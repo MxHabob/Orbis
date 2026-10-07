@@ -15,6 +15,8 @@
     SelectItem,
   } from "@orbis/ui/select";
   import { toast } from "@orbis/ui";
+  import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+  import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
   let {
     orgId,
@@ -118,50 +120,27 @@
   <div
     class="flex-1 overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide text-start"
   >
-    <!-- Names (Arabic & English) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Arabic Name -->
-      <FormField
-        id="room_name_ar"
-        label={m.common_rooms_label_name_ar()}
-        error={fieldError("name_ar")}
-      >
-        {#snippet children()}
-          <Input
-            id="room_name_ar"
-            type="text"
-            bind:value={form.values.name_ar}
-            onblur={() => form.markTouched("name_ar")}
-            placeholder={m.academics_room_form_placeholder()}
-            disabled={form.isSubmitting}
-          />
-        {/snippet}
-      </FormField>
-
-      <!-- English Name -->
-      <FormField
-        id="room_name_en"
-        label={m.common_rooms_label_name_en()}
-        error={fieldError("name")}
-        required
-      >
-        {#snippet children()}
-          <Input
-            id="room_name_en"
-            type="text"
-            bind:value={form.values.name}
-            onblur={() => form.markTouched("name")}
-            aria-invalid={Boolean(fieldError("name"))}
-            aria-describedby={fieldError("name")
-              ? "room_name_error"
-              : undefined}
-            placeholder={m.common_rooms_placeholder_name_en()}
-            required
-            disabled={form.isSubmitting}
-          />
-        {/snippet}
-      </FormField>
-    </div>
+    <BilingualNameFields
+      arId="room_name_ar"
+      enId="room_name_en"
+      arLabel={m.common_rooms_label_name_ar()}
+      enLabel={m.common_rooms_label_name_en()}
+      bind:arValue={form.values.name_ar}
+      bind:enValue={form.values.name}
+      arPlaceholder={m.academics_room_form_placeholder()}
+      enPlaceholder={m.common_rooms_placeholder_name_en()}
+      arError={fieldError("name_ar")}
+      enError={fieldError("name")}
+      onArBlur={() => form.markTouched("name_ar")}
+      onEnBlur={() => form.markTouched("name")}
+      kind="label"
+      requestSuggestion={suggestLocalTranslation}
+      enRequired
+      disabled={form.isSubmitting}
+      loadingMessage={m.bilingual_entry_loading()}
+      failureMessage={m.bilingual_entry_failure()}
+      generatedMessage={m.bilingual_entry_generated()}
+    />
 
     <!-- Type & Capacity -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

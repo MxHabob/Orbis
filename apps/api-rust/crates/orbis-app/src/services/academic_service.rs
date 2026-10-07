@@ -142,6 +142,7 @@ impl AcademicService {
         unit_id: Uuid,
         period_id: Uuid,
         name: String,
+        name_ar: Option<String>,
         level: String,
     ) -> Result<Class, DomainError> {
         self.permission_checker
@@ -157,7 +158,7 @@ impl AcademicService {
             unit_id,
             period_id,
             name,
-            name_ar: None,
+            name_ar,
             level,
             division: None,
             homeroom_teacher_id: None,

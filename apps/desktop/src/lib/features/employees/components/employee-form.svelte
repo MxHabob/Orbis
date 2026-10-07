@@ -42,6 +42,8 @@ import {
 } from "../queries";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 import { formatNumber } from "$lib/core/i18n";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   orgId: string;
@@ -297,80 +299,55 @@ function handleCancelClick() {
         </AccordionTrigger>
         <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
           
-          <!-- Arabic Names -->
-          <div class="grid grid-cols-3 gap-3">
-            <FormField label={m.employees_first_name_ar()} required>
-              {#snippet children()}
-              <Input
-                type="text"
-                placeholder={m.operations_ui_employee_first_name_example()}
-                class="text-xs h-9"
-                bind:value={firstNameAr}
-                disabled={isSaving}
-                required
-              />
-              {/snippet}
-            </FormField>
-            <FormField label={m.employees_middle_name_ar()}>
-              {#snippet children()}
-              <Input
-                type="text"
-                placeholder={m.operations_ui_employee_father_name_example()}
-                class="text-xs h-9"
-                bind:value={middleNameAr}
-                disabled={isSaving}
-              />
-              {/snippet}
-            </FormField>
-            <FormField label={m.employees_last_name_ar()}>
-              {#snippet children()}
-              <Input
-                type="text"
-                placeholder={m.operations_ui_employee_last_name_example()}
-                class="text-xs h-9"
-                bind:value={lastNameAr}
-                disabled={isSaving}
-              />
-              {/snippet}
-            </FormField>
-          </div>
-
-          <!-- Latin / English Names -->
-          <div class="grid grid-cols-3 gap-3">
-            <FormField label={m.employees_first_name()}>
-              {#snippet children()}
-              <Input
-                type="text"
-                placeholder="Mohammed"
-                class="text-xs h-9"
-                bind:value={firstName}
-                disabled={isSaving}
-              />
-              {/snippet}
-            </FormField>
-            <FormField label={m.employees_middle_name()}>
-              {#snippet children()}
-              <Input
-                type="text"
-                placeholder="Abdullah"
-                class="text-xs h-9"
-                bind:value={middleName}
-                disabled={isSaving}
-              />
-              {/snippet}
-            </FormField>
-            <FormField label={m.employees_last_name()}>
-              {#snippet children()}
-              <Input
-                type="text"
-                placeholder="Al-Ghamdi"
-                class="text-xs h-9"
-                bind:value={lastName}
-                disabled={isSaving}
-              />
-              {/snippet}
-            </FormField>
-          </div>
+          <BilingualNameFields
+            arId="employee-first-name-ar"
+            enId="employee-first-name"
+            arLabel={m.employees_first_name_ar()}
+            enLabel={m.employees_first_name()}
+            bind:arValue={firstNameAr}
+            bind:enValue={firstName}
+            arPlaceholder={m.operations_ui_employee_first_name_example()}
+            enPlaceholder="Mohammed"
+            kind="person-name"
+            requestSuggestion={suggestLocalTranslation}
+            arRequired
+            disabled={isSaving}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+            generatedMessage={m.bilingual_entry_generated()}
+          />
+          <BilingualNameFields
+            arId="employee-middle-name-ar"
+            enId="employee-middle-name"
+            arLabel={m.employees_middle_name_ar()}
+            enLabel={m.employees_middle_name()}
+            bind:arValue={middleNameAr}
+            bind:enValue={middleName}
+            arPlaceholder={m.operations_ui_employee_father_name_example()}
+            enPlaceholder="Abdullah"
+            kind="person-name"
+            requestSuggestion={suggestLocalTranslation}
+            disabled={isSaving}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+            generatedMessage={m.bilingual_entry_generated()}
+          />
+          <BilingualNameFields
+            arId="employee-last-name-ar"
+            enId="employee-last-name"
+            arLabel={m.employees_last_name_ar()}
+            enLabel={m.employees_last_name()}
+            bind:arValue={lastNameAr}
+            bind:enValue={lastName}
+            arPlaceholder={m.operations_ui_employee_last_name_example()}
+            enPlaceholder="Al-Ghamdi"
+            kind="person-name"
+            requestSuggestion={suggestLocalTranslation}
+            disabled={isSaving}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+            generatedMessage={m.bilingual_entry_generated()}
+          />
 
           <!-- ID & Demographic Grid -->
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">

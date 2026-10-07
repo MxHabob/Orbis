@@ -251,3 +251,28 @@ export function suggestNameTransliteration(
     approximate: true,
   };
 }
+
+export function suggestPhoneticTransliteration(
+  value: string,
+  sourceLanguage: TranslationLanguage,
+): SuggestionResult {
+  const text = value.trim();
+  if (!text) return { status: "unavailable", reason: "empty" };
+
+  const sourceScript = sourceLanguage === "ar" ? arabicLetter : latinLetter;
+  if (![...text].some((character) => sourceScript.test(character))) {
+    return { status: "unavailable", reason: "unsupported-script" };
+  }
+
+  const transliterated = transliterateText(text, sourceLanguage, new Map());
+  if (transliterated === text || !/\p{L}/u.test(transliterated)) {
+    return { status: "unavailable", reason: "unsupported-script" };
+  }
+
+  return {
+    status: "suggestion",
+    text: transliterated,
+    method: "transliteration",
+    approximate: true,
+  };
+}

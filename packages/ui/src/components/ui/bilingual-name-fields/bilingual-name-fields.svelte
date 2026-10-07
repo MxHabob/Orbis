@@ -1,24 +1,23 @@
 <script lang="ts">
-import { onDestroy } from "svelte";
-import { Button } from "../button/index.js";
+import { onDestroy, tick } from "svelte";
+import type { Snippet } from "svelte";
+import type {
+  SuggestionRequest,
+  SuggestionResult,
+  TranslationLanguage,
+} from "@orbis/translation";
 import { Input } from "../input/index.js";
 
-type TranslationLanguage = "ar" | "en";
-type SuggestionRequest = {
-  text: string;
-  sourceLanguage: TranslationLanguage;
-  kind: "label" | "person-name";
+type FieldControlArgs = {
+  id: string;
+  placeholder: string;
+  required: boolean;
+  disabled: boolean;
+  ariaInvalid?: "true";
+  ariaDescribedBy?: string;
+  onInput: (value: string) => void;
+  onBlur?: () => void;
 };
-type SuggestionResult =
-  | {
-      status: "suggestion";
-      text: string;
-      approximate: boolean;
-    }
-  | {
-      status: "unavailable";
-      reason: "empty" | "unknown-term" | "unsupported-script";
-    };
 
 type Props = {
   arId: string;
@@ -33,19 +32,20 @@ type Props = {
   enValue?: string;
   arPlaceholder?: string;
   enPlaceholder?: string;
+  arDescription?: string;
+  enDescription?: string;
+  arControl?: Snippet<[FieldControlArgs]>;
   arError?: string;
   enError?: string;
+  onArBlur?: () => void;
+  onEnBlur?: () => void;
   disabled?: boolean;
   arRequired?: boolean;
   enRequired?: boolean;
   debounceMs?: number;
   loadingMessage: string;
-  unavailableMessage: string;
   failureMessage: string;
-  approximateMessage: string;
-  acceptMessage: string;
-  replaceMessage: string;
-  dismissMessage: string;
+  generatedMessage: string;
 };
 
 let {
@@ -59,36 +59,51 @@ let {
   enValue = $bindable(""),
   arPlaceholder = "",
   enPlaceholder = "",
+  arDescription = "",
+  enDescription = "",
+  arControl,
   arError,
   enError,
+  onArBlur,
+  onEnBlur,
   disabled = false,
   arRequired = false,
   enRequired = false,
   debounceMs = 350,
   loadingMessage,
-  unavailableMessage,
   failureMessage,
-  approximateMessage,
-  acceptMessage,
-  replaceMessage,
-  dismissMessage,
+  generatedMessage,
 }: Props = $props();
 
 let isLoading = $state(false);
-let candidate = $state<SuggestionResult | null>(null);
-let requestSource = $state<TranslationLanguage | null>(null);
 let requestFailed = $state(false);
+let generatedLanguage = $state<TranslationLanguage | null>(null);
+let generatedValue = "";
 let requestSequence = 0;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function valueFor(language: TranslationLanguage): string {
+  return language === "ar" ? arValue : enValue;
+}
+
+function isGenerated(language: TranslationLanguage): boolean {
+  return generatedLanguage === language && valueFor(language) === generatedValue;
+}
 
 function invalidatePendingRequest() {
   requestSequence += 1;
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = undefined;
   isLoading = false;
-  candidate = null;
-  requestSource = null;
   requestFailed = false;
+}
+
+function handleInput(text: string, sourceLanguage: TranslationLanguage) {
+  if (generatedLanguage === sourceLanguage) {
+    generatedLanguage = null;
+    generatedValue = "";
+  }
+  scheduleSuggestion(text, sourceLanguage);
 }
 
 function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
@@ -104,29 +119,35 @@ function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
         sourceLanguage,
         kind,
       });
-      if (sequence !== requestSequence) return;
-      candidate = result;
-      requestSource = sourceLanguage;
+      if (sequence !== requestSequence || result.status !== "suggestion") return;
+
+      const targetLanguage = sourceLanguage === "ar" ? "en" : "ar";
+      const targetValue = valueFor(targetLanguage);
+      if (targetValue.trim() && !isGenerated(targetLanguage)) return;
+
+      if (targetLanguage === "ar") arValue = result.text;
+      else enValue = result.text;
+      generatedLanguage = targetLanguage;
+      generatedValue = result.text;
+
+      await tick();
+      const input = document.getElementById(
+        targetLanguage === "ar" ? arId : enId,
+      );
+      if (
+        sequence === requestSequence &&
+        isGenerated(targetLanguage) &&
+        input instanceof HTMLInputElement
+      ) {
+        input.focus();
+        input.setSelectionRange(0, result.text.length);
+      }
     } catch {
-      if (sequence !== requestSequence) return;
-      requestFailed = true;
+      if (sequence === requestSequence) requestFailed = true;
     } finally {
       if (sequence === requestSequence) isLoading = false;
     }
   }, debounceMs);
-}
-
-function acceptSuggestion() {
-  if (candidate?.status !== "suggestion" || !requestSource) return;
-  if (requestSource === "ar") enValue = candidate.text;
-  else arValue = candidate.text;
-  candidate = null;
-  requestSource = null;
-}
-
-function dismissSuggestion() {
-  candidate = null;
-  requestSource = null;
 }
 
 onDestroy(() => {
@@ -139,19 +160,55 @@ onDestroy(() => {
     <label for={arId} class="text-xs font-semibold text-muted-foreground">
       {arLabel}{#if arRequired}<span class="text-destructive" aria-hidden="true"> *</span>{/if}
     </label>
-    <Input
-      id={arId}
-      type="text"
-      dir="rtl"
-      bind:value={arValue}
-      oninput={(event) => scheduleSuggestion(event.currentTarget.value, "ar")}
-      placeholder={arPlaceholder}
-      aria-invalid={arError ? "true" : undefined}
-      aria-describedby={arError ? `${arId}-error` : undefined}
-      required={arRequired}
-      {disabled}
-      autocomplete="off"
-    />
+    {#if arDescription}
+      <p id={`${arId}-description`} class="text-[11px] leading-5 text-muted-foreground">
+        {arDescription}
+      </p>
+    {/if}
+    <div class="relative">
+      {#if arControl}
+        {@render arControl({
+          id: arId,
+          placeholder: arPlaceholder,
+          required: arRequired,
+          disabled,
+          ariaInvalid: arError ? "true" : undefined,
+          ariaDescribedBy: [
+            arDescription ? `${arId}-description` : "",
+            arError ? `${arId}-error` : "",
+          ].filter(Boolean).join(" ") || undefined,
+          onInput: (value) => handleInput(value, "ar"),
+          onBlur: onArBlur,
+        })}
+      {:else}
+        <Input
+          id={arId}
+          type="text"
+          dir="rtl"
+          bind:value={arValue}
+          oninput={(event) => handleInput(event.currentTarget.value, "ar")}
+          onblur={onArBlur}
+          placeholder={arPlaceholder}
+          aria-invalid={arError ? "true" : undefined}
+          aria-describedby={[
+            arDescription ? `${arId}-description` : "",
+            arError ? `${arId}-error` : "",
+          ].filter(Boolean).join(" ") || undefined}
+          required={arRequired}
+          {disabled}
+          autocomplete="off"
+          class="pe-9"
+        />
+      {/if}
+      {#if isGenerated("ar")}
+        <span
+          class="absolute end-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-[10px] font-semibold text-muted-foreground"
+          title={generatedMessage}
+          aria-label={generatedMessage}
+          role="img"
+        >↔</span>
+      {/if}
+    </div>
     {#if arError}
       <p id={`${arId}-error`} class="text-xs text-destructive">{arError}</p>
     {/if}
@@ -161,61 +218,49 @@ onDestroy(() => {
     <label for={enId} class="text-xs font-semibold text-muted-foreground">
       {enLabel}{#if enRequired}<span class="text-destructive" aria-hidden="true"> *</span>{/if}
     </label>
-    <Input
-      id={enId}
-      type="text"
-      dir="ltr"
-      bind:value={enValue}
-      oninput={(event) => scheduleSuggestion(event.currentTarget.value, "en")}
-      placeholder={enPlaceholder}
-      aria-invalid={enError ? "true" : undefined}
-      aria-describedby={enError ? `${enId}-error` : undefined}
-      required={enRequired}
-      {disabled}
-      autocomplete="off"
-    />
+    {#if enDescription}
+      <p id={`${enId}-description`} class="text-[11px] leading-5 text-muted-foreground">
+        {enDescription}
+      </p>
+    {/if}
+    <div class="relative">
+      <Input
+        id={enId}
+        type="text"
+        dir="ltr"
+        bind:value={enValue}
+        oninput={(event) => handleInput(event.currentTarget.value, "en")}
+        onblur={onEnBlur}
+        placeholder={enPlaceholder}
+        aria-invalid={enError ? "true" : undefined}
+        aria-describedby={[
+          enDescription ? `${enId}-description` : "",
+          enError ? `${enId}-error` : "",
+        ].filter(Boolean).join(" ") || undefined}
+        required={enRequired}
+        {disabled}
+        autocomplete="off"
+        class="pe-9"
+      />
+      {#if isGenerated("en")}
+        <span
+          class="absolute end-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-[10px] font-semibold text-muted-foreground"
+          title={generatedMessage}
+          aria-label={generatedMessage}
+          role="img"
+        >↔</span>
+      {/if}
+    </div>
     {#if enError}
       <p id={`${enId}-error`} class="text-xs text-destructive">{enError}</p>
     {/if}
   </div>
 </div>
 
-<div class="min-h-7" role="status" aria-live="polite" aria-atomic="true">
+<div class="min-h-5" role="status" aria-live="polite" aria-atomic="true">
   {#if isLoading}
-    <p class="text-xs text-muted-foreground">{loadingMessage}</p>
+    <span class="sr-only">{loadingMessage}</span>
   {:else if requestFailed}
     <p class="text-xs text-muted-foreground">{failureMessage}</p>
-  {:else if candidate?.status === "unavailable"}
-    <p class="text-xs text-muted-foreground">{unavailableMessage}</p>
-  {:else if candidate?.status === "suggestion" && requestSource}
-    <div class="flex flex-wrap items-center gap-2 text-xs">
-      <span class="text-muted-foreground">
-        {requestSource === "ar" ? enLabel : arLabel}:
-      </span>
-      <span class="font-medium text-foreground" dir="auto">{candidate.text}</span>
-      {#if candidate.approximate}
-        <span class="text-muted-foreground">{approximateMessage}</span>
-      {/if}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={disabled}
-        onclick={acceptSuggestion}
-      >
-        {(requestSource === "ar" ? enValue : arValue).trim()
-          ? replaceMessage
-          : acceptMessage}
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        disabled={disabled}
-        onclick={dismissSuggestion}
-      >
-        {dismissMessage}
-      </Button>
-    </div>
   {/if}
 </div>

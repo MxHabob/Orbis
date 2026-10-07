@@ -15,6 +15,8 @@ import {
 import { AdjustmentsHorizontal } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   classId,
@@ -102,32 +104,27 @@ async function handleSubmit(e: SubmitEvent) {
 	</SheetHeader>
 
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
-		<!-- Name (Arabic) -->
-		<FormField id="ass_name_ar" label={m.common_assessment_label_name_ar()} error={fieldError("title_ar")} required>
-			{#snippet children()}
-			<Input 
-				id="ass_name_ar"
-				type="text" 
-				bind:value={form.values.title_ar}
-				onblur={() => form.markTouched("title_ar")}
-				placeholder={m.common_assessment_placeholder_name_ar()}
-				required
-			/>
-			{/snippet}
-		</FormField>
-
-		<!-- Name (English) -->
-		<FormField id="ass_name_en" label={m.common_assessment_label_name_en()} error={fieldError("title")}>
-			{#snippet children()}
-			<Input 
-				id="ass_name_en"
-				type="text" 
-				bind:value={form.values.title}
-				onblur={() => form.markTouched("title")}
-				placeholder={m.common_assessment_placeholder_name_ar()}
-			/>
-			{/snippet}
-		</FormField>
+		<BilingualNameFields
+			arId="ass_name_ar"
+			enId="ass_name_en"
+			arLabel={m.common_assessment_label_name_ar()}
+			enLabel={m.common_assessment_label_name_en()}
+			bind:arValue={form.values.title_ar}
+			bind:enValue={form.values.title}
+			arPlaceholder={m.common_assessment_placeholder_name_ar()}
+			enPlaceholder={m.common_assessment_placeholder_name_en()}
+			arError={fieldError("title_ar")}
+			enError={fieldError("title")}
+			onArBlur={() => form.markTouched("title_ar")}
+			onEnBlur={() => form.markTouched("title")}
+			kind="label"
+			requestSuggestion={suggestLocalTranslation}
+			arRequired
+			disabled={form.isSubmitting}
+			loadingMessage={m.bilingual_entry_loading()}
+			failureMessage={m.bilingual_entry_failure()}
+			generatedMessage={m.bilingual_entry_generated()}
+		/>
 
 		<!-- Assessment Type -->
 		<FormField id="ass_type" label={m.common_assessment_label_type()} error={fieldError("item_type")} required>

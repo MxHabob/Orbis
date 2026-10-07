@@ -82,6 +82,11 @@ const navGroups = $derived([
     title: m.settings_sidebar_academic_rules(),
     items: [
       {
+        path: "academic-years",
+        label: m.settings_nav_academic_years(),
+        icon: Calendar,
+      },
+      {
         path: "periods",
         label: m.settings_nav_cycles(),
         icon: Calendar,

@@ -32,7 +32,6 @@ export const academicDictionaryPack: DictionaryPack = {
     { ar: "الواجب المنزلي", en: "Homework" },
     { ar: "قاعة", en: "Room" },
     { ar: "مختبر", en: "Laboratory" },
-    { ar: "فصل", en: "Class" },
     { ar: "صف", en: "Grade" },
     { ar: "مجموعة", en: "Group" },
     { ar: "مادة", en: "Subject" },

@@ -71,6 +71,7 @@ pub struct CreateClassRequest {
     pub unit_id: Uuid,
     pub period_id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
     pub level: String,
 }
 
@@ -204,7 +205,15 @@ async fn create_class(
 ) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
     let c = state
         .academic_service
-        .create_class(&ctx, ctx.tenant_id, p.unit_id, p.period_id, p.name, p.level)
+        .create_class(
+            &ctx,
+            ctx.tenant_id,
+            p.unit_id,
+            p.period_id,
+            p.name,
+            p.name_ar,
+            p.level,
+        )
         .await?;
     Ok(ApiResponse::ok(class_to_dto(c)))
 }

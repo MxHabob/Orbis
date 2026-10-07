@@ -8,6 +8,7 @@ import type {
 } from "./types";
 import {
   defaultNameDictionary,
+  suggestPhoneticTransliteration,
   suggestNameTransliteration,
 } from "./transliteration";
 
@@ -172,7 +173,11 @@ export function createTranslationEngine(
       if (kind === "person-name") {
         return suggestNameTransliteration(text, sourceLanguage, names);
       }
-      return translateWithDictionary(text, sourceLanguage, dictionary);
+      const result = translateWithDictionary(text, sourceLanguage, dictionary);
+      if (result.status === "unavailable" && result.reason === "unknown-term") {
+        return suggestPhoneticTransliteration(text, sourceLanguage);
+      }
+      return result;
     },
   };
 }

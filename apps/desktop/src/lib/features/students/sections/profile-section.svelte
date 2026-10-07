@@ -32,6 +32,8 @@ import DateOfBirthField from "../components/date-of-birth-field.svelte";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
 import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { state }: { state: StudentFormState } = $props();
 
@@ -104,45 +106,25 @@ const studyModes = [
         </div>
       </div>
 
-      <!-- Arabic Name -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="nameAr" class="text-xs font-semibold text-foreground flex items-center gap-1">
-            {m.common_form_full_name_ar()}
-            <span class="text-destructive">*</span>
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_name_ar_desc()}</span>
-        </div>
-        <div class="w-full md:w-120 shrink-0">
-          <Input 
-            id="nameAr"
-            type="text" 
-            placeholder={m.common_form_full_name_ar_placeholder()} 
-            class="h-9 w-full bg-background" 
-            bind:value={state.personal.nameAr}
-            autocomplete="off"
-          />
-        </div>
-      </div>
-
-      <!-- English Name -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="nameEn" class="text-xs font-semibold text-foreground">
-            {m.common_form_full_name_en()}
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_name_en_desc()}</span>
-        </div>
-        <div class="w-full md:w-120 shrink-0">
-          <Input 
-            id="nameEn"
-            type="text" 
-            placeholder={m.common_form_full_name_en_placeholder()} 
-            class="h-9 w-full bg-background font-mono"
-            bind:value={state.personal.nameEn}
-            autocomplete="off"
-          />
-        </div>
+      <div class="px-6 py-4">
+        <BilingualNameFields
+          arId="nameAr"
+          enId="nameEn"
+          arLabel={m.common_form_full_name_ar()}
+          enLabel={m.common_form_full_name_en()}
+          bind:arValue={state.personal.nameAr}
+          bind:enValue={state.personal.nameEn}
+          arPlaceholder={m.common_form_full_name_ar_placeholder()}
+          enPlaceholder={m.common_form_full_name_en_placeholder()}
+          arDescription={m.common_form_profile_name_ar_desc()}
+          enDescription={m.common_form_profile_name_en_desc()}
+          kind="person-name"
+          requestSuggestion={suggestLocalTranslation}
+          arRequired
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+          generatedMessage={m.bilingual_entry_generated()}
+        />
       </div>
 
       <!-- Target Class & Section with CapacityIndicator -->

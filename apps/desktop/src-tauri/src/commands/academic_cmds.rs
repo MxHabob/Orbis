@@ -65,6 +65,7 @@ pub struct CreateClassInput {
     pub unit_id: String,
     pub period_id: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub level: String,
 }
 
@@ -225,6 +226,7 @@ pub async fn academic_create_class(
             unit_id,
             period_id,
             request.name,
+            request.name_ar,
             request.level,
         )
         .await

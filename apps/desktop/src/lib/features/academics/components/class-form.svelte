@@ -18,6 +18,8 @@ import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
 import { classFormInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   orgId,
@@ -78,7 +80,8 @@ async function handleSubmit(e: SubmitEvent) {
     const request: CreateClassRequest = {
       unit_id: unitId,
       period_id: periodId,
-      name: values.name_ar || values.name,
+      name: values.name || values.name_ar || "",
+      name_ar: values.name_ar || undefined,
       level: values.grade_level || "1",
     };
     await api.createClass(request);
@@ -103,31 +106,42 @@ async function handleSubmit(e: SubmitEvent) {
 	</SheetHeader>
 
 	<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide text-start">
-		<!-- Name (Arabic) -->
-		<FormField id="name_ar" label={m.academics_class_label_name_ar()} error={fieldError("name_ar")} required>
-			{#snippet children()}
-			<InputColor
-				placeholder={m.academics_class_placeholder_name_ar()}
-				bind:value={form.values.name_ar}
-				bind:color={form.values.color}
-				required
-			/>
+		<BilingualNameFields
+			arId="name_ar"
+			enId="name_en"
+			arLabel={m.academics_class_label_name_ar()}
+			enLabel={m.academics_class_label_name_en()}
+			bind:arValue={form.values.name_ar}
+			bind:enValue={form.values.name}
+			arPlaceholder={m.academics_class_placeholder_name_ar()}
+			enPlaceholder={m.common_class_placeholder_name_en()}
+			arError={fieldError("name_ar")}
+			enError={fieldError("name")}
+			onArBlur={() => form.markTouched("name_ar")}
+			onEnBlur={() => form.markTouched("name")}
+			kind="label"
+			requestSuggestion={suggestLocalTranslation}
+			arRequired
+			disabled={form.isSubmitting}
+			loadingMessage={m.bilingual_entry_loading()}
+			failureMessage={m.bilingual_entry_failure()}
+			generatedMessage={m.bilingual_entry_generated()}
+		>
+			{#snippet arControl({ id, placeholder, required, disabled, ariaInvalid, ariaDescribedBy, onInput, onBlur })}
+				<InputColor
+					{id}
+					{placeholder}
+					bind:value={form.values.name_ar}
+					bind:color={form.values.color}
+					onvalueinput={onInput}
+					onblur={onBlur}
+					{required}
+					{disabled}
+					ariaInvalid={ariaInvalid}
+					ariaDescribedBy={ariaDescribedBy}
+				/>
 			{/snippet}
-		</FormField>
-
-		<!-- Name (English) -->
-		<FormField id="name_en" label={m.academics_class_label_name_en()} error={fieldError("name")}>
-			{#snippet children()}
-			<Input 
-				id="name_en"
-				type="text" 
-				bind:value={form.values.name}
-				onblur={() => form.markTouched("name")}
-				aria-invalid={Boolean(fieldError("name"))}
-				placeholder={m.common_class_placeholder_name_en()}
-			/>
-			{/snippet}
-		</FormField>
+		</BilingualNameFields>
 
 		<!-- Unit & Period Selection -->
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">

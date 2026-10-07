@@ -9,6 +9,8 @@ import { FormField } from "@orbis/ui";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 type SubjectDraft = {
   name: string;
@@ -65,33 +67,42 @@ async function handleSubmit(e: SubmitEvent) {
   </SheetHeader>
 
   <div class="flex-1 overflow-y-auto p-6 flex flex-col gap-5 scrollbar-hide">
-    <!-- Name (Arabic) -->
-    <FormField id="sub_name_ar" label={m.common_subject_label_name_ar()} error={fieldError("name_ar")} required>
-      {#snippet children()}
-      <InputColor
-        placeholder={m.common_subject_placeholder_name_ar()}
-        bind:value={form.values.name_ar}
-        bind:color={form.values.color}
-        onblur={() => form.markTouched("name_ar")}
-        required
-      />
+    <BilingualNameFields
+      arId="sub_name_ar"
+      enId="sub_name_en"
+      arLabel={m.common_subject_label_name_ar()}
+      enLabel={m.common_subject_label_name_en()}
+      bind:arValue={form.values.name_ar}
+      bind:enValue={form.values.name}
+      arPlaceholder={m.common_subject_placeholder_name_ar()}
+      enPlaceholder={m.common_subject_placeholder_name_en()}
+      arError={fieldError("name_ar")}
+      enError={fieldError("name")}
+      onArBlur={() => form.markTouched("name_ar")}
+      onEnBlur={() => form.markTouched("name")}
+      kind="label"
+      requestSuggestion={suggestLocalTranslation}
+      arRequired
+      disabled={form.isSubmitting}
+      loadingMessage={m.bilingual_entry_loading()}
+      failureMessage={m.bilingual_entry_failure()}
+      generatedMessage={m.bilingual_entry_generated()}
+    >
+      {#snippet arControl({ id, placeholder, required, disabled, ariaInvalid, ariaDescribedBy, onInput, onBlur })}
+        <InputColor
+          {id}
+          {placeholder}
+          bind:value={form.values.name_ar}
+          bind:color={form.values.color}
+          onvalueinput={onInput}
+          onblur={onBlur}
+          {required}
+          {disabled}
+          ariaInvalid={ariaInvalid}
+          ariaDescribedBy={ariaDescribedBy}
+        />
       {/snippet}
-    </FormField>
-
-    <!-- Name (English) -->
-    <FormField id="sub_name_en" label={m.common_subject_label_name_en()} error={fieldError("name")}>
-      {#snippet children()}
-      <Input 
-        id="sub_name_en"
-        type="text" 
-        bind:value={form.values.name}
-        onblur={() => form.markTouched("name")}
-        aria-invalid={Boolean(fieldError("name"))}
-        aria-describedby={fieldError("name") ? "sub_name_error" : undefined}
-        placeholder={m.common_subject_placeholder_name_en()}
-      />
-      {/snippet}
-    </FormField>
+    </BilingualNameFields>
 
     <!-- Subject Code -->
     <FormField id="sub_code" label={m.common_subject_label_code()} error={fieldError("code")} required>

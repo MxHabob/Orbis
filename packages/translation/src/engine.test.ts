@@ -41,14 +41,34 @@ describe("offline translation engine", () => {
     ).toMatchObject({ status: "suggestion", text: "Class 2!" });
   });
 
-  test("does not return a partial translation for an unknown term", () => {
+  test("phoneticizes unknown Arabic labels instead of returning no suggestion", () => {
     expect(
       engine.suggest({
         text: "قاعة الكواكب",
         sourceLanguage: "ar",
         kind: "label",
       }),
-    ).toEqual({ status: "unavailable", reason: "unknown-term" });
+    ).toMatchObject({
+      status: "suggestion",
+      text: "qa'h alkwakb",
+      method: "transliteration",
+      approximate: true,
+    });
+  });
+
+  test("phoneticizes unknown English labels into Arabic", () => {
+    expect(
+      engine.suggest({
+        text: "Orbis Hall",
+        sourceLanguage: "en",
+        kind: "label",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "وربيس هالل",
+      method: "transliteration",
+      approximate: true,
+    });
   });
 
   test("normalizes Arabic diacritics and alef variants", () => {

@@ -744,6 +744,7 @@ export type CreateAccountRequest = {
 export type CreateClassRequest = {
     level: string;
     name: string;
+    name_ar?: string | null;
     period_id: string;
     unit_id: string;
 };

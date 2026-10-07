@@ -34,6 +34,11 @@ const navItems = $derived([
     badge: classesCount > 0 ? classesCount : null,
   },
   {
+    path: "calendar",
+    label: m.academics_nav_calendar(),
+    icon: Calendar,
+  },
+  {
     path: "schedule",
     label: m.common_exams_detail_schedule(),
     icon: Calendar,
