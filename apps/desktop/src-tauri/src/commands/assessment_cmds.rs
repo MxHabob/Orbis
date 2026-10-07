@@ -877,7 +877,8 @@ pub async fn assessment_get_class_term_results(
     class_id: String,
     period_id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<orbis_domain::entities::academic_policy::StudentTermReportCard>>, String> {
+) -> Result<ApiResponse<Vec<orbis_domain::entities::academic_policy::StudentTermReportCard>>, String>
+{
     let ctx = make_ctx(&state);
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
@@ -896,7 +897,10 @@ pub async fn assessment_get_class_annual_results(
     class_id: String,
     year_id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<orbis_domain::entities::academic_policy::StudentAnnualReportCard>>, String> {
+) -> Result<
+    ApiResponse<Vec<orbis_domain::entities::academic_policy::StudentAnnualReportCard>>,
+    String,
+> {
     let ctx = make_ctx(&state);
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
     let yid = Uuid::parse_str(&year_id).map_err(|_| "Invalid year ID")?;

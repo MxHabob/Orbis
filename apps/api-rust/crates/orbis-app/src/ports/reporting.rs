@@ -35,7 +35,6 @@ pub trait ReportDefinitionRepository: Send + Sync {
     async fn provision_catalog(&self, org_id: Uuid) -> Result<u32, DomainError>;
 }
 
-
 #[async_trait]
 pub trait ReportTemplateRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ReportTemplate>, DomainError>;

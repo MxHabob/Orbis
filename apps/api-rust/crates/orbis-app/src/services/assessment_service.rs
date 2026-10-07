@@ -4,10 +4,11 @@ use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AcademicPeriodRepository, AcademicYearRepository, AssessmentSchemeRepository,
     AttendanceRepository, BehaviorRecordRepository, ClassRepository, ClassSubjectRepository,
-    EnrollmentRepository, GpaRecordRepository, GradeRepository, StudentRepository, SubjectRepository,
+    EnrollmentRepository, GpaRecordRepository, GradeRepository, StudentRepository,
+    SubjectRepository,
 };
 use crate::services::calculation_engine::{
-    apply_rounding, AcademicCalculationEngine, AstNode, CalcEngine,
+    AcademicCalculationEngine, AstNode, CalcEngine, apply_rounding,
 };
 use chrono::{NaiveDate, Utc};
 use orbis_domain::entities::academic_period::PeriodKind;
@@ -934,7 +935,10 @@ impl AssessmentService {
         // 1. Resolve student details
         let (student_name, student_number) = if let Some(sr) = &self.student_repo {
             if let Some(detail) = sr.find_detail_by_id(student_id).await? {
-                (detail.person.full_name(), Some(detail.student.student_number))
+                (
+                    detail.person.full_name(),
+                    Some(detail.student.student_number),
+                )
             } else if let Some(st) = sr.find_by_id(student_id).await? {
                 (
                     format!("Student {}", &st.id.to_string()[..8]),
@@ -970,9 +974,7 @@ impl AssessmentService {
             let enrollments = er.find_by_student(student_id).await?;
             enrollments
                 .into_iter()
-                .find(|e| {
-                    e.period_id == period_id || e.status == EnrollmentStatus::Active
-                })
+                .find(|e| e.period_id == period_id || e.status == EnrollmentStatus::Active)
                 .and_then(|e| e.class_id)
                 .unwrap_or_else(Uuid::nil)
         } else {
@@ -1044,10 +1046,8 @@ impl AssessmentService {
                             .to_uppercase()
                             .contains("EXAM");
 
-                    let period_grades: Vec<&Grade> = all_grades
-                        .iter()
-                        .filter(|g| g.period_id == cp.id)
-                        .collect();
+                    let period_grades: Vec<&Grade> =
+                        all_grades.iter().filter(|g| g.period_id == cp.id).collect();
 
                     if is_exam {
                         if let Some(first_grade) = period_grades.first() {
@@ -1065,10 +1065,7 @@ impl AssessmentService {
                                         .component_id
                                         .map(|cid| cid.to_string())
                                         .unwrap_or_else(|| "TOTAL".into()),
-                                    name: g
-                                        .notes
-                                        .clone()
-                                        .unwrap_or_else(|| "Score".into()),
+                                    name: g.notes.clone().unwrap_or_else(|| "Score".into()),
                                     name_ar: None,
                                     score: g.score,
                                     max_score: g.max_score,
@@ -1309,14 +1306,7 @@ impl AssessmentService {
             };
 
             let annual_res = AcademicCalculationEngine::calculate_subject_annual_result(
-                subject_id,
-                code,
-                name,
-                name_ar,
-                credit,
-                t1_res,
-                t2_res,
-                &policy,
+                subject_id, code, name, name_ar, credit, t1_res, t2_res, &policy,
             );
             annual_subjects.push(annual_res);
         }
@@ -1404,8 +1394,7 @@ impl AssessmentService {
                 .map(|c| (c.student_id, c.overall_percentage))
                 .collect();
             let rankings = AcademicCalculationEngine::compute_rankings(&scores, policy.tie_policy);
-            let rank_map: std::collections::HashMap<Uuid, u32> =
-                rankings.into_iter().collect();
+            let rank_map: std::collections::HashMap<Uuid, u32> = rankings.into_iter().collect();
 
             for c in &mut cards {
                 if let Some(r) = rank_map.get(&c.student_id) {
@@ -1467,8 +1456,7 @@ impl AssessmentService {
                 .map(|c| (c.student_id, c.overall_percentage))
                 .collect();
             let rankings = AcademicCalculationEngine::compute_rankings(&scores, policy.tie_policy);
-            let rank_map: std::collections::HashMap<Uuid, u32> =
-                rankings.into_iter().collect();
+            let rank_map: std::collections::HashMap<Uuid, u32> = rankings.into_iter().collect();
 
             for c in &mut cards {
                 if let Some(r) = rank_map.get(&c.student_id) {

@@ -1,7 +1,7 @@
 #[allow(unused_imports)] // ComponentScore used by tests via super::*
 use orbis_domain::entities::academic_policy::{
-    AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult,
-    PeriodComponentScores, RoundingMode, SubjectAnnualResult, SubjectTermResult, TiePolicy,
+    AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult, PeriodComponentScores,
+    RoundingMode, SubjectAnnualResult, SubjectTermResult, TiePolicy,
 };
 use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
@@ -439,10 +439,34 @@ mod tests {
     fn school_breakdown(hw: &str, oral: &str, att: &str, written: &str) -> PeriodComponentScores {
         let mut b = PeriodComponentScores {
             components: vec![
-                ComponentScore { code: "HW".into(), name: "Homework".into(), name_ar: None, score: d(hw), max_score: d("20") },
-                ComponentScore { code: "ORAL".into(), name: "Oral".into(), name_ar: None, score: d(oral), max_score: d("20") },
-                ComponentScore { code: "ATT".into(), name: "Attendance".into(), name_ar: None, score: d(att), max_score: d("20") },
-                ComponentScore { code: "EXAM_M".into(), name: "Written".into(), name_ar: None, score: d(written), max_score: d("40") },
+                ComponentScore {
+                    code: "HW".into(),
+                    name: "Homework".into(),
+                    name_ar: None,
+                    score: d(hw),
+                    max_score: d("20"),
+                },
+                ComponentScore {
+                    code: "ORAL".into(),
+                    name: "Oral".into(),
+                    name_ar: None,
+                    score: d(oral),
+                    max_score: d("20"),
+                },
+                ComponentScore {
+                    code: "ATT".into(),
+                    name: "Attendance".into(),
+                    name_ar: None,
+                    score: d(att),
+                    max_score: d("20"),
+                },
+                ComponentScore {
+                    code: "EXAM_M".into(),
+                    name: "Written".into(),
+                    name_ar: None,
+                    score: d(written),
+                    max_score: d("40"),
+                },
             ],
             total: Decimal::ZERO,
             total_max: d("100"),
@@ -452,7 +476,11 @@ mod tests {
     }
 
     /// Helper to wrap a breakdown into a PeriodAssessmentResult.
-    fn month_result(code: &str, name: &str, breakdown: PeriodComponentScores) -> PeriodAssessmentResult {
+    fn month_result(
+        code: &str,
+        name: &str,
+        breakdown: PeriodComponentScores,
+    ) -> PeriodAssessmentResult {
         PeriodAssessmentResult {
             period_id: Uuid::new_v4(),
             period_code: code.into(),

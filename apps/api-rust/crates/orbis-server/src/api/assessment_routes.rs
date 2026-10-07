@@ -885,13 +885,7 @@ pub async fn get_class_term_results(
 ) -> Result<Json<ApiResponse<Vec<StudentTermReportCard>>>, ApiError> {
     let reports = state
         .assessment_service
-        .calculate_class_term_report_cards(
-            &ctx,
-            ctx.tenant_id,
-            class_id,
-            q.period_id,
-            None,
-        )
+        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, class_id, q.period_id, None)
         .await?;
     Ok(ApiResponse::ok(reports))
 }
@@ -910,13 +904,7 @@ pub async fn get_class_annual_results(
 ) -> Result<Json<ApiResponse<Vec<StudentAnnualReportCard>>>, ApiError> {
     let reports = state
         .assessment_service
-        .calculate_class_annual_report_cards(
-            &ctx,
-            ctx.tenant_id,
-            class_id,
-            q.year_id,
-            None,
-        )
+        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, class_id, q.year_id, None)
         .await?;
     Ok(ApiResponse::ok(reports))
 }

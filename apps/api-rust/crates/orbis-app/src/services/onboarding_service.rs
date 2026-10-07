@@ -967,9 +967,9 @@ impl OnboardingService {
             let slots = self.time_slot_repo.find_by_period(period.id).await?;
             let complete_week = (1..=5).all(|day| {
                 (1..=9).all(|slot_index| {
-                    slots.iter().any(|slot| {
-                        slot.day_of_week == day && slot.slot_index == slot_index
-                    })
+                    slots
+                        .iter()
+                        .any(|slot| slot.day_of_week == day && slot.slot_index == slot_index)
                 })
             });
             if complete_week {
