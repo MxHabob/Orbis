@@ -45,6 +45,9 @@ import hyperpay from "./hyperpay/config";
 import stripe from "./stripe/config";
 import sadad from "./sadad/config";
 import jaib from "./jaib/config";
+import alKuraimi from "./alkuraimi/config";
+import yemenWallet from "./yemen-wallet/config";
+import yemenMobileSms from "./yemen-mobile-sms/config";
 
 // ── Exported App Collection ─────────────────────────────────────
 
@@ -70,12 +73,15 @@ export const apps: OrbisApp[] = [
   stripe,
   sadad,
   jaib,
+  alKuraimi,
+  yemenWallet,
   // Surveillance
   hikvisionCamera,
   // Communication
   smtpEmail,
   whatsappBusiness,
   smsProvider,
+  yemenMobileSms,
   pushNotifications,
   // Identity
   googleWorkspace,
