@@ -179,7 +179,7 @@ Uses FormController, BilingualNameFields, and shared UI components.
       enLabel={m.year_sheet_name_en()}
       bind:arValue={form.values.name_ar}
       bind:enValue={form.values.name}
-      arPlaceholder="مثال: العام الدراسي 1447/1448 هـ"
+      arPlaceholder={m.year_sheet_name_ar_placeholder()}
       enPlaceholder="e.g. Academic Year 2026/2027"
       arError={fieldError("name_ar")}
       enError={fieldError("name")}

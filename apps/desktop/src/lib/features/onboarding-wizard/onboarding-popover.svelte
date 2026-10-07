@@ -79,7 +79,7 @@ function handleOpenHub() {
               {...props}
               variant="outline"
               size="icon-sm"
-              class="relative cursor-pointer rounded-[10px]"
+              class="relative cursor-pointer"
               aria-label={m.onboarding_popover_title()}
             >
               <TaskList size={16} strokeWidth={1.8} class="text-foreground" />
@@ -102,7 +102,7 @@ function handleOpenHub() {
     {side}
     {align}
     sideOffset={12}
-    class="w-88 sm:w-[420px] p-5 overflow-hidden z-50 rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 select-none flex flex-col gap-4"
+    class="w-72 sm:w-[320px] p-5 overflow-hidden z-50 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 select-none flex flex-col gap-4"
   >
     <!-- Header with Circular Progress Ring -->
     <div class="flex items-start gap-3.5 pb-3.5 border-b border-border/40">

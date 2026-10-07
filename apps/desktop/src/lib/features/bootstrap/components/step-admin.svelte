@@ -10,6 +10,8 @@ import type { OnboardingFormModel } from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Avatar, AvatarController } from "@orbis/avatar-engine";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   form = $bindable<OnboardingFormModel>(),
@@ -93,68 +95,39 @@ const strengthLabel = $derived.by(() => {
         </h3>
       </div>
 
-      <!-- Arabic Names -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <Label for="admin-fn-ar" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_admin_first_name_arabic()}
-          </Label>
-          <Input
-            id="admin-fn-ar"
-            type="text"
-            placeholder={m.operations_ui_admin_first_name_arabic_example()}
-            bind:value={form.adminFirstNameAr}
-            class="h-9 text-xs"
-          />
-        </div>
-
-        <div class="space-y-1.5">
-          <Label for="admin-ln-ar" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_admin_last_name_arabic()}
-          </Label>
-          <Input
-            id="admin-ln-ar"
-            type="text"
-            placeholder={m.operations_ui_admin_last_name_arabic_example()}
-            bind:value={form.adminLastNameAr}
-            class="h-9 text-xs"
-          />
-        </div>
-      </div>
-
-      <!-- English Names -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <Label for="admin-fn-en" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_admin_first_name_english()}
-          </Label>
-          <Input
-            id="admin-fn-en"
-            type="text"
-            placeholder="e.g. Tariq"
-            bind:value={form.adminFirstName}
-            class="h-9 text-xs"
-          />
-          {#if errors.adminFirstName}
-            <p class="text-[11px] text-destructive">{errors.adminFirstName}</p>
-          {/if}
-        </div>
-
-        <div class="space-y-1.5">
-          <Label for="admin-ln-en" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_admin_last_name_english()}
-          </Label>
-          <Input
-            id="admin-ln-en"
-            type="text"
-            placeholder="e.g. Al-Mansoor"
-            bind:value={form.adminLastName}
-            class="h-9 text-xs"
-          />
-          {#if errors.adminLastName}
-            <p class="text-[11px] text-destructive">{errors.adminLastName}</p>
-          {/if}
-        </div>
+      <div class="space-y-4">
+        <BilingualNameFields
+          arId="admin-fn-ar"
+          enId="admin-fn-en"
+          arLabel={m.ui_onboarding_admin_first_name_arabic()}
+          enLabel={m.ui_onboarding_admin_first_name_english()}
+          bind:arValue={form.adminFirstNameAr}
+          bind:enValue={form.adminFirstName}
+          arPlaceholder={m.operations_ui_admin_first_name_arabic_example()}
+          enPlaceholder="e.g. Tariq"
+          enError={errors.adminFirstName}
+          kind="person-name"
+          requestSuggestion={suggestLocalTranslation}
+          replaceUneditedInitialValues
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
+        <BilingualNameFields
+          arId="admin-ln-ar"
+          enId="admin-ln-en"
+          arLabel={m.ui_onboarding_admin_last_name_arabic()}
+          enLabel={m.ui_onboarding_admin_last_name_english()}
+          bind:arValue={form.adminLastNameAr}
+          bind:enValue={form.adminLastName}
+          arPlaceholder={m.operations_ui_admin_last_name_arabic_example()}
+          enPlaceholder="e.g. Al-Mansoor"
+          enError={errors.adminLastName}
+          kind="person-name"
+          requestSuggestion={suggestLocalTranslation}
+          replaceUneditedInitialValues
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
       </div>
 
       <!-- Email Address -->

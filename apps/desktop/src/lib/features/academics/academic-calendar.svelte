@@ -4,10 +4,13 @@ Visual Academic Calendar providing Gantt timeline, term breakdown,
 progress tracking, and academic cycle status for the school year.
 -->
 <script lang="ts">
-  import { api, extractErrorMessage } from "$lib/api";
+  import { api, extractErrorMessage, queryKeys } from "$lib/api";
+  import { formatDate } from "$lib/core/i18n";
   import * as m from "$lib/paraglide/messages";
   import { academicContext, confirmStore } from "$lib/stores";
+  import { createAcademicYearsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
   import type { AcademicPeriodDto, AcademicYearDto } from "@orbis/sdk";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { LoadingIndicator, toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -28,17 +31,31 @@ progress tracking, and academic cycle status for the school year.
   import RelatedActions, {
     type ActionGroup,
   } from "$lib/shared/components/related-actions.svelte";
-  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
   let { orgId }: { orgId: string } = $props();
 
-  // State
-  let years = $state<AcademicYearDto[]>([]);
-  let periods = $state<AcademicPeriodDto[]>([]);
+  const queryClient = useQueryClient();
+
+  // Queries
+  const yearsQuery = createAcademicYearsQuery(() => orgId);
+  const periodsQuery = createPeriodsQuery(() => orgId);
+
+  // Derived state from queries
+  const years = $derived(yearsQuery.data ?? []);
+  const periods = $derived(periodsQuery.data ?? []);
+  const isLoading = $derived(yearsQuery.isLoading || periodsQuery.isLoading);
+  const isRefreshing = $derived(yearsQuery.isFetching || periodsQuery.isFetching);
+
   let selectedYearId = $state<string>("");
-  let isLoading = $state(true);
-  let isRefreshing = $state(false);
+
+  // Select active year by default, or first year
+  $effect(() => {
+    if (years.length > 0 && (!selectedYearId || !years.some((y) => y.id === selectedYearId))) {
+      const active = years.find((y) => y.status === "active");
+      selectedYearId = active ? active.id : years[0]?.id || "";
+    }
+  });
 
   // Sheets
   let isYearSheetOpen = $state(false);
@@ -49,32 +66,9 @@ progress tracking, and academic cycle status for the school year.
   // View Mode: 'timeline' | 'cards'
   let viewMode = $state<"timeline" | "cards">("timeline");
 
-  async function loadData() {
-    isRefreshing = true;
-    try {
-      const [yearsList, periodsList] = await Promise.all([
-        api.listAcademicYears(),
-        api.listAcademicPeriods().catch(() => []),
-      ]);
-      years = yearsList || [];
-      periods = periodsList || [];
-
-      // Select active year by default, or first year
-      if (!selectedYearId || !years.some((y) => y.id === selectedYearId)) {
-        const active = years.find((y) => y.status === "active");
-        selectedYearId = active ? active.id : years[0]?.id || "";
-      }
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    } finally {
-      isLoading = false;
-      isRefreshing = false;
-    }
+  async function handleRefresh() {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
   }
-
-  onMount(() => {
-    loadData();
-  });
 
   const currentYear = $derived(years.find((y) => y.id === selectedYearId));
   const yearPeriods = $derived(
@@ -124,11 +118,6 @@ progress tracking, and academic cycle status for the school year.
     const widthPct = Math.max(2, Math.min(100 - leftPct, ((periodEnd - periodStart) / totalDuration) * 100));
 
     return { left: leftPct, width: widthPct };
-  }
-
-  function formatDate(d?: string | null): string {
-    if (!d) return "-";
-    return d.slice(0, 10);
   }
 
   function openCreatePeriod() {
@@ -225,7 +214,7 @@ progress tracking, and academic cycle status for the school year.
       <Button
         variant="ghost"
         size="icon-sm"
-        onclick={loadData}
+        onclick={handleRefresh}
         class="text-muted-foreground"
         disabled={isRefreshing}
       >
@@ -519,12 +508,12 @@ progress tracking, and academic cycle status for the school year.
   {orgId}
   year={editingYear}
   existingYears={years}
-  onSuccess={loadData}
+  onSuccess={handleRefresh}
 />
 
 <PeriodCreateSheet
   bind:open={isPeriodSheetOpen}
   {orgId}
   period={editingPeriod}
-  onSuccess={loadData}
+  onSuccess={handleRefresh}
 />

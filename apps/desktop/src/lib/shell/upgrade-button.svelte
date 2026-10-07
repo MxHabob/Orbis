@@ -13,7 +13,7 @@ import { uiStore } from "$lib/stores";
 						{...props}
 						variant="outline" 
 						size="icon-sm" 
-						class="relative cursor-pointer rounded-[10px]"
+						class="relative cursor-pointer"
 						onclick={() => uiStore.setUpgradeDialog(true)}
 						aria-label={m.common_upgrade_title()}
 					>

@@ -1,14 +1,17 @@
 <!--
 @component PeriodsManager
 Allows administrators to manage academic periods, terms, semesters, and locking states.
-Grouped by Academic Year with real backend deletion and lifecycle integration.
+Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hierarchical trees.
 -->
 <script lang="ts">
-  import { api, extractErrorMessage } from "$lib/api";
+  import { api, extractErrorMessage, queryKeys } from "$lib/api";
+  import { formatDate } from "$lib/core/i18n";
+  import { createPeriodsQuery, createAcademicYearsQuery } from "$lib/features/academics/queries";
   import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
   import * as m from "$lib/paraglide/messages";
   import { confirmStore } from "$lib/stores";
-  import type { AcademicPeriodDto, AcademicYearDto } from "@orbis/sdk";
+  import type { AcademicPeriodDto } from "@orbis/sdk";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import {
     AcademicCap,
     Calendar,
@@ -19,26 +22,39 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
     Lock,
     Pencil,
     Plus,
+    Refresh,
+    Search,
     Trash,
   } from "@orbis/icons";
-  import { toast } from "@orbis/ui";
+  import { LoadingIndicator, toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
+  import { Input } from "@orbis/ui/input";
   import { Skeleton } from "@orbis/ui/skeleton";
+  import SearchableMultiFilter, {
+    type SearchableMultiFilterGroup,
+  } from "$lib/shared/components/searchable-multi-filter.svelte";
   import RelatedActions, {
     type ActionGroup,
   } from "$lib/shared/components/related-actions.svelte";
-  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
   let { orgId }: { orgId: string } = $props();
 
-  // State
-  let periods = $state<AcademicPeriodDto[]>([]);
-  let academicYears = $state<AcademicYearDto[]>([]);
-  let selectedYearId = $state<string>("all");
-  let isLoading = $state(true);
-  let error = $state<string | null>(null);
+  const queryClient = useQueryClient();
+
+  // Queries
+  const periodsQuery = createPeriodsQuery(() => orgId);
+  const yearsQuery = createAcademicYearsQuery(() => orgId);
+
+  // Derived state from queries
+  const periods = $derived(periodsQuery.data ?? []);
+  const academicYears = $derived(yearsQuery.data ?? []);
+  const isLoading = $derived(periodsQuery.isLoading || yearsQuery.isLoading);
+  const isRefreshing = $derived(periodsQuery.isFetching || yearsQuery.isFetching);
+
+  let searchQuery = $state("");
+  let selectedFilters = $state<string[]>([]);
 
   // Sheet controls
   let isSheetOpen = $state(false);
@@ -47,41 +63,81 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
   // Collapsed states for parent nodes
   let collapsedNodes = $state<Record<string, boolean>>({});
 
-  async function loadPeriods() {
-    isLoading = true;
-    error = null;
-    try {
-      const [periodsList, yearsList] = await Promise.all([
-        api.listAcademicPeriods(),
-        api.listAcademicYears().catch(() => []),
-      ]);
-      periods = periodsList || [];
-      academicYears = yearsList || [];
-
-      // If active year exists and no filter chosen, default to active year or "all"
-      if (selectedYearId === "all" && yearsList && yearsList.length > 0) {
-        const active = yearsList.find((y) => y.status === "active");
-        if (active) {
-          selectedYearId = active.id;
-        }
-      }
-    } catch (e: unknown) {
-      error = extractErrorMessage(e);
-      toast.error(extractErrorMessage(e));
-    } finally {
-      isLoading = false;
-    }
+  async function handleRefresh() {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
   }
 
-  onMount(() => {
-    loadPeriods();
-  });
+  // Filter Groups for SearchableMultiFilter
+  const filterGroups = $derived<SearchableMultiFilterGroup[]>([
+    {
+      id: "years",
+      label: m.settings_nav_academic_years(),
+      options: academicYears.map((y) => ({
+        value: `year:${y.id}`,
+        label: `${y.name_ar || y.name}${y.status === "active" ? " ★" : ""}`,
+      })),
+    },
+    {
+      id: "status",
+      label: m.common_word_status(),
+      options: [
+        { value: "status:active", label: m.academic_years_filter_active() },
+        { value: "status:locked", label: m.academic_calendar_locked_badge() },
+      ],
+    },
+    {
+      id: "type",
+      label: m.common_filter(),
+      options: [
+        { value: "type:term", label: m.common_period_form_type_term() },
+        { value: "type:semester", label: m.common_cycle_form_type_year() },
+      ],
+    },
+  ]);
 
-  // Filtered Periods by Selected Year
+  const selectedYearFilters = $derived(
+    selectedFilters
+      .filter((f) => f.startsWith("year:"))
+      .map((f) => f.replace("year:", "")),
+  );
+
+  const selectedStatusFilters = $derived(
+    selectedFilters
+      .filter((f) => f.startsWith("status:"))
+      .map((f) => f.replace("status:", "")),
+  );
+
+  const selectedTypeFilters = $derived(
+    selectedFilters
+      .filter((f) => f.startsWith("type:"))
+      .map((f) => f.replace("type:", "")),
+  );
+
+  // Filtered Periods
   let filteredPeriods = $derived(
-    selectedYearId === "all"
-      ? periods
-      : periods.filter((p) => p.year_id === selectedYearId || !p.year_id),
+    periods.filter((p) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.name_ar && p.name_ar.toLowerCase().includes(q)) ||
+        (p.code && p.code.toLowerCase().includes(q));
+
+      const matchesYear =
+        selectedYearFilters.length === 0 ||
+        (p.year_id && selectedYearFilters.includes(p.year_id));
+
+      const matchesStatus =
+        selectedStatusFilters.length === 0 ||
+        (selectedStatusFilters.includes("active") && p.status === "active") ||
+        (selectedStatusFilters.includes("locked") && p.is_locked === 1);
+
+      const matchesType =
+        selectedTypeFilters.length === 0 ||
+        (p.period_type && selectedTypeFilters.includes(p.period_type));
+
+      return matchesSearch && matchesYear && matchesStatus && matchesType;
+    }),
   );
 
   // Root periods (Semesters / Terms with no parent_id)
@@ -89,9 +145,89 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
     filteredPeriods.filter((p) => !p.parent_id || p.parent_id === ""),
   );
 
-  const selectedYear = $derived(
-    academicYears.find((y) => y.id === selectedYearId),
-  );
+  function getChildren(parentId: string) {
+    return filteredPeriods.filter(
+      (p) => p.parent_id === parentId && p.id !== parentId,
+    );
+  }
+
+  function getYearName(yearId?: string | null): string | null {
+    if (!yearId) return null;
+    const y = academicYears.find((item) => item.id === yearId);
+    return y ? (y.name_ar || y.name) : null;
+  }
+
+  function openCreateSheet() {
+    editingPeriod = null;
+    isSheetOpen = true;
+  }
+
+  function openEditSheet(period: any) {
+    editingPeriod = period;
+    isSheetOpen = true;
+  }
+
+  async function requestActivate(periodId: string) {
+    const confirmed = await confirmStore.prompt({
+      title: m.ui_copy_activate_period_03ace2fa(),
+      description: m.settings_ui_period_open_confirm(),
+      confirmText: m.ui_copy_activate_c2b12d71(),
+      variant: "default",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await api.unlockAcademicPeriod(periodId);
+      toast.success(m.ui_copy_period_activated_successfully_de714514());
+      await loadPeriods();
+    } catch (e: unknown) {
+      toast.error(extractErrorMessage(e));
+    }
+  }
+
+  async function requestLock(periodId: string) {
+    const confirmed = await confirmStore.prompt({
+      title: m.ui_copy_lock_close_period_57387762(),
+      description: m.settings_ui_period_close_confirm(),
+      confirmText: m.ui_copy_lock_period_54879736(),
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await api.lockAcademicPeriod(periodId);
+      toast.success(m.ui_copy_period_locked_successfully_c75e6ca2());
+      await loadPeriods();
+    } catch (e: unknown) {
+      toast.error(extractErrorMessage(e));
+    }
+  }
+
+  async function requestDelete(periodId: string) {
+    const confirmed = await confirmStore.prompt({
+      title: m.periods_manager_delete_confirm_title(),
+      description: m.periods_manager_delete_confirm_desc(),
+      confirmText: m.common_action_delete(),
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await api.deleteAcademicPeriod(periodId);
+      toast.success(m.periods_manager_delete_success());
+      await loadPeriods();
+    } catch (e: unknown) {
+      toast.error(extractErrorMessage(e));
+    }
+  }
+
+  function toggleCollapse(periodId: string) {
+    collapsedNodes[periodId] = !collapsedNodes[periodId];
+  }
+
 
   const relatedActionGroups = $derived<ActionGroup[]>([
     {
@@ -136,174 +272,50 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
       ],
     },
   ]);
-
-  function getChildren(parentId: string) {
-    return filteredPeriods.filter(
-      (p) => p.parent_id === parentId && p.id !== parentId,
-    );
-  }
-
-  function getYearName(yearId?: string | null): string | null {
-    if (!yearId) return null;
-    const y = academicYears.find((item) => item.id === yearId);
-    return y ? (y.name_ar || y.name) : null;
-  }
-
-  function openCreateSheet() {
-    editingPeriod = null;
-    isSheetOpen = true;
-  }
-
-  function openEditSheet(period: any) {
-    editingPeriod = period;
-    isSheetOpen = true;
-  }
-
-  async function requestActivate(periodId: string) {
-    const confirmed = await confirmStore.prompt({
-      title: m.ui_copy_activate_period_03ace2fa(),
-      description: m.settings_ui_period_open_confirm(),
-      confirmText: m.ui_copy_activate_c2b12d71(),
-      variant: "default",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.unlockAcademicPeriod(periodId);
-      toast.success(
-        m.ui_copy_period_activated_successfully_de714514(),
-      );
-      await loadPeriods();
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  async function requestLock(periodId: string) {
-    const confirmed = await confirmStore.prompt({
-      title: m.ui_copy_lock_close_period_57387762(),
-      description: m.settings_ui_period_close_confirm(),
-      confirmText: m.ui_copy_lock_period_54879736(),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.lockAcademicPeriod(periodId);
-      toast.success(
-        m.ui_copy_period_locked_successfully_c75e6ca2(),
-      );
-      await loadPeriods();
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  async function requestDelete(periodId: string) {
-    const confirmed = await confirmStore.prompt({
-      title: m.periods_manager_delete_confirm_title(),
-      description: m.periods_manager_delete_confirm_desc(),
-      confirmText: m.common_action_delete(),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.deleteAcademicPeriod(periodId);
-      toast.success(m.periods_manager_delete_success());
-      await loadPeriods();
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  function toggleCollapse(periodId: string) {
-    collapsedNodes[periodId] = !collapsedNodes[periodId];
-  }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide">
-  <!-- Header Area -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans border-b border-border/40 pb-5">
-    <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-2">
-        <h1 class="text-xl font-bold text-foreground">
-          {m.settings_nav_cycles()}
-        </h1>
-        {#if !isLoading}
-          <span class="text-[10px] px-2 py-0.5 rounded bg-muted font-mono text-muted-foreground font-bold">
-            {m.settings_periods_count({ count: filteredPeriods.length })}
-          </span>
-        {/if}
-      </div>
-      <p class="text-xs text-muted-foreground">
-        {m.periods_manager_empty_desc() || ""}
-      </p>
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide font-sans">
+  <!-- Minimal Standard Toolbar -->
+  <div class="flex items-center justify-between gap-3 flex-nowrap shrink-0">
+    <div class="relative flex-1 max-w-xs">
+      <Search
+        size={14}
+        class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+      />
+      <Input
+        type="text"
+        placeholder={m.settings_subjects_search_placeholder_custom ? m.academic_years_search_placeholder() : "Search..."}
+        bind:value={searchQuery}
+        class="h-8 ps-8 text-xs bg-card border-border/60"
+      />
     </div>
 
-    <div class="flex items-center gap-2 shrink-0 flex-nowrap">
-      <a
-        href={`/${orgId}/settings/academic-years`}
-        class="inline-flex items-center gap-1.5 text-xs h-9 px-3 font-semibold rounded-md border border-border/60 hover:bg-muted/40 transition-colors text-foreground"
+    <div class="flex items-center gap-2">
+      <SearchableMultiFilter
+        groups={filterGroups}
+        bind:selectedValues={selectedFilters}
+        placeholder={m.academic_years_filter_placeholder()}
+        searchPlaceholder={m.academic_years_filter_search()}
+        emptyText={m.academic_years_no_matching_filters()}
+      />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onclick={handleRefresh}
+        class="text-muted-foreground"
+        disabled={isRefreshing}
       >
-        <Calendar size={14} />
-        <span>{m.settings_nav_academic_years()}</span>
-      </a>
-      <Button class="text-xs h-9 px-4 font-semibold" onclick={openCreateSheet}>
+        {#if isRefreshing}
+          <LoadingIndicator size={14} />
+        {:else}
+          <Refresh size={14} />
+        {/if}
+      </Button>
+      <Button variant="lime" class="text-xs h-8 px-3 font-semibold shrink-0" onclick={openCreateSheet}>
         <Plus size={14} class="me-1.5" />
         {m.settings_periods_add()}
       </Button>
     </div>
-  </div>
-
-  <!-- Academic Year Filter & Info Banner -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl border border-border/60 bg-card/60">
-    <div class="flex items-center gap-2 flex-wrap">
-      <span class="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-        <Calendar size={14} class="text-primary" />
-        {m.periods_manager_year_label()}
-      </span>
-
-      <!-- Year Filter Buttons -->
-      <div class="flex items-center gap-1 flex-wrap">
-        <Button
-          variant={selectedYearId === "all" ? "secondary" : "ghost"}
-          size="sm"
-          class="text-xs h-7 px-2.5 rounded-md font-medium"
-          onclick={() => (selectedYearId = "all")}
-        >
-          {m.periods_manager_all_years()}
-        </Button>
-
-        {#each academicYears as y (y.id)}
-          <Button
-            variant={selectedYearId === y.id ? "secondary" : "ghost"}
-            size="sm"
-            class="text-xs h-7 px-2.5 rounded-md font-medium gap-1.5 {selectedYearId === y.id ? 'border border-primary/30' : ''}"
-            onclick={() => (selectedYearId = y.id)}
-          >
-            <span>{y.name_ar || y.name}</span>
-            {#if y.status === "active"}
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            {/if}
-          </Button>
-        {/each}
-      </div>
-    </div>
-
-    {#if selectedYear}
-      <div class="text-[11px] font-mono text-muted-foreground flex items-center gap-2 self-end sm:self-auto">
-        <span>{selectedYear.start_date?.slice(0, 10)} ↔ {selectedYear.end_date?.slice(0, 10)}</span>
-        {#if selectedYear.status === "active"}
-          <Badge variant="info" class="text-[9px] px-1.5 py-0 rounded font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-            {m.academic_calendar_active_badge()}
-          </Badge>
-        {/if}
-      </div>
-    {/if}
   </div>
 
   {#snippet periodNode(node: any, depth: number)}
@@ -315,134 +327,117 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
 
       <div
         class="flex flex-col w-full {isRoot
-          ? 'py-4 gap-2 border-b border-border/60'
+          ? 'py-3 border-b border-border/60 first:pt-0'
           : 'py-2 border-b border-border/20 last:border-b-0'}"
       >
-        <!-- Node Header -->
+        <!-- Node Row -->
         <div
-          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          class="flex items-center justify-between gap-3"
           style="padding-inline-start: {depth > 0 ? depth * 1.5 : 0}rem;"
         >
           <!-- Left Info -->
-          <div class="flex items-start gap-3">
-            {#if children.length > 0 || isRoot}
+          <div class="flex items-center gap-2.5 min-w-0">
+            {#if children.length > 0}
               <button
                 type="button"
-                class="p-1 hover:bg-accent rounded text-muted-foreground mt-0.5 cursor-pointer {children.length ===
-                0
-                  ? 'invisible'
-                  : ''}"
+                class="p-1 rounded hover:bg-muted text-muted-foreground transition-colors cursor-pointer shrink-0"
                 onclick={() => toggleCollapse(node.id)}
               >
                 {#if isCollapsed}
-                  <ChevronRight size={16} class="rtl:rotate-180" />
+                  <ChevronRight size={15} class="rtl:rotate-180" />
                 {:else}
-                  <ChevronDown size={16} />
+                  <ChevronDown size={15} />
                 {/if}
               </button>
             {:else}
-              <div class="w-6 h-6 mt-0.5 shrink-0"></div>
+              <div class="w-6 shrink-0"></div>
             {/if}
 
-            <div class="flex flex-col text-start gap-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <h3
-                  class="{isRoot
-                    ? 'text-sm'
-                    : 'text-xs'} font-bold text-foreground"
+            <div class="flex items-center gap-2 min-w-0 flex-wrap">
+              <span class="font-semibold text-foreground text-xs truncate">
+                {node.name_ar || node.name}
+              </span>
+
+              <!-- Status Badges -->
+              {#if node.status === "active"}
+                <Badge
+                  variant="info"
+                  class="text-[9px] px-1.5 py-0 h-4 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                 >
-                  {node.name_ar || node.name}
-                </h3>
+                  {m.common_phase_active()}
+                </Badge>
+              {:else}
+                <Badge
+                  variant="secondary"
+                  class="text-[9px] px-1.5 py-0 h-4 rounded-full font-medium"
+                >
+                  {node.is_locked === 1
+                    ? m.common_phase_locked()
+                    : m.common_status_disabled()}
+                </Badge>
+              {/if}
 
-                <!-- Status Badges -->
-                {#if node.status === "active"}
-                  <Badge
-                    variant="info"
-                    class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                  >
-                    {m.common_phase_active()}
-                  </Badge>
-                {:else}
-                  <Badge
-                    variant="secondary"
-                    class="text-[9px] px-2 py-0 h-4.5 rounded-full font-bold"
-                  >
-                    {node.is_locked === 1
-                      ? m.common_phase_locked()
-                      : m.common_status_disabled()}
-                  </Badge>
-                {/if}
+              {#if node.code}
+                <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border border-border/50 text-muted-foreground bg-muted/30">
+                  {node.code}
+                </span>
+              {/if}
 
-                {#if node.code}
-                  <span
-                    class="text-[9px] font-mono px-1.5 py-0.5 rounded border border-border/60 text-muted-foreground bg-muted/20 font-bold"
-                  >
-                    {node.code}
-                  </span>
-                {/if}
-
-                {#if isRoot && selectedYearId === "all" && yearName}
-                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium flex items-center gap-1">
-                    <Calendar size={10} />
-                    {yearName}
-                  </span>
-                {/if}
-
-                {#if !isRoot && node.grading_system}
-                  <span
-                    class="text-[9px] text-muted-foreground flex items-center gap-1"
-                  >
-                    <AcademicCap size={10} />
-                    {node.grading_system}
-                  </span>
-                {/if}
-              </div>
+              {#if yearName}
+                <span class="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium flex items-center gap-1">
+                  <Calendar size={10} />
+                  {yearName}
+                </span>
+              {/if}
 
               <span class="text-[10px] text-muted-foreground font-mono">
-                {node.start_date?.slice(0, 10)} ↔ {node.end_date?.slice(0, 10)}
+                {formatDate(node.start_date)} ↔ {formatDate(node.end_date)}
               </span>
             </div>
           </div>
 
           <!-- Right Actions -->
-          <div class="flex items-center gap-2 sm:justify-end">
+          <div class="flex items-center gap-1 shrink-0">
             {#if node.status !== "active" && node.is_locked !== 1}
               <Button
-                variant={isRoot ? "outline" : "ghost"}
-                class="text-[10px] h-7 px-2.5 font-semibold text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/5 {isRoot
-                  ? 'border-emerald-500/20'
-                  : ''}"
+                variant="ghost"
+                size="sm"
+                class="text-[11px] h-7 px-2 font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 gap-1"
                 onclick={() => requestActivate(node.id)}
               >
-                {#if isRoot}<CheckCircle size={12} class="me-1" />{/if}
-                {m.common_word_status()}
+                <CheckCircle size={12} />
+                <span class="hidden sm:inline">{m.common_word_status()}</span>
               </Button>
             {/if}
 
             {#if node.status === "active" && node.is_locked !== 1}
               <Button
-                variant="outline"
-                class="text-[10px] h-7 px-2.5 font-semibold"
+                variant="ghost"
+                size="sm"
+                class="text-[11px] h-7 px-2 font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 gap-1"
                 onclick={() => requestLock(node.id)}
               >
-                {#if isRoot}<Lock size={12} class="me-1" />{/if}
-                {m.common_td_ctx_lock()}
+                <Lock size={12} />
+                <span class="hidden sm:inline">{m.common_td_ctx_lock()}</span>
               </Button>
             {/if}
 
             <Button
-              variant="outline"
-              class="text-[10px] h-7 px-2.5 font-semibold"
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground hover:text-foreground h-7 w-7"
               onclick={() => openEditSheet(node)}
+              title={m.common_action_edit_simple()}
             >
-              {#if isRoot}<Pencil size={12} class="me-1" />{/if}
-              {m.common_action_edit_simple()}
+              <Pencil size={12} />
             </Button>
 
             <Button
-              variant="destructive"
-              class="text-[10px] h-7 px-2.5 font-semibold"
+              variant="ghost"
+              size="icon-sm"
+              class="text-muted-foreground hover:text-destructive h-7 w-7"
               onclick={() => requestDelete(node.id)}
+              title={m.common_action_delete()}
             >
               <Trash size={12} />
             </Button>
@@ -450,56 +445,44 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
         </div>
 
         <!-- Nested Children -->
-        {#if !isCollapsed}
-          <div class="flex flex-col transition-all duration-200">
-            {#if children.length === 0 && isRoot}
-              <div
-                class="text-[10px] text-muted-foreground/60 py-3 text-start select-none ps-8"
-              >
-                {m.settings_periods_no_terms()}
-              </div>
-            {:else if children.length > 0}
-              <div class="flex flex-col mt-2">
-                {#each children as child (child.id)}
-                  {@render periodNode(child, depth + 1)}
-                {/each}
-              </div>
-            {/if}
+        {#if !isCollapsed && children.length > 0}
+          <div class="flex flex-col mt-1 ps-3 border-s border-border/30 ms-3">
+            {#each children as child (child.id)}
+              {@render periodNode(child, depth + 1)}
+            {/each}
           </div>
         {/if}
       </div>
     {/if}
   {/snippet}
 
-  <!-- Main Content -->
+  <!-- Content List / Tree -->
   {#if isLoading}
-    <div class="flex flex-col gap-4">
-      <Skeleton class="h-20 w-full" />
-      <Skeleton class="h-20 w-full" />
+    <div class="flex flex-col gap-3">
+      <Skeleton class="h-14 w-full rounded-lg" />
+      <Skeleton class="h-14 w-full rounded-lg" />
+      <Skeleton class="h-14 w-full rounded-lg" />
     </div>
   {:else if rootPeriods.length === 0}
-    <div class="flex flex-col items-center justify-center py-12 px-4 rounded-xl border border-dashed border-border/70 text-center">
-      <div class="p-3 rounded-full bg-primary/10 text-primary mb-3">
-        <ClockRotateRight size={24} />
+    <div class="flex flex-col items-center justify-center py-16 px-4 rounded-xl border border-dashed border-border/70 text-center">
+      <div class="p-2.5 rounded-full bg-muted text-muted-foreground mb-3">
+        <ClockRotateRight size={22} />
       </div>
-      <h3 class="text-sm font-bold text-foreground mb-1">
-        {selectedYearId !== "all"
-          ? m.periods_manager_empty_year()
+      <h3 class="text-xs font-bold text-foreground mb-1">
+        {searchQuery || selectedFilters.length > 0
+          ? m.academic_years_empty_search()
           : m.periods_manager_empty_all()}
       </h3>
-      <p class="text-xs text-muted-foreground max-w-sm mb-4">
+      <p class="text-[11px] text-muted-foreground max-w-sm mb-4">
         {m.periods_manager_empty_desc()}
       </p>
-      <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={openCreateSheet}>
-        <Plus size={14} />
+      <Button size="sm" variant="lime" class="text-xs h-8 px-3 font-semibold gap-1.5" onclick={openCreateSheet}>
+        <Plus size={13} />
         {m.settings_periods_add()}
       </Button>
     </div>
   {:else}
-    <div
-      class="flex flex-col divide-y divide-border/60"
-      in:fade={{ duration: 150 }}
-    >
+    <div class="flex flex-col divide-y divide-border/40 bg-card/30 rounded-xl border border-border/60 p-4" in:fade={{ duration: 150 }}>
       {#each rootPeriods as root (root.id)}
         {@render periodNode(root, 0)}
       {/each}
@@ -518,5 +501,5 @@ Grouped by Academic Year with real backend deletion and lifecycle integration.
   bind:open={isSheetOpen}
   {orgId}
   period={editingPeriod}
-  onSuccess={loadPeriods}
+  onSuccess={handleRefresh}
 />

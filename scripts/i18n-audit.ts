@@ -124,9 +124,40 @@ async function main() {
 
   for (const { file, text } of sourceText) {
     const lines = text.split(/\r?\n/);
+    const remoteMetadataStart = file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`)
+      ? text.indexOf("async bootstrapDetectEnvironment")
+      : -1;
+    const remoteMetadataEnd =
+      remoteMetadataStart >= 0
+        ? text.indexOf("async bootstrapGenerateSlug", remoteMetadataStart)
+        : -1;
+    const guardianRelationshipStart = file.endsWith(
+      `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}components${"\\"}guardian-form.svelte`,
+    )
+      ? text.indexOf("const relationshipAr =")
+      : -1;
+    const guardianRelationshipEnd =
+      guardianRelationshipStart >= 0
+        ? text.indexOf("const request:", guardianRelationshipStart)
+        : -1;
+    let skipArabicDataValue = false;
+    let lineOffset = 0;
     for (const [index, line] of lines.entries()) {
+      const currentOffset = lineOffset;
+      lineOffset += line.length + 1;
       if (line.trim().startsWith("//") || line.trim().startsWith("<!--"))
         continue;
+      if (
+        file.endsWith(`${"src"}${"\\"}routes${"\\"}(app)${"\\"}[orgId]${"\\"}onboarding${"\\"}+page.svelte`) &&
+        /\bacademic_year_name_ar\s*:/.test(line)
+      ) {
+        skipArabicDataValue = true;
+        continue;
+      }
+      if (skipArabicDataValue) {
+        if (line.includes(",")) skipArabicDataValue = false;
+        continue;
+      }
       if (
         file.includes(`${"src"}${"\\"}lib${"\\"}features${"\\"}bulk-entry${"\\"}profiles${"\\"}`)
       ) {
@@ -134,8 +165,26 @@ async function main() {
       }
       if (
         file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`) &&
-        index >= 1472 &&
-        index < 1540
+        ((remoteMetadataStart >= 0 &&
+          currentOffset >= remoteMetadataStart &&
+          (remoteMetadataEnd < 0 || currentOffset < remoteMetadataEnd)) ||
+          (index >= 1472 && index < 1540))
+      ) {
+        continue;
+      }
+      if (
+        file.endsWith(`${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}search.ts`) ||
+        (guardianRelationshipStart >= 0 &&
+        currentOffset >= guardianRelationshipStart &&
+        (guardianRelationshipEnd < 0 || currentOffset < guardianRelationshipEnd)) ||
+        /\b(?:[A-Za-z]*nameAr|[A-Za-z_]*name_ar|relationshipAr|relationship_ar|country_name_ar|currency_symbol_ar|currency_name_ar|suggested_academic_year_ar|detected_language)\s*(?:=|:|\|\|)/i.test(
+        line,
+        ) ||
+        /\b(?:rawStatus|rawGender|status|sex)\b.*[\u0600-\u06ff]/.test(line) ||
+        /\.replace\(\s*["'][^"']*[\u0600-\u06ff][^"']*["']/.test(line) ||
+        ((file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`) ||
+          file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`)) &&
+          /\b(?:firstName|lastName)\b.*[\u0600-\u06ff]/.test(line))
       ) {
         continue;
       }
@@ -182,7 +231,10 @@ async function main() {
 
   function printList(title: string, values: string[]) {
     console.log(`\n${title} (${values.length})`);
-    for (const value of values) console.log(`- ${value}`);
+    for (const value of values.slice(0, 20)) console.log(`- ${value}`);
+    if (values.length > 20) {
+      console.log(`... and ${values.length - 20} more`);
+    }
   }
 
   console.log(

@@ -43,6 +43,7 @@ type Props = {
   arRequired?: boolean;
   enRequired?: boolean;
   debounceMs?: number;
+  replaceUneditedInitialValues?: boolean;
   loadingMessage: string;
   failureMessage: string;
 };
@@ -69,23 +70,54 @@ let {
   arRequired = false,
   enRequired = false,
   debounceMs = 350,
+  replaceUneditedInitialValues = false,
   loadingMessage,
   failureMessage,
 }: Props = $props();
 
+const initialArValue = arValue;
+const initialEnValue = enValue;
+let manuallyEditedAr = false;
+let manuallyEditedEn = false;
 let isLoading = $state(false);
 let requestFailed = $state(false);
 let generatedLanguage = $state<TranslationLanguage | null>(null);
 let generatedValue = "";
+let generatedSourceLanguage: TranslationLanguage | null = null;
+let generatedSourceValue = "";
 let requestSequence = 0;
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function otherLanguage(language: TranslationLanguage): TranslationLanguage {
+  return language === "ar" ? "en" : "ar";
+}
 
 function valueFor(language: TranslationLanguage): string {
   return language === "ar" ? arValue : enValue;
 }
 
+function initialValueFor(language: TranslationLanguage): string {
+  return language === "ar" ? initialArValue : initialEnValue;
+}
+
+function hasBeenManuallyEdited(language: TranslationLanguage): boolean {
+  return language === "ar" ? manuallyEditedAr : manuallyEditedEn;
+}
+
+function setValue(language: TranslationLanguage, value: string) {
+  if (language === "ar") arValue = value;
+  else enValue = value;
+}
+
 function isGenerated(language: TranslationLanguage): boolean {
   return generatedLanguage === language && valueFor(language) === generatedValue;
+}
+
+function clearGeneratedLink() {
+  generatedLanguage = null;
+  generatedValue = "";
+  generatedSourceLanguage = null;
+  generatedSourceValue = "";
 }
 
 function invalidatePendingRequest() {
@@ -97,18 +129,37 @@ function invalidatePendingRequest() {
 }
 
 function handleInput(text: string, sourceLanguage: TranslationLanguage) {
-  if (generatedLanguage === sourceLanguage) {
-    generatedLanguage = null;
-    generatedValue = "";
+  if (sourceLanguage === "ar") manuallyEditedAr = true;
+  else manuallyEditedEn = true;
+  if (!text.trim()) {
+    invalidatePendingRequest();
+    const pairedLanguage =
+      generatedLanguage === sourceLanguage
+        ? generatedSourceLanguage
+        : otherLanguage(sourceLanguage);
+    if (
+      pairedLanguage &&
+      ((generatedLanguage === pairedLanguage &&
+        isGenerated(pairedLanguage)) ||
+        (pairedLanguage === generatedSourceLanguage &&
+          valueFor(pairedLanguage) === generatedSourceValue))
+    ) {
+      setValue(pairedLanguage, "");
+    }
+    clearGeneratedLink();
+    return;
   }
   scheduleSuggestion(text, sourceLanguage);
 }
 
 function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
   invalidatePendingRequest();
-  if (!text.trim() || disabled) return;
+  if (disabled) return;
 
   const sequence = requestSequence;
+  const reverseGeneratedSource =
+    generatedLanguage === sourceLanguage ? generatedSourceLanguage : null;
+  const reverseGeneratedSourceValue = generatedSourceValue;
   isLoading = true;
   debounceTimer = setTimeout(async () => {
     try {
@@ -119,14 +170,29 @@ function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
       });
       if (sequence !== requestSequence || result.status !== "suggestion") return;
 
-      const targetLanguage = sourceLanguage === "ar" ? "en" : "ar";
+      const targetLanguage = otherLanguage(sourceLanguage);
       const targetValue = valueFor(targetLanguage);
-      if (targetValue.trim() && !isGenerated(targetLanguage)) return;
+      const canReplaceLinkedSource =
+        reverseGeneratedSource === targetLanguage &&
+        targetValue === reverseGeneratedSourceValue;
+      const canReplaceUneditedInitialValue =
+        replaceUneditedInitialValues &&
+        !hasBeenManuallyEdited(targetLanguage) &&
+        targetValue === initialValueFor(targetLanguage);
+      if (
+        targetValue.trim() &&
+        !isGenerated(targetLanguage) &&
+        !canReplaceLinkedSource &&
+        !canReplaceUneditedInitialValue
+      ) {
+        return;
+      }
 
-      if (targetLanguage === "ar") arValue = result.text;
-      else enValue = result.text;
+      setValue(targetLanguage, result.text);
       generatedLanguage = targetLanguage;
       generatedValue = result.text;
+      generatedSourceLanguage = sourceLanguage;
+      generatedSourceValue = text;
     } catch {
       if (sequence === requestSequence) requestFailed = true;
     } finally {

@@ -149,7 +149,7 @@ function handleGoToOnboarding() {
               {...props}
               variant="outline" 
               size="icon-sm" 
-              class="relative cursor-pointer rounded-[10px]"
+              class="relative cursor-pointer"
               aria-label={m.common_autopilot_popover_title()}
             >
               <ChartBar size={16} strokeWidth={1.8} class="text-foreground" />
@@ -177,7 +177,7 @@ function handleGoToOnboarding() {
     side="inline-end"
     align="end"
     sideOffset={12}
-    class="w-88 rounded-2xl p-0 overflow-hidden z-50 flex flex-col font-sans text-start border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 select-none"
+    class="w-88 p-0 overflow-hidden z-50 flex flex-col font-sans text-start backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 select-none"
   >
     <!-- Header -->
     <div class="flex items-center justify-between gap-3 border-b border-border/60 bg-muted/20 px-4 py-3">

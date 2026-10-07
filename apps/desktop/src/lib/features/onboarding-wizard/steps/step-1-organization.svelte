@@ -20,6 +20,8 @@ import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -139,30 +141,24 @@ async function handleContinue() {
       description={m.onboarding_step1_identity_desc()}
       isComplete={Boolean(name.trim())}
     >
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <Label for="org-name" class="text-xs font-semibold">
-            {m.onboarding_step1_name_en()}
-          </Label>
-          <Input
-            id="org-name"
-            bind:value={name}
-            placeholder={m.onboarding_step1_name_en_placeholder()}
-            required
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="org-name-ar" class="text-xs font-semibold">
-            {m.onboarding_step1_name_ar()}
-          </Label>
-          <Input
-            id="org-name-ar"
-            bind:value={nameAr}
-            placeholder={m.onboarding_step1_name_ar_placeholder()}
-          />
-        </div>
-
+      <div class="space-y-4 sm:col-span-2">
+        <BilingualNameFields
+          arId="org-name-ar"
+          enId="org-name"
+          arLabel={m.onboarding_step1_name_ar()}
+          enLabel={m.onboarding_step1_name_en()}
+          bind:arValue={nameAr}
+          bind:enValue={name}
+          arPlaceholder={m.onboarding_step1_name_ar_placeholder()}
+          enPlaceholder={m.onboarding_step1_name_en_placeholder()}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          replaceUneditedInitialValues
+          enRequired
+          disabled={isSaving}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
         <div class="space-y-2 sm:col-span-2">
           <Label for="org-slug" class="text-xs font-semibold">
             {m.onboarding_step1_slug()}

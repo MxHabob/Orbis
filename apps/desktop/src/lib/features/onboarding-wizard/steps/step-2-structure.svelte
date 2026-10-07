@@ -18,6 +18,8 @@ import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -195,25 +197,23 @@ async function handleContinue() {
       <div class="space-y-4">
         <!-- Branch Creation Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
+          <BilingualNameFields
+            arId="branch-name-ar"
+            enId="branch-name-en"
+            arLabel={m.onboarding_step2_branch_name_ar()}
+            enLabel={m.onboarding_step2_branch_name_en()}
+            bind:arValue={unitNameAr}
+            bind:enValue={unitName}
+            arPlaceholder={m.onboarding_step2_branch_name_ar_placeholder()}
+            enPlaceholder={m.onboarding_step2_branch_name_en_placeholder()}
+            kind="label"
+            requestSuggestion={suggestLocalTranslation}
+            replaceUneditedInitialValues
+            disabled={isSubmittingUnit}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_branch_name_en()}
-              </Label>
-              <Input
-                bind:value={unitName}
-                placeholder={m.onboarding_step2_branch_name_en_placeholder()}
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_branch_name_ar()}
-              </Label>
-              <Input
-                bind:value={unitNameAr}
-                placeholder={m.onboarding_step2_branch_name_ar_placeholder()}
-              />
-            </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
                 {m.onboarding_step2_branch_code()}
@@ -299,16 +299,23 @@ async function handleContinue() {
       <div class="space-y-4">
         <!-- Room Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
+          <BilingualNameFields
+            arId="room-name-ar"
+            enId="room-name-en"
+            arLabel={m.common_rooms_label_name_ar()}
+            enLabel={m.common_rooms_label_name_en()}
+            bind:arValue={roomNameAr}
+            bind:enValue={roomName}
+            arPlaceholder={m.common_rooms_placeholder_name_ar()}
+            enPlaceholder={m.common_rooms_placeholder_name_en()}
+            kind="label"
+            requestSuggestion={suggestLocalTranslation}
+            replaceUneditedInitialValues
+            disabled={isSubmittingRoom}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
           <div class="grid gap-3 sm:grid-cols-3">
-            <div class="space-y-1.5 sm:col-span-2">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_room_name()}
-              </Label>
-              <Input
-                bind:value={roomName}
-                placeholder={m.onboarding_step2_room_name_placeholder()}
-              />
-            </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
                 {m.onboarding_step2_room_number()}

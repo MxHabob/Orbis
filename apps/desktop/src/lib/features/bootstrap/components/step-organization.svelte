@@ -26,6 +26,8 @@ import {
 import { Check } from "@orbis/icons";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   form = $bindable<OnboardingFormModel>(),
@@ -71,39 +73,23 @@ function selectCountry(countryCode: string) {
         </h3>
       </div>
 
-      <!-- Arabic Name -->
-      <div class="space-y-1.5">
-        <Label for="org-name-ar" class="text-xs font-medium text-foreground">
-          {m.ui_onboarding_organization_organization_name_arabic()}
-        </Label>
-        <Input
-          id="org-name-ar"
-          type="text"
-          placeholder={m.operations_ui_organization_name_arabic_example()}
-          bind:value={form.organizationNameAr}
-          class="h-9 text-xs"
-        />
-        {#if errors.organizationNameAr}
-          <p class="text-[11px] text-destructive">{errors.organizationNameAr}</p>
-        {/if}
-      </div>
-
-      <!-- English Name -->
-      <div class="space-y-1.5">
-        <Label for="org-name-en" class="text-xs font-medium text-foreground">
-          {m.ui_onboarding_organization_organization_name_english()}
-        </Label>
-        <Input
-          id="org-name-en"
-          type="text"
-          placeholder="e.g. Al-Noor Academy"
-          bind:value={form.organizationName}
-          class="h-9 text-xs"
-        />
-        {#if errors.organizationName}
-          <p class="text-[11px] text-destructive">{errors.organizationName}</p>
-        {/if}
-      </div>
+      <BilingualNameFields
+        arId="org-name-ar"
+        enId="org-name-en"
+        arLabel={m.ui_onboarding_organization_organization_name_arabic()}
+        enLabel={m.ui_onboarding_organization_organization_name_english()}
+        bind:arValue={form.organizationNameAr}
+        bind:enValue={form.organizationName}
+        arPlaceholder={m.operations_ui_organization_name_arabic_example()}
+        enPlaceholder="e.g. Al-Noor Academy"
+        arError={errors.organizationNameAr}
+        enError={errors.organizationName}
+        kind="label"
+        requestSuggestion={suggestLocalTranslation}
+        replaceUneditedInitialValues
+        loadingMessage={m.bilingual_entry_loading()}
+        failureMessage={m.bilingual_entry_failure()}
+      />
 
       <!-- Educational Track -->
       <div class="space-y-1.5">

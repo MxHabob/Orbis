@@ -4,7 +4,7 @@ import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
-import { Check, CheckCircle, ChevronDown, ChevronRight, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
+import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
 
 // Configure marked with GFM & breaks
@@ -36,9 +36,19 @@ let {
 } = $props();
 
 let expandedTools = $state<Record<string, boolean>>({});
+let expandedUserMessages = $state<Record<string, boolean>>({});
 let copiedMessageId = $state<string | null>(null);
 let editingMessageId = $state<string | null>(null);
 let editingText = $state("");
+
+function isLongMessage(content: string): boolean {
+  if (!content) return false;
+  return content.length > 240 || content.split("\n").length > 5;
+}
+
+function toggleUserMessageExpand(msgId: string) {
+  expandedUserMessages[msgId] = !expandedUserMessages[msgId];
+}
 
 function toggleTool(key: string) {
   expandedTools[key] = !expandedTools[key];
@@ -145,9 +155,36 @@ function handleContentClick(e: MouseEvent) {
               </div>
             </div>
           {:else}
-            <!-- User Text Bubble (Vibrant Gradient / Solid) -->
-            <div class="max-w-[88%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-tr-xs rtl:rounded-tr-2xl rtl:rounded-tl-xs text-[13px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-2xs">
-              {msg.content}
+            {@const isLong = isLongMessage(msg.content)}
+            {@const isExpanded = !!expandedUserMessages[msg.id]}
+
+            <!-- User Text Bubble (Vibrant Gradient / Solid with Expandable Long Message) -->
+            <div class="max-w-[88%] bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-xs rtl:rounded-tr-2xl rtl:rounded-tl-xs text-[13px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-2xs relative flex flex-col">
+              <!-- Content area with max-height truncation and bottom gradient -->
+              <div class="relative transition-all duration-200 {isLong && !isExpanded ? 'max-h-[140px] sm:max-h-[160px] overflow-hidden' : ''}">
+                {msg.content}
+
+                {#if isLong && !isExpanded}
+                  <!-- Soft bottom gradient fade-out -->
+                  <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-primary via-primary/80 to-transparent"></div>
+                {/if}
+              </div>
+
+              {#if isLong}
+                <!-- Show More / Show Less Toggle Button -->
+                <button
+                  type="button"
+                  onclick={() => toggleUserMessageExpand(msg.id)}
+                  class="mt-2 pt-1.5 border-t border-primary-foreground/15 inline-flex items-center gap-1.5 text-xs font-semibold text-primary-foreground/90 hover:text-primary-foreground transition-colors cursor-pointer select-none self-start"
+                >
+                  <span>{isExpanded ? m.ai_ui_show_less() : m.ai_ui_show_more()}</span>
+                  {#if isExpanded}
+                    <ChevronUp size={13} />
+                  {:else}
+                    <ChevronDown size={13} />
+                  {/if}
+                </button>
+              {/if}
             </div>
 
             <!-- User Hover Action Bar -->

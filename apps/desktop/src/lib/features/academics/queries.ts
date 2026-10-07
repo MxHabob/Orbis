@@ -7,6 +7,7 @@ import {
   type ClassDto,
   type SubjectDto,
   type AcademicPeriodDto,
+  type AcademicYearDto,
   type ClassSubjectDto,
   type AssessmentSchemeDto,
   type TimeSlotDto,
@@ -17,6 +18,16 @@ import {
   type GradeDto,
   type ReportDefinitionDto,
 } from "$lib/api";
+
+/** All academic years for current organization. */
+export function createAcademicYearsQuery(orgId: () => string) {
+  return createQuery<AcademicYearDto[]>(() => ({
+    queryKey: queryKeys.calendar.years(orgId()),
+    queryFn: () => api.listAcademicYears(),
+    enabled: !!orgId(),
+    staleTime: 10 * 60 * 1000,
+  }));
+}
 
 /** All academic periods for current organization/year. */
 export function createPeriodsQuery(orgId: () => string) {

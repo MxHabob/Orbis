@@ -12,6 +12,8 @@ import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -286,22 +288,22 @@ async function handleContinue() {
         <!-- Subject Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_subject_name_en()}
-              </Label>
-              <Input
-                bind:value={subjectName}
-                placeholder={m.onboarding_step4_subject_name_en_placeholder()}
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_subject_name_ar()}
-              </Label>
-              <Input
-                bind:value={subjectNameAr}
-                placeholder={m.onboarding_step4_subject_name_ar_placeholder()}
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-subject-name-ar"
+                enId="onboarding-subject-name-en"
+                arLabel={m.onboarding_step4_subject_name_ar()}
+                enLabel={m.onboarding_step4_subject_name_en()}
+                bind:arValue={subjectNameAr}
+                bind:enValue={subjectName}
+                arPlaceholder={m.onboarding_step4_subject_name_ar_placeholder()}
+                enPlaceholder={m.onboarding_step4_subject_name_en_placeholder()}
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmittingSubject}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
               />
             </div>
             <div class="space-y-1.5">
@@ -401,22 +403,22 @@ async function handleContinue() {
         <!-- Class Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_class_name_en()}
-              </Label>
-              <Input
-                bind:value={className}
-                placeholder={m.onboarding_step4_class_name_en_placeholder()}
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_class_name_ar()}
-              </Label>
-              <Input
-                bind:value={classNameAr}
-                placeholder={m.onboarding_step4_class_name_ar_placeholder()}
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-class-name-ar"
+                enId="onboarding-class-name-en"
+                arLabel={m.onboarding_step4_class_name_ar()}
+                enLabel={m.onboarding_step4_class_name_en()}
+                bind:arValue={classNameAr}
+                bind:enValue={className}
+                arPlaceholder={m.onboarding_step4_class_name_ar_placeholder()}
+                enPlaceholder={m.onboarding_step4_class_name_en_placeholder()}
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmittingClass}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
               />
             </div>
             <div class="space-y-1.5">

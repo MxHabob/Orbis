@@ -18,6 +18,8 @@ import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -256,22 +258,22 @@ async function handleContinue() {
         <!-- Scheme Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step6_scheme_name_en()}
-              </Label>
-              <Input
-                bind:value={schemeName}
-                placeholder={m.onboarding_step6_scheme_name_en_placeholder()}
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step6_scheme_name_ar()}
-              </Label>
-              <Input
-                bind:value={schemeNameAr}
-                placeholder={m.onboarding_step6_scheme_name_ar_placeholder()}
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-scheme-name-ar"
+                enId="onboarding-scheme-name-en"
+                arLabel={m.onboarding_step6_scheme_name_ar()}
+                enLabel={m.onboarding_step6_scheme_name_en()}
+                bind:arValue={schemeNameAr}
+                bind:enValue={schemeName}
+                arPlaceholder={m.onboarding_step6_scheme_name_ar_placeholder()}
+                enPlaceholder={m.onboarding_step6_scheme_name_en_placeholder()}
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmitting}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
               />
             </div>
             <div class="space-y-1.5">

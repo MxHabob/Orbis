@@ -31,6 +31,8 @@ import { Progress } from "@orbis/ui/progress";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import {
   Select,
   SelectTrigger,
@@ -547,32 +549,22 @@ async function handleProvisionDefaults() {
     {/if}
 
     <div class="space-y-3.5 py-2 text-xs">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="space-y-1.5">
-          <Label for="prov-year-name" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_progress_year_name_en()}
-          </Label>
-          <Input
-            id="prov-year-name"
-            type="text"
-            placeholder={m.shared_ui_example_academic_year()}
-            bind:value={provYearName}
-            class="h-9 text-xs"
-          />
-        </div>
-        <div class="space-y-1.5">
-          <Label for="prov-year-name-ar" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_progress_year_name_ar()}
-          </Label>
-          <Input
-            id="prov-year-name-ar"
-            type="text"
-            placeholder={m.shared_ui_example_academic_year()}
-            bind:value={provYearNameAr}
-            class="h-9 text-xs"
-          />
-        </div>
-      </div>
+      <BilingualNameFields
+        arId="prov-year-name-ar"
+        enId="prov-year-name"
+        arLabel={m.ui_onboarding_progress_year_name_ar()}
+        enLabel={m.ui_onboarding_progress_year_name_en()}
+        bind:arValue={provYearNameAr}
+        bind:enValue={provYearName}
+        arPlaceholder={m.shared_ui_example_academic_year()}
+        enPlaceholder={m.shared_ui_example_academic_year()}
+        kind="label"
+        requestSuggestion={suggestLocalTranslation}
+        replaceUneditedInitialValues
+        disabled={isProvisioning}
+        loadingMessage={m.bilingual_entry_loading()}
+        failureMessage={m.bilingual_entry_failure()}
+      />
 
       <div class="space-y-2 pt-2 border-t border-border/40">
         <span class="text-xs font-medium text-foreground block">

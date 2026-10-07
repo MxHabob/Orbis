@@ -81,7 +81,7 @@ async function handleReject(id: string) {
   try {
     await (api as any).aiCenter?.rejectAction?.(
       id,
-      "تم الرفض بواسطة المسؤول",
+      m.ai_permission_rejection_reason(),
     );
     pendingApprovals = pendingApprovals.filter((a) => a.id !== id);
   } catch (e) {

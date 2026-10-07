@@ -4,10 +4,13 @@ Allows administrators to manage Academic Years, activate current school year,
 close completed years, archive historical years, and view period structure.
 -->
 <script lang="ts">
-  import { api, extractErrorMessage } from "$lib/api";
+  import { api, extractErrorMessage, queryKeys } from "$lib/api";
+  import { formatDate } from "$lib/core/i18n";
   import * as m from "$lib/paraglide/messages";
   import { academicContext, confirmStore } from "$lib/stores";
+  import { createAcademicYearsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
   import type { AcademicPeriodDto, AcademicYearDto } from "@orbis/sdk";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { LoadingIndicator, toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
@@ -34,16 +37,22 @@ close completed years, archive historical years, and view period structure.
     type ActionGroup,
   } from "$lib/shared/components/related-actions.svelte";
   import YearCreateSheet from "./year-create-sheet.svelte";
-  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
 
   let { orgId }: { orgId: string } = $props();
 
-  // State
-  let years = $state<AcademicYearDto[]>([]);
-  let periods = $state<AcademicPeriodDto[]>([]);
-  let isLoading = $state(true);
-  let isRefreshing = $state(false);
+  const queryClient = useQueryClient();
+
+  // Queries
+  const yearsQuery = createAcademicYearsQuery(() => orgId);
+  const periodsQuery = createPeriodsQuery(() => orgId);
+
+  // Derived state from queries
+  const years = $derived(yearsQuery.data ?? []);
+  const periods = $derived(periodsQuery.data ?? []);
+  const isLoading = $derived(yearsQuery.isLoading || periodsQuery.isLoading);
+  const isRefreshing = $derived(yearsQuery.isFetching || periodsQuery.isFetching);
+
   let searchQuery = $state("");
   let selectedFilters = $state<string[]>([]);
 
@@ -54,32 +63,17 @@ close completed years, archive historical years, and view period structure.
   let isSheetOpen = $state(false);
   let editingYear = $state<AcademicYearDto | null>(null);
 
-  async function loadData() {
-    isRefreshing = true;
-    try {
-      const [yearsList, periodsList] = await Promise.all([
-        api.listAcademicYears(),
-        api.listAcademicPeriods().catch(() => []),
-      ]);
-      years = yearsList || [];
-      periods = periodsList || [];
-
-      // Auto expand active year if not yet set
-      const active = years.find((y) => y.status === "active");
-      if (active && Object.keys(expandedYears).length === 0) {
-        expandedYears[active.id] = true;
-      }
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    } finally {
-      isLoading = false;
-      isRefreshing = false;
+  // Auto expand active year if not yet set
+  $effect(() => {
+    const active = years.find((y) => y.status === "active");
+    if (active && Object.keys(expandedYears).length === 0) {
+      expandedYears[active.id] = true;
     }
-  }
-
-  onMount(() => {
-    loadData();
   });
+
+  async function handleRefresh() {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+  }
 
   // Filter Groups for SearchableMultiFilter
   const filterGroups = $derived<SearchableMultiFilterGroup[]>([
@@ -154,7 +148,7 @@ close completed years, archive historical years, and view period structure.
       await api.activateAcademicYear(year.id);
       toast.success(m.academic_years_activate_success());
       await academicContext.resolveContext(orgId);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
@@ -174,7 +168,7 @@ close completed years, archive historical years, and view period structure.
       await api.closeAcademicYear(year.id);
       toast.success(m.academic_years_close_success());
       await academicContext.resolveContext(orgId);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
@@ -194,15 +188,10 @@ close completed years, archive historical years, and view period structure.
       await api.archiveAcademicYear(year.id);
       toast.success(m.academic_years_archive_success());
       await academicContext.resolveContext(orgId);
-      await loadData();
+      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
-  }
-
-  function formatDate(d?: string | null): string {
-    if (!d) return "-";
-    return d.slice(0, 10);
   }
 
   const relatedActionGroups = $derived<ActionGroup[]>([
@@ -264,7 +253,7 @@ close completed years, archive historical years, and view period structure.
       <Button
         variant="ghost"
         size="icon-sm"
-        onclick={loadData}
+        onclick={handleRefresh}
         class="text-muted-foreground"
         disabled={isRefreshing}
       >
@@ -274,14 +263,14 @@ close completed years, archive historical years, and view period structure.
           <Refresh size={14} />
         {/if}
       </Button>
-      <Button class="text-xs h-8 px-3 font-semibold shrink-0" onclick={openCreateSheet}>
+      <Button variant="lime" class="text-xs h-8 px-3 font-semibold shrink-0" onclick={openCreateSheet}>
         <Plus size={14} class="me-1.5" />
         {m.academic_years_add_btn()}
       </Button>
     </div>
   </div>
 
-  <!-- Content List / Rows -->
+  <!-- Content List / Year Cards -->
   {#if isLoading}
     <div class="flex flex-col gap-2.5">
       <Skeleton class="h-16 w-full rounded-lg" />
@@ -311,7 +300,7 @@ close completed years, archive historical years, and view period structure.
       {/if}
     </div>
   {:else}
-    <div class="flex flex-col gap-2.5" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col gap-3" in:fade={{ duration: 150 }}>
       {#each filteredYears as year (year.id)}
         {@const yearPeriods = getPeriodsForYear(year.id)}
         {@const isExpanded = !!expandedYears[year.id]}
@@ -320,67 +309,70 @@ close completed years, archive historical years, and view period structure.
         {@const isArchived = year.status === "archived"}
         {@const isPlanning = year.status === "planning" || !year.status}
 
+        <!-- Refined Academic Year Card -->
         <div
-          class="rounded-lg border transition-all duration-150 bg-card/40 hover:bg-card/70 overflow-hidden {isActive
-            ? 'border-emerald-500/40 ring-1 ring-emerald-500/10'
+          class="rounded-xl border transition-all duration-150 bg-card/50 hover:bg-card/80 overflow-hidden shadow-2xs {isActive
+            ? 'border-emerald-500/40 ring-1 ring-emerald-500/10 bg-emerald-500/[0.02]'
             : 'border-border/60'}"
         >
-          <!-- Compact Main Row -->
-          <div class="px-4 py-3 flex items-center justify-between gap-3">
+          <!-- Card Header Row -->
+          <div class="px-4 py-3.5 flex items-center justify-between gap-3">
             <!-- Left Info Block -->
             <div class="flex items-center gap-3 min-w-0">
               <button
                 type="button"
-                class="p-1 rounded hover:bg-muted text-muted-foreground transition-colors cursor-pointer shrink-0"
+                class="p-1 rounded-md hover:bg-muted text-muted-foreground transition-colors cursor-pointer shrink-0"
                 onclick={() => toggleExpand(year.id)}
                 title={m.academic_years_child_periods_title()}
               >
                 {#if isExpanded}
-                  <ChevronDown size={15} />
+                  <ChevronDown size={16} />
                 {:else}
-                  <ChevronRight size={15} class="rtl:rotate-180" />
+                  <ChevronRight size={16} class="rtl:rotate-180" />
                 {/if}
               </button>
 
               <div class="flex items-center gap-2.5 min-w-0 flex-wrap">
-                <span class="text-xs font-bold text-foreground truncate">
-                  {year.name_ar || year.name}
-                </span>
-
-                {#if year.name && year.name_ar && year.name !== year.name_ar}
-                  <span class="text-[11px] text-muted-foreground truncate">
-                    ({year.name})
-                  </span>
-                {/if}
-
                 <!-- Status Badge -->
                 {#if isActive}
-                  <Badge variant="info" class="text-[9px] px-1.5 py-0 h-4.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 gap-1">
-                    <span class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <Badge variant="info" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     {m.academic_calendar_active_badge()}
                   </Badge>
                 {:else if isPlanning}
-                  <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4.5 rounded-full font-medium">
+                  <Badge variant="secondary" class="text-[9px] px-2 py-0.5 rounded-full font-medium">
                     {m.academic_years_filter_planning()}
                   </Badge>
                 {:else if isClosed}
-                  <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4.5 rounded-full font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20">
+                  <Badge variant="secondary" class="text-[9px] px-2 py-0.5 rounded-full font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20">
                     {m.academic_years_filter_closed()}
                   </Badge>
                 {:else if isArchived}
-                  <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4.5 rounded-full font-medium text-muted-foreground">
+                  <Badge variant="secondary" class="text-[9px] px-2 py-0.5 rounded-full font-medium text-muted-foreground">
                     {m.academic_years_filter_archived()}
                   </Badge>
                 {/if}
 
-                <!-- Periods Count -->
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-muted-foreground">
-                  {m.academic_years_count_tag({ count: yearPeriods.length })}
+                <!-- Primary Year Title -->
+                <span class="text-xs font-bold text-foreground">
+                  {year.name_ar || year.name}
                 </span>
 
+                {#if year.name && year.name_ar && year.name !== year.name_ar}
+                  <span class="text-[11px] text-muted-foreground">
+                    ({year.name})
+                  </span>
+                {/if}
+
                 <!-- Date Range -->
-                <span class="text-[10px] text-muted-foreground font-mono">
+                <span class="text-[11px] text-muted-foreground font-mono flex items-center gap-1">
+                  <Calendar size={11} class="text-muted-foreground/60" />
                   {formatDate(year.start_date)} ↔ {formatDate(year.end_date)}
+                </span>
+
+                <!-- Periods Count Tag -->
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/70 text-muted-foreground">
+                  {m.academic_years_count_tag({ count: yearPeriods.length })}
                 </span>
               </div>
             </div>
@@ -437,10 +429,12 @@ close completed years, archive historical years, and view period structure.
 
           <!-- Nested Sub-Periods Breakdown -->
           {#if isExpanded}
-            <div class="border-t border-border/40 bg-muted/10 px-4 py-3">
+            <div class="border-t border-border/40 bg-muted/15 px-4 py-3">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] font-semibold text-muted-foreground">
-                  {m.academic_years_child_periods_title()} ({yearPeriods.length})
+                <span class="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
+                  <ClockRotateRight size={12} />
+                  <span>{m.academic_years_child_periods_title()}</span>
+                  <span class="text-[10px] font-mono">({yearPeriods.length})</span>
                 </span>
                 <a
                   href={`/${orgId}/settings/periods`}
@@ -452,7 +446,7 @@ close completed years, archive historical years, and view period structure.
               </div>
 
               {#if yearPeriods.length === 0}
-                <div class="py-2.5 text-center text-[11px] text-muted-foreground/70 border border-dashed border-border/50 rounded-md bg-card/20">
+                <div class="py-3 text-center text-[11px] text-muted-foreground/70 border border-dashed border-border/50 rounded-lg bg-card/20">
                   <span>{m.academic_years_no_periods_configured()}</span>
                   <a
                     href={`/${orgId}/settings/periods`}
@@ -466,7 +460,7 @@ close completed years, archive historical years, and view period structure.
                   {#each yearPeriods as period (period.id)}
                     {@const isPeriodActive = period.status === "active"}
                     {@const isPeriodLocked = period.is_locked === 1}
-                    <div class="p-2 rounded-md border border-border/40 bg-card/70 flex items-center justify-between gap-2 text-xs">
+                    <div class="p-2.5 rounded-lg border border-border/50 bg-card/80 flex items-center justify-between gap-2 text-xs shadow-2xs">
                       <div class="flex flex-col min-w-0">
                         <span class="font-medium text-foreground truncate text-[11px]">
                           {period.name_ar || period.name}
@@ -476,11 +470,11 @@ close completed years, archive historical years, and view period structure.
                         </span>
                       </div>
                       {#if isPeriodActive}
-                        <Badge variant="info" class="text-[9px] px-1 py-0 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <Badge variant="info" class="text-[9px] px-1.5 py-0 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                           {m.academic_calendar_active_badge()}
                         </Badge>
                       {:else if isPeriodLocked}
-                        <Badge variant="secondary" class="text-[9px] px-1 py-0 h-4 rounded-full shrink-0">
+                        <Badge variant="secondary" class="text-[9px] px-1.5 py-0 h-4 rounded-full shrink-0">
                           {m.academic_calendar_locked_badge()}
                         </Badge>
                       {/if}
@@ -508,5 +502,5 @@ close completed years, archive historical years, and view period structure.
   {orgId}
   year={editingYear}
   existingYears={years}
-  onSuccess={loadData}
+  onSuccess={handleRefresh}
 />

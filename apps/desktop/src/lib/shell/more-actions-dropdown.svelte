@@ -15,7 +15,11 @@ import {
 } from "@orbis/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { isDesktopApp } from "$lib/api";
-import BackupCliDialog from "../features/system/backup-cli-dialog.svelte";
+import {
+  AboutDialog,
+  BackupCliDialog,
+  SupportDialog,
+} from "../features/system";
 import {
   AppNotification,
   ChatBubbles,
@@ -32,6 +36,8 @@ import {
 } from "@orbis/icons";
 
 let isBackupCliOpen = $state(false);
+let isAboutOpen = $state(false);
+let isSupportOpen = $state(false);
 
 let {
   orgName = "Orbis School",
@@ -71,7 +77,7 @@ const iconClass = "text-muted-foreground shrink-0";
             {...props}
             variant="outline" 
             size="icon-sm" 
-            class="relative cursor-pointer rounded-[10px]"
+            class="relative cursor-pointer"
             aria-label={m.ui_copy_more_options_2179e961()}
           >
             <EllipsisHorizontal size={16} strokeWidth={1.8} class="text-foreground" />
@@ -93,7 +99,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.ui_copy_resources_8bacd643()}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent side="inline-start" align="end" sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com')}>
             <GlobeAlt size={13} class={iconClass} />
             <span>{m.ui_copy_welcome_page_e980d673()}</span>
@@ -125,7 +131,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.common_sidebar_help_community()}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent side="inline-start" align="end" sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://discord.gg/e64gRQZhP')}>
             <ChatBubbles size={13} class={iconClass} />
             <span>Discord</span>
@@ -151,7 +157,7 @@ const iconClass = "text-muted-foreground shrink-0";
           <span>{m.ui_copy_legal_4ddb3d47()}</span>
         </div>
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent side="inline-start" align="end" sideOffset={4} class="w-48 text-start">
+      <DropdownMenuSubContent align="end" sideOffset={4} class="w-48 text-start">
           <DropdownMenuItem class={menuItemClass} onclick={() => openUrl('https://www.mulverse.com/p/orbis/terms')}>
             <DocumentPage size={13} class={iconClass} />
             <span>{m.common_sidebar_help_terms()}</span>
@@ -165,11 +171,33 @@ const iconClass = "text-muted-foreground shrink-0";
 
     <DropdownMenuSeparator />
 
-    <!-- Give Feedback -->
-    <DropdownMenuItem class={menuItemClass} onclick={() => (isBackupCliOpen = true)}>
+    <DropdownMenuItem class={menuItemClass} onclick={() => (isSupportOpen = true)}>
       <AppNotification size={14} class={iconClass} />
       <span>{m.ui_copy_give_feedback_bca18e8d()}</span>
     </DropdownMenuItem>
+
+    <DropdownMenuSub>
+      <DropdownMenuSubTrigger class={subTriggerClass}>
+        <div class="flex items-center gap-2.5">
+          <CodeBracket size={14} class={iconClass} />
+          <span>{m.ui_shell_system_tools()}</span>
+        </div>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent align="end" sideOffset={4} class="w-48 text-start">
+        <DropdownMenuItem class={menuItemClass} onclick={() => (isSupportOpen = true)}>
+          <Headphone size={13} class={iconClass} />
+          <span>{m.ui_shell_open_support()}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem class={menuItemClass} onclick={() => (isAboutOpen = true)}>
+          <QuestionMarkCircle size={13} class={iconClass} />
+          <span>{m.ui_shell_app_info()}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem class={menuItemClass} onclick={() => (isBackupCliOpen = true)}>
+          <CodeBracket size={13} class={iconClass} />
+          <span>{m.ui_shell_cli()}</span>
+        </DropdownMenuItem>
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
 
     <!-- Tour Navigation -->
     <DropdownMenuItem class={menuItemClass} onclick={() => alert('Tour is coming soon!')}>
@@ -180,4 +208,6 @@ const iconClass = "text-muted-foreground shrink-0";
   </DropdownMenuPortal>
 </DropdownMenu>
 
+<AboutDialog bind:open={isAboutOpen} />
+<SupportDialog bind:open={isSupportOpen} />
 <BackupCliDialog bind:open={isBackupCliOpen} {orgName} />

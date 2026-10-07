@@ -6,7 +6,7 @@ import { useDirectionAwareSide, type PositionSide } from "../../../utils/directi
 let {
   ref = $bindable(null),
   class: className,
-  side = "right",
+  side = "inline-end",
   ...restProps
 }: Omit<DropdownMenuPrimitive.SubContentProps, "side"> & {
   side?: PositionSide;
