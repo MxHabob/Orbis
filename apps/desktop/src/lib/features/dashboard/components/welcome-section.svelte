@@ -215,7 +215,7 @@
 
     {#if insights.length > 1}
       <div class="flex items-center gap-1.5 justify-center">
-        {#each insights as _, i}
+        {#each insights as insight, i (insight.key)}
           <button
             type="button"
             class="group/bar relative cursor-pointer py-2 -my-2 focus:outline-none"

@@ -129,14 +129,21 @@ export function buildGradeColumns(
     const sample = matrix.students?.[0]?.grades?.find(
       (g) => g.exam_type === type,
     );
-    const max = sample?.max_score || 100;
+    const max = sample?.max_score || (type === "final" ? 30 : 20);
+    const typeLabel =
+      type === "monthly"
+        ? (locale === "ar" ? `المحصلة (${max})` : `Work (${max})`)
+        : type === "final"
+          ? (locale === "ar" ? `الاختبار (${max})` : `Exam (${max})`)
+          : `${type} (${max})`;
+
     cols.push({
       id: `exam_${type}`,
       prop: `exam_${type}`,
-      header: `${type} (${max})`,
-      name: `${type} (${max})`,
-      width: 90,
-      size: 90,
+      header: typeLabel,
+      name: typeLabel,
+      width: 105,
+      size: 105,
       type: "number",
       align: "end",
       editor: readonly
