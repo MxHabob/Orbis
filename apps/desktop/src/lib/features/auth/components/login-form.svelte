@@ -7,10 +7,8 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { AdjustmentsHorizontal, ArrowPath, Eye, EyeSlash } from "@orbis/icons";
-
 import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
-
 import { loginInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 

@@ -45,7 +45,6 @@ onMount(async () => {
   <div class="flex h-full w-full items-center justify-center bg-background">
     <div class="flex items-center gap-3 text-sm text-muted-foreground">
       <LoadingIndicator size="lg" label="Loading workspace" />
-      <span aria-hidden="true">Loading workspace...</span>
     </div>
   </div>
 {/if}
