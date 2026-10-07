@@ -6,6 +6,7 @@ import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
 import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
+import { fade } from "svelte/transition";
 
 // Configure marked with GFM & breaks
 marked.setOptions({
@@ -40,6 +41,22 @@ let expandedUserMessages = $state<Record<string, boolean>>({});
 let copiedMessageId = $state<string | null>(null);
 let editingMessageId = $state<string | null>(null);
 let editingText = $state("");
+let showScrollBottom = $state(false);
+
+function handleScroll() {
+  if (!chatContainer) return;
+  const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+  showScrollBottom = scrollHeight - scrollTop - clientHeight > 100;
+}
+
+function scrollToBottom() {
+  if (!chatContainer) return;
+  chatContainer.scrollTo({
+    top: chatContainer.scrollHeight,
+    behavior: "smooth",
+  });
+  showScrollBottom = false;
+}
 
 function isLongMessage(content: string): boolean {
   if (!content) return false;
@@ -105,10 +122,12 @@ function handleContentClick(e: MouseEvent) {
 }
 </script>
 
-<div 
-  bind:this={chatContainer}
-  class="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto scrollbar-thin select-text space-y-4"
->
+<div class="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+  <div 
+    bind:this={chatContainer}
+    onscroll={handleScroll}
+    class="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto scrollbar-thin select-text space-y-4"
+  >
   <div class="flex flex-col gap-4 w-full">
     {#each messages as msg (msg.id)}
       {#if msg.role === 'user'}
@@ -400,6 +419,25 @@ function handleContentClick(e: MouseEvent) {
       <AiLoadingSkeleton class="mt-2" />
     {/if}
   </div>
+</div>
+
+  <!-- Center Floating Scroll-to-bottom Button -->
+  {#if showScrollBottom}
+    <div
+      class="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-20"
+      transition:fade={{ duration: 150 }}
+    >
+      <button
+        type="button"
+        onclick={scrollToBottom}
+        class="pointer-events-auto shadow-md border border-border/80 bg-card/95 hover:bg-card backdrop-blur-md text-foreground px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-all hover:scale-105 active:scale-95 group hover:border-primary/50"
+        aria-label={m.ai_ui_scroll_to_bottom()}
+      >
+        <ChevronDown size={14} class="text-primary group-hover:translate-y-0.5 transition-transform" />
+        <span class="text-[11px] font-medium">{m.ai_ui_scroll_to_bottom()}</span>
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

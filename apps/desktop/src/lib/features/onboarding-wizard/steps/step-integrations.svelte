@@ -21,7 +21,6 @@ import CategoryFilter from "$lib/features/ai/components/integrations/category-fi
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
-import IntegrationConnectSheet from "../components/integration-connect-sheet.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
 import { Check, Bolt, Sparkles } from "@orbis/icons";
@@ -245,14 +244,6 @@ async function handleContinue() {
     />
   {/if}
 
-  <!-- Connection / Configuration Sheet matching Archive Preview Sheet -->
-  <IntegrationConnectSheet
-    bind:open={sheetOpen}
-    app={selectedApp}
-    {orgId}
-    onconnected={handleAppConnected}
-    ondisconnected={handleAppDisconnected}
-  />
 
   <!-- Bottom Navigation Actions Bar -->
   <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">

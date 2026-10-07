@@ -34,32 +34,24 @@ import OnboardingPopover from "$lib/features/onboarding-wizard/onboarding-popove
 
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
+import { l } from "$lib/core/i18n/locale";
 import { onMount } from "svelte";
 import { prefetchRouteData } from "$lib/api";
 
 let {
   orgId,
-  orgName: initialOrgName = "Orbis School",
+  orgName: initialOrgName,
 }: {
   orgId: string;
-  orgName?: string;
+  orgName?: string | null;
 } = $props();
 
 const orgQuery = createOrganizationQuery(() => orgId);
-
-const fallbackName = $derived.by(() => {
-  if (initialOrgName && initialOrgName !== "Orbis School")
-    return initialOrgName;
-  if (orgId) {
-    return orgId
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  }
-  return "Orbis School";
-});
-
-const orgNameDisplay = $derived(orgQuery.data?.name || fallbackName);
+const orgNameDisplay = $derived(
+  l(orgQuery.data?.name_ar, orgQuery.data?.name || initialOrgName || ""),
+);
+const orgNameArabic = $derived(orgQuery.data?.name_ar ?? null);
+const orgPrimaryColor = $derived(orgQuery.data?.primary_color ?? "var(--primary)");
 
 const navItems = $derived([
   {
@@ -124,7 +116,12 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 <TooltipProvider delayDuration={150}>
 	<div class="flex h-full w-12 shrink-0 flex-col items-center justify-between py-3 select-none">
 		<div class="flex flex-col items-center gap-3">
-			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
+			<OrgSidebarSwitcher
+        {orgId}
+        orgName={orgNameDisplay}
+        orgNameAr={orgNameArabic}
+        primaryColor={orgPrimaryColor}
+      />
 
 			<!-- Divider -->
 			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 self-center"></div>
