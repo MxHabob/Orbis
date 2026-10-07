@@ -44,7 +44,9 @@ export function CameraSolid({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M12 9a3.75 3.75 0 1 0 0 7.5A3.75 3.75 0 0 0 12 9Z" />
 	<Path
 		fillRule="evenodd"

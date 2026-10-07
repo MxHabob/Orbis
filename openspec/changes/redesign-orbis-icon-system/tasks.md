@@ -3,7 +3,7 @@
 ## 1. Catalog and Baseline
 
 - [x] 1.1 Inventory every Svelte and React Native icon, export name, viewBox, default size/color/stroke, SVG primitives, and existing variant; verify the report accounts for all package exports and both platform directories.
-- [ ] 1.2 Measure icon import frequency across `apps/desktop` and `apps/mobile`, identify icon-only interactive controls, and rank redesign batches; verify the report names the most-used symbols and representative accessibility risks.
+- [x] 1.2 Measure icon import frequency across `apps/desktop` and `apps/mobile`, identify icon-only interactive controls, and rank redesign batches; verify the report names the most-used symbols and representative accessibility risks.
 - [ ] 1.3 Capture current package typecheck/build results, representative desktop/mobile screenshots, and bundle-size baselines; verify the baseline can be reproduced before icon files change.
 - [x] 1.4 Document the inventory findings, usage ranking, API differences, and baseline results in the icon-package documentation; verify the report links each finding to a reproducible check or artifact.
 

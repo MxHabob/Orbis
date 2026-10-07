@@ -44,7 +44,9 @@ export function UserAlt({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		d="M5 20V19C5 15.134 8.13401 12 12 12V12C15.866 12 19 15.134 19 19V20"
 		strokeLinecap="round"

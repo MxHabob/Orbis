@@ -44,7 +44,9 @@ export function AlignHorizontal({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M3 22L3 2" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21 22V2"
 		strokeLinecap="round"

@@ -29,13 +29,15 @@
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
->
+
+	stroke-linecap="round"
+	stroke-linejoin="round">
 	<path
 		stroke-linecap="round"
 		stroke-linejoin="round"
-		d="M3.5 6h4m3 0h10M3.5 12h10m3 0h4m-17 6h3m3 0h11"
+		d="M3.5 6.5h4m3 0h10M3.5 12h9m3 0h5m-17 5.5h3m3 0h11"
 	/>
-	<circle cx="9" cy="6" r="1.5" />
-	<circle cx="15" cy="12" r="1.5" />
-	<circle cx="8" cy="18" r="1.5" />
+	<circle cx="9" cy="6.5" r="1.5" />
+	<circle cx="14" cy="12" r="1.5" />
+	<circle cx="8" cy="17.5" r="1.5" />
 </svg>

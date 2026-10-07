@@ -44,7 +44,9 @@ export function Info({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"

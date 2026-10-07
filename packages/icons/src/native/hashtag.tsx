@@ -44,7 +44,9 @@ export function Hashtag({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M10 3L6 21" strokeLinecap="round"></Path><Path d="M20.5 16H2.5" strokeLinecap="round"
 	></Path><Path d="M22 7H4" strokeLinecap="round"></Path><Path
 		d="M18 3L14 21"

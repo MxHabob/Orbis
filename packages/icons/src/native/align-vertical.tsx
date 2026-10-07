@@ -44,7 +44,9 @@ export function AlignVertical({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M22 3L2 3" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M22 21L2 21"
 		strokeLinecap="round"

@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "audit": "node scripts/audit-icons.mjs --output docs/icon-inventory.json --manifest-output docs/icon-manifest.json",
+    "gallery": "node scripts/build-gallery.mjs"
+  },
   "svelte": "./src/svelte/index.ts",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

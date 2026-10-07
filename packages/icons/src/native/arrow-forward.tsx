@@ -44,7 +44,9 @@ export function ArrowForward({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path strokeLinecap="round" strokeLinejoin="round" d="M13.25 19.25L16.75 15.75L13.25 12.25" />
 	<Path
 		strokeLinecap="round"

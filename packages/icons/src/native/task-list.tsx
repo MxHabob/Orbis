@@ -44,7 +44,9 @@ export function TaskList({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		d="M9 6L20 6"
 		stroke="currentColor"

@@ -44,7 +44,9 @@ export function Clipboard({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"

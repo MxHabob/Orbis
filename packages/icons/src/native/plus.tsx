@@ -44,8 +44,10 @@ export function Plus({
       style={style}
       aria-hidden={true}
       {...props}
-    >
-      <Path strokeLinecap="round" strokeLinejoin="round" d="M12 5v14M5 12h14" />
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <Path strokeLinecap="round" strokeLinejoin="round" d="M12 5.25v13.5M5.25 12h13.5" />
     </Svg>
   );
 }

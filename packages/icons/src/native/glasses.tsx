@@ -44,7 +44,9 @@ export function Glasses({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       
 	<Path
 		d="M2 14

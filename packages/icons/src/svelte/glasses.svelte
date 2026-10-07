@@ -29,7 +29,9 @@
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
->
+
+	stroke-linecap="round"
+	stroke-linejoin="round">
 	<!-- Left lens -->
 	<path
 		d="M2 14

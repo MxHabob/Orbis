@@ -44,7 +44,9 @@ export function Computer({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M2 21L17 21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21 21L22 21"
 		strokeLinecap="round"

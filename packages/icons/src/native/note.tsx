@@ -44,7 +44,9 @@ export function Note({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		stroke="currentColor"
 		strokeLinecap="round"

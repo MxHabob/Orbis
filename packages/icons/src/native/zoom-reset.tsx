@@ -44,7 +44,9 @@ export function ZoomReset({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Rect x="2" y="4" width="20" height="16" rx="3" fill="none" />
 	
 	<Path strokeLinecap="round" strokeLinejoin="round" d="M7.5 9v6M6 10.5l1.5-1.5" />

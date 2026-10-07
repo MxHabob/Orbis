@@ -50,11 +50,14 @@ function getSvelteMetadata(file) {
 	const source = fs.readFileSync(path.join(svelteRoot, `${file}.svelte`), 'utf8');
 	const defaultSizeClass = source.match(/className\s*\|\|\s*['"]([^'"]+)['"]/)?.[1] ?? null;
 	const defaultSize = defaultSizeClass?.match(/\bsize-(\d+(?:\.\d+)?)/)?.[1];
+	const svgAttributes = source.match(/<svg\b([^>]*)>/i)?.[1] ?? '';
 
 	return {
 		viewBox: getViewBox(source),
 		defaultSize: defaultSize ? Number(defaultSize) * 4 : null,
 		defaultColor: source.match(/\bstroke=["']([^"']+)["']/i)?.[1] ?? null,
+		defaultLineCap: svgAttributes.match(/\bstroke-linecap=["']([^"']+)["']/i)?.[1] ?? null,
+		defaultLineJoin: svgAttributes.match(/\bstroke-linejoin=["']([^"']+)["']/i)?.[1] ?? null,
 		defaultStrokeWidth:
 			source.match(/stroke-width=\{strokeWidth\s*\?\?\s*['"]([^'"]+)['"]\}/)?.[1] ?? null,
 		primitives: [...source.matchAll(/<(path|circle|rect|line|polyline|polygon|g)\b/gi)]
@@ -68,6 +71,7 @@ function getSvelteMetadata(file) {
 
 function getNativeMetadata(file) {
 	const source = fs.readFileSync(path.join(nativeRoot, `${file}.tsx`), 'utf8');
+	const svgAttributes = source.match(/<Svg\b([^>]*)>/)?.[1] ?? '';
 	const primitives = [...source.matchAll(/<(Path|Circle|Rect|Line|Polyline|Polygon|G)\b/g)]
 		.map(([, primitive]) => primitive.toLowerCase())
 		.reduce((counts, primitive) => {
@@ -79,6 +83,8 @@ function getNativeMetadata(file) {
 		viewBox: getViewBox(source),
 		defaultSize: Number(source.match(/\bsize\s*=\s*(\d+)/)?.[1] ?? NaN) || null,
 		defaultColor: source.match(/\bcolor\s*=\s*['"]([^'"]+)['"]/)?.[1] ?? null,
+		defaultLineCap: svgAttributes.match(/\bstrokeLinecap=["']([^"']+)["']/)?.[1] ?? null,
+		defaultLineJoin: svgAttributes.match(/\bstrokeLinejoin=["']([^"']+)["']/)?.[1] ?? null,
 		defaultStrokeWidth: source.match(/\bstrokeWidth\s*=\s*([\d.]+)/)?.[1] ?? null,
 		primitives,
 	};
@@ -194,6 +200,12 @@ const icons = [...allNames]
 			if (svelte?.defaultStrokeWidth !== '1.75') errors.push(`Unexpected Svelte default stroke for ${name}`);
 			if (native?.defaultSize !== 16) errors.push(`Unexpected native default size for ${name}`);
 			if (native?.defaultStrokeWidth !== '1.75') errors.push(`Unexpected native default stroke for ${name}`);
+		}
+		if (!['Github', 'Logo', 'Youtube'].includes(name)) {
+			if (svelte?.defaultLineCap !== 'round') errors.push(`Unexpected Svelte default line cap for ${name}`);
+			if (svelte?.defaultLineJoin !== 'round') errors.push(`Unexpected Svelte default line join for ${name}`);
+			if (native?.defaultLineCap !== 'round') errors.push(`Unexpected native default line cap for ${name}`);
+			if (native?.defaultLineJoin !== 'round') errors.push(`Unexpected native default line join for ${name}`);
 		}
 		if (!svelte?.viewBox || !native?.viewBox) errors.push(`Missing viewBox for ${name}`);
 

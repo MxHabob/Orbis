@@ -44,7 +44,9 @@ export function DatabaseSettings({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		d="M4 6V12C4 12 4 15 11 15C18 15 18 12 18 12V6"
 		strokeLinecap="round"

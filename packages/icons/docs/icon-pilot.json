@@ -74,6 +74,29 @@
       "pairedWith": "Sparkles",
       "svelte": "src/svelte/sparkles-solid.svelte",
       "native": "src/native/sparkles-solid.tsx"
+    },
+    {
+      "name": "GlobeAltSolid",
+      "family": "utility",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "svelte": "src/svelte/globe-alt-solid.svelte",
+      "native": "src/native/globe-alt-solid.tsx"
+    },
+    {
+      "name": "DocumentArrowUpSolid",
+      "family": "navigation",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "svelte": "src/svelte/document-arrow-up-solid.svelte",
+      "native": "src/native/document-arrow-up-solid.tsx"
+    },
+    {
+      "name": "Grid",
+      "family": "navigation",
+      "kind": "canonical",
+      "svelte": "src/svelte/grid.svelte",
+      "native": "src/native/grid.tsx"
     }
   ]
 }

@@ -44,7 +44,9 @@ export function Expand({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		d="M9 9L4 4M4 4V8M4 4H8"
 		stroke="currentColor"

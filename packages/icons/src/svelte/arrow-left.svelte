@@ -29,6 +29,8 @@
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
->
-	<path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5m7 7-7-7 7-7" />
+
+	stroke-linecap="round"
+	stroke-linejoin="round">
+	<path stroke-linecap="round" stroke-linejoin="round" d="M18.25 12H5.75m5.5 6.25L5 12l6.25-6.25" />
 </svg>

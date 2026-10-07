@@ -44,7 +44,9 @@ export function ArrowRightTag({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		d="M6.75 12H16.75M16.75 12L14 14.75M16.75 12L14 9.25"
 		strokeLinecap="round"

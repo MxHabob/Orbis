@@ -29,7 +29,9 @@
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
->
+
+	stroke-linecap="round"
+	stroke-linejoin="round">
 	<path
 		d="M4 6V12C4 12 4 15 11 15C18 15 18 12 18 12V6"
 		stroke-linecap="round"

@@ -44,7 +44,9 @@ export function Minus({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
     </Svg>
   );

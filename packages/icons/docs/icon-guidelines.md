@@ -10,8 +10,9 @@
   hierarchy calls for it.
 - Use a nominal `1.75` stroke at 24 units. Adjustments are allowed only when
   needed for a dense form or a deliberate filled/brand shape.
-- Use rounded caps and joins for open strokes. Keep corners square only when
-  the depicted object requires them.
+- Use rounded caps and joins as the default for open strokes. Individual paths
+  may explicitly keep square corners or ends when the depicted object requires
+  them; brand marks retain their own geometry and treatment.
 - Center by visual mass, not by bounding-box arithmetic. Check optical balance
   at 16px, where unnecessary detail and narrow gaps disappear first.
 
@@ -30,6 +31,10 @@
 - For example, `Sparkles` uses three open, rounded rays while `SparklesSolid`
   uses the same three-ray hierarchy as filled silhouettes. The filled paths
   are drawn independently so their narrow joins remain open at 16px.
+- `GlobeAltSolid` uses a compact filled globe with clear negative-space
+  meridians and latitudes; `DocumentArrowUpSolid` keeps the upload arrow open
+  as a cutout in the filled page. `Grid` uses an asymmetric dashboard layout:
+  diagonally opposed panels are taller, with four separated rounded corners.
 - Make glyph geometry genuinely Orbis-specific. Use external references for
   general qualities such as clarity, never as artwork to trace or copy.
 - Use consumer-selected color (`currentColor` on web) rather than embedding

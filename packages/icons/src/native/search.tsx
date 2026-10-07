@@ -44,7 +44,9 @@ export function Search({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Circle cx="10.75" cy="10.75" r="6.75" />
       <Path strokeLinecap="round" strokeLinejoin="round" d="m15.5 15.5 4.25 4.25" />
     </Svg>

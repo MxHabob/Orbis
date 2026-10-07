@@ -12,12 +12,27 @@ properties, primitives, and desktop/mobile import frequency. The manifest
 classifies each name by semantic family, variant, and compatibility kind, and
 records the six native default aliases separately.
 
-The most-used desktop imports in the baseline were `Plus` (51), `Refresh` (48),
-`AdjustmentsHorizontal` (45), `Search` (43), and `InfoCircle` (42). The mobile
-app imported 25 distinct icons; all 27 rendered icon instances in the baseline
-set an explicit size. Static import counts do not reveal whether every
-icon-only control has an accessible name, so interactive controls still require
-in-context review.
+The most-used desktop imports in the current inventory are `Plus` (51),
+`Refresh` (49), `AdjustmentsHorizontal` (45), `Search` (43), and
+`CheckCircle`/`InfoCircle` (42 each), followed by `ArrowPath` (41),
+`Sparkles` (39), `Trash` (36), and `XMark` (34). The mobile app imports 25
+distinct icons; all 27 rendered icon instances set an explicit size. Static
+import counts do not reveal whether every icon-only control has an accessible
+name, so interactive controls still require in-context review.
+
+Redesign batches are prioritized as navigation/actions, status/feedback and
+account/security, education/organization, then records/data and remaining
+utilities; this keeps high-frequency shared symbols ahead of low-usage
+families. Counts come from the reproducible audit command below.
+
+Representative icon-only control checks found two useful accessibility
+patterns: the desktop app sidebar places a 20px navigation glyph in a button
+with a localized `aria-label` and a visible-on-hover tooltip; mobile's shared
+`IconButton` requires an `accessibilityLabel` and expands targets smaller than
+44 points with hit slop. The underlying interactive component—not the glyph—
+owns the label and target size. These focused examples are not an exhaustive
+audit of every importing control; the rest of the consumers still need review
+in their family rollout.
 
 The Svelte API uses SVG attributes, `class`/`className`, optional `size`, and
 `strokeWidth`; its default rendered size is 16px. Native components use
@@ -34,6 +49,8 @@ following checks passed:
 ```sh
 bun packages/icons/scripts/audit-icons.mjs --output packages/icons/docs/icon-inventory.json
 bun packages/icons/scripts/audit-icons.mjs --output packages/icons/docs/icon-inventory.json --manifest-output packages/icons/docs/icon-manifest.json
+bun run --cwd packages/icons audit
+bun run --cwd packages/icons gallery
 bunx tsc --noEmit -p packages/icons/tsconfig.json
 bun run --cwd apps/mobile typecheck
 bun run --cwd apps/desktop build
@@ -42,6 +59,13 @@ bun run --cwd apps/desktop build
 The desktop build completed successfully. Baseline screenshots and bundle-size
 measurements were not captured; do not use the build result as a substitute for
 either visual or bundle-size comparison.
+
+The generated [icon gallery](./icon-gallery.html) renders all 206 exported
+symbols at 16, 20, and 24px on light and dark surfaces. Rebuild it with
+`bun run --cwd packages/icons gallery`; use the family filter and name search to
+review related concepts together. For React Native, compare the same names in
+the existing Expo app and its rendered consumer controls; the static gallery
+does not claim to replace a native-device rendering review.
 
 ## Design and review
 
@@ -52,6 +76,14 @@ them. Directional icons should only be mirrored by consumers when they express
 logical navigation; physical directions and fixed spatial relationships remain
 unchanged.
 
-The first redraw batch focuses on the high-frequency `Sparkles` outline/solid
-pair and the `UserBadgeCheck` account-status symbol. Both platforms use matching
-geometry; the 16/20/24 light/dark and in-context visual review is still pending.
+The first redraw batch now covers the paired `ArrowLeft`, `Plus`, `CheckCircle`,
+`BookOpen`, `AdjustmentsHorizontal`, and `Pencil`/`PencilSolid` pilot, as well
+as high-frequency `Sparkles`/`SparklesSolid` and `UserBadgeCheck`. Each changed
+glyph has matched Svelte and native geometry. The 16/20/24 light/dark and
+in-context visual review is still pending.
+
+The current focused redesign also updates `GlobeAltSolid`,
+`DocumentArrowUpSolid`, and `Grid` in both implementations. The two `Solid`
+icons preserve filled semantics with negative-space details; `Grid` uses four
+independent rounded cells. All three retain the 16px default and 1.75 nominal
+stroke contract.

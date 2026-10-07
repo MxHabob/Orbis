@@ -44,8 +44,10 @@ export function ArrowLeft({
       style={style}
       aria-hidden={true}
       {...props}
-    >
-      <Path strokeLinecap="round" strokeLinejoin="round" d="M19 12H5m7 7-7-7 7-7" />
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
+      <Path strokeLinecap="round" strokeLinejoin="round" d="M18.25 12H5.75m5.5 6.25L5 12l6.25-6.25" />
     </Svg>
   );
 }

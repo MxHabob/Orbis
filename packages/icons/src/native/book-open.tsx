@@ -44,11 +44,13 @@ export function BookOpen({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"
-		d="M12 6.5c-2.5-2-5.5-2.75-8.5-2v14c3-1 6-.25 8.5 2m0-14c2.5-2 5.5-2.75 8.5-2v14c-3-1-6-.25-8.5 2m0-14v14"
+		d="M12 6.5c-2.5-1.75-5.5-2.25-8.5-1.5v13c3-.75 6-.25 8.5 1.5m0-13c2.5-1.75 5.5-2.25 8.5-1.5v13c-3-.75-6-.25-8.5 1.5m0-13v13"
 	/>
     </Svg>
   );

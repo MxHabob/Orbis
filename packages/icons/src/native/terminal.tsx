@@ -44,7 +44,9 @@ export function Terminal({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M13 16H18" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M6 8L10 12L6 16"
 		strokeLinecap="round"

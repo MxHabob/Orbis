@@ -44,7 +44,9 @@ export function UserBadgeCheck({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Circle cx={7.5} cy={7.5} r={3.25} />
       <Path d="M1.75 20v-1.25a5.75 5.75 0 0 1 11.5 0V20H1.75Z" strokeLinecap="round" strokeLinejoin="round" />
       <Circle cx={18} cy={17} r={4.25} />

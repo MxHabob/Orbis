@@ -44,7 +44,9 @@ export function InfoCircle({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M12 11.5V16.5" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M12 7.51L12.01 7.49889"
 		strokeLinecap="round"

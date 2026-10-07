@@ -44,7 +44,9 @@ export function Download({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M6 20L18 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M12 4V16M12 16L15.5 12.5M12 16L8.5 12.5"
 		strokeLinecap="round"

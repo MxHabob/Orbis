@@ -29,7 +29,9 @@
 	class={cn(className || 'size-4', klass)}
 	aria-hidden="true"
 	{...restProps}
->
+
+	stroke-linecap="round"
+	stroke-linejoin="round">
 	<circle cx="7.5" cy="7.5" r="3.25" />
 	<path d="M1.75 20v-1.25a5.75 5.75 0 0 1 11.5 0V20H1.75Z" stroke-linecap="round" stroke-linejoin="round" />
 	<circle cx="18" cy="17" r="4.25" />

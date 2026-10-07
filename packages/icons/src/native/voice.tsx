@@ -44,7 +44,9 @@ export function Voice({
       style={style}
       aria-hidden={true}
       {...props}
-    >
+    
+      strokeLinecap="round"
+      strokeLinejoin="round">
       <Path d="M12 4L12 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M8 9L8 15"
 		strokeLinecap="round"
