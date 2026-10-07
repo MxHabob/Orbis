@@ -207,6 +207,7 @@ pub trait AcademicPeriodRepository: Send + Sync {
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<AcademicPeriod>, DomainError>;
     async fn find_current(&self, year_id: Uuid) -> Result<Option<AcademicPeriod>, DomainError>;
     async fn save(&self, period: &AcademicPeriod) -> Result<(), DomainError>;
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 
 #[async_trait]

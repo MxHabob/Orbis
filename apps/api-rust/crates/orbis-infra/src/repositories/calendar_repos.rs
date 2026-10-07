@@ -295,6 +295,14 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        PeriodEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 #[async_trait]

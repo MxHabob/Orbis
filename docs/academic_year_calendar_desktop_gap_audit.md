@@ -372,16 +372,30 @@ The onboarding wizard's step 3 ("Calendar") provides:
 
 ---
 
-## 16. Existing Periods Manager Audit — ⚠️ PARTIAL
+## 16. Existing Periods Manager Audit — ⚠️ PARTIAL + 🐛 BUG
 
 [`periods-manager.svelte`](file:///d:/projects/Orbis/apps/desktop/src/lib/features/settings/periods-manager.svelte) provides:
 - Period listing (flat, not grouped by year)
 - Period creation via sheet
 - Period lock/unlock/activate lifecycle
-- ⚠️ Delete button exists but **doesn't actually delete** (shows toast only, no API call)
+- ⚠️ Delete button exists but **doesn't actually delete** (shows toast only, no API call — line 162-168)
 - ❌ No year management
 - ❌ No year grouping/filtering
 - ❌ No year creation
+
+> [!CAUTION]
+> ### 🐛 BUG: `academicYears` loaded but never rendered
+>
+> **Line 26**: `let academicYears = $state<any[]>([]);` — state variable defined
+> **Line 43**: `api.listAcademicYears().catch(() => [])` — data fetched from API
+> **Line 60-62**: `rootPeriods` filters periods where `!p.parent_id` — semesters become root nodes
+> **Line 368**: Template iterates `rootPeriods` directly — **academic years are never shown**
+>
+> **Result**: The page shows "First Semester" and "Second Semester" as flat top-level items with no academic year parent node. The user sees periods floating without any year context — there is no way to know which year these periods belong to, and no visual hierarchy showing `Year → Term → Month`.
+>
+> **Evidence**: Confirmed via screenshot — the page displays only 2 items ("First Semester", "Second Semester") with no year header, no year grouping, and no year selector.
+>
+> **Impact**: Users managing multiple academic years cannot distinguish which year's periods they are viewing or editing. The `academicYears` API call is wasted — data is fetched and discarded.
 
 ---
 
@@ -494,12 +508,13 @@ This avoids scattered pages and keeps editing in Settings (where all configurati
 
 | Risk | Severity | Description |
 |------|----------|-------------|
+| 🐛 `academicYears` loaded but never rendered | **HIGH** | `periods-manager` fetches academic years via API but never displays them — periods are shown flat without year context, making multi-year management impossible |
 | Onboarding as only admin UI | **HIGH** | Users who complete onboarding have no way to manage years afterward |
+| Period delete is fake | **HIGH** | `periods-manager` delete button shows toast but doesn't call any API (line 162-168 — no `api.delete*` call) |
 | Missing update/delete APIs | MEDIUM | Backend `save()` supports upsert but no explicit routes exist |
 | Year lifecycle routes unexposed | MEDIUM | `activate_year()`, `close_year()` exist in service but have no API routes |
 | No year-level permission | LOW | All year operations reuse `period:write` |
 | No overlapping year validation | LOW | Backend doesn't prevent duplicate/overlapping year dates |
-| Period delete is fake | MEDIUM | `periods-manager` delete button shows toast but doesn't call any API |
 
 ---
 

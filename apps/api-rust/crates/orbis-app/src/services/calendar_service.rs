@@ -46,6 +46,7 @@ impl CalendarService {
         ctx: &RequestContext,
         org_id: Uuid,
         name: String,
+        name_ar: Option<String>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
     ) -> Result<AcademicYear, DomainError> {
@@ -60,7 +61,7 @@ impl CalendarService {
             id: year_id,
             org_id,
             name,
-            name_ar: None,
+            name_ar,
             start_date,
             end_date,
             hijri_start: None,
@@ -116,7 +117,10 @@ impl CalendarService {
         year_id: Uuid,
         parent_id: Option<Uuid>,
         name: String,
+        name_ar: Option<String>,
+        code: Option<String>,
         period_type: String,
+        period_kind: Option<String>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
     ) -> Result<AcademicPeriod, DomainError> {
@@ -129,11 +133,15 @@ impl CalendarService {
         let now = Utc::now();
         let period_id = Uuid::new_v4();
         let parsed_type = PeriodType::from_str(&period_type);
-        // Infer kind from type: terms default to Teaching, but callers can override via metadata
-        let inferred_kind = if parsed_type.is_term() {
-            PeriodKind::Teaching
-        } else {
-            PeriodKind::Teaching
+        let parsed_kind = match period_kind {
+            Some(ref k) => PeriodKind::from_str(k),
+            None => {
+                if parsed_type.is_term() {
+                    PeriodKind::Teaching
+                } else {
+                    PeriodKind::Teaching
+                }
+            }
         };
 
         let period = AcademicPeriod {
@@ -142,10 +150,10 @@ impl CalendarService {
             year_id,
             parent_id,
             name,
-            name_ar: None,
-            code: None,
+            name_ar,
+            code,
             period_type: parsed_type,
-            period_kind: inferred_kind,
+            period_kind: parsed_kind,
             state: AcademicPeriodState::ActiveTeaching,
             start_date,
             end_date,
@@ -503,5 +511,162 @@ impl CalendarService {
         period_id: Uuid,
     ) -> Result<AcademicPeriod, DomainError> {
         self.lock_period(ctx, period_id).await
+    }
+
+    /// Update an academic year's mutable fields
+    pub async fn update_year(
+        &self,
+        ctx: &RequestContext,
+        year_id: Uuid,
+        name: Option<String>,
+        name_ar: Option<String>,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+        notes: Option<String>,
+    ) -> Result<AcademicYear, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+
+        let mut year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+
+        if year.is_locked {
+            return Err(DomainError::Validation("Cannot update a locked academic year".into()));
+        }
+
+        if let Some(n) = name {
+            year.name = n;
+        }
+        if let Some(n) = name_ar {
+            year.name_ar = Some(n);
+        }
+        if let Some(d) = start_date {
+            year.start_date = d;
+        }
+        if let Some(d) = end_date {
+            year.end_date = d;
+        }
+        if let Some(n) = notes {
+            year.notes = Some(n);
+        }
+        year.updated_at = Utc::now();
+
+        self.year_repo.save(&year).await?;
+        Ok(year)
+    }
+
+    /// Archive an academic year
+    pub async fn archive_year(
+        &self,
+        ctx: &RequestContext,
+        year_id: Uuid,
+    ) -> Result<AcademicYear, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+
+        let mut year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
+
+        let now = Utc::now();
+        year.status = "archived".to_string();
+        year.archived_at = Some(now);
+        year.archived_by = ctx.actor.id();
+        year.is_locked = true;
+        year.locked_at = Some(now);
+        year.locked_by = ctx.actor.id();
+        year.updated_at = now;
+
+        self.year_repo.save(&year).await?;
+        Ok(year)
+    }
+
+    /// Update an academic period's mutable fields
+    pub async fn update_period(
+        &self,
+        ctx: &RequestContext,
+        period_id: Uuid,
+        name: Option<String>,
+        name_ar: Option<String>,
+        code: Option<String>,
+        start_date: Option<DateTime<Utc>>,
+        end_date: Option<DateTime<Utc>>,
+        period_kind: Option<String>,
+    ) -> Result<AcademicPeriod, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+
+        let mut period = self
+            .period_repo
+            .find_by_id(period_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        if period.is_locked {
+            return Err(DomainError::Validation("Cannot update a locked period".into()));
+        }
+
+        if let Some(n) = name {
+            period.name = n;
+        }
+        if let Some(n) = name_ar {
+            period.name_ar = Some(n);
+        }
+        if let Some(c) = code {
+            period.code = Some(c);
+        }
+        if let Some(s) = start_date {
+            period.start_date = s;
+        }
+        if let Some(e) = end_date {
+            period.end_date = e;
+        }
+        if let Some(k) = period_kind {
+            period.period_kind = orbis_domain::entities::academic_period::PeriodKind::from_str(&k);
+        }
+        period.updated_at = Utc::now();
+
+        self.period_repo.save(&period).await?;
+        Ok(period)
+    }
+
+    /// Delete an academic period (if unlocked and has no child periods)
+    pub async fn delete_period(
+        &self,
+        ctx: &RequestContext,
+        period_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+
+        let period = self
+            .period_repo
+            .find_by_id(period_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Academic period {} not found", period_id)))?;
+
+        if period.is_locked {
+            return Err(DomainError::Validation("Cannot delete a locked period".into()));
+        }
+
+        // Check no child periods exist
+        let children = self.period_repo.find_by_year(period.year_id).await?;
+        if children.iter().any(|c| c.parent_id == Some(period_id)) {
+            return Err(DomainError::Validation(
+                "Cannot delete a period with child periods. Please delete child periods first.".into(),
+            ));
+        }
+
+        self.period_repo.delete(period_id).await?;
+        Ok(())
     }
 }
