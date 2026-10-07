@@ -37,7 +37,9 @@ import type {
   AcademicContextResponse,
   PeriodTemplateDto,
   CreateYearRequest,
+  UpdateYearRequest,
   CreatePeriodRequest,
+  UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
   ClassSubjectDto,
@@ -467,6 +469,15 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.createYear({ client: this.client, body: req }));
   }
 
+  async updateAcademicYear(
+    id: string,
+    req: UpdateYearRequest,
+  ): Promise<AcademicYearDto> {
+    return this.call(
+      sdk.updateYear({ client: this.client, path: { id }, body: req }),
+    );
+  }
+
   async listAcademicYears(): Promise<AcademicYearDto[]> {
     return this.call(sdk.listYears({ client: this.client })) ?? [];
   }
@@ -479,8 +490,33 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getYear({ client: this.client, path: { id } }));
   }
 
+  async activateAcademicYear(id: string): Promise<AcademicYearDto> {
+    return this.call(sdk.activateYear({ client: this.client, path: { id } }));
+  }
+
+  async closeAcademicYear(id: string): Promise<AcademicYearDto> {
+    return this.call(sdk.closeYear({ client: this.client, path: { id } }));
+  }
+
+  async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
+    return this.call(sdk.archiveYear({ client: this.client, path: { id } }));
+  }
+
   async createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto> {
     return this.call(sdk.createPeriod({ client: this.client, body: req }));
+  }
+
+  async updateAcademicPeriod(
+    id: string,
+    req: UpdatePeriodRequest,
+  ): Promise<AcademicPeriodDto> {
+    return this.call(
+      sdk.updatePeriod({ client: this.client, path: { id }, body: req }),
+    );
+  }
+
+  async deleteAcademicPeriod(id: string): Promise<boolean> {
+    return this.call(sdk.deletePeriod({ client: this.client, path: { id } }));
   }
 
   async listAcademicPeriods(): Promise<AcademicPeriodDto[]> {

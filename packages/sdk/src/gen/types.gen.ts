@@ -868,6 +868,7 @@ export type CreateOrgUnitRequest = {
 };
 
 export type CreatePeriodRequest = {
+    code?: string | null;
     end_date: string;
     name: string;
     name_ar?: string | null;
@@ -876,6 +877,15 @@ export type CreatePeriodRequest = {
     period_type: string;
     start_date: string;
     year_id: string;
+};
+
+export type UpdatePeriodRequest = {
+    code?: string | null;
+    end_date?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    period_kind?: string | null;
+    start_date?: string | null;
 };
 
 export type CreateRoomRequest = {
@@ -962,6 +972,14 @@ export type CreateYearRequest = {
     name: string;
     name_ar?: string | null;
     start_date: string;
+};
+
+export type UpdateYearRequest = {
+    end_date?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    notes?: string | null;
+    start_date?: string | null;
 };
 
 export type CumulativeGpaRecordDto = {
@@ -2736,6 +2754,36 @@ export type UnlockPeriodResponses = {
 
 export type UnlockPeriodResponse = UnlockPeriodResponses[keyof UnlockPeriodResponses];
 
+export type UpdatePeriodData = {
+    body: UpdatePeriodRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type UpdatePeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type UpdatePeriodResponse = UpdatePeriodResponses[keyof UpdatePeriodResponses];
+
+export type DeletePeriodData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type DeletePeriodResponses = {
+    200: boolean;
+};
+
+export type DeletePeriodResponse = DeletePeriodResponses[keyof DeletePeriodResponses];
+
 export type ListYearsData = {
     body?: never;
     path?: never;
@@ -2792,6 +2840,66 @@ export type GetYearResponses = {
 };
 
 export type GetYearResponse = GetYearResponses[keyof GetYearResponses];
+
+export type UpdateYearData = {
+    body: UpdateYearRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}';
+};
+
+export type UpdateYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type UpdateYearResponse = UpdateYearResponses[keyof UpdateYearResponses];
+
+export type ActivateYearData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/activate';
+};
+
+export type ActivateYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type ActivateYearResponse = ActivateYearResponses[keyof ActivateYearResponses];
+
+export type CloseYearData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/close';
+};
+
+export type CloseYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type CloseYearResponse = CloseYearResponses[keyof CloseYearResponses];
+
+export type ArchiveYearData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/archive';
+};
+
+export type ArchiveYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type ArchiveYearResponse = ArchiveYearResponses[keyof ArchiveYearResponses];
 
 export type ListAccountsData = {
     body?: never;

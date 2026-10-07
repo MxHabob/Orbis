@@ -29,7 +29,9 @@ import type {
   AcademicContextResponse,
   PeriodTemplateDto,
   CreateYearRequest,
+  UpdateYearRequest,
   CreatePeriodRequest,
+  UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
   ClassSubjectDto,
@@ -360,6 +362,12 @@ export class LocalClient implements OrbisApiClient {
   async createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto> {
     return unwrap(await invoke("calendar_create_year", { request: req }));
   }
+  async updateAcademicYear(
+    id: string,
+    req: UpdateYearRequest,
+  ): Promise<AcademicYearDto> {
+    return unwrap(await invoke("calendar_update_year", { id, request: req }));
+  }
   async listAcademicYears(): Promise<AcademicYearDto[]> {
     return unwrap(await invoke("calendar_list_years"));
   }
@@ -369,10 +377,28 @@ export class LocalClient implements OrbisApiClient {
   async getAcademicYear(id: string): Promise<AcademicYearDto> {
     return unwrap(await invoke("calendar_get_year", { id }));
   }
+  async activateAcademicYear(id: string): Promise<AcademicYearDto> {
+    return unwrap(await invoke("calendar_activate_year", { id }));
+  }
+  async closeAcademicYear(id: string): Promise<AcademicYearDto> {
+    return unwrap(await invoke("calendar_close_year", { id }));
+  }
+  async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
+    return unwrap(await invoke("calendar_archive_year", { id }));
+  }
   async createAcademicPeriod(
     req: CreatePeriodRequest,
   ): Promise<AcademicPeriodDto> {
     return unwrap(await invoke("calendar_create_period", { request: req }));
+  }
+  async updateAcademicPeriod(
+    id: string,
+    req: UpdatePeriodRequest,
+  ): Promise<AcademicPeriodDto> {
+    return unwrap(await invoke("calendar_update_period", { id, request: req }));
+  }
+  async deleteAcademicPeriod(id: string): Promise<boolean> {
+    return unwrap(await invoke("calendar_delete_period", { id }));
   }
   async listAcademicPeriods(): Promise<AcademicPeriodDto[]> {
     return unwrap(await invoke("calendar_list_periods"));

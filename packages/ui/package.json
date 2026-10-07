@@ -22,6 +22,10 @@
       "svelte": "./src/components/ui/input/index.ts",
       "default": "./src/components/ui/input/index.ts"
     },
+    "./bilingual-name-fields": {
+      "svelte": "./src/components/ui/bilingual-name-fields/index.ts",
+      "default": "./src/components/ui/bilingual-name-fields/index.ts"
+    },
     "./kbd": {
       "svelte": "./src/components/ui/kbd/index.ts",
       "default": "./src/components/ui/kbd/index.ts"

@@ -41,7 +41,9 @@ import type {
   AcademicContextResponse,
   PeriodTemplateDto,
   CreateYearRequest,
+  UpdateYearRequest,
   CreatePeriodRequest,
+  UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
   ClassSubjectDto,
@@ -1362,10 +1364,16 @@ export interface OrbisApiClient {
 
   // ── Calendar ────────────────────────────────────────────────
   createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto>;
+  updateAcademicYear(id: string, req: UpdateYearRequest): Promise<AcademicYearDto>;
   listAcademicYears(): Promise<AcademicYearDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
   getAcademicYear(id: string): Promise<AcademicYearDto>;
+  activateAcademicYear(id: string): Promise<AcademicYearDto>;
+  closeAcademicYear(id: string): Promise<AcademicYearDto>;
+  archiveAcademicYear(id: string): Promise<AcademicYearDto>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
+  updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
+  deleteAcademicPeriod(id: string): Promise<boolean>;
   listAcademicPeriods(): Promise<AcademicPeriodDto[]>;
   getAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
