@@ -103,6 +103,7 @@ icons preserve filled semantics with negative-space details; `Grid` uses four
 rounded cells, with diagonally opposed taller panels matching the dashboard
 reference. All three retain the 16px default and 1.75 nominal stroke contract.
 
-The next common-action batch redraws `ArrowPath`, `Trash`, `InfoCircle`, and
-`XMark` in both implementations. Their consumer size overrides remain intact;
-the paired paths, rather than a blanket size change, carry the visual update.
+The current high-frequency batch redraws `Refresh`, `ArrowPath`, `Trash`,
+`InfoCircle`, `XMark`, `Users`, and `DocumentPage` in both implementations.
+Their consumer size overrides remain intact; the paired paths, rather than a
+blanket size change, carry the visual update.

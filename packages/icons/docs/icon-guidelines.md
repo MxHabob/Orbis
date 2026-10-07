@@ -44,6 +44,9 @@
 - Common actions use distinct, concise silhouettes: `ArrowPath` is a paired
   refresh cycle, `Trash` has a clear lid/body/separator hierarchy, and
   `XMark` uses two rounded strokes rather than a filled block.
+- `Refresh` uses a single clockwise loop to remain distinct from the paired
+  cycle in `ArrowPath`; `Users` separates the primary and secondary figures,
+  while `DocumentPage` keeps its folded corner and content lines uncluttered.
 - Use consumer-selected color (`currentColor` on web) rather than embedding
   interface colors. The Orbis logo and other brand assets are exceptions to
   interface-grid and stroke rules.

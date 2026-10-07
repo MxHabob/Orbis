@@ -125,6 +125,27 @@
       "kind": "canonical",
       "svelte": "src/svelte/x-mark.svelte",
       "native": "src/native/x-mark.tsx"
+    },
+    {
+      "name": "Refresh",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/refresh.svelte",
+      "native": "src/native/refresh.tsx"
+    },
+    {
+      "name": "Users",
+      "family": "people",
+      "kind": "canonical",
+      "svelte": "src/svelte/users.svelte",
+      "native": "src/native/users.tsx"
+    },
+    {
+      "name": "DocumentPage",
+      "family": "education",
+      "kind": "canonical",
+      "svelte": "src/svelte/document-page.svelte",
+      "native": "src/native/document-page.tsx"
     }
   ]
 }

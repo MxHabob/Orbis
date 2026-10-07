@@ -3638,7 +3638,7 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 5
+          "path": 2
         }
       },
       "native": {
@@ -3649,7 +3649,7 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 5
+          "path": 2
         }
       }
     },
@@ -6106,7 +6106,7 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 2
+          "path": 1
         }
       },
       "native": {
@@ -6117,7 +6117,7 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
-          "path": 2
+          "path": 1
         }
       }
     },
@@ -7204,6 +7204,7 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
+          "circle": 2,
           "path": 1
         }
       },
@@ -7215,6 +7216,7 @@
         "defaultLineJoin": "round",
         "defaultStrokeWidth": "1.75",
         "primitives": {
+          "circle": 2,
           "path": 1
         }
       }

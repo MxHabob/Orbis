@@ -1686,7 +1686,9 @@ impl OnboardingService {
             .list_by_org(org_id, None, None, None)
             .await?;
         if existing_templates.is_empty() {
-            let admin_id = ctx.user_id;
+            let admin_id = ctx.user_id().ok_or_else(|| {
+                DomainError::Validation("Authenticated user required for template provisioning".into())
+            })?;
             let count = self
                 .template_repo
                 .provision_system_templates(org_id, admin_id)
