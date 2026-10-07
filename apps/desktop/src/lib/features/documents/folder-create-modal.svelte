@@ -3,7 +3,15 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Folder, Sparkles, AcademicCap, Plus, XMark, Search, Check } from "@orbis/icons";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@orbis/ui/dialog";
+import { Folder, Sparkles, AcademicCap, Plus, Search, Check } from "@orbis/icons";
 import { api, type FolderDto, type CreateFolderRequest, type CreateCurriculumFolderRequest, type StudentDetailDto } from "$lib/api";
 import { createQuery } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
@@ -125,92 +133,84 @@ async function handleCreate() {
 }
 </script>
 
-{#if open}
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-150">
-    <div
-      class="relative w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-150 text-start"
-      role="dialog"
-      aria-modal="true"
-    >
-      <!-- Close Button -->
-      <button
-        type="button"
-        onclick={handleClose}
-        class="absolute top-4 left-4 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
-      >
-        <XMark class="w-4 h-4" />
-      </button>
-
-      <!-- Modal Header -->
-      <div class="mb-5">
-        <h3 class="text-lg font-bold text-foreground flex items-center gap-2">
+<Dialog bind:open onOpenChange={(value) => !value && resetForm()}>
+  <DialogContent class="max-w-md gap-5 p-5 text-start sm:p-6">
+    <DialogHeader class="gap-1">
+      <DialogTitle class="flex items-center gap-2.5 text-base">
+        <span class="flex size-9 items-center justify-center rounded-lg bg-muted text-foreground">
           {#if activeTab === "curriculum"}
-            <Sparkles class="w-5 h-5 text-emerald-500" />
-            <span>{m.operations_ui_curriculum_folder_create_title()}</span>
+            <Sparkles class="size-4" />
           {:else if activeTab === "student"}
-            <AcademicCap class="w-5 h-5 text-indigo-500" />
-            <span>{m.operations_ui_student_folder_create_title()}</span>
+            <AcademicCap class="size-4" />
           {:else}
-            <Folder class="w-5 h-5 text-amber-500" />
-            <span>{m.operations_ui_folder_create_title()}</span>
+            <Folder class="size-4" />
           {/if}
-        </h3>
-        <p class="text-xs text-muted-foreground mt-1">
-          {m.operations_ui_folder_create_description()}
-        </p>
-      </div>
+        </span>
+        {#if activeTab === "curriculum"}
+          {m.operations_ui_curriculum_folder_create_title()}
+        {:else if activeTab === "student"}
+          {m.operations_ui_student_folder_create_title()}
+        {:else}
+          {m.operations_ui_folder_create_title()}
+        {/if}
+      </DialogTitle>
+      <DialogDescription class="text-xs leading-relaxed">
+        {m.operations_ui_folder_create_description()}
+      </DialogDescription>
+    </DialogHeader>
 
-      <!-- Tab Switcher -->
-      <div class="flex items-center gap-1.5 p-1 rounded-xl bg-muted/60 mb-5 text-xs font-medium">
+    <div class="flex items-center gap-1 rounded-lg border border-border/60 bg-muted/30 p-1 text-xs">
         <button
           type="button"
           onclick={() => activeTab = "standard"}
-          class="flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 {activeTab === 'standard' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+          aria-pressed={activeTab === "standard"}
+          class="flex-1 rounded-md px-2 py-2 transition-colors flex items-center justify-center gap-1.5 {activeTab === 'standard' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
         >
-          <Folder class="w-3.5 h-3.5 text-amber-500" />
+          <Folder class="size-3.5" />
           <span>{m.operations_ui_general_folder()}</span>
         </button>
 
         <button
           type="button"
           onclick={() => activeTab = "curriculum"}
-          class="flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 {activeTab === 'curriculum' ? 'bg-background text-emerald-600 dark:text-emerald-400 font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+          aria-pressed={activeTab === "curriculum"}
+          class="flex-1 rounded-md px-2 py-2 transition-colors flex items-center justify-center gap-1.5 {activeTab === 'curriculum' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
         >
-          <Sparkles class="w-3.5 h-3.5 text-emerald-500" />
+          <Sparkles class="size-3.5" />
           <span>{m.operations_ui_ai_curriculum_folder()}</span>
         </button>
 
         <button
           type="button"
           onclick={() => activeTab = "student"}
-          class="flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 {activeTab === 'student' ? 'bg-background text-indigo-600 dark:text-indigo-400 font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+          aria-pressed={activeTab === "student"}
+          class="flex-1 rounded-md px-2 py-2 transition-colors flex items-center justify-center gap-1.5 {activeTab === 'student' ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground'}"
         >
-          <AcademicCap class="w-3.5 h-3.5 text-indigo-500" />
+          <AcademicCap class="size-3.5" />
           <span>{m.operations_ui_student_folder()}</span>
         </button>
-      </div>
+    </div>
 
-      <!-- Form Contents based on Tab -->
-      <div class="space-y-4">
+    <div class="space-y-4">
         {#if activeTab === "standard"}
-          <div class="space-y-1.5">
+          <div class="space-y-2">
             <label for="standard-folder-name" class="text-xs font-medium text-foreground">{m.operations_ui_folder_name()}</label>
             <Input
               id="standard-folder-name"
               bind:value={folderName}
               placeholder={m.operations_ui_folder_name_example()}
-              class="w-full text-xs"
+              class="h-10 w-full text-sm"
               autofocus
               onkeydown={(e) => e.key === "Enter" && handleCreate()}
             />
           </div>
         {:else if activeTab === "curriculum"}
           <div class="space-y-3">
-            <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
-              <Sparkles class="w-4 h-4 shrink-0 mt-0.5" />
+            <div class="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              <Sparkles class="mt-0.5 size-4 shrink-0 text-foreground" />
               <div>
-                <p class="font-semibold">{m.operations_ui_ai_integration()}</p>
-                <p class="text-[11px] opacity-90 mt-0.5">
+                <p class="font-medium text-foreground">{m.operations_ui_ai_integration()}</p>
+                <p class="mt-0.5 text-[11px] leading-relaxed">
                   {m.operations_ui_ai_folder_indexing_description()}
                 </p>
               </div>
@@ -222,7 +222,7 @@ async function handleCreate() {
                 id="curriculum-name"
                 bind:value={curriculumName}
                 placeholder={m.operations_ui_curriculum_name_example()}
-                class="w-full text-xs"
+                class="h-10 w-full text-sm"
                 autofocus
               />
             </div>
@@ -254,12 +254,12 @@ async function handleCreate() {
             <div class="space-y-1.5">
               <label for="student-search-input" class="text-xs font-medium text-foreground">{m.operations_ui_search_student()}</label>
               <div class="relative">
-                <Search class="w-4 h-4 absolute right-3 top-2.5 text-muted-foreground pointer-events-none" />
+                <Search class="absolute inset-s-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
                   id="student-search-input"
                   bind:value={studentSearch}
                   placeholder={m.operations_ui_student_search_placeholder()}
-                  class="w-full pr-9 text-xs"
+                  class="h-10 w-full ps-9 text-sm"
                   autofocus
                 />
               </div>
@@ -267,7 +267,7 @@ async function handleCreate() {
 
             {#if studentList.length > 0}
               <div class="border border-border/60 rounded-xl overflow-hidden divide-y divide-border/40 max-h-48 overflow-y-auto">
-                {#each studentList as s}
+                {#each studentList as s (s.student.id)}
                   {@const isSelected = selectedStudent?.student?.id === s.student.id}
                   <button
                     type="button"
@@ -291,26 +291,29 @@ async function handleCreate() {
         {/if}
       </div>
 
-      <!-- Footer Buttons -->
-      <div class="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-border/40">
-        <Button variant="ghost" size="sm" onclick={handleClose} disabled={isSubmitting}>
-          {m.common_action_cancel()}
-        </Button>
-        <Button
-          size="sm"
-          onclick={handleCreate}
-          disabled={isSubmitting || (activeTab === "student" && !selectedStudent)}
-          class="gap-1.5"
-        >
-          {#if isSubmitting}
-            <LoadingIndicator size={14} class="w-3.5 h-3.5" />
-            <span>{m.operations_ui_processing()}</span>
-          {:else}
-            <Plus class="w-4 h-4" />
-            <span>{activeTab === "student" ? m.operations_ui_open_student_folder() : m.operations_ui_folder_create_title()}</span>
-          {/if}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
+    <DialogFooter class="gap-2 border-t border-border/60 pt-4">
+      <Button
+        variant="outline"
+        size="sm"
+        onclick={handleClose}
+        disabled={isSubmitting}
+      >
+        {m.common_action_cancel()}
+      </Button>
+      <Button
+        size="sm"
+        onclick={handleCreate}
+        disabled={isSubmitting || (activeTab === "student" && !selectedStudent)}
+        class="gap-1.5"
+      >
+        {#if isSubmitting}
+          <LoadingIndicator size={14} class="size-3.5" />
+          <span>{m.operations_ui_processing()}</span>
+        {:else}
+          <Plus class="size-4" />
+          <span>{activeTab === "student" ? m.operations_ui_open_student_folder() : m.operations_ui_folder_create_title()}</span>
+        {/if}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>

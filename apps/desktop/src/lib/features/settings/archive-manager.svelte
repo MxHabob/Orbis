@@ -28,6 +28,12 @@ import {
 } from "@orbis/icons";
 import { confirmStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
+import { getLocale } from "$lib/paraglide/runtime";
+import {
+  OrbisGrid,
+  type GridActionEvent,
+  type OrbisColumnDef,
+} from "@orbis/svelte-grid";
 import { api } from "$lib/api";
 import {
   useFolders,
@@ -46,7 +52,7 @@ import FolderCard from "$lib/features/documents/folder-card.svelte";
 import FolderBreadcrumbs from "$lib/features/documents/folder-breadcrumbs.svelte";
 import FolderCreateModal from "$lib/features/documents/folder-create-modal.svelte";
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
-import ArchiveDocumentRow from "$lib/features/documents/archive-document-row.svelte";
+import ArchiveSelectionCell from "$lib/features/documents/archive-selection-cell.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
@@ -61,7 +67,7 @@ let {
 } = $props();
 
 // View and State Management
-let viewMode = $state<"grid" | "table">("grid");
+let viewMode = $state<"grid" | "table">("table");
 let searchQuery = $state("");
 let selectedAssetType = $state<string>("all");
 let selectedCategory = $state<string>("all");
@@ -150,6 +156,127 @@ const filteredDocuments = $derived.by(() => {
     return true;
   });
 });
+
+const gridSource = $derived(
+  filteredDocuments.map((doc) => ({
+    ...doc,
+    id: doc.id,
+    selected: selectedIds.has(doc.id),
+    toggleSelection: toggleSelect,
+    sizeLabel: formatSize(doc.file_size_bytes),
+  })),
+);
+
+const documentColumns = $derived<OrbisColumnDef[]>([
+  {
+    id: "selected",
+    header: "",
+    width: 42,
+    flex: 0,
+    readonly: true,
+    sort: false,
+    cell: ArchiveSelectionCell,
+  },
+  {
+    id: "name",
+    header: m.settings_ui_archive_file_name(),
+    width: 320,
+    minWidth: 180,
+    flex: 2,
+    readonly: true,
+    cellClass: "font-medium text-foreground",
+  },
+  {
+    id: "category",
+    header: m.settings_ui_archive_category(),
+    width: 150,
+    readonly: true,
+    cellClass: "text-muted-foreground",
+  },
+  {
+    id: "sizeLabel",
+    header: m.settings_ui_archive_size(),
+    width: 100,
+    align: "end",
+    readonly: true,
+    cellClass: "font-mono text-[11px] text-muted-foreground",
+  },
+  {
+    id: "created_at",
+    header: m.settings_ui_archive_upload_date(),
+    width: 160,
+    type: "date",
+    readonly: true,
+    cellClass: "text-muted-foreground",
+  },
+  {
+    id: "actions",
+    header: m.settings_ui_archive_actions(),
+    width: 160,
+    flex: 0,
+    type: "action",
+    meta: {
+      items: [
+        { id: "preview", icon: "Eye", label: m.operations_ui_preview() },
+        { id: "download", icon: "Download", label: m.operations_ui_download() },
+        {
+          id: "archive",
+          icon: "ArchiveBox",
+          label: m.operations_ui_archive(),
+          visible: (row) => row.is_archived !== true,
+        },
+        {
+          id: "delete",
+          icon: "Trash",
+          label: m.common_action_delete(),
+          variant: "destructive",
+        },
+      ],
+    },
+  },
+]);
+
+function formatSize(bytes?: number | null): string {
+  if (!bytes || bytes <= 0) return "0 KB";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function handleGridAction(event: GridActionEvent) {
+  const doc = rawDocuments.find((item) => item.id === String(event.row.id));
+  if (!doc) return;
+
+  switch (event.actionId) {
+    case "preview":
+      void handlePreview(doc);
+      break;
+    case "download":
+      void downloadDocument(doc);
+      break;
+    case "archive":
+      void handleArchiveDoc(doc.id);
+      break;
+    case "delete":
+      void handleDeleteDoc(doc.id);
+      break;
+  }
+}
+
+async function downloadDocument(doc: DocumentDto) {
+  try {
+    const url = await resolveDocumentUrl(getDocumentSource(doc));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = doc.name;
+    link.rel = "noreferrer";
+    document.body.append(link);
+    link.click();
+    link.remove();
+  } catch (error) {
+    console.error("Failed to download archived document:", error);
+    toast.error(m.settings_ui_archive_download_error());
+  }
+}
 
 // Category options derived from existing documents
 const availableCategories = $derived.by(() => {
@@ -526,7 +653,7 @@ function onContainerDrop(e: DragEvent) {
             </SelectTrigger>
             <SelectContent align="end">
               <SelectItem value="all">{m.settings_ui_archive_all_categories()}</SelectItem>
-              {#each availableCategories as cat}
+              {#each availableCategories as cat (cat)}
                 <SelectItem value={cat}>{cat}</SelectItem>
               {/each}
             </SelectContent>
@@ -574,7 +701,7 @@ function onContainerDrop(e: DragEvent) {
         </p>
         <div class="flex items-center gap-2 mt-5">
           <Button variant="outline" size="sm" onclick={() => isCreateFolderModalOpen = true}>
-            <NewFolderAlt class="w-3.5 h-3.5 me-1.5 text-amber-500" />
+            <NewFolderAlt class="w-3.5 h-3.5 me-1.5" />
             <span>{m.settings_ui_archive_create_folder()}</span>
           </Button>
           <Button size="sm" onclick={() => fileInput?.click()}>
@@ -589,7 +716,7 @@ function onContainerDrop(e: DragEvent) {
         <section class="space-y-3">
           <div class="flex items-center justify-between">
             <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Folder class="w-3.5 h-3.5 text-amber-500" />
+              <Folder class="w-3.5 h-3.5" />
               <span>{m.settings_ui_archive_folders_count({ count: filteredFolders.length })}</span>
             </h4>
           </div>
@@ -641,25 +768,16 @@ function onContainerDrop(e: DragEvent) {
             </div>
           {:else}
             <!-- Table View -->
-            <div class="border border-border/50 rounded-xl overflow-hidden bg-card/60 divide-y divide-border/40">
-              <div class="grid grid-cols-[auto_minmax(0,2.5fr)_minmax(100px,1fr)_minmax(80px,0.8fr)_minmax(100px,1fr)_auto] items-center gap-3 px-3 py-2 bg-muted/40 text-[11px] font-semibold text-muted-foreground uppercase">
-                <span class="w-4"></span>
-                <span>{m.settings_ui_archive_file_name()}</span>
-                <span>{m.settings_ui_archive_category()}</span>
-                <span>{m.settings_ui_archive_size()}</span>
-                <span>{m.settings_ui_archive_upload_date()}</span>
-                <span class="text-end">{m.settings_ui_archive_actions()}</span>
-              </div>
-              {#each filteredDocuments as doc (doc.id)}
-                <ArchiveDocumentRow
-                  document={doc}
-                  selected={selectedIds.has(doc.id)}
-                  onpreview={handlePreview}
-                  ondelete={handleDeleteDoc}
-                  onarchive={handleArchiveDoc}
-                  ontoggle={toggleSelect}
-                />
-              {/each}
+            <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden rounded-xl border border-border/60 bg-card">
+              <OrbisGrid
+                columns={documentColumns}
+                source={gridSource}
+                emptyTitle={m.settings_ui_archive_folder_empty()}
+                emptyDescription={m.settings_ui_archive_empty_description()}
+                rtl={getLocale() === "ar"}
+                readonly
+                onaction={handleGridAction}
+              />
             </div>
           {/if}
         </section>

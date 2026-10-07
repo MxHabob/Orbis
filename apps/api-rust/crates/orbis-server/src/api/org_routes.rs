@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
+use crate::state::AppState;
 use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
 use orbis_domain::entities::settings::OrganizationSettings;
 use rust_decimal::Decimal;
@@ -328,9 +329,60 @@ pub struct OrganizationSettingsDto {
     pub autopilot: AutopilotSettingsDto,
 }
 
-#[derive(Serialize, Deserialize, ToSchema, Default)]
+#[derive(Serialize, Deserialize, ToSchema)]
+#[serde(default)]
 pub struct AcademicSettingsDto {
     pub default_grading_system: String,
+    pub default_passing_score: Decimal,
+    pub default_max_score: Decimal,
+    pub passing_threshold_percentage: Decimal,
+    pub honors_threshold_percentage: Decimal,
+    pub minimum_final_exam_score: Option<Decimal>,
+    pub max_failed_subjects_for_conditional_pass: usize,
+    pub min_attendance_rate: Decimal,
+    pub ranking_enabled: bool,
+    pub max_displayed_rank: Option<u32>,
+    pub ranking_scope: RankingScope,
+    pub tie_policy: TiePolicy,
+    pub rounding_mode: RoundingMode,
+    pub decimal_places: u32,
+    pub enrollment_auto_close: bool,
+    pub allow_late_enrollment: bool,
+    pub late_enrollment_approval: bool,
+    pub grade_entry_auto_close: bool,
+    pub allow_grade_edit_after_close: bool,
+    pub grade_edit_approval: bool,
+    pub auto_graduate_final_level: bool,
+    pub exclude_withdrawn: bool,
+}
+
+impl Default for AcademicSettingsDto {
+    fn default() -> Self {
+        Self {
+            default_grading_system: "percentage".to_string(),
+            default_passing_score: Decimal::from(50),
+            default_max_score: Decimal::from(100),
+            passing_threshold_percentage: Decimal::from(50),
+            honors_threshold_percentage: Decimal::from(85),
+            minimum_final_exam_score: Some(Decimal::from(10)),
+            max_failed_subjects_for_conditional_pass: 2,
+            min_attendance_rate: Decimal::from(75),
+            ranking_enabled: true,
+            max_displayed_rank: None,
+            ranking_scope: RankingScope::Class,
+            tie_policy: TiePolicy::StandardCompetition,
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            enrollment_auto_close: true,
+            allow_late_enrollment: false,
+            late_enrollment_approval: true,
+            grade_entry_auto_close: true,
+            allow_grade_edit_after_close: false,
+            grade_edit_approval: true,
+            auto_graduate_final_level: false,
+            exclude_withdrawn: true,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
@@ -445,6 +497,27 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
         Self {
             academic: AcademicSettingsDto {
                 default_grading_system: s.academic.default_grading_system,
+                default_passing_score: s.academic.default_passing_score,
+                default_max_score: s.academic.default_max_score,
+                passing_threshold_percentage: s.academic.passing_threshold_percentage,
+                honors_threshold_percentage: s.academic.honors_threshold_percentage,
+                minimum_final_exam_score: s.academic.minimum_final_exam_score,
+                max_failed_subjects_for_conditional_pass: s.academic.max_failed_subjects_for_conditional_pass,
+                min_attendance_rate: s.academic.min_attendance_rate,
+                ranking_enabled: s.academic.ranking_enabled,
+                max_displayed_rank: s.academic.max_displayed_rank,
+                ranking_scope: s.academic.ranking_scope,
+                tie_policy: s.academic.tie_policy,
+                rounding_mode: s.academic.rounding_mode,
+                decimal_places: s.academic.decimal_places,
+                enrollment_auto_close: s.academic.enrollment_auto_close,
+                allow_late_enrollment: s.academic.allow_late_enrollment,
+                late_enrollment_approval: s.academic.late_enrollment_approval,
+                grade_entry_auto_close: s.academic.grade_entry_auto_close,
+                allow_grade_edit_after_close: s.academic.allow_grade_edit_after_close,
+                grade_edit_approval: s.academic.grade_edit_approval,
+                auto_graduate_final_level: s.academic.auto_graduate_final_level,
+                exclude_withdrawn: s.academic.exclude_withdrawn,
             },
             enrollment: EnrollmentSettingsDto {
                 registration_enabled: s.enrollment.registration_enabled,
@@ -537,6 +610,27 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
         Self {
             academic: orbis_domain::entities::settings::AcademicSettings {
                 default_grading_system: s.academic.default_grading_system,
+                default_passing_score: s.academic.default_passing_score,
+                default_max_score: s.academic.default_max_score,
+                passing_threshold_percentage: s.academic.passing_threshold_percentage,
+                honors_threshold_percentage: s.academic.honors_threshold_percentage,
+                minimum_final_exam_score: s.academic.minimum_final_exam_score,
+                max_failed_subjects_for_conditional_pass: s.academic.max_failed_subjects_for_conditional_pass,
+                min_attendance_rate: s.academic.min_attendance_rate,
+                ranking_enabled: s.academic.ranking_enabled,
+                max_displayed_rank: s.academic.max_displayed_rank,
+                ranking_scope: s.academic.ranking_scope,
+                tie_policy: s.academic.tie_policy,
+                rounding_mode: s.academic.rounding_mode,
+                decimal_places: s.academic.decimal_places,
+                enrollment_auto_close: s.academic.enrollment_auto_close,
+                allow_late_enrollment: s.academic.allow_late_enrollment,
+                late_enrollment_approval: s.academic.late_enrollment_approval,
+                grade_entry_auto_close: s.academic.grade_entry_auto_close,
+                allow_grade_edit_after_close: s.academic.allow_grade_edit_after_close,
+                grade_edit_approval: s.academic.grade_edit_approval,
+                auto_graduate_final_level: s.academic.auto_graduate_final_level,
+                exclude_withdrawn: s.academic.exclude_withdrawn,
             },
             enrollment: orbis_domain::entities::settings::EnrollmentSettings {
                 registration_enabled: s.enrollment.registration_enabled,

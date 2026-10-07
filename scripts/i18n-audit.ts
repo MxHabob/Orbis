@@ -60,15 +60,23 @@ async function main() {
   );
   const source = sourceText.map(({ text }) => text).join("\n");
   const usedKeys = new Set<string>();
+  const literalMessageKeys = new Set<string>();
   const keyPattern = /\b(?:m|messages)\.([A-Za-z0-9_]+)\s*\(/g;
+  const literalMessageKeyPattern = /["'](iam_[A-Za-z0-9_]+)["']/g;
 
   for (const match of source.matchAll(keyPattern)) {
     if (match[1]) usedKeys.add(match[1]);
+  }
+  for (const match of source.matchAll(literalMessageKeyPattern)) {
+    if (match[1]) literalMessageKeys.add(match[1]);
   }
 
   const arabicKeys = new Set(Object.keys(arabicMessages));
   const englishKeys = new Set(Object.keys(englishMessages));
   const allKeys = new Set([...arabicKeys, ...englishKeys]);
+  for (const key of literalMessageKeys) {
+    if (allKeys.has(key)) usedKeys.add(key);
+  }
   const unusedKeys = [...allKeys].filter((key) => !usedKeys.has(key)).sort();
   const missingInArabic = [...new Set([
     ...[...usedKeys].filter((key) => !arabicKeys.has(key)),

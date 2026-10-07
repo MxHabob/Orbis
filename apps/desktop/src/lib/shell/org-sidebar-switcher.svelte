@@ -153,10 +153,9 @@ async function handleBranchSelect(id: string) {
     <!-- Header info -->
     <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
       <Avatar
-        class="h-8 w-8 rounded-xl {activeColors.bg} font-bold text-xs"
-        style="box-shadow: 0 2px 0 0 {activeColors.shadow}, 0 0 0 1px {activeColors.shadow};"
+        class="w-8 h-8 rounded-md {activeColors.bg}"
       >
-        <AvatarFallback class="{activeColors.bg} font-bold text-xs">
+        <AvatarFallback class="{activeColors.bg} font-bold text-md">
           {orgInitials}
         </AvatarFallback>
       </Avatar>
@@ -179,7 +178,7 @@ async function handleBranchSelect(id: string) {
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings`)}>
         {m.common_header_org_settings()}
       </DropdownMenuItem>
-      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/units`)}>
+      <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/branches`)}>
         {m.common_header_org_branches()}
       </DropdownMenuItem>
       <DropdownMenuItem class="cursor-pointer px-3 py-1.5 text-xs rounded" onclick={() => handleNavigate(`/${orgId}/settings/users`)}>
@@ -210,8 +209,8 @@ async function handleBranchSelect(id: string) {
               {@const projColors = getOrgColors(project.label)}
               <DropdownMenuItem class="cursor-pointer flex items-center gap-2 px-3 py-1.5 text-xs rounded" onclick={() => handleSelect(project.id)}>
                 <Avatar
-                  class="h-5 w-5 rounded-[6px] {projColors.bg} font-bold text-[9px]"
-                  style="box-shadow: 0 1.5px 0 0 {projColors.shadow}, 0 0 0 0.5px {projColors.shadow};"
+                   class="w-5 h-5 rounded-md {activeColors.bg} outline-none select-none cursor-pointer  flex items-center justify-center"
+                   style="--btn-shadow: {activeColors.shadow};"
                 >
                   <AvatarFallback class="{projColors.bg} font-bold text-[9px]">
                     {(project.label || "O").charAt(0).toUpperCase()}

@@ -400,7 +400,7 @@ async function handleDisconnect() {
           </div>
 
           <div>
-            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">الأمان والتشفير</span>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.onboarding_integration_security_encryption()}</span>
             <span class="font-mono text-foreground mt-0.5 block text-[11px] truncate flex items-center gap-1">
               <ShieldCheck class="size-3 text-primary" />
               <span>AES-256 Vault</span>
@@ -408,7 +408,7 @@ async function handleDisconnect() {
           </div>
 
           <div>
-            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">بيئة التشغيل</span>
+            <span class="text-[10px] font-semibold uppercase text-muted-foreground block">{m.onboarding_integration_operating_environment()}</span>
             <span class="font-mono text-foreground mt-0.5 block text-[11px] truncate">Production / Live</span>
           </div>
         </div>
