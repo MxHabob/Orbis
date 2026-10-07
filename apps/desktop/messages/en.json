@@ -523,6 +523,7 @@
   "ai_ui_health_offline": "Disconnected",
   "ai_ui_integrations_category_empty": "Welcome! There are no integrations registered in this category yet. Explore other categories or add a new device.",
   "ai_ui_integrations_search_empty": "Welcome! I couldn't find a service or device matching \"{query}\". Try changing your search terms or choosing a different category.",
+  "ai_ui_integration_how_it_works": "How it works",
   "ai_ui_latency": "Latency",
   "ai_ui_link_providers_from_store": "You can link providers from the integrations store.",
   "ai_ui_live": "Live",

@@ -523,6 +523,7 @@
   "ai_ui_health_offline": "غير متصل",
   "ai_ui_integrations_category_empty": "أهلاً بك! لا توجد تكاملات مسجلة في هذا التصنيف حالياً. يمكنك استكشاف بقية التصنيفات أو إضافة جهاز جديد.",
   "ai_ui_integrations_search_empty": "أهلاً بك! لم أستطع العثور على أي خدمة أو جهاز يطابق \"{query}\". حاول تغيير كلمات البحث أو اختيار تصنيف مختلف.",
+  "ai_ui_integration_how_it_works": "كيف يعمل",
   "ai_ui_latency": "زمن الاستجابة",
   "ai_ui_link_providers_from_store": "يمكنك ربط المزودين من خلال متجر التكاملات.",
   "ai_ui_live": "مباشر",

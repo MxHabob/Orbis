@@ -14,14 +14,18 @@ import { l } from "$lib/core/i18n";
 
 let {
   app,
-  href,
+  onselect,
 }: {
   app: OrbisApp;
-  href: string;
+  onselect: () => void;
 } = $props();
 </script>
 
-<a {href} class="block h-full group">
+<button
+  type="button"
+  class="block h-full w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-start text-inherit"
+  onclick={onselect}
+>
   <Card class="h-full flex flex-col justify-between hover:border-foreground/30 transition-colors">
     <CardContent class="p-5 flex flex-col flex-1 text-start">
       <!-- Top: Icon + UI Badges -->
@@ -71,4 +75,4 @@ let {
       </Badge>
     </CardFooter>
   </Card>
-</a>
+</button>
