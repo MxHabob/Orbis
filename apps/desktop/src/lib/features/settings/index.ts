@@ -13,14 +13,9 @@ export { default as RegistrationSettingsForm } from "./components/registration-s
 export { default as AddDocumentRequirementSheet } from "./components/add-document-requirement-sheet.svelte";
 export { default as AddCurrencyDialog } from "./components/add-currency-dialog.svelte";
 export { default as RoleCreationSheet } from "./components/role-creation-sheet.svelte";
-export { default as PermissionRuleDialog } from "./components/permission-rule-dialog.svelte";
-export { default as UserPermissionsDialog } from "./components/user-permissions-dialog.svelte";
 export { default as CreateUserSheet } from "./components/create-user-sheet.svelte";
-export { default as EnrollmentSettingsCard } from "./components/enrollment-settings-card.svelte";
-export { default as FinanceSettingsCard } from "./components/finance-settings-card.svelte";
 
 // Feature Components
-export { default as BranchesWorkspace } from "./branches-workspace.svelte";
 export { default as SettingsOverview } from "./settings-overview.svelte";
 export { default as RegistrationSettings } from "./registration-settings.svelte";
 export { default as AcademicPolicyManager } from "./academic-policy-manager.svelte";
