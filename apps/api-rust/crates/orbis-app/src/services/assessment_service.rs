@@ -4,8 +4,8 @@ use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AcademicPeriodRepository, AcademicYearRepository, AssessmentSchemeRepository,
     AttendanceRepository, BehaviorRecordRepository, ClassRepository, ClassSubjectRepository,
-    EnrollmentRepository, GpaRecordRepository, GradeRepository, StudentRepository,
-    SubjectRepository,
+    EnrollmentRepository, GpaRecordRepository, GradeRepository, SettingsRepository,
+    StudentRepository, SubjectRepository,
 };
 use crate::services::calculation_engine::{
     AcademicCalculationEngine, AstNode, CalcEngine, apply_rounding,
@@ -67,6 +67,7 @@ pub struct AssessmentService {
     pub student_repo: Option<Arc<dyn StudentRepository>>,
     pub year_repo: Option<Arc<dyn AcademicYearRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
+    pub settings_repo: Option<Arc<dyn SettingsRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -96,6 +97,7 @@ impl AssessmentService {
             student_repo: None,
             year_repo: None,
             enrollment_repo: None,
+            settings_repo: None,
             event_bus,
             permission_checker,
         }
@@ -109,13 +111,29 @@ impl AssessmentService {
         student_repo: Option<Arc<dyn StudentRepository>>,
         year_repo: Option<Arc<dyn AcademicYearRepository>>,
         enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
+        settings_repo: Option<Arc<dyn SettingsRepository>>,
     ) -> Self {
         self.period_repo = period_repo;
         self.class_repo = class_repo;
         self.student_repo = student_repo;
         self.year_repo = year_repo;
         self.enrollment_repo = enrollment_repo;
+        self.settings_repo = settings_repo;
         self
+    }
+
+    /// Helper to resolve the authoritative AcademicPolicy for an organization
+    async fn resolve_policy(&self, org_id: Uuid, policy: Option<AcademicPolicy>) -> AcademicPolicy {
+        if let Some(p) = policy {
+            p
+        } else if let Some(sr) = &self.settings_repo {
+            sr.get_settings(org_id)
+                .await
+                .map(|s| s.academic.to_academic_policy(org_id))
+                .unwrap_or_default()
+        } else {
+            AcademicPolicy::default()
+        }
     }
 
     /// Record or update a student grade
@@ -920,7 +938,7 @@ impl AssessmentService {
     pub async fn calculate_student_term_report_card(
         &self,
         ctx: &RequestContext,
-        _org_id: Uuid,
+        org_id: Uuid,
         student_id: Uuid,
         period_id: Uuid,
         class_id: Option<Uuid>,
@@ -930,7 +948,7 @@ impl AssessmentService {
             .check(ctx, Permission::GradeRead)
             .await?;
 
-        let policy = policy.unwrap_or_default();
+        let policy = self.resolve_policy(org_id, policy).await;
 
         // 1. Resolve student details
         let (student_name, student_number) = if let Some(sr) = &self.student_repo {
@@ -1193,7 +1211,7 @@ impl AssessmentService {
             .check(ctx, Permission::GradeRead)
             .await?;
 
-        let policy = policy.unwrap_or_default();
+        let policy = self.resolve_policy(org_id, policy).await;
 
         let (year_name, term_periods) = if let Some(pr) = &self.period_repo {
             let all_periods = pr.find_by_year(academic_year_id).await?;
@@ -1364,7 +1382,7 @@ impl AssessmentService {
             .check(ctx, Permission::GradeRead)
             .await?;
 
-        let policy = policy.unwrap_or_default();
+        let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
             er.find_by_class(class_id).await?
@@ -1426,7 +1444,7 @@ impl AssessmentService {
             .check(ctx, Permission::GradeRead)
             .await?;
 
-        let policy = policy.unwrap_or_default();
+        let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
             er.find_by_class(class_id).await?

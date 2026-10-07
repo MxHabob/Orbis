@@ -9,12 +9,6 @@ import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
-import {
   Folder,
   FolderOpen,
   NewFolderAlt,
@@ -56,6 +50,10 @@ import ArchiveSelectionCell from "$lib/features/documents/archive-selection-cell
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import SearchableMultiFilter, {
+  type SearchableMultiFilterGroup,
+} from "$lib/shared/components/searchable-multi-filter.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import type { DocumentDto, FolderDto } from "$lib/api";
 
 let {
@@ -69,8 +67,7 @@ let {
 // View and State Management
 let viewMode = $state<"grid" | "table">("table");
 let searchQuery = $state("");
-let selectedAssetType = $state<string>("all");
-let selectedCategory = $state<string>("all");
+let selectedFilters = $state<string[]>([]);
 let selectedIds = $state<Set<string>>(new Set());
 
 // Modals & Sheets
@@ -128,21 +125,35 @@ const filteredFolders = $derived.by(() => {
   return subfolders.filter((f) => f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q));
 });
 
+const selectedFileTypes = $derived(
+  selectedFilters
+    .filter((value) => value.startsWith("type:"))
+    .map((value) => value.slice("type:".length)),
+);
+const selectedCategories = $derived(
+  selectedFilters
+    .filter((value) => value.startsWith("category:"))
+    .map((value) => value.slice("category:".length)),
+);
+
 const filteredDocuments = $derived.by(() => {
   const q = searchQuery.trim().toLowerCase();
   return rawDocuments.filter((doc) => {
-    // Category Filter
-    if (selectedCategory !== "all" && doc.category !== selectedCategory) {
+    if (
+      selectedCategories.length > 0 &&
+      !selectedCategories.includes(doc.category || "")
+    ) {
       return false;
     }
 
-    // Asset Type Filter
-    if (selectedAssetType !== "all") {
+    if (selectedFileTypes.length > 0) {
       const mime = doc.mime_type?.toLowerCase() || "";
-      if (selectedAssetType === "image" && !mime.startsWith("image/")) return false;
-      if (selectedAssetType === "video" && !mime.startsWith("video/")) return false;
-      if (selectedAssetType === "audio" && !mime.startsWith("audio/")) return false;
-      if (selectedAssetType === "pdf" && mime !== "application/pdf" && doc.extension?.toLowerCase() !== "pdf") return false;
+      const extension = doc.extension?.toLowerCase();
+      const matchesType = selectedFileTypes.some((type) => {
+        if (type === "pdf") return mime === "application/pdf" || extension === "pdf";
+        return mime.startsWith(`${type}/`);
+      });
+      if (!matchesType) return false;
     }
 
     // Search Query Filter
@@ -287,24 +298,50 @@ const availableCategories = $derived.by(() => {
   return Array.from(set);
 });
 
-// Filter Labels for Selects
-const assetTypeLabel = $derived.by(() => {
-  switch (selectedAssetType) {
-    case "pdf": return m.settings_ui_archive_pdf_documents();
-    case "image": return m.settings_ui_archive_images();
-    case "video": return m.settings_ui_archive_videos();
-    case "audio": return m.settings_ui_archive_audio_recordings();
-    default: return m.settings_ui_archive_all_file_types();
-  }
-});
-
-const categoryLabel = $derived(
-  selectedCategory === "all" ? m.settings_ui_archive_all_categories() : selectedCategory
-);
+const archiveFilterGroups = $derived<SearchableMultiFilterGroup[]>([
+  {
+    id: "file-types",
+    label: m.operations_ui_file_type(),
+    options: [
+      { value: "type:pdf", label: m.settings_ui_archive_pdf_documents() },
+      { value: "type:image", label: m.settings_ui_archive_images() },
+      { value: "type:video", label: m.settings_ui_archive_videos() },
+      { value: "type:audio", label: m.settings_ui_archive_audio_recordings() },
+    ],
+  },
+  ...(availableCategories.length > 0
+    ? [{
+        id: "categories",
+        label: m.settings_ui_archive_category(),
+        options: availableCategories.map((category) => ({
+          value: `category:${category}`,
+          label: category,
+        })),
+      }]
+    : []),
+]);
 
 // Trash Query for Badge Counter
 const trashDocumentsQuery = useTrashDocuments();
 const trashedDocsCount = $derived(trashDocumentsQuery.data?.length || 0);
+const archiveMenuActions = $derived([
+  {
+    id: "new-folder",
+    label: m.settings_ui_archive_new_folder(),
+    icon: NewFolderAlt,
+    onSelect: () => (isCreateFolderModalOpen = true),
+  },
+  {
+    id: "trash",
+    label: m.settings_ui_archive_trash_title(),
+    icon: Trash,
+    badge: trashedDocsCount > 0 ? String(trashedDocsCount) : undefined,
+    onSelect: () => goto(`/${orgId}/settings/archive/trash`),
+  },
+]);
+const uploadCategory = $derived(
+  selectedCategories.length === 1 ? selectedCategories[0] : "archive",
+);
 
 // Mutations
 const archiveDocMutation = useArchiveDocument();
@@ -464,7 +501,7 @@ async function handleFilesUpload(fileList: FileList | File[]) {
         file,
         name: file.name,
         folder_id: folderId ?? undefined,
-        category: selectedCategory !== "all" ? selectedCategory : "archive",
+        category: uploadCategory,
         visibility: "internal",
       });
       successCount++;
@@ -568,43 +605,13 @@ function onContainerDrop(e: DragEvent) {
       />
 
       <div class="flex items-center flex-wrap gap-2 w-full sm:w-auto justify-end">
-        <!-- Trash Bin Button -->
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => goto(`/${orgId}/settings/archive/trash`)}
-          class="gap-1.5 text-xs shadow-xs hover:border-rose-500/40 hover:text-rose-600 dark:hover:text-rose-400"
-          title={m.settings_ui_archive_trash_title()}
-        >
-          <Trash class="w-3.5 h-3.5 text-rose-500" />
-          <span>{m.settings_ui_archive_trash_title()}</span>
-          {#if trashedDocsCount > 0}
-            <span class="rounded-full bg-rose-500/15 px-1.5 py-0.2 text-[10px] font-bold text-rose-600 dark:text-rose-400">
-              {trashedDocsCount}
-            </span>
-          {/if}
-        </Button>
-
-        <!-- New Folder Button -->
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => isCreateFolderModalOpen = true}
-          class="gap-1.5 text-xs shadow-xs"
-        >
-          <NewFolderAlt class="w-3.5 h-3.5 text-amber-500" />
-          <span>{m.settings_ui_archive_new_folder()}</span>
-        </Button>
-
-        <!-- Upload Files Button -->
-        <Button
-          size="sm"
-          onclick={() => fileInput?.click()}
-          class="gap-1.5 text-xs shadow-xs"
-        >
-          <ArrowUpTray class="w-3.5 h-3.5" />
-          <span>{m.settings_ui_archive_upload_files()}</span>
-        </Button>
+        <SplitActionMenu
+          label={m.settings_ui_archive_upload_files()}
+          menuLabel={m.ui_copy_more_options_2179e961()}
+          icon={ArrowUpTray}
+          actions={archiveMenuActions}
+          onprimary={() => fileInput?.click()}
+        />
       </div>
     </div>
 
@@ -631,34 +638,13 @@ function onContainerDrop(e: DragEvent) {
 
       <!-- Filter Controls & View Switcher -->
       <div class="flex items-center flex-wrap gap-2 text-xs">
-        <!-- Asset Type Filter -->
-        <Select type="single" bind:value={selectedAssetType}>
-          <SelectTrigger class="h-8 min-w-32 text-xs">
-            <span class="truncate">{assetTypeLabel}</span>
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem value="all">{m.settings_ui_archive_all_file_types()}</SelectItem>
-            <SelectItem value="pdf">{m.settings_ui_archive_pdf_documents()}</SelectItem>
-            <SelectItem value="image">{m.settings_ui_archive_images()}</SelectItem>
-            <SelectItem value="video">{m.settings_ui_archive_videos()}</SelectItem>
-            <SelectItem value="audio">{m.settings_ui_archive_audio_recordings()}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <!-- Category Filter -->
-        {#if availableCategories.length > 0}
-          <Select type="single" bind:value={selectedCategory}>
-            <SelectTrigger class="h-8 min-w-32 text-xs">
-              <span class="truncate">{categoryLabel}</span>
-            </SelectTrigger>
-            <SelectContent align="end">
-              <SelectItem value="all">{m.settings_ui_archive_all_categories()}</SelectItem>
-              {#each availableCategories as cat (cat)}
-                <SelectItem value={cat}>{cat}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        {/if}
+        <SearchableMultiFilter
+          groups={archiveFilterGroups}
+          bind:selectedValues={selectedFilters}
+          placeholder={m.settings_ui_archive_filters()}
+          searchPlaceholder={m.settings_ui_archive_filter_search()}
+          emptyText={m.settings_ui_archive_no_matching_filters()}
+        />
 
         <!-- View Switcher -->
         <div class="flex items-center p-0.5 rounded-lg border border-border/60 bg-muted/40">

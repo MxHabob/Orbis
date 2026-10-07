@@ -81,6 +81,8 @@ import type {
   CalculateRankingsRequest,
   ScoreItemRequest,
   RankingItemDto,
+  StudentTermReportCard,
+  StudentAnnualReportCard,
   DocumentDto,
   FolderDto,
   FolderContentsDto,
@@ -957,6 +959,66 @@ export class RemoteClient implements OrbisApiClient {
 
   async calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]> {
     return this.call(sdk.calculateRankings({ client: this.client, body: req })) ?? [];
+  }
+
+  async getStudentTermResults(
+    studentId: string,
+    periodId: string,
+    classId?: string,
+  ): Promise<StudentTermReportCard> {
+    const params = new URLSearchParams({ period_id: periodId });
+    if (classId) params.append("class_id", classId);
+    const url = `${this.baseUrl}/api/v1/students/${studentId}/term-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data;
+  }
+
+  async getStudentAnnualResults(
+    studentId: string,
+    yearId: string,
+    classId?: string,
+  ): Promise<StudentAnnualReportCard> {
+    const params = new URLSearchParams({ year_id: yearId });
+    if (classId) params.append("class_id", classId);
+    const url = `${this.baseUrl}/api/v1/students/${studentId}/annual-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data;
+  }
+
+  async getClassTermResults(
+    classId: string,
+    periodId: string,
+  ): Promise<StudentTermReportCard[]> {
+    const params = new URLSearchParams({ period_id: periodId });
+    const url = `${this.baseUrl}/api/v1/classes/${classId}/term-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data ?? [];
+  }
+
+  async getClassAnnualResults(
+    classId: string,
+    yearId: string,
+  ): Promise<StudentAnnualReportCard[]> {
+    const params = new URLSearchParams({ year_id: yearId });
+    const url = `${this.baseUrl}/api/v1/classes/${classId}/annual-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data ?? [];
   }
 
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {

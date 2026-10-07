@@ -73,6 +73,8 @@ import type {
   CalculateRankingsRequest,
   ScoreItemRequest,
   RankingItemDto,
+  StudentTermReportCard,
+  StudentAnnualReportCard,
   DocumentDto,
   FolderDto,
   FolderContentsDto,
@@ -720,6 +722,54 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<RankingItemDto[]> {
     return unwrap(
       await invoke("assessment_calculate_rankings", { request: req }),
+    );
+  }
+  async getStudentTermResults(
+    studentId: string,
+    periodId: string,
+    classId?: string,
+  ): Promise<StudentTermReportCard> {
+    return unwrap(
+      await invoke("assessment_get_student_term_results", {
+        studentId,
+        periodId,
+        classId: classId ?? null,
+      }),
+    );
+  }
+  async getStudentAnnualResults(
+    studentId: string,
+    yearId: string,
+    classId?: string,
+  ): Promise<StudentAnnualReportCard> {
+    return unwrap(
+      await invoke("assessment_get_student_annual_results", {
+        studentId,
+        yearId,
+        classId: classId ?? null,
+      }),
+    );
+  }
+  async getClassTermResults(
+    classId: string,
+    periodId: string,
+  ): Promise<StudentTermReportCard[]> {
+    return unwrap(
+      await invoke("assessment_get_class_term_results", {
+        classId,
+        periodId,
+      }),
+    );
+  }
+  async getClassAnnualResults(
+    classId: string,
+    yearId: string,
+  ): Promise<StudentAnnualReportCard[]> {
+    return unwrap(
+      await invoke("assessment_get_class_annual_results", {
+        classId,
+        yearId,
+      }),
     );
   }
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {

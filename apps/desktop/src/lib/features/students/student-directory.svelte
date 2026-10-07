@@ -21,6 +21,7 @@ import { toast } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
+import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
@@ -201,22 +202,22 @@ function handleExportStudents() {
           </div>
 
           <div class="flex items-center gap-2">
-            <Button
-              variant="outline"
-              class="text-xs h-9 px-3"
-              onclick={() => goto(localizeHref(`/${orgId}/settings/bulk-input`))}
-            >
-              <ArrowUpTray size={13} class="me-1.5" />
-              {m.common_bulk_hub_title()}
-            </Button>
-            <Button
-              variant="outline"
-              class="text-xs h-9 px-3"
-              onclick={handleExportStudents}
-            >
-              <DocumentChartBar size={13} class="me-1.5" />
-              {m.common_export()}
-            </Button>
+            <ActionDropdownMenu
+              actions={[
+                {
+                  id: "bulk-input",
+                  label: m.common_bulk_hub_title(),
+                  icon: ArrowUpTray,
+                  onSelect: () => goto(localizeHref(`/${orgId}/settings/bulk-input`)),
+                },
+                {
+                  id: "export",
+                  label: m.common_export(),
+                  icon: DocumentChartBar,
+                  onSelect: handleExportStudents,
+                },
+              ]}
+            />
             {#if academicContext.effectivePeriodId}
               <PeriodGateAction
                 gateType="enrollment"

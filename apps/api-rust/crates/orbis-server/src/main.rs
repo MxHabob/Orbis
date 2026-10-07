@@ -210,6 +210,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(student_repo.clone()),
             Some(calendar_repo.clone()),
             Some(student_repo.clone()),
+            Some(settings_repo.clone()),
         ),
     );
 

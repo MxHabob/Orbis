@@ -689,7 +689,7 @@ impl BootstrapService {
         // 5. Notifications
         settings.notifications.notify_parents_on_absence = true;
         settings.notifications.notify_parents_on_grade_publish = true;
-        settings.notifications.finance_reminder_days = 7;
+        settings.notifications.finance_reminder_days = vec![7];
 
         // 6. Autopilot Defaults
         settings.autopilot.enabled = false;

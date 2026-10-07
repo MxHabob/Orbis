@@ -207,7 +207,7 @@ async function handleCreate() {
         {:else if activeTab === "curriculum"}
           <div class="space-y-3">
             <div class="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
-              <Sparkles class="mt-0.5 size-4 shrink-0 text-foreground" />
+              <Sparkles class="mt-0.5 size-4 shrink-0 text-muted-foreground" />
               <div>
                 <p class="font-medium text-foreground">{m.operations_ui_ai_integration()}</p>
                 <p class="mt-0.5 text-[11px] leading-relaxed">

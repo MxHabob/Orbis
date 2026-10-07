@@ -1188,6 +1188,131 @@ export interface ProvisionDefaultsResultDto {
   state: OnboardingStateDto;
 }
 
+export type RoundingMode = 'round_half_up' | 'round_up' | 'round_down' | 'truncate';
+export type RankingScope = 'class' | 'grade_level' | 'org_unit' | 'cohort';
+export type TiePolicy = 'standard_competition' | 'dense' | 'fractional';
+export type AcademicStatus =
+  | 'passed'
+  | 'passed_with_honors'
+  | 'conditional_pass'
+  | 'failed'
+  | 'incomplete'
+  | 'absent'
+  | 'probation'
+  | 'withdrawn';
+
+export interface ComponentScore {
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  score: number;
+  max_score: number;
+}
+
+export interface PeriodComponentScores {
+  components: ComponentScore[];
+  total: number;
+  total_max: number;
+}
+
+export interface PeriodAssessmentResult {
+  period_id: string;
+  period_code: string;
+  period_name: string;
+  period_name_ar?: string | null;
+  breakdown: PeriodComponentScores;
+}
+
+export interface SubjectTermResult {
+  subject_id: string;
+  subject_code: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  credit_hours: number;
+  monthly_results: PeriodAssessmentResult[];
+  monthly_average: number;
+  monthly_contribution: number;
+  monthly_contribution_max: number;
+  term_final_exam?: number | null;
+  term_final_exam_max: number;
+  term_total: number;
+  term_max: number;
+  percentage: number;
+  letter_grade?: string | null;
+  status: AcademicStatus;
+}
+
+export interface SubjectAnnualResult {
+  subject_id: string;
+  subject_code: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  credit_hours: number;
+  term_1_result?: SubjectTermResult | null;
+  term_2_result?: SubjectTermResult | null;
+  annual_total: number;
+  annual_max: number;
+  percentage: number;
+  letter_grade?: string | null;
+  status: AcademicStatus;
+}
+
+export interface StudentTermReportCard {
+  student_id: string;
+  student_name: string;
+  student_number?: string | null;
+  class_id: string;
+  class_name: string;
+  period_id: string;
+  period_name: string;
+  subjects: SubjectTermResult[];
+  total_score: number;
+  max_possible_score: number;
+  overall_percentage: number;
+  gpa?: number | null;
+  rank_in_class?: number | null;
+  rank_in_grade?: number | null;
+  total_students_in_class: number;
+  total_students_in_grade: number;
+  status: AcademicStatus;
+  calculated_at: string;
+}
+
+export interface StudentAnnualReportCard {
+  student_id: string;
+  student_name: string;
+  student_number?: string | null;
+  class_id: string;
+  class_name: string;
+  academic_year_id: string;
+  academic_year_name: string;
+  subjects: SubjectAnnualResult[];
+  total_score: number;
+  max_possible_score: number;
+  overall_percentage: number;
+  cumulative_gpa?: number | null;
+  rank_in_class?: number | null;
+  rank_in_grade?: number | null;
+  total_students_in_class: number;
+  total_students_in_grade: number;
+  status: AcademicStatus;
+  calculated_at: string;
+}
+
+export interface AcademicPolicy {
+  org_id: string;
+  passing_threshold_percentage: number;
+  honors_threshold_percentage: number;
+  minimum_final_exam_score?: number | null;
+  max_failed_subjects_for_conditional_pass: number;
+  rounding_mode: RoundingMode;
+  decimal_places: number;
+  ranking_scope: RankingScope;
+  tie_policy: TiePolicy;
+  ranking_enabled: boolean;
+  max_displayed_rank?: number | null;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // UNIFIED CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
@@ -1359,6 +1484,24 @@ export interface OrbisApiClient {
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto>;
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
+  getStudentTermResults(
+    studentId: string,
+    periodId: string,
+    classId?: string,
+  ): Promise<StudentTermReportCard>;
+  getStudentAnnualResults(
+    studentId: string,
+    yearId: string,
+    classId?: string,
+  ): Promise<StudentAnnualReportCard>;
+  getClassTermResults(
+    classId: string,
+    periodId: string,
+  ): Promise<StudentTermReportCard[]>;
+  getClassAnnualResults(
+    classId: string,
+    yearId: string,
+  ): Promise<StudentAnnualReportCard[]>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   batchMarkAttendance(
     req: BatchMarkAttendanceRequest,

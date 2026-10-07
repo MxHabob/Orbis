@@ -46,6 +46,22 @@ export type AcademicPeriodState = 'planning' | 'enrollment_open' | 'active_teach
 
 export type AcademicSettingsDto = {
     default_grading_system: string;
+    passing_threshold_percentage?: number;
+    honors_threshold_percentage?: number;
+    minimum_final_exam_score?: number;
+    max_failed_subjects_for_conditional_pass?: number;
+    min_attendance_rate?: number;
+    ranking_enabled?: boolean;
+    max_displayed_rank?: number;
+    ranking_scope?: string;
+    tie_policy?: string;
+    rounding_mode?: string;
+    decimal_places?: number;
+    grade_entry_auto_close?: boolean;
+    allow_grade_edit_after_close?: boolean;
+    grade_edit_approval?: boolean;
+    auto_graduate_final_level?: boolean;
+    exclude_withdrawn?: boolean;
 };
 
 export type AcademicYearDto = {
