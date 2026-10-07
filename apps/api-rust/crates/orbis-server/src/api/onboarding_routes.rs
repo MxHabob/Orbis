@@ -79,6 +79,7 @@ pub struct ProvisionDefaultsReqDto {
     pub provision_subjects: Option<bool>,
     pub provision_assessment_scheme: Option<bool>,
     pub provision_tuition_fee_template: Option<bool>,
+    pub provision_discount_templates: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -237,6 +238,7 @@ pub async fn provision_blueprint_defaults(
         provision_subjects: req.provision_subjects,
         provision_assessment_scheme: req.provision_assessment_scheme,
         provision_tuition_fee_template: req.provision_tuition_fee_template,
+        provision_discount_templates: req.provision_discount_templates,
     };
 
     let result = state

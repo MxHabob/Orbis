@@ -24,7 +24,7 @@
 	fill="none"
 	width={size}
 	height={size}
-	class={cn(className || 'size-4', klass)}
+	class={cn(className || (size === undefined ? 'size-4' : ''), klass)}
 	aria-hidden="true"
 	{...restProps}
 >

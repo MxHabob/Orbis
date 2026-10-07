@@ -14,7 +14,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, UserGroup, Users } from "@orbis/icons";
+import {
+  AiCenter,
+  BookOpen,
+  EmployeeAffairs,
+  FinanceSystem,
+  Grid,
+  Settings,
+  StudentAffairs,
+  TemplateLibrary,
+} from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
@@ -61,13 +70,13 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/students`,
-    icon: Users,
+    icon: StudentAffairs,
     label: m.common_word_students(),
     match: "prefix",
   },
   {
     href: `/${orgId}/employees`,
-    icon: UserGroup,
+    icon: EmployeeAffairs,
     label: m.employees_nav_title(),
     match: "prefix",
   },
@@ -79,19 +88,19 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/finance`,
-    icon: Banknotes,
+    icon: FinanceSystem,
     label: m.common_nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/templates`,
-    icon: DocumentPage,
+    icon: TemplateLibrary,
     label: m.settings_nav_templates(),
     match: "prefix",
   },
   {
     href: `/${orgId}/ai-center`,
-    icon: Sparkles,
+    icon: AiCenter,
     label: m.common_autopilot_popover_ai_center(),
     match: "prefix",
   },
@@ -118,7 +127,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
 
 			<!-- Divider -->
-			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700  self-center"></div>
+			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 self-center"></div>
 
 			{#each navItems as item (item.href)}
 				<div class="flex">
@@ -127,6 +136,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 							<Button
 								href={localizeHref(item.href)}
 								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
+								size="icon"
 								class="rounded-[10px]"
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
@@ -136,7 +146,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 									prefetchRouteData(segment, orgId);
 								}}
 							>
-								<item.icon size={24} />
+								<item.icon size={20} />
 							</Button>
 						</TooltipTrigger>
 						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>

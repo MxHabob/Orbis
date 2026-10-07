@@ -131,13 +131,12 @@ async function handleBranchSelect(id: string) {
       <Tooltip>
         <TooltipTrigger>
           <button
-            type="button"
             class="w-8 h-8 rounded-md {activeColors.bg} outline-none select-none cursor-pointer btn-tactile p-0 border-none flex items-center justify-center relative"
             style="--btn-shadow: {activeColors.shadow};"
             aria-label={orgNameDisplay}
           >
-            <Avatar class="h-full w-full rounded-md bg-transparent">
-              <AvatarFallback class="bg-transparent font-bold text-sm">
+            <Avatar class="h-full w-full rounded-md">
+              <AvatarFallback class="font-bold text-lg">
                 {orgInitials}
               </AvatarFallback>
             </Avatar>

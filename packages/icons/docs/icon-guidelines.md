@@ -8,6 +8,9 @@
 - Use `16`, `20`, and `24` as review sizes. The component default is `16` in
   both Svelte and React Native; a control may request a larger size when its
   hierarchy calls for it.
+- An explicit Svelte `size` prop controls the SVG dimensions. The default
+  `size-4` utility applies only when `size` is omitted; never let the default
+  class override an explicitly requested dimension.
 - Keep glyph size separate from the interactive target: use `12–14` only for
   dense inline metadata when it remains legible, `16` for standard controls,
   `18–20` for primary navigation or toolbars, and `24` for prominent states.
@@ -47,6 +50,11 @@
 - `Refresh` uses a single clockwise loop to remain distinct from the paired
   cycle in `ArrowPath`; `Users` separates the primary and secondary figures,
   while `DocumentPage` keeps its folded corner and content lines uncluttered.
+- The custom sidebar symbols use category-specific, compact compositions:
+  `StudentAffairs` pairs a graduation cap with an open book, `EmployeeAffairs`
+  is an employee profile card, `TemplateLibrary` is a page layout, `AiCenter`
+  is a sparkle in a conversation card, and `FinanceSystem` pairs a ledger with
+  a currency-neutral coin.
 - Use consumer-selected color (`currentColor` on web) rather than embedding
   interface colors. The Orbis logo and other brand assets are exceptions to
   interface-grid and stroke rules.

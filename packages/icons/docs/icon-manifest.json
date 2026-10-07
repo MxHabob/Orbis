@@ -45,6 +45,16 @@
       "kind": "canonical"
     },
     {
+      "name": "AiCenter",
+      "files": {
+        "svelte": "ai-center",
+        "native": "ai-center"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
       "name": "AlignHorizontal",
       "files": {
         "svelte": "align-horizontal",
@@ -915,6 +925,16 @@
       "kind": "canonical"
     },
     {
+      "name": "EmployeeAffairs",
+      "files": {
+        "svelte": "employee-affairs",
+        "native": "employee-affairs"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
       "name": "Expand",
       "files": {
         "svelte": "expand",
@@ -981,6 +1001,16 @@
         "native": "file-plus-alt"
       },
       "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FinanceSystem",
+      "files": {
+        "svelte": "finance-system",
+        "native": "finance-system"
+      },
+      "family": "data",
       "variant": "default",
       "kind": "canonical"
     },
@@ -1795,6 +1825,16 @@
       "kind": "canonical"
     },
     {
+      "name": "StudentAffairs",
+      "files": {
+        "svelte": "student-affairs",
+        "native": "student-affairs"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
       "name": "Sun",
       "files": {
         "svelte": "sun",
@@ -1819,6 +1859,16 @@
       "files": {
         "svelte": "task-list",
         "native": "task-list"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "TemplateLibrary",
+      "files": {
+        "svelte": "template-library",
+        "native": "template-library"
       },
       "family": "education",
       "variant": "default",

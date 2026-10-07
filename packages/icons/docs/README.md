@@ -6,11 +6,13 @@ implementations together.
 
 ## Current catalog
 
-The inventory and maintained manifest cover 206 public icon names and 206
-components per platform. The inventory records source files, viewBox, default
-properties, primitives, and desktop/mobile import frequency. The manifest
-classifies each name by semantic family, variant, and compatibility kind, and
-records the six native default aliases separately.
+The inventory and maintained manifest cover 211 public icon names and 211
+components per platform, including five custom sidebar symbols for Student
+Affairs, Employee Affairs, Templates, the AI Center, and Finance. The inventory
+records source files, viewBox, default properties, primitives, and
+desktop/mobile import frequency. The manifest classifies each name by semantic
+family, variant, and compatibility kind, and records the six native default
+aliases separately.
 
 The most-used desktop imports in the current inventory are `Plus` (51),
 `Refresh` (49), `AdjustmentsHorizontal` (45), `Search` (43), and
@@ -39,6 +41,8 @@ The Svelte API uses SVG attributes, `class`/`className`, optional `size`, and
 React-Native-SVG props and `style`, with `size`, `color`, and `strokeWidth`;
 the old default was 20pt (with a small set of 24pt exceptions). Both platforms
 default to `currentColor` and decorative accessibility behavior.
+In Svelte, an explicit `size` now suppresses the default `size-4` class so CSS
+cannot silently clamp the SVG back to 16px.
 
 Use size by visual hierarchy rather than applying one size globally: 12–14px
 is reserved for dense inline metadata, 16px is the standard control glyph,
@@ -69,10 +73,10 @@ The desktop build completed successfully. Baseline screenshots and bundle-size
 measurements were not captured; do not use the build result as a substitute for
 either visual or bundle-size comparison.
 
-The generated [icon gallery](./icon-gallery.html) renders all 206 exported
+The generated [icon gallery](./icon-gallery.html) renders all 211 exported
 symbols at 16, 20, and 24px on light and dark surfaces. Rebuild it with
 `bun run --cwd packages/icons gallery`; use the family filter and name search to
-review related concepts together. The catalog was checked in-browser at 206
+review related concepts together. The catalog was checked in-browser at 211
 cards (six previews per symbol) and family filtering was verified. For React
 Native, compare the same names in the existing Expo app and its rendered
 consumer controls; the static gallery does not claim to replace a native-device

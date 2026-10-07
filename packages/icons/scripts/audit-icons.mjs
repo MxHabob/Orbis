@@ -46,15 +46,30 @@ function getViewBox(source) {
 	return source.match(/\bviewBox\s*=\s*["']([^"']+)["']/i)?.[1] ?? null;
 }
 
+function getDefaultSizeClass(source) {
+	return (
+		source.match(/className\s*\|\|\s*\(\s*size\s*===\s*undefined\s*\?\s*['"]([^'"]+)['"]/)?.[1] ??
+		source.match(/className\s*\|\|\s*['"]([^'"]+)['"]/)?.[1] ??
+		null
+	);
+}
+
+function honorsExplicitSvelteSize(source) {
+	return /className\s*\|\|\s*\(\s*size\s*===\s*undefined\s*\?\s*['"]size-4['"]\s*:\s*['"][^'"]*['"]\s*\)/.test(
+		source,
+	);
+}
+
 function getSvelteMetadata(file) {
 	const source = fs.readFileSync(path.join(svelteRoot, `${file}.svelte`), 'utf8');
-	const defaultSizeClass = source.match(/className\s*\|\|\s*['"]([^'"]+)['"]/)?.[1] ?? null;
+	const defaultSizeClass = getDefaultSizeClass(source);
 	const defaultSize = defaultSizeClass?.match(/\bsize-(\d+(?:\.\d+)?)/)?.[1];
 	const svgAttributes = source.match(/<svg\b([^>]*)>/i)?.[1] ?? '';
 
 	return {
 		viewBox: getViewBox(source),
 		defaultSize: defaultSize ? Number(defaultSize) * 4 : null,
+		honorsExplicitSize: honorsExplicitSvelteSize(source),
 		defaultColor: source.match(/\bstroke=["']([^"']+)["']/i)?.[1] ?? null,
 		defaultLineCap: svgAttributes.match(/\bstroke-linecap=["']([^"']+)["']/i)?.[1] ?? null,
 		defaultLineJoin: svgAttributes.match(/\bstroke-linejoin=["']([^"']+)["']/i)?.[1] ?? null,
@@ -175,6 +190,18 @@ function validateAliases(aliases, nativeExports, nativeFiles) {
 }
 
 function validateFixtures() {
+	const explicitSizeClassFixture =
+		"class={cn(className || (size === undefined ? 'size-4' : ''), klass)}";
+	if (!honorsExplicitSvelteSize(explicitSizeClassFixture)) {
+		throw new Error('Explicit Svelte size fixture was not accepted');
+	}
+	if (honorsExplicitSvelteSize("class={cn(className || 'size-4', klass)}")) {
+		throw new Error('Svelte default-size override fixture was not rejected');
+	}
+	if (getDefaultSizeClass(explicitSizeClassFixture) !== 'size-4') {
+		throw new Error('Conditional default Svelte size was not detected');
+	}
+
 	const validFixture = {
 		icons: [
 			{
@@ -239,6 +266,13 @@ function walkSourceFiles(directory) {
 
 function classifyIcon(name) {
 	const normalized = name.toLowerCase();
+	const customFamilies = {
+		aicenter: 'status',
+		employeeaffairs: 'people',
+		financesystem: 'data',
+		studentaffairs: 'people',
+		templatelibrary: 'education',
+	};
 	const familyRules = [
 		['brand', /\b(logo|github|youtube)\b/],
 		['navigation', /(arrow|chevron|bars|menu|sidebar|home|grid|collapse|expand|maximize|restore)/],
@@ -251,7 +285,10 @@ function classifyIcon(name) {
 		['security', /(lock|key|face-id|sign-out)/],
 		['actions', /(plus|minus|x-mark|check|edit|pencil|pen|trash|garbage|refresh|reset|undo|download|upload|arrow-path|search|funnel|adjustment|setting|cog|wrench)/],
 	];
-	const family = familyRules.find(([, pattern]) => pattern.test(normalized))?.[0] ?? 'utility';
+	const family =
+		customFamilies[normalized] ??
+		familyRules.find(([, pattern]) => pattern.test(normalized))?.[0] ??
+		'utility';
 	const variant = /solid/i.test(name) ? 'solid' : /outline/i.test(name) ? 'outline' : 'default';
 	return {
 		family,
@@ -343,6 +380,9 @@ const icons = [...allNames]
 			if (svelte?.defaultStrokeWidth !== '1.75') errors.push(`Unexpected Svelte default stroke for ${name}`);
 			if (native?.defaultSize !== 16) errors.push(`Unexpected native default size for ${name}`);
 			if (native?.defaultStrokeWidth !== '1.75') errors.push(`Unexpected native default stroke for ${name}`);
+		}
+		if (!svelte?.honorsExplicitSize) {
+			errors.push(`Explicit Svelte size is overridden by the default class for ${name}`);
 		}
 		if (!['Github', 'Logo', 'Youtube'].includes(name)) {
 			if (svelte?.defaultLineCap !== 'round') errors.push(`Unexpected Svelte default line cap for ${name}`);

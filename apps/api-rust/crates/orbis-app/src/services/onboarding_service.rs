@@ -164,10 +164,15 @@ pub struct ProvisionDefaultsRequest {
     pub academic_year_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
+    /// Whether to create sample classes. Defaults to **false** (opt-in demo data).
     pub provision_stages_and_grades: Option<bool>,
+    /// Whether to create sample subjects. Defaults to **false** (opt-in demo data).
     pub provision_subjects: Option<bool>,
     pub provision_assessment_scheme: Option<bool>,
+    /// Whether to create a tuition fee template. Defaults to true.
     pub provision_tuition_fee_template: Option<bool>,
+    /// Whether to create discount templates. Defaults to **false** (opt-in demo data).
+    pub provision_discount_templates: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -398,12 +403,22 @@ impl OnboardingService {
         ));
 
         // Task 5: Academic Periods / Terms & Monthly Periods
-        let min_periods_required = match inst_type {
-            InstitutionType::School => 2,
-            InstitutionType::University => 2,
-            InstitutionType::Institute => 1,
+        // For schools, validate the full hierarchy: at least 2 terms, each with monthly children
+        let has_periods = match inst_type {
+            InstitutionType::School => {
+                let terms: Vec<_> = periods.iter().filter(|p| p.parent_id.is_none() && p.period_type == PeriodType::Semester).collect();
+                let has_children = terms.iter().all(|t| {
+                    periods.iter().any(|p| p.parent_id == Some(t.id))
+                });
+                terms.len() >= 2 && has_children
+            }
+            InstitutionType::University => {
+                periods.iter().filter(|p| p.parent_id.is_none() && p.period_type == PeriodType::Semester).count() >= 2
+            }
+            InstitutionType::Institute => {
+                !periods.is_empty()
+            }
         };
-        let has_periods = periods.len() >= min_periods_required;
         let period_progress = if has_periods {
             100
         } else if !periods.is_empty() {
@@ -1075,10 +1090,10 @@ impl OnboardingService {
             self.year_repo.save(&year).await?;
             created_items.push("Active Academic Year".to_string());
 
-            // Create Terms and Monthly Periods for School
+            // Create Terms, Monthly Periods & Exam Periods for School
             match inst_type {
                 InstitutionType::School => {
-                    // Term 1 (Sep - Jan)
+                    // ── Term 1 (Sep - Jan) ────────────────────
                     let t1_id = Uuid::new_v4();
                     let t1_start = start_date;
                     let t1_end = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 31)
@@ -1119,7 +1134,76 @@ impl OnboardingService {
                     };
                     self.period_repo.save(&t1).await?;
 
-                    // Term 2 (Feb - Jun)
+                    // ── Term 1 Monthly Periods (3 months) + Exam ──
+                    let t1_months: Vec<(u32, u32, &str, &str, &str)> = vec![
+                        (current_year_num as u32, 9, "M1", "Month 1", "الشهر الأول"),
+                        (current_year_num as u32, 10, "M2", "Month 2", "الشهر الثاني"),
+                        (current_year_num as u32, 11, "M3", "Month 3", "الشهر الثالث"),
+                    ];
+                    for (idx, (yr, mon, code, name_en, name_ar)) in t1_months.iter().enumerate() {
+                        let m_start = chrono::NaiveDate::from_ymd_opt(*yr as i32, *mon, 1)
+                            .unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+                        let last_day = if *mon == 12 { 31 } else {
+                            chrono::NaiveDate::from_ymd_opt(*yr as i32, *mon + 1, 1)
+                                .unwrap().pred_opt().unwrap().day()
+                        };
+                        let m_end = chrono::NaiveDate::from_ymd_opt(*yr as i32, *mon, last_day)
+                            .unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+                        let mp = AcademicPeriod {
+                            id: Uuid::new_v4(),
+                            org_id,
+                            year_id,
+                            parent_id: Some(t1_id),
+                            name: name_en.to_string(),
+                            name_ar: Some(name_ar.to_string()),
+                            code: Some(code.to_string()),
+                            period_type: PeriodType::Month,
+                            period_kind: PeriodKind::Teaching,
+                            state: if idx == 0 { AcademicPeriodState::ActiveTeaching } else { AcademicPeriodState::Planning },
+                            start_date: m_start,
+                            end_date: m_end,
+                            hijri_start: None, hijri_end: None,
+                            enrollment_starts_at: None, enrollment_ends_at: None, is_enrollment_open: false,
+                            grade_entry_starts_at: None, grade_entry_ends_at: None,
+                            is_grade_entry_open: idx == 0,
+                            exam_starts_at: None, exam_ends_at: None,
+                            is_locked: false, locked_at: None, locked_by: None,
+                            sort_order: Some((idx + 1) as i32),
+                            metadata: None,
+                            created_at: now, updated_at: now,
+                        };
+                        self.period_repo.save(&mp).await?;
+                    }
+                    // Term 1 Exam Period
+                    let t1_exam_start = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 1)
+                        .unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+                    let t1_exam_end = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 1, 20)
+                        .unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+                    let t1_exam = AcademicPeriod {
+                        id: Uuid::new_v4(),
+                        org_id,
+                        year_id,
+                        parent_id: Some(t1_id),
+                        name: "Term 1 Examination".to_string(),
+                        name_ar: Some("اختبار الفصل الأول".to_string()),
+                        code: Some("T1-EXAM".to_string()),
+                        period_type: PeriodType::Month,
+                        period_kind: PeriodKind::Examination,
+                        state: AcademicPeriodState::Planning,
+                        start_date: t1_exam_start,
+                        end_date: t1_exam_end,
+                        hijri_start: None, hijri_end: None,
+                        enrollment_starts_at: None, enrollment_ends_at: None, is_enrollment_open: false,
+                        grade_entry_starts_at: None, grade_entry_ends_at: None, is_grade_entry_open: false,
+                        exam_starts_at: Some(t1_exam_start), exam_ends_at: Some(t1_exam_end),
+                        is_locked: false, locked_at: None, locked_by: None,
+                        sort_order: Some(4),
+                        metadata: None,
+                        created_at: now, updated_at: now,
+                    };
+                    self.period_repo.save(&t1_exam).await?;
+
+                    // ── Term 2 (Feb - Jun) ────────────────────
                     let t2_id = Uuid::new_v4();
                     let t2_start = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 2, 1)
                         .unwrap()
@@ -1159,7 +1243,74 @@ impl OnboardingService {
                         updated_at: now,
                     };
                     self.period_repo.save(&t2).await?;
-                    created_items.push("Terms (Term 1 & Term 2)".to_string());
+
+                    // ── Term 2 Monthly Periods (3 months) + Exam ──
+                    let t2_months: Vec<(u32, u32, &str, &str, &str)> = vec![
+                        (current_year_num as u32 + 1, 2, "M4", "Month 4", "الشهر الرابع"),
+                        (current_year_num as u32 + 1, 3, "M5", "Month 5", "الشهر الخامس"),
+                        (current_year_num as u32 + 1, 4, "M6", "Month 6", "الشهر السادس"),
+                    ];
+                    for (idx, (yr, mon, code, name_en, name_ar)) in t2_months.iter().enumerate() {
+                        let m_start = chrono::NaiveDate::from_ymd_opt(*yr as i32, *mon, 1)
+                            .unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+                        let last_day = chrono::NaiveDate::from_ymd_opt(*yr as i32, *mon + 1, 1)
+                            .unwrap().pred_opt().unwrap().day();
+                        let m_end = chrono::NaiveDate::from_ymd_opt(*yr as i32, *mon, last_day)
+                            .unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+                        let mp = AcademicPeriod {
+                            id: Uuid::new_v4(),
+                            org_id,
+                            year_id,
+                            parent_id: Some(t2_id),
+                            name: name_en.to_string(),
+                            name_ar: Some(name_ar.to_string()),
+                            code: Some(code.to_string()),
+                            period_type: PeriodType::Month,
+                            period_kind: PeriodKind::Teaching,
+                            state: AcademicPeriodState::Planning,
+                            start_date: m_start,
+                            end_date: m_end,
+                            hijri_start: None, hijri_end: None,
+                            enrollment_starts_at: None, enrollment_ends_at: None, is_enrollment_open: false,
+                            grade_entry_starts_at: None, grade_entry_ends_at: None, is_grade_entry_open: false,
+                            exam_starts_at: None, exam_ends_at: None,
+                            is_locked: false, locked_at: None, locked_by: None,
+                            sort_order: Some((idx + 1) as i32),
+                            metadata: None,
+                            created_at: now, updated_at: now,
+                        };
+                        self.period_repo.save(&mp).await?;
+                    }
+                    // Term 2 Exam Period
+                    let t2_exam_start = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 5, 15)
+                        .unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+                    let t2_exam_end = chrono::NaiveDate::from_ymd_opt(current_year_num + 1, 6, 5)
+                        .unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+                    let t2_exam = AcademicPeriod {
+                        id: Uuid::new_v4(),
+                        org_id,
+                        year_id,
+                        parent_id: Some(t2_id),
+                        name: "Term 2 Examination".to_string(),
+                        name_ar: Some("اختبار الفصل الثاني".to_string()),
+                        code: Some("T2-EXAM".to_string()),
+                        period_type: PeriodType::Month,
+                        period_kind: PeriodKind::Examination,
+                        state: AcademicPeriodState::Planning,
+                        start_date: t2_exam_start,
+                        end_date: t2_exam_end,
+                        hijri_start: None, hijri_end: None,
+                        enrollment_starts_at: None, enrollment_ends_at: None, is_enrollment_open: false,
+                        grade_entry_starts_at: None, grade_entry_ends_at: None, is_grade_entry_open: false,
+                        exam_starts_at: Some(t2_exam_start), exam_ends_at: Some(t2_exam_end),
+                        is_locked: false, locked_at: None, locked_by: None,
+                        sort_order: Some(4),
+                        metadata: None,
+                        created_at: now, updated_at: now,
+                    };
+                    self.period_repo.save(&t2_exam).await?;
+
+                    created_items.push("Terms with Monthly Periods & Exam Sessions (T1: 3 months + exam, T2: 3 months + exam)".to_string());
                 }
                 InstitutionType::University => {
                     // Semester 1 (Fall)
@@ -1288,7 +1439,7 @@ impl OnboardingService {
             .subject_repo
             .list(org_id, SubjectFilter::default())
             .await?;
-        if existing_subjects.total_count == 0 && req.provision_subjects.unwrap_or(true) {
+        if existing_subjects.total_count == 0 && req.provision_subjects.unwrap_or(false) {
             let sample_subjects = match inst_type {
                 InstitutionType::School => vec![
                     ("MATH", "Mathematics", Some("الرياضيات"), true, 5),
@@ -1389,7 +1540,7 @@ impl OnboardingService {
 
         // 4. Provision Starter Classes if requested & empty
         let existing_classes = self.class_repo.list(org_id, ClassFilter::default()).await?;
-        if existing_classes.total_count == 0 && req.provision_stages_and_grades.unwrap_or(true) {
+        if existing_classes.total_count == 0 && req.provision_stages_and_grades.unwrap_or(false) {
             let active_period = self
                 .period_repo
                 .find_by_year(active_year_id)
@@ -1473,11 +1624,15 @@ impl OnboardingService {
             }
         }
 
-        // 5. Provision Standard 100-pt Assessment Scheme if requested & empty
+        // 5. Provision Assessment Schemes if requested & empty
         let existing_schemes = self.assessment_scheme_repo.find_by_org(org_id).await?;
         if existing_schemes.is_empty() && req.provision_assessment_scheme.unwrap_or(true) {
             let scheme = match inst_type {
                 InstitutionType::School => {
+                    // Also provision the term exam scheme (30 points)
+                    let term_exam_scheme = AssessmentScheme::default_school_term_exam(org_id);
+                    self.assessment_scheme_repo.save(&term_exam_scheme).await?;
+
                     AssessmentScheme {
                         id: Uuid::new_v4(),
                         org_id,
@@ -1607,7 +1762,7 @@ impl OnboardingService {
                 name: "Annual Academic Tuition".to_string(),
                 name_ar: Some("الرسوم الدراسية السنوية".to_string()),
                 category: "tuition".to_string(),
-                default_amount: Decimal::from(5000),
+                default_amount: Decimal::ZERO, // Placeholder — institution must set actual tuition amount
                 currency_code: org
                     .base_currency_code
                     .clone()
@@ -1626,9 +1781,9 @@ impl OnboardingService {
             created_items.push("Tuition Fee Template".to_string());
         }
 
-        // 7. Provision Standard Discount Templates if empty
+        // 7. Provision Standard Discount Templates if requested & empty (opt-in demo data)
         let existing_discounts = self.discount_template_repo.find_by_org(org_id).await?;
-        if existing_discounts.is_empty() {
+        if existing_discounts.is_empty() && req.provision_discount_templates.unwrap_or(false) {
             let sibling_disc = DiscountTemplate {
                 id: Uuid::new_v4(),
                 org_id,

@@ -1,8 +1,8 @@
 {
-  "iconCount": 206,
+  "iconCount": 211,
   "platformExports": {
-    "svelte": 206,
-    "native": 206
+    "svelte": 211,
+    "native": 211
   },
   "nativeDefaultAliases": [
     {
@@ -31,12 +31,12 @@
     }
   ],
   "platformSourceFiles": {
-    "svelte": 206,
-    "native": 206
+    "svelte": 211,
+    "native": 211
   },
   "usage": {
     "desktop": {
-      "distinctIcons": 127,
+      "distinctIcons": 132,
       "importedIcons": [
         {
           "name": "Plus",
@@ -75,8 +75,8 @@
         },
         {
           "name": "Sparkles",
-          "count": 39,
-          "files": 39
+          "count": 38,
+          "files": 38
         },
         {
           "name": "Trash",
@@ -100,16 +100,16 @@
         },
         {
           "name": "Users",
-          "count": 31,
-          "files": 31
-        },
-        {
-          "name": "DocumentPage",
           "count": 30,
           "files": 30
         },
         {
           "name": "Check",
+          "count": 29,
+          "files": 29
+        },
+        {
+          "name": "DocumentPage",
           "count": 29,
           "files": 29
         },
@@ -239,11 +239,6 @@
           "files": 10
         },
         {
-          "name": "UserGroup",
-          "count": 10,
-          "files": 10
-        },
-        {
           "name": "ArrowUpTray",
           "count": 9,
           "files": 9
@@ -255,6 +250,11 @@
         },
         {
           "name": "Pin",
+          "count": 9,
+          "files": 9
+        },
+        {
+          "name": "UserGroup",
           "count": 9,
           "files": 9
         },
@@ -284,11 +284,6 @@
           "files": 7
         },
         {
-          "name": "Banknotes",
-          "count": 7,
-          "files": 7
-        },
-        {
           "name": "Expand",
           "count": 7,
           "files": 7
@@ -310,6 +305,11 @@
         },
         {
           "name": "ArchiveBox",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "Banknotes",
           "count": 6,
           "files": 6
         },
@@ -559,6 +559,11 @@
           "files": 2
         },
         {
+          "name": "AiCenter",
+          "count": 1,
+          "files": 1
+        },
+        {
           "name": "ArrowRightTag",
           "count": 1,
           "files": 1
@@ -590,6 +595,16 @@
         },
         {
           "name": "CursorArrowRays",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "EmployeeAffairs",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "FinanceSystem",
           "count": 1,
           "files": 1
         },
@@ -664,7 +679,17 @@
           "files": 1
         },
         {
+          "name": "StudentAffairs",
+          "count": 1,
+          "files": 1
+        },
+        {
           "name": "Sun",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "TemplateLibrary",
           "count": 1,
           "files": 1
         },
@@ -877,6 +902,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -909,6 +935,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -943,6 +970,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -975,6 +1003,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -996,6 +1025,41 @@
       }
     },
     {
+      "name": "AiCenter",
+      "files": {
+        "svelte": "ai-center",
+        "native": "ai-center"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "honorsExplicitSize": true,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 2,
+          "circle": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 2,
+          "circle": 2
+        }
+      }
+    },
+    {
       "name": "AlignHorizontal",
       "files": {
         "svelte": "align-horizontal",
@@ -1007,6 +1071,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1039,6 +1104,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1071,6 +1137,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1103,6 +1170,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1135,6 +1203,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1167,6 +1236,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1199,6 +1269,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1231,6 +1302,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1263,6 +1335,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1295,6 +1368,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1327,6 +1401,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1359,6 +1434,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1391,6 +1467,7 @@
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1423,6 +1500,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1455,6 +1533,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1487,6 +1566,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1519,6 +1599,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1551,6 +1632,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1583,6 +1665,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1615,6 +1698,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1647,6 +1731,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1679,6 +1764,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1711,6 +1797,7 @@
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1743,6 +1830,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1775,6 +1863,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1807,6 +1896,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1839,6 +1929,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1871,6 +1962,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1903,6 +1995,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1935,6 +2028,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1967,6 +2061,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -1999,6 +2094,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2031,6 +2127,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2063,6 +2160,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2095,6 +2193,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2127,6 +2226,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2159,6 +2259,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2191,6 +2292,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2223,6 +2325,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2255,6 +2358,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2287,6 +2391,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2319,6 +2424,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2351,6 +2457,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2383,6 +2490,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2415,6 +2523,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2447,6 +2556,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2479,6 +2589,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2511,6 +2622,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2545,6 +2657,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2577,6 +2690,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2609,6 +2723,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2641,6 +2756,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2673,6 +2789,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2705,6 +2822,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2737,6 +2855,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2769,6 +2888,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2801,6 +2921,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2833,6 +2954,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2865,6 +2987,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2897,6 +3020,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2929,6 +3053,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2961,6 +3086,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -2993,6 +3119,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3025,6 +3152,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3057,6 +3185,7 @@
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3089,6 +3218,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3121,6 +3251,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3153,6 +3284,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3185,6 +3317,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3217,6 +3350,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3249,6 +3383,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3281,6 +3416,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3313,6 +3449,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3345,6 +3482,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3377,6 +3515,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3409,6 +3548,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3441,6 +3581,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3473,6 +3614,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3505,6 +3647,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3537,6 +3680,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3569,6 +3713,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3601,6 +3746,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3633,6 +3779,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3665,6 +3812,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3697,6 +3845,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3729,6 +3878,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3761,6 +3911,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3782,6 +3933,43 @@
       }
     },
     {
+      "name": "EmployeeAffairs",
+      "files": {
+        "svelte": "employee-affairs",
+        "native": "employee-affairs"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "honorsExplicitSize": true,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "rect": 1,
+          "circle": 1,
+          "path": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "rect": 1,
+          "circle": 1,
+          "path": 1
+        }
+      }
+    },
+    {
       "name": "Expand",
       "files": {
         "svelte": "expand",
@@ -3793,6 +3981,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3825,6 +4014,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3857,6 +4047,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3889,6 +4080,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3921,6 +4113,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3953,6 +4146,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -3985,6 +4179,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4006,6 +4201,41 @@
       }
     },
     {
+      "name": "FinanceSystem",
+      "files": {
+        "svelte": "finance-system",
+        "native": "finance-system"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "honorsExplicitSize": true,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 3,
+          "circle": 1
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 3,
+          "circle": 1
+        }
+      }
+    },
+    {
       "name": "FloppyDisk",
       "files": {
         "svelte": "floppy-disk",
@@ -4017,6 +4247,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4049,6 +4280,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4081,6 +4313,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4113,6 +4346,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4145,6 +4379,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4177,6 +4412,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": null,
         "defaultLineJoin": null,
@@ -4209,6 +4445,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4241,6 +4478,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4273,6 +4511,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4305,6 +4544,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4337,6 +4577,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4369,6 +4610,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4401,6 +4643,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4433,6 +4676,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4465,6 +4709,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4497,6 +4742,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4529,6 +4775,7 @@
       "svelte": {
         "viewBox": "0 0 22 22",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4561,6 +4808,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4593,6 +4841,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4627,6 +4876,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4659,6 +4909,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4691,6 +4942,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4723,6 +4975,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4755,6 +5008,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4787,6 +5041,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4819,6 +5074,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4851,6 +5107,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4883,6 +5140,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4915,6 +5173,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4947,6 +5206,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -4979,6 +5239,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5011,6 +5272,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5043,6 +5305,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5075,6 +5338,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5107,6 +5371,7 @@
       "svelte": {
         "viewBox": "0 0 642 660",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": null,
         "defaultLineCap": null,
         "defaultLineJoin": null,
@@ -5139,6 +5404,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5171,6 +5437,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5203,6 +5470,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5235,6 +5503,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5267,6 +5536,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5301,6 +5571,7 @@
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5333,6 +5604,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5365,6 +5637,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5397,6 +5670,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5429,6 +5703,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5461,6 +5736,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5493,6 +5769,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5525,6 +5802,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5557,6 +5835,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5589,6 +5868,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5621,6 +5901,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5653,6 +5934,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5685,6 +5967,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5717,6 +6000,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5749,6 +6033,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5781,6 +6066,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5813,6 +6099,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5845,6 +6132,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5877,6 +6165,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5909,6 +6198,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5941,6 +6231,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -5973,6 +6264,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6005,6 +6297,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6037,6 +6330,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6069,6 +6363,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6101,6 +6396,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6133,6 +6429,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6165,6 +6462,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6199,6 +6497,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6231,6 +6530,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6265,6 +6565,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6297,6 +6598,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6329,6 +6631,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6361,6 +6664,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6393,6 +6697,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6425,6 +6730,7 @@
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6457,6 +6763,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6489,6 +6796,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6521,6 +6829,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6553,6 +6862,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6585,6 +6895,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6606,6 +6917,39 @@
       }
     },
     {
+      "name": "StudentAffairs",
+      "files": {
+        "svelte": "student-affairs",
+        "native": "student-affairs"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "honorsExplicitSize": true,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 3
+        }
+      }
+    },
+    {
       "name": "Sun",
       "files": {
         "svelte": "sun",
@@ -6617,6 +6961,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6651,6 +6996,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6685,6 +7031,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6706,6 +7053,39 @@
       }
     },
     {
+      "name": "TemplateLibrary",
+      "files": {
+        "svelte": "template-library",
+        "native": "template-library"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "honorsExplicitSize": true,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 2
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
       "name": "Terminal",
       "files": {
         "svelte": "terminal",
@@ -6717,6 +7097,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6749,6 +7130,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6781,6 +7163,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6813,6 +7196,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6845,6 +7229,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6877,6 +7262,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6909,6 +7295,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6941,6 +7328,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -6973,6 +7361,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7007,6 +7396,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7039,6 +7429,7 @@
       "svelte": {
         "viewBox": "0 0 16 16",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7071,6 +7462,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7103,6 +7495,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7135,6 +7528,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7167,6 +7561,7 @@
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7199,6 +7594,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7233,6 +7629,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7265,6 +7662,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7297,6 +7695,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7329,6 +7728,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7361,6 +7761,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7393,6 +7794,7 @@
       "svelte": {
         "viewBox": "0 0 20 20",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",
@@ -7425,6 +7827,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": null,
         "defaultLineJoin": null,
@@ -7457,6 +7860,7 @@
       "svelte": {
         "viewBox": "0 0 24 24",
         "defaultSize": 16,
+        "honorsExplicitSize": true,
         "defaultColor": "currentColor",
         "defaultLineCap": "round",
         "defaultLineJoin": "round",

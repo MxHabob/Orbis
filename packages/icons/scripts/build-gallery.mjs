@@ -141,5 +141,5 @@ const html = `<!doctype html>
 </html>
 `;
 
-fs.writeFileSync(outputPath, html);
+fs.writeFileSync(outputPath, html.replace(/[ \t]+(?=\r?$)/gm, ''));
 console.log(`Generated visual gallery for ${icons.length} icons at ${path.relative(packageRoot, outputPath)}`);
