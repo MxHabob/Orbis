@@ -81,8 +81,8 @@ export function getBulkEntryGridColumns<T>(
 ): BulkImportProfile<T, any>["gridColumns"] {
   return profile.gridColumns.map((column) => {
     const header =
-      columnHeaders[profile.id][column.id]?.() ??
-      gridHeaders[column.id]?.() ??
+      (column.id ? columnHeaders[profile.id]?.[column.id]?.() : undefined) ??
+      (column.id ? gridHeaders[column.id]?.() : undefined) ??
       column.header;
     const options = column.options?.map((option) => ({
       ...option,

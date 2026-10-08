@@ -27,9 +27,9 @@ export interface HomeProps extends SvgProps {
 }
 
 export function Home({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: HomeProps) {
@@ -42,9 +42,10 @@ export function Home({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		stroke="currentColor"
 		strokeLinecap="round"

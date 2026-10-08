@@ -3,6 +3,7 @@
   Searchable multi-user selection dialog for bulk assigning users to a user group.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import {
   Dialog,
@@ -164,7 +165,7 @@ async function handleAssign() {
       <div class="flex-1 min-h-0 overflow-y-auto border border-border/70 rounded-lg divide-y divide-border/40 bg-card">
         {#if employeesQuery.isLoading}
           <div class="p-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-            <ArrowPath size={14} class="animate-spin text-primary" />
+            <LoadingIndicator class="text-primary"  size={14} />
             <span>{m.ui_copy_loading_users_8a49770d()}</span>
           </div>
         {:else if candidates.length === 0}
@@ -236,7 +237,7 @@ async function handleAssign() {
         onclick={handleAssign}
       >
         {#if bulkAssignMutation.isPending}
-          <ArrowPath size={13} class="animate-spin me-1" />
+          <LoadingIndicator class="me-1"  size={13} />
         {/if}
         {m.groups_bulk_assign()} ({selectedUserIds.size})
       </Button>

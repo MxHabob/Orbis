@@ -4,6 +4,7 @@
   Reusable across AI Center Settings, General Settings, Academic Policies, and other configuration hubs.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
@@ -19,6 +20,9 @@ interface Props {
   resetLabel?: string;
   message?: string;
   showReset?: boolean;
+  saveVariant?: "default" | "destructive" | "primary" | "secondary" | "lime" | "outline";
+  statusVariant?: "amber" | "rose" | "primary" | "emerald";
+  actions?: import("svelte").Snippet;
   onsave?: () => void;
   onreset?: () => void;
 }
@@ -32,6 +36,9 @@ let {
   resetLabel,
   message,
   showReset = true,
+  saveVariant = "default",
+  statusVariant = "amber",
+  actions,
   onsave,
   onreset,
 }: Props = $props();
@@ -51,49 +58,70 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
 
 {#if visible && isDirty}
   <div
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md pointer-events-auto select-none"
+    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg pointer-events-auto select-none"
     transition:fly={{ y: 35, duration: 250, easing: quintOut }}
   >
-    <div class="bg-card border border-border shadow-lg rounded-lg px-3 py-2 flex items-center justify-between gap-3">
-      <!-- Unsaved Changes Status Indicator -->
-      <div class="flex min-w-0 items-center gap-2 text-start">
-        <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-          <InfoCircle size={15} strokeWidth={2} />
-        </span>
-        <span class="truncate text-sm font-medium text-foreground">
+    <div class="bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3">
+      <!-- Status Indicator & Message -->
+      <div class="flex min-w-0 items-center gap-2.5 text-start">
+        {#if statusVariant === "rose"}
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400">
+            <InfoCircle size={15} strokeWidth={2} />
+          </span>
+        {:else if statusVariant === "emerald"}
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <InfoCircle size={15} strokeWidth={2} />
+          </span>
+        {:else if statusVariant === "primary"}
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <InfoCircle size={15} strokeWidth={2} />
+          </span>
+        {:else}
+          <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-500">
+            <InfoCircle size={15} strokeWidth={2} />
+          </span>
+        {/if}
+        <span class="truncate text-xs sm:text-sm font-medium text-foreground">
           {displayMessage}
         </span>
       </div>
 
       <!-- Action Buttons -->
       <div class="flex shrink-0 items-center gap-1.5">
-        {#if showReset && onreset}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            class="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-            disabled={isSaving}
-            onclick={onreset}
-          >
-            {displayResetLabel}
-          </Button>
-        {/if}
-
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          class="h-8 px-3 text-xs font-medium shadow-xs cursor-pointer"
-          disabled={isSaving}
-          onclick={onsave}
-        >
-          {#if isSaving}
-            <ArrowPath size={13} class="animate-spin me-1.5" />
-          {:else}
-            {displaySaveLabel}
+        {#if actions}
+          {@render actions()}
+        {:else}
+          {#if showReset && onreset}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+              disabled={isSaving}
+              onclick={onreset}
+            >
+              {displayResetLabel}
+            </Button>
           {/if}
-        </Button>
+
+          {#if onsave}
+            <Button
+              type="button"
+              variant={saveVariant}
+              size="sm"
+              class="h-8 px-3 text-xs font-semibold shadow-xs cursor-pointer"
+              disabled={isSaving}
+              onclick={onsave}
+            >
+              {#if isSaving}
+                <LoadingIndicator class="me-1.5"  size={13} />
+                <span>{displaySavingLabel}</span>
+              {:else}
+                <span>{displaySaveLabel}</span>
+              {/if}
+            </Button>
+          {/if}
+        {/if}
       </div>
 
     </div>

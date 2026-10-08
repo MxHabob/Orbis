@@ -24,6 +24,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@orbis/ui/accordion";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   orgId,
@@ -137,35 +139,24 @@ async function handleSubmit(e: SubmitEvent) {
       <AccordionItem value="structure" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_org_unit_structure()}</AccordionTrigger>
         <AccordionContent>
-    <!-- Names (Arabic & English) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField id="unit_name_ar" label={m.common_org_unit_name_ar()} error={fieldError("name_ar")} required>
-        {#snippet children()}
-        <Input
-          id="unit_name_ar"
-          type="text"
-          bind:value={form.values.name_ar}
-          placeholder={m.common_org_unit_name_ar_placeholder()}
-          required
-          disabled={form.isSubmitting}
-          class="text-xs h-9"
-        />
-        {/snippet}
-      </FormField>
-
-      <FormField id="unit_name_en" label={m.common_org_unit_name_en()} error={fieldError("name")}>
-        {#snippet children()}
-        <Input
-          id="unit_name_en"
-          type="text"
-          bind:value={form.values.name}
-          placeholder={m.common_org_unit_name_en_placeholder()}
-          disabled={form.isSubmitting}
-          class="text-xs h-9"
-        />
-        {/snippet}
-      </FormField>
-    </div>
+    <BilingualNameFields
+      arId="unit_name_ar"
+      enId="unit_name_en"
+      arLabel={m.common_org_unit_name_ar()}
+      enLabel={m.common_org_unit_name_en()}
+      bind:arValue={form.values.name_ar}
+      bind:enValue={form.values.name}
+      arPlaceholder={m.common_org_unit_name_ar_placeholder()}
+      enPlaceholder={m.common_org_unit_name_en_placeholder()}
+      arError={fieldError("name_ar")}
+      enError={fieldError("name")}
+      kind="label"
+      requestSuggestion={suggestLocalTranslation}
+      arRequired
+      disabled={form.isSubmitting}
+      loadingMessage={m.bilingual_entry_loading()}
+      failureMessage={m.bilingual_entry_failure()}
+    />
 
     <!-- Type & Parent -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

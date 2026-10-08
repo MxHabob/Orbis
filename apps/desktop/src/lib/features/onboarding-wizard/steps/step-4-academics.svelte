@@ -1,43 +1,55 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
-import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto } from "$lib/api";
+import { toast } from "@orbis/ui";
+import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto, type OrgUnitDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
+import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmittingSubject = $state(false);
 let isSubmittingClass = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
 let subjects = $state<SubjectDto[]>([]);
 let classes = $state<ClassDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
+let orgUnits = $state<OrgUnitDto[]>([]);
 
 // Subject Creation Form
-let subjectName = $state("Mathematics");
-let subjectNameAr = $state("الرياضيات");
-let subjectCode = $state("MATH-101");
+let subjectName = $state("");
+let subjectNameAr = $state("");
+let subjectCode = $state("");
 let subjectCreditHours = $state("3");
 
 // Class Creation Form
-let className = $state("Grade 1 - Section A");
-let classNameAr = $state("الصف الأول - شعبة (أ)");
-let classCode = $state("G1-A");
-let classGrade = $state("Grade 1");
+let className = $state("");
+let classNameAr = $state("");
+let classGrade = $state("");
 let classCapacity = $state<number>(30);
 let selectedPeriodId = $state<string>("");
+let selectedUnitId = $state<string>("");
 
 const STANDARD_SUBJECTS = [
   { code: "MATH-01", name: "Mathematics", nameAr: "الرياضيات", credits: "4" },
@@ -52,16 +64,48 @@ const STANDARD_SUBJECTS = [
 ];
 
 const STANDARD_CLASSES = [
-  { code: "G1-A", name: "Grade 1 - A", nameAr: "الصف الأول (أ)", grade: "Grade 1" },
-  { code: "G2-A", name: "Grade 2 - A", nameAr: "الصف الثاني (أ)", grade: "Grade 2" },
-  { code: "G3-A", name: "Grade 3 - A", nameAr: "الصف الثالث (أ)", grade: "Grade 3" },
-  { code: "G4-A", name: "Grade 4 - A", nameAr: "الصف الرابع (أ)", grade: "Grade 4" },
-  { code: "G5-A", name: "Grade 5 - A", nameAr: "الصف الخامس (أ)", grade: "Grade 5" },
-  { code: "G6-A", name: "Grade 6 - A", nameAr: "الصف السادس (أ)", grade: "Grade 6" },
+  { name: "Grade 1 - A", nameAr: "الصف الأول (أ)", grade: "Grade 1" },
+  { name: "Grade 2 - A", nameAr: "الصف الثاني (أ)", grade: "Grade 2" },
+  { name: "Grade 3 - A", nameAr: "الصف الثالث (أ)", grade: "Grade 3" },
+  { name: "Grade 4 - A", nameAr: "الصف الرابع (أ)", grade: "Grade 4" },
+  { name: "Grade 5 - A", nameAr: "الصف الخامس (أ)", grade: "Grade 5" },
+  { name: "Grade 6 - A", nameAr: "الصف السادس (أ)", grade: "Grade 6" },
 ];
 
 const stepTasks = $derived(getTasksForStep("academics", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const remainingStandardSubjects = $derived(
+  STANDARD_SUBJECTS.filter(
+    (preset) => !subjects.some((subject) => subject.code.toLowerCase() === preset.code.toLowerCase()),
+  ),
+);
+const remainingStandardClasses = $derived(
+  STANDARD_CLASSES.filter(
+    (preset) =>
+      !classes.some(
+        (classItem) =>
+          String(classItem.unit_id) === selectedUnitId &&
+          String(classItem.period_id) === selectedPeriodId &&
+          (classItem.name.trim().toLowerCase() === preset.name.toLowerCase() ||
+            classItem.name_ar?.trim().toLowerCase() === preset.nameAr.toLowerCase()) &&
+          classItem.level.trim().toLowerCase() === preset.grade.toLowerCase(),
+      ),
+  ),
+);
+
+function applySubjectPreset(subject: typeof STANDARD_SUBJECTS[number]) {
+  subjectName = subject.name;
+  subjectNameAr = subject.nameAr;
+  subjectCode = subject.code;
+  subjectCreditHours = subject.credits;
+}
+
+function applyClassPreset(classPreset: typeof STANDARD_CLASSES[number]) {
+  className = classPreset.name;
+  classNameAr = classPreset.nameAr;
+  classGrade = classPreset.grade;
+  classCapacity = 30;
+}
 
 onMount(async () => {
   await loadData();
@@ -70,20 +114,25 @@ onMount(async () => {
 async function loadData() {
   try {
     isLoading = true;
-    const [subRes, classRes, periodRes] = await Promise.all([
-      api.listSubjects().catch(() => []),
-      api.listClasses().catch(() => []),
-      api.listAcademicPeriods().catch(() => []),
+    const [subRes, classRes, periodRes, unitRes] = await Promise.all([
+      api.listSubjects(),
+      api.listClasses(),
+      api.listAcademicPeriods(),
+      api.listOrgUnits(),
     ]);
     subjects = subRes;
     classes = classRes;
     periods = periodRes;
+    orgUnits = unitRes;
     if (periods.length > 0 && !selectedPeriodId) {
       selectedPeriodId = String(periods[0].id);
     }
+    if (orgUnits.length > 0 && !selectedUnitId) {
+      selectedUnitId = String(orgUnits[0].id);
+    }
   } catch (err: any) {
     console.error("Failed to load academic data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -91,17 +140,22 @@ async function loadData() {
 
 async function handleCreateSubject() {
   if (!subjectName.trim() && !subjectNameAr.trim()) {
-    errorMessage = m.onboarding_step4_subject_err_name();
+    toast.error(m.onboarding_step4_subject_err_name());
+    return;
+  }
+  const resolvedCode =
+    subjectCode.trim() || `SUB-${String(subjects.length + 1).padStart(2, "0")}`;
+  if (subjects.some((subject) => subject.code.toLowerCase() === resolvedCode.toLowerCase())) {
+    toast.error(m.onboarding_step4_subject_duplicate_code());
     return;
   }
 
   isSubmittingSubject = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
     const newSubject = await api.createSubject({
-      code: subjectCode.trim() || `SUB-${subjects.length + 1}`,
+      code: resolvedCode,
       name: subjectName.trim() || subjectNameAr.trim(),
       name_ar: subjectNameAr.trim() || undefined,
       credit_hours: subjectCreditHours,
@@ -111,24 +165,24 @@ async function handleCreateSubject() {
     subjects = [...subjects, newSubject];
     subjectName = "";
     subjectNameAr = "";
-    subjectCode = `SUB-0${subjects.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    subjectCode = "";
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_subject_created_success();
   } catch (err: any) {
     console.error("Failed to create subject:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingSubject = false;
   }
 }
 
 async function handleBatchImportSubjects() {
+  if (remainingStandardSubjects.length === 0) return;
   isSubmittingSubject = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
-    for (const sub of STANDARD_SUBJECTS) {
+    for (const sub of remainingStandardSubjects) {
       const created = await api.createSubject({
         code: sub.code,
         name: sub.name,
@@ -139,11 +193,11 @@ async function handleBatchImportSubjects() {
       subjects = [...subjects, created];
     }
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_subjects_imported_success();
   } catch (err: any) {
     console.error("Failed to import subjects:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingSubject = false;
   }
@@ -151,75 +205,102 @@ async function handleBatchImportSubjects() {
 
 async function handleCreateClass() {
   if (!className.trim() && !classNameAr.trim()) {
-    errorMessage = m.onboarding_step4_class_err_name();
+    toast.error(m.onboarding_step4_class_err_name());
+    return;
+  }
+  if (!selectedUnitId) {
+    toast.error(m.shared_ui_organizational_unit_required());
+    return;
+  }
+  if (!selectedPeriodId) {
+    toast.error(m.shared_ui_academic_period_required());
+    return;
+  }
+  if (!Number.isInteger(classCapacity) || classCapacity <= 0) {
+    toast.error(m.ui_copy_settings_contain_invalid_values_fae2c24c());
+    return;
+  }
+  const resolvedName = className.trim() || classNameAr.trim();
+  const resolvedLevel = classGrade.trim() || "1";
+  if (
+    classes.some(
+      (classItem) =>
+        String(classItem.unit_id) === selectedUnitId &&
+        String(classItem.period_id) === selectedPeriodId &&
+        (classItem.name.trim().toLowerCase() === resolvedName.toLowerCase() ||
+          (!!classNameAr.trim() &&
+            classItem.name_ar?.trim().toLowerCase() === classNameAr.trim().toLowerCase())) &&
+        classItem.level.trim().toLowerCase() === resolvedLevel.toLowerCase(),
+    )
+  ) {
+    toast.error(m.onboarding_step4_class_duplicate());
     return;
   }
 
   isSubmittingClass = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
     const newClass = await api.createClass({
-      name: className.trim() || classNameAr.trim(),
+      unit_id: selectedUnitId,
+      period_id: selectedPeriodId,
+      name: resolvedName,
       name_ar: classNameAr.trim() || undefined,
-      code: classCode.trim() || `CLS-${classes.length + 1}`,
-      period_id: selectedPeriodId || undefined,
-      grade_level: classGrade.trim() || undefined,
-      capacity: classCapacity > 0 ? classCapacity : 30,
+      level: resolvedLevel,
+      capacity: classCapacity,
     });
 
     classes = [...classes, newClass];
     className = "";
     classNameAr = "";
-    classCode = `CLS-0${classes.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    classGrade = "";
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
     console.error("Failed to create class:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingClass = false;
   }
 }
 
 async function handleBatchImportClasses() {
+  if (!selectedUnitId || !selectedPeriodId) {
+    toast.error(
+      !selectedUnitId
+        ? m.shared_ui_organizational_unit_required()
+        : m.shared_ui_academic_period_required(),
+    );
+    return;
+  }
+  const pendingClasses = remainingStandardClasses;
+  if (pendingClasses.length === 0) return;
   isSubmittingClass = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
-    for (const cls of STANDARD_CLASSES) {
+    for (const cls of pendingClasses) {
       const created = await api.createClass({
+        unit_id: selectedUnitId,
+        period_id: selectedPeriodId,
         name: cls.name,
         name_ar: cls.nameAr,
-        code: cls.code,
-        period_id: selectedPeriodId || undefined,
-        grade_level: cls.grade,
+        level: cls.grade,
         capacity: 30,
       });
       classes = [...classes, created];
     }
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_classes_imported_success();
   } catch (err: any) {
     console.error("Failed to import classes:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingClass = false;
   }
 }
 
-async function handleContinue() {
-  if (subjects.length === 0 && subjectName.trim()) {
-    await handleCreateSubject();
-  }
-  if (classes.length === 0 && className.trim()) {
-    await handleCreateClass();
-  }
-  await goto(`/${orgId}/onboarding/finance`);
-}
 </script>
 
 <div class="space-y-6">
@@ -231,12 +312,6 @@ async function handleContinue() {
     status={isTaskComplete ? "completed" : subjects.length > 0 || classes.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -247,7 +322,7 @@ async function handleContinue() {
 
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
-      <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+      <LoadingIndicator size={16} class="size-4 text-primary" />
       <span>{m.common_control_loading()}</span>
     </div>
   {:else}
@@ -259,50 +334,53 @@ async function handleContinue() {
       isComplete={subjects.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Batch Import -->
-        {#if subjects.length === 0}
-          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-semibold text-foreground">
-                📚 {m.onboarding_step4_quick_subjects()}
-              </div>
-              <p class="text-xs text-muted-foreground">
-                {m.onboarding_step4_quick_subjects_desc()}
-              </p>
-            </div>
+        <OnboardingPresetBar
+          title={m.onboarding_step4_quick_subjects()}
+          description={m.onboarding_step4_quick_subjects_desc()}
+        >
+          {#each STANDARD_SUBJECTS as subject (subject.code)}
             <Button
               variant="outline"
               size="sm"
               disabled={isSubmittingSubject}
+              onclick={() => applySubjectPreset(subject)}
+              class="text-xs"
+            >
+              {l(subject.nameAr, subject.name)}
+            </Button>
+          {/each}
+          {#if remainingStandardSubjects.length > 0}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isSubmittingSubject}
               onclick={handleBatchImportSubjects}
-              class="text-xs bg-background shrink-0 font-semibold"
+              class="text-xs"
             >
               {m.onboarding_step4_import_subjects_btn()}
             </Button>
-          </div>
-        {/if}
+          {/if}
+        </OnboardingPresetBar>
 
         <!-- Subject Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_subject_name_en()}
-              </Label>
-              <Input
-                bind:value={subjectName}
-                placeholder={m.onboarding_step4_subject_name_en_placeholder()}
-                dir="ltr"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_subject_name_ar()}
-              </Label>
-              <Input
-                bind:value={subjectNameAr}
-                placeholder={m.onboarding_step4_subject_name_ar_placeholder()}
-                dir="rtl"
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-subject-name-ar"
+                enId="onboarding-subject-name-en"
+                arLabel={m.onboarding_step4_subject_name_ar()}
+                enLabel={m.onboarding_step4_subject_name_en()}
+                bind:arValue={subjectNameAr}
+                bind:enValue={subjectName}
+                arPlaceholder={m.onboarding_step4_subject_name_ar_placeholder()}
+                enPlaceholder={m.onboarding_step4_subject_name_en_placeholder()}
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmittingSubject}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
               />
             </div>
             <div class="space-y-1.5">
@@ -311,8 +389,7 @@ async function handleContinue() {
               </Label>
               <Input
                 bind:value={subjectCode}
-                placeholder="MATH-101"
-                dir="ltr"
+                placeholder="MATH-01"
                 class="font-mono text-xs"
               />
             </div>
@@ -377,50 +454,94 @@ async function handleContinue() {
       isComplete={classes.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Batch Import Classes -->
-        {#if classes.length === 0}
-          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-semibold text-foreground">
-                👥 {m.onboarding_step4_quick_classes()}
-              </div>
-              <p class="text-xs text-muted-foreground">
-                {m.onboarding_step4_quick_classes_desc()}
-              </p>
-            </div>
+        <OnboardingPresetBar
+          title={m.onboarding_step4_quick_classes()}
+          description={m.onboarding_step4_quick_classes_desc()}
+        >
+          {#each STANDARD_CLASSES as classPreset (classPreset.code)}
             <Button
               variant="outline"
               size="sm"
               disabled={isSubmittingClass}
+              onclick={() => applyClassPreset(classPreset)}
+              class="text-xs"
+            >
+              {l(classPreset.nameAr, classPreset.name)}
+            </Button>
+          {/each}
+          {#if remainingStandardClasses.length > 0}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isSubmittingClass}
               onclick={handleBatchImportClasses}
-              class="text-xs bg-background shrink-0 font-semibold"
+              class="text-xs"
             >
               {m.onboarding_step4_import_classes_btn()}
             </Button>
-          </div>
-        {/if}
+          {/if}
+        </OnboardingPresetBar>
 
         <!-- Class Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_class_name_en()}
-              </Label>
-              <Input
-                bind:value={className}
-                placeholder={m.onboarding_step4_class_name_en_placeholder()}
-                dir="ltr"
-              />
+              <Label class="text-xs font-medium">{m.common_word_unit()}</Label>
+              <Select
+                type="single"
+                bind:value={selectedUnitId}
+                disabled={orgUnits.length <= 1 || isSubmittingClass}
+              >
+                <SelectTrigger class="w-full">
+                  {orgUnits.find((unit) => String(unit.id) === selectedUnitId)?.name_ar ||
+                    orgUnits.find((unit) => String(unit.id) === selectedUnitId)?.name ||
+                    m.common_word_unit()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each orgUnits as unit (unit.id)}
+                    <SelectItem value={String(unit.id)}>
+                      {unit.name_ar || unit.name}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step4_class_name_ar()}
-              </Label>
-              <Input
-                bind:value={classNameAr}
-                placeholder={m.onboarding_step4_class_name_ar_placeholder()}
-                dir="rtl"
+              <Label class="text-xs font-medium">{m.common_period_form_title_create()}</Label>
+              <Select
+                type="single"
+                bind:value={selectedPeriodId}
+                disabled={periods.length <= 1 || isSubmittingClass}
+              >
+                <SelectTrigger class="w-full">
+                  {periods.find((period) => String(period.id) === selectedPeriodId)?.name ||
+                    m.common_period_form_title_create()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each periods as period (period.id)}
+                    <SelectItem value={String(period.id)}>{period.name}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-class-name-ar"
+                enId="onboarding-class-name-en"
+                arLabel={m.onboarding_step4_class_name_ar()}
+                enLabel={m.onboarding_step4_class_name_en()}
+                bind:arValue={classNameAr}
+                bind:enValue={className}
+                arPlaceholder={m.onboarding_step4_class_name_ar_placeholder()}
+                enPlaceholder={m.onboarding_step4_class_name_en_placeholder()}
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmittingClass}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
               />
             </div>
             <div class="space-y-1.5">
@@ -471,7 +592,14 @@ async function handleContinue() {
                       {cls.name_ar || cls.name}
                     </div>
                     <div class="text-[10px] text-muted-foreground">
-                      {cls.grade_level || "Grade"} | {cls.capacity || 30}
+                      {cls.level} | {cls.capacity || 30}
+                      {#if orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))}
+                        · {orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))?.name_ar ||
+                          orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))?.name}
+                      {/if}
+                      {#if periods.find((period) => String(period.id) === String(cls.period_id))}
+                        · {periods.find((period) => String(period.id) === String(cls.period_id))?.name}
+                      {/if}
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
@@ -485,26 +613,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Actions Bar -->
-    <div class="flex items-center justify-between border-t border-border/50 pt-6">
-      <Button
-        variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding/calendar`)}
-        class="text-xs"
-      >
-        {m.onboarding_step4_back_btn()}
-      </Button>
-
-      <div class="flex items-center gap-3">
-        <Button
-          variant="default"
-          disabled={subjects.length === 0 && classes.length === 0 && !subjectName.trim()}
-          onclick={handleContinue}
-          class="text-xs font-semibold shadow-xs"
-        >
-          {m.onboarding_step4_continue_btn()}
-        </Button>
-      </div>
-    </div>
   {/if}
 </div>

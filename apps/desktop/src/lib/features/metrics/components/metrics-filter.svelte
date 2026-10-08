@@ -12,9 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 import { AdjustmentsHorizontal, ChevronDown } from "@orbis/icons";
-import { onMount } from "svelte";
-import { api } from "$lib/api";
-
+import { createPeriodsQuery, createClassesQuery } from "$lib/features/academics/queries";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {
@@ -29,34 +27,19 @@ let {
   selectedClass: string;
 } = $props();
 
-// Loaded Options
-let terms = $state<any[]>([]);
-let classes = $state<any[]>([]);
+const periodsQuery = createPeriodsQuery(() => orgId);
+const classesQuery = createClassesQuery(() => orgId);
 
-async function loadOptions() {
-  try {
-    // Load Terms (Periods of type 'term')
-    const periods = await api.listAcademicPeriods();
-    terms = periods
-      ? periods.filter(
-          (c) =>
-            c.period_type === "term" ||
-            !c.period_type ||
-            c.period_type === "academic_year",
-        )
-      : [];
+const terms = $derived(
+  (periodsQuery.data ?? []).filter(
+    (c) =>
+      c.period_type === "term" ||
+      !c.period_type ||
+      c.period_type === "academic_year",
+  ),
+);
 
-    // Load Classes
-    const cl = await api.listClasses();
-    classes = cl || [];
-  } catch (e) {
-    console.error("Error loading filter options:", e);
-  }
-}
-
-onMount(() => {
-  loadOptions();
-});
+const classes = $derived(classesQuery.data ?? []);
 
 // Get Labels for indicators
 const periodLabel = $derived(() => {

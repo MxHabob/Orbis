@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
+
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
 }
@@ -35,6 +36,15 @@ pub struct CreateYearInput {
     pub end_date: String,
 }
 
+#[derive(Deserialize)]
+pub struct UpdateYearInput {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub notes: Option<String>,
+}
+
 #[derive(Serialize)]
 pub struct AcademicPeriodDto {
     pub id: String,
@@ -61,10 +71,21 @@ pub struct CreatePeriodInput {
     pub parent_id: Option<String>,
     pub name: String,
     pub name_ar: Option<String>,
+    pub code: Option<String>,
     pub period_type: String,
     pub period_kind: Option<String>,
     pub start_date: String,
     pub end_date: String,
+}
+
+#[derive(Deserialize)]
+pub struct UpdatePeriodInput {
+    pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub code: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub period_kind: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -149,10 +170,104 @@ pub async fn calendar_create_year(
 
     let y = state
         .calendar_service
-        .create_year(&ctx, ctx.tenant_id, request.name, start_date, end_date)
+        .create_year(
+            &ctx,
+            ctx.tenant_id,
+            request.name,
+            request.name_ar,
+            start_date,
+            end_date,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
+    Ok(ok(year_dto(y)))
+}
+
+#[tauri::command]
+pub async fn calendar_update_year(
+    id: String,
+    request: UpdateYearInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicYearDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let start_date = match request.start_date {
+        Some(ref s) => Some(
+            DateTime::parse_from_rfc3339(s)
+                .map(|d| d.with_timezone(&Utc))
+                .map_err(|_| "Invalid start_date format")?,
+        ),
+        None => None,
+    };
+    let end_date = match request.end_date {
+        Some(ref s) => Some(
+            DateTime::parse_from_rfc3339(s)
+                .map(|d| d.with_timezone(&Utc))
+                .map_err(|_| "Invalid end_date format")?,
+        ),
+        None => None,
+    };
+
+    let y = state
+        .calendar_service
+        .update_year(
+            &ctx,
+            uid,
+            request.name,
+            request.name_ar,
+            start_date,
+            end_date,
+            request.notes,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(year_dto(y)))
+}
+
+#[tauri::command]
+pub async fn calendar_activate_year(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicYearDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let y = state
+        .calendar_service
+        .activate_year(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(year_dto(y)))
+}
+
+#[tauri::command]
+pub async fn calendar_close_year(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicYearDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let y = state
+        .calendar_service
+        .close_year(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(year_dto(y)))
+}
+
+#[tauri::command]
+pub async fn calendar_archive_year(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicYearDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let y = state
+        .calendar_service
+        .archive_year(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(year_dto(y)))
 }
 
@@ -206,7 +321,10 @@ pub async fn calendar_create_period(
             year_id,
             parent_id,
             request.name,
+            request.name_ar,
+            request.code,
             request.period_type,
+            request.period_kind,
             start_date,
             end_date,
         )
@@ -214,6 +332,64 @@ pub async fn calendar_create_period(
         .map_err(|e| e.to_string())?;
 
     Ok(ok(period_dto(p)))
+}
+
+#[tauri::command]
+pub async fn calendar_update_period(
+    id: String,
+    request: UpdatePeriodInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<AcademicPeriodDto>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    let start_date = match request.start_date {
+        Some(ref s) => Some(
+            DateTime::parse_from_rfc3339(s)
+                .map(|d| d.with_timezone(&Utc))
+                .map_err(|_| "Invalid start_date format")?,
+        ),
+        None => None,
+    };
+    let end_date = match request.end_date {
+        Some(ref s) => Some(
+            DateTime::parse_from_rfc3339(s)
+                .map(|d| d.with_timezone(&Utc))
+                .map_err(|_| "Invalid end_date format")?,
+        ),
+        None => None,
+    };
+
+    let p = state
+        .calendar_service
+        .update_period(
+            &ctx,
+            uid,
+            request.name,
+            request.name_ar,
+            request.code,
+            start_date,
+            end_date,
+            request.period_kind,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(period_dto(p)))
+}
+
+#[tauri::command]
+pub async fn calendar_delete_period(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    state
+        .calendar_service
+        .delete_period(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(true))
 }
 
 #[tauri::command]

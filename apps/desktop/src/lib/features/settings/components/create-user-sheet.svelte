@@ -8,6 +8,7 @@
   - Zero duplicate Person records (reusing authoritative employee, student & guardian person_id)
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import {
@@ -464,7 +465,11 @@ async function handleSubmit() {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="right" class="w-105 sm:w-125 md:w-140 h-full p-0 flex flex-col overflow-hidden">
+  <Sheet.Content
+    side="end"
+    contentClass="data-[side=end]:w-[min(35rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(35rem,calc(100vw-1rem))]"
+    class="h-full w-full p-0 flex flex-col overflow-hidden"
+  >
     <form
       onsubmit={(e) => {
         e.preventDefault();
@@ -668,7 +673,7 @@ async function handleSubmit() {
 
                   {#if isLoadingGuardians}
                     <div class="flex items-center gap-2 text-xs text-muted-foreground p-2">
-                      <Refresh size={13} class="animate-spin text-primary" />
+                      <LoadingIndicator class="text-primary"  size={13} />
                       <span>{m.ui_copy_loading_registered_guardians_16d08b44()}</span>
                     </div>
                   {:else if selectedGuardianStudentId}
@@ -1019,7 +1024,7 @@ async function handleSubmit() {
           class="flex-1 h-9 text-sm font-semibold cursor-pointer shadow-xs gap-1.5"
         >
           {#if isSubmitting}
-            <Refresh size={14} class="animate-spin" />
+            <LoadingIndicator   size={14} />
             <span>{m.common_state_saving()}</span>
           {:else}
             <Check size={14} />

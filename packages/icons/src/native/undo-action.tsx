@@ -27,9 +27,9 @@ export interface UndoActionProps extends SvgProps {
 }
 
 export function UndoAction({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: UndoActionProps) {
@@ -42,9 +42,10 @@ export function UndoAction({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M5 5V8V11" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
 	<Path
 		d="M8.50005 8C12.5001 8 11.0001 8 15.0001 8C15.0001 8 15.0001 8 15.0001 8C15.0001 8 20.0001 8 20.0001 12.7059C20.0001 18 15.0001 18 15.0001 18C11.5715 18 9.71434 18 6.28577 18"

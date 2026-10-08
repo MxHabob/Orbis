@@ -5,6 +5,7 @@
   Performance-optimized with static module-level Intl instance caching and O(1) preset lookups.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
@@ -38,6 +39,8 @@ import {
 import { AdjustmentsHorizontal, ArrowPath, Check, DocumentChartBar, GlobeAlt, Sparkles } from "@orbis/icons";
 import { currencyInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   open: boolean;
@@ -315,30 +318,24 @@ async function handleSubmit(e: Event) {
         </FormField>
       </div>
 
-      <!-- Names Grid -->
-      <div class="grid grid-cols-2 gap-3">
-        <FormField label={m.common_cycle_form_name()} error={form.errors.name_ar?.[0]}>
-          {#snippet children()}
-          <Input
-            bind:value={nameAr}
-            placeholder={m.settings_ui_currency_arabic_name_example()}
-            class="text-xs h-8"
-            disabled={isSubmitting}
-          />
-          {/snippet}
-        </FormField>
-
-        <FormField label={m.settings_ui_currency_english_name()} error={form.errors.name?.[0]} required>
-          {#snippet children()}
-          <Input
-            bind:value={name}
-            placeholder={m.settings_ui_currency_english_name_example()}
-            class="text-xs h-8"
-            disabled={isSubmitting}
-          />
-          {/snippet}
-        </FormField>
-      </div>
+      <BilingualNameFields
+        arId="currency-name-ar"
+        enId="currency-name-en"
+        arLabel={m.common_cycle_form_name()}
+        enLabel={m.settings_ui_currency_english_name()}
+        bind:arValue={nameAr}
+        bind:enValue={name}
+        arPlaceholder={m.settings_ui_currency_arabic_name_example()}
+        enPlaceholder={m.settings_ui_currency_english_name_example()}
+        arError={form.errors.name_ar?.[0]}
+        enError={form.errors.name?.[0]}
+        kind="label"
+        requestSuggestion={suggestLocalTranslation}
+        enRequired
+        disabled={isSubmitting}
+        loadingMessage={m.bilingual_entry_loading()}
+        failureMessage={m.bilingual_entry_failure()}
+      />
 
           </AccordionContent>
         </AccordionItem>
@@ -439,7 +436,7 @@ async function handleSubmit(e: Event) {
           class="text-xs cursor-pointer gap-1.5 font-bold"
         >
           {#if isSubmitting}
-            <ArrowPath size={12} class="animate-spin" />
+            <LoadingIndicator   size={12} />
           {:else}
             <Check size={12} />
           {/if}

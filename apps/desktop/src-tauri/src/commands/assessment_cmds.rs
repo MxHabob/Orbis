@@ -829,3 +829,87 @@ pub async fn assessment_list_all_behavior(
 
     Ok(ok(records.into_iter().map(behavior_to_dto).collect()))
 }
+
+#[tauri::command]
+pub async fn assessment_get_student_term_results(
+    student_id: String,
+    period_id: String,
+    class_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<orbis_domain::entities::academic_policy::StudentTermReportCard>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
+    let cid = class_id.and_then(|c| Uuid::parse_str(&c).ok());
+
+    let report = state
+        .assessment_service
+        .calculate_student_term_report_card(&ctx, ctx.tenant_id, sid, pid, cid, None)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(report))
+}
+
+#[tauri::command]
+pub async fn assessment_get_student_annual_results(
+    student_id: String,
+    year_id: String,
+    class_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<orbis_domain::entities::academic_policy::StudentAnnualReportCard>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let yid = Uuid::parse_str(&year_id).map_err(|_| "Invalid year ID")?;
+    let cid = class_id.and_then(|c| Uuid::parse_str(&c).ok());
+
+    let report = state
+        .assessment_service
+        .calculate_student_annual_report_card(&ctx, ctx.tenant_id, sid, yid, cid, None)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(report))
+}
+
+#[tauri::command]
+pub async fn assessment_get_class_term_results(
+    class_id: String,
+    period_id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<orbis_domain::entities::academic_policy::StudentTermReportCard>>, String>
+{
+    let ctx = make_ctx(&state);
+    let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
+    let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
+
+    let reports = state
+        .assessment_service
+        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, cid, pid, None)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(reports))
+}
+
+#[tauri::command]
+pub async fn assessment_get_class_annual_results(
+    class_id: String,
+    year_id: String,
+    state: State<'_, AppState>,
+) -> Result<
+    ApiResponse<Vec<orbis_domain::entities::academic_policy::StudentAnnualReportCard>>,
+    String,
+> {
+    let ctx = make_ctx(&state);
+    let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
+    let yid = Uuid::parse_str(&year_id).map_err(|_| "Invalid year ID")?;
+
+    let reports = state
+        .assessment_service
+        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, cid, yid, None)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(reports))
+}

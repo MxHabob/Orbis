@@ -8,8 +8,8 @@ export interface IconProps extends SvgProps {
 }
 
 export const Restore: React.FC<IconProps> = ({
-	size = 24,
-	strokeWidth = 1.5,
+	size = 16,
+	strokeWidth = 1.75,
 	color = 'currentColor',
 	...props
 }) => (
@@ -20,10 +20,9 @@ export const Restore: React.FC<IconProps> = ({
 		fill="none"
 		stroke={color}
 		strokeWidth={strokeWidth}
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		{...props}
-	>
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
 		<Rect x="3" y="7" width="14" height="14" rx="2" />
 		<Path d="M7 4h12a2 2 0 0 1 2 2v12" />
 	</Svg>

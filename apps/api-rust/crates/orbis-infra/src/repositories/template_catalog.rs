@@ -40,7 +40,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
     Ok(())
 }
 
-fn get_master_template_definitions() -> Vec<(
+pub fn get_master_template_definitions() -> Vec<(
     &'static str,
     &'static str,
     &'static str,

@@ -21,18 +21,22 @@
 <svg
 	xmlns="http://www.w3.org/2000/svg"
 	viewBox="0 0 24 24"
-	fill="currentColor"
+	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
-	class={cn(className || 'size-4', klass)}
+	class={cn(className || (size === undefined ? 'size-4' : ''), klass)}
+	stroke-linecap="round"
+	stroke-linejoin="round"
 	aria-hidden="true"
-	{...restProps}
->
+	{...restProps}>
 	<path
 		stroke-linecap="round"
 		stroke-linejoin="round"
-		d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
+		d="M3.5 6.5h4m3 0h10M3.5 12h9m3 0h5m-17 5.5h3m3 0h11"
 	/>
+	<circle cx="9" cy="6.5" r="1.5" />
+	<circle cx="14" cy="12" r="1.5" />
+	<circle cx="8" cy="17.5" r="1.5" />
 </svg>

@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { formatDate } from "$lib/core/i18n";
 /**
  * HistoryPanel — Scrollable undo/redo history.
  * Allows clicking to jump to any history state.
@@ -121,7 +122,7 @@ function jumpToState(index: number) {
               </span>
               {#if cmd.timestamp}
                 <span class="text-[7px] text-muted-foreground/50">
-                  {new Date(cmd.timestamp).toLocaleTimeString(isAr ? "ar" : "en", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  {formatDate(cmd.timestamp, "time", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </span>
               {/if}
             </div>

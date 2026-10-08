@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 import { api } from "$lib/api";
@@ -19,6 +20,7 @@ import { goto } from "$app/navigation";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import CreateUserSheet from "$lib/features/settings/components/create-user-sheet.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -205,25 +207,27 @@ async function handleAction(event: GridActionEvent) {
         bind:filter={activeFilter}
         fields={userFilterFields}
       />
-      <Button variant="ghost" size="icon-sm" onclick={loadUsers} class="text-muted-foreground">
-        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
-      </Button>
-      <Button
-        variant="outline"
-        class="text-xs h-8 px-3 font-medium gap-1.5 cursor-pointer"
-        onclick={() => goto(localizeHref(`/${orgId}/employees`))}
-      >
-        <ShieldCheck size={14} class="text-primary" />
-        <span>{m.employees_nav_title()}</span>
-      </Button>
-      <Button
-        variant="default"
-        class="text-xs h-8 px-3.5 font-semibold gap-1.5 cursor-pointer shadow-xs"
-        onclick={() => (createUserSheetOpen = true)}
-      >
-        <UserPlus size={14} />
-        <span>{m.ui_copy_provision_user_7ee34dd9()}</span>
-      </Button>
+      <SplitActionMenu
+        label={m.ui_copy_provision_user_7ee34dd9()}
+        menuLabel={m.operations_ui_actions()}
+        icon={UserPlus}
+        actions={[
+          {
+            id: "refresh",
+            label: m.operations_ui_refresh(),
+            icon: Refresh,
+            disabled: isLoading,
+            onSelect: loadUsers,
+          },
+          {
+            id: "employees",
+            label: m.employees_nav_title(),
+            icon: ShieldCheck,
+            onSelect: () => goto(localizeHref(`/${orgId}/employees`)),
+          },
+        ]}
+        onprimary={() => (createUserSheetOpen = true)}
+      />
     </div>
   </div>
 

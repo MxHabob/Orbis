@@ -27,9 +27,9 @@ export interface TaskListProps extends SvgProps {
 }
 
 export function TaskList({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: TaskListProps) {
@@ -42,9 +42,10 @@ export function TaskList({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M9 6L20 6"
 		stroke="currentColor"

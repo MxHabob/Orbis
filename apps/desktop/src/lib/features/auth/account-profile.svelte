@@ -9,7 +9,8 @@ import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { themeStore, authStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
-import { getLocale, setLocale } from "$lib/paraglide/runtime";
+import { getLocale } from "$lib/paraglide/runtime";
+import { changeAppLocale } from "$lib/core/i18n";
 
 import {
   AccountDetailsCard,
@@ -49,7 +50,7 @@ async function handleLanguageChange(newLocale: string) {
   selectedLanguage = newLocale;
 
   if (targetLang === getLocale()) return;
-  setLocale(targetLang);
+  await changeAppLocale(targetLang);
 }
 
 function handleThemeChange(theme: "light" | "dark" | "system") {

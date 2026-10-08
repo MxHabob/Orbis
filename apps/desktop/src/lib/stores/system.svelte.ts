@@ -100,6 +100,7 @@ class SystemStore {
   }
 
   async loadReadiness(): Promise<OrganizationReadiness | null> {
+    this.orgReadiness = null;
     try {
       this.orgReadiness = await api.systemGetReadiness();
       return this.orgReadiness;
@@ -140,6 +141,7 @@ class SystemStore {
   }
 
   async loadOnboardingState(orgId?: string): Promise<import("$lib/api/types").OnboardingStateDto | null> {
+    this.onboardingState = null;
     try {
       this.onboardingState = await api.onboardingGetState(orgId);
       return this.onboardingState;
@@ -170,6 +172,7 @@ class SystemStore {
     this.connectionMode = null;
     this.connectionError = null;
     this.orgReadiness = null;
+    this.onboardingState = null;
     this.entitlement = null;
     this.isLoading = false;
   }

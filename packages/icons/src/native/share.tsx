@@ -27,9 +27,9 @@ export interface ShareProps extends SvgProps {
 }
 
 export function Share({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ShareProps) {
@@ -42,9 +42,10 @@ export function Share({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M20 13V19C20 20.1046 19.1046 21 18 21H6C4.89543 21 4 20.1046 4 19V13"
 		strokeLinecap="round"

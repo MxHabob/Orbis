@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { AdjustmentsHorizontal, ArrowPath, ChartBar, CheckCircle, Clock, Lock, LockClosed, Refresh, Users, XMark } from "@orbis/icons";
@@ -107,7 +108,7 @@ let {
             disabled={isPeriodActionLoading}
           >
             {#if isPeriodActionLoading}
-              <ArrowPath size={14} class="animate-spin" />
+              <LoadingIndicator   size={14} />
             {:else}
               <Unlock size={14} />
             {/if}
@@ -121,7 +122,7 @@ let {
             disabled={isPeriodActionLoading}
           >
             {#if isPeriodActionLoading}
-              <ArrowPath size={14} class="animate-spin" />
+              <LoadingIndicator   size={14} />
             {:else}
               <Lock size={14} />
             {/if}
@@ -136,7 +137,7 @@ let {
               disabled={isPeriodActionLoading}
             >
               {#if isPeriodActionLoading}
-                <ArrowPath size={14} class="animate-spin" />
+                <LoadingIndicator   size={14} />
               {:else}
                 <LockClosed size={14} />
               {/if}
@@ -150,7 +151,7 @@ let {
               disabled={isPeriodActionLoading}
             >
               {#if isPeriodActionLoading}
-                <ArrowPath size={14} class="animate-spin" />
+                <LoadingIndicator   size={14} />
               {:else}
                 <Clock size={14} />
               {/if}
@@ -168,7 +169,7 @@ let {
           disabled={isCompileLoading}
         >
           {#if isCompileLoading}
-            <ArrowPath size={14} class="animate-spin" />
+            <LoadingIndicator   size={14} />
           {:else}
             <Refresh size={14} />
           {/if}

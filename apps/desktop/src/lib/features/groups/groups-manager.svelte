@@ -3,6 +3,7 @@
   User Groups catalog and lifecycle manager for IAM subsystem.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
@@ -163,7 +164,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         class="h-9 w-9 cursor-pointer"
         title={m.common_control_refresh()}
       >
-        <Refresh size={13} class={groupsQuery.isLoading ? "animate-spin" : ""} />
+        {#if groupsQuery.isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
       </Button>
 
       <Button
@@ -182,7 +183,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
   <div class="flex-1 min-h-0 overflow-y-auto">
     {#if groupsQuery.isLoading}
       <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
-        <ArrowPath size={24} class="animate-spin text-primary" />
+        <LoadingIndicator class="text-primary"  size={24} />
         <span class="text-xs">{m.ui_copy_loading_user_groups_ff96ce28()}</span>
       </div>
     {:else if groupsQuery.error}
@@ -302,7 +303,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
           <Label class="text-xs font-medium">{m.groups_name_ar()}</Label>
           <Input
             type="text"
-            placeholder="مثال: هيئة التدريس والمشرفين"
+            placeholder={m.groups_name_ar_placeholder()}
             class="text-xs"
             bind:value={formNameAr}
           />
@@ -321,7 +322,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         <div class="flex flex-col gap-1.5">
           <Label class="text-xs font-medium">{m.groups_description()}</Label>
           <Textarea
-            placeholder="وصف مهام وصلاحيات هذه المجموعة..."
+            placeholder={m.groups_description_placeholder()}
             class="text-xs min-h-20"
             bind:value={formDesc}
           />
@@ -334,7 +335,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         </Button>
         <Button size="sm" class="text-xs cursor-pointer" disabled={createMutation.isPending || updateMutation.isPending} onclick={handleSaveGroup}>
           {#if createMutation.isPending || updateMutation.isPending}
-            <ArrowPath size={13} class="animate-spin me-1.5" />
+            <LoadingIndicator class="me-1.5"  size={13} />
           {/if}
           {m.settings_action_save_changes()}
         </Button>

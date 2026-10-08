@@ -27,9 +27,9 @@ export interface LineSpaceSmallerProps extends SvgProps {
 }
 
 export function LineSpaceSmaller({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: LineSpaceSmallerProps) {
@@ -42,9 +42,10 @@ export function LineSpaceSmaller({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M11 6H21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M11 12H21"
 		strokeLinecap="round"

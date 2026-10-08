@@ -46,6 +46,22 @@ export type AcademicPeriodState = 'planning' | 'enrollment_open' | 'active_teach
 
 export type AcademicSettingsDto = {
     default_grading_system: string;
+    passing_threshold_percentage?: number;
+    honors_threshold_percentage?: number;
+    minimum_final_exam_score?: number;
+    max_failed_subjects_for_conditional_pass?: number;
+    min_attendance_rate?: number;
+    ranking_enabled?: boolean;
+    max_displayed_rank?: number;
+    ranking_scope?: string;
+    tie_policy?: string;
+    rounding_mode?: string;
+    decimal_places?: number;
+    grade_entry_auto_close?: boolean;
+    allow_grade_edit_after_close?: boolean;
+    grade_edit_approval?: boolean;
+    auto_graduate_final_level?: boolean;
+    exclude_withdrawn?: boolean;
 };
 
 export type AcademicYearDto = {
@@ -485,6 +501,10 @@ export type BootstrapRequest = {
      */
     date_format?: string | null;
     /**
+     * Locale used for formatting dates, numbers, and currency independently from the UI language
+     */
+    format_locale?: string | null;
+    /**
      * Educational curriculum track
      */
     educational_track?: string | null;
@@ -544,6 +564,10 @@ export type BootstrapRequest = {
      * IANA timezone
      */
     timezone: string;
+    /**
+     * Time display preference: locale, 12-hour, or 24-hour
+     */
+    time_format?: string | null;
     /**
      * Official website URL
      */
@@ -726,8 +750,10 @@ export type CreateAccountRequest = {
 };
 
 export type CreateClassRequest = {
+    capacity?: number | null;
     level: string;
     name: string;
+    name_ar?: string | null;
     period_id: string;
     unit_id: string;
 };
@@ -781,8 +807,8 @@ export type CreateFeeTemplateRequest = {
     is_mandatory?: boolean | null;
     name: string;
     name_ar?: string | null;
-    receivable_account_id: string;
-    revenue_account_id: string;
+    receivable_account_id?: string | null;
+    revenue_account_id?: string | null;
 };
 
 export type CreateFolderRequest = {
@@ -852,6 +878,7 @@ export type CreateOrgUnitRequest = {
 };
 
 export type CreatePeriodRequest = {
+    code?: string | null;
     end_date: string;
     name: string;
     name_ar?: string | null;
@@ -860,6 +887,15 @@ export type CreatePeriodRequest = {
     period_type: string;
     start_date: string;
     year_id: string;
+};
+
+export type UpdatePeriodRequest = {
+    code?: string | null;
+    end_date?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    period_kind?: string | null;
+    start_date?: string | null;
 };
 
 export type CreateRoomRequest = {
@@ -946,6 +982,14 @@ export type CreateYearRequest = {
     name: string;
     name_ar?: string | null;
     start_date: string;
+};
+
+export type UpdateYearRequest = {
+    end_date?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    notes?: string | null;
+    start_date?: string | null;
 };
 
 export type CumulativeGpaRecordDto = {
@@ -1161,6 +1205,7 @@ export type EnrollmentDto = {
 export type EnrollmentSettingsDto = {
     allow_late_enrollment: boolean;
     allow_waitlist: boolean;
+    is_configured: boolean;
     max_class_size_default: number;
     registration_enabled: boolean;
     require_admin_approval: boolean;
@@ -1547,19 +1592,23 @@ export type OrgDto = {
     current_period_id?: string | null;
     date_format?: string | null;
     favicon?: string | null;
+    format_locale?: string | null;
     features?: unknown;
     id: string;
+    institution_type?: "school" | "university" | "institute" | string;
     is_active: boolean;
     is_hijri_enabled: boolean;
     is_verified: boolean;
     locale: string;
     logo?: string | null;
+    metadata?: Record<string, unknown> | null;
     name: string;
     name_ar?: string | null;
     primary_color?: string | null;
     settings?: unknown;
     slug: string;
     timezone: string;
+    time_format?: string | null;
     updated_at: string;
     updated_by?: string | null;
     version: number;
@@ -1771,13 +1820,20 @@ export type ProviderSchemaResponse = {
 };
 
 export type ProvisionDefaultsReqDto = {
+    academic_year_id?: string | null;
     academic_year_name?: string | null;
     academic_year_name_ar?: string | null;
+    enable_period_autopilot?: boolean | null;
     end_date?: string | null;
+    hijri_month_lengths?: Array<number> | null;
+    hijri_start_year?: number | null;
     provision_assessment_scheme?: boolean | null;
+    provision_discount_templates?: boolean | null;
+    provision_hijri_school_calendar?: boolean | null;
     provision_stages_and_grades?: boolean | null;
     provision_subjects?: boolean | null;
     provision_tuition_fee_template?: boolean | null;
+    provision_time_slots?: boolean | null;
     start_date?: string | null;
 };
 
@@ -2401,6 +2457,7 @@ export type UpdateOrgRequest = {
     code?: string | null;
     date_format?: string | null;
     favicon?: string | null;
+    format_locale?: string | null;
     is_hijri_enabled?: boolean | null;
     locale?: string | null;
     logo?: string | null;
@@ -2408,6 +2465,7 @@ export type UpdateOrgRequest = {
     name_ar?: string | null;
     primary_color?: string | null;
     timezone?: string | null;
+    time_format?: string | null;
 };
 
 export type UpdateOrgUnitRequest = {
@@ -2713,6 +2771,36 @@ export type UnlockPeriodResponses = {
 
 export type UnlockPeriodResponse = UnlockPeriodResponses[keyof UnlockPeriodResponses];
 
+export type UpdatePeriodData = {
+    body: UpdatePeriodRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type UpdatePeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type UpdatePeriodResponse = UpdatePeriodResponses[keyof UpdatePeriodResponses];
+
+export type DeletePeriodData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type DeletePeriodResponses = {
+    200: boolean;
+};
+
+export type DeletePeriodResponse = DeletePeriodResponses[keyof DeletePeriodResponses];
+
 export type ListYearsData = {
     body?: never;
     path?: never;
@@ -2769,6 +2857,66 @@ export type GetYearResponses = {
 };
 
 export type GetYearResponse = GetYearResponses[keyof GetYearResponses];
+
+export type UpdateYearData = {
+    body: UpdateYearRequest;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}';
+};
+
+export type UpdateYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type UpdateYearResponse = UpdateYearResponses[keyof UpdateYearResponses];
+
+export type ActivateYearData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/activate';
+};
+
+export type ActivateYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type ActivateYearResponse = ActivateYearResponses[keyof ActivateYearResponses];
+
+export type CloseYearData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/close';
+};
+
+export type CloseYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type CloseYearResponse = CloseYearResponses[keyof CloseYearResponses];
+
+export type ArchiveYearData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/archive';
+};
+
+export type ArchiveYearResponses = {
+    200: AcademicYearDto;
+};
+
+export type ArchiveYearResponse = ArchiveYearResponses[keyof ArchiveYearResponses];
 
 export type ListAccountsData = {
     body?: never;
@@ -6449,6 +6597,7 @@ export type EvaluateStudentRequirementsData = {
     query?: {
         grade_level_id?: string | null;
         is_national?: boolean | null;
+        is_special_needs?: boolean | null;
         is_transfer?: boolean | null;
     };
     url: '/api/v1/students/{id}/document-requirements';

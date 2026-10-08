@@ -13,9 +13,9 @@ export interface ClipboardCheckProps extends SvgProps {
 }
 
 export function ClipboardCheck({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ClipboardCheckProps) {
@@ -28,9 +28,10 @@ export function ClipboardCheck({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
         strokeLinecap="round"
         strokeLinejoin="round"

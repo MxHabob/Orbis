@@ -1,7 +1,8 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type OrgUnitDto, type RoomDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -16,14 +17,18 @@ import {
 } from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmittingUnit = $state(false);
 let isSubmittingRoom = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
@@ -33,29 +38,41 @@ let rooms = $state<RoomDto[]>([]);
 // Branch Creation State
 let unitName = $state("");
 let unitNameAr = $state("");
-let unitCode = $state("BR-01");
+let unitCode = $state("");
 let unitType = $state("branch");
-let unitCapacity = $state<number>(500);
+let unitCapacity = $state<number>(0);
 
 // Room Creation State
 let roomName = $state("");
 let roomNameAr = $state("");
-let roomNumber = $state("R-101");
+let roomNumber = $state("");
 let roomType = $state("classroom");
-let roomCapacity = $state<number>(30);
+let roomCapacity = $state<number>(0);
 let roomBuilding = $state("");
 
 const ROOM_TYPES = [
-  { value: "classroom", label: "Classroom (فصل دراسي)" },
-  { value: "lab", label: "Science / Computer Lab (مختبر)" },
-  { value: "auditorium", label: "Auditorium / Theatre (مسرح / قاعة احتفالات)" },
-  { value: "library", label: "Library (مكتبة)" },
-  { value: "sports_hall", label: "Sports Hall / Gymnasium (صالة رياضية)" },
-  { value: "other", label: "Other Facility (مرفق آخر)" },
+  { value: "classroom", label: m.onboarding_room_type_classroom() },
+  { value: "lab", label: m.onboarding_room_type_lab() },
+  { value: "auditorium", label: m.onboarding_room_type_auditorium() },
+  { value: "library", label: m.onboarding_room_type_library() },
+  { value: "sports_hall", label: m.onboarding_room_type_sports_hall() },
+  { value: "other", label: m.onboarding_room_type_other() },
 ];
 
 const stepTasks = $derived(getTasksForStep("structure", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+
+function applyBranchPreset() {
+  unitCode = `BR-${String(orgUnits.length + 1).padStart(2, "0")}`;
+  unitType = "branch";
+  unitCapacity = 500;
+}
+
+function applyRoomPreset() {
+  roomNumber = `R-${String(rooms.length + 101).padStart(3, "0")}`;
+  roomType = "classroom";
+  roomCapacity = 30;
+}
 
 onMount(async () => {
   await loadData();
@@ -65,14 +82,14 @@ async function loadData() {
   try {
     isLoading = true;
     const [unitsRes, roomsRes] = await Promise.all([
-      api.listOrgUnits().catch(() => []),
-      api.listRooms().catch(() => []),
+      api.listOrgUnits(),
+      api.listRooms(),
     ]);
     orgUnits = unitsRes;
     rooms = roomsRes;
   } catch (err: any) {
     console.error("Failed to load structure data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -80,12 +97,11 @@ async function loadData() {
 
 async function handleCreateUnit() {
   if (!unitName.trim() && !unitNameAr.trim()) {
-    errorMessage = m.onboarding_step2_branch_err_name();
+    toast.error(m.onboarding_step2_branch_err_name());
     return;
   }
 
   isSubmittingUnit = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -101,34 +117,34 @@ async function handleCreateUnit() {
     orgUnits = [...orgUnits, newUnit];
     unitName = "";
     unitNameAr = "";
-    unitCode = `BR-0${orgUnits.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    unitCode = "";
+    unitCapacity = 0;
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_branch_created_success();
   } catch (err: any) {
     console.error("Failed to create unit:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingUnit = false;
   }
 }
 
 async function handleCreateRoom() {
-  if (!roomName.trim() && !roomNameAr.trim() && !roomNumber.trim()) {
-    errorMessage = m.onboarding_step2_room_err_name();
+  if (!roomNumber.trim()) {
+    toast.error(m.onboarding_step2_room_err_name());
     return;
   }
 
   isSubmittingRoom = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
     const newRoom = await api.createRoom({
       name: roomName.trim() || roomNameAr.trim() || roomNumber.trim(),
       name_ar: roomNameAr.trim() || undefined,
-      room_number: roomNumber.trim() || "R-101",
+      room_number: roomNumber.trim(),
       room_type: roomType,
-      capacity: roomCapacity > 0 ? roomCapacity : 30,
+      capacity: roomCapacity > 0 ? roomCapacity : undefined,
       building: roomBuilding.trim() || undefined,
       is_active: true,
     });
@@ -136,23 +152,30 @@ async function handleCreateRoom() {
     rooms = [...rooms, newRoom];
     roomName = "";
     roomNameAr = "";
-    roomNumber = `R-10${rooms.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    roomNumber = "";
+    roomCapacity = 0;
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_room_created_success();
   } catch (err: any) {
     console.error("Failed to create room:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingRoom = false;
   }
 }
 
-async function handleContinue() {
-  if (orgUnits.length === 0 && (unitName.trim() || unitNameAr.trim())) {
-    await handleCreateUnit();
-  }
-  await goto(`/${orgId}/onboarding/calendar`);
+async function deleteUnit(unit: OrgUnitDto) {
+  await api.deleteOrgUnit(String(unit.id));
+  orgUnits = orgUnits.filter((item) => item.id !== unit.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
+
+async function deleteRoom(room: RoomDto) {
+  await api.deleteRoom(String(room.id));
+  rooms = rooms.filter((item) => item.id !== room.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
+}
+
 </script>
 
 <div class="space-y-6">
@@ -164,12 +187,6 @@ async function handleContinue() {
     status={isTaskComplete ? "completed" : orgUnits.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -180,7 +197,7 @@ async function handleContinue() {
 
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
-      <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+      <LoadingIndicator size={16} class="size-4 text-primary" />
       <span>{m.common_control_loading()}</span>
     </div>
   {:else}
@@ -192,29 +209,37 @@ async function handleContinue() {
       isComplete={orgUnits.length > 0}
     >
       <div class="space-y-4">
+        <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSubmittingUnit}
+            onclick={applyBranchPreset}
+            class="text-xs"
+          >
+            BR-{String(orgUnits.length + 1).padStart(2, "0")} · 500
+          </Button>
+        </OnboardingPresetBar>
+
         <!-- Branch Creation Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
+          <BilingualNameFields
+            arId="branch-name-ar"
+            enId="branch-name-en"
+            arLabel={m.onboarding_step2_branch_name_ar()}
+            enLabel={m.onboarding_step2_branch_name_en()}
+            bind:arValue={unitNameAr}
+            bind:enValue={unitName}
+            arPlaceholder={m.onboarding_step2_branch_name_ar_placeholder()}
+            enPlaceholder={m.onboarding_step2_branch_name_en_placeholder()}
+            kind="label"
+            requestSuggestion={suggestLocalTranslation}
+            replaceUneditedInitialValues
+            disabled={isSubmittingUnit}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_branch_name_en()}
-              </Label>
-              <Input
-                bind:value={unitName}
-                placeholder={m.onboarding_step2_branch_name_en_placeholder()}
-                dir="ltr"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_branch_name_ar()}
-              </Label>
-              <Input
-                bind:value={unitNameAr}
-                placeholder={m.onboarding_step2_branch_name_ar_placeholder()}
-                dir="rtl"
-              />
-            </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
                 {m.onboarding_step2_branch_code()}
@@ -222,7 +247,6 @@ async function handleContinue() {
               <Input
                 bind:value={unitCode}
                 placeholder="BR-01"
-                dir="ltr"
                 class="font-mono text-xs"
               />
             </div>
@@ -282,6 +306,7 @@ async function handleContinue() {
                     <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
                       {m.onboarding_active_badge()}
                     </Badge>
+                    <DeleteRecordButton label={unit.name_ar || unit.name} onDelete={() => deleteUnit(unit)} />
                   </div>
                 </div>
               {/each}
@@ -299,18 +324,37 @@ async function handleContinue() {
       isComplete={rooms.length > 0}
     >
       <div class="space-y-4">
+        <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSubmittingRoom}
+            onclick={applyRoomPreset}
+            class="text-xs"
+          >
+            R-{String(rooms.length + 101).padStart(3, "0")} · {ROOM_TYPES[0].label} · 30
+          </Button>
+        </OnboardingPresetBar>
+
         <!-- Room Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
+          <BilingualNameFields
+            arId="room-name-ar"
+            enId="room-name-en"
+            arLabel={m.common_rooms_label_name_ar()}
+            enLabel={m.common_rooms_label_name_en()}
+            bind:arValue={roomNameAr}
+            bind:enValue={roomName}
+            arPlaceholder={m.common_rooms_placeholder_name_ar()}
+            enPlaceholder={m.common_rooms_placeholder_name_en()}
+            kind="label"
+            requestSuggestion={suggestLocalTranslation}
+            replaceUneditedInitialValues
+            disabled={isSubmittingRoom}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
           <div class="grid gap-3 sm:grid-cols-3">
-            <div class="space-y-1.5 sm:col-span-2">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step2_room_name()}
-              </Label>
-              <Input
-                bind:value={roomName}
-                placeholder={m.onboarding_step2_room_name_placeholder()}
-              />
-            </div>
             <div class="space-y-1.5">
               <Label class="text-xs font-medium">
                 {m.onboarding_step2_room_number()}
@@ -330,7 +374,7 @@ async function handleContinue() {
                   {ROOM_TYPES.find((r) => r.value === roomType)?.label || roomType}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each ROOM_TYPES as r}
+                  {#each ROOM_TYPES as r (r.value)}
                     <SelectItem value={r.value}>{r.label}</SelectItem>
                   {/each}
                 </SelectContent>
@@ -361,7 +405,7 @@ async function handleContinue() {
             <Button
               variant="default"
               size="sm"
-              disabled={isSubmittingRoom || (!roomName.trim() && !roomNumber.trim())}
+              disabled={isSubmittingRoom || !roomNumber.trim()}
               onclick={handleCreateRoom}
               class="text-xs font-semibold"
             >
@@ -390,9 +434,12 @@ async function handleContinue() {
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" class="text-[10px]">
-                    {room.capacity || 30} {m.onboarding_step2_seats_suffix()}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="secondary" class="text-[10px]">
+                      {room.capacity || 30} {m.onboarding_step2_seats_suffix()}
+                    </Badge>
+                    <DeleteRecordButton label={room.name_ar || room.name || room.room_number} onDelete={() => deleteRoom(room)} />
+                  </div>
                 </div>
               {/each}
             </div>
@@ -401,26 +448,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Actions Bar -->
-    <div class="flex items-center justify-between border-t border-border/50 pt-6">
-      <Button
-        variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding/organization`)}
-        class="text-xs"
-      >
-        {m.onboarding_step2_back_btn()}
-      </Button>
-
-      <div class="flex items-center gap-3">
-        <Button
-          variant="default"
-          disabled={orgUnits.length === 0 && !unitName.trim()}
-          onclick={handleContinue}
-          class="text-xs font-semibold shadow-xs"
-        >
-          {m.onboarding_step2_continue_btn()}
-        </Button>
-      </div>
-    </div>
   {/if}
 </div>

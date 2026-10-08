@@ -7,7 +7,7 @@ const orgId = $derived(page.params.orgId || "");
 </script>
 
 <svelte:head>
-  <title>سلة المحذوفات | الأرشيف | Orbis</title>
+  <title>{m.ui_page_settings_archive_trash()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-hidden">

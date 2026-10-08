@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api, extractErrorMessage } from "$lib/api";
 import { academicContext } from "$lib/stores";
@@ -402,7 +403,7 @@ function handleDownloadCurrent() {
 <!-- Parameter Drawer Sheet -->
 {#if selectedDefinition}
   <Sheet bind:open={isSheetOpen}>
-    <SheetContent side="right" class="w-full sm:max-w-md flex flex-col justify-between p-6 text-start">
+    <SheetContent side="end" class="w-full sm:max-w-md flex flex-col justify-between p-6 text-start">
       <div class="space-y-6 overflow-y-auto pr-1">
         <SheetHeader class="space-y-1">
           <div class="flex items-center gap-2">
@@ -502,7 +503,7 @@ function handleDownloadCurrent() {
 
           {#if isGenerating}
             <div class="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3">
-              <Refresh class="w-5 h-5 text-primary animate-spin" />
+              <LoadingIndicator class="w-5 h-5 text-primary"  size={20} />
               <div class="text-xs text-primary font-semibold">{jobStatus}</div>
             </div>
           {/if}

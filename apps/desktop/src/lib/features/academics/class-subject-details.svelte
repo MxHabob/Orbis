@@ -4,6 +4,7 @@
   Provides interactive cell editing, total recalculation, and batch grade saving inside a standardized Card container.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { api } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
@@ -160,7 +161,7 @@ async function handleSaveAll() {
             disabled={isMatrixLoading}
             title={m.common_retry()}
           >
-            <Refresh size={12} class={isMatrixLoading ? "animate-spin" : ""} />
+            {#if isMatrixLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
             <span>{m.common_retry()}</span>
           </Button>
 

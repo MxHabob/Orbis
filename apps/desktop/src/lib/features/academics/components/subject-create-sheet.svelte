@@ -20,7 +20,10 @@ let {
 </script>
 
 <Sheet bind:open>
-	<SheetContent class="flex flex-col h-full sm:max-w-md overflow-hidden p-0 gap-0">
+	<SheetContent
+		contentClass="data-[side=end]:sm:max-w-md"
+		class="flex flex-col h-full overflow-hidden p-0 gap-0"
+	>
 		<SubjectForm 
 			{orgId} 
 			onSuccess={() => {

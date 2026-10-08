@@ -8,6 +8,7 @@
   - Instant transition between Tree/Form Split View and Full Ledger Grid
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
@@ -33,7 +34,7 @@ import {
   Trash,
 } from "@orbis/icons";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
-import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
+import { formatCurrency, formatDate, isAr, l } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountTree, { type AccountNode } from "$lib/features/finance/components/account-tree.svelte";
@@ -113,7 +114,7 @@ const accountTree = $derived.by(() => {
       .sort((a, b) => (a.code || "").localeCompare(b.code || "", undefined, { numeric: true }))
       .map((node) => ({
         ...node,
-        name: node.name_ar || node.name || "—",
+        name: l(node.name_ar, node.name_en || node.name) || "—",
         children: buildSubTree(node.id),
       }));
   }
@@ -150,8 +151,8 @@ function handleSelectAccount(account: AccountNode) {
 
   formParentId = (account as any).parent_id || null;
   formCode = account.code || "";
-  formNameAr = account.name_ar || account.name || "";
-  formNameEn = account.name_en || account.name || "";
+  formNameAr = account.name_ar || (isAr() ? account.name : "") || "";
+  formNameEn = account.name_en || (!isAr() ? account.name : "") || "";
   formAccountType = String(account.account_type || account.type || "asset").toLowerCase();
   formSubType = account.sub_type || "general";
   formCurrency = account.currency || baseCurrency;
@@ -269,11 +270,11 @@ const treasurySource = $derived(
     return {
       ...account,
       __idx: i + 1,
-      name_display: account.name_ar || account.name || "—",
+      name_display: l(account.name_ar, account.name_en || account.name) || "—",
       balance_formatted: formatCurrency(bal, account.currency || baseCurrency),
       currency_code: account.currency || baseCurrency,
-      status: account.is_active === 1 ? "active" : "inactive",
-      status_display: account.is_active === 1 ? m.finance_ui_active() : m.finance_ui_inactive(),
+      status: account.is_active === 1 || account.is_active === true ? "active" : "inactive",
+      status_display: (account.is_active === 1 || account.is_active === true) ? m.finance_ui_active() : m.finance_ui_inactive(),
     };
   })
 );
@@ -351,7 +352,7 @@ function exportAccountsCsv() {
 
       <div class="flex items-center gap-2">
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
-          <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+          {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
         </Button>
 
         <Button variant="ghost" size="icon-sm" onclick={exportAccountsCsv} class="text-muted-foreground">
@@ -364,11 +365,22 @@ function exportAccountsCsv() {
     <div class="flex min-h-0 flex-1 overflow-hidden">
       {#if viewMode === "tree"}
         <!-- ══════════════════════════════════════════════════════════════ -->
-        <!-- Classic Split-View Layout (Tree on Right + Form on Left)     -->
+        <!-- Responsive Split-View Layout (Tree first, Form second)       -->
+        <!-- RTL: Tree on Right, Form on Left                             -->
+        <!-- LTR: Tree on Left, Form on Right                             -->
         <!-- ══════════════════════════════════════════════════════════════ -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-full min-h-0">
           
-          <!-- Left: Account Details & Editing / Creation Form (7 cols) -->
+          <!-- Compact TreeView (5 cols) -->
+          <div class="lg:col-span-5 flex flex-col h-full min-h-0 overflow-hidden rounded-xl border border-border/40 bg-card p-2 shadow-sm">
+            <AccountTree
+              accounts={accountTree}
+              {orgId}
+              onSelectAccount={(node) => handleSelectAccount(node)}
+            />
+          </div>
+
+          <!-- Account Details & Editing / Creation Form (7 cols) -->
           <div class="lg:col-span-7 flex flex-col h-full min-h-0 overflow-y-auto">
             <Card class="border border-border/50 bg-card shadow-sm h-full flex flex-col justify-between">
               <CardHeader class="py-3 px-4 border-b border-border/40 shrink-0">
@@ -376,7 +388,7 @@ function exportAccountsCsv() {
                   <div class="flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full {isAddingNew ? 'bg-emerald-500 animate-pulse' : 'bg-primary'}"></span>
                     <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                      {isAddingNew ? m.finance_ui_add_account_heading() : m.finance_ui_account_details_heading({ account: formNameAr || formCode })}
+                      {isAddingNew ? m.finance_ui_add_account_heading() : m.finance_ui_account_details_heading({ account: l(formNameAr, formNameEn) || formCode })}
                     </CardTitle>
                   </div>
 
@@ -398,7 +410,7 @@ function exportAccountsCsv() {
                         {parentAccountNode ? parentAccountNode.code : "—"}
                       </span>
                       <span class="font-medium text-foreground">
-                        {parentAccountNode ? (parentAccountNode.name_ar || parentAccountNode.name) : m.finance_ui_root_account()}
+                        {parentAccountNode ? (l(parentAccountNode.name_ar, parentAccountNode.name_en || parentAccountNode.name) || parentAccountNode.code) : m.finance_ui_root_account()}
                       </span>
                     </div>
 
@@ -576,15 +588,6 @@ function exportAccountsCsv() {
               </div>
             </Card>
           </div>
-
-          <!-- Right: Compact TreeView (5 cols) -->
-          <div class="lg:col-span-5 flex flex-col h-full min-h-0 overflow-hidden rounded-xl border border-border/40 bg-card p-2 shadow-sm">
-            <AccountTree
-              accounts={accountTree}
-              {orgId}
-              onSelectAccount={(node) => handleSelectAccount(node)}
-            />
-          </div>
         </div>
 
       {:else}
@@ -611,7 +614,7 @@ function exportAccountsCsv() {
                 fields={accountFilterFields}
               />
               <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
-                <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+                {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
               </Button>
               <Button variant="ghost" size="icon-sm" onclick={exportAccountsCsv} class="text-muted-foreground">
                 <Download size={14} />

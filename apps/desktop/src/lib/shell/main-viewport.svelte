@@ -26,6 +26,7 @@ import { Button } from "@orbis/ui";
 import Resizer from "./resizer.svelte";
 import SashLayer from "./sash-layer.svelte";
 import type { Snippet } from "svelte";
+    import { m } from "$lib/paraglide/messages";
 
 type PanelSize = {
   default: number;
@@ -164,7 +165,7 @@ function getFallbackLabel(
 				{/if}
 				<Resizer
 					viewport={leftDiv}
-					direction="end"
+					edge="end"
 					minWidth={leftMinWidth}
 					maxWidth={leftMaxWidth}
 					defaultValue={pxToRem(leftWidth.default)}
@@ -190,7 +191,7 @@ function getFallbackLabel(
 			>
 				<Resizer
 					viewport={rightDiv}
-					direction="start"
+					edge="start"
 					minWidth={rightMinWidth}
 					maxWidth={rightMaxWidth}
 					defaultValue={pxToRem(rightWidth.default)}
@@ -200,7 +201,7 @@ function getFallbackLabel(
 				/>
 				{#if finalRightWidth === COLLAPSED_WIDTH}
 					<!-- Collapsed vertical strip -->
-					<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-l border-border/80 select-none">
+					<div class="h-full w-full flex flex-col items-center py-4 bg-card/30 border-s border-border/80 select-none">
 						<button
 							type="button"
 							class="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-150 mb-4"

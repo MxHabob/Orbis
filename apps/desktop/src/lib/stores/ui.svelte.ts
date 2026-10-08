@@ -8,6 +8,7 @@ class UIStore {
   showUpgradeDialog = $state(false);
   focusMode = $state(localStorage.getItem("orbis_focus_mode") === "true");
   showSearch = $state(false);
+  showSystemClock = $state(localStorage.getItem("orbis_clock_open") !== "false");
 
   get showAskOrbis() {
     try {
@@ -48,6 +49,11 @@ class UIStore {
 
   setSearch(show: boolean) {
     this.showSearch = show;
+  }
+
+  setSystemClock(show: boolean) {
+    this.showSystemClock = show;
+    localStorage.setItem("orbis_clock_open", String(show));
   }
 }
 

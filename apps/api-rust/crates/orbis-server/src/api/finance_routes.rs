@@ -93,8 +93,8 @@ pub struct CreateFeeTemplateRequest {
     pub category: Option<String>,
     pub default_amount: Decimal,
     pub currency: Option<String>,
-    pub revenue_account_id: Uuid,
-    pub receivable_account_id: Uuid,
+    pub revenue_account_id: Option<Uuid>,
+    pub receivable_account_id: Option<Uuid>,
     pub applicable_levels: Option<Vec<String>>,
     pub applicable_study_modes: Option<Vec<String>>,
     pub frequency: Option<String>,
@@ -485,7 +485,9 @@ pub async fn create_account(
             ctx.tenant_id,
             p.code,
             p.name,
+            p.name_ar,
             account_type,
+            p.sub_type,
             p.currency.unwrap_or_else(|| "SAR".to_string()),
             p.parent_id,
         )
@@ -655,11 +657,17 @@ pub async fn create_fee_template(
         .create_fee_template(
             &ctx,
             ctx.tenant_id,
+            p.code,
             p.name,
+            p.name_ar,
+            p.category.clone(),
             p.default_amount,
             currency_code,
             p.receivable_account_id,
             p.revenue_account_id,
+            p.applicable_levels,
+            p.frequency,
+            p.is_mandatory,
         )
         .await?;
 

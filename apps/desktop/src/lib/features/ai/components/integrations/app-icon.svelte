@@ -28,7 +28,7 @@ const logoHtml = $derived(
 );
 </script>
 
-<div class="flex items-center justify-start shrink-0 [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto [&>svg]:object-contain {className}">
+<div class="flex items-center justify-center shrink-0 [&>svg]:max-w-full [&>svg]:max-h-full [&>svg]:w-auto [&>svg]:h-auto [&>svg]:object-contain {className}">
   {#if logoHtml}
     {@html logoHtml}
   {:else}

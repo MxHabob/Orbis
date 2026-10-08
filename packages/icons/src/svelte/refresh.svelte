@@ -23,20 +23,13 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
-	class={cn(className || 'size-4', klass)}
+	class={cn(className || (size === undefined ? 'size-4' : ''), klass)}
+	stroke-linecap="round"
+	stroke-linejoin="round"
 	aria-hidden="true"
-	{...restProps}
->
-	<path
-		d="M21.8883 13.5C21.1645 18.3113 17.013 22 12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C16.1006 2 19.6248 4.46819 21.1679 8"
-		stroke-linecap="round"
-		stroke-linejoin="round"
-	></path><path
-		d="M17 8H21.4C21.7314 8 22 7.73137 22 7.4V3"
-		stroke-linecap="round"
-		stroke-linejoin="round"
-	></path>
+	{...restProps}>
+	<path d="M19.5 12a7.5 7.5 0 1 1-7.5-7.5M12 4.5h5m0 0-3-2.5m3 2.5-3 2.5" />
 </svg>

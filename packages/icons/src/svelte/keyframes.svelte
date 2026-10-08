@@ -23,13 +23,14 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
-	class={cn(className || 'size-4', klass)}
+	class={cn(className || (size === undefined ? 'size-4' : ''), klass)}
+	stroke-linecap="round"
+	stroke-linejoin="round"
 	aria-hidden="true"
-	{...restProps}
->
+	{...restProps}>
 	<path
 		d="M13.8476 13.317L9.50515 18.2798C8.70833 19.1905 7.29167 19.1905 6.49485 18.2798L2.15238 13.317C1.49259 12.563 1.49259 11.437 2.15238 10.683L6.49485 5.72018C7.29167 4.80952 8.70833 4.80952 9.50515 5.72017L13.8476 10.683C14.5074 11.437 14.5074 12.563 13.8476 13.317Z"
 	/>

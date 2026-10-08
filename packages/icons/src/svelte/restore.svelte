@@ -23,13 +23,14 @@
 	viewBox="0 0 24 24"
 	fill="none"
 	stroke="currentColor"
-	stroke-width={strokeWidth ?? '1.5'}
+	stroke-width={strokeWidth ?? '1.75'}
 	width={size}
 	height={size}
-	class={cn(className || 'size-4', klass)}
+	class={cn(className || (size === undefined ? 'size-4' : ''), klass)}
+	stroke-linecap="round"
+	stroke-linejoin="round"
 	aria-hidden="true"
-	{...restProps}
->
+	{...restProps}>
 	<rect x="3" y="7" width="14" height="14" rx="2" stroke-linecap="round" stroke-linejoin="round"></rect>
 	<path d="M7 4h12a2 2 0 0 1 2 2v12" stroke-linecap="round" stroke-linejoin="round"></path>
 </svg>

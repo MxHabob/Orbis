@@ -20,6 +20,8 @@ import { toast } from "@orbis/ui";
 import { api } from "$lib/api";
 import { examSessionInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   open = $bindable(false),
@@ -136,19 +138,23 @@ async function handleSubmit() {
         {/snippet}
       </FormField>
 
-      <!-- Name Arabic -->
-      <FormField id="session-name-ar" label={m.common_exams_create_name_ar()} error={form.errors.name_ar?.[0]}>
-        {#snippet children()}
-        <Input id="session-name-ar" bind:value={nameAr} placeholder={m.operations_ui_exam_session_name_example()} class="text-xs h-9" />
-        {/snippet}
-      </FormField>
-
-      <!-- Name English -->
-      <FormField id="session-name" label={m.common_exams_create_name()} error={form.errors.name?.[0]}>
-        {#snippet children()}
-        <Input id="session-name" bind:value={name} placeholder="e.g. Final Exams Semester 1" class="text-xs h-9" />
-        {/snippet}
-      </FormField>
+      <BilingualNameFields
+        arId="session-name-ar"
+        enId="session-name"
+        arLabel={m.common_exams_create_name_ar()}
+        enLabel={m.common_exams_create_name()}
+        bind:arValue={nameAr}
+        bind:enValue={name}
+        arPlaceholder={m.operations_ui_exam_session_name_example()}
+        enPlaceholder="e.g. Final Exams Semester 1"
+        arError={form.errors.name_ar?.[0]}
+        enError={form.errors.name?.[0]}
+        kind="label"
+        requestSuggestion={suggestLocalTranslation}
+        disabled={isSaving}
+        loadingMessage={m.bilingual_entry_loading()}
+        failureMessage={m.bilingual_entry_failure()}
+      />
 
       <!-- Session Type -->
       <FormField id="session-type" label={m.common_exams_create_type()} error={form.errors.session_type?.[0]} required>

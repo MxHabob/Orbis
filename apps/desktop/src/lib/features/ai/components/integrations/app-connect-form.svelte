@@ -22,9 +22,11 @@ import {
 
 let {
   settings,
+  submitting = false,
   onsubmit,
 }: {
   settings: AppSetting[];
+  submitting?: boolean;
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
@@ -110,8 +112,7 @@ function handleSubmit(e: SubmitEvent) {
     </FormField>
   {/each}
 
-  <Button type="submit" class="w-full" size="sm">
-    {m.ui_copy_save_connect_3d45edcd()}
+  <Button type="submit" class="w-full" size="sm" disabled={submitting}>
+    {submitting ? m.setup_connection_connecting() : m.ui_copy_save_connect_3d45edcd()}
   </Button>
 </form>
-

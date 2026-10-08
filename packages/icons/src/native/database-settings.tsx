@@ -27,9 +27,9 @@ export interface DatabaseSettingsProps extends SvgProps {
 }
 
 export function DatabaseSettings({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: DatabaseSettingsProps) {
@@ -42,9 +42,10 @@ export function DatabaseSettings({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M4 6V12C4 12 4 15 11 15C18 15 18 12 18 12V6"
 		strokeLinecap="round"

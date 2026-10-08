@@ -37,7 +37,9 @@ import type {
   AcademicContextResponse,
   PeriodTemplateDto,
   CreateYearRequest,
+  UpdateYearRequest,
   CreatePeriodRequest,
+  UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
   ClassSubjectDto,
@@ -81,6 +83,8 @@ import type {
   CalculateRankingsRequest,
   ScoreItemRequest,
   RankingItemDto,
+  StudentTermReportCard,
+  StudentAnnualReportCard,
   DocumentDto,
   FolderDto,
   FolderContentsDto,
@@ -223,7 +227,6 @@ import type {
   OnboardingStateDto,
   ProvisionDefaultsReqDto,
   ProvisionDefaultsResultDto,
-  BootstrapMfaInitResult,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -465,6 +468,15 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.createYear({ client: this.client, body: req }));
   }
 
+  async updateAcademicYear(
+    id: string,
+    req: UpdateYearRequest,
+  ): Promise<AcademicYearDto> {
+    return this.call(
+      sdk.updateYear({ client: this.client, path: { id }, body: req }),
+    );
+  }
+
   async listAcademicYears(): Promise<AcademicYearDto[]> {
     return this.call(sdk.listYears({ client: this.client })) ?? [];
   }
@@ -477,8 +489,33 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getYear({ client: this.client, path: { id } }));
   }
 
+  async activateAcademicYear(id: string): Promise<AcademicYearDto> {
+    return this.call(sdk.activateYear({ client: this.client, path: { id } }));
+  }
+
+  async closeAcademicYear(id: string): Promise<AcademicYearDto> {
+    return this.call(sdk.closeYear({ client: this.client, path: { id } }));
+  }
+
+  async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
+    return this.call(sdk.archiveYear({ client: this.client, path: { id } }));
+  }
+
   async createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto> {
     return this.call(sdk.createPeriod({ client: this.client, body: req }));
+  }
+
+  async updateAcademicPeriod(
+    id: string,
+    req: UpdatePeriodRequest,
+  ): Promise<AcademicPeriodDto> {
+    return this.call(
+      sdk.updatePeriod({ client: this.client, path: { id }, body: req }),
+    );
+  }
+
+  async deleteAcademicPeriod(id: string): Promise<boolean> {
+    return this.call(sdk.deletePeriod({ client: this.client, path: { id } }));
   }
 
   async listAcademicPeriods(): Promise<AcademicPeriodDto[]> {
@@ -957,6 +994,66 @@ export class RemoteClient implements OrbisApiClient {
 
   async calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]> {
     return this.call(sdk.calculateRankings({ client: this.client, body: req })) ?? [];
+  }
+
+  async getStudentTermResults(
+    studentId: string,
+    periodId: string,
+    classId?: string,
+  ): Promise<StudentTermReportCard> {
+    const params = new URLSearchParams({ period_id: periodId });
+    if (classId) params.append("class_id", classId);
+    const url = `${this.baseUrl}/api/v1/students/${studentId}/term-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data;
+  }
+
+  async getStudentAnnualResults(
+    studentId: string,
+    yearId: string,
+    classId?: string,
+  ): Promise<StudentAnnualReportCard> {
+    const params = new URLSearchParams({ year_id: yearId });
+    if (classId) params.append("class_id", classId);
+    const url = `${this.baseUrl}/api/v1/students/${studentId}/annual-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data;
+  }
+
+  async getClassTermResults(
+    classId: string,
+    periodId: string,
+  ): Promise<StudentTermReportCard[]> {
+    const params = new URLSearchParams({ period_id: periodId });
+    const url = `${this.baseUrl}/api/v1/classes/${classId}/term-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data ?? [];
+  }
+
+  async getClassAnnualResults(
+    classId: string,
+    yearId: string,
+  ): Promise<StudentAnnualReportCard[]> {
+    const params = new URLSearchParams({ year_id: yearId });
+    const url = `${this.baseUrl}/api/v1/classes/${classId}/annual-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data ?? [];
   }
 
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {
@@ -1627,22 +1724,11 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
-    return this.call(sdk.getBootstrapStatus({ client: this.client }));
+    return this.call(sdk.getBootstrapStatus({ client: this.client })) as Promise<BootstrapStatusResponse>;
   }
 
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
     return this.call(sdk.executeBootstrap({ client: this.client, body: req }));
-  }
-
-  async bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult> {
-    const issuer = orgName || "Orbis";
-    const account = adminEmail || "admin";
-    const secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
-    return {
-      secret,
-      otpauth_url: `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}`,
-      recovery_codes: ["1234-5678", "8765-4321"],
-    };
   }
 
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
@@ -1662,7 +1748,7 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async onboardingGetState(_orgId?: string): Promise<OnboardingStateDto> {
-    return this.call(sdk.getOnboardingState({ client: this.client }));
+    return this.call(sdk.getOnboardingState({ client: this.client })) as Promise<OnboardingStateDto>;
   }
 
   async onboardingProvisionDefaults(
@@ -1671,7 +1757,7 @@ export class RemoteClient implements OrbisApiClient {
   ): Promise<ProvisionDefaultsResultDto> {
     return this.call(
       sdk.provisionBlueprintDefaults({ client: this.client, body: req }),
-    );
+    ) as Promise<ProvisionDefaultsResultDto>;
   }
 
 
@@ -2006,7 +2092,12 @@ export class RemoteClient implements OrbisApiClient {
 
   async evaluateStudentDocumentRequirements(
     studentId: string,
-    params?: { grade_level_id?: string; is_national?: boolean; is_transfer?: boolean },
+    params?: {
+      grade_level_id?: string;
+      is_national?: boolean;
+      is_special_needs?: boolean;
+      is_transfer?: boolean;
+    },
   ): Promise<StudentDocumentFulfillmentDto[]> {
     return (await this.call(
       sdk.evaluateStudentRequirements({

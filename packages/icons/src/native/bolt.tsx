@@ -27,9 +27,9 @@ export interface BoltProps extends SvgProps {
 }
 
 export function Bolt({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: BoltProps) {
@@ -42,9 +42,10 @@ export function Bolt({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"

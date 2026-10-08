@@ -27,9 +27,9 @@ export interface ClockRotateRightProps extends SvgProps {
 }
 
 export function ClockRotateRight({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ClockRotateRightProps) {
@@ -42,9 +42,10 @@ export function ClockRotateRight({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M12 6L12 12L18 12" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21.8883 10.5C21.1645 5.68874 17.013 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C16.1006 22 19.6248 19.5318 21.1679 16"
 		strokeLinecap="round"

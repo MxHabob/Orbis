@@ -6,15 +6,12 @@ import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { InfoCircle, SettingsAlt } from "@orbis/icons";
-import { getLocale } from "$lib/paraglide/runtime";
 
 let {
   open = $bindable(false),
   classSubjectId,
   periodId,
 }: { open: boolean; classSubjectId: string; periodId: string } = $props();
-
-const isArabic = $derived(getLocale() === "ar");
 
 const componentsQuery = createQuery(() => ({
   queryKey: ["assessment-components", classSubjectId, periodId],
@@ -26,7 +23,7 @@ const components = $derived((componentsQuery.data || []) as any[]);
 </script>
 
 <Sheet bind:open>
-  <SheetContent side={isArabic ? "left" : "right"} class="w-full sm:max-w-md p-0 flex flex-col h-full border-border/50">
+  <SheetContent side="end" class="w-full sm:max-w-md p-0 flex flex-col h-full border-border/50">
     <div class="p-6 border-b border-border/40 bg-muted/20">
       <SheetHeader>
         <SheetTitle class="flex items-center gap-2 text-lg">

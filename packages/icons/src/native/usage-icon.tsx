@@ -27,9 +27,9 @@ export interface UsageIconProps extends SvgProps {
 }
 
 export function UsageIcon({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: UsageIconProps) {
@@ -42,9 +42,10 @@ export function UsageIcon({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M20 20H4V4" strokeLinecap="round" strokeLinejoin="round" />
 	<Path d="M4 16.5L12 9L15 12L19.5 7.5" strokeLinecap="round" strokeLinejoin="round" />
     </Svg>

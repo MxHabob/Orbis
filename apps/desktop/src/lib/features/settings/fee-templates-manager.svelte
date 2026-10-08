@@ -3,6 +3,7 @@
 Lists all fee templates with OrbisGrid, allowing CRUD through FeeTemplateSheet.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api, queryKeys } from "$lib/api";
 import { useQueryClient } from "@tanstack/svelte-query";
@@ -174,7 +175,7 @@ async function handleGridAction(event: GridActionEvent) {
         onclick={() => feeTemplatesQuery.refetch()} 
         class="text-muted-foreground"
       >
-        <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+        {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
       </Button>
       <Button size="sm" onclick={handleCreate} class="text-xs font-bold shrink-0">
         <Plus size={14} class="me-1" />

@@ -6,11 +6,14 @@ import AppCard from "$lib/features/ai/components/integrations/app-card.svelte";
 import CategoryFilter from "$lib/features/ai/components/integrations/category-filter.svelte";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
+import AppDetailSheet from "$lib/features/ai/components/integrations/app-detail-sheet.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let activeCategory = $state("all");
 let searchQuery = $state("");
+let selectedApp = $state<OrbisApp | null>(null);
+let detailSheetOpen = $state(false);
 
 const filteredApps = $derived.by(() => {
   let result: OrbisApp[] =
@@ -32,7 +35,6 @@ const filteredApps = $derived.by(() => {
   return result;
 });
 
-const basePath = $derived(`/${orgId}/ai-center/integrations`);
 </script>
 
 <div class="h-full w-full overflow-y-auto font-sans p-6 scrollbar-hide space-y-6">
@@ -67,7 +69,13 @@ const basePath = $derived(`/${orgId}/ai-center/integrations`);
     {#if filteredApps.length > 0}
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {#each filteredApps as app (app.id)}
-          <AppCard {app} href="{basePath}/{app.id}" />
+          <AppCard
+            {app}
+            onselect={() => {
+              selectedApp = app;
+              detailSheetOpen = true;
+            }}
+          />
         {/each}
       </div>
     {:else}
@@ -81,4 +89,16 @@ const basePath = $derived(`/${orgId}/ai-center/integrations`);
       />
     {/if}
   </main>
+
+  {#if selectedApp}
+    <AppDetailSheet
+      bind:open={detailSheetOpen}
+      {orgId}
+      app={selectedApp}
+      onclose={() => {
+        detailSheetOpen = false;
+        selectedApp = null;
+      }}
+    />
+  {/if}
 </div>

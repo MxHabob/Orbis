@@ -3,25 +3,26 @@
   import { onMount } from "svelte";
   import { api } from "$lib/api/client";
   import type { AppInfo, ReleaseChangelogItem, UpdateCheckResult } from "$lib/api/types";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { formatDate as formatOrgDate } from "$lib/core/i18n";
   import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { ArrowPath, Calendar, Check, Cube } from "@orbis/icons";
+  import { LoadingIndicator, toast } from "@orbis/ui";
+  import { ArrowPath, Sparkles } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+  import EmptyState from "$lib/shared/components/empty-state.svelte";
 
   let releases = $state<ReleaseChangelogItem[]>([]);
   let appInfo = $state<AppInfo | null>(null);
-  let selectedVersion = $state("");
   let isLoading = $state(true);
-  let loadError = $state<string | null>(null);
   let isCheckingUpdate = $state(false);
   let isInstallingUpdate = $state(false);
   let updateResult = $state<UpdateCheckResult | null>(null);
-  let updateError = $state<string | null>(null);
 
-  const isRTL = $derived(getLocale().startsWith("ar"));
-  const activeRelease = $derived(
-    releases.find((release) => release.version === selectedVersion) ?? releases[0] ?? null,
+  // Focus strictly on the current installed release
+  const currentRelease = $derived(
+    releases.find((r) => r.is_current) ??
+    releases.find((r) => r.version === appInfo?.version) ??
+    releases[0] ??
+    null
   );
 
   function formatDate(value?: string) {
@@ -29,23 +30,27 @@
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? null
-      : date.toLocaleDateString(isRTL ? "ar" : "en", { dateStyle: "medium" });
+      : formatOrgDate(date, "date");
   }
 
   async function loadData() {
     isLoading = true;
-    loadError = null;
     try {
       const [releaseList, info] = await Promise.all([
-        api.systemGetChangelog(),
-        api.systemGetAppInfo(),
+        api.systemGetChangelog().catch((err) => {
+          console.warn("Changelog fetch failed, treating as empty:", err);
+          return [] as ReleaseChangelogItem[];
+        }),
+        api.systemGetAppInfo().catch((err) => {
+          console.warn("App info fetch failed:", err);
+          return null;
+        }),
       ]);
       releases = releaseList;
       appInfo = info;
-      selectedVersion = releaseList[0]?.version ?? "";
     } catch (error) {
-      console.error("Failed to load changelog data:", error);
-      loadError = error instanceof Error ? error.message : String(error);
+      console.warn("Failed to load changelog data:", error);
+      releases = [];
     } finally {
       isLoading = false;
     }
@@ -53,13 +58,17 @@
 
   async function handleCheckForUpdates() {
     isCheckingUpdate = true;
-    updateError = null;
     updateResult = null;
     try {
-      updateResult = await api.systemCheckForUpdates();
+      const res = await api.systemCheckForUpdates();
+      updateResult = res;
+      if (!res.has_update) {
+        toast.info(m.shared_ui_latest_version_installed({ version: res.current_version }));
+      }
     } catch (error) {
-      console.error("Failed to check for updates:", error);
-      updateError = error instanceof Error ? error.message : String(error);
+      console.warn("Check for updates failed:", error);
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
     } finally {
       isCheckingUpdate = false;
     }
@@ -67,15 +76,19 @@
 
   async function handleInstallUpdate() {
     isInstallingUpdate = true;
-    updateError = null;
     try {
       await api.systemInstallUpdate();
     } catch (error) {
       console.error("Failed to install update:", error);
-      updateError = error instanceof Error ? error.message : String(error);
+      const msg = error instanceof Error ? error.message : String(error);
+      toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
     } finally {
       isInstallingUpdate = false;
     }
+  }
+
+  function closeWindow() {
+    window.close();
   }
 
   onMount(() => {
@@ -84,213 +97,198 @@
 </script>
 
 <svelte:head>
-  <title>{appInfo ? `${appInfo.name} — ${m.ui_changelog_what_s_new_releases()}` : m.ui_changelog_what_s_new_releases()}</title>
+  <title>{currentRelease?.title ? `${currentRelease.title} (v${currentRelease.version})` : m.ui_changelog_what_s_new_releases()}</title>
 </svelte:head>
 
-<div class="flex min-h-screen flex-col bg-background font-sans text-foreground">
-  <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/50 bg-background/95 px-6 backdrop-blur-md">
-    <div class="flex min-w-0 items-center gap-3">
-      <div class="flex size-7 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
-        <Cube size={16} />
-      </div>
-      <div class="flex min-w-0 items-center gap-2">
-        {#if appInfo}
-          <span class="truncate text-sm font-bold tracking-tight">{appInfo.name}</span>
-        {/if}
-        <span class="text-xs text-muted-foreground">•</span>
-        <span class="truncate text-xs font-medium text-muted-foreground">
-          {m.ui_changelog_what_s_new_releases()}
-        </span>
-      </div>
-      {#if appInfo}
-        <Badge variant="outline" class="h-4 border-primary/40 bg-primary/5 px-1.5 font-mono text-[10px] text-primary">
-          v{appInfo.version}
-        </Badge>
-      {/if}
-    </div>
-
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={isCheckingUpdate}
-      onclick={handleCheckForUpdates}
-      class="h-8 gap-1.5 border-border/60 px-3 text-xs font-normal"
-    >
-      <span class={isCheckingUpdate ? "animate-spin" : ""}><ArrowPath size={13} /></span>
-      <span>{isCheckingUpdate ? m.ui_changelog_checking() : m.ui_changelog_check_for_updates()}</span>
-    </Button>
-  </header>
-
-  {#if updateError}
-    <div class="border-b border-destructive/20 bg-destructive/10 px-6 py-2.5 text-xs text-destructive" role="alert">
-      {m.ui_changelog_update_failed()} {updateError}
-    </div>
-  {/if}
-
-  {#if updateResult}
-    <div class="flex items-center justify-between border-b px-6 py-2.5 text-xs {updateResult.has_update
-      ? 'border-primary/20 bg-primary/10 text-primary'
-      : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}">
-      <div class="flex items-center gap-2">
-        {#if updateResult.has_update}
+<div class="min-h-screen bg-background font-sans text-foreground flex flex-col">
+  <main class="flex-1 w-full max-w-2xl sm:max-w-3xl mx-auto p-5 sm:p-7 flex flex-col gap-5 justify-between">
+    <div class="flex flex-col gap-5">
+      <!-- Update Available Action Bar -->
+      {#if updateResult?.has_update}
+        <div class="flex items-center justify-between rounded-2xl border border-primary/20 bg-primary/10 text-primary p-3 text-xs">
           <span class="font-medium">{m.shared_ui_update_available({ version: updateResult.latest_version })}</span>
-        {:else}
-          <Check size={14} />
-          <span>{m.shared_ui_latest_version_installed({ version: updateResult.current_version })}</span>
-        {/if}
-      </div>
-      {#if updateResult.has_update}
-        <Button
-          variant="default"
-          size="sm"
-          disabled={isInstallingUpdate}
-          onclick={handleInstallUpdate}
-          class="h-8 px-3 text-xs font-medium"
-        >
-          {isInstallingUpdate ? m.ui_changelog_installing_update() : m.ui_changelog_install_and_restart()}
-        </Button>
-      {:else if updateResult.release_url}
-        <a href={updateResult.release_url} target="_blank" rel="noreferrer" class="underline">
-          {m.ui_changelog_download_from_github()}
-        </a>
+          <Button
+            variant="default"
+            size="sm"
+            disabled={isInstallingUpdate}
+            onclick={handleInstallUpdate}
+            class="h-7 px-3 text-xs font-medium cursor-pointer"
+          >
+            {isInstallingUpdate ? m.ui_changelog_installing_update() : m.ui_changelog_install_and_restart()}
+          </Button>
+        </div>
       {/if}
-    </div>
-  {/if}
-
-  <div class="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 overflow-hidden md:grid-cols-12">
-    <aside class="flex flex-col gap-2 overflow-y-auto border-border/40 bg-muted/10 p-4 sm:p-5 md:col-span-4 md:border-e">
-      <div class="px-2 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-        {m.ui_changelog_release_history()}
-      </div>
 
       {#if isLoading}
-        <div class="animate-pulse p-6 text-center text-xs text-muted-foreground">
-          {m.ui_changelog_fetching_live_release_data_from_github()}
+        <div class="flex flex-col items-center justify-center py-28 gap-3 text-muted-foreground text-xs">
+          <LoadingIndicator size="sm" />
+          <span>{m.ui_changelog_loading_release_changelog()}</span>
         </div>
-      {:else if loadError}
-        <p class="p-3 text-xs text-destructive" role="alert">{m.ui_changelog_load_failed()}</p>
-      {:else if releases.length === 0}
-        <p class="p-3 text-xs text-muted-foreground">{m.ui_changelog_no_releases()}</p>
-      {:else}
-        {#each releases as release (release.version)}
-          {@const selected = activeRelease?.version === release.version}
-          {@const date = formatDate(release.published_at)}
-          <button
-            type="button"
-            onclick={() => (selectedVersion = release.version)}
-            aria-pressed={selected}
-            class="flex w-full cursor-pointer flex-col gap-1.5 rounded-xl border p-3 text-start text-xs transition-all {selected
-              ? 'border-border bg-background font-medium text-foreground shadow-sm'
-              : 'border-transparent text-muted-foreground hover:bg-muted/30 hover:text-foreground'}"
-          >
-            <span class="flex items-center justify-between gap-1">
-              <span class="font-mono text-sm font-bold text-foreground">v{release.version}</span>
-              {#if release.is_latest}
-                <Badge variant="default" class="h-4 bg-primary px-1.5 font-mono text-[9px] text-primary-foreground">
-                  {m.ui_changelog_latest()}
-                </Badge>
-              {:else if release.is_current}
-                <Badge variant="secondary" class="h-4 px-1.5 font-mono text-[9px]">
-                  {m.ui_changelog_installed()}
-                </Badge>
-              {/if}
+      {:else if currentRelease}
+        <!-- Visual Banner (Dynamic - only if release provides images) -->
+        {#if currentRelease.images && currentRelease.images.length > 0}
+          <div class="relative w-full h-48 sm:h-56 overflow-hidden rounded-2xl border border-border/40 flex items-center justify-center bg-muted/20 shadow-xs">
+            <img
+              src={currentRelease.images[0]}
+              alt={currentRelease.title}
+              class="w-full h-full object-cover select-none"
+            />
+          </div>
+        {/if}
+
+        <!-- Current Release Header & Typography -->
+        <div class="flex flex-col gap-1.5 text-start">
+          {#if appInfo?.name}
+            <span class="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+              {appInfo.name}
             </span>
-            <span class="line-clamp-1 text-xs text-foreground/80">{release.title}</span>
-            {#if date}
-              <span class="flex items-center gap-1 font-mono text-[10px] text-muted-foreground">
-                <Calendar size={11} />{date}
+          {/if}
+
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="text-xl sm:text-2xl font-black tracking-tight capitalize">
+              {currentRelease.title}
+            </h1>
+            {#if currentRelease.version}
+              <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full border">
+                v{currentRelease.version}
               </span>
             {/if}
-          </button>
-        {/each}
-      {/if}
-    </aside>
-
-    <main class="space-y-6 overflow-y-auto bg-background p-6 sm:p-8 md:col-span-8">
-      {#if isLoading}
-        <p class="py-24 text-center text-sm text-muted-foreground">{m.ui_changelog_loading_release_changelog()}</p>
-      {:else if loadError}
-        <p class="py-24 text-center text-sm text-destructive" role="alert">{m.ui_changelog_load_failed()}</p>
-      {:else if activeRelease}
-        {@const date = formatDate(activeRelease.published_at)}
-        <section class="space-y-3 border-b border-border/40 pb-5">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex min-w-0 items-center gap-2">
-              <Badge variant="outline" class="shrink-0 border-primary/40 bg-primary/5 px-2 py-0.5 font-mono text-[10px] text-primary">
-                v{activeRelease.version}
-              </Badge>
-              <h1 class="text-xl font-bold tracking-tight sm:text-2xl">{activeRelease.title}</h1>
-            </div>
-            <a
-              href={activeRelease.html_url}
-              target="_blank"
-              rel="noreferrer"
-              class="text-xs text-primary underline underline-offset-4"
-            >
-              {m.ui_changelog_github_release()}
-            </a>
+            {#if currentRelease.is_latest}
+              <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {m.ui_changelog_latest()}
+              </span>
+            {/if}
           </div>
-          {#if date}
-            <div class="flex items-center gap-1 text-xs text-muted-foreground">
-              <Calendar size={12} />
-              <span>{m.shared_ui_release_date({ date })}</span>
-            </div>
-          {/if}
-        </section>
 
-        {#if activeRelease.images.length > 0}
-          <section class="space-y-3">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-foreground">{m.ui_changelog_release_images()}</h2>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {#each activeRelease.images as image (image)}
+          <!-- Fully Dynamic Metadata Row -->
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10.5px] font-mono text-muted-foreground pt-1">
+            {#if appInfo?.build_profile}
+              <span class="capitalize">{appInfo.build_profile}</span>
+            {/if}
+            {#if appInfo?.target_os}
+              {#if appInfo?.build_profile}
+                <span>•</span>
+              {/if}
+              <span>{appInfo.target_os}{appInfo.target_arch ? `/${appInfo.target_arch}` : ""}</span>
+            {/if}
+            {#if currentRelease.published_at}
+              {@const pubDate = formatDate(currentRelease.published_at)}
+              {#if pubDate}
+                {#if appInfo?.target_os || appInfo?.build_profile}
+                  <span>•</span>
+                {/if}
+                <span>{pubDate}</span>
+              {/if}
+            {/if}
+          </div>
+        </div>
+
+        <!-- Release Notes Body -->
+        {#if currentRelease.body?.trim()}
+          <section class="space-y-2 pt-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {m.ui_changelog_release_notes()}
+            </h2>
+            <div class="rounded-2xl border border-border/50 bg-card/60 p-4 sm:p-6 shadow-xs">
+              <ReleaseMarkdown markdown={currentRelease.body} />
+            </div>
+          </section>
+        {/if}
+
+        <!-- Additional Images (Dynamic - only if release provides multiple images) -->
+        {#if currentRelease.images && currentRelease.images.length > 1}
+          <section class="space-y-2 pt-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {m.ui_changelog_release_images()}
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {#each currentRelease.images.slice(1) as img (img)}
                 <img
-                  src={image}
-                  alt={activeRelease.title}
+                  src={img}
+                  alt={currentRelease.title}
                   loading="lazy"
-                  referrerpolicy="no-referrer"
-                  class="max-h-72 w-full rounded-lg border border-border/50 bg-muted/20 object-contain"
+                  class="w-full max-h-60 rounded-xl border border-border/50 bg-muted/20 object-contain"
                 />
               {/each}
             </div>
           </section>
         {/if}
 
-        {#if activeRelease.body?.trim()}
-          <section class="space-y-3">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-foreground">{m.ui_changelog_release_notes()}</h2>
-            <div class="rounded-lg border border-border/50 bg-muted/20 p-4">
-              <ReleaseMarkdown markdown={activeRelease.body} />
-            </div>
-          </section>
-        {:else}
-          <p class="rounded-lg border border-border/50 bg-muted/20 p-4 text-sm text-muted-foreground">
-            {m.ui_changelog_no_release_notes()}
-          </p>
-        {/if}
-
-        {#if activeRelease.resources.length > 0}
-          <section class="space-y-3">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-foreground">{m.ui_changelog_release_resources()}</h2>
-            <ul class="space-y-2">
-              {#each activeRelease.resources as resource (resource.url)}
-                <li>
-                  <a
-                    href={resource.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="flex items-center justify-between gap-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-sm text-primary underline underline-offset-4"
-                  >
-                    <span class="min-w-0 truncate">{resource.name}</span>
-                    <span class="shrink-0 font-mono text-xs text-muted-foreground">{(resource.size / 1024).toFixed(0)} KB</span>
-                  </a>
-                </li>
+        <!-- Release Resources (Dynamic - only if release provides resources) -->
+        {#if currentRelease.resources && currentRelease.resources.length > 0}
+          <section class="space-y-2 pt-2">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {m.ui_changelog_release_resources()}
+            </h2>
+            <div class="flex flex-col gap-2">
+              {#each currentRelease.resources as res (res.url)}
+                <a
+                  href={res.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-card/60 hover:bg-muted/40 transition-colors text-xs"
+                >
+                  <span class="font-medium text-foreground">{res.name}</span>
+                  <span class="font-mono text-muted-foreground">{(res.size / 1024).toFixed(0)} KB</span>
+                </a>
               {/each}
-            </ul>
+            </div>
           </section>
         {/if}
       {:else}
-        <p class="py-24 text-center text-sm text-muted-foreground">{m.ui_changelog_no_releases()}</p>
+        <!-- System Empty State when no releases are available -->
+        <EmptyState
+          icon={Sparkles}
+          title={m.ui_changelog_no_releases()}
+          description={m.ui_changelog_no_release_notes()}
+          actionLabel={m.ui_changelog_check_for_updates()}
+          onaction={handleCheckForUpdates}
+          class="py-20"
+        />
       {/if}
-    </main>
-  </div>
+    </div>
+
+    <!-- Bottom Action Row (Always present) -->
+    <div class="flex items-center justify-between gap-2 pt-4 mt-2 border-t border-border/40">
+      <div>
+        {#if currentRelease?.html_url}
+          <Button
+            variant="ghost"
+            size="sm"
+            onclick={() => window.open(currentRelease.html_url, "_blank")}
+            class="inline-flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none text-muted-foreground hover:text-foreground"
+          >
+            <Sparkles size={13} />
+            <span>{m.ui_changelog_github_release()}</span>
+          </Button>
+        {/if}
+      </div>
+
+      <div class="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={isCheckingUpdate}
+          onclick={handleCheckForUpdates}
+          class="h-8 gap-1.5 px-3 text-xs font-semibold cursor-pointer select-none"
+        >
+          {#if isCheckingUpdate}
+            <LoadingIndicator size={13} />
+          {:else}
+            <ArrowPath size={13} />
+          {/if}
+          <span>{isCheckingUpdate ? m.ui_changelog_checking() : m.ui_changelog_check_for_updates()}</span>
+        </Button>
+
+        <Button
+          variant="default"
+          size="sm"
+          onclick={closeWindow}
+          class="text-xs h-8 px-5 font-semibold cursor-pointer"
+        >
+          {m.ui_system_about_close()}
+        </Button>
+      </div>
+    </div>
+  </main>
 </div>

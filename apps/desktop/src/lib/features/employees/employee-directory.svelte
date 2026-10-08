@@ -5,6 +5,7 @@
   search, CSV export, slide-over EmployeeSheet, and unified account lifecycle actions.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -575,7 +576,7 @@ function handleGridAction(event: GridActionEvent) {
         <div class="flex-1 min-h-0 flex flex-col bg-card border border-border rounded-lg overflow-hidden shadow-xs">
           {#if isLoading}
             <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
-              <ArrowPath size={24} class="animate-spin text-primary" />
+              <LoadingIndicator class="text-primary"  size={24} />
               <span class="text-xs">{m.ui_copy_loading_employees_3e3b45d1()}</span>
             </div>
           {:else if error}

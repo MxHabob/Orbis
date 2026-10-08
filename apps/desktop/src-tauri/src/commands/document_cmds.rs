@@ -549,6 +549,7 @@ pub async fn document_evaluate_student_requirements(
     student_id: String,
     grade_level_id: Option<String>,
     is_national: Option<bool>,
+    is_special_needs: Option<bool>,
     is_transfer: Option<bool>,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<StudentDocumentFulfillmentDto>>, String> {
@@ -564,6 +565,7 @@ pub async fn document_evaluate_student_requirements(
             gid,
             is_national.unwrap_or(true),
             is_transfer.unwrap_or(false),
+            is_special_needs.unwrap_or(false),
         )
         .await
         .map_err(|e| e.to_string())?;

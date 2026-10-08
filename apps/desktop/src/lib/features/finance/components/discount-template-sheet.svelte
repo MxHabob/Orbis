@@ -21,7 +21,7 @@ let {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="right" class="w-105 sm:w-120 h-full p-0 flex flex-col overflow-hidden">
+  <Sheet.Content side="end" class="w-105 sm:w-120 h-full p-0 flex flex-col overflow-hidden">
     <DiscountTemplateForm 
       {orgId} 
       {template}

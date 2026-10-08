@@ -14,42 +14,45 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@orbis/ui";
-import { Banknotes, BookOpen, DocumentPage, Grid, Settings, Sparkles, UserGroup, Users } from "@orbis/icons";
+import {
+  AiCenter,
+  BookOpen,
+  EmployeeAffairs,
+  FinanceSystem,
+  Grid,
+  Settings,
+  StudentAffairs,
+  TemplateLibrary,
+} from "@orbis/icons";
 import OrgSidebarSwitcher from "./org-sidebar-switcher.svelte";
 import UserSidebarMenu from "./user-sidebar-menu.svelte";
 import UpgradeButton from "./upgrade-button.svelte";
 import GitIntegrationPopover from "./mulverse-integration-popover.svelte";
 import AutomationStatusPopover from "./orbis-autopilot-popover.svelte";
 import MoreActionsDropdown from "./more-actions-dropdown.svelte";
+import OnboardingPopover from "$lib/features/onboarding-wizard/onboarding-popover.svelte";
+import SystemClock from "./system-clock.svelte";
 
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
 import { createOrganizationQuery } from "$lib/features/settings/queries";
+import { l } from "$lib/core/i18n/locale";
 import { onMount } from "svelte";
 import { prefetchRouteData } from "$lib/api";
 
 let {
   orgId,
-  orgName: initialOrgName = "Orbis School",
+  orgName: initialOrgName,
 }: {
   orgId: string;
-  orgName?: string;
+  orgName?: string | null;
 } = $props();
 
 const orgQuery = createOrganizationQuery(() => orgId);
-
-const fallbackName = $derived.by(() => {
-  if (initialOrgName && initialOrgName !== "Orbis School")
-    return initialOrgName;
-  if (orgId) {
-    return orgId
-      .split("-")
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(" ");
-  }
-  return "Orbis School";
-});
-
-const orgNameDisplay = $derived(orgQuery.data?.name || fallbackName);
+const orgNameDisplay = $derived(
+  l(orgQuery.data?.name_ar, orgQuery.data?.name || initialOrgName || ""),
+);
+const orgNameArabic = $derived(orgQuery.data?.name_ar ?? null);
+const orgPrimaryColor = $derived(orgQuery.data?.primary_color ?? "var(--primary)");
 
 const navItems = $derived([
   {
@@ -60,13 +63,13 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/students`,
-    icon: Users,
+    icon: StudentAffairs,
     label: m.common_word_students(),
     match: "prefix",
   },
   {
     href: `/${orgId}/employees`,
-    icon: UserGroup,
+    icon: EmployeeAffairs,
     label: m.employees_nav_title(),
     match: "prefix",
   },
@@ -78,19 +81,19 @@ const navItems = $derived([
   },
   {
     href: `/${orgId}/finance`,
-    icon: Banknotes,
+    icon: FinanceSystem,
     label: m.common_nav_finance(),
     match: "prefix",
   },
   {
     href: `/${orgId}/templates`,
-    icon: DocumentPage,
+    icon: TemplateLibrary,
     label: m.settings_nav_templates(),
     match: "prefix",
   },
   {
     href: `/${orgId}/ai-center`,
-    icon: Sparkles,
+    icon: AiCenter,
     label: m.common_autopilot_popover_ai_center(),
     match: "prefix",
   },
@@ -114,10 +117,15 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 <TooltipProvider delayDuration={150}>
 	<div class="flex h-full w-12 shrink-0 flex-col items-center justify-between py-3 select-none">
 		<div class="flex flex-col items-center gap-3">
-			<OrgSidebarSwitcher {orgId} orgName={orgNameDisplay} />
+			<OrgSidebarSwitcher
+        {orgId}
+        orgName={orgNameDisplay}
+        orgNameAr={orgNameArabic}
+        primaryColor={orgPrimaryColor}
+      />
 
 			<!-- Divider -->
-			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700  self-center"></div>
+			<div class="w-8 h-px bg-slate-200/80 dark:bg-zinc-700 self-center"></div>
 
 			{#each navItems as item (item.href)}
 				<div class="flex">
@@ -126,6 +134,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 							<Button
 								href={localizeHref(item.href)}
 								variant={isActive(item.href, item.match) ? 'default' : 'ghost'}
+								size="icon"
 								class="rounded-[10px]"
 								aria-label={item.label}
 								aria-current={isActive(item.href, item.match) ? 'page' : undefined}
@@ -135,10 +144,10 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 									prefetchRouteData(segment, orgId);
 								}}
 							>
-								<item.icon size={20} strokeWidth={1.8} />
+								<item.icon size={20} />
 							</Button>
 						</TooltipTrigger>
-						<TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
+						<TooltipContent side="inline-end" sideOffset={12}>{item.label}</TooltipContent>
 					</Tooltip>
 				</div>
 			{/each}
@@ -146,12 +155,13 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 
 		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1.5">
+				<OnboardingPopover {orgId} />
 				<GitIntegrationPopover />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />
         <MoreActionsDropdown orgName={orgNameDisplay} />
 			</div>
-
+      <SystemClock />
 			<UserSidebarMenu {orgId} />
 		</div>
 	</div>

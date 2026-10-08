@@ -27,9 +27,9 @@ export interface ChatBubblesProps extends SvgProps {
 }
 
 export function ChatBubbles({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ChatBubblesProps) {
@@ -42,9 +42,10 @@ export function ChatBubbles({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"

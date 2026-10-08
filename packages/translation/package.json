@@ -1,0 +1,22 @@
+{
+  "name": "@orbis/translation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test && bun run sizecheck",
+    "sizecheck": "bun scripts/check-size.ts",
+    "lint": "biome check ."
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./academic": "./src/dictionaries/academic.ts"
+  },
+  "devDependencies": {
+    "@orbis/tsconfig": "workspace:*",
+    "@types/bun": "latest",
+    "typescript": "^7.0.2"
+  }
+}

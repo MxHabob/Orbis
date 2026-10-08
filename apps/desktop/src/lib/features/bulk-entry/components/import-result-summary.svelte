@@ -12,7 +12,7 @@
   let { result, onreset, onretryfailed, onexportreport }: Props = $props();
 </script>
 
-<div class="w-full max-w-2xl mx-auto my-8 p-8 rounded-3xl bg-card border border-border shadow-xl space-y-6 animate-in fade-in zoom-in-95 duration-200" dir="rtl">
+<div class="w-full max-w-2xl mx-auto my-8 p-8 rounded-3xl bg-card border border-border shadow-xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
   <!-- Status Badge & Icon -->
   <div class="flex flex-col items-center text-center space-y-3">
     {#if result.failedCount === 0}

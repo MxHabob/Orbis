@@ -27,9 +27,9 @@ export interface Cog6Props extends SvgProps {
 }
 
 export function Cog6({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: Cog6Props) {
@@ -42,9 +42,10 @@ export function Cog6({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"

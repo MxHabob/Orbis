@@ -27,9 +27,9 @@ export interface PinProps extends SvgProps {
 }
 
 export function Pin({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: PinProps) {
@@ -42,9 +42,10 @@ export function Pin({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M9.5 14.5L3 21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M5.00007 9.48528L14.1925 18.6777L15.8895 16.9806L15.4974 13.1944L21.0065 8.5211L15.1568 2.67141L10.4834 8.18034L6.69713 7.78823L5.00007 9.48528Z"
 		strokeLinecap="round"

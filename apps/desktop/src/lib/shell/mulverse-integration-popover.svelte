@@ -15,20 +15,24 @@ import { Merge } from "@orbis/icons";
 						{...props}
 						variant="outline" 
 						size="icon-sm" 
-						class="relative cursor-pointer rounded-[10px]"
+						class="relative cursor-pointer"
 						aria-label={m.common_sidebar_mulverse_connect_title()}
 					>
 						<Merge size={16} strokeWidth={1.8} class="text-foreground" />
 						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
 					</Button>
 				</TooltipTrigger>
-				<TooltipContent side="right" sideOffset={12}>
+				<TooltipContent side="inline-end" sideOffset={12}>
 					{m.common_sidebar_mulverse_connect_title()}
 				</TooltipContent>
 			</Tooltip>
 		{/snippet}
 	</PopoverTrigger>
-	<PopoverContent side="right" sideOffset={12} class="w-64 p-4 rounded-xl space-y-3">
+	<PopoverContent
+    side="inline-end"
+    align="end"
+    sideOffset={12}
+	 class="w-64 p-4 space-y-3 backdrop-blur-md">
 		<div class="space-y-1">
 			<h4 class="text-xs font-bold text-foreground">
 				{m.common_sidebar_mulverse_connect_title()}

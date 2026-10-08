@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
+  import { formatNumber } from "$lib/core/i18n";
   import type { BulkPreviewSummary, StudentPreviewDetails, EmployeePreviewDetails, GradePreviewDetails } from "../types";
 
   interface Props {
@@ -18,7 +19,7 @@
 </script>
 
 {#if open && summary}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" dir="rtl">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
     <div class="w-full max-w-2xl rounded-2xl bg-card border border-border shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
       <!-- Header -->
       <div class="px-6 py-4 border-b border-border bg-muted/40 flex items-center justify-between">
@@ -83,7 +84,7 @@
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
                 <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_estimated_receivables()}</span>
-                <span class="text-base font-bold text-primary mt-1 block">{studentDetails.totalEstimatedMandatoryFees.toLocaleString()} {studentDetails.currency}</span>
+                <span class="text-base font-bold text-primary mt-1 block">{formatNumber(studentDetails.totalEstimatedMandatoryFees)} {studentDetails.currency}</span>
               </div>
             </div>
 

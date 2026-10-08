@@ -14,6 +14,32 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{DocumentRepository, DocumentRequirementRepository};
 
+fn target_matches(
+    target_type: RequirementTargetType,
+    target_id: Option<Uuid>,
+    grade_level_id: Option<Uuid>,
+) -> bool {
+    match target_type {
+        RequirementTargetType::Global => true,
+        RequirementTargetType::GradeLevel => target_id.is_some() && target_id == grade_level_id,
+        RequirementTargetType::Stage | RequirementTargetType::Program => false,
+    }
+}
+
+fn condition_applies(
+    condition: DocumentCondition,
+    is_national: bool,
+    is_transfer: bool,
+    is_special_needs: bool,
+) -> bool {
+    match condition {
+        DocumentCondition::AllStudents => true,
+        DocumentCondition::NonNationalOnly => !is_national,
+        DocumentCondition::TransferStudentsOnly => is_transfer,
+        DocumentCondition::SpecialNeedsOnly => is_special_needs,
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CreateDocumentInput {
     pub uploaded_by: Option<Uuid>,
@@ -525,6 +551,7 @@ impl DocumentService {
         grade_level_id: Option<Uuid>,
         is_national: bool,
         is_transfer: bool,
+        is_special_needs: bool,
     ) -> Result<Vec<StudentDocumentFulfillment>, DomainError> {
         let all_org_reqs = self.doc_requirement_repo.find_by_org(org_id).await?;
         let student_docs = self
@@ -536,23 +563,12 @@ impl DocumentService {
 
         for req in all_org_reqs {
             // Check target match
-            let is_target_match = match req.target_type {
-                RequirementTargetType::Global => true,
-                RequirementTargetType::GradeLevel => req.target_id == grade_level_id,
-                _ => true,
-            };
-
-            if !is_target_match {
+            if !target_matches(req.target_type, req.target_id, grade_level_id) {
                 continue;
             }
 
-            // Check condition match
-            let is_applicable = match req.condition {
-                DocumentCondition::AllStudents => true,
-                DocumentCondition::NonNationalOnly => !is_national,
-                DocumentCondition::TransferStudentsOnly => is_transfer,
-                DocumentCondition::SpecialNeedsOnly => true,
-            };
+            let is_applicable =
+                condition_applies(req.condition, is_national, is_transfer, is_special_needs);
 
             // Check if student uploaded matching document
             let uploaded = student_docs
@@ -577,5 +593,60 @@ impl DocumentService {
         }
 
         Ok(results)
+    }
+}
+
+#[cfg(test)]
+mod document_requirement_tests {
+    use super::{condition_applies, target_matches};
+    use orbis_domain::entities::document_requirement::{DocumentCondition, RequirementTargetType};
+    use uuid::Uuid;
+
+    #[test]
+    fn requirement_condition_matches_student_attributes() {
+        assert!(condition_applies(
+            DocumentCondition::SpecialNeedsOnly,
+            true,
+            false,
+            true,
+        ));
+        assert!(!condition_applies(
+            DocumentCondition::SpecialNeedsOnly,
+            true,
+            false,
+            false,
+        ));
+        assert!(condition_applies(
+            DocumentCondition::NonNationalOnly,
+            false,
+            false,
+            false,
+        ));
+        assert!(condition_applies(
+            DocumentCondition::TransferStudentsOnly,
+            true,
+            true,
+            false,
+        ));
+    }
+
+    #[test]
+    fn unsupported_target_types_never_match_every_student() {
+        let grade_level_id = Uuid::new_v4();
+        assert!(target_matches(
+            RequirementTargetType::GradeLevel,
+            Some(grade_level_id),
+            Some(grade_level_id),
+        ));
+        assert!(!target_matches(
+            RequirementTargetType::Stage,
+            Some(grade_level_id),
+            Some(grade_level_id),
+        ));
+        assert!(!target_matches(
+            RequirementTargetType::Program,
+            Some(grade_level_id),
+            Some(grade_level_id),
+        ));
     }
 }

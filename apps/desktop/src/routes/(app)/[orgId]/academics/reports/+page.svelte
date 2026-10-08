@@ -1,4 +1,5 @@
 <script lang="ts">
+  import * as m from "$lib/paraglide/messages";
   import { page } from "$app/state";
   import { AcademicsReports } from "$lib/features/academics";
 
@@ -6,7 +7,7 @@
 </script>
 
 <svelte:head>
-  <title>التقارير الأكاديمية | Orbis</title>
+  <title>{m.ui_page_academics_reports()} | Orbis</title>
 </svelte:head>
 
 <AcademicsReports {orgId} />

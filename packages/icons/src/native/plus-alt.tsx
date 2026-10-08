@@ -27,9 +27,9 @@ export interface PlusAltProps extends SvgProps {
 }
 
 export function PlusAlt({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: PlusAltProps) {
@@ -42,9 +42,10 @@ export function PlusAlt({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M6 12H12M18 12H12M12 12V6M12 12V18" strokeLinecap="round" strokeLinejoin="round"
 	></Path>
     </Svg>

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import QRCode from "qrcode";
 import {
@@ -160,7 +161,7 @@ async function handleVerifyAndActivate() {
     <div class="py-2">
       {#if isLoading}
         <div class="py-12 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-          <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+          <LoadingIndicator size={24} class="h-6 w-6 text-primary" />
           <span class="text-xs">{m.auth_ui_mfa_generating_keys()}</span>
         </div>
       {:else if enrollData}
@@ -314,7 +315,7 @@ async function handleVerifyAndActivate() {
           onclick={handleVerifyAndActivate}
         >
           {#if isSubmitting}
-            <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
+            <LoadingIndicator size={14} class="h-3.5 w-3.5 text-primary" />
             <span>...</span>
           {:else}
             <UserBadgeCheck class="w-3.5 h-3.5" />

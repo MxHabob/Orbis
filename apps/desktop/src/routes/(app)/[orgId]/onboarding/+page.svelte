@@ -7,11 +7,27 @@
 import * as m from "$lib/paraglide/messages";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { systemStore } from "$lib/stores/system.svelte";
-import type { SetupTaskDto, OnboardingTaskCategory, OnboardingTaskStatus } from "$lib/api/types";
-import { onMount } from "svelte";
-import { deriveSteps, findNextIncompleteStep } from "$lib/features/onboarding-wizard/onboarding-steps";
+import { api } from "$lib/api";
+import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
+import {
+  getHijriSchoolMonthLengths,
+  getNextHijriSchoolCalendar,
+} from "$lib/core/i18n/hijri";
+import { effectiveContext, systemStore } from "$lib/stores";
+import type {
+  OnboardingTaskCategory,
+  OnboardingTaskStatus,
+  ProvisionDefaultsReqDto,
+  SetupTaskDto,
+} from "$lib/api/types";
+import {
+  deriveSteps,
+  findNextIncompleteStep,
+  findStepForTask,
+  isTaskAccessible,
+} from "$lib/features/onboarding-wizard/onboarding-steps";
 
 // @orbis/ui components
 import { Button } from "@orbis/ui/button";
@@ -21,6 +37,8 @@ import { Progress } from "@orbis/ui/progress";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import {
   Select,
   SelectTrigger,
@@ -46,6 +64,8 @@ let selectedStatus = $state<string>("all");
 let isProvisionModalOpen = $state(false);
 let isProvisioning = $state(false);
 let provisioningError = $state<string | null>(null);
+let isLoadingOnboarding = $state(false);
+let onboardingLoadFailed = $state(false);
 
 // Provision Form Defaults
 let provYearName = $state("");
@@ -55,16 +75,28 @@ let provSubjects = $state(true);
 let provAssessmentScheme = $state(true);
 let provTuitionFee = $state(true);
 
-onMount(async () => {
-  await loadState();
-});
-
 async function loadState() {
-  await systemStore.loadOnboardingState(orgId);
+  isLoadingOnboarding = true;
+  onboardingLoadFailed = false;
+  try {
+    systemStore.onboardingState = await fetchLatestOnboardingState(orgId);
+  } catch (error) {
+    console.error("Failed to load the onboarding overview state:", error);
+    systemStore.onboardingState = null;
+    onboardingLoadFailed = true;
+  } finally {
+    isLoadingOnboarding = false;
+  }
 }
 
 const state = $derived(systemStore.onboardingState);
 const tasks = $derived(systemStore.onboardingTasks);
+const steps = $derived(
+  deriveSteps(
+    tasks,
+    (permission) => effectiveContext.hasPermission(permission),
+  ),
+);
 const categories = $derived(state?.categories ?? []);
 
 // Category label translations
@@ -118,6 +150,12 @@ function getStatusInfo(status: OnboardingTaskStatus) {
         variant: "outline" as const,
         classes: "text-muted-foreground",
       };
+    case "not_applicable":
+      return {
+        label: m.onboarding_task_status_not_applicable(),
+        variant: "outline" as const,
+        classes: "text-muted-foreground",
+      };
     default:
       return {
         label: m.ui_onboarding_progress_not_started(),
@@ -145,43 +183,76 @@ const filteredTasks = $derived.by(() => {
   });
 });
 
-function getStepRouteForTask(taskId: string): string {
-  if (taskId === "org_profile") return "organization";
-  if (taskId === "org_units" || taskId === "facilities_rooms") return "structure";
-  if (taskId === "academic_year" || taskId === "academic_periods") return "calendar";
-  if (taskId === "academic_subjects" || taskId === "academic_classes" || taskId === "teaching_assignments") return "academics";
-  if (taskId === "chart_of_accounts" || taskId === "fee_templates" || taskId === "discount_templates") return "finance";
-  if (taskId === "assessment_schemes" || taskId === "academic_policy") return "assessment";
-  if (taskId === "student_registration_policy" || taskId === "document_requirements" || taskId === "system_templates" || taskId === "integrations_setup") return "operations";
-  return "review";
-}
-
 async function handleNavigate(task: SetupTaskDto) {
-  if (task.status === "blocked") return;
-  const stepRoute = getStepRouteForTask(task.id);
-  await goto(`/${orgId}/onboarding/${stepRoute}`);
+  const step = findStepForTask(steps, task.id);
+  if (!isTaskAccessible(steps, task.id)) return;
+  await goto(resolve(localizeHref(`/${orgId}/onboarding/${step.route}`)));
 }
 
 async function startGuidedSetup() {
-  const steps = deriveSteps(tasks);
-  const next = findNextIncompleteStep(steps);
-  const targetRoute = next ? next.route : "organization";
-  await goto(`/${orgId}/onboarding/${targetRoute}`);
+  const target = findNextIncompleteStep(steps) ??
+    steps.find((step) => step.id === "review" && step.isAccessible);
+  if (!target) return;
+  await goto(resolve(localizeHref(`/${orgId}/onboarding/${target.route}`)));
 }
 
 async function handleProvisionDefaults() {
   isProvisioning = true;
   provisioningError = null;
   try {
+    const request: ProvisionDefaultsReqDto = {
+      academic_year_name: provYearName || undefined,
+      academic_year_name_ar: provYearNameAr || undefined,
+      provision_stages_and_grades: provStagesAndGrades,
+      provision_subjects: provSubjects,
+      provision_assessment_scheme: provAssessmentScheme,
+      provision_tuition_fee_template: provTuitionFee,
+    };
+    if (state?.institution_type === "school") {
+      const years = await api.listAcademicYears();
+      const academicYear =
+        years.find((year) => year.status === "active") ?? years[0];
+      const calendar = academicYear
+        ? getHijriSchoolMonthLengths(academicYear.start_date)
+        : getNextHijriSchoolCalendar();
+      if (!calendar) {
+        throw new Error(m.onboarding_step_scheduling_invalid_hijri_start());
+      }
+      const toDateValue = (date: Date) =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const startDate = toDateValue(
+        academicYear?.start_date
+          ? new Date(academicYear.start_date)
+          : calendar.startDate,
+      );
+      const endDate = toDateValue(
+        academicYear?.end_date
+          ? new Date(academicYear.end_date)
+          : calendar.endDate,
+      );
+      Object.assign(request, {
+        academic_year_id: academicYear ? String(academicYear.id) : undefined,
+        academic_year_name:
+          academicYear?.name ||
+          provYearName ||
+          `${calendar.hijriYear}/${calendar.hijriYear + 1}`,
+        academic_year_name_ar:
+          academicYear?.name_ar ||
+          provYearNameAr ||
+          `العام الدراسي ${calendar.hijriYear}-${calendar.hijriYear + 1}هـ`,
+        start_date: academicYear?.start_date || new Date(startDate).toISOString(),
+        end_date:
+          academicYear?.end_date ||
+          new Date(`${endDate}T23:59:59.000Z`).toISOString(),
+        provision_hijri_school_calendar: true,
+        hijri_start_year: calendar.hijriYear,
+        hijri_month_lengths: calendar.monthLengths,
+        provision_time_slots: true,
+        enable_period_autopilot: true,
+      });
+    }
     await systemStore.provisionBlueprintDefaults(
-      {
-        academic_year_name: provYearName || undefined,
-        academic_year_name_ar: provYearNameAr || undefined,
-        provision_stages_and_grades: provStagesAndGrades,
-        provision_subjects: provSubjects,
-        provision_assessment_scheme: provAssessmentScheme,
-        provision_tuition_fee_template: provTuitionFee,
-      },
+      request,
       orgId,
     );
     isProvisionModalOpen = false;
@@ -197,6 +268,24 @@ async function handleProvisionDefaults() {
   <title>{m.ui_onboarding_progress_institution_onboarding_readiness()} — Orbis</title>
 </svelte:head>
 
+{#if isLoadingOnboarding}
+  <div class="flex min-h-64 items-center justify-center px-4 py-10">
+    <p class="text-sm text-muted-foreground" role="status" aria-live="polite">
+      {m.onboarding_state_loading()}
+    </p>
+  </div>
+{:else if onboardingLoadFailed}
+  <div class="mx-auto flex min-h-64 w-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
+    <div class="w-full space-y-4 rounded-2xl border border-destructive/30 bg-card p-6 text-start">
+      <p class="text-sm font-semibold text-destructive" role="alert">
+        {m.onboarding_state_load_failed()}
+      </p>
+      <Button variant="outline" size="sm" onclick={loadState}>
+        {m.onboarding_retry()}
+      </Button>
+    </div>
+  </div>
+{:else}
 <div class="max-w-6xl mx-auto space-y-6 p-4 sm:p-6 pb-20">
   <!-- Minimal Page Header -->
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-5">
@@ -232,7 +321,7 @@ async function handleProvisionDefaults() {
         variant="outline"
         size="sm"
         onclick={loadState}
-        disabled={systemStore.isLoading}
+        disabled={isLoadingOnboarding || systemStore.isLoading}
         class="h-9 text-xs"
       >
         <span>{m.common_control_refresh()}</span>
@@ -291,7 +380,7 @@ async function handleProvisionDefaults() {
   </Card>
 
   <!-- Recommended Next Action (Subtle Notice) -->
-  {#if state?.recommended_next_task}
+  {#if state?.recommended_next_task && isTaskAccessible(steps, state.recommended_next_task.id)}
     {@const next = state.recommended_next_task}
     <div class="rounded-xl border border-border/80 bg-muted/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="space-y-0.5">
@@ -380,7 +469,7 @@ async function handleProvisionDefaults() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.ui_onboarding_progress_all_categories()}</SelectItem>
-            {#each categories as cat}
+            {#each categories as cat (cat.category)}
               <SelectItem value={cat.category}>
                 {isArabic ? cat.label_ar : cat.label} ({cat.completed_tasks}/{cat.total_tasks})
               </SelectItem>
@@ -397,6 +486,8 @@ async function handleProvisionDefaults() {
       {@const statusInfo = getStatusInfo(task.status)}
       {@const isBlocked = task.status === "blocked"}
       {@const isComplete = task.status === "completed"}
+      {@const step = findStepForTask(steps, task.id)}
+      {@const isAccessible = isTaskAccessible(steps, task.id)}
 
       <Card class="border-border/60 shadow-xs hover:border-border transition-colors flex flex-col justify-between {isBlocked ? 'opacity-70 bg-muted/10' : ''}">
         <CardContent class="p-4 space-y-3">
@@ -449,7 +540,7 @@ async function handleProvisionDefaults() {
           <Button
             variant={isComplete ? "outline" : "default"}
             size="sm"
-            disabled={isBlocked}
+            disabled={!isAccessible}
             onclick={() => handleNavigate(task)}
             class="h-8 text-xs font-medium"
           >
@@ -471,6 +562,7 @@ async function handleProvisionDefaults() {
     {/each}
   </div>
 </div>
+{/if}
 
 <!-- Auto-Scaffolding Blueprint Dialog -->
 <Dialog bind:open={isProvisionModalOpen}>
@@ -491,32 +583,22 @@ async function handleProvisionDefaults() {
     {/if}
 
     <div class="space-y-3.5 py-2 text-xs">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div class="space-y-1.5">
-          <Label for="prov-year-name" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_progress_year_name_en()}
-          </Label>
-          <Input
-            id="prov-year-name"
-            type="text"
-            placeholder={m.shared_ui_example_academic_year()}
-            bind:value={provYearName}
-            class="h-9 text-xs"
-          />
-        </div>
-        <div class="space-y-1.5">
-          <Label for="prov-year-name-ar" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_progress_year_name_ar()}
-          </Label>
-          <Input
-            id="prov-year-name-ar"
-            type="text"
-            placeholder={m.shared_ui_example_academic_year()}
-            bind:value={provYearNameAr}
-            class="h-9 text-xs"
-          />
-        </div>
-      </div>
+      <BilingualNameFields
+        arId="prov-year-name-ar"
+        enId="prov-year-name"
+        arLabel={m.ui_onboarding_progress_year_name_ar()}
+        enLabel={m.ui_onboarding_progress_year_name_en()}
+        bind:arValue={provYearNameAr}
+        bind:enValue={provYearName}
+        arPlaceholder={m.shared_ui_example_academic_year()}
+        enPlaceholder={m.shared_ui_example_academic_year()}
+        kind="label"
+        requestSuggestion={suggestLocalTranslation}
+        replaceUneditedInitialValues
+        disabled={isProvisioning}
+        loadingMessage={m.bilingual_entry_loading()}
+        failureMessage={m.bilingual_entry_failure()}
+      />
 
       <div class="space-y-2 pt-2 border-t border-border/40">
         <span class="text-xs font-medium text-foreground block">

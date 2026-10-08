@@ -21,6 +21,7 @@ Usage:
   </PeriodGateAction>
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
@@ -103,7 +104,7 @@ const decisionColors: Record<GateDecision, string> = {
 
 {#if gateQuery.isLoading}
   <Button {size} disabled>
-    <ArrowPath class="mr-2 h-4 w-4 animate-spin" />
+    <LoadingIndicator class="mr-2 h-4 w-4"  size={16} />
     {m.shared_ui_checking()}
   </Button>
 {:else if verdict}

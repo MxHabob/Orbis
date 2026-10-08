@@ -13,6 +13,7 @@ import {
   Refresh,
 } from "@orbis/icons";
 import type { DocumentDto } from "$lib/api";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
 let {
   open = $bindable(false),
@@ -63,10 +64,7 @@ $effect(() => {
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return formatOrgDate(value, "datetime");
 }
 
 function formatSize(bytes?: number | null) {
@@ -134,7 +132,7 @@ function endPan() {
 </script>
 
 <Sheet bind:open>
-  <SheetContent side="left" class="w-full sm:max-w-2xl p-0 flex flex-col h-full bg-background">
+  <SheetContent class="flex flex-col h-full sm:max-w-xl md:max-w-2xl overflow-hidden p-0 gap-0">
     {#if document}
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-border/40 px-6 py-4">

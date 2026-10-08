@@ -8,6 +8,9 @@ pub mod m20240105_000001_registration_schema;
 pub mod m20240106_000001_room_floor_name_ar;
 pub mod m20240107_000001_academic_period_kind_assessment_enrichment;
 pub mod m20240108_000001_storage_and_archive_schema;
+pub mod m20240109_000001_organization_format_preferences;
+pub mod m20240110_000001_account_name_ar_and_subtype;
+pub mod m20240111_000001_backfill_standard_subject_arabic_names;
 
 pub struct Migrator;
 
@@ -23,6 +26,9 @@ impl MigratorTrait for Migrator {
             Box::new(m20240106_000001_room_floor_name_ar::Migration),
             Box::new(m20240107_000001_academic_period_kind_assessment_enrichment::Migration),
             Box::new(m20240108_000001_storage_and_archive_schema::Migration),
+            Box::new(m20240109_000001_organization_format_preferences::Migration),
+            Box::new(m20240110_000001_account_name_ar_and_subtype::Migration),
+            Box::new(m20240111_000001_backfill_standard_subject_arabic_names::Migration),
         ]
     }
 }

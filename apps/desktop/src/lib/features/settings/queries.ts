@@ -9,13 +9,16 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { api, queryKeys, type OrgDto, type UserDto } from "$lib/api";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 /** Get the organization details. */
 export function createOrganizationQuery(orgId: () => string) {
   return createQuery<OrgDto>(() => ({
     queryKey: queryKeys.org.current(),
     queryFn: async (): Promise<OrgDto> => {
-      return api.getCurrentOrg();
+      const organization = await api.getCurrentOrg();
+      orgContext.setOrganization(organization);
+      return organization;
     },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
@@ -28,10 +31,11 @@ export function createUpdateOrganizationMutation() {
   return createMutation(() => ({
     mutationFn: (variables: { orgId: string; request: any }) =>
       api.updateCurrentOrg(variables.request),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    onSuccess: async (organization) => {
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.org.all,
       });
+      orgContext.setOrganization(organization);
     },
   }));
 }

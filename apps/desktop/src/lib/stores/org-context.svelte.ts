@@ -13,6 +13,7 @@
 
 import { api } from "$lib/api/client";
 import { extractErrorMessage } from "$lib/api";
+import type { OrgDto } from "$lib/api/types";
 
 export interface OrgConfig {
   id: string;
@@ -23,6 +24,8 @@ export interface OrgConfig {
   timezone: string;
   locale: string;
   dateFormat: string | null;
+  formatLocale: string | null;
+  timeFormat: string | null;
   isHijriEnabled: boolean;
   baseCurrencyCode: string | null;
   primaryColor: string | null;
@@ -33,6 +36,8 @@ export interface OrgConfig {
   isVerified: boolean;
   settings: Record<string, unknown> | null;
   features: Record<string, unknown> | null;
+  institutionType: "school" | "university" | "institute";
+  metadata: Record<string, unknown> | null;
 }
 
 /**
@@ -89,11 +94,20 @@ class OrganizationContextStore {
   /** Organization locale (e.g., "ar", "en", "ar-SA") */
   locale = $derived(this._config?.locale ?? "ar");
 
-  /** Intl-compatible locale tag for formatting APIs */
-  intlLocale = $derived(resolveIntlLocale(this._config?.locale ?? "ar"));
+  /** Locale for rendered data, independent from the application UI language. */
+  intlLocale = $derived(
+    resolveIntlLocale(
+      this._config?.formatLocale && this._config.formatLocale !== "auto"
+        ? this._config.formatLocale
+        : this._config?.locale ?? "ar",
+    ),
+  );
 
   /** Organization date format string (e.g., "DD/MM/YYYY") */
   dateFormat = $derived(this._config?.dateFormat ?? "DD/MM/YYYY");
+
+  /** Time display preference: locale, 12-hour, or 24-hour. */
+  timeFormat = $derived(this._config?.timeFormat ?? "locale");
 
   /** Whether Hijri calendar display is enabled */
   isHijriEnabled = $derived(this._config?.isHijriEnabled ?? false);
@@ -113,6 +127,19 @@ class OrganizationContextStore {
   /** Organization current period ID from backend */
   currentPeriodId = $derived(this._config?.currentPeriodId ?? null);
 
+  /** Institution type: "school" | "university" | "institute" */
+  institutionType = $derived<"school" | "university" | "institute">(
+    this._config?.institutionType ?? "school"
+  );
+
+  /** Organization metadata */
+  metadata = $derived(this._config?.metadata ?? null);
+
+  /** Convenience helpers for institution type */
+  isSchool = $derived(this.institutionType === "school");
+  isUniversity = $derived(this.institutionType === "university");
+  isInstitute = $derived(this.institutionType === "institute");
+
   /** Full config object for components that need multiple fields */
   config = $derived(this._config);
 
@@ -126,32 +153,49 @@ class OrganizationContextStore {
     this.isLoading = true;
     try {
       const org = await api.getCurrentOrg();
-      this._config = {
-        id: org.id,
-        name: org.name,
-        nameAr: org.name_ar ?? null,
-        slug: org.slug,
-        code: org.code ?? null,
-        timezone: org.timezone,
-        locale: org.locale,
-        dateFormat: org.date_format ?? null,
-        isHijriEnabled: org.is_hijri_enabled ?? false,
-        baseCurrencyCode: org.base_currency_code ?? null,
-        primaryColor: org.primary_color ?? null,
-        logo: org.logo ?? null,
-        favicon: org.favicon ?? null,
-        currentPeriodId: org.current_period_id ?? null,
-        isActive: org.is_active ?? true,
-        isVerified: org.is_verified ?? false,
-        settings: (org.settings as Record<string, unknown> | null) ?? null,
-        features: (org.features as Record<string, unknown> | null) ?? null,
-      };
-      this.isInitialized = true;
+      this.setOrganization(org);
     } catch (e: unknown) {
       console.warn("Failed to load organization context:", extractErrorMessage(e));
     } finally {
       this.isLoading = false;
     }
+  }
+
+  setOrganization(org: OrgDto) {
+    const rawType = (
+      org.institution_type ||
+      (org.metadata as any)?.institution_type ||
+      "school"
+    ).toLowerCase();
+    const institutionType: "school" | "university" | "institute" =
+      rawType === "university" ? "university" :
+      rawType === "institute" || rawType === "training_center" ? "institute" : "school";
+
+    this._config = {
+      id: org.id,
+      name: org.name,
+      nameAr: org.name_ar ?? null,
+      slug: org.slug,
+      code: org.code ?? null,
+      timezone: org.timezone,
+      locale: org.locale,
+      dateFormat: org.date_format ?? null,
+      formatLocale: org.format_locale ?? null,
+      timeFormat: org.time_format ?? null,
+      isHijriEnabled: org.is_hijri_enabled ?? false,
+      baseCurrencyCode: org.base_currency_code ?? null,
+      primaryColor: org.primary_color ?? null,
+      logo: org.logo ?? null,
+      favicon: org.favicon ?? null,
+      currentPeriodId: org.current_period_id ?? null,
+      isActive: org.is_active ?? true,
+      isVerified: org.is_verified ?? false,
+      settings: (org.settings as Record<string, unknown> | null) ?? null,
+      features: (org.features as Record<string, unknown> | null) ?? null,
+      institutionType,
+      metadata: (org.metadata as Record<string, unknown> | null) ?? null,
+    };
+    this.isInitialized = true;
   }
 
   /**

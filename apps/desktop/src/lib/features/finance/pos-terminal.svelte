@@ -5,6 +5,7 @@
   canonical multi-channel payment method handling, and atomic General Ledger posting.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import { slide } from "svelte/transition";
 import * as m from "$lib/paraglide/messages";
@@ -311,6 +312,7 @@ const rtl = $derived(getLocale() === "ar");
           <input
             bind:this={searchInputEl}
             type="text"
+            dir="auto"
             value={searchQuery}
             oninput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
             onfocus={() => (isSearchFocused = true)}
@@ -607,6 +609,7 @@ const rtl = $derived(getLocale() === "ar");
             <input
               id="pos_token"
               type="text"
+              dir="auto"
               bind:value={sourceToken}
               placeholder={m.finance_ui_pos_payment_token_placeholder()}
               class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
@@ -623,6 +626,7 @@ const rtl = $derived(getLocale() === "ar");
             <input
               id="pos_ref"
               type="text"
+              dir="auto"
               bind:value={referenceNumber}
               placeholder={formMethod === "check" ? m.finance_ui_check_reference_placeholder() : m.finance_ui_transfer_reference_placeholder()}
               class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
@@ -636,6 +640,7 @@ const rtl = $derived(getLocale() === "ar");
           <input
             id="pos_notes"
             type="text"
+            dir="auto"
             bind:value={notes}
             placeholder={m.finance_ui_receipt_notes_placeholder()}
             class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary"
@@ -663,7 +668,7 @@ const rtl = $derived(getLocale() === "ar");
             class="w-full h-10 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-sm"
           >
             {#if processPaymentMutation.isPending}
-              <ArrowPath size={14} class="animate-spin" />
+              <LoadingIndicator   size={14} />
               <span>{m.finance_ui_posting_entry_and_issuing_receipt()}</span>
             {:else}
               <CheckCircle size={15} />

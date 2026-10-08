@@ -8,7 +8,7 @@ let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
 const basePath = $derived(`/${data.orgId}/finance/reports`);
 const items = $derived([
-  { path: "", label: "النظرة العامة", icon: ChartBar },
+  { path: "", label: m.finance_reports_overview(), icon: ChartBar },
   {
     path: "trial-balance",
     label: m.finance_reports_trial_balance(),

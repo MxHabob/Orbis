@@ -19,6 +19,10 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
+use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
+use orbis_domain::entities::admission::{
+    AdmissionPolicy, FormFieldConfig, NumberingSchema, YearFormat,
+};
 use orbis_domain::entities::identity::{IdentityProvider, UserIdentity};
 use orbis_domain::entities::organization::{InstitutionType, Organization};
 use orbis_domain::entities::person::Person;
@@ -28,6 +32,7 @@ use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::entities::user::User;
 use orbis_domain::entities::user_role_assignment::UserRoleAssignment;
 use orbis_domain::errors::DomainError;
+use rust_decimal::Decimal;
 
 use super::coa_loader::CoaBlueprintLoader;
 use crate::ports::event_bus::EventBus;
@@ -70,6 +75,8 @@ pub struct BootstrapRequest {
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: Option<bool>,
     pub base_currency_code: Option<String>,
 
@@ -426,6 +433,8 @@ impl BootstrapService {
             });
         org.code = Some(auto_code);
         org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
+        org.format_locale = req.format_locale.clone();
+        org.time_format = req.time_format.clone();
         org.is_hijri_enabled = req.is_hijri_enabled.unwrap_or(false);
         org.base_currency_code = req.base_currency_code.clone();
         org.primary_color = req.primary_color.clone().or(Some("#4f46e5".to_string()));
@@ -465,27 +474,233 @@ impl BootstrapService {
     ) -> Result<(), DomainError> {
         let mut settings = OrganizationSettings::default();
 
-        // Apply institution-type-specific defaults
+        // 1. Academic Policies & Evaluation Defaults
         match institution_type {
             InstitutionType::School => {
                 settings.academic.default_grading_system = "percentage".to_string();
+                settings.academic.default_passing_score = Decimal::from(50);
+                settings.academic.default_max_score = Decimal::from(100);
+                settings.academic.passing_threshold_percentage = Decimal::from(50);
+                settings.academic.honors_threshold_percentage = Decimal::from(85);
+                settings.academic.minimum_final_exam_score = Some(Decimal::from(10));
+                settings.academic.max_failed_subjects_for_conditional_pass = 2;
+                settings.academic.min_attendance_rate = Decimal::from(75);
+                settings.academic.ranking_enabled = true;
+                settings.academic.max_displayed_rank = None;
+                settings.academic.ranking_scope = RankingScope::Class;
+                settings.academic.tie_policy = TiePolicy::StandardCompetition;
+                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
+                settings.academic.decimal_places = 2;
                 settings.enrollment.max_class_size_default = 30;
+                settings.enrollment.allow_late_enrollment = false;
             }
             InstitutionType::University => {
                 settings.academic.default_grading_system = "gpa".to_string();
+                settings.academic.default_passing_score = Decimal::from(60);
+                settings.academic.default_max_score = Decimal::from(100);
+                settings.academic.passing_threshold_percentage = Decimal::from(60);
+                settings.academic.honors_threshold_percentage = Decimal::from(90);
+                settings.academic.minimum_final_exam_score = Some(Decimal::from(15));
+                settings.academic.max_failed_subjects_for_conditional_pass = 1;
+                settings.academic.min_attendance_rate = Decimal::from(75);
+                settings.academic.ranking_enabled = true;
+                settings.academic.max_displayed_rank = None;
+                settings.academic.ranking_scope = RankingScope::Cohort;
+                settings.academic.tie_policy = TiePolicy::StandardCompetition;
+                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
+                settings.academic.decimal_places = 2;
                 settings.enrollment.max_class_size_default = 50;
                 settings.enrollment.allow_late_enrollment = true;
             }
             InstitutionType::Institute => {
                 settings.academic.default_grading_system = "percentage".to_string();
+                settings.academic.default_passing_score = Decimal::from(50);
+                settings.academic.default_max_score = Decimal::from(100);
+                settings.academic.passing_threshold_percentage = Decimal::from(50);
+                settings.academic.honors_threshold_percentage = Decimal::from(85);
+                settings.academic.minimum_final_exam_score = Some(Decimal::from(10));
+                settings.academic.max_failed_subjects_for_conditional_pass = 2;
+                settings.academic.min_attendance_rate = Decimal::from(80);
+                settings.academic.ranking_enabled = true;
+                settings.academic.max_displayed_rank = None;
+                settings.academic.ranking_scope = RankingScope::Class;
+                settings.academic.tie_policy = TiePolicy::StandardCompetition;
+                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
+                settings.academic.decimal_places = 2;
                 settings.enrollment.max_class_size_default = 25;
+                settings.enrollment.allow_late_enrollment = false;
             }
         }
+        settings.academic.enrollment_auto_close = true;
+        settings.academic.late_enrollment_approval = true;
+        settings.academic.grade_entry_auto_close = true;
+        settings.academic.allow_grade_edit_after_close = false;
+        settings.academic.grade_edit_approval = true;
+        settings.academic.auto_graduate_final_level = false;
+        settings.academic.exclude_withdrawn = true;
 
-        // Apply currency from bootstrap request
-        if let Some(ref currency) = req.base_currency_code {
-            settings.finance.currency = currency.clone();
-        }
+        // 2. Enrollment Policies
+        settings.enrollment.registration_enabled = true;
+        settings.enrollment.require_admin_approval = true;
+        settings.enrollment.allow_waitlist = true;
+        settings.enrollment.sibling_priority_enabled = true;
+
+        // 3. Admission Configuration (Numbering Schema, Admission Policy, and Standard Form Fields)
+        let prefix = match institution_type {
+            InstitutionType::University => "UNI",
+            InstitutionType::Institute => "INS",
+            _ => "STD",
+        };
+        settings.admission.numbering = NumberingSchema {
+            prefix: prefix.to_string(),
+            year_format: YearFormat::Full,
+            sequence_digits: 4,
+            separator: "-".to_string(),
+        };
+        settings.admission.policy = AdmissionPolicy {
+            requires_approval: true,
+            allow_no_guardian: false,
+            allow_duplicate_national_id: false,
+            auto_assign_fees: true,
+            max_class_capacity: settings.enrollment.max_class_size_default,
+            allow_late_enrollment: settings.enrollment.allow_late_enrollment,
+            allow_waitlist: true,
+            sibling_priority_enabled: true,
+        };
+        settings.admission.fields = vec![
+            FormFieldConfig {
+                key: "national_id".into(),
+                name_ar: "رقم الهوية / الإقامة".into(),
+                name_en: "National ID / Iqama".into(),
+                is_active: true,
+                is_required: true,
+                prevent_duplicate: true,
+                supports_duplicate: true,
+            },
+            FormFieldConfig {
+                key: "phone".into(),
+                name_ar: "رقم الهاتف".into(),
+                name_en: "Phone Number".into(),
+                is_active: true,
+                is_required: true,
+                prevent_duplicate: false,
+                supports_duplicate: true,
+            },
+            FormFieldConfig {
+                key: "email".into(),
+                name_ar: "البريد الإلكتروني".into(),
+                name_en: "Email Address".into(),
+                is_active: true,
+                is_required: false,
+                prevent_duplicate: false,
+                supports_duplicate: true,
+            },
+            FormFieldConfig {
+                key: "birth_date".into(),
+                name_ar: "تاريخ الميلاد".into(),
+                name_en: "Date of Birth".into(),
+                is_active: true,
+                is_required: true,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "sex".into(),
+                name_ar: "الجنس".into(),
+                name_en: "Gender".into(),
+                is_active: true,
+                is_required: true,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "nationality".into(),
+                name_ar: "الجنسية".into(),
+                name_en: "Nationality".into(),
+                is_active: true,
+                is_required: true,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "address".into(),
+                name_ar: "العنوان السكني".into(),
+                name_en: "Residential Address".into(),
+                is_active: true,
+                is_required: false,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "place_of_birth".into(),
+                name_ar: "مكان الميلاد".into(),
+                name_en: "Place of Birth".into(),
+                is_active: true,
+                is_required: false,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "blood_type".into(),
+                name_ar: "فصيلة الدم".into(),
+                name_en: "Blood Type".into(),
+                is_active: true,
+                is_required: false,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "emergency_contact".into(),
+                name_ar: "رقم الطوارئ".into(),
+                name_en: "Emergency Contact".into(),
+                is_active: true,
+                is_required: true,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "medical_notes".into(),
+                name_ar: "ملاحظات طبية".into(),
+                name_en: "Medical Notes".into(),
+                is_active: true,
+                is_required: false,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+            FormFieldConfig {
+                key: "previous_school".into(),
+                name_ar: "المدرسة / الجهة السابقة".into(),
+                name_en: "Previous School / Institution".into(),
+                is_active: true,
+                is_required: false,
+                prevent_duplicate: false,
+                supports_duplicate: false,
+            },
+        ];
+
+        // 4. Financial Policies
+        settings.finance.currency = req
+            .base_currency_code
+            .as_deref()
+            .unwrap_or("SAR")
+            .to_uppercase();
+        settings.finance.tax_rate = 0.15;
+        settings.finance.invoice_due_days = 14;
+        settings.finance.late_fee_type = "fixed".to_string();
+        settings.finance.late_fee_value = 0.0;
+        settings.finance.allow_partial_payments = true;
+
+        // 5. Notifications
+        settings.notifications.notify_parents_on_absence = true;
+        settings.notifications.notify_parents_on_grade_publish = true;
+        settings.notifications.finance_reminder_days = vec![7];
+
+        // 6. Autopilot Defaults
+        settings.autopilot.enabled = false;
+        settings.autopilot.mode = "assisted".to_string();
+        settings.autopilot.grace_days = 3;
+        settings.autopilot.notify_before_deadline_hours = 48;
+        settings.autopilot.max_retries = 3;
 
         self.settings_repo.save_settings(org_id, &settings).await?;
         Ok(())

@@ -1,8 +1,8 @@
 <script lang="ts">
 import { CheckCircle, Info, InfoCircle, XMark } from "@orbis/icons";
 import { Button } from "../button/index.js";
+import { LoadingIndicator } from "../loading-indicator/index.js";
 import { Progress } from "../progress/index.js";
-import Spinner from "../spinner.svelte";
 import { toastStore } from "./toast-state.svelte.js";
 
 let { ...restProps } = $props();
@@ -18,7 +18,7 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
           {:else if item.variant === "error" || item.variant === "destructive"}<XMark size={16} />
           {:else if item.variant === "warning"}<InfoCircle size={16} />
           {:else if item.variant === "info" || item.variant === "ai"}<Info size={16} />
-          {:else}<Spinner size={16} />{/if}
+          {:else}<LoadingIndicator size={16} aria-hidden="true" />{/if}
         </div>
         <div class="toast-content">
           <div class="toast-heading">

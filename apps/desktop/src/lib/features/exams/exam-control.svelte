@@ -112,7 +112,11 @@ async function loadGradeMatrix() {
   try {
     const studentRes = await api.listStudents({ pageSize: 200, classId: selectedClassId });
     const studentItems = studentRes.items || [];
-    const assessmentTypes = ["quiz", "midterm", "final"];
+    const assessmentConfigs = [
+      { type: "monthly", max: 20 },
+      { type: "final", max: 30 },
+    ];
+    const assessmentTypes = assessmentConfigs.map((c) => c.type);
 
     const students: GradeMatrixStudent[] = await Promise.all(
       studentItems.map(async (st: any) => {
@@ -123,17 +127,17 @@ async function loadGradeMatrix() {
             String(g.subject_id) === String(selectedSubjectId) &&
             String(g.period_id) === String(selectedPeriodId),
         );
-        const cells: GradeCell[] = assessmentTypes.map((type) => {
+        const cells: GradeCell[] = assessmentConfigs.map(({ type, max }) => {
           const g = matchingGrades.find((gr: any) => gr.grade_type === type);
           return {
             grade_id: g?.id || null,
             exam_type: type,
             score: g?.raw_score ?? null,
-            max_score: g?.max_score ?? 100,
+            max_score: g?.max_score ?? max,
           };
         });
         const total = cells.reduce((acc, c) => acc + (c.score || 0), 0);
-        const maxTotal = cells.reduce((acc, c) => acc + (c.max_score || 100), 0);
+        const maxTotal = cells.reduce((acc, c) => acc + (c.max_score || 50), 0);
         const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
         return {
           enrollment_id: studentId,
@@ -205,6 +209,7 @@ async function handleSaveAll() {
       for (const key of assessmentKeys) {
         const score = row[`exam_${key}`] ?? row[`score_${key}`];
         if (score !== null && score !== undefined && score !== "") {
+          const max = key === "final" ? 30 : 20;
           items.push({
             student_id: row.student_id,
             period_id: selectedPeriodId,
@@ -212,7 +217,7 @@ async function handleSaveAll() {
             class_id: selectedClassId,
             grade_type: key,
             raw_score: Number(score),
-            max_score: 100,
+            max_score: max,
             weight: 1.0,
             notes: null,
           });
@@ -235,6 +240,25 @@ async function handleSaveAll() {
     toast.error(extractErrorMessage(e) || "Error saving grades");
   } finally {
     isSaving = false;
+  }
+}
+
+let isCalculatingRankings = $state(false);
+
+async function handleCalculateRankings() {
+  if (!selectedPeriodId) return;
+  isCalculatingRankings = true;
+  try {
+    await api.calculateRankings({
+      period_id: selectedPeriodId,
+      class_id: selectedClassId || undefined,
+    });
+    toast.success(m.exams_control_rankings_calculated());
+    await loadGradeMatrix();
+  } catch (err: unknown) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isCalculatingRankings = false;
   }
 }
 
@@ -292,6 +316,8 @@ onMount(() => {
       onRefresh={loadGradeMatrix}
       onSaveAll={handleSaveAll}
       onCellEdit={handleCellEdit}
+      onCalculateRankings={handleCalculateRankings}
+      isCalculating={isCalculatingRankings}
     />
   {/if}
 </div>

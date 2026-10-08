@@ -9,6 +9,8 @@ import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   open = $bindable(false),
@@ -99,8 +101,26 @@ async function saveSlot(event: SubmitEvent) {
 {#if open}
   <section class="shrink-0 rounded-xl border border-primary/30 bg-card/40 p-3 text-start">
     <form class="mt-3 grid grid-cols-1 gap-3 rounded-lg border border-primary/30 bg-background p-3 sm:grid-cols-2 lg:grid-cols-5" onsubmit={saveSlot}>
-      <FormField label={m.academics_schedule_name_ar()} error={form.errors.name_ar?.[0]} required>{#snippet children()}<Input bind:value={nameAr} placeholder={m.academics_schedule_name_ar()} required disabled={isSubmitting} />{/snippet}</FormField>
-      <FormField label={m.academics_schedule_name_en()} error={form.errors.name?.[0]}>{#snippet children()}<Input bind:value={name} placeholder={m.academics_schedule_name_en()} disabled={isSubmitting} />{/snippet}</FormField>
+      <div class="sm:col-span-2 lg:col-span-2">
+        <BilingualNameFields
+          arId="slot-name-ar"
+          enId="slot-name-en"
+          arLabel={m.academics_schedule_name_ar()}
+          enLabel={m.academics_schedule_name_en()}
+          bind:arValue={nameAr}
+          bind:enValue={name}
+          arPlaceholder={m.academics_schedule_name_ar()}
+          enPlaceholder={m.academics_schedule_name_en()}
+          arError={form.errors.name_ar?.[0]}
+          enError={form.errors.name?.[0]}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          arRequired
+          disabled={isSubmitting}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
+      </div>
       <FormField label={m.academics_schedule_start_time()} error={form.errors.start_time?.[0]} required>{#snippet children()}<Input bind:value={startTime} type="time" required disabled={isSubmitting} />{/snippet}</FormField>
       <FormField label={m.academics_schedule_end_time()} error={form.errors.end_time?.[0]} required>{#snippet children()}<Input bind:value={endTime} type="time" required disabled={isSubmitting} />{/snippet}</FormField>
       <div class="flex gap-2">

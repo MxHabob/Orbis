@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -30,6 +31,8 @@ interface Props {
   onRefresh: () => void;
   onSaveAll: () => void;
   onCellEdit: (e: any) => void;
+  onCalculateRankings?: () => void;
+  isCalculating?: boolean;
 }
 
 let {
@@ -46,6 +49,8 @@ let {
   onRefresh,
   onSaveAll,
   onCellEdit,
+  onCalculateRankings,
+  isCalculating = false,
 }: Props = $props();
 </script>
 
@@ -60,6 +65,18 @@ let {
         {#if isDirty}
           <Badge variant="secondary" class="text-[10px]">●</Badge>
         {/if}
+        {#if onCalculateRankings}
+          <Button
+            variant="outline"
+            size="sm"
+            class="text-[10px] h-7 px-2.5 gap-1.5 cursor-pointer text-primary border-primary/30 hover:bg-primary/5"
+            onclick={onCalculateRankings}
+            disabled={isCalculating}
+          >
+            {#if isCalculating}<LoadingIndicator size={11} />{:else}<ChartBar size={11} />{/if}
+            <span>{m.common_control_calculate_ranking()}</span>
+          </Button>
+        {/if}
         <Button
           variant="outline"
           size="sm"
@@ -67,7 +84,7 @@ let {
           onclick={onRefresh}
           disabled={isMatrixLoading}
         >
-          <Refresh size={11} class={isMatrixLoading ? "animate-spin" : ""} />
+          {#if isMatrixLoading}<LoadingIndicator size={11} />{:else}<Refresh size={11} />{/if}
           {m.common_control_refresh()}
         </Button>
         <Button
@@ -78,7 +95,7 @@ let {
           disabled={isSaving || !isDirty}
         >
           {#if isSaving}
-            <ArrowPath size={11} class="animate-spin" />
+            <LoadingIndicator size={11} />
           {:else}
             <FloppyDisk size={11} />
           {/if}

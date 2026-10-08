@@ -27,9 +27,9 @@ export interface AlignVerticalProps extends SvgProps {
 }
 
 export function AlignVertical({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: AlignVerticalProps) {
@@ -42,9 +42,10 @@ export function AlignVertical({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M22 3L2 3" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M22 21L2 21"
 		strokeLinecap="round"

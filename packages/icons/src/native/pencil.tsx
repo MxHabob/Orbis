@@ -27,9 +27,9 @@ export interface PencilProps extends SvgProps {
 }
 
 export function Pencil({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: PencilProps) {
@@ -42,13 +42,14 @@ export function Pencil({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"
-		d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
+		d="m4.1 16.9 12.2-12.2a2.4 2.4 0 0 1 3.4 3.4L7.5 20.3 2.5 21.5l1.6-4.6Zm11-11 3.4 3.4"
 	/>
     </Svg>
   );

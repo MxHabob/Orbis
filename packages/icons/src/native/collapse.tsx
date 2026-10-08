@@ -27,9 +27,9 @@ export interface CollapseProps extends SvgProps {
 }
 
 export function Collapse({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: CollapseProps) {
@@ -42,9 +42,10 @@ export function Collapse({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M20 20L15 15M15 15V19M15 15H19"
 		stroke="currentColor"

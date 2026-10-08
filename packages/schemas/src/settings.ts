@@ -9,6 +9,8 @@ export const generalSettingsInputSchema = z.object({
   timezone: z.string().trim().min(1),
   locale: z.string().trim().min(1),
   dateFormat: z.string().trim().min(1),
+  formatLocale: z.string().trim().min(1),
+  timeFormat: z.enum(["locale", "12-hour", "24-hour"]),
 });
 
 type AppSettingDefinition = {

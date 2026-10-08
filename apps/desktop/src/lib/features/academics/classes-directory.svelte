@@ -18,6 +18,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { l } from "$lib/core/i18n/locale";
 import { fade } from "svelte/transition";
 import ClassCreateSheet from "$lib/features/academics/components/class-create-sheet.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -92,6 +93,15 @@ const averageClassSize = $derived(
 const pageLoading = $derived(
   classesQuery.isLoading || periodsQuery.isLoading || enrollmentsQuery.isLoading,
 );
+const classMenuActions = $derived([
+  {
+    id: "refresh",
+    label: m.operations_ui_refresh(),
+    icon: Refresh,
+    disabled: pageLoading,
+    onSelect: refetchAll,
+  },
+]);
 </script>
 
 <div
@@ -171,26 +181,14 @@ const pageLoading = $derived(
 			</div>
 
 			<CardAction>
-				<div class="flex items-center gap-2">
-					<Button
-						variant="ghost"
-						size="icon-sm"
-						onclick={refetchAll}
-						class="text-muted-foreground"
-					>
-						<Refresh size={14} class={pageLoading ? "animate-spin" : ""} />
-					</Button>
-
-					<Button
-						variant="default"
-						size="sm"
-						class="h-8 px-3 text-xs font-bold gap-1.5 shadow-sm"
-						onclick={() => (isModalOpen = true)}
-					>
-						<Plus size={14} />
-						{m.common_classes_new_class()}
-					</Button>
-				</div>
+				<SplitActionMenu
+					label={m.common_classes_new_class()}
+					menuLabel={m.operations_ui_actions()}
+					icon={Plus}
+					actions={classMenuActions}
+					onprimary={() => (isModalOpen = true)}
+					disabled={pageLoading}
+				/>
 			</CardAction>
 		</CardHeader>
 

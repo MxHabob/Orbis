@@ -41,7 +41,9 @@ import type {
   AcademicContextResponse,
   PeriodTemplateDto,
   CreateYearRequest,
+  UpdateYearRequest,
   CreatePeriodRequest,
+  UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
   ClassSubjectDto,
@@ -232,12 +234,6 @@ export interface PersonDto {
   address?: string | null;
   created_at: string;
   updated_at: string;
-}
-
-export interface BootstrapMfaInitResult {
-  secret: string;
-  otpauth_url: string;
-  recovery_codes: string[];
 }
 
 export interface StudentDetailDto {
@@ -912,6 +908,8 @@ export interface BootstrapRequest {
   timezone: string;
   locale: string;
   date_format?: string;
+  format_locale?: string;
+  time_format?: "locale" | "12-hour" | "24-hour";
   is_hijri_enabled?: boolean;
   base_currency_code?: string;
   primary_color?: string;
@@ -1165,6 +1163,7 @@ export interface OnboardingStateDto {
 }
 
 export interface ProvisionDefaultsReqDto {
+  academic_year_id?: string;
   academic_year_name?: string;
   academic_year_name_ar?: string;
   start_date?: string;
@@ -1173,12 +1172,143 @@ export interface ProvisionDefaultsReqDto {
   provision_subjects?: boolean;
   provision_assessment_scheme?: boolean;
   provision_tuition_fee_template?: boolean;
+  provision_discount_templates?: boolean;
+  provision_hijri_school_calendar?: boolean;
+  hijri_start_year?: number;
+  hijri_month_lengths?: number[];
+  provision_time_slots?: boolean;
+  enable_period_autopilot?: boolean;
 }
 
 export interface ProvisionDefaultsResultDto {
   success: boolean;
   created_items: string[];
   state: OnboardingStateDto;
+}
+
+export type RoundingMode = 'round_half_up' | 'round_up' | 'round_down' | 'truncate';
+export type RankingScope = 'class' | 'grade_level' | 'org_unit' | 'cohort';
+export type TiePolicy = 'standard_competition' | 'dense' | 'fractional';
+export type AcademicStatus =
+  | 'passed'
+  | 'passed_with_honors'
+  | 'conditional_pass'
+  | 'failed'
+  | 'incomplete'
+  | 'absent'
+  | 'probation'
+  | 'withdrawn';
+
+export interface ComponentScore {
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  score: number;
+  max_score: number;
+}
+
+export interface PeriodComponentScores {
+  components: ComponentScore[];
+  total: number;
+  total_max: number;
+}
+
+export interface PeriodAssessmentResult {
+  period_id: string;
+  period_code: string;
+  period_name: string;
+  period_name_ar?: string | null;
+  breakdown: PeriodComponentScores;
+}
+
+export interface SubjectTermResult {
+  subject_id: string;
+  subject_code: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  credit_hours: number;
+  monthly_results: PeriodAssessmentResult[];
+  monthly_average: number;
+  monthly_contribution: number;
+  monthly_contribution_max: number;
+  term_final_exam?: number | null;
+  term_final_exam_max: number;
+  term_total: number;
+  term_max: number;
+  percentage: number;
+  letter_grade?: string | null;
+  status: AcademicStatus;
+}
+
+export interface SubjectAnnualResult {
+  subject_id: string;
+  subject_code: string;
+  subject_name: string;
+  subject_name_ar?: string | null;
+  credit_hours: number;
+  term_1_result?: SubjectTermResult | null;
+  term_2_result?: SubjectTermResult | null;
+  annual_total: number;
+  annual_max: number;
+  percentage: number;
+  letter_grade?: string | null;
+  status: AcademicStatus;
+}
+
+export interface StudentTermReportCard {
+  student_id: string;
+  student_name: string;
+  student_number?: string | null;
+  class_id: string;
+  class_name: string;
+  period_id: string;
+  period_name: string;
+  subjects: SubjectTermResult[];
+  total_score: number;
+  max_possible_score: number;
+  overall_percentage: number;
+  gpa?: number | null;
+  rank_in_class?: number | null;
+  rank_in_grade?: number | null;
+  total_students_in_class: number;
+  total_students_in_grade: number;
+  status: AcademicStatus;
+  calculated_at: string;
+}
+
+export interface StudentAnnualReportCard {
+  student_id: string;
+  student_name: string;
+  student_number?: string | null;
+  class_id: string;
+  class_name: string;
+  academic_year_id: string;
+  academic_year_name: string;
+  subjects: SubjectAnnualResult[];
+  total_score: number;
+  max_possible_score: number;
+  overall_percentage: number;
+  cumulative_gpa?: number | null;
+  rank_in_class?: number | null;
+  rank_in_grade?: number | null;
+  total_students_in_class: number;
+  total_students_in_grade: number;
+  status: AcademicStatus;
+  calculated_at: string;
+}
+
+export interface AcademicPolicy {
+  org_id: string;
+  passing_threshold_percentage: number;
+  honors_threshold_percentage: number;
+  minimum_final_exam_score?: number | null;
+  max_failed_subjects_for_conditional_pass: number;
+  rounding_mode: RoundingMode;
+  decimal_places: number;
+  ranking_scope: RankingScope;
+  tie_policy: TiePolicy;
+  ranking_enabled: boolean;
+  max_displayed_rank?: number | null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1230,10 +1360,16 @@ export interface OrbisApiClient {
 
   // ── Calendar ────────────────────────────────────────────────
   createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto>;
+  updateAcademicYear(id: string, req: UpdateYearRequest): Promise<AcademicYearDto>;
   listAcademicYears(): Promise<AcademicYearDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
   getAcademicYear(id: string): Promise<AcademicYearDto>;
+  activateAcademicYear(id: string): Promise<AcademicYearDto>;
+  closeAcademicYear(id: string): Promise<AcademicYearDto>;
+  archiveAcademicYear(id: string): Promise<AcademicYearDto>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
+  updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
+  deleteAcademicPeriod(id: string): Promise<boolean>;
   listAcademicPeriods(): Promise<AcademicPeriodDto[]>;
   getAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
@@ -1352,6 +1488,24 @@ export interface OrbisApiClient {
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto>;
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
+  getStudentTermResults(
+    studentId: string,
+    periodId: string,
+    classId?: string,
+  ): Promise<StudentTermReportCard>;
+  getStudentAnnualResults(
+    studentId: string,
+    yearId: string,
+    classId?: string,
+  ): Promise<StudentAnnualReportCard>;
+  getClassTermResults(
+    classId: string,
+    periodId: string,
+  ): Promise<StudentTermReportCard[]>;
+  getClassAnnualResults(
+    classId: string,
+    yearId: string,
+  ): Promise<StudentAnnualReportCard[]>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   batchMarkAttendance(
     req: BatchMarkAttendanceRequest,
@@ -1470,6 +1624,7 @@ export interface OrbisApiClient {
     params?: {
       grade_level_id?: string;
       is_national?: boolean;
+      is_special_needs?: boolean;
       is_transfer?: boolean;
     },
   ): Promise<StudentDocumentFulfillmentDto[]>;
@@ -1568,7 +1723,6 @@ export interface OrbisApiClient {
   bootstrapGenerateSlug(name: string, nameAr?: string): Promise<SlugGenerationResult>;
   bootstrapGetStatus(): Promise<BootstrapStatusResponse>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
-  bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
 
   // ── Onboarding & DAG Readiness ──────────────────────────────

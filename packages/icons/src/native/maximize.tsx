@@ -8,8 +8,8 @@ export interface IconProps extends SvgProps {
 }
 
 export const Maximize: React.FC<IconProps> = ({
-	size = 24,
-	strokeWidth = 1.5,
+	size = 16,
+	strokeWidth = 1.75,
 	color = 'currentColor',
 	...props
 }) => (
@@ -20,10 +20,9 @@ export const Maximize: React.FC<IconProps> = ({
 		fill="none"
 		stroke={color}
 		strokeWidth={strokeWidth}
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		{...props}
-	>
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}>
 		<Rect x="4" y="4" width="16" height="16" rx="2" />
 	</Svg>
 );

@@ -3,6 +3,7 @@
   Handles OAuth login & account linking callback flows for third-party providers.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { page } from "$app/state";
@@ -400,7 +401,7 @@ onMount(() => {
 
       {#if status === "authenticating" || status === "linking"}
         <div class="flex flex-col items-center gap-3 my-4">
-          <Refresh class="w-6 h-6 text-primary animate-spin" />
+          <LoadingIndicator size="lg" label={isLinking ? m.auth_provider_verifying() : m.auth_provider_connecting({ provider: providerConfig.name })} />
           <p class="text-xs text-muted-foreground">
             {isLinking ? m.auth_provider_verifying() : m.auth_provider_connecting({ provider: providerConfig.name })}
           </p>

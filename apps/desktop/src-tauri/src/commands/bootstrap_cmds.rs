@@ -36,6 +36,8 @@ pub struct BootstrapRequest {
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
+    pub format_locale: Option<String>,
+    pub time_format: Option<String>,
     pub is_hijri_enabled: Option<bool>,
     pub base_currency_code: Option<String>,
 
@@ -691,6 +693,8 @@ pub async fn bootstrap_execute(
         timezone: request.timezone,
         locale: request.locale,
         date_format: request.date_format,
+        format_locale: request.format_locale,
+        time_format: request.time_format,
         is_hijri_enabled: request.is_hijri_enabled,
         base_currency_code: request.base_currency_code,
         primary_color: request.primary_color,
@@ -749,60 +753,5 @@ pub async fn bootstrap_execute(
         admin_email: result.admin_email,
         setup_required: result.setup_required,
         warnings: result.warnings,
-    })
-}
-
-/// Strongly-typed TOTP enrollment result for bootstrap.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BootstrapMfaInitResult {
-    pub secret: String,
-    pub otpauth_url: String,
-    pub recovery_codes: Vec<String>,
-}
-
-/// Initialize authentic TOTP secret and recovery codes for master admin bootstrap.
-#[tauri::command]
-pub async fn bootstrap_init_mfa(
-    admin_email: Option<String>,
-    org_name: Option<String>,
-) -> Result<BootstrapMfaInitResult, String> {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    const BASE32_ALPHABET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-
-    let secret: String = (0..32)
-        .map(|_| {
-            let idx = rng.gen_range(0..BASE32_ALPHABET.len());
-            BASE32_ALPHABET[idx] as char
-        })
-        .collect();
-
-    let issuer = org_name
-        .as_deref()
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .unwrap_or("Orbis");
-    let account = admin_email
-        .as_deref()
-        .map(|s| s.trim())
-        .filter(|s| !s.is_empty())
-        .unwrap_or("admin");
-    let otpauth_url = format!(
-        "otpauth://totp/{}:{}?secret={}&issuer={}&algorithm=SHA1&digits=6&period=30",
-        issuer, account, secret, issuer
-    );
-
-    let recovery_codes: Vec<String> = (0..8)
-        .map(|_| {
-            let a: String = (0..4).map(|_| rng.gen_range(0..10).to_string()).collect();
-            let b: String = (0..4).map(|_| rng.gen_range(0..10).to_string()).collect();
-            format!("{}-{}", a, b)
-        })
-        .collect();
-
-    Ok(BootstrapMfaInitResult {
-        secret,
-        otpauth_url,
-        recovery_codes,
     })
 }

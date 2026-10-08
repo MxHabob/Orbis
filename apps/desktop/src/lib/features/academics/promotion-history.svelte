@@ -15,6 +15,7 @@ import {
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
+import { LoadingIndicator } from "@orbis/ui";
 import {
   Card,
   CardHeader,
@@ -151,7 +152,11 @@ function statusLabel(status: string) {
             <div class="flex items-center justify-between gap-4">
               <div class="flex items-center gap-3.5 min-w-0">
                 <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 select-none text-primary">
-                  <Icon class="size-4 {job.status === 'executing' ? 'animate-spin' : ''}" />
+                  {#if job.status === "executing"}
+                    <LoadingIndicator size={16} />
+                  {:else}
+                    <Icon class="size-4" />
+                  {/if}
                 </div>
 
                 <div class="min-w-0 text-start">

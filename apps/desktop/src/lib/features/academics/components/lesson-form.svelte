@@ -2,8 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { untrack } from "svelte";
 import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
-import { l } from "$lib/core/i18n";
-import { getLocale } from "$lib/paraglide/runtime";
+import { formatDate, l } from "$lib/core/i18n";
 import { createClassSubjectsQuery } from "$lib/features/academics/queries";
 import { lessonFormInputSchema } from "@orbis/schemas";
 import {
@@ -117,9 +116,10 @@ const weekdays = $derived(
     const value = index + 1;
     return {
       value,
-      label: new Intl.DateTimeFormat(getLocale(), { weekday: "long" }).format(
-        new Date(Date.UTC(2023, 0, value)),
-      ),
+      label: formatDate(new Date(Date.UTC(2023, 0, value)), "date", {
+        weekday: "long",
+        timeZone: "UTC",
+      }),
     };
   }),
 );

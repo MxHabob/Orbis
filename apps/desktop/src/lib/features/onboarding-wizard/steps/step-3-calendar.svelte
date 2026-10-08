@@ -1,8 +1,13 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
+import {
+  getHijriSchoolMonthLengths,
+  getNextHijriSchoolCalendar,
+} from "$lib/core/i18n/hijri";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -10,31 +15,56 @@ import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmittingYear = $state(false);
 let isSubmittingPeriod = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
 let years = $state<AcademicYearDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 
+function dateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 // Academic Year Form
-let yearName = $state("2026/2027");
-let yearNameAr = $state("العام الدراسي 1447-1448هـ / 2026-2027م");
-let yearStartDate = $state("2026-09-01");
-let yearEndDate = $state("2027-06-30");
+let yearName = $state("");
+let yearNameAr = $state("");
+let yearStartDate = $state("");
+let yearEndDate = $state("");
 
 // Selected Year for Period Creation
 let selectedYearId = $state<string>("");
 
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const isSchool = $derived(systemStore.onboardingState?.institution_type === "school");
+
+function applyRecommendedYear() {
+  const calendar = getNextHijriSchoolCalendar();
+  if (!calendar) {
+    toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
+    return;
+  }
+
+  yearName = `${calendar.hijriYear}/${calendar.hijriYear + 1}`;
+  yearNameAr = `العام الدراسي ${calendar.hijriYear}-${calendar.hijriYear + 1}هـ`;
+  yearStartDate = dateInputValue(calendar.startDate);
+  yearEndDate = dateInputValue(calendar.endDate);
+}
 
 onMount(async () => {
   await loadData();
@@ -44,8 +74,8 @@ async function loadData() {
   try {
     isLoading = true;
     const [yearsRes, periodsRes] = await Promise.all([
-      api.listAcademicYears().catch(() => []),
-      api.listAcademicPeriods().catch(() => []),
+      api.listAcademicYears(),
+      api.listAcademicPeriods(),
     ]);
     years = yearsRes;
     periods = periodsRes;
@@ -54,7 +84,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load calendar data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -62,16 +92,15 @@ async function loadData() {
 
 async function handleCreateYear() {
   if (!yearName.trim() && !yearNameAr.trim()) {
-    errorMessage = m.onboarding_step3_year_err_name();
+    toast.error(m.onboarding_step3_year_err_name());
     return;
   }
   if (!yearStartDate || !yearEndDate) {
-    errorMessage = m.onboarding_step3_year_err_dates();
+    toast.error(m.onboarding_step3_year_err_dates());
     return;
   }
 
   isSubmittingYear = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -84,11 +113,15 @@ async function handleCreateYear() {
 
     years = [...years, newYear];
     selectedYearId = String(newYear.id);
-    await systemStore.loadOnboardingState(orgId);
+    yearName = "";
+    yearNameAr = "";
+    yearStartDate = "";
+    yearEndDate = "";
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step3_year_created_success();
   } catch (err: any) {
     console.error("Failed to create academic year:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingYear = false;
   }
@@ -96,16 +129,47 @@ async function handleCreateYear() {
 
 async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | "4_quarters") {
   if (!selectedYearId) {
-    errorMessage = m.onboarding_step3_period_err_year();
+    toast.error(m.onboarding_step3_period_err_year());
     return;
   }
 
   isSubmittingPeriod = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
-    const currentYear = years.find((y) => String(y.id) === String(selectedYearId));
+    const currentYear = years.find((year) => String(year.id) === String(selectedYearId));
+    if (scheme === "2_semesters" && isSchool) {
+      const calendar = getHijriSchoolMonthLengths(
+        currentYear?.start_date ?? `${yearStartDate}T00:00:00Z`,
+      );
+      if (!calendar) {
+        toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
+        return;
+      }
+      await api.onboardingProvisionDefaults(
+        {
+          academic_year_id: selectedYearId,
+          academic_year_name: currentYear?.name ?? yearName,
+          academic_year_name_ar: currentYear?.name_ar ?? yearNameAr,
+          start_date: currentYear?.start_date ?? new Date(yearStartDate).toISOString(),
+          end_date: currentYear?.end_date ?? new Date(yearEndDate).toISOString(),
+          provision_hijri_school_calendar: true,
+          hijri_start_year: calendar.hijriYear,
+          hijri_month_lengths: calendar.monthLengths,
+          provision_stages_and_grades: false,
+          provision_subjects: false,
+          provision_assessment_scheme: false,
+          provision_tuition_fee_template: false,
+          enable_period_autopilot: false,
+        },
+        orgId,
+      );
+      periods = await api.listAcademicPeriods();
+      await refreshOnboardingState(orgId, m.common_action_failed());
+      successMessage = m.onboarding_step3_periods_generated_success();
+      return;
+    }
+
     const startYear = currentYear ? new Date(currentYear.start_date).getFullYear() : 2026;
     const endYear = currentYear ? new Date(currentYear.end_date).getFullYear() : 2027;
 
@@ -135,22 +199,23 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
       periods = [...periods, created];
     }
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step3_periods_generated_success();
   } catch (err: any) {
     console.error("Failed to generate periods:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingPeriod = false;
   }
 }
 
-async function handleContinue() {
-  if (years.length === 0 && yearName.trim()) {
-    await handleCreateYear();
-  }
-  await goto(`/${orgId}/onboarding/academics`);
+async function deletePeriod(period: AcademicPeriodDto) {
+  const deleted = await api.deleteAcademicPeriod(String(period.id));
+  if (!deleted) throw new Error(m.common_action_failed());
+  periods = periods.filter((item) => item.id !== period.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
+
 </script>
 
 <div class="space-y-6">
@@ -162,12 +227,6 @@ async function handleContinue() {
     status={isTaskComplete ? "completed" : years.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -178,7 +237,7 @@ async function handleContinue() {
 
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
-      <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+      <LoadingIndicator size={16} class="size-4 text-primary" />
       <span>{m.common_control_loading()}</span>
     </div>
   {:else}
@@ -190,27 +249,39 @@ async function handleContinue() {
       isComplete={years.length > 0}
     >
       <div class="space-y-4">
+        {#if isSchool}
+          <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSubmittingYear}
+              onclick={applyRecommendedYear}
+              class="text-xs"
+            >
+              {m.onboarding_step3_hijri_school_calendar()}
+            </Button>
+          </OnboardingPresetBar>
+        {/if}
+
         <!-- Year Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step3_year_name_en()}
-              </Label>
-              <Input
-                bind:value={yearName}
-                placeholder="2026/2027"
-                dir="ltr"
-              />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
-                {m.onboarding_step3_year_name_ar()}
-              </Label>
-              <Input
-                bind:value={yearNameAr}
-                placeholder="1447-1448هـ / 2026-2027م"
-                dir="rtl"
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-year-name-ar"
+                enId="onboarding-year-name-en"
+                arLabel={m.onboarding_step3_year_name_ar()}
+                enLabel={m.onboarding_step3_year_name_en()}
+                bind:arValue={yearNameAr}
+                bind:enValue={yearName}
+                arPlaceholder={m.onboarding_step3_year_name_ar_placeholder()}
+                enPlaceholder="2026/2027"
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmittingYear}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
               />
             </div>
             <div class="space-y-1.5">
@@ -288,43 +359,42 @@ async function handleContinue() {
     >
       <div class="space-y-4">
         <!-- Quick Preset Generator Buttons -->
-        <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-          <div class="text-xs font-semibold text-foreground">
-            ⚡ {m.onboarding_step3_quick_schemes()}
-          </div>
-          <p class="text-xs text-muted-foreground">
-            {m.onboarding_step3_quick_schemes_desc()}
-          </p>
-          <div class="flex flex-wrap gap-2">
+        <OnboardingPresetBar
+          title={m.onboarding_step3_quick_schemes()}
+          description={m.onboarding_step3_quick_schemes_desc()}
+        >
             <Button
               variant="outline"
               size="sm"
               disabled={isSubmittingPeriod || years.length === 0}
               onclick={() => handleGenerateSemesters("2_semesters")}
-              class="text-xs bg-background hover:bg-muted"
+              class="text-xs"
             >
-              {m.onboarding_step3_2_semesters()}
+              {isSchool
+                ? m.onboarding_step3_hijri_school_calendar()
+                : m.onboarding_step3_2_semesters()}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || years.length === 0}
-              onclick={() => handleGenerateSemesters("3_trimesters")}
-              class="text-xs bg-background hover:bg-muted"
-            >
-              {m.onboarding_step3_3_trimesters()}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || years.length === 0}
-              onclick={() => handleGenerateSemesters("4_quarters")}
-              class="text-xs bg-background hover:bg-muted"
-            >
-              {m.onboarding_step3_4_quarters()}
-            </Button>
-          </div>
-        </div>
+            {#if !isSchool}
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isSubmittingPeriod || years.length === 0}
+                onclick={() => handleGenerateSemesters("3_trimesters")}
+                class="text-xs"
+              >
+                {m.onboarding_step3_3_trimesters()}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isSubmittingPeriod || years.length === 0}
+                onclick={() => handleGenerateSemesters("4_quarters")}
+                class="text-xs"
+              >
+                {m.onboarding_step3_4_quarters()}
+              </Button>
+            {/if}
+        </OnboardingPresetBar>
 
         <!-- Existing Periods List -->
         {#if periods.length > 0}
@@ -348,9 +418,12 @@ async function handleContinue() {
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" class="text-[10px] uppercase">
-                    {p.period_type}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="secondary" class="text-[10px] uppercase">
+                      {p.period_type}
+                    </Badge>
+                    <DeleteRecordButton label={p.name_ar || p.name} onDelete={() => deletePeriod(p)} />
+                  </div>
                 </div>
               {/each}
             </div>
@@ -359,26 +432,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Actions Bar -->
-    <div class="flex items-center justify-between border-t border-border/50 pt-6">
-      <Button
-        variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding/structure`)}
-        class="text-xs"
-      >
-        {m.onboarding_step3_back_btn()}
-      </Button>
-
-      <div class="flex items-center gap-3">
-        <Button
-          variant="default"
-          disabled={years.length === 0 && !yearName.trim()}
-          onclick={handleContinue}
-          class="text-xs font-semibold shadow-xs"
-        >
-          {m.onboarding_step3_continue_btn()}
-        </Button>
-      </div>
-    </div>
   {/if}
 </div>

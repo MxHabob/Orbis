@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { untrack } from "svelte";
 import { api, queryKeys } from "$lib/api";
@@ -565,7 +566,7 @@ async function handleSubmit(e: SubmitEvent) {
           disabled={isSubmitting || (activeTab === "gl" && !glParentId)}
         >
           {#if isSubmitting}
-            <ArrowPath size={13} class="animate-spin" />
+            <LoadingIndicator   size={13} />
           {:else}
             <Check size={13} />
           {/if}

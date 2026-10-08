@@ -27,9 +27,9 @@ export interface ExpandProps extends SvgProps {
 }
 
 export function Expand({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ExpandProps) {
@@ -42,9 +42,10 @@ export function Expand({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M9 9L4 4M4 4V8M4 4H8"
 		stroke="currentColor"

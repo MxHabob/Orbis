@@ -58,11 +58,11 @@ function formatSize(bytes?: number | null) {
 }
 </script>
 
-<article class="archive-card group flex flex-col justify-between rounded-xl border border-border/50 bg-card/60 p-3 hover:border-border hover:shadow-md transition-all duration-200">
+<article class="archive-card group flex flex-col justify-between rounded-xl border border-border/50 bg-card/60 p-2.5 hover:border-border hover:shadow-md transition-all duration-200 overflow-hidden min-w-0 max-w-full">
   <!-- Media / Thumbnail Container -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
-    class="archive-media relative cursor-pointer overflow-hidden rounded-lg bg-muted/40 flex items-center justify-center"
+    class="archive-media relative cursor-pointer overflow-hidden rounded-lg bg-muted/40 flex items-center justify-center w-full border border-border/30"
     use:loadWhenVisible
     role="button"
     tabindex="0"
@@ -165,11 +165,11 @@ function formatSize(bytes?: number | null) {
   </div>
 
   <!-- Document Metadata -->
-  <div class="min-w-0 pt-2.5 text-start">
-    <p class="truncate text-xs font-semibold text-foreground" title={document.name}>
+  <div class="min-w-0 w-full pt-2 text-start overflow-hidden">
+    <p class="truncate block w-full text-xs font-semibold text-foreground" title={document.name}>
       {document.name}
     </p>
-    <div class="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground">
+    <div class="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground min-w-0">
       <span class="truncate font-medium">{document.category || m.operations_ui_general_category()}</span>
       <span class="shrink-0 font-mono">{formatSize(document.file_size_bytes)}</span>
     </div>

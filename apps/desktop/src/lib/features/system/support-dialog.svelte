@@ -3,6 +3,7 @@
   Builds a prefilled support email with user-provided details and reviewable device diagnostics.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api/client";
 import { isDesktopApp } from "$lib/api";
@@ -52,14 +53,14 @@ let showDiagnosticsPreview = $state(false);
 let isLoadingInfo = $state(false);
 let infoError = $state<string | null>(null);
 
-const categories = [
-  { value: "technical_support", label: m.ui_system_support_category_technical },
-  { value: "onboarding_setup", label: m.ui_system_support_category_onboarding },
-  { value: "finance_accounting", label: m.ui_system_support_category_finance },
-  { value: "academics_grading", label: m.ui_system_support_category_academics },
-  { value: "feature_request", label: m.ui_system_support_category_feature_request },
-  { value: "other", label: m.ui_system_support_category_general },
-];
+const categories = $derived([
+  { value: "technical_support", label: m.ui_system_support_category_technical() },
+  { value: "onboarding_setup", label: m.ui_system_support_category_onboarding() },
+  { value: "finance_accounting", label: m.ui_system_support_category_finance() },
+  { value: "academics_grading", label: m.ui_system_support_category_academics() },
+  { value: "feature_request", label: m.ui_system_support_category_feature_request() },
+  { value: "other", label: m.ui_system_support_category_general() },
+]);
 
 const selectedCat = $derived(categories.find((c) => c.value === category));
 
@@ -77,7 +78,7 @@ const diagnosticPayload = $derived({
 
 function createSupportReport() {
   return `${m.ui_system_support_report_title()}
-${m.ui_system_support_category()}: ${selectedCat?.label() ?? category}
+${m.ui_system_support_category()}: ${selectedCat?.label ?? category}
 ${m.ui_system_support_subject_title()}: ${subject.trim()}
 ${m.ui_system_support_contact_email_optional()}: ${email.trim() || "-"}
 
@@ -230,12 +231,12 @@ $effect(() => {
               onValueChange={(v) => (category = v ?? "technical_support")}
             >
               <SelectTrigger class="w-full h-9 text-xs">
-                {selectedCat ? selectedCat.label() : category}
+                {selectedCat ? selectedCat.label : category}
               </SelectTrigger>
               <SelectContent>
-                {#each categories as cat}
+                {#each categories as cat (cat.value)}
                   <SelectItem value={cat.value}>
-                    {cat.label()}
+                    {cat.label}
                   </SelectItem>
                 {/each}
               </SelectContent>
@@ -379,7 +380,7 @@ $effect(() => {
             class="h-8 px-4 text-xs font-medium gap-1.5"
           >
             {#if isSubmitting}
-              <span class="animate-spin text-xs">⏳</span>
+              <LoadingIndicator class="text-xs" />
               <span>{m.ui_system_support_sending()}</span>
             {:else}
               <span>{m.ui_system_support_send_report()}</span>

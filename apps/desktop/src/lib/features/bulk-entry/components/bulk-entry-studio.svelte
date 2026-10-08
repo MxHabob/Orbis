@@ -389,7 +389,7 @@
   }}
 />
 
-<div class="h-full flex flex-col bg-background text-foreground" dir="rtl">
+<div class="h-full flex flex-col bg-background text-foreground">
   <!-- Minimal Settings-Style Top Bar -->
   <div class="px-4 py-2.5 border-b border-border flex items-center justify-between gap-3 flex-wrap">
     <!-- Profile Selection / Mode Tabs -->
@@ -587,6 +587,7 @@
         <div class="relative">
           <input
             type="text"
+            dir="auto"
             placeholder={m.common_search_placeholder()}
             bind:value={searchQuery}
             class="h-7 w-36 px-2.5 text-xs rounded bg-background border border-border text-foreground focus:outline-none focus:ring-1 focus:ring-primary"

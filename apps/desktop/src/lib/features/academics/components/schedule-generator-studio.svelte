@@ -2,6 +2,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { formatDate } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
 import { api, extractErrorMessage, type ClassSubjectDto, type ScheduledLessonDto } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -256,9 +257,10 @@ const weekdays = $derived.by(() => {
     .sort((a, b) => weekOrder.indexOf(a) - weekOrder.indexOf(b))
     .map((day) => ({
       value: day,
-      label: new Intl.DateTimeFormat(getLocale(), { weekday: "short" }).format(
-        new Date(Date.UTC(2023, 0, day)),
-      ),
+      label: formatDate(new Date(Date.UTC(2023, 0, day)), "date", {
+        weekday: "short",
+        timeZone: "UTC",
+      }),
       isToday: false,
     }));
 });
@@ -416,7 +418,7 @@ function getSubjectColor(subjectId: string): string {
     >
       <Resizer
         viewport={navRailDiv}
-        direction="end"
+        edge="end"
         minWidth={minNavWidth}
         maxWidth={maxNavWidth}
         defaultValue={pxToRem(240)}
@@ -844,7 +846,7 @@ function getSubjectColor(subjectId: string): string {
                   <div>
                     <div class="flex items-center gap-2">
                       <span class="font-bold text-xs text-foreground">
-                        {new Date(job.created_at).toLocaleString()}
+                        {formatDate(job.created_at, "datetime")}
                       </span>
                       <Badge variant={job.status === "completed" ? "default" : "outline"} class="text-[9px]">
                         {job.status}
@@ -890,4 +892,3 @@ function getSubjectColor(subjectId: string): string {
     onsave={activeJob?.status === "completed" && solutionAssignments.length > 0 ? handleApplySolution : handleLaunchSolver}
   />
 </div>
-

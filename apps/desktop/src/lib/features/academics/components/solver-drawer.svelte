@@ -1,4 +1,6 @@
 <script lang="ts">
+import { formatDate } from "$lib/core/i18n";
+import { LoadingIndicator } from "@orbis/ui";
 import {
   Sheet,
   SheetContent,
@@ -106,7 +108,7 @@ async function handleCancelJob(jobId: string) {
           onclick={handleStartSolve}
         >
           {#if isLaunching || activeJob?.status === "running" || activeJob?.status === "pending"}
-            <ArrowPath size={13} class="animate-spin" />
+            <LoadingIndicator   size={13} />
             <span>{m.academics_schedule_computing()}</span>
           {:else}
             <Sparkles size={13} />
@@ -130,7 +132,7 @@ async function handleCancelJob(jobId: string) {
               </Badge>
             {:else if activeJob.status === "running" || activeJob.status === "pending"}
               <Badge variant="secondary" class="bg-primary/10 text-primary gap-1 text-[10px] animate-pulse">
-                <ArrowPath size={10} class="animate-spin" />
+                <LoadingIndicator   size={10} />
                 {m.academics_schedule_status_running()}
               </Badge>
             {:else if activeJob.status === "failed"}
@@ -192,7 +194,7 @@ async function handleCancelJob(jobId: string) {
                 onclick={() => handleApplySolve(activeJob.id)}
               >
                 {#if isApplying}
-                  <ArrowPath size={13} class="animate-spin" />
+                  <LoadingIndicator   size={13} />
                   <span>{m.academics_schedule_applying()}</span>
                 {:else}
                   <Check size={14} />
@@ -217,7 +219,7 @@ async function handleCancelJob(jobId: string) {
                 <div class="flex items-center gap-1.5">
                   <ClockRotateRight size={11} class="text-muted-foreground" />
                   <span class="text-[10px] text-muted-foreground font-mono">
-                    {new Date(job.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {formatDate(job.created_at, "time")}
                   </span>
                   <Badge variant="outline" class="h-4 text-[9px]">{job.status}</Badge>
                 </div>

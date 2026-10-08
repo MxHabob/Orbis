@@ -68,7 +68,7 @@ interface DocItem {
   isRequired: boolean;
   blocksEnrollment: boolean;
   gradeLevelId?: string; // specific class/grade ID or undefined for all
-  condition: string; // all_students | national_only | foreign_only | transfer_students
+  condition: string;
   description?: string;
 }
 
@@ -359,12 +359,12 @@ const docGridSource = $derived(
       class_name: mappedClass ? (mappedClass.name || mappedClass.level) : m.ui_copy_all_classes_c890049c(),
       condition_label: doc.condition === "all_students"
         ? m.ui_copy_all_students_be94120b()
-        : doc.condition === "national_only"
-        ? m.ui_copy_nationals_only_f7853fd7()
-        : doc.condition === "foreign_only"
+        : doc.condition === "non_national_only"
         ? m.ui_copy_expats_only_714a26ad()
-        : doc.condition === "transfer_students"
+        : doc.condition === "transfer_students_only"
         ? m.ui_copy_transfers_452455ee()
+        : doc.condition === "special_needs_only"
+        ? m.ui_copy_special_needs_5315c628()
         : doc.condition,
       is_required_display: doc.isRequired ? m.ui_copy_mandatory_5ceed842() : m.ui_onboarding_progress_optional(),
       blocks_display: doc.blocksEnrollment ? m.ui_copy_blocks_1362af09() : m.ui_copy_no_block_8cdb8971(),
@@ -493,6 +493,7 @@ function handleFormSave() {
       })),
     },
     enrollment: {
+      is_configured: true,
       registration_enabled: registrationEnabled,
       require_admin_approval: requiresApproval,
       allow_waitlist: allowWaitlist,

@@ -4,8 +4,9 @@ import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
-import { Check, CheckCircle, ChevronDown, ChevronRight, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
+import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
+import { fade } from "svelte/transition";
 
 // Configure marked with GFM & breaks
 marked.setOptions({
@@ -36,9 +37,35 @@ let {
 } = $props();
 
 let expandedTools = $state<Record<string, boolean>>({});
+let expandedUserMessages = $state<Record<string, boolean>>({});
 let copiedMessageId = $state<string | null>(null);
 let editingMessageId = $state<string | null>(null);
 let editingText = $state("");
+let showScrollBottom = $state(false);
+
+function handleScroll() {
+  if (!chatContainer) return;
+  const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+  showScrollBottom = scrollHeight - scrollTop - clientHeight > 100;
+}
+
+function scrollToBottom() {
+  if (!chatContainer) return;
+  chatContainer.scrollTo({
+    top: chatContainer.scrollHeight,
+    behavior: "smooth",
+  });
+  showScrollBottom = false;
+}
+
+function isLongMessage(content: string): boolean {
+  if (!content) return false;
+  return content.length > 240 || content.split("\n").length > 5;
+}
+
+function toggleUserMessageExpand(msgId: string) {
+  expandedUserMessages[msgId] = !expandedUserMessages[msgId];
+}
 
 function toggleTool(key: string) {
   expandedTools[key] = !expandedTools[key];
@@ -95,10 +122,12 @@ function handleContentClick(e: MouseEvent) {
 }
 </script>
 
-<div 
-  bind:this={chatContainer}
-  class="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto scrollbar-thin select-text space-y-4"
->
+<div class="relative flex-1 flex flex-col min-h-0 overflow-hidden">
+  <div 
+    bind:this={chatContainer}
+    onscroll={handleScroll}
+    class="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto scrollbar-thin select-text space-y-4"
+  >
   <div class="flex flex-col gap-4 w-full">
     {#each messages as msg (msg.id)}
       {#if msg.role === 'user'}
@@ -108,6 +137,7 @@ function handleContentClick(e: MouseEvent) {
             <!-- Inline Edit Form -->
             <div class="w-full max-w-[95%] flex flex-col gap-2 bg-card border border-primary/40 rounded-2xl p-3 shadow-md">
               <textarea
+                dir="auto"
                 bind:value={editingText}
                 rows={3}
                 class="w-full p-2.5 text-[13px] bg-background border border-border rounded-xl focus:outline-none focus:ring-1 focus:ring-primary resize-none text-foreground font-sans leading-relaxed"
@@ -144,9 +174,36 @@ function handleContentClick(e: MouseEvent) {
               </div>
             </div>
           {:else}
-            <!-- User Text Bubble (Vibrant Gradient / Solid) -->
-            <div class="max-w-[88%] bg-primary text-primary-foreground px-4 py-2.5 rounded-2xl rounded-tr-xs rtl:rounded-tr-2xl rtl:rounded-tl-xs text-[13px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-2xs">
-              {msg.content}
+            {@const isLong = isLongMessage(msg.content)}
+            {@const isExpanded = !!expandedUserMessages[msg.id]}
+
+            <!-- User Text Bubble (Vibrant Gradient / Solid with Expandable Long Message) -->
+            <div class="max-w-[88%] bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-xs rtl:rounded-tr-2xl rtl:rounded-tl-xs text-[13px] leading-relaxed break-words whitespace-pre-wrap font-medium shadow-2xs relative flex flex-col">
+              <!-- Content area with max-height truncation and bottom gradient -->
+              <div class="relative transition-all duration-200 {isLong && !isExpanded ? 'max-h-[140px] sm:max-h-[160px] overflow-hidden' : ''}">
+                {msg.content}
+
+                {#if isLong && !isExpanded}
+                  <!-- Soft bottom gradient fade-out -->
+                  <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-primary via-primary/80 to-transparent"></div>
+                {/if}
+              </div>
+
+              {#if isLong}
+                <!-- Show More / Show Less Toggle Button -->
+                <button
+                  type="button"
+                  onclick={() => toggleUserMessageExpand(msg.id)}
+                  class="mt-2 pt-1.5 border-t border-primary-foreground/15 inline-flex items-center gap-1.5 text-xs font-semibold text-primary-foreground/90 hover:text-primary-foreground transition-colors cursor-pointer select-none self-start"
+                >
+                  <span>{isExpanded ? m.ai_ui_show_less() : m.ai_ui_show_more()}</span>
+                  {#if isExpanded}
+                    <ChevronUp size={13} />
+                  {:else}
+                    <ChevronDown size={13} />
+                  {/if}
+                </button>
+              {/if}
             </div>
 
             <!-- User Hover Action Bar -->
@@ -221,7 +278,7 @@ function handleContentClick(e: MouseEvent) {
 
           <!-- Assistant Text Content Card -->
           {#if msg.content}
-            <div class="relative bg-card/65 hover:bg-card/90 border border-border/70 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all {msg.isError ? 'border-destructive/30 bg-destructive/5 dark:bg-destructive/10 text-destructive' : ''}">
+            <div class="relative bg-card/65 hover:bg-card/90 border border-border/70 rounded-2xl p-3.5 sm:p-4 shadow-2xs transition-all">
               <!-- Rendered Markdown Container -->
               <!-- svelte-ignore a11y_click_events_have_key_events -->
               <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -231,14 +288,23 @@ function handleContentClick(e: MouseEvent) {
               >
                 {@html renderMarkdown(msg.content)}
               </div>
+
+              {#if msg.isError && onRetry && !isThinking}
+                <div class="pt-3 mt-3 border-t border-border/40 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onclick={() => onRetry(msg.id)}
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-foreground/80 bg-muted/50 hover:bg-muted border border-border/60 hover:border-border transition-all cursor-pointer select-none"
+                  >
+                    <Refresh size={12} class="shrink-0 text-muted-foreground" />
+                    <span>{m.ai_ui_retry()}</span>
+                  </button>
+                </div>
+              {/if}
             </div>
 
             <!-- Assistant Actions on Hover -->
             <div class="flex items-center gap-1.5 ps-1 select-none opacity-0 group-hover:opacity-100 transition-opacity">
-              {#if msg.isError}
-                <Badge variant="destructive" class="text-[8.5px] h-4 px-1.5 font-semibold">{m.ai_ui_request_error()}</Badge>
-              {/if}
-
               {#if onRetry && !isThinking}
                 <button
                   type="button"
@@ -353,6 +419,25 @@ function handleContentClick(e: MouseEvent) {
       <AiLoadingSkeleton class="mt-2" />
     {/if}
   </div>
+</div>
+
+  <!-- Center Floating Scroll-to-bottom Button -->
+  {#if showScrollBottom}
+    <div
+      class="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none z-20"
+      transition:fade={{ duration: 150 }}
+    >
+      <button
+        type="button"
+        onclick={scrollToBottom}
+        class="pointer-events-auto shadow-md border border-border/80 bg-card/95 hover:bg-card backdrop-blur-md text-foreground px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-all hover:scale-105 active:scale-95 group hover:border-primary/50"
+        aria-label={m.ai_ui_scroll_to_bottom()}
+      >
+        <ChevronDown size={14} class="text-primary group-hover:translate-y-0.5 transition-transform" />
+        <span class="text-[11px] font-medium">{m.ai_ui_scroll_to_bottom()}</span>
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

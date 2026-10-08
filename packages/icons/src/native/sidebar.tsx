@@ -27,9 +27,9 @@ export interface SidebarProps extends SvgProps {
 }
 
 export function Sidebar({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: SidebarProps) {
@@ -42,9 +42,10 @@ export function Sidebar({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M19 21L5 21C3.89543 21 3 20.1046 3 19L3 5C3 3.89543 3.89543 3 5 3L19 3C20.1046 3 21 3.89543 21 5L21 19C21 20.1046 20.1046 21 19 21Z"
 	></Path><Path d="M9.5 21V3"></Path><Path d="M5.5 10L7.25 12L5.5 14"></Path>

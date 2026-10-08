@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 /**
  * PrintDialog — Enhanced bulk printing dialog with Multi-Up support.
@@ -344,7 +345,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             <span>{m.common_print_multi_up_complete()}</span>
           </div>
         {:else}
-          <Refresh size={24} class="animate-spin text-primary mt-2" />
+          <LoadingIndicator class="text-primary mt-2"  size={24} />
         {/if}
       </div>
 
@@ -437,7 +438,7 @@ function applySuggestion(suggestion: MultiUpLayout) {
             <TabsContent value="pdf" class="grow border border-border rounded-xl bg-muted/20 mt-2 relative min-h-70 overflow-hidden flex items-center justify-center">
               {#if generatingPdf}
                 <div class="absolute inset-0 bg-background/60 backdrop-blur-xs flex flex-col items-center justify-center gap-2 z-10">
-                  <Refresh size={20} class="text-primary animate-spin" />
+                  <LoadingIndicator class="text-primary"  size={20} />
                   <p class="text-[10px] font-semibold">{m.common_print_multi_up_preview_loading()}</p>
                 </div>
               {/if}

@@ -3,6 +3,7 @@
   Feature component listing available reports for the Academics domain.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -44,7 +45,7 @@ const error = $derived(reportsQuery.error);
       class="h-8 gap-1.5 text-xs font-semibold"
       onclick={() => reportsQuery.refetch()}
     >
-      <Refresh size={13} class={isLoading ? "animate-spin" : ""} />
+      {#if isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
       <span>{m.common_retry()}</span>
     </Button>
   </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import {
   Dialog,
@@ -127,7 +128,7 @@ async function handleSubmitChallenge() {
         onclick={handleSubmitChallenge}
       >
         {#if isSubmitting}
-          <div class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
+          <LoadingIndicator size={14} class="h-3.5 w-3.5 text-primary" />
           <span>...</span>
         {:else}
           <Check class="w-3.5 h-3.5" />

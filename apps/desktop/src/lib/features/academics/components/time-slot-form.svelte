@@ -22,6 +22,8 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   open = $bindable(false),
@@ -118,18 +120,24 @@ async function handleSubmit(event: SubmitEvent) {
 
     <form onsubmit={handleSubmit} class="flex flex-col gap-4 py-2">
       <div class="flex flex-col gap-4">
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label={m.academics_schedule_name_ar()} error={form.errors.name_ar?.[0]} required>
-                {#snippet children()}
-                <Input bind:value={nameAr} placeholder={m.academics_schedule_placeholder_period({ number: 1 })} class="h-9 text-sm" required />
-                {/snippet}
-              </FormField>
-              <FormField label={m.academics_schedule_name_en()} error={form.errors.name?.[0]}>
-                {#snippet children()}
-                <Input bind:value={name} placeholder={m.academics_schedule_placeholder_period_en({ number: 1 })} class="h-9 text-sm" />
-                {/snippet}
-              </FormField>
-            </div>
+            <BilingualNameFields
+              arId="time-slot-name-ar"
+              enId="time-slot-name-en"
+              arLabel={m.academics_schedule_name_ar()}
+              enLabel={m.academics_schedule_name_en()}
+              bind:arValue={nameAr}
+              bind:enValue={name}
+              arPlaceholder={m.academics_schedule_placeholder_period({ number: 1 })}
+              enPlaceholder={m.academics_schedule_placeholder_period_en({ number: 1 })}
+              arError={form.errors.name_ar?.[0]}
+              enError={form.errors.name?.[0]}
+              kind="label"
+              requestSuggestion={suggestLocalTranslation}
+              arRequired
+              disabled={form.isSubmitting}
+              loadingMessage={m.bilingual_entry_loading()}
+              failureMessage={m.bilingual_entry_failure()}
+            />
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField label={m.academics_schedule_start_time()} error={form.errors.start_time?.[0]} required>

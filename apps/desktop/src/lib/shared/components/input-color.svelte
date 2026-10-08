@@ -8,19 +8,31 @@ import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 
 let {
+  id,
   placeholder,
   value = $bindable(""),
   color = $bindable(""),
   autoFocus = false,
   required = false,
+  disabled = false,
   onchange,
+  onvalueinput,
+  onblur,
+  ariaInvalid,
+  ariaDescribedBy,
 }: {
+  id?: string;
   placeholder: string;
   value?: string;
   color?: string;
   autoFocus?: boolean;
   required?: boolean;
+  disabled?: boolean;
   onchange?: (values: { name: string; color: string }) => void;
+  onvalueinput?: (value: string) => void;
+  onblur?: () => void;
+  ariaInvalid?: "true";
+  ariaDescribedBy?: string;
 } = $props();
 
 const colors = [
@@ -121,6 +133,7 @@ function handleInput(e: Event) {
   if (!isCustomColor) {
     color = getColorFromName(value);
   }
+  onvalueinput?.(value);
   onchange?.({ name: value, color });
 }
 
@@ -163,13 +176,19 @@ $effect(() => {
   />
 
   <Input
+    {id}
     type="text"
+    dir="rtl"
     placeholder={placeholder}
     {value}
     oninput={handleInput}
+    onblur={onblur}
     autofocus={autoFocus}
     {required}
-    class="pl-9 w-full"
+    {disabled}
+    aria-invalid={ariaInvalid}
+    aria-describedby={ariaDescribedBy}
+    class="pl-9 pe-9 w-full"
     autocomplete="off"
   />
 </div>

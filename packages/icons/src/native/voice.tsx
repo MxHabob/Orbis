@@ -27,9 +27,9 @@ export interface VoiceProps extends SvgProps {
 }
 
 export function Voice({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: VoiceProps) {
@@ -42,9 +42,10 @@ export function Voice({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M12 4L12 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M8 9L8 15"
 		strokeLinecap="round"

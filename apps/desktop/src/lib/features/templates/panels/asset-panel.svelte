@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 /**
@@ -139,7 +140,7 @@ function triggerUpload() {
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={uploadMutation.isPending}>
             {#if uploadMutation.isPending}
-              <ArrowPath size={11} class="animate-spin" />
+              <LoadingIndicator   size={11} />
             {:else}
               <ArrowUpTray size={11} />
             {/if}
@@ -174,7 +175,7 @@ function triggerUpload() {
   <div class="grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
     {#if documentsQuery.isLoading && serverAssets.length === 0}
       <div class="flex justify-center p-4">
-        <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
+        <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
       </div>
     {:else if filteredAssets.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
@@ -195,7 +196,7 @@ function triggerUpload() {
             <!-- Thumbnail -->
             <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
               {#await resolveDocumentUrl(getDocumentSource(doc))}
-                <ArrowPath class="h-4 w-4 animate-spin text-muted-foreground" />
+                <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
               {:then srcUrl}
                 <img
                   src={srcUrl}
@@ -238,7 +239,7 @@ function triggerUpload() {
           onclick={() => documentsQuery.fetchNextPage()}
         >
           {#if documentsQuery.isFetchingNextPage}
-            <ArrowPath class="me-1 h-3 w-3 animate-spin" /> {m.template_loading()}
+            <LoadingIndicator class="me-1 h-3 w-3"  size={12} /> {m.template_loading()}
           {:else}
             {m.template_load_more()}
           {/if}

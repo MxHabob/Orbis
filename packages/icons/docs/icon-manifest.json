@@ -1,0 +1,2150 @@
+{
+  "version": 1,
+  "viewBox": "0 0 24 24",
+  "defaultSize": 16,
+  "defaultStrokeWidth": 1.75,
+  "icons": [
+    {
+      "name": "AcademicCap",
+      "files": {
+        "svelte": "academic-cap",
+        "native": "academic-cap"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "AdjustmentsHorizontal",
+      "files": {
+        "svelte": "adjustments-horizontal",
+        "native": "adjustments-horizontal"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "AdjustmentsHorizontalOutline",
+      "files": {
+        "svelte": "adjustments-horizontal-outline",
+        "native": "adjustments-horizontal-outline"
+      },
+      "family": "actions",
+      "variant": "outline",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Agile",
+      "files": {
+        "svelte": "agile",
+        "native": "agile"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "AiCenter",
+      "files": {
+        "svelte": "ai-center",
+        "native": "ai-center"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "AlignHorizontal",
+      "files": {
+        "svelte": "align-horizontal",
+        "native": "align-horizontal"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "AlignVertical",
+      "files": {
+        "svelte": "align-vertical",
+        "native": "align-vertical"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "AppNotification",
+      "files": {
+        "svelte": "app-notification",
+        "native": "app-notification"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArchiveBox",
+      "files": {
+        "svelte": "archive-box",
+        "native": "archive-box"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowDownTray",
+      "files": {
+        "svelte": "arrow-down-tray",
+        "native": "arrow-down-tray"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowForward",
+      "files": {
+        "svelte": "arrow-forward",
+        "native": "arrow-forward"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowLeft",
+      "files": {
+        "svelte": "arrow-left",
+        "native": "arrow-left"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowLeftTag",
+      "files": {
+        "svelte": "arrow-left-tag",
+        "native": "arrow-left-tag"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowPath",
+      "files": {
+        "svelte": "arrow-path",
+        "native": "arrow-path"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowRight",
+      "files": {
+        "svelte": "arrow-right",
+        "native": "arrow-right"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowRightCircle",
+      "files": {
+        "svelte": "arrow-right-circle",
+        "native": "arrow-right-circle"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowRightTag",
+      "files": {
+        "svelte": "arrow-right-tag",
+        "native": "arrow-right-tag"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowTurnDownRight",
+      "files": {
+        "svelte": "arrow-turn-down-right",
+        "native": "arrow-turn-down-right"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowUpCircle",
+      "files": {
+        "svelte": "arrow-up-circle",
+        "native": "arrow-up-circle"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowUpLeft",
+      "files": {
+        "svelte": "arrow-up-left",
+        "native": "arrow-up-left"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowUpLeftAlt",
+      "files": {
+        "svelte": "arrow-up-left-alt",
+        "native": "arrow-up-left-alt"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowUpTray",
+      "files": {
+        "svelte": "arrow-up-tray",
+        "native": "arrow-up-tray"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowUturnLeft",
+      "files": {
+        "svelte": "arrow-uturn-left",
+        "native": "arrow-uturn-left"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowUturnRight",
+      "files": {
+        "svelte": "arrow-uturn-right",
+        "native": "arrow-uturn-right"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowsPointingOut",
+      "files": {
+        "svelte": "arrows-pointing-out",
+        "native": "arrows-pointing-out"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ArrowsRightLeft",
+      "files": {
+        "svelte": "arrows-right-left",
+        "native": "arrows-right-left"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Banknotes",
+      "files": {
+        "svelte": "banknotes",
+        "native": "banknotes"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Bars3BottomLeft",
+      "files": {
+        "svelte": "bars3-bottom-left",
+        "native": "bars3-bottom-left"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "BarsArrowUp",
+      "files": {
+        "svelte": "bars-arrow-up",
+        "native": "bars-arrow-up"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Bell",
+      "files": {
+        "svelte": "bell",
+        "native": "bell"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Bold",
+      "files": {
+        "svelte": "bold",
+        "native": "bold"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Bolt",
+      "files": {
+        "svelte": "bolt",
+        "native": "bolt"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "BookOpen",
+      "files": {
+        "svelte": "book-open",
+        "native": "book-open"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Bookmark",
+      "files": {
+        "svelte": "bookmark",
+        "native": "bookmark"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "BookmarkSlash",
+      "files": {
+        "svelte": "bookmark-slash",
+        "native": "bookmark-slash"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "BuildingLibrary",
+      "files": {
+        "svelte": "building-library",
+        "native": "building-library"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "BuildingOffice",
+      "files": {
+        "svelte": "building-office",
+        "native": "building-office"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Calculator",
+      "files": {
+        "svelte": "calculator",
+        "native": "calculator"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Calendar",
+      "files": {
+        "svelte": "calendar",
+        "native": "calendar"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CalendarSolid",
+      "files": {
+        "svelte": "calendar-solid",
+        "native": "calendar-solid"
+      },
+      "family": "education",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Camera",
+      "files": {
+        "svelte": "camera",
+        "native": "camera"
+      },
+      "family": "media",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CameraSolid",
+      "files": {
+        "svelte": "camera-solid",
+        "native": "camera-solid"
+      },
+      "family": "media",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "ChartBar",
+      "files": {
+        "svelte": "chart-bar",
+        "native": "chart-bar"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatBubble",
+      "files": {
+        "svelte": "chat-bubble",
+        "native": "chat-bubble"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatBubbleDotted",
+      "files": {
+        "svelte": "chat-bubble-dotted",
+        "native": "chat-bubble-dotted"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatBubbleDottedChecked",
+      "files": {
+        "svelte": "chat-bubble-dotted-checked",
+        "native": "chat-bubble-dotted-checked"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatBubbleOval",
+      "files": {
+        "svelte": "chat-bubble-oval",
+        "native": "chat-bubble-oval"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatBubbles",
+      "files": {
+        "svelte": "chat-bubbles",
+        "native": "chat-bubbles"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatCheck",
+      "files": {
+        "svelte": "chat-check",
+        "native": "chat-check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChatPlus",
+      "files": {
+        "svelte": "chat-plus",
+        "native": "chat-plus"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Check",
+      "files": {
+        "svelte": "check",
+        "native": "check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CheckBox",
+      "files": {
+        "svelte": "check-box",
+        "native": "check-box"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CheckCircle",
+      "files": {
+        "svelte": "check-circle",
+        "native": "check-circle"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CheckSquare",
+      "files": {
+        "svelte": "check-square",
+        "native": "check-square"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChevronDown",
+      "files": {
+        "svelte": "chevron-down",
+        "native": "chevron-down"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChevronLeft",
+      "files": {
+        "svelte": "chevron-left",
+        "native": "chevron-left"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChevronRight",
+      "files": {
+        "svelte": "chevron-right",
+        "native": "chevron-right"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChevronUp",
+      "files": {
+        "svelte": "chevron-up",
+        "native": "chevron-up"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ChevronUpDown",
+      "files": {
+        "svelte": "chevron-up-down",
+        "native": "chevron-up-down"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Clip",
+      "files": {
+        "svelte": "clip",
+        "native": "clip"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Clipboard",
+      "files": {
+        "svelte": "clipboard",
+        "native": "clipboard"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ClipboardCheck",
+      "files": {
+        "svelte": "clipboard-check",
+        "native": "clipboard-check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Clock",
+      "files": {
+        "svelte": "clock",
+        "native": "clock"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ClockRotateRight",
+      "files": {
+        "svelte": "clock-rotate-right",
+        "native": "clock-rotate-right"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Cloud",
+      "files": {
+        "svelte": "cloud",
+        "native": "cloud"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CloudArrowUp",
+      "files": {
+        "svelte": "cloud-arrow-up",
+        "native": "cloud-arrow-up"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Code",
+      "files": {
+        "svelte": "code",
+        "native": "code"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CodeBracket",
+      "files": {
+        "svelte": "code-bracket",
+        "native": "code-bracket"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Cog6",
+      "files": {
+        "svelte": "cog6",
+        "native": "cog6"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Cog6Solid",
+      "files": {
+        "svelte": "cog6-solid",
+        "native": "cog6-solid"
+      },
+      "family": "actions",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Collapse",
+      "files": {
+        "svelte": "collapse",
+        "native": "collapse"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CommandLine",
+      "files": {
+        "svelte": "command-line",
+        "native": "command-line"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CommandLineSolid",
+      "files": {
+        "svelte": "command-line-solid",
+        "native": "command-line-solid"
+      },
+      "family": "utility",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Component",
+      "files": {
+        "svelte": "component",
+        "native": "component"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Computer",
+      "files": {
+        "svelte": "computer",
+        "native": "computer"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CreditCard",
+      "files": {
+        "svelte": "credit-card",
+        "native": "credit-card"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Cube",
+      "files": {
+        "svelte": "cube",
+        "native": "cube"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "CursorArrowRays",
+      "files": {
+        "svelte": "cursor-arrow-rays",
+        "native": "cursor-arrow-rays"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Database",
+      "files": {
+        "svelte": "database",
+        "native": "database"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DatabaseSettings",
+      "files": {
+        "svelte": "database-settings",
+        "native": "database-settings"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Document",
+      "files": {
+        "svelte": "document",
+        "native": "document"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DocumentArrowDown",
+      "files": {
+        "svelte": "document-arrow-down",
+        "native": "document-arrow-down"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DocumentArrowUp",
+      "files": {
+        "svelte": "document-arrow-up",
+        "native": "document-arrow-up"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DocumentArrowUpSolid",
+      "files": {
+        "svelte": "document-arrow-up-solid",
+        "native": "document-arrow-up-solid"
+      },
+      "family": "navigation",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "DocumentChartBar",
+      "files": {
+        "svelte": "document-chart-bar",
+        "native": "document-chart-bar"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DocumentCheck",
+      "files": {
+        "svelte": "document-check",
+        "native": "document-check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DocumentDuplicate",
+      "files": {
+        "svelte": "document-duplicate",
+        "native": "document-duplicate"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "DocumentPage",
+      "files": {
+        "svelte": "document-page",
+        "native": "document-page"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Download",
+      "files": {
+        "svelte": "download",
+        "native": "download"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "EditPencil",
+      "files": {
+        "svelte": "edit-pencil",
+        "native": "edit-pencil"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "EllipsisHorizontal",
+      "files": {
+        "svelte": "ellipsis-horizontal",
+        "native": "ellipsis-horizontal"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "EllipsisVertical",
+      "files": {
+        "svelte": "ellipsis-vertical",
+        "native": "ellipsis-vertical"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "EmployeeAffairs",
+      "files": {
+        "svelte": "employee-affairs",
+        "native": "employee-affairs"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Expand",
+      "files": {
+        "svelte": "expand",
+        "native": "expand"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Eye",
+      "files": {
+        "svelte": "eye",
+        "native": "eye"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "EyeSlash",
+      "files": {
+        "svelte": "eye-slash",
+        "native": "eye-slash"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Face",
+      "files": {
+        "svelte": "face",
+        "native": "face"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FaceId",
+      "files": {
+        "svelte": "face-id",
+        "native": "face-id"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FaceSmile",
+      "files": {
+        "svelte": "face-smile",
+        "native": "face-smile"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FilePlusAlt",
+      "files": {
+        "svelte": "file-plus-alt",
+        "native": "file-plus-alt"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FinanceSystem",
+      "files": {
+        "svelte": "finance-system",
+        "native": "finance-system"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FloppyDisk",
+      "files": {
+        "svelte": "floppy-disk",
+        "native": "floppy-disk"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Folder",
+      "files": {
+        "svelte": "folder",
+        "native": "folder"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "FolderOpen",
+      "files": {
+        "svelte": "folder-open",
+        "native": "folder-open"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Funnel",
+      "files": {
+        "svelte": "funnel",
+        "native": "funnel"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "GarbageBin",
+      "files": {
+        "svelte": "garbage-bin",
+        "native": "garbage-bin"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Github",
+      "files": {
+        "svelte": "github",
+        "native": "github"
+      },
+      "family": "brand",
+      "variant": "default",
+      "kind": "brand-asset"
+    },
+    {
+      "name": "Glasses",
+      "files": {
+        "svelte": "glasses",
+        "native": "glasses"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "GlobeAlt",
+      "files": {
+        "svelte": "globe-alt",
+        "native": "globe-alt"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "GlobeAltSolid",
+      "files": {
+        "svelte": "globe-alt-solid",
+        "native": "globe-alt-solid"
+      },
+      "family": "utility",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Grid",
+      "files": {
+        "svelte": "grid",
+        "native": "grid"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "H1",
+      "files": {
+        "svelte": "h1",
+        "native": "h1"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "H2",
+      "files": {
+        "svelte": "h2",
+        "native": "h2"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "H3",
+      "files": {
+        "svelte": "h3",
+        "native": "h3"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Hashtag",
+      "files": {
+        "svelte": "hashtag",
+        "native": "hashtag"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Headphone",
+      "files": {
+        "svelte": "headphone",
+        "native": "headphone"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Heart",
+      "files": {
+        "svelte": "heart",
+        "native": "heart"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Home",
+      "files": {
+        "svelte": "home",
+        "native": "home"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Info",
+      "files": {
+        "svelte": "info",
+        "native": "info"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "InfoCircle",
+      "files": {
+        "svelte": "info-circle",
+        "native": "info-circle"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Italic",
+      "files": {
+        "svelte": "italic",
+        "native": "italic"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Keyboard",
+      "files": {
+        "svelte": "keyboard",
+        "native": "keyboard"
+      },
+      "family": "security",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "KeyframePlus",
+      "files": {
+        "svelte": "keyframe-plus",
+        "native": "keyframe-plus"
+      },
+      "family": "security",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Keyframes",
+      "files": {
+        "svelte": "keyframes",
+        "native": "keyframes"
+      },
+      "family": "security",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Knobs",
+      "files": {
+        "svelte": "knobs",
+        "native": "knobs"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Label",
+      "files": {
+        "svelte": "label",
+        "native": "label"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Lifebuoy",
+      "files": {
+        "svelte": "lifebuoy",
+        "native": "lifebuoy"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "LightBulb",
+      "files": {
+        "svelte": "light-bulb",
+        "native": "light-bulb"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "LineSpace",
+      "files": {
+        "svelte": "line-space",
+        "native": "line-space"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "LineSpaceSmaller",
+      "files": {
+        "svelte": "line-space-smaller",
+        "native": "line-space-smaller"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Link",
+      "files": {
+        "svelte": "link",
+        "native": "link"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "LinkSlash",
+      "files": {
+        "svelte": "link-slash",
+        "native": "link-slash"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ListBullet",
+      "files": {
+        "svelte": "list-bullet",
+        "native": "list-bullet"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Lock",
+      "files": {
+        "svelte": "lock",
+        "native": "lock"
+      },
+      "family": "security",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "LockClosed",
+      "files": {
+        "svelte": "lock-closed",
+        "native": "lock-closed"
+      },
+      "family": "security",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Logo",
+      "files": {
+        "svelte": "logo",
+        "native": "logo"
+      },
+      "family": "brand",
+      "variant": "default",
+      "kind": "brand-asset"
+    },
+    {
+      "name": "Map",
+      "files": {
+        "svelte": "map",
+        "native": "map"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Maximize",
+      "files": {
+        "svelte": "maximize",
+        "native": "maximize"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "MenuLines",
+      "files": {
+        "svelte": "menu-lines",
+        "native": "menu-lines"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Merge",
+      "files": {
+        "svelte": "merge",
+        "native": "merge"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Mic",
+      "files": {
+        "svelte": "mic",
+        "native": "mic"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "MicSolid",
+      "files": {
+        "svelte": "mic-solid",
+        "native": "mic-solid"
+      },
+      "family": "communication",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Minus",
+      "files": {
+        "svelte": "minus",
+        "native": "minus"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Moon",
+      "files": {
+        "svelte": "moon",
+        "native": "moon"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "NewFolderAlt",
+      "files": {
+        "svelte": "new-folder-alt",
+        "native": "new-folder-alt"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Note",
+      "files": {
+        "svelte": "note",
+        "native": "note"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "NumberedList",
+      "files": {
+        "svelte": "numbered-list",
+        "native": "numbered-list"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PageEdit",
+      "files": {
+        "svelte": "page-edit",
+        "native": "page-edit"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PagePlus",
+      "files": {
+        "svelte": "page-plus",
+        "native": "page-plus"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PenAlt",
+      "files": {
+        "svelte": "pen-alt",
+        "native": "pen-alt"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Pencil",
+      "files": {
+        "svelte": "pencil",
+        "native": "pencil"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PencilSolid",
+      "files": {
+        "svelte": "pencil-solid",
+        "native": "pencil-solid"
+      },
+      "family": "actions",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "PencilSquare",
+      "files": {
+        "svelte": "pencil-square",
+        "native": "pencil-square"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PeopleTag",
+      "files": {
+        "svelte": "people-tag",
+        "native": "people-tag"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Phone",
+      "files": {
+        "svelte": "phone",
+        "native": "phone"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Photo",
+      "files": {
+        "svelte": "photo",
+        "native": "photo"
+      },
+      "family": "media",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PhotoSolid",
+      "files": {
+        "svelte": "photo-solid",
+        "native": "photo-solid"
+      },
+      "family": "media",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Pin",
+      "files": {
+        "svelte": "pin",
+        "native": "pin"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PinSlash",
+      "files": {
+        "svelte": "pin-slash",
+        "native": "pin-slash"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Play",
+      "files": {
+        "svelte": "play",
+        "native": "play"
+      },
+      "family": "media",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Plus",
+      "files": {
+        "svelte": "plus",
+        "native": "plus"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "PlusAlt",
+      "files": {
+        "svelte": "plus-alt",
+        "native": "plus-alt"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Printer",
+      "files": {
+        "svelte": "printer",
+        "native": "printer"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "QuestionMarkCircle",
+      "files": {
+        "svelte": "question-mark-circle",
+        "native": "question-mark-circle"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "QueueList",
+      "files": {
+        "svelte": "queue-list",
+        "native": "queue-list"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ReceiptPercent",
+      "files": {
+        "svelte": "receipt-percent",
+        "native": "receipt-percent"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Refresh",
+      "files": {
+        "svelte": "refresh",
+        "native": "refresh"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Reset",
+      "files": {
+        "svelte": "reset",
+        "native": "reset"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Restore",
+      "files": {
+        "svelte": "restore",
+        "native": "restore"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Scale",
+      "files": {
+        "svelte": "scale",
+        "native": "scale"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Search",
+      "files": {
+        "svelte": "search",
+        "native": "search"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Settings",
+      "files": {
+        "svelte": "settings",
+        "native": "settings"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "SettingsAlt",
+      "files": {
+        "svelte": "settings-alt",
+        "native": "settings-alt"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Share",
+      "files": {
+        "svelte": "share",
+        "native": "share"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "ShieldCheck",
+      "files": {
+        "svelte": "shield-check",
+        "native": "shield-check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Sidebar",
+      "files": {
+        "svelte": "sidebar",
+        "native": "sidebar"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "SignOut",
+      "files": {
+        "svelte": "sign-out",
+        "native": "sign-out"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "SoundHigh",
+      "files": {
+        "svelte": "sound-high",
+        "native": "sound-high"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Sparkles",
+      "files": {
+        "svelte": "sparkles",
+        "native": "sparkles"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "SparklesSolid",
+      "files": {
+        "svelte": "sparkles-solid",
+        "native": "sparkles-solid"
+      },
+      "family": "status",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Star",
+      "files": {
+        "svelte": "star",
+        "native": "star"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Strikethrough",
+      "files": {
+        "svelte": "strikethrough",
+        "native": "strikethrough"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "StudentAffairs",
+      "files": {
+        "svelte": "student-affairs",
+        "native": "student-affairs"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Sun",
+      "files": {
+        "svelte": "sun",
+        "native": "sun"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Tag",
+      "files": {
+        "svelte": "tag",
+        "native": "tag"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "TaskList",
+      "files": {
+        "svelte": "task-list",
+        "native": "task-list"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "TemplateLibrary",
+      "files": {
+        "svelte": "template-library",
+        "native": "template-library"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Terminal",
+      "files": {
+        "svelte": "terminal",
+        "native": "terminal"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Trash",
+      "files": {
+        "svelte": "trash",
+        "native": "trash"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Underline",
+      "files": {
+        "svelte": "underline",
+        "native": "underline"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UndoAction",
+      "files": {
+        "svelte": "undo-action",
+        "native": "undo-action"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Union",
+      "files": {
+        "svelte": "union",
+        "native": "union"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UsageIcon",
+      "files": {
+        "svelte": "usage-icon",
+        "native": "usage-icon"
+      },
+      "family": "data",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "User",
+      "files": {
+        "svelte": "user",
+        "native": "user"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserAlt",
+      "files": {
+        "svelte": "user-alt",
+        "native": "user-alt"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserBadgeCheck",
+      "files": {
+        "svelte": "user-badge-check",
+        "native": "user-badge-check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserCircle",
+      "files": {
+        "svelte": "user-circle",
+        "native": "user-circle"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserCircleSolid",
+      "files": {
+        "svelte": "user-circle-solid",
+        "native": "user-circle-solid"
+      },
+      "family": "people",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "UserGroup",
+      "files": {
+        "svelte": "user-group",
+        "native": "user-group"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserMinus",
+      "files": {
+        "svelte": "user-minus",
+        "native": "user-minus"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserPlus",
+      "files": {
+        "svelte": "user-plus",
+        "native": "user-plus"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UserPlusSolid",
+      "files": {
+        "svelte": "user-plus-solid",
+        "native": "user-plus-solid"
+      },
+      "family": "people",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Users",
+      "files": {
+        "svelte": "users",
+        "native": "users"
+      },
+      "family": "people",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "UsersSolid",
+      "files": {
+        "svelte": "users-solid",
+        "native": "users-solid"
+      },
+      "family": "people",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "Voice",
+      "files": {
+        "svelte": "voice",
+        "native": "voice"
+      },
+      "family": "communication",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Wrench",
+      "files": {
+        "svelte": "wrench",
+        "native": "wrench"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "WrenchAlt",
+      "files": {
+        "svelte": "wrench-alt",
+        "native": "wrench-alt"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "WrenchSolid",
+      "files": {
+        "svelte": "wrench-solid",
+        "native": "wrench-solid"
+      },
+      "family": "actions",
+      "variant": "solid",
+      "kind": "intentional-variant"
+    },
+    {
+      "name": "XMark",
+      "files": {
+        "svelte": "x-mark",
+        "native": "x-mark"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical"
+    },
+    {
+      "name": "Youtube",
+      "files": {
+        "svelte": "youtube",
+        "native": "youtube"
+      },
+      "family": "brand",
+      "variant": "default",
+      "kind": "brand-asset"
+    },
+    {
+      "name": "ZoomReset",
+      "files": {
+        "svelte": "zoom-reset",
+        "native": "zoom-reset"
+      },
+      "family": "actions",
+      "variant": "default",
+      "kind": "canonical"
+    }
+  ],
+  "nativeAliases": [
+    {
+      "name": "BellIcon",
+      "file": "bell",
+      "kind": "compatibility-alias"
+    },
+    {
+      "name": "SunIcon",
+      "file": "sun",
+      "kind": "compatibility-alias"
+    },
+    {
+      "name": "MoonIcon",
+      "file": "moon",
+      "kind": "compatibility-alias"
+    },
+    {
+      "name": "MaximizeIcon",
+      "file": "maximize",
+      "kind": "compatibility-alias"
+    },
+    {
+      "name": "RestoreIcon",
+      "file": "restore",
+      "kind": "compatibility-alias"
+    },
+    {
+      "name": "LogoIcon",
+      "file": "logo",
+      "kind": "compatibility-alias"
+    }
+  ]
+}

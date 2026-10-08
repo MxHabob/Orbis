@@ -27,9 +27,9 @@ export interface InfoCircleProps extends SvgProps {
 }
 
 export function InfoCircle({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: InfoCircleProps) {
@@ -42,18 +42,12 @@ export function InfoCircle({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
-      <Path d="M12 11.5V16.5" strokeLinecap="round" strokeLinejoin="round"></Path><Path
-		d="M12 7.51L12.01 7.49889"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path><Path
-		d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path>
+      {...props}>
+      <Circle cx="12" cy="12" r="9.25" />
+      <Path d="M12 10.75v5.5m0-8.5h.01" />
     </Svg>
   );
 }

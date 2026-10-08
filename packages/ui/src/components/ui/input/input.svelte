@@ -19,6 +19,7 @@ let {
   ref = $bindable(null),
   value = $bindable(),
   type,
+  dir = "auto",
   files = $bindable(),
   class: className,
   "data-slot": dataSlot = "input",
@@ -35,6 +36,7 @@ let {
 			className
 		)}
 		type="file"
+		{dir}
 		bind:files
 		bind:value
 		{...restProps}
@@ -48,6 +50,7 @@ let {
 			className
 		)}
 		{type}
+		{dir}
 		bind:value
 		{...restProps}
 	/>

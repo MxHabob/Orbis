@@ -13,9 +13,9 @@ export interface ReceiptPercentProps extends SvgProps {
 }
 
 export function ReceiptPercent({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ReceiptPercentProps) {
@@ -28,9 +28,10 @@ export function ReceiptPercent({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		strokeLinecap="round"
 		strokeLinejoin="round"

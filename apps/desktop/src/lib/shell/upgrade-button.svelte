@@ -13,7 +13,7 @@ import { uiStore } from "$lib/stores";
 						{...props}
 						variant="outline" 
 						size="icon-sm" 
-						class="relative cursor-pointer rounded-[10px]"
+						class="relative cursor-pointer"
 						onclick={() => uiStore.setUpgradeDialog(true)}
 						aria-label={m.common_upgrade_title()}
 					>
@@ -22,7 +22,7 @@ import { uiStore } from "$lib/stores";
 					</Button>
 		{/snippet}
 	</TooltipTrigger>
-	<TooltipContent side="right" sideOffset={12}>
+	<TooltipContent side="inline-end" sideOffset={12}>
 		{m.common_upgrade_title()}
 	</TooltipContent>
 </Tooltip>

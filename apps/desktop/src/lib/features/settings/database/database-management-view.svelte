@@ -8,6 +8,7 @@
   - High-performance Svelte 5 Runes architecture with dual-transport parity & zero guessed defaults
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { onMount } from "svelte";
@@ -403,7 +404,7 @@ const advisorInsights = $derived.by(() => {
         onclick={() => controller.refresh()}
         disabled={controller.isLoading || controller.isOperating}
       >
-        <ArrowPath size={12} class={controller.isLoading ? "animate-spin text-primary" : ""} />
+        {#if controller.isLoading}<LoadingIndicator  size={12} class="text-primary" />{:else}<ArrowPath size={12}   />{/if}
         <span>{m.common_refresh()}</span>
       </Button>
 
@@ -705,7 +706,6 @@ const advisorInsights = $derived.by(() => {
                         type="text"
                         bind:value={connDbFilename}
                         class="h-8 text-xs font-mono bg-background border-input"
-                        style="direction: ltr;"
                       />
                     {/snippet}
                   </FormField>
@@ -719,7 +719,6 @@ const advisorInsights = $derived.by(() => {
                           bind:value={connCustomPath}
                           placeholder={m.ui_copy_leave_blank_for_default_appdata_path_a40f6b20()}
                           class="h-8 text-xs font-mono bg-background border-input flex-1"
-                          style="direction: ltr;"
                         />
                         <Button
                           type="button"
@@ -754,7 +753,6 @@ const advisorInsights = $derived.by(() => {
                           bind:value={connServerUrl}
                           placeholder="http://localhost:3000"
                           class="h-8 text-xs font-mono bg-background border-input flex-1"
-                          style="direction: ltr;"
                         />
                         <Button
                           type="button"
@@ -765,7 +763,7 @@ const advisorInsights = $derived.by(() => {
                           disabled={controller.isCheckingHealth}
                         >
                           {#if controller.isCheckingHealth}
-                            <ArrowPath size={13} class="animate-spin text-primary" />
+                            <LoadingIndicator class="text-primary"  size={13} />
                           {:else}
                             <Bolt size={13} class="text-primary" />
                           {/if}
@@ -778,32 +776,32 @@ const advisorInsights = $derived.by(() => {
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <FormField id="connHost" label={m.ui_copy_database_host_218c7a89()}>
                       {#snippet children()}
-                        <Input id="connHost" type="text" bind:value={connHost} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connHost" type="text" bind:value={connHost} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
 
                     <FormField id="connPort" label={m.ui_copy_port_966ae516()}>
                       {#snippet children()}
-                        <Input id="connPort" type="number" bind:value={connPort} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connPort" type="number" bind:value={connPort} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
 
                     <FormField id="connDatabaseName" label={m.ui_copy_database_name_72beaf93()}>
                       {#snippet children()}
-                        <Input id="connDatabaseName" type="text" bind:value={connDatabaseName} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connDatabaseName" type="text" bind:value={connDatabaseName} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
 
                     <FormField id="connUsername" label={m.ui_copy_username_f733f5b3()}>
                       {#snippet children()}
-                        <Input id="connUsername" type="text" bind:value={connUsername} class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                        <Input id="connUsername" type="text" bind:value={connUsername} class="h-8 text-xs font-mono bg-background border-input" />
                       {/snippet}
                     </FormField>
                   </div>
 
                   <FormField id="connPassword" label={m.common_user_form_password()}>
                     {#snippet children()}
-                      <Input id="connPassword" type="password" bind:value={connPassword} placeholder="••••••••" class="h-8 text-xs font-mono bg-background border-input" style="direction: ltr;" />
+                      <Input id="connPassword" type="password" bind:value={connPassword} placeholder="••••••••" class="h-8 text-xs font-mono bg-background border-input" />
                     {/snippet}
                   </FormField>
                 </div>
@@ -831,7 +829,7 @@ const advisorInsights = $derived.by(() => {
                   disabled={controller.isOperating}
                 >
                   {#if controller.isOperating && controller.operationName === "save_connection"}
-                    <ArrowPath size={12} class="animate-spin" />
+                    <LoadingIndicator   size={12} />
                     <span>{m.common_state_saving()}</span>
                   {:else}
                     <CheckCircle size={13} />
@@ -872,7 +870,6 @@ const advisorInsights = $derived.by(() => {
                         bind:value={customBackupPath}
                         placeholder={m.database_backup_custom_dest_hint?.() || m.ui_copy_leave_blank_for_default_backups_folder_aa0c2051()}
                         class="h-8 text-xs font-mono bg-background border-input flex-1"
-                        style="direction: ltr;"
                       />
                       <Button
                         type="button"
@@ -896,7 +893,7 @@ const advisorInsights = $derived.by(() => {
                   disabled={controller.isOperating}
                 >
                   {#if controller.isOperating && controller.operationName === "backup"}
-                    <ArrowPath size={13} class="animate-spin" />
+                    <LoadingIndicator   size={13} />
                     <span>{m.ui_copy_creating_verifying_backup_47acb457()}</span>
                   {:else}
                     <ArrowDownTray size={14} />
@@ -978,7 +975,6 @@ const advisorInsights = $derived.by(() => {
                     bind:value={restoreFilePath}
                     placeholder={m.ui_copy_select_backup_file_db_f97eaf03()}
                     class="h-8 text-xs font-mono bg-background border-input flex-1"
-                    style="direction: ltr;"
                     readonly
                   />
                   <Button
@@ -998,7 +994,7 @@ const advisorInsights = $derived.by(() => {
               <!-- Step 2: Inspection Card -->
               {#if controller.isInspectingBackup}
                 <div class="p-3.5 rounded-lg bg-card/40 border border-border/40 text-xs flex items-center gap-2.5 text-muted-foreground">
-                  <ArrowPath size={13} class="animate-spin text-primary" />
+                  <LoadingIndicator class="text-primary"  size={13} />
                   <span>{m.ui_copy_inspecting_and_validating_backup_file_8f710a33()}</span>
                 </div>
               {:else if controller.inspectedBackup}
@@ -1044,7 +1040,7 @@ const advisorInsights = $derived.by(() => {
                 disabled={!controller.inspectedBackup?.is_valid || controller.isOperating}
               >
                 {#if controller.isOperating && controller.operationName === "restore"}
-                  <ArrowPath size={13} class="animate-spin" />
+                  <LoadingIndicator   size={13} />
                   <span>{m.ui_copy_restoring_upgrading_30e27930()}</span>
                 {:else}
                   <ArrowUpTray size={14} />

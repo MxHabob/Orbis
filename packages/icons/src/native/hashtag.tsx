@@ -27,9 +27,9 @@ export interface HashtagProps extends SvgProps {
 }
 
 export function Hashtag({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: HashtagProps) {
@@ -42,9 +42,10 @@ export function Hashtag({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M10 3L6 21" strokeLinecap="round"></Path><Path d="M20.5 16H2.5" strokeLinecap="round"
 	></Path><Path d="M22 7H4" strokeLinecap="round"></Path><Path
 		d="M18 3L14 21"

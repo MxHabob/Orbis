@@ -27,9 +27,9 @@ export interface ArrowLeftProps extends SvgProps {
 }
 
 export function ArrowLeft({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ArrowLeftProps) {
@@ -42,10 +42,11 @@ export function ArrowLeft({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
-      <Path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+      {...props}>
+      <Path strokeLinecap="round" strokeLinejoin="round" d="M18.25 12H5.75m5.5 6.25L5 12l6.25-6.25" />
     </Svg>
   );
 }

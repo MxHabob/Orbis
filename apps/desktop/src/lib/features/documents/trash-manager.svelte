@@ -14,13 +14,9 @@ import {
   Search,
   Grid,
   Bars3BottomLeft,
-  ChevronLeft,
-  ChevronRight,
   FolderOpen,
   Check,
-  CheckCircle,
   XMark,
-  ClockRotateRight,
   ArchiveBox,
 } from "@orbis/icons";
 import { confirmStore } from "$lib/stores";
@@ -33,9 +29,20 @@ import {
   getDocumentSource,
 } from "$lib/features/documents/queries";
 import TrashDocumentCard from "$lib/features/documents/trash-document-card.svelte";
-import TrashDocumentRow from "$lib/features/documents/trash-document-row.svelte";
+import ArchiveSelectionCell from "$lib/features/documents/archive-selection-cell.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import SearchableMultiFilter, {
+  type SearchableMultiFilterGroup,
+} from "$lib/shared/components/searchable-multi-filter.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
+import {
+  OrbisGrid,
+  type GridActionEvent,
+  type OrbisColumnDef,
+} from "@orbis/svelte-grid";
+import { getLocale } from "$lib/paraglide/runtime";
 import type { DocumentDto } from "$lib/api";
 
 let {
@@ -45,10 +52,9 @@ let {
 } = $props();
 
 // View and filter states
-let viewMode = $state<"grid" | "table">("grid");
+let viewMode = $state<"grid" | "table">("table");
 let searchQuery = $state("");
-let selectedCategory = $state<string>("all");
-let selectedAssetType = $state<string>("all");
+let selectedFilters = $state<string[]>([]);
 let selectedIds = $state<Set<string>>(new Set());
 
 // Preview sheet states
@@ -63,6 +69,23 @@ const purgeMutation = usePurgeDocument();
 
 const trashedDocs = $derived<DocumentDto[]>(trashQuery.data || []);
 const isLoading = $derived(trashQuery.isLoading);
+const trashMenuActions = $derived([
+  {
+    id: "refresh",
+    label: m.operations_ui_refresh(),
+    icon: Refresh,
+    disabled: trashQuery.isFetching,
+    onSelect: () => trashQuery.refetch(),
+  },
+  {
+    id: "empty-trash",
+    label: m.operations_ui_trash_empty_action(),
+    icon: Trash,
+    destructive: true,
+    disabled: trashedDocs.length === 0,
+    onSelect: handleEmptyTrash,
+  },
+]);
 
 // Available categories derived from trashed items
 const availableCategories = $derived.by(() => {
@@ -73,22 +96,59 @@ const availableCategories = $derived.by(() => {
   return Array.from(set);
 });
 
+const selectedFileTypes = $derived(
+  selectedFilters
+    .filter((value) => value.startsWith("type:"))
+    .map((value) => value.slice("type:".length)),
+);
+const selectedCategories = $derived(
+  selectedFilters
+    .filter((value) => value.startsWith("category:"))
+    .map((value) => value.slice("category:".length)),
+);
+
+const trashFilterGroups = $derived<SearchableMultiFilterGroup[]>([
+  {
+    id: "file-types",
+    label: m.operations_ui_file_type(),
+    options: [
+      { value: "type:pdf", label: m.operations_ui_pdf_documents() },
+      { value: "type:image", label: m.operations_ui_image() },
+      { value: "type:video", label: m.operations_ui_video() },
+      { value: "type:audio", label: m.operations_ui_audio() },
+    ],
+  },
+  ...(availableCategories.length > 0
+    ? [{
+        id: "categories",
+        label: m.operations_ui_category(),
+        options: availableCategories.map((category) => ({
+          value: `category:${category}`,
+          label: category,
+        })),
+      }]
+    : []),
+]);
+
 // Filtered items
 const filteredDocs = $derived.by(() => {
   const q = searchQuery.trim().toLowerCase();
   return trashedDocs.filter((doc) => {
-    // Category filter
-    if (selectedCategory !== "all" && doc.category !== selectedCategory) {
+    if (
+      selectedCategories.length > 0 &&
+      !selectedCategories.includes(doc.category || "")
+    ) {
       return false;
     }
 
-    // Asset type filter
-    if (selectedAssetType !== "all") {
+    if (selectedFileTypes.length > 0) {
       const mime = doc.mime_type?.toLowerCase() || "";
-      if (selectedAssetType === "image" && !mime.startsWith("image/")) return false;
-      if (selectedAssetType === "video" && !mime.startsWith("video/")) return false;
-      if (selectedAssetType === "audio" && !mime.startsWith("audio/")) return false;
-      if (selectedAssetType === "pdf" && mime !== "application/pdf" && doc.extension?.toLowerCase() !== "pdf") return false;
+      const extension = doc.extension?.toLowerCase();
+      const matchesType = selectedFileTypes.some((type) => {
+        if (type === "pdf") return mime === "application/pdf" || extension === "pdf";
+        return mime.startsWith(`${type}/`);
+      });
+      if (!matchesType) return false;
     }
 
     // Search query
@@ -102,6 +162,97 @@ const filteredDocs = $derived.by(() => {
     return true;
   });
 });
+const allFilteredSelected = $derived(
+  filteredDocs.length > 0 && filteredDocs.every((doc) => selectedIds.has(doc.id)),
+);
+
+const trashGridSource = $derived(
+  filteredDocs.map((doc) => ({
+    ...doc,
+    id: doc.id,
+    selected: selectedIds.has(doc.id),
+    toggleSelection: toggleSelect,
+    sizeLabel: formatSize(doc.file_size_bytes),
+  })),
+);
+
+const trashColumns: OrbisColumnDef[] = [
+  {
+    id: "selected",
+    header: "",
+    width: 42,
+    flex: 0,
+    readonly: true,
+    sort: false,
+    cell: ArchiveSelectionCell,
+  },
+  {
+    id: "name",
+    header: m.operations_ui_file(),
+    width: 320,
+    minWidth: 180,
+    flex: 2,
+    readonly: true,
+    cellClass: "font-medium text-foreground",
+  },
+  {
+    id: "category",
+    header: m.operations_ui_category(),
+    width: 150,
+    readonly: true,
+    cellClass: "text-muted-foreground",
+  },
+  {
+    id: "sizeLabel",
+    header: m.operations_ui_size(),
+    width: 100,
+    align: "end",
+    readonly: true,
+    cellClass: "font-mono text-[11px] text-muted-foreground",
+  },
+  {
+    id: "deleted_at",
+    header: m.operations_ui_deleted_date(),
+    width: 160,
+    type: "date",
+    readonly: true,
+    cellClass: "text-muted-foreground",
+  },
+  {
+    id: "actions",
+    header: m.operations_ui_actions(),
+    width: 128,
+    flex: 0,
+    type: "action",
+    meta: {
+      items: [
+        { id: "preview", icon: "Eye", label: m.operations_ui_preview() },
+        { id: "restore", icon: "Refresh", label: m.operations_ui_restore() },
+        {
+          id: "purge",
+          icon: "Trash",
+          label: m.operations_ui_trash_permanently_delete(),
+          variant: "destructive",
+        },
+      ],
+    },
+  },
+];
+
+function formatSize(bytes?: number | null): string {
+  if (!bytes || bytes <= 0) return "0 KB";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function handleGridAction(event: GridActionEvent) {
+  const doc = trashedDocs.find((item) => item.id === String(event.row.id));
+  if (!doc) return;
+
+  if (event.actionId === "preview") void handlePreview(doc);
+  if (event.actionId === "restore") void handleRestoreDoc(doc.id);
+  if (event.actionId === "purge") void handlePurgeDoc(doc.id);
+}
 
 // Preview handler
 async function handlePreview(doc: DocumentDto) {
@@ -179,10 +330,13 @@ function toggleSelect(id: string, isSelected: boolean) {
 }
 
 function selectAll() {
-  if (selectedIds.size === filteredDocs.length) {
-    selectedIds = new Set();
+  const visibleIds = filteredDocs.map((doc) => doc.id);
+  if (allFilteredSelected) {
+    selectedIds = new Set(
+      Array.from(selectedIds).filter((id) => !visibleIds.includes(id)),
+    );
   } else {
-    selectedIds = new Set(filteredDocs.map((d) => d.id));
+    selectedIds = new Set([...selectedIds, ...visibleIds]);
   }
 }
 
@@ -256,41 +410,13 @@ async function handleBatchPurge() {
         </div>
       </div>
 
-      <!-- Header Action Buttons -->
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => trashQuery.refetch()}
-          title={m.operations_ui_refresh_data()}
-          class="h-9"
-        >
-          <Refresh class="w-4 h-4 {trashQuery.isFetching ? 'animate-spin' : ''}" />
-          <span class="hidden sm:inline ms-1.5">{m.operations_ui_refresh()}</span>
-        </Button>
-
-        {#if trashedDocs.length > 0}
-          <Button
-            variant="destructive"
-            size="sm"
-            onclick={handleEmptyTrash}
-            class="h-9"
-          >
-            <Trash class="w-4 h-4 me-1.5" />
-            <span>{m.operations_ui_trash_empty_action()}</span>
-          </Button>
-        {/if}
-
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => goto(`/${orgId}/settings/archive`)}
-          class="h-9"
-        >
-          <FolderOpen class="w-4 h-4 me-1.5 text-primary" />
-          <span>{m.operations_ui_return_to_archive()}</span>
-        </Button>
-      </div>
+      <SplitActionMenu
+        label={m.operations_ui_return_to_archive()}
+        menuLabel={m.operations_ui_actions()}
+        icon={FolderOpen}
+        actions={trashMenuActions}
+        onprimary={() => goto(`/${orgId}/settings/archive`)}
+      />
     </div>
 
     <!-- Search & Filter Controls -->
@@ -316,34 +442,29 @@ async function handleBatchPurge() {
       </div>
 
       <!-- Filters & View Switcher -->
-      <div class="flex items-center gap-2 flex-wrap">
-        <!-- Asset Type Filter -->
-        <select
-          bind:value={selectedAssetType}
-          class="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-        >
-          <option value="all">{m.operations_ui_all_types()}</option>
-          <option value="image">{m.operations_ui_image()}</option>
-          <option value="pdf">{m.operations_ui_pdf_documents()}</option>
-          <option value="video">{m.operations_ui_video()}</option>
-          <option value="audio">{m.operations_ui_audio()}</option>
-        </select>
+      <div class="flex items-center gap-2 flex-wrap text-xs">
+        <SearchableMultiFilter
+          groups={trashFilterGroups}
+          bind:selectedValues={selectedFilters}
+          placeholder={m.settings_ui_archive_filters()}
+          searchPlaceholder={m.settings_ui_archive_filter_search()}
+          emptyText={m.settings_ui_archive_no_matching_filters()}
+        />
 
-        <!-- Category Filter -->
-        {#if availableCategories.length > 0}
-          <select
-            bind:value={selectedCategory}
-            class="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary capitalize"
-          >
-            <option value="all">{m.operations_ui_all_categories()}</option>
-            {#each availableCategories as cat}
-              <option value={cat}>{cat}</option>
-            {/each}
-          </select>
-        {/if}
+        <Button
+          variant="ghost"
+          size="sm"
+          class="h-8 px-2 text-xs text-muted-foreground"
+          disabled={filteredDocs.length === 0}
+          onclick={selectAll}
+        >
+          {allFilteredSelected
+            ? m.operations_ui_clear_selection()
+            : m.operations_ui_select_all()}
+        </Button>
 
         <!-- View Switcher (Grid / Table) -->
-        <div class="flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
+        <div class="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5">
           <Button
             variant="ghost"
             size="icon"
@@ -368,48 +489,8 @@ async function handleBatchPurge() {
     </div>
   </header>
 
-  <!-- Multi-Select Floating Toolbar -->
-  {#if selectedIds.size > 0}
-    <div class="shrink-0 bg-primary/10 border-b border-primary/20 px-6 py-2.5 flex items-center justify-between text-xs transition-all">
-      <div class="flex items-center gap-3">
-        <span class="font-medium text-foreground">
-          {m.operations_ui_trash_selection_count({ selected: selectedIds.size, total: filteredDocs.length })}
-        </span>
-        <button
-          type="button"
-          class="text-xs text-muted-foreground hover:text-foreground underline"
-          onclick={() => (selectedIds = new Set())}
-        >
-          {m.operations_ui_clear_selection()}
-        </button>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-7 text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
-          onclick={handleBatchRestore}
-        >
-          <Refresh class="w-3.5 h-3.5 me-1.5" />
-          <span>{m.operations_ui_trash_restore_selected()}</span>
-        </Button>
-
-        <Button
-          variant="destructive"
-          size="sm"
-          class="h-7 text-xs"
-          onclick={handleBatchPurge}
-        >
-          <Trash class="w-3.5 h-3.5 me-1.5" />
-          <span>{m.operations_ui_trash_delete_selected()}</span>
-        </Button>
-      </div>
-    </div>
-  {/if}
-
   <!-- Main Content Stage -->
-  <main class="flex-1 overflow-y-auto p-6">
+  <main class="flex-1 overflow-y-auto p-6 scrollbar-hide">
     {#if isLoading}
       <ArchiveLoading />
     {:else if filteredDocs.length === 0}
@@ -458,39 +539,17 @@ async function handleBatchPurge() {
         </div>
       {:else}
         <!-- Table View -->
-        <div class="rounded-xl border border-border/50 bg-card overflow-hidden shadow-xs">
-          <table class="w-full text-start border-collapse">
-            <thead>
-              <tr class="border-b border-border/60 bg-muted/50 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                <th class="w-10 px-4 py-3 text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedIds.size === filteredDocs.length && filteredDocs.length > 0}
-                    onchange={selectAll}
-                    class="rounded border-border"
-                    aria-label={m.operations_ui_select_all()}
-                  />
-                </th>
-                <th class="px-4 py-3 text-start">{m.operations_ui_file()}</th>
-                <th class="px-4 py-3 text-start">{m.operations_ui_category()}</th>
-                <th class="px-4 py-3 text-start">{m.operations_ui_size()}</th>
-                <th class="px-4 py-3 text-start">{m.operations_ui_deleted_date()}</th>
-                <th class="px-4 py-3 text-end">{m.operations_ui_actions()}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each filteredDocs as doc (doc.id)}
-                <TrashDocumentRow
-                  document={doc}
-                  selected={selectedIds.has(doc.id)}
-                  onpreview={handlePreview}
-                  onrestore={handleRestoreDoc}
-                  onpurge={handlePurgeDoc}
-                  ontoggle={toggleSelect}
-                />
-              {/each}
-            </tbody>
-          </table>
+        <div class="h-[min(65vh,680px)] min-h-[360px] overflow-hidden rounded-xl border border-border/60 bg-card">
+          <OrbisGrid
+            columns={trashColumns}
+            source={trashGridSource}
+            loading={false}
+            emptyTitle={m.operations_ui_trash_empty_heading()}
+            emptyDescription={m.operations_ui_trash_empty_description()}
+            rtl={getLocale() === "ar"}
+            readonly
+            onaction={handleGridAction}
+          />
         </div>
       {/if}
     {/if}
@@ -505,4 +564,45 @@ async function handleBatchPurge() {
   isTrash={true}
   onrestore={handleRestoreDoc}
   onpurge={handlePurgeDoc}
+/>
+
+<!-- Floating Multi-Select Bottom Bar -->
+{#snippet trashActions()}
+  <Button
+    type="button"
+    variant="ghost"
+    size="sm"
+    class="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+    onclick={() => (selectedIds = new Set())}
+  >
+    {m.operations_ui_clear_selection()}
+  </Button>
+  <Button
+    type="button"
+    variant="outline"
+    size="sm"
+    class="h-8 px-3 text-xs font-semibold text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
+    onclick={handleBatchRestore}
+  >
+    <Refresh class="w-3.5 h-3.5 me-1.5" />
+    <span>{m.operations_ui_trash_restore_selected()}</span>
+  </Button>
+  <Button
+    type="button"
+    variant="destructive"
+    size="sm"
+    class="h-8 px-3 text-xs font-semibold cursor-pointer shadow-xs"
+    onclick={handleBatchPurge}
+  >
+    <Trash class="w-3.5 h-3.5 me-1.5" />
+    <span>{m.operations_ui_trash_delete_selected()}</span>
+  </Button>
+{/snippet}
+
+<SettingsBottomBar
+  visible={selectedIds.size > 0}
+  isDirty={selectedIds.size > 0}
+  message={m.operations_ui_trash_selection_count({ selected: selectedIds.size, total: filteredDocs.length })}
+  statusVariant="rose"
+  actions={trashActions}
 />

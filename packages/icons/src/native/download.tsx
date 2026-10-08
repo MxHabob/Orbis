@@ -27,9 +27,9 @@ export interface DownloadProps extends SvgProps {
 }
 
 export function Download({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: DownloadProps) {
@@ -42,9 +42,10 @@ export function Download({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M6 20L18 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M12 4V16M12 16L15.5 12.5M12 16L8.5 12.5"
 		strokeLinecap="round"

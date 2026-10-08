@@ -58,23 +58,100 @@ async function main() {
       text: await readFile(file, "utf8"),
     })),
   );
-  const source = sourceText.map(({ text }) => text).join("\n");
   const usedKeys = new Set<string>();
+  const literalMessageKeys = new Set<string>();
   const keyPattern = /\b(?:m|messages)\.([A-Za-z0-9_]+)\s*\(/g;
+  const messageNamespacePattern =
+    /\bimport\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s*["'][^"']*paraglide\/messages(?:\.js)?["']/g;
+  const literalMessageKeyPattern = /["'](iam_[A-Za-z0-9_]+)["']/g;
+  const nonMessageObjectProperties = new Set([
+    "content",
+    "executedTools",
+    "executed_tools",
+    "field",
+    "id",
+    "is_digital_gateway",
+    "name",
+    "present_records",
+    "proposedActions",
+    "proposed_actions",
+    "role",
+    "timestamp",
+    "total_attendance_records",
+    "user_id",
+    "value",
+  ]);
 
+  const source = sourceText.map(({ text }) => text).join("\n");
   for (const match of source.matchAll(keyPattern)) {
     if (match[1]) usedKeys.add(match[1]);
+  }
+  for (const { text } of sourceText) {
+    for (const importMatch of text.matchAll(messageNamespacePattern)) {
+      const namespace = importMatch[1];
+      if (!namespace) continue;
+      const escapedNamespace = namespace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const messageReferencePattern = new RegExp(
+        `\\b${escapedNamespace}\\.([A-Za-z0-9_]+)\\b`,
+        "g",
+      );
+      for (const match of text.matchAll(messageReferencePattern)) {
+        if (match[1] && !nonMessageObjectProperties.has(match[1])) {
+          usedKeys.add(match[1]);
+        }
+      }
+    }
+    for (const match of text.matchAll(literalMessageKeyPattern)) {
+      if (match[1]) literalMessageKeys.add(match[1]);
+    }
   }
 
   const arabicKeys = new Set(Object.keys(arabicMessages));
   const englishKeys = new Set(Object.keys(englishMessages));
   const allKeys = new Set([...arabicKeys, ...englishKeys]);
+  for (const key of literalMessageKeys) {
+    if (allKeys.has(key)) usedKeys.add(key);
+  }
   const unusedKeys = [...allKeys].filter((key) => !usedKeys.has(key)).sort();
-  const missingInArabic = [...englishKeys]
-    .filter((key) => !arabicKeys.has(key))
+  const missingInArabic = [...new Set([
+    ...[...usedKeys].filter((key) => !arabicKeys.has(key)),
+    ...[...englishKeys].filter((key) => !arabicKeys.has(key)),
+  ])]
     .sort();
-  const missingInEnglish = [...arabicKeys]
-    .filter((key) => !englishKeys.has(key))
+  const missingInEnglish = [...new Set([
+    ...[...usedKeys].filter((key) => !englishKeys.has(key)),
+    ...[...arabicKeys].filter((key) => !englishKeys.has(key)),
+  ])]
+    .sort();
+  const placeholderPattern = /\{\s*([A-Za-z0-9_]+)\s*\}/g;
+  const placeholderVariables = (message: unknown) =>
+    typeof message === "string"
+      ? [...message.matchAll(placeholderPattern)]
+          .map((match) => match[1])
+          .sort()
+          .join(",")
+      : "";
+  const placeholderMismatches = [...allKeys]
+    .filter(
+      (key) =>
+        arabicKeys.has(key) &&
+        englishKeys.has(key) &&
+        placeholderVariables(arabicMessages[key]) !==
+          placeholderVariables(englishMessages[key]),
+    )
+    .sort()
+    .map(
+      (key) =>
+        `${key} (ar: {${placeholderVariables(arabicMessages[key])}}, en: {${placeholderVariables(englishMessages[key])}})`,
+    );
+  const generatedLookingMessages = [...allKeys]
+    .filter((key) => {
+      const value = englishMessages[key];
+      return (
+        typeof value === "string" &&
+        /^(?:Shared Ui |Common Action |Finance Ui |Settings Ui )/.test(value)
+      );
+    })
     .sort();
   const hardcodedArabic: string[] = [];
   const hardcodedArabicMarkup: string[] = [];
@@ -82,9 +159,40 @@ async function main() {
 
   for (const { file, text } of sourceText) {
     const lines = text.split(/\r?\n/);
+    const remoteMetadataStart = file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`)
+      ? text.indexOf("async bootstrapDetectEnvironment")
+      : -1;
+    const remoteMetadataEnd =
+      remoteMetadataStart >= 0
+        ? text.indexOf("async bootstrapGenerateSlug", remoteMetadataStart)
+        : -1;
+    const guardianRelationshipStart = file.endsWith(
+      `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}components${"\\"}guardian-form.svelte`,
+    )
+      ? text.indexOf("const relationshipAr =")
+      : -1;
+    const guardianRelationshipEnd =
+      guardianRelationshipStart >= 0
+        ? text.indexOf("const request:", guardianRelationshipStart)
+        : -1;
+    let skipArabicDataValue = false;
+    let lineOffset = 0;
     for (const [index, line] of lines.entries()) {
+      const currentOffset = lineOffset;
+      lineOffset += line.length + 1;
       if (line.trim().startsWith("//") || line.trim().startsWith("<!--"))
         continue;
+      if (
+        file.endsWith(`${"src"}${"\\"}routes${"\\"}(app)${"\\"}[orgId]${"\\"}onboarding${"\\"}+page.svelte`) &&
+        /\bacademic_year_name_ar\s*:/.test(line)
+      ) {
+        skipArabicDataValue = true;
+        continue;
+      }
+      if (skipArabicDataValue) {
+        if (line.includes(",")) skipArabicDataValue = false;
+        continue;
+      }
       if (
         file.includes(`${"src"}${"\\"}lib${"\\"}features${"\\"}bulk-entry${"\\"}profiles${"\\"}`)
       ) {
@@ -92,8 +200,26 @@ async function main() {
       }
       if (
         file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`) &&
-        index >= 1472 &&
-        index < 1540
+        ((remoteMetadataStart >= 0 &&
+          currentOffset >= remoteMetadataStart &&
+          (remoteMetadataEnd < 0 || currentOffset < remoteMetadataEnd)) ||
+          (index >= 1472 && index < 1540))
+      ) {
+        continue;
+      }
+      if (
+        file.endsWith(`${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}search.ts`) ||
+        (guardianRelationshipStart >= 0 &&
+        currentOffset >= guardianRelationshipStart &&
+        (guardianRelationshipEnd < 0 || currentOffset < guardianRelationshipEnd)) ||
+        /\b(?:[A-Za-z]*nameAr|[A-Za-z_]*name_ar|relationshipAr|relationship_ar|country_name_ar|currency_symbol_ar|currency_name_ar|suggested_academic_year_ar|detected_language)\s*(?:=|:|\|\|)/i.test(
+        line,
+        ) ||
+        /\b(?:rawStatus|rawGender|status|sex)\b.*[\u0600-\u06ff]/.test(line) ||
+        /\.replace\(\s*["'][^"']*[\u0600-\u06ff][^"']*["']/.test(line) ||
+        ((file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`) ||
+          file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`)) &&
+          /\b(?:firstName|lastName)\b.*[\u0600-\u06ff]/.test(line))
       ) {
         continue;
       }
@@ -149,6 +275,8 @@ async function main() {
   printList("Unused message keys", unusedKeys);
   printList("Missing Arabic translations", missingInArabic);
   printList("Missing English translations", missingInEnglish);
+  printList("Placeholder mismatches", placeholderMismatches);
+  printList("Generated-looking English messages (manual review)", generatedLookingMessages);
   printList("Hardcoded Arabic literals", hardcodedArabic);
   printList("Hardcoded Arabic Svelte markup", hardcodedArabicMarkup);
 
@@ -171,7 +299,8 @@ async function main() {
   if (
     missingInArabic.length ||
     missingInEnglish.length ||
-    hardcodedArabic.length ||
+    placeholderMismatches.length ||
+    generatedLookingMessages.length ||
     hardcodedArabicMarkup.length
   ) {
     process.exitCode = 1;

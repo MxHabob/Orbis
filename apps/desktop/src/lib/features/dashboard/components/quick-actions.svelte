@@ -81,7 +81,7 @@ const ACTIONS = $derived.by(() => {
 });
 </script>
 
-<div class="flex items-center justify-center gap-3 pb-12 w-full flex-wrap">
+<div class="flex w-full flex-wrap items-center justify-center gap-3 pb-6">
 	{#each ACTIONS as action (action.href)}
 		{@const Icon = action.icon}
 		<Button

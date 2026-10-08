@@ -4,7 +4,7 @@ import { Skeleton } from "@orbis/ui";
 import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
-import { getLocale } from "$lib/paraglide/runtime";
+import { formatDate, formatNumber } from "$lib/core/i18n";
 
 let {
   orgId,
@@ -37,9 +37,7 @@ async function loadData() {
     const months: { label: string; index: number }[] = [];
     for (let i = 0; i < 12; i++) {
       const dateObj = new Date(new Date().getFullYear(), i, 1);
-      const label = new Intl.DateTimeFormat(getLocale(), {
-        month: "short",
-      }).format(dateObj);
+      const label = formatDate(dateObj, "date", { month: "short", timeZone: "UTC" });
       months.push({ label, index: i });
     }
 
@@ -133,7 +131,7 @@ function formatVal(val: number) {
 }
 
 function formatTooltipVal(val: number) {
-  return `€${val.toLocaleString()}`;
+  return `€${formatNumber(val)}`;
 }
 </script>
 

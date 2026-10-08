@@ -15,6 +15,7 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_domain::entities::academic_policy::{StudentAnnualReportCard, StudentTermReportCard};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
@@ -794,6 +795,120 @@ pub async fn list_student_behavior(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct StudentTermResultQuery {
+    pub period_id: Uuid,
+    pub class_id: Option<Uuid>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct StudentAnnualResultQuery {
+    pub year_id: Uuid,
+    pub class_id: Option<Uuid>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ClassTermResultQuery {
+    pub period_id: Uuid,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ClassAnnualResultQuery {
+    pub year_id: Uuid,
+}
+
+#[utoipa::path(get, path = "/api/v1/students/{id}/term-results",
+    params(
+        ("id" = Uuid, Path, description = "Student ID"),
+        ("period_id" = Uuid, Query, description = "Term Period ID"),
+        ("class_id" = Option<Uuid>, Query, description = "Optional Class ID"),
+    ),
+    responses((status = 200, body = StudentTermReportCard)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_student_term_results(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
+    Query(q): Query<StudentTermResultQuery>,
+) -> Result<Json<ApiResponse<StudentTermReportCard>>, ApiError> {
+    let report = state
+        .assessment_service
+        .calculate_student_term_report_card(
+            &ctx,
+            ctx.tenant_id,
+            student_id,
+            q.period_id,
+            q.class_id,
+            None,
+        )
+        .await?;
+    Ok(ApiResponse::ok(report))
+}
+
+#[utoipa::path(get, path = "/api/v1/students/{id}/annual-results",
+    params(
+        ("id" = Uuid, Path, description = "Student ID"),
+        ("year_id" = Uuid, Query, description = "Academic Year ID"),
+        ("class_id" = Option<Uuid>, Query, description = "Optional Class ID"),
+    ),
+    responses((status = 200, body = StudentAnnualReportCard)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_student_annual_results(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
+    Query(q): Query<StudentAnnualResultQuery>,
+) -> Result<Json<ApiResponse<StudentAnnualReportCard>>, ApiError> {
+    let report = state
+        .assessment_service
+        .calculate_student_annual_report_card(
+            &ctx,
+            ctx.tenant_id,
+            student_id,
+            q.year_id,
+            q.class_id,
+            None,
+        )
+        .await?;
+    Ok(ApiResponse::ok(report))
+}
+
+#[utoipa::path(get, path = "/api/v1/classes/{id}/term-results",
+    params(
+        ("id" = Uuid, Path, description = "Class ID"),
+        ("period_id" = Uuid, Query, description = "Term Period ID"),
+    ),
+    responses((status = 200, body = Vec<StudentTermReportCard>)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_class_term_results(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(class_id): Path<Uuid>,
+    Query(q): Query<ClassTermResultQuery>,
+) -> Result<Json<ApiResponse<Vec<StudentTermReportCard>>>, ApiError> {
+    let reports = state
+        .assessment_service
+        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, class_id, q.period_id, None)
+        .await?;
+    Ok(ApiResponse::ok(reports))
+}
+
+#[utoipa::path(get, path = "/api/v1/classes/{id}/annual-results",
+    params(
+        ("id" = Uuid, Path, description = "Class ID"),
+        ("year_id" = Uuid, Query, description = "Academic Year ID"),
+    ),
+    responses((status = 200, body = Vec<StudentAnnualReportCard>)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_class_annual_results(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(class_id): Path<Uuid>,
+    Query(q): Query<ClassAnnualResultQuery>,
+) -> Result<Json<ApiResponse<Vec<StudentAnnualReportCard>>>, ApiError> {
+    let reports = state
+        .assessment_service
+        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, class_id, q.year_id, None)
+        .await?;
+    Ok(ApiResponse::ok(reports))
+}
+
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route(
@@ -822,6 +937,22 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/students/:id/attendance",
             get(list_student_attendance),
+        )
+        .route(
+            "/api/v1/students/:id/term-results",
+            get(get_student_term_results),
+        )
+        .route(
+            "/api/v1/students/:id/annual-results",
+            get(get_student_annual_results),
+        )
+        .route(
+            "/api/v1/classes/:id/term-results",
+            get(get_class_term_results),
+        )
+        .route(
+            "/api/v1/classes/:id/annual-results",
+            get(get_class_annual_results),
         )
         .route(
             "/api/v1/behavior",

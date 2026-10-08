@@ -27,9 +27,9 @@ export interface ArrowForwardProps extends SvgProps {
 }
 
 export function ArrowForward({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ArrowForwardProps) {
@@ -42,9 +42,10 @@ export function ArrowForward({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path strokeLinecap="round" strokeLinejoin="round" d="M13.25 19.25L16.75 15.75L13.25 12.25" />
 	<Path
 		strokeLinecap="round"

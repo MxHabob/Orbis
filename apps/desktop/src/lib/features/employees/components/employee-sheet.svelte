@@ -28,7 +28,7 @@ let {
 </script>
 
 <Sheet.Root bind:open>
-  <Sheet.Content side="right" class="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl h-full p-0 flex flex-col overflow-hidden">
+  <Sheet.Content side="end" class="w-full sm:max-w-xl md:max-w-2xl lg:max-w-3xl h-full p-0 flex flex-col overflow-hidden">
     {#if open}
       <EmployeeForm
         {orgId}

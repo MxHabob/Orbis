@@ -1,0 +1,151 @@
+{
+  "viewBox": "0 0 24 24",
+  "reviewSizes": [16, 20, 24],
+  "themes": ["light", "dark"],
+  "icons": [
+    {
+      "name": "ArrowLeft",
+      "family": "navigation",
+      "kind": "canonical",
+      "direction": "logical-navigation",
+      "svelte": "src/svelte/arrow-left.svelte",
+      "native": "src/native/arrow-left.tsx"
+    },
+    {
+      "name": "Plus",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/plus.svelte",
+      "native": "src/native/plus.tsx"
+    },
+    {
+      "name": "CheckCircle",
+      "family": "status",
+      "kind": "canonical",
+      "svelte": "src/svelte/check-circle.svelte",
+      "native": "src/native/check-circle.tsx"
+    },
+    {
+      "name": "BookOpen",
+      "family": "education",
+      "kind": "canonical",
+      "svelte": "src/svelte/book-open.svelte",
+      "native": "src/native/book-open.tsx"
+    },
+    {
+      "name": "AdjustmentsHorizontal",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/adjustments-horizontal.svelte",
+      "native": "src/native/adjustments-horizontal.tsx"
+    },
+    {
+      "name": "Pencil",
+      "family": "actions",
+      "kind": "intentional-variant",
+      "variant": "outline",
+      "pairedWith": "PencilSolid",
+      "svelte": "src/svelte/pencil.svelte",
+      "native": "src/native/pencil.tsx"
+    },
+    {
+      "name": "PencilSolid",
+      "family": "actions",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "pairedWith": "Pencil",
+      "svelte": "src/svelte/pencil-solid.svelte",
+      "native": "src/native/pencil-solid.tsx"
+    },
+    {
+      "name": "Sparkles",
+      "family": "status",
+      "kind": "intentional-variant",
+      "variant": "outline",
+      "pairedWith": "SparklesSolid",
+      "svelte": "src/svelte/sparkles.svelte",
+      "native": "src/native/sparkles.tsx"
+    },
+    {
+      "name": "SparklesSolid",
+      "family": "status",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "pairedWith": "Sparkles",
+      "svelte": "src/svelte/sparkles-solid.svelte",
+      "native": "src/native/sparkles-solid.tsx"
+    },
+    {
+      "name": "GlobeAltSolid",
+      "family": "utility",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "svelte": "src/svelte/globe-alt-solid.svelte",
+      "native": "src/native/globe-alt-solid.tsx"
+    },
+    {
+      "name": "DocumentArrowUpSolid",
+      "family": "navigation",
+      "kind": "intentional-variant",
+      "variant": "solid",
+      "svelte": "src/svelte/document-arrow-up-solid.svelte",
+      "native": "src/native/document-arrow-up-solid.tsx"
+    },
+    {
+      "name": "Grid",
+      "family": "navigation",
+      "kind": "canonical",
+      "svelte": "src/svelte/grid.svelte",
+      "native": "src/native/grid.tsx"
+    },
+    {
+      "name": "ArrowPath",
+      "family": "navigation",
+      "kind": "canonical",
+      "svelte": "src/svelte/arrow-path.svelte",
+      "native": "src/native/arrow-path.tsx"
+    },
+    {
+      "name": "Trash",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/trash.svelte",
+      "native": "src/native/trash.tsx"
+    },
+    {
+      "name": "InfoCircle",
+      "family": "status",
+      "kind": "canonical",
+      "svelte": "src/svelte/info-circle.svelte",
+      "native": "src/native/info-circle.tsx"
+    },
+    {
+      "name": "XMark",
+      "family": "utility",
+      "kind": "canonical",
+      "svelte": "src/svelte/x-mark.svelte",
+      "native": "src/native/x-mark.tsx"
+    },
+    {
+      "name": "Refresh",
+      "family": "actions",
+      "kind": "canonical",
+      "svelte": "src/svelte/refresh.svelte",
+      "native": "src/native/refresh.tsx"
+    },
+    {
+      "name": "Users",
+      "family": "people",
+      "kind": "canonical",
+      "svelte": "src/svelte/users.svelte",
+      "native": "src/native/users.tsx"
+    },
+    {
+      "name": "DocumentPage",
+      "family": "education",
+      "kind": "canonical",
+      "svelte": "src/svelte/document-page.svelte",
+      "native": "src/native/document-page.tsx"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ Matches the FinanceOverview layout and design aesthetic with top KPI cards,
 toolbar controls, and an advanced OrbisGrid / cards directory.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { onMount } from "svelte";
@@ -31,7 +32,7 @@ import {
   Eye,
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef, type ActionItem, type GridActionEvent } from "@orbis/svelte-grid";
-import { l, isAr, formatDate } from "$lib/core/i18n";
+import { l, isAr, formatDate, formatNumber } from "$lib/core/i18n";
 import { confirmStore } from "$lib/stores";
 import BranchSheet from "$lib/features/settings/components/branch-sheet.svelte";
 
@@ -169,7 +170,7 @@ const gridSource = $derived(
       displayName: b.name_ar || b.name,
       displayCode: b.code || "—",
       managerName: mgr ? formatEmployeeName(mgr) : m.common_unassigned(),
-      displayCapacity: b.capacity ? b.capacity.toLocaleString() : m.ui_copy_uncapped_eb8a96f3(),
+      displayCapacity: b.capacity ? formatNumber(b.capacity) : m.ui_copy_uncapped_eb8a96f3(),
       subUnitsCount: b.children_count || 0,
       isolationLabel: b.data_isolation === "isolated" ? m.ui_copy_isolated_09d34bff() : b.data_isolation === "read_only" ? m.ui_copy_read_only_05cda70d() : m.ui_copy_shared_cdf39825(),
       statusLabel: b.is_active ? m.common_phase_active() : m.common_status_disabled(),
@@ -218,12 +219,7 @@ function openEditBranch(branch: OrgUnitDto) {
 function promptDeleteBranch(branch: OrgUnitDto) {
   const children = allUnits.filter((u) => u.parent_id === branch.id);
   if (children.length > 0) {
-    toast.error(
-      l(
-        `لا يمكن حذف الفرع لوجود (${children.length}) وحدات وأقسام تابعة له. يرجى نقلها أو حذفها أولاً.`,
-        `Cannot delete branch because it contains (${children.length}) child units.`
-      )
-    );
+    toast.error(m.settings_branch_delete_with_children({ count: children.length }));
     return;
   }
 
@@ -300,7 +296,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
       <CardContent class="p-4 flex items-center justify-between">
         <div class="space-y-1">
           <span class="text-xs font-medium text-muted-foreground">{m.ui_copy_total_capacity_31f26962()}</span>
-          <div class="text-2xl font-bold tabular-nums text-foreground">{totalCapacity.toLocaleString()}</div>
+          <div class="text-2xl font-bold tabular-nums text-foreground">{formatNumber(totalCapacity)}</div>
           <span class="text-[11px] text-muted-foreground">{m.ui_copy_available_seats_1a55ae77()}</span>
         </div>
       </CardContent>
@@ -369,7 +365,7 @@ async function setDefaultBranch(branch: OrgUnitDto) {
         disabled={isRefreshing || isLoading}
         class="h-9 px-3 text-xs gap-1.5 cursor-pointer"
       >
-        <Refresh size={13} class={isRefreshing ? "animate-spin" : ""} />
+        {#if isRefreshing}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
         <span>{m.common_refresh()}</span>
       </Button>
 

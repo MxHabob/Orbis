@@ -71,6 +71,7 @@ pub struct OnboardingStateDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ProvisionDefaultsReqDto {
+    pub academic_year_id: Option<Uuid>,
     pub academic_year_name: Option<String>,
     pub academic_year_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
@@ -79,6 +80,12 @@ pub struct ProvisionDefaultsReqDto {
     pub provision_subjects: Option<bool>,
     pub provision_assessment_scheme: Option<bool>,
     pub provision_tuition_fee_template: Option<bool>,
+    pub provision_discount_templates: Option<bool>,
+    pub provision_hijri_school_calendar: Option<bool>,
+    pub hijri_start_year: Option<i32>,
+    pub hijri_month_lengths: Option<Vec<u8>>,
+    pub provision_time_slots: Option<bool>,
+    pub enable_period_autopilot: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -229,6 +236,7 @@ pub async fn provision_blueprint_defaults(
 ) -> Result<Json<ApiResponse<ProvisionDefaultsResultDto>>, ApiError> {
     let org_id = auth.tenant_id;
     let service_req = orbis_app::services::ProvisionDefaultsRequest {
+        academic_year_id: req.academic_year_id,
         academic_year_name: req.academic_year_name,
         academic_year_name_ar: req.academic_year_name_ar,
         start_date: req.start_date,
@@ -237,6 +245,12 @@ pub async fn provision_blueprint_defaults(
         provision_subjects: req.provision_subjects,
         provision_assessment_scheme: req.provision_assessment_scheme,
         provision_tuition_fee_template: req.provision_tuition_fee_template,
+        provision_discount_templates: req.provision_discount_templates,
+        provision_hijri_school_calendar: req.provision_hijri_school_calendar,
+        hijri_start_year: req.hijri_start_year,
+        hijri_month_lengths: req.hijri_month_lengths,
+        provision_time_slots: req.provision_time_slots,
+        enable_period_autopilot: req.enable_period_autopilot,
     };
 
     let result = state

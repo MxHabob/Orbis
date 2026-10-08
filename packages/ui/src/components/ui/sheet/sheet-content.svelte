@@ -1,5 +1,5 @@
 <script lang="ts" module>
-export type Side = "top" | "right" | "bottom" | "left";
+export type Side = "top" | "right" | "bottom" | "left" | "start" | "end";
 </script>
 
 <script lang="ts">
@@ -13,7 +13,7 @@ export type Side = "top" | "right" | "bottom" | "left";
 	let {
 		ref = $bindable(null),
 		class: className,
-		side = "right",
+		side = "end",
 		showCloseButton = true,
 		contentClass,
 		portalProps,
@@ -35,7 +35,7 @@ export type Side = "top" | "right" | "bottom" | "left";
 		data-slot="sheet-content"
 		data-side={side}
 		class={cn(
-			"fixed z-50 gap-4 transition ease-in-out md:p-4 data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:data-closed:slide-out-to-bottom data-[side=bottom]:data-open:slide-in-from-bottom data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:data-closed:slide-out-to-left data-[side=left]:data-open:slide-in-from-left data-[side=left]:sm:max-w-sm data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:data-closed:slide-out-to-right data-[side=right]:data-open:slide-in-from-right data-[side=right]:sm:max-w-130 data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:data-closed:slide-out-to-top data-[side=top]:data-open:slide-in-from-top data-open:animate-in data-closed:animate-out data-closed:duration-200 data-open:duration-300",
+			"fixed z-50 gap-4 transition ease-in-out md:p-4 data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:data-closed:slide-out-to-bottom data-[side=bottom]:data-open:slide-in-from-bottom data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:data-closed:slide-out-to-left data-[side=left]:data-open:slide-in-from-left data-[side=left]:sm:max-w-sm data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:data-closed:slide-out-to-right data-[side=right]:data-open:slide-in-from-right data-[side=right]:sm:max-w-130 data-[side=start]:inset-y-0 data-[side=start]:inset-s-0 data-[side=start]:h-full data-[side=start]:w-3/4 data-[side=start]:data-closed:slide-out-to-left data-[side=start]:data-open:slide-in-from-left rtl:data-[side=start]:data-closed:slide-out-to-right rtl:data-[side=start]:data-open:slide-in-from-right data-[side=start]:sm:max-w-sm data-[side=end]:inset-y-0 data-[side=end]:inset-e-0 data-[side=end]:h-full data-[side=end]:w-3/4 data-[side=end]:data-closed:slide-out-to-right data-[side=end]:data-open:slide-in-from-right rtl:data-[side=end]:data-closed:slide-out-to-left rtl:data-[side=end]:data-open:slide-in-from-left data-[side=end]:sm:max-w-130 data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:data-closed:slide-out-to-top data-[side=top]:data-open:slide-in-from-top data-open:animate-in data-closed:animate-out data-closed:duration-200 data-open:duration-300",
 			contentClass
 		)}
 		{...restProps}

@@ -27,9 +27,9 @@ export interface ComputerProps extends SvgProps {
 }
 
 export function Computer({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ComputerProps) {
@@ -42,9 +42,10 @@ export function Computer({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M2 21L17 21" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21 21L22 21"
 		strokeLinecap="round"

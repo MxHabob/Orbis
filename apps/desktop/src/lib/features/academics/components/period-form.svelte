@@ -24,6 +24,8 @@ import {
 } from "@orbis/ui/accordion";
 import { createPeriodsQuery } from "$lib/features/academics/queries";
 import { createQuery } from "@tanstack/svelte-query";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   orgId,
@@ -101,33 +103,53 @@ const gradingLabels = $derived({
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-    if (payload.period_type === "year") {
-      const yearReq = {
-        name: payload.name || payload.name_ar || "",
-        name_ar: payload.name_ar || payload.name || undefined,
-        start_date: new Date(payload.start_date).toISOString(),
-        end_date: new Date(payload.end_date).toISOString(),
-      };
-      await api.createAcademicYear(yearReq);
+    if (isEdit && period) {
+      if (payload.period_type === "year") {
+        await api.updateAcademicYear(period.id, {
+          name: payload.name || payload.name_ar || "",
+          name_ar: payload.name_ar || payload.name || undefined,
+          start_date: new Date(payload.start_date).toISOString(),
+          end_date: new Date(payload.end_date).toISOString(),
+        });
+      } else {
+        await api.updateAcademicPeriod(period.id, {
+          name: payload.name || payload.name_ar || "",
+          name_ar: payload.name_ar || payload.name || undefined,
+          period_type: payload.period_type,
+          start_date: new Date(payload.start_date).toISOString(),
+          end_date: new Date(payload.end_date).toISOString(),
+        });
+      }
       toast.success(m.common_action_save());
     } else {
-      const selectedYearId =
-        payload.year_id ||
-        (yearsList[0]?.id ? String(yearsList[0].id) : "");
-      if (!selectedYearId) {
-        throw new Error(m.shared_ui_academic_year_required_for_period());
+      if (payload.period_type === "year") {
+        const yearReq = {
+          name: payload.name || payload.name_ar || "",
+          name_ar: payload.name_ar || payload.name || undefined,
+          start_date: new Date(payload.start_date).toISOString(),
+          end_date: new Date(payload.end_date).toISOString(),
+        };
+        await api.createAcademicYear(yearReq);
+        toast.success(m.common_action_save());
+      } else {
+        const selectedYearId =
+          payload.year_id ||
+          (yearsList[0]?.id ? String(yearsList[0].id) : "");
+        if (!selectedYearId) {
+          throw new Error(m.shared_ui_academic_year_required_for_period());
+        }
+        const periodReq = {
+          year_id: selectedYearId,
+          parent_id: payload.parent_id || undefined,
+          name: payload.name || payload.name_ar || "",
+          name_ar: payload.name_ar || payload.name || undefined,
+          period_type: payload.period_type,
+          start_date: new Date(payload.start_date).toISOString(),
+          end_date: new Date(payload.end_date).toISOString(),
+        };
+        await api.createAcademicPeriod(periodReq);
+        toast.success(m.common_period_form_success());
       }
-      const periodReq = {
-        year_id: selectedYearId,
-        parent_id: payload.parent_id || undefined,
-        name: payload.name || payload.name_ar || "",
-        name_ar: payload.name_ar || payload.name || undefined,
-        period_type: payload.period_type,
-        start_date: new Date(payload.start_date).toISOString(),
-        end_date: new Date(payload.end_date).toISOString(),
-      };
-      await api.createAcademicPeriod(periodReq);
-      toast.success(m.common_period_form_success());
     }
   });
   if (submitted) onSuccess();
@@ -149,37 +171,26 @@ async function handleSubmit(e: SubmitEvent) {
       <AccordionItem value="identity" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_user_form_name_en()}</AccordionTrigger>
         <AccordionContent>
-    <!-- Names (Arabic & English) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <FormField id="per_name_ar" label={m.common_cycle_form_name()} error={fieldError("name_ar")}>
-        {#snippet children()}
-        <Input
-          id="per_name_ar"
-          type="text"
-          bind:value={form.values.name_ar}
-          onblur={() => form.markTouched("name_ar")}
-          placeholder={m.common_period_form_name_placeholder()}
-          disabled={form.isSubmitting}
-        />
-        {/snippet}
-      </FormField>
-
-      <FormField id="per_name_en" label={m.common_user_form_name_en()} error={fieldError("name")} required>
-        {#snippet children()}
-        <Input
-          id="per_name_en"
-          type="text"
-          bind:value={form.values.name}
-          onblur={() => form.markTouched("name")}
-          aria-invalid={Boolean(fieldError("name"))}
-          aria-describedby={fieldError("name") ? "period_name_error" : undefined}
-          placeholder={m.common_period_form_name_en_placeholder()}
-          required
-          disabled={form.isSubmitting}
-        />
-        {/snippet}
-      </FormField>
-    </div>
+    <BilingualNameFields
+      arId="per_name_ar"
+      enId="per_name_en"
+      arLabel={m.common_cycle_form_name()}
+      enLabel={m.common_user_form_name_en()}
+      bind:arValue={form.values.name_ar}
+      bind:enValue={form.values.name}
+      arPlaceholder={m.common_period_form_name_placeholder()}
+      enPlaceholder={m.common_period_form_name_en_placeholder()}
+      arError={fieldError("name_ar")}
+      enError={fieldError("name")}
+      onArBlur={() => form.markTouched("name_ar")}
+      onEnBlur={() => form.markTouched("name")}
+      kind="label"
+      requestSuggestion={suggestLocalTranslation}
+      enRequired
+      disabled={form.isSubmitting}
+      loadingMessage={m.bilingual_entry_loading()}
+      failureMessage={m.bilingual_entry_failure()}
+    />
 
     <!-- Type & Parent -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

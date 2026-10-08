@@ -23,7 +23,6 @@ import { uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
 import { page } from "$app/state";
-import { onMount } from "svelte";
 import AskOrbisSidebar from "$lib/features/ai/views/sidebar.svelte";
 import { useQueryClient } from "@tanstack/svelte-query";
 

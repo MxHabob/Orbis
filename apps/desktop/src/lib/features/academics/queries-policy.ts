@@ -37,15 +37,17 @@ export function useUpdateAcademicPolicy() {
   return createMutation(() => ({
     mutationFn: async (vars: {
       orgId: string;
-      payload: Record<string, any>;
+      payload?: Record<string, any>;
+      policy?: Record<string, any>;
     }) => {
       const current = await api.getSettings();
+      const policyData = vars.payload ?? vars.policy ?? {};
       return api.updateSettings({
         ...current,
         academic: {
           default_grading_system:
-            current.academic?.default_grading_system || "standard",
-          ...vars.payload,
+            current.academic?.default_grading_system || "percentage",
+          ...policyData,
         },
       });
     },

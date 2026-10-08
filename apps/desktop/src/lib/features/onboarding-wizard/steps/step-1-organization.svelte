@@ -1,9 +1,11 @@
 <script lang="ts">
+import { createMutation, useQueryClient } from "@tanstack/svelte-query";
+import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
-import { goto } from "$app/navigation";
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
-import { systemStore } from "$lib/stores";
+import { toast } from "@orbis/ui";
+import { api, queryKeys } from "$lib/api";
+import { authStore, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -14,15 +16,40 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
+import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
-let isSaving = $state(false);
-let errorMessage = $state<string | null>(null);
+const queryClient = useQueryClient();
+const saveOrganizationMutation = createMutation(() => ({
+  mutationFn: (request: {
+    name: string;
+    name_ar?: string;
+    slug?: string;
+    base_currency_code: string;
+    timezone: string;
+    locale: string;
+    is_hijri_enabled: boolean;
+  }) => api.updateCurrentOrg(request),
+  onSuccess: async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.current() }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.onboarding.state(orgId),
+      }),
+    ]);
+  },
+}));
+const isSaving = $derived(saveOrganizationMutation.isPending);
 let successMessage = $state<string | null>(null);
 
 // Form Fields
@@ -34,57 +61,28 @@ let timezone = $state("Asia/Riyadh");
 let locale = $state("ar");
 let isHijriEnabled = $state(false);
 
-// Currency options
-const CURRENCIES = [
-  { code: "SAR", label: "SAR — Saudi Riyal (ريال سعودي)" },
-  { code: "AED", label: "AED — UAE Dirham (درهم إماراتي)" },
-  { code: "QAR", label: "QAR — Qatari Riyal (ريال قطري)" },
-  { code: "KWD", label: "KWD — Kuwaiti Dinar (دينار كويتي)" },
-  { code: "BHD", label: "BHD — Bahraini Dinar (دينار بحريني)" },
-  { code: "OMR", label: "OMR — Omani Rial (ريال عماني)" },
-  { code: "EGP", label: "EGP — Egyptian Pound (جنيه مصري)" },
-  { code: "YER", label: "YER — Yemeni Rial (ريال يمني)" },
-  { code: "USD", label: "USD — US Dollar (دولار أمريكي)" },
-  { code: "EUR", label: "EUR — Euro (يورو)" },
-  { code: "GBP", label: "GBP — British Pound (جنيه إسترليني)" },
-];
-
-// Timezone options
-const TIMEZONES = [
-  { value: "Asia/Riyadh", label: "Riyadh, Saudi Arabia (UTC+3)" },
-  { value: "Asia/Dubai", label: "Dubai, UAE (UTC+4)" },
-  { value: "Asia/Kuwait", label: "Kuwait (UTC+3)" },
-  { value: "Asia/Bahrain", label: "Bahrain (UTC+3)" },
-  { value: "Asia/Qatar", label: "Qatar (UTC+3)" },
-  { value: "Asia/Muscat", label: "Muscat, Oman (UTC+4)" },
-  { value: "Africa/Cairo", label: "Cairo, Egypt (UTC+2)" },
-  { value: "Asia/Amman", label: "Amman, Jordan (UTC+3)" },
-  { value: "Asia/Beirut", label: "Beirut, Lebanon (UTC+3)" },
-  { value: "Asia/Aden", label: "Aden / Sanaa, Yemen (UTC+3)" },
-  { value: "UTC", label: "Coordinated Universal Time (UTC)" },
-  { value: "Europe/London", label: "London, UK (UTC+0 / UTC+1)" },
-  { value: "America/New_York", label: "New York, USA (UTC-5 / UTC-4)" },
-];
-
 const stepTasks = $derived(getTasksForStep("organization", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.every((t) => t.status === "completed"));
 
 onMount(async () => {
   try {
     isLoading = true;
-    const org = await api.getCurrentOrg();
+    const org = (await api.getCurrentOrg()) || systemStore.onboardingState?.organization || authStore.currentOrg;
     if (org) {
-      name = org.name || "";
-      nameAr = org.name_ar || "";
-      slug = org.slug || "";
-      baseCurrencyCode = org.base_currency_code || org.currency || "SAR";
-      timezone = org.timezone || "Asia/Riyadh";
-      locale = org.locale || "ar";
-      isHijriEnabled = Boolean(org.is_hijri_enabled ?? org.hijri_enabled);
+      name = org.name || name;
+      nameAr = org.name_ar || nameAr;
+      slug = org.slug || slug;
+      baseCurrencyCode = org.base_currency_code || (org as any).currency || baseCurrencyCode;
+      timezone = org.timezone || timezone;
+      locale = org.locale || locale;
+      isHijriEnabled = Boolean(org.is_hijri_enabled ?? (org as any).hijri_enabled ?? isHijriEnabled);
+    }
+    if (!name && authStore.currentOrg?.name) {
+      name = authStore.currentOrg.name;
     }
   } catch (err: any) {
     console.error("Failed to load organization profile:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -92,16 +90,14 @@ onMount(async () => {
 
 async function saveOrganization() {
   if (!name.trim()) {
-    errorMessage = m.onboarding_step1_err_name();
+    toast.error(m.onboarding_step1_err_name());
     return;
   }
 
-  isSaving = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
-    await api.updateCurrentOrg({
+    await saveOrganizationMutation.mutateAsync({
       name: name.trim(),
       name_ar: nameAr.trim() || undefined,
       slug: slug.trim() || undefined,
@@ -112,22 +108,14 @@ async function saveOrganization() {
     });
 
     // Refresh onboarding DAG state
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step1_saved_success();
   } catch (err: any) {
     console.error("Failed to save organization profile:", err);
-    errorMessage = err?.message || m.common_action_failed();
-  } finally {
-    isSaving = false;
+    toast.error(err?.message || m.common_action_failed());
   }
 }
 
-async function handleContinue() {
-  if (!isTaskComplete) {
-    await saveOrganization();
-  }
-  await goto(`/${orgId}/onboarding/structure`);
-}
 </script>
 
 <div class="space-y-6">
@@ -139,12 +127,6 @@ async function handleContinue() {
     status={isTaskComplete ? "completed" : "in_progress"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -155,7 +137,7 @@ async function handleContinue() {
 
   {#if isLoading}
     <div class="flex items-center justify-center p-12 text-muted-foreground text-sm gap-2">
-      <span class="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></span>
+      <LoadingIndicator size={16} class="size-4 text-primary" />
       <span>{m.common_control_loading()}</span>
     </div>
   {:else}
@@ -165,32 +147,24 @@ async function handleContinue() {
       description={m.onboarding_step1_identity_desc()}
       isComplete={Boolean(name.trim())}
     >
-      <div class="grid gap-4 sm:grid-cols-2">
-        <div class="space-y-2">
-          <Label for="org-name" class="text-xs font-semibold">
-            {m.onboarding_step1_name_en()}
-          </Label>
-          <Input
-            id="org-name"
-            bind:value={name}
-            placeholder={m.onboarding_step1_name_en_placeholder()}
-            dir="ltr"
-            required
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="org-name-ar" class="text-xs font-semibold">
-            {m.onboarding_step1_name_ar()}
-          </Label>
-          <Input
-            id="org-name-ar"
-            bind:value={nameAr}
-            placeholder={m.onboarding_step1_name_ar_placeholder()}
-            dir="rtl"
-          />
-        </div>
-
+      <div class="space-y-4 sm:col-span-2">
+        <BilingualNameFields
+          arId="org-name-ar"
+          enId="org-name"
+          arLabel={m.onboarding_step1_name_ar()}
+          enLabel={m.onboarding_step1_name_en()}
+          bind:arValue={nameAr}
+          bind:enValue={name}
+          arPlaceholder={m.onboarding_step1_name_ar_placeholder()}
+          enPlaceholder={m.onboarding_step1_name_en_placeholder()}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          replaceUneditedInitialValues
+          enRequired
+          disabled={isSaving}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
         <div class="space-y-2 sm:col-span-2">
           <Label for="org-slug" class="text-xs font-semibold">
             {m.onboarding_step1_slug()}
@@ -199,7 +173,6 @@ async function handleContinue() {
             id="org-slug"
             bind:value={slug}
             placeholder={m.onboarding_step1_slug_placeholder()}
-            dir="ltr"
             class="font-mono text-xs"
           />
           <p class="text-[11px] text-muted-foreground">
@@ -216,39 +189,19 @@ async function handleContinue() {
       isComplete={Boolean(baseCurrencyCode && timezone)}
     >
       <div class="grid gap-4 sm:grid-cols-2">
-        <!-- Currency Select -->
-        <div class="space-y-2">
-          <Label class="text-xs font-semibold">
-            {m.onboarding_step1_currency()}
-          </Label>
-          <Select type="single" bind:value={baseCurrencyCode}>
-            <SelectTrigger class="w-full">
-              {CURRENCIES.find((c) => c.code === baseCurrencyCode)?.label || baseCurrencyCode}
-            </SelectTrigger>
-            <SelectContent>
-              {#each CURRENCIES as curr}
-                <SelectItem value={curr.code}>{curr.label}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
+        <!-- Currency Select (Database-backed) -->
+        <CurrencySelector
+          bind:currentCurrency={baseCurrencyCode}
+          compact={true}
+          title={m.onboarding_step1_currency()}
+        />
 
-        <!-- Timezone Select -->
-        <div class="space-y-2">
-          <Label class="text-xs font-semibold">
-            {m.onboarding_step1_timezone()}
-          </Label>
-          <Select type="single" bind:value={timezone}>
-            <SelectTrigger class="w-full">
-              {TIMEZONES.find((t) => t.value === timezone)?.label || timezone}
-            </SelectTrigger>
-            <SelectContent>
-              {#each TIMEZONES as tz}
-                <SelectItem value={tz.value}>{tz.label}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
+        <!-- Timezone Select (Location-backed) -->
+        <TimezoneSettings
+          bind:currentTimezone={timezone}
+          compact={true}
+          title={m.onboarding_step1_timezone()}
+        />
 
         <!-- System Locale Select -->
         <div class="space-y-2">
@@ -267,7 +220,7 @@ async function handleContinue() {
         </div>
 
         <!-- Hijri Calendar Toggle -->
-        <div class="flex items-center space-x-3 space-x-reverse rounded-lg border border-border/50 p-3 self-end">
+        <div class="flex items-center gap-3 rounded-lg border border-border/50 p-3 self-end">
           <Checkbox id="hijri-toggle" bind:checked={isHijriEnabled} />
           <div class="space-y-0.5">
             <Label for="hijri-toggle" class="text-xs font-medium cursor-pointer">
@@ -281,35 +234,15 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Bottom Actions Bar -->
-    <div class="flex items-center justify-between border-t border-border/50 pt-6">
+    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
       <Button
-        variant="outline"
-        onclick={() => goto(`/${orgId}/onboarding`)}
+        variant="secondary"
+        disabled={isSaving}
+        onclick={saveOrganization}
         class="text-xs"
       >
-        {m.onboarding_overview_btn()}
+        {isSaving ? m.onboarding_saving_btn() : m.onboarding_save_btn()}
       </Button>
-
-      <div class="flex items-center gap-3">
-        <Button
-          variant="secondary"
-          disabled={isSaving}
-          onclick={saveOrganization}
-          class="text-xs"
-        >
-          {isSaving ? m.onboarding_saving_btn() : m.onboarding_save_btn()}
-        </Button>
-
-        <Button
-          variant="default"
-          disabled={isSaving || !name.trim()}
-          onclick={handleContinue}
-          class="text-xs font-semibold shadow-xs"
-        >
-          {m.onboarding_step1_continue_btn()}
-        </Button>
-      </div>
     </div>
   {/if}
 </div>

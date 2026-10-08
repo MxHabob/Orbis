@@ -49,6 +49,8 @@ import {
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
 
@@ -450,25 +452,29 @@ async function saveStudentDetails(e: Event) {
             </div>
           </div>
 
-          <!-- Row 2: Full Name (Arabic) -->
+          <!-- Row 2: Full Name -->
           <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
             <div class="flex flex-col gap-1 text-start">
               <span class="text-xs font-bold text-foreground">{m.common_form_full_name_ar()} *</span>
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_name_ar_desc()}</span>
             </div>
-            <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs font-semibold h-9" bind:value={nameAr} required />
-            </div>
-          </div>
-
-          <!-- Row 3: Full Name (English) -->
-          <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between border-b border-border gap-4">
-            <div class="flex flex-col gap-1 text-start">
-              <span class="text-xs font-bold text-foreground">{m.common_form_full_name_en()}</span>
-              <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_name_en_desc()}</span>
-            </div>
-            <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs font-semibold h-9 font-mono text-left" bind:value={nameEn} />
+            <div class="w-full min-w-0 md:max-w-2xl">
+              <BilingualNameFields
+                arId="student-full-name-ar"
+                enId="student-full-name-en"
+                arLabel={m.common_form_full_name_ar()}
+                enLabel={m.common_form_full_name_en()}
+                bind:arValue={nameAr}
+                bind:enValue={nameEn}
+                arDescription={m.students_student_detail_row_name_ar_desc()}
+                enDescription={m.students_student_detail_row_name_en_desc()}
+                kind="person-name"
+                requestSuggestion={suggestLocalTranslation}
+                arRequired
+                disabled={isSaving}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
+              />
             </div>
           </div>
 
@@ -626,7 +632,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_phone_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="text" class="text-xs h-9 font-mono text-left" bind:value={phone} />
+              <Input type="tel" class="text-xs h-9 font-mono" bind:value={phone} />
             </div>
           </div>
 
@@ -637,7 +643,7 @@ async function saveStudentDetails(e: Event) {
               <span class="text-[10px] text-muted-foreground">{m.students_student_detail_row_email_desc()}</span>
             </div>
             <div class="w-full md:w-80 shrink-0">
-              <Input type="email" class="text-xs h-9 font-mono text-left" bind:value={email} />
+              <Input type="email" class="text-xs h-9 font-mono" bind:value={email} />
             </div>
           </div>
 

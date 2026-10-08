@@ -34,6 +34,7 @@ pub struct SubjectDto {
 pub struct CreateSubjectInput {
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub unit_id: Option<String>,
     pub credit_hours: Option<Decimal>,
     #[serde(default)]
@@ -65,7 +66,9 @@ pub struct CreateClassInput {
     pub unit_id: String,
     pub period_id: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub level: String,
+    pub capacity: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -171,6 +174,7 @@ pub async fn academic_create_subject(
             unit_id,
             request.code,
             request.name,
+            request.name_ar,
             request.credit_hours,
             request.is_core,
         )
@@ -225,7 +229,9 @@ pub async fn academic_create_class(
             unit_id,
             period_id,
             request.name,
+            request.name_ar,
             request.level,
+            request.capacity,
         )
         .await
         .map_err(|e| e.to_string())?;

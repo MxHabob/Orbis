@@ -134,7 +134,7 @@ let { state }: { state: StudentFormState } = $props();
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
             </div>
             <div class="w-full md:w-120 shrink-0">
-              <Input bind:value={guardian.phone} class="h-9 w-full bg-background font-mono text-left" placeholder="777000000" />
+              <Input type="tel" bind:value={guardian.phone} class="h-9 w-full bg-background font-mono" placeholder="777000000" />
             </div>
           </div>
 
@@ -206,7 +206,7 @@ let { state }: { state: StudentFormState } = $props();
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_guardian_workplace_phone_number_cc339fc4()}</span>
             </div>
             <div class="w-full md:w-120 shrink-0">
-              <Input bind:value={guardian.work_phone} class="h-9 w-full bg-background font-mono text-left" placeholder="01-234567" />
+              <Input type="tel" bind:value={guardian.work_phone} class="h-9 w-full bg-background font-mono" placeholder="01-234567" />
             </div>
           </div>
 

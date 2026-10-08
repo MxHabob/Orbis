@@ -31,6 +31,7 @@
         "@orbis/schemas": "workspace:*",
         "@orbis/sdk": "workspace:*",
         "@orbis/svelte-grid": "workspace:*",
+        "@orbis/translation": "workspace:*",
         "@orbis/ui": "workspace:*",
         "@orbis/utils": "workspace:*",
         "@tanstack/svelte-form": "^1.33.5",
@@ -223,6 +224,15 @@
         "svelte": "^5.0.0",
       },
     },
+    "packages/translation": {
+      "name": "@orbis/translation",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@orbis/tsconfig": "workspace:*",
+        "@types/bun": "latest",
+        "typescript": "^7.0.2",
+      },
+    },
     "packages/tsconfig": {
       "name": "@orbis/tsconfig",
       "version": "1.0.0",
@@ -234,6 +244,7 @@
         "@fontsource-variable/rubik": "^5.2.8",
         "@internationalized/date": "^3.12.0",
         "@orbis/icons": "workspace:*",
+        "@orbis/translation": "workspace:*",
         "@orbis/utils": "workspace:*",
         "bits-ui": "^2.16.3",
         "class-variance-authority": "^0.7",
@@ -743,6 +754,8 @@
     "@orbis/sdk": ["@orbis/sdk@workspace:packages/sdk"],
 
     "@orbis/svelte-grid": ["@orbis/svelte-grid@workspace:packages/svelte-grid"],
+
+    "@orbis/translation": ["@orbis/translation@workspace:packages/translation"],
 
     "@orbis/tsconfig": ["@orbis/tsconfig@workspace:packages/tsconfig"],
 

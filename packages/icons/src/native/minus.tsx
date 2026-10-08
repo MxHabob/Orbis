@@ -27,9 +27,9 @@ export interface MinusProps extends SvgProps {
 }
 
 export function Minus({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: MinusProps) {
@@ -42,9 +42,10 @@ export function Minus({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
     </Svg>
   );

@@ -27,9 +27,9 @@ export interface AgileProps extends SvgProps {
 }
 
 export function Agile({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: AgileProps) {
@@ -42,9 +42,10 @@ export function Agile({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M17.5 19H22M22 19L19.5 16.5M22 19L19.5 21.5"
 		strokeLinecap="round"

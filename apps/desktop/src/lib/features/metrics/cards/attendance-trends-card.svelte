@@ -5,7 +5,7 @@ import { onMount } from "svelte";
 import { api } from "$lib/api";
 import DragIndicator from "../components/drag-indicator.svelte";
 
-import { getLocale } from "$lib/paraglide/runtime";
+import { formatDate } from "$lib/core/i18n";
 
 import { academicContext } from "$lib/stores";
 
@@ -80,9 +80,7 @@ async function loadData() {
         const dateObj = new Date(date);
         const label = isNaN(dateObj.getTime())
           ? date.substring(5)
-          : new Intl.DateTimeFormat(getLocale(), { month: "short" }).format(
-              dateObj,
-            );
+          : formatDate(dateObj, "date", { month: "short", timeZone: "UTC" });
         return {
           date: label,
           rawDate: date,

@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 /**
  * ReportViewer — A C# .NET style native printing component.
@@ -164,7 +165,7 @@ function handleDownload() {
           </div>
           <Progress value={progress} class="h-2.5 w-full" />
           <div class="flex items-center gap-2 mt-2">
-            <Refresh size={24} class="animate-spin text-primary" />
+            <LoadingIndicator class="text-primary"  size={24} />
           </div>
         </div>
       {:else if errorMessage}

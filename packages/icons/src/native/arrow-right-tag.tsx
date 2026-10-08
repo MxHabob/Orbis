@@ -27,9 +27,9 @@ export interface ArrowRightTagProps extends SvgProps {
 }
 
 export function ArrowRightTag({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ArrowRightTagProps) {
@@ -42,9 +42,10 @@ export function ArrowRightTag({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path
 		d="M6.75 12H16.75M16.75 12L14 14.75M16.75 12L14 9.25"
 		strokeLinecap="round"

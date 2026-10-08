@@ -4,6 +4,7 @@
   Uses @orbis/svelte-grid inside a standardized Card container.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import {
@@ -19,6 +20,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import { createClassStudentsQuery } from "$lib/features/academics";
+import { formatDate } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 
@@ -107,7 +109,7 @@ const gridSource = $derived(
     gender: student.gender || "—",
     status: student.status || "active",
     enrolled_date: student.created_at
-      ? new Date(student.created_at).toLocaleDateString()
+      ? formatDate(student.created_at, "date")
       : "—",
   })),
 );
@@ -154,7 +156,7 @@ function refetch() {
             class="h-8 gap-1.5 text-xs font-semibold"
             onclick={refetch}
           >
-            <Refresh size={12} class={isLoading ? "animate-spin" : ""} />
+            {#if isLoading}<LoadingIndicator  size={12} />{:else}<Refresh size={12}   />{/if}
             {m.common_retry()}
           </Button>
         </div>

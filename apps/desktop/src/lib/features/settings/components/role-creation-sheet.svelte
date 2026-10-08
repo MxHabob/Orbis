@@ -224,7 +224,7 @@ async function handleSubmit(e: SubmitEvent) {
               id="role_name_ar_field"
               type="text"
               bind:value={roleNameAr}
-              placeholder="مثال: مشرف أكاديمي"
+              placeholder={m.settings_role_name_ar_placeholder()}
               class="text-xs"
             />
             {/snippet}

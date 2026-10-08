@@ -22,6 +22,14 @@
       "svelte": "./src/components/ui/input/index.ts",
       "default": "./src/components/ui/input/index.ts"
     },
+    "./bilingual-name-fields": {
+      "svelte": "./src/components/ui/bilingual-name-fields/index.ts",
+      "default": "./src/components/ui/bilingual-name-fields/index.ts"
+    },
+    "./kbd": {
+      "svelte": "./src/components/ui/kbd/index.ts",
+      "default": "./src/components/ui/kbd/index.ts"
+    },
     "./badge": {
       "svelte": "./src/components/ui/badge/index.ts",
       "default": "./src/components/ui/badge/index.ts"
@@ -143,6 +151,7 @@
     "@fontsource-variable/rubik": "^5.2.8",
     "@internationalized/date": "^3.12.0",
     "@orbis/icons": "workspace:*",
+    "@orbis/translation": "workspace:*",
     "@orbis/utils": "workspace:*",
     "bits-ui": "^2.16.3",
     "class-variance-authority": "^0.7",

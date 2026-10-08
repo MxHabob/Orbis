@@ -27,9 +27,9 @@ export interface ZoomResetProps extends SvgProps {
 }
 
 export function ZoomReset({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: ZoomResetProps) {
@@ -42,9 +42,10 @@ export function ZoomReset({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Rect x="2" y="4" width="20" height="16" rx="3" fill="none" />
 	
 	<Path strokeLinecap="round" strokeLinejoin="round" d="M7.5 9v6M6 10.5l1.5-1.5" />

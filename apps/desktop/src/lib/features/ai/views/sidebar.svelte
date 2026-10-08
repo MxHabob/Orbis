@@ -459,8 +459,8 @@ interactive tool inspections, and consequential action approvals.
 <div
   bind:this={sidebarDiv}
   class={isStandalone
-    ? "relative flex w-full h-full flex-col bg-card text-card-foreground overflow-hidden select-none"
-    : "absolute end-3.5 top-3.5 bottom-3.5 flex shrink-0 flex-col bg-card text-card-foreground rounded-2xl overflow-hidden border border-border/80 shadow-2xl z-50 select-none backdrop-blur-md"}
+    ? "relative flex w-full h-full flex-col overflow-hidden"
+    : "absolute end-3.5 top-3.5 bottom-3.5 flex shrink-0 flex-col overflow-hidden shadow-2xl z-50 select-none backdrop-blur-md"}
   style:width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:min-width={isStandalone ? "100%" : `${preferredWidth}rem`}
   style:max-width={isStandalone ? "100%" : `${preferredWidth}rem`}
@@ -472,7 +472,7 @@ interactive tool inspections, and consequential action approvals.
   {#if !isStandalone}
     <Resizer
       viewport={sidebarDiv}
-      direction="start"
+      edge="start"
       {minWidth}
       {maxWidth}
       defaultValue={pxToRem(400)}

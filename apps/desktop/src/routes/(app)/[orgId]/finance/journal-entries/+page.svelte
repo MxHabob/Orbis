@@ -6,7 +6,7 @@ let { data }: { data: { orgId: string } } = $props();
 </script>
 
 <svelte:head>
-  <title>قيود اليومية المحاسبية | Orbis</title>
+  <title>{m.ui_page_finance_journal_entries()} | Orbis</title>
 </svelte:head>
 
 <JournalEntries orgId={data.orgId} />

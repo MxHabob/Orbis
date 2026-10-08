@@ -4,6 +4,7 @@ Multi-step wizard for the academic promotion workflow.
 Steps: Configuration → Class Mapping → Preview → Execute.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api } from "$lib/api";
 import { extractErrorMessage } from "$lib/api";
@@ -541,7 +542,7 @@ const previewGridRows = $derived(
       <div class="w-full space-y-6">
         {#if isExecuting}
           <div class="border border-border rounded-xl bg-card flex flex-col items-center justify-center py-16 text-center select-none">
-            <ArrowPath class="size-12 text-primary animate-spin mb-4" />
+            <LoadingIndicator class="size-12 text-primary mb-4"  size={48} />
             <h3 class="text-lg font-semibold text-foreground font-serif">{m.common_promo_executing()}</h3>
             <p class="text-sm text-muted-foreground mt-1">{m.common_promo_execute_confirm()}</p>
           </div>
@@ -609,7 +610,7 @@ const previewGridRows = $derived(
               class="flex gap-2 items-center font-bold select-none"
             >
               {#if isAnalyzing}
-                <ArrowPath class="size-4 animate-spin" />
+                <LoadingIndicator class="size-4"  size={16} />
                 <span>{m.common_promo_running()}</span>
               {:else}
                 <Play class="size-4" />

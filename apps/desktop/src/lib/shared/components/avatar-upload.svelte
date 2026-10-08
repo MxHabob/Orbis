@@ -3,6 +3,7 @@
 A circular avatar image uploader with hover edit states and customizable fallbacks.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
@@ -120,7 +121,7 @@ function handleFileChange(event: Event) {
 >
   {#if isLoading || uploadMutation.isPending}
     <div class="flex items-center justify-center w-full h-full bg-background/50 backdrop-blur-xs">
-      <ArrowPath class="animate-spin text-primary shrink-0" size={Math.max(16, size / 3.5)} />
+      <LoadingIndicator class="text-primary shrink-0"  size={Math.max(16, size / 3.5)} />
     </div>
   {:else}
     <Avatar class="w-full h-full rounded-md">

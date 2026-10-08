@@ -344,6 +344,47 @@ pub struct EvaluateRequirementsQuery {
     pub grade_level_id: Option<Uuid>,
     pub is_national: Option<bool>,
     pub is_transfer: Option<bool>,
+    pub is_special_needs: Option<bool>,
+}
+
+fn parse_requirement_target(
+    value: &str,
+    target_id: Option<Uuid>,
+) -> Result<orbis_domain::entities::document_requirement::RequirementTargetType, ApiError> {
+    use orbis_domain::entities::document_requirement::RequirementTargetType;
+
+    match value {
+        "global" if target_id.is_none() => Ok(RequirementTargetType::Global),
+        "grade_level" if target_id.is_some() => Ok(RequirementTargetType::GradeLevel),
+        "global" => Err(ApiError::bad_request(
+            "Global document requirements cannot have a target ID",
+        )),
+        "grade_level" => Err(ApiError::bad_request(
+            "Grade-level document requirements require a target ID",
+        )),
+        "stage" | "program" => Err(ApiError::bad_request(
+            "Stage and program document targeting is not supported yet",
+        )),
+        _ => Err(ApiError::bad_request(
+            "Unsupported document requirement target",
+        )),
+    }
+}
+
+fn parse_requirement_condition(
+    value: &str,
+) -> Result<orbis_domain::entities::document_requirement::DocumentCondition, ApiError> {
+    use orbis_domain::entities::document_requirement::DocumentCondition;
+
+    match value {
+        "all_students" => Ok(DocumentCondition::AllStudents),
+        "non_national_only" => Ok(DocumentCondition::NonNationalOnly),
+        "transfer_students_only" => Ok(DocumentCondition::TransferStudentsOnly),
+        "special_needs_only" => Ok(DocumentCondition::SpecialNeedsOnly),
+        _ => Err(ApiError::bad_request(
+            "Unsupported document requirement condition",
+        )),
+    }
 }
 
 // ── Document Requirement Handlers ───────────────────────────────
@@ -355,21 +396,8 @@ async fn create_document_requirement(
     State(state): State<AppState>,
     Json(p): Json<CreateDocumentRequirementRequest>,
 ) -> Result<Json<ApiResponse<DocumentRequirementDto>>, ApiError> {
-    use orbis_domain::entities::document_requirement::{DocumentCondition, RequirementTargetType};
-
-    let target_type = match p.target_type.as_str() {
-        "stage" => RequirementTargetType::Stage,
-        "grade_level" => RequirementTargetType::GradeLevel,
-        "program" => RequirementTargetType::Program,
-        _ => RequirementTargetType::Global,
-    };
-
-    let condition = match p.condition.as_deref().unwrap_or("all_students") {
-        "non_national_only" => DocumentCondition::NonNationalOnly,
-        "transfer_students_only" => DocumentCondition::TransferStudentsOnly,
-        "special_needs_only" => DocumentCondition::SpecialNeedsOnly,
-        _ => DocumentCondition::AllStudents,
-    };
+    let target_type = parse_requirement_target(&p.target_type, p.target_id)?;
+    let condition = parse_requirement_condition(p.condition.as_deref().unwrap_or("all_students"))?;
 
     let input = orbis_app::services::CreateDocumentRequirementInput {
         target_type,
@@ -428,25 +456,24 @@ async fn update_document_requirement(
     Path(id): Path<Uuid>,
     Json(p): Json<UpdateDocumentRequirementRequest>,
 ) -> Result<Json<ApiResponse<DocumentRequirementDto>>, ApiError> {
-    use orbis_domain::entities::document_requirement::{DocumentCondition, RequirementTargetType};
-
-    let target_type = p.target_type.map(|t| match t.as_str() {
-        "stage" => RequirementTargetType::Stage,
-        "grade_level" => RequirementTargetType::GradeLevel,
-        "program" => RequirementTargetType::Program,
-        _ => RequirementTargetType::Global,
-    });
-
-    let condition = p.condition.map(|c| match c.as_str() {
-        "non_national_only" => DocumentCondition::NonNationalOnly,
-        "transfer_students_only" => DocumentCondition::TransferStudentsOnly,
-        "special_needs_only" => DocumentCondition::SpecialNeedsOnly,
-        _ => DocumentCondition::AllStudents,
-    });
+    let target_type = p
+        .target_type
+        .as_deref()
+        .map(|value| parse_requirement_target(value, p.target_id))
+        .transpose()?;
+    let condition = p
+        .condition
+        .as_deref()
+        .map(parse_requirement_condition)
+        .transpose()?;
+    let target_id = match p.target_type.as_deref() {
+        Some("global") => Some(None),
+        _ => p.target_id.map(Some),
+    };
 
     let input = UpdateDocumentRequirementInput {
         target_type,
-        target_id: p.target_id.map(Some),
+        target_id,
         code: p.code,
         name_ar: p.name_ar,
         name_en: p.name_en,
@@ -492,6 +519,7 @@ async fn evaluate_student_requirements(
             q.grade_level_id,
             q.is_national.unwrap_or(true),
             q.is_transfer.unwrap_or(false),
+            q.is_special_needs.unwrap_or(false),
         )
         .await?;
 

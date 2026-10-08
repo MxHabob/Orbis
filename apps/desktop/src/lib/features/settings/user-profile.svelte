@@ -22,6 +22,9 @@ import { createUserQuery } from "$lib/features/settings/queries";
 import { useQueryClient, createQuery } from "@tanstack/svelte-query";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
 import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -73,7 +76,6 @@ let groupsSheetOpen = $state(false);
 // Form fields
 let fullName = $state("");
 let nameAr = $state("");
-let nameEn = $state("");
 let email = $state("");
 let phone = $state("");
 let role = $state("staff");
@@ -91,6 +93,18 @@ $effect(() => {
   isActiveState =
     fetched.is_active !== undefined ? Boolean(fetched.is_active) : true;
   initializedUserId = userId;
+});
+
+const isDirty = $derived.by(() => {
+  if (!user) return false;
+  return (
+    fullName !== (user.full_name || "") ||
+    nameAr !== (user.full_name_ar || "") ||
+    email !== (user.email || "") ||
+    phone !== ((user.phone as string) || "") ||
+    role !== (user.roles?.[0] || "staff") ||
+    isActiveState !== (user.is_active !== undefined ? Boolean(user.is_active) : true)
+  );
 });
 
 function openManageGroups() {
@@ -215,37 +229,35 @@ async function saveProfile() {
 
     <!-- Main Profile Fields -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Full Name -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label
-          for="fullName"
-          class="text-xs font-medium text-muted-foreground"
-        >
-          {m.common_word_fullname ? m.common_word_fullname() : m.common_word_fullname()} *
-        </Label>
-        <Input id="fullName" type="text" bind:value={fullName} required />
+      <div class="md:col-span-2">
+        <BilingualNameFields
+          arId="nameAr"
+          enId="fullName"
+          arLabel={m.ui_copy_full_name_arabic_4871e6bf()}
+          enLabel={m.common_word_fullname()}
+          bind:arValue={nameAr}
+          bind:enValue={fullName}
+          kind="person-name"
+          requestSuggestion={suggestLocalTranslation}
+          enRequired
+          disabled={isSaving}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
       </div>
 
       <!-- Email -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="email" class="text-xs font-medium text-muted-foreground">
-          {m.common_word_email ? m.common_word_email() : m.common_word_email()} *
+          {m.common_word_email()} *
         </Label>
         <Input id="email" type="email" bind:value={email} required />
-      </div>
-
-      <!-- Arabic Name -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-          {m.common_form_full_name_ar ? m.common_form_full_name_ar() : m.ui_copy_full_name_arabic_4871e6bf()}
-        </Label>
-        <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>
 
       <!-- Dynamic Primary Role Select -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="role" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_primary_role ? m.settings_user_detail_label_primary_role() : m.ui_copy_primary_role_b4890578()}
+          {m.ui_copy_primary_role_b4890578()}
         </Label>
         <RoleSelect bind:value={role} />
       </div>
@@ -253,7 +265,7 @@ async function saveProfile() {
       <!-- Phone -->
       <div class="flex flex-col gap-1.5 text-start">
         <Label for="phone" class="text-xs font-medium text-muted-foreground">
-          {m.settings_user_detail_label_phone ? m.settings_user_detail_label_phone() : m.employees_phone()}
+          {m.employees_phone()}
         </Label>
         <Input id="phone" type="text" bind:value={phone} />
       </div>
@@ -298,22 +310,15 @@ async function saveProfile() {
       {/if}
     </div>
 
-    <!-- Actions Toolbar -->
-    <div class="flex justify-end gap-3 border-t border-border/40 pt-6 mt-2">
-      <Button variant="ghost" size="sm" onclick={resetForm}>
-        {m.common_switcher_reset ? m.common_switcher_reset() : m.common_switcher_reset()}
-      </Button>
-      <Button
-        variant="lime"
-        size="sm"
-        class="font-bold px-6 cursor-pointer"
-        onclick={saveProfile}
-        disabled={isSaving}
-      >
-        {isSaving ? "..." : (m.settings_user_detail_btn_save_details ? m.settings_user_detail_btn_save_details() : m.ui_copy_save_changes_c8af420b())}
-      </Button>
-    </div>
   </div>
+
+  <SettingsBottomBar
+    visible={isDirty}
+    {isDirty}
+    {isSaving}
+    onsave={saveProfile}
+    onreset={resetForm}
+  />
 
   <!-- Manage User Groups Drawer Sheet Component -->
   <ManageUserGroupsSheet

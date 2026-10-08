@@ -1,4 +1,5 @@
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -34,6 +35,6 @@ let {
       <FormField label={m.settings_ui_assessment_scheme_name()} required>{#snippet children()}<Input bind:value={name} placeholder={m.settings_ui_assessment_scheme_example()} class="text-xs" />{/snippet}</FormField>
       <FormField label={m.settings_ui_assessment_scheme_description_optional()}>{#snippet children()}<Input bind:value={description} placeholder={m.settings_ui_assessment_scheme_description_example()} class="text-xs" />{/snippet}</FormField>
     </div>
-    <DialogFooter><Button size="sm" class="text-xs cursor-pointer" onclick={onsubmit} disabled={isCreating || !name.trim()}>{#if isCreating}<ArrowPath size={12} class="animate-spin me-1" />{/if}{m.common_action_create()}</Button></DialogFooter>
+    <DialogFooter><Button size="sm" class="text-xs cursor-pointer" onclick={onsubmit} disabled={isCreating || !name.trim()}>{#if isCreating}<LoadingIndicator class="me-1"  size={12} />{/if}{m.common_action_create()}</Button></DialogFooter>
   </DialogContent>
 </Dialog>

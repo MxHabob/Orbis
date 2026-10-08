@@ -31,6 +31,7 @@
     "@orbis/schemas": "workspace:*",
     "@orbis/sdk": "workspace:*",
     "@orbis/svelte-grid": "workspace:*",
+    "@orbis/translation": "workspace:*",
     "@orbis/ui": "workspace:*",
     "@orbis/utils": "workspace:*",
     "@tanstack/svelte-form": "^1.33.5",

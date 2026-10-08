@@ -27,9 +27,9 @@ export interface AlignHorizontalProps extends SvgProps {
 }
 
 export function AlignHorizontal({
-  size = 20,
+  size = 16,
   color = 'currentColor',
-  strokeWidth = 1.5,
+  strokeWidth = 1.75,
   style,
   ...props
 }: AlignHorizontalProps) {
@@ -42,9 +42,10 @@ export function AlignHorizontal({
       stroke={color}
       strokeWidth={strokeWidth}
       style={style}
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden={true}
-      {...props}
-    >
+      {...props}>
       <Path d="M3 22L3 2" strokeLinecap="round" strokeLinejoin="round"></Path><Path
 		d="M21 22V2"
 		strokeLinecap="round"

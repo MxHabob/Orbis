@@ -5,6 +5,7 @@
   Prerequisite Bypasses, and Multi-Step Approval Workflows directly via backend API.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
@@ -482,7 +483,7 @@ function parseApprovalChain(chain: any): any[] {
                           disabled={isProcessing}
                         >
                           {#if isProcessing}
-                            <ArrowPath class="w-3.5 h-3.5 animate-spin" />
+                            <LoadingIndicator class="w-3.5 h-3.5"  size={14} />
                             <span>{m.ui_copy_processing_94974c77()}</span>
                           {:else}
                             <CheckCircle class="w-3.5 h-3.5" />

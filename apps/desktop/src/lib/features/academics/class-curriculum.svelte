@@ -4,6 +4,7 @@
   Uses @orbis/svelte-grid directly inside a standardized Card container.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage, type ClassSubjectDto, type SubjectDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
@@ -144,7 +145,7 @@ function handleGridAction(event: GridActionEvent) {
             class="text-muted-foreground"
             onclick={() => subjectsQuery.refetch()}
           >
-            <Refresh size={14} class={isLoading ? "animate-spin" : ""} />
+            {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
           </Button>
 
           <Button

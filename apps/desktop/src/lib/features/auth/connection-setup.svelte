@@ -3,6 +3,7 @@
   Database and remote server connection configuration.
 -->
 <script lang="ts">
+import { LoadingIndicator } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -265,7 +266,6 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                       disabled={form.isSubmitting}
                       class="h-9 text-xs font-mono font-medium bg-background border-input"
                       placeholder="orbis.db"
-                      style="direction: ltr;"
                     />
                   {/snippet}
                 </FormField>
@@ -290,7 +290,6 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                           disabled={form.isSubmitting}
                           class="h-9 text-xs font-mono bg-background border-input flex-1"
                           placeholder="http://localhost:3000"
-                          style="direction: ltr;"
                         />
                         <Button
                           type="button"
@@ -301,7 +300,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
                           disabled={isCheckingHealth || !form.values.serverUrl.trim()}
                         >
                           {#if isCheckingHealth}
-                            <ArrowPath class="size-3.5 animate-spin" />
+                            <LoadingIndicator class="size-3.5"  size={14} />
                           {:else}
                             <ChartBar class="size-3.5 text-primary" />
                           {/if}
@@ -340,7 +339,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
               disabled={form.isSubmitting || (form.values.mode === 'remote' && healthResult !== null && !healthResult.reachable)}
             >
               {#if form.isSubmitting}
-                <ArrowPath class="size-4 animate-spin" />
+                <LoadingIndicator class="size-4"  size={16} />
                 <span>{m.setup_connection_connecting()}</span>
               {:else}
                 <span>{m.setup_connection_connect_btn()}</span>

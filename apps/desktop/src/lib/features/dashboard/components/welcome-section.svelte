@@ -1,22 +1,13 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
-  import { authStore } from "$lib/stores";
-  import { onDestroy, onMount } from "svelte";
   import { quadOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-
   import { localizeHref } from "$lib/paraglide/runtime";
-  import {
-    ALL_AVATAR_HATS,
-    Avatar,
-    AvatarController,
-    type AvatarHat,
-  } from "@orbis/avatar-engine";
-
   import type { DashboardCountsDto } from "$lib/api/types";
+  import DashboardGreeting from "./dashboard-greeting.svelte";
 
   let {
-    type,
+    type = "both",
     stats,
     orgId,
   }: {
@@ -24,49 +15,6 @@
     stats?: DashboardCountsDto | null;
     orgId: string;
   } = $props();
-
-  const avatarController = new AvatarController();
-
-  // Greeting Logic
-  let hourState = $state(new Date().getHours());
-  let greetingInterval: ReturnType<typeof setInterval> | undefined;
-
-  onMount(() => {
-    greetingInterval = setInterval(() => {
-      hourState = new Date().getHours();
-    }, 60000);
-  });
-
-  onDestroy(() => {
-    if (greetingInterval) clearInterval(greetingInterval);
-    avatarController.destroy();
-  });
-
-  const greeting = $derived.by(() => {
-    if (hourState >= 5 && hourState < 12) return m.common_greeting_morning();
-    if (hourState >= 12 && hourState < 17) return m.common_greeting_evening();
-    return m.common_greeting_evening();
-  });
-
-  const firstName = $derived(authStore.user?.full_name?.split(" ")[0]);
-
-  let manualHat = $state<AvatarHat | null>(null);
-
-  const userHat = $derived.by<AvatarHat>(() => {
-    if (manualHat !== null) return manualHat;
-    const rawRole = authStore.user?.primary_role || "viewer";
-    const role = String(rawRole).toLowerCase();
-    if (role === "admin" || role === "super_admin") return "crown";
-    if (role === "teacher") return "graduation";
-    if (role === "registrar") return "firefighter";
-    return "graduation";
-  });
-
-  function cycleHat() {
-    const currentIdx = ALL_AVATAR_HATS.indexOf(userHat);
-    const nextIdx = (currentIdx + 1) % ALL_AVATAR_HATS.length;
-    manualHat = ALL_AVATAR_HATS[nextIdx];
-  }
 
   // Ticker / Insights Logic
   let index = $state(0);
@@ -95,9 +43,9 @@
       for (const ai of stats.ai_insights) {
         if (ai.key === "critical") {
           const link = m.ai_insight_critical_link({ count: ai.count });
-          const parts = m
-            .ai_insight_critical({ link: "||LINK||" })
-            .split("||LINK||");
+          const parts = m.ai_insight_critical({
+            link: "||LINK||",
+          }).split("||LINK||");
           items.push({
             key: "critical",
             before: parts[0] ?? "",
@@ -107,9 +55,9 @@
           });
         } else if (ai.key === "warning") {
           const link = m.ai_insight_warning_link({ count: ai.count });
-          const parts = m
-            .ai_insight_warning({ link: "||LINK||" })
-            .split("||LINK||");
+          const parts = m.ai_insight_warning({
+            link: "||LINK||",
+          }).split("||LINK||");
           items.push({
             key: "warning",
             before: parts[0] ?? "",
@@ -119,9 +67,9 @@
           });
         } else if (ai.key === "healthy") {
           const link = m.ai_insight_healthy_link();
-          const parts = m
-            .ai_insight_healthy({ link: "||LINK||" })
-            .split("||LINK||");
+          const parts = m.ai_insight_healthy({
+            link: "||LINK||",
+          }).split("||LINK||");
           items.push({
             key: "healthy",
             before: parts[0] ?? "",
@@ -137,9 +85,9 @@
       const studentLink = m.common_insight_students_link({
         count: stats.total_students ?? 0,
       });
-      const studentParts = m
-        .common_insight_students({ link: "||LINK||" })
-        .split("||LINK||");
+      const studentParts = m.common_insight_students({
+        link: "||LINK||",
+      }).split("||LINK||");
       items.push({
         key: "students",
         before: studentParts[0] ?? "",
@@ -149,14 +97,11 @@
       });
 
       const classLink = m.common_insight_classes_link({
-        count: stats.total_classes ?? 0,
+        count: stats.active_classes ?? 0,
       });
-      const classParts = m
-        .common_insight_classes({
-          link: "||LINK||",
-          teacherCount: stats.total_teachers ?? 0,
-        })
-        .split("||LINK||");
+      const classParts = m.common_insight_classes({
+        link: "||LINK||",
+      }).split("||LINK||");
       items.push({
         key: "classes",
         before: classParts[0] ?? "",
@@ -165,86 +110,45 @@
         href: `/${orgId}/academics`,
       });
 
-      const attendanceLink = m.common_insight_attendance_link({
-        rate: stats.attendance_overview?.present_rate ?? 0,
+      const employeeLink = m.common_insight_staff_link({
+        count: stats.active_employees ?? 0,
       });
-      const attendanceParts = m
-        .common_insight_attendance({
-          link: "||LINK||",
-          lateRate: stats.attendance_overview?.late_rate ?? 0,
-        })
-        .split("||LINK||");
+      const employeeParts = m.common_insight_staff({
+        link: "||LINK||",
+      }).split("||LINK||");
       items.push({
-        key: "attendance",
-        before: attendanceParts[0] ?? "",
-        link: attendanceLink,
-        after: attendanceParts[1] ?? "",
-        href: `/${orgId}/reports`,
-      });
-
-      const behaviorLink = m.common_insight_behavior_link({
-        count: stats.behavior_summary?.total_records ?? 0,
-      });
-      const behaviorParts = m
-        .common_insight_behavior({
-          link: "||LINK||",
-          criticalCount: stats.behavior_summary?.critical_count ?? 0,
-        })
-        .split("||LINK||");
-      items.push({
-        key: "behavior",
-        before: behaviorParts[0] ?? "",
-        link: behaviorLink,
-        after: behaviorParts[1] ?? "",
-        href: `/${orgId}/students`,
-      });
-
-      const staffLink = m.common_insight_staff_link({
-        count: stats.total_staff ?? 0,
-      });
-      const staffParts = m
-        .common_insight_staff({ link: "||LINK||" })
-        .split("||LINK||");
-      items.push({
-        key: "staff",
-        before: staffParts[0] ?? "",
-        link: staffLink,
-        after: staffParts[1] ?? "",
-        href: `/${orgId}/settings`,
+        key: "employees",
+        before: employeeParts[0] ?? "",
+        link: employeeLink,
+        after: employeeParts[1] ?? "",
+        href: `/${orgId}/employees`,
       });
     }
 
     return items;
   });
 
-  function goTo(i: number) {
-    if (insights.length <= 1) return;
-    const next = i % insights.length;
-    if (next === index) return;
-    index = next;
-    progress = 0;
-    start = Date.now();
-    elapsedOnPause = 0;
+  function tick() {
+    if (!isHovered && insights.length > 1) {
+      const now = Date.now();
+      const elapsed = now - start;
+      progress = Math.min(elapsed / TICK_DURATION, 1);
+
+      if (elapsed >= TICK_DURATION) {
+        index = (index + 1) % insights.length;
+        start = Date.now();
+        elapsedOnPause = 0;
+        progress = 0;
+      }
+    }
+    rafId = requestAnimationFrame(tick);
   }
 
-  function tick() {
-    if (isHovered) {
-      rafId = requestAnimationFrame(tick);
-      return;
-    }
-
-    const elapsed = elapsedOnPause + (Date.now() - start);
-    const pct = Math.min(elapsed / TICK_DURATION, 1);
-    progress = pct;
-
-    if (pct >= 1) {
-      index = (index + 1) % insights.length;
-      progress = 0;
-      start = Date.now();
-      elapsedOnPause = 0;
-    }
-
-    rafId = requestAnimationFrame(tick);
+  function goTo(i: number) {
+    index = i;
+    start = Date.now();
+    elapsedOnPause = 0;
+    progress = 0;
   }
 
   $effect(() => {
@@ -267,42 +171,11 @@
   }
 </script>
 
-{#if type === "greeting" || type === "both" || !type}
-  <div
-    class="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mb-0 text-center sm:text-start select-none"
-  >
-    <button
-      type="button"
-      class="cursor-pointer focus:outline-none transition-all duration-150 ease-out -translate-y-1 hover:-translate-y-2 active:translate-y-0 shrink-0"
-      onclick={() => {
-        cycleHat();
-        const rand = Math.random();
-        if (rand < 0.33) {
-          avatarController.happy();
-        } else if (rand < 0.66) {
-          avatarController.think();
-        } else {
-          avatarController.blink();
-        }
-      }}
-      aria-label="Interactive Avatar"
-    >
-      <Avatar
-        controller={avatarController}
-        hat={userHat}
-        width="80px"
-        height="80px"
-      />
-    </button>
-    <h1 class="text-[38px] font-serif leading-tight">
-      {greeting}{#if firstName}, <span class="text-muted-foreground"
-          >{firstName}</span
-        >{/if}
-    </h1>
-  </div>
+{#if type === "greeting" || type === "both"}
+  <DashboardGreeting showSubtitle={type === "greeting" || insights.length === 0} stats={stats} />
 {/if}
 
-{#if type === "summary" || type === "both" || !type}
+{#if type === "summary" || type === "both"}
   <div
     class="flex flex-col items-center max-w-lg w-full gap-3 mt-1 justify-center text-center mx-auto"
     role="region"
@@ -342,7 +215,7 @@
 
     {#if insights.length > 1}
       <div class="flex items-center gap-1.5 justify-center">
-        {#each insights as _, i}
+        {#each insights as insight, i (insight.key)}
           <button
             type="button"
             class="group/bar relative cursor-pointer py-2 -my-2 focus:outline-none"
