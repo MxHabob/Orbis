@@ -1,20 +1,36 @@
 <script lang="ts">
+  import { createMutation, useQueryClient } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import * as m from "$lib/paraglide/messages";
-  import { api, type AcademicYearDto } from "$lib/api";
+  import {
+    api,
+    queryKeys,
+    type AcademicYearDto,
+    type ProvisionDefaultsReqDto,
+  } from "$lib/api";
   import { getHijriSchoolMonthLengths } from "$lib/core/i18n/hijri";
   import { systemStore } from "$lib/stores";
+  import { refreshOnboardingState } from "../refresh-onboarding-state";
   import { Button } from "@orbis/ui/button";
   import OnboardingStepHeader from "../onboarding-step-header.svelte";
   import { getTasksForStep } from "../onboarding-steps";
-  import { navigateOnboardingRoute } from "../navigation";
 
   let { orgId }: { orgId: string } = $props();
 
   let years = $state<AcademicYearDto[]>([]);
   let selectedYearId = $state("");
   let isLoading = $state(true);
-  let isSubmitting = $state(false);
+  const queryClient = useQueryClient();
+  const provisionDefaultsMutation = createMutation(() => ({
+    mutationFn: (request: ProvisionDefaultsReqDto) =>
+      api.onboardingProvisionDefaults(request, orgId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.onboarding.state(orgId),
+      });
+    },
+  }));
+  const isSubmitting = $derived(provisionDefaultsMutation.isPending);
   let errorMessage = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
 
@@ -78,12 +94,10 @@
       return;
     }
 
-    isSubmitting = true;
     errorMessage = null;
     successMessage = null;
     try {
-      await api.onboardingProvisionDefaults(
-        {
+      await provisionDefaultsMutation.mutateAsync({
           academic_year_id: String(selectedYear.id),
           academic_year_name: selectedYear.name,
           academic_year_name_ar: selectedYear.name_ar,
@@ -98,17 +112,13 @@
           provision_tuition_fee_template: true,
           provision_time_slots: true,
           enable_period_autopilot: true,
-        },
-        orgId,
-      );
-      await systemStore.loadOnboardingState(orgId);
+        });
+      await refreshOnboardingState(orgId, m.common_action_failed());
       successMessage = m.onboarding_step_scheduling_success();
     } catch (error) {
       console.error("Failed to provision the school timetable:", error);
       errorMessage =
         error instanceof Error ? error.message : m.common_action_failed();
-    } finally {
-      isSubmitting = false;
     }
   }
 </script>
@@ -200,13 +210,7 @@
         <p class="text-sm text-muted-foreground">{m.onboarding_step_scheduling_missing_calendar()}</p>
       {/if}
 
-      <div class="flex flex-wrap justify-end gap-2 border-t border-border/50 pt-4">
-        <Button
-          variant="outline"
-          onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/academics`)}
-        >
-          {m.onboarding_step_scheduling_back_btn()}
-        </Button>
+      <div class="flex justify-end border-t border-border/50 pt-4">
         <Button
           disabled={!selectedYear || isSubmitting}
           onclick={provisionSchedule}
@@ -214,12 +218,6 @@
           {isSubmitting
             ? m.onboarding_step_scheduling_provisioning()
             : m.onboarding_step_scheduling_provision_btn()}
-        </Button>
-        <Button
-          variant="ghost"
-          onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/finance`)}
-        >
-          {m.onboarding_step_scheduling_continue_btn()}
         </Button>
       </div>
     </section>

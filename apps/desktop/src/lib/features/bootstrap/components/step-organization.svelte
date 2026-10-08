@@ -9,23 +9,16 @@
 import * as m from "$lib/paraglide/messages";
 import {
   type OnboardingFormModel,
-  COUNTRIES_LIST,
   EDUCATIONAL_TRACK_OPTIONS,
   ORGANIZATION_SIZE_OPTIONS,
-  COLOR_PRESETS,
 } from "../types";
-import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Checkbox } from "@orbis/ui/checkbox";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { Check } from "@orbis/icons";
-import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
-import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -39,45 +32,23 @@ let {
   isRTL?: boolean;
 } = $props();
 
-function selectCountry(countryCode: string) {
-  form.countryCode = countryCode;
-  const country = COUNTRIES_LIST.find((c) => c.code === countryCode);
-  if (country) {
-    if (country.defaultCurrency) form.baseCurrencyCode = country.defaultCurrency;
-    if (country.defaultTimezone) form.timezone = country.defaultTimezone;
-  }
-}
 </script>
 
 <div class="space-y-6 max-w-5xl mx-auto py-2">
   <div class="space-y-2 text-start">
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {m.ui_onboarding_organization_step_3_of_6()}
-      </span>
-    </div>
-    <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {m.ui_onboarding_organization_organization_profile_identity()}
-    </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {m.operations_ui_organization_setup_description()}
     </p>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-start">
-    <!-- Left Card: Institution Identity & Track -->
-    <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-5 shadow-xs">
-      <div class="border-b border-border/40 pb-3">
-        <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
-          {m.ui_onboarding_organization_identity_track()}
-        </h3>
-      </div>
-
+  <section class="max-w-3xl rounded-2xl border border-border/70 bg-card p-5 text-start shadow-xs sm:p-7">
+    <div class="space-y-6">
       <BilingualNameFields
         arId="org-name-ar"
         enId="org-name-en"
         arLabel={m.ui_onboarding_organization_organization_name_arabic()}
         enLabel={m.ui_onboarding_organization_organization_name_english()}
+        enRequired
         bind:arValue={form.organizationNameAr}
         bind:enValue={form.organizationName}
         arPlaceholder={m.operations_ui_organization_name_arabic_example()}
@@ -91,7 +62,7 @@ function selectCountry(countryCode: string) {
         failureMessage={m.bilingual_entry_failure()}
       />
 
-      <!-- Educational Track -->
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div class="space-y-1.5">
         <Label class="text-xs font-medium text-foreground">
           {m.ui_onboarding_organization_educational_track()}
@@ -105,7 +76,7 @@ function selectCountry(countryCode: string) {
             {EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack)?.label() || form.educationalTrack}
           </SelectTrigger>
           <SelectContent>
-            {#each EDUCATIONAL_TRACK_OPTIONS as opt}
+            {#each EDUCATIONAL_TRACK_OPTIONS as opt (opt.value)}
               <SelectItem value={opt.value}>
                 <div class="space-y-0.5">
                   <div class="text-xs font-medium">{opt.label()}</div>
@@ -116,7 +87,6 @@ function selectCountry(countryCode: string) {
         </Select>
       </div>
 
-      <!-- Capacity Size -->
       <div class="space-y-1.5">
         <Label class="text-xs font-medium text-foreground">
           {m.ui_onboarding_organization_expected_student_capacity()}
@@ -130,7 +100,7 @@ function selectCountry(countryCode: string) {
             {ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize)?.label() || form.organizationSize}
           </SelectTrigger>
           <SelectContent>
-            {#each ORGANIZATION_SIZE_OPTIONS as opt}
+            {#each ORGANIZATION_SIZE_OPTIONS as opt (opt.value)}
               <SelectItem value={opt.value}>
                 <span class="text-xs">{opt.label()}</span>
               </SelectItem>
@@ -138,106 +108,7 @@ function selectCountry(countryCode: string) {
           </SelectContent>
         </Select>
       </div>
-    </div>
-
-    <!-- Right Card: Regional & Fiscal Settings -->
-    <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-5 shadow-xs">
-      <div class="border-b border-border/40 pb-3">
-        <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
-          {m.ui_onboarding_organization_regional_fiscal_parameters()}
-        </h3>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- Country -->
-        <div class="space-y-1.5">
-          <Label class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_organization_country_region()}
-          </Label>
-          <Select
-            type="single"
-            value={form.countryCode}
-            onValueChange={(v) => v && selectCountry(v)}
-          >
-            <SelectTrigger class="w-full h-9 text-xs">
-              {COUNTRIES_LIST.find((c) => c.code === form.countryCode) ? `${COUNTRIES_LIST.find((c) => c.code === form.countryCode)?.flag} ${COUNTRIES_LIST.find((c) => c.code === form.countryCode)?.name()}` : form.countryCode}
-            </SelectTrigger>
-            <SelectContent>
-              {#each COUNTRIES_LIST as country}
-                <SelectItem value={country.code}>
-                  <span class="text-xs">{country.flag} {country.name()}</span>
-                </SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <!-- City -->
-        <div class="space-y-1.5">
-          <Label for="org-city" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_organization_city_campus()}
-          </Label>
-          <Input
-            id="org-city"
-            type="text"
-            placeholder={m.ui_onboarding_organization_e_g_riyadh()}
-            bind:value={form.city}
-            class="h-9 text-xs"
-          />
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <!-- Base Currency (Database-backed via CurrencySelector) -->
-        <CurrencySelector
-          bind:currentCurrency={form.baseCurrencyCode}
-          compact={true}
-          title={m.ui_onboarding_organization_base_currency()}
-        />
-
-        <!-- Timezone (Location-backed via TimezoneSettings) -->
-        <TimezoneSettings
-          bind:currentTimezone={form.timezone}
-          compact={true}
-          title={m.ui_onboarding_organization_timezone()}
-        />
-      </div>
-
-      <!-- Dual Hijri Preference -->
-      <div class="p-3.5 rounded-xl bg-muted/20 border border-border/50 flex items-center justify-between">
-        <div class="space-y-0.5">
-          <Label for="hijri-toggle" class="text-xs font-semibold text-foreground cursor-pointer">
-            {m.ui_onboarding_organization_dual_hijri_gregorian_calendar()}
-          </Label>
-          <p class="text-[11px] text-muted-foreground">
-            {m.ui_onboarding_organization_display_corresponding_umm_al_qura_hijri_dates_across_modules()}
-          </p>
-        </div>
-        <Checkbox id="hijri-toggle" bind:checked={form.isHijriEnabled} />
-      </div>
-
-      <!-- Theme Color Palette -->
-      <div class="space-y-2 pt-1">
-        <Label class="text-xs font-medium text-foreground">
-          {m.ui_onboarding_organization_accent_color_theme()}
-        </Label>
-        <div class="flex items-center gap-2.5">
-          {#each COLOR_PRESETS as color}
-            {@const isColorActive = form.primaryColor === color.value}
-            <button
-              type="button"
-              onclick={() => (form.primaryColor = color.value)}
-              class="size-7 rounded-full transition-transform flex items-center justify-center {isColorActive ? 'scale-110 ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'hover:scale-105'}"
-              style="background-color: {color.value};"
-              title={color.label()}
-            >
-              {#if isColorActive}
-                <Check size={12} class="text-white" strokeWidth={3} />
-              {/if}
-            </button>
-          {/each}
-        </div>
       </div>
     </div>
-  </div>
+  </section>
 </div>

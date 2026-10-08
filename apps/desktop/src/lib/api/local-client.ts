@@ -227,7 +227,6 @@ import type {
   OnboardingStateDto,
   ProvisionDefaultsReqDto,
   ProvisionDefaultsResultDto,
-  BootstrapMfaInitResult,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -1336,12 +1335,6 @@ export class LocalClient implements OrbisApiClient {
   }
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
     return invoke<BootstrapResult>("bootstrap_execute", { request: req });
-  }
-  async bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult> {
-    return invoke<BootstrapMfaInitResult>("bootstrap_init_mfa", {
-      adminEmail: adminEmail || null,
-      orgName: orgName || null,
-    });
   }
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
     return invoke<OnboardingResult>("onboarding_complete", { request: req });

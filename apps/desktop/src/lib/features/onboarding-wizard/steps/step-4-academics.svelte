@@ -11,7 +11,7 @@ import { Badge } from "@orbis/ui/badge";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -74,9 +74,9 @@ async function loadData() {
   try {
     isLoading = true;
     const [subRes, classRes, periodRes] = await Promise.all([
-      api.listSubjects().catch(() => []),
-      api.listClasses().catch(() => []),
-      api.listAcademicPeriods().catch(() => []),
+      api.listSubjects(),
+      api.listClasses(),
+      api.listAcademicPeriods(),
     ]);
     subjects = subRes;
     classes = classRes;
@@ -115,7 +115,7 @@ async function handleCreateSubject() {
     subjectName = "";
     subjectNameAr = "";
     subjectCode = `SUB-0${subjects.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_subject_created_success();
   } catch (err: any) {
     console.error("Failed to create subject:", err);
@@ -142,7 +142,7 @@ async function handleBatchImportSubjects() {
       subjects = [...subjects, created];
     }
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_subjects_imported_success();
   } catch (err: any) {
     console.error("Failed to import subjects:", err);
@@ -176,7 +176,7 @@ async function handleCreateClass() {
     className = "";
     classNameAr = "";
     classCode = `CLS-0${classes.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
     console.error("Failed to create class:", err);
@@ -204,7 +204,7 @@ async function handleBatchImportClasses() {
       classes = [...classes, created];
     }
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_classes_imported_success();
   } catch (err: any) {
     console.error("Failed to import classes:", err);
@@ -214,15 +214,6 @@ async function handleBatchImportClasses() {
   }
 }
 
-async function handleContinue() {
-  if (subjects.length === 0 && subjectName.trim()) {
-    await handleCreateSubject();
-  }
-  if (classes.length === 0 && className.trim()) {
-    await handleCreateClass();
-  }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/scheduling`);
-}
 </script>
 
 <div class="space-y-6">
@@ -483,16 +474,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Inline Actions Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
-      <Button
-        variant="default"
-        disabled={subjects.length === 0 && classes.length === 0 && !subjectName.trim()}
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step4_continue_btn()}
-      </Button>
-    </div>
   {/if}
 </div>

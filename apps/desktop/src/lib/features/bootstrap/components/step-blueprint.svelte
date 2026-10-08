@@ -69,27 +69,20 @@ const blueprintsList: BlueprintOption[] = [
 
 <div class="space-y-6 max-w-5xl mx-auto py-2">
   <div class="space-y-2 text-start">
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {m.ui_onboarding_blueprint_step_2_of_6()}
-      </span>
-    </div>
-    <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {m.ui_onboarding_blueprint_select_institutional_blueprint()}
-    </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {m.operations_ui_blueprint_selection_description()}
     </p>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    {#each blueprintsList as item}
+    {#each blueprintsList as item (item.type)}
       {@const isSelected = selectedType === item.type}
 
       <button
         type="button"
+        aria-pressed={isSelected}
         onclick={() => (selectedType = item.type)}
-        class="text-start focus:outline-none w-full group"
+        class="group w-full text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
       >
         <div
           class="h-full rounded-2xl border p-6 transition-all cursor-pointer relative flex flex-col justify-between {isSelected
@@ -118,7 +111,7 @@ const blueprintsList: BlueprintOption[] = [
           </div>
 
           <div class="flex flex-wrap gap-1.5 mt-5 pt-3 border-t border-border/40">
-            {#each item.highlights as highlight}
+            {#each item.highlights as highlight (highlight)}
               <Badge
                 variant="outline"
                 class="text-[11px] px-2 py-0.5 font-normal text-muted-foreground border-border/60 bg-muted/20"

@@ -1593,11 +1593,13 @@ export type OrgDto = {
     format_locale?: string | null;
     features?: unknown;
     id: string;
+    institution_type?: "school" | "university" | "institute" | string;
     is_active: boolean;
     is_hijri_enabled: boolean;
     is_verified: boolean;
     locale: string;
     logo?: string | null;
+    metadata?: Record<string, unknown> | null;
     name: string;
     name_ar?: string | null;
     primary_color?: string | null;

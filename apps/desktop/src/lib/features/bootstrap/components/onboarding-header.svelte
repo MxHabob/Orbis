@@ -5,6 +5,8 @@
 -->
 <script lang="ts">
 import type { OnboardingStep } from "../types";
+import * as m from "$lib/paraglide/messages";
+import SetupWizardHeader from "$lib/shared/components/setup-wizard-header.svelte";
 
 let {
   currentStep,
@@ -15,24 +17,23 @@ let {
 } = $props();
 
 const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
-
+const stepLabels: Record<OnboardingStep, () => string> = {
+  intro: m.ui_onboarding_intro_release_notes,
+  blueprint: m.ui_onboarding_blueprint_select_institutional_blueprint,
+  organization: m.ui_onboarding_organization_organization_profile_identity,
+  region: m.ui_onboarding_organization_regional_fiscal_parameters,
+  admin: m.ui_onboarding_admin_primary_administrator_account,
+  mfa: m.ui_onboarding_mfa_two_factor_authentication_setup,
+  review: m.ui_onboarding_review_launch_bootstrap,
+};
+const stepPosition = $derived(`${currentStepIndex + 1} / ${steps.length}`);
+const progressValue = $derived(((currentStepIndex + 1) / steps.length) * 100);
 </script>
 
-<header class="sticky top-2 z-30 w-full mx-auto flex backdrop-blur-2xl px-2 justify-center transition-all shrink-0">
-  <!-- Minimalist Visual Progress (Pure Progress Segments Without Text) -->
-  <nav aria-label="Progress" class="flex items-center gap-2 justify-center">
-    {#each steps as s, idx}
-      {@const isDone = idx < currentStepIndex}
-      {@const isCurrent = idx === currentStepIndex}
-
-      <div
-        class="h-1.5 rounded-full transition-all duration-300 {isCurrent
-          ? 'w-7 sm:w-10 bg-primary shadow-xs shadow-primary/30 ring-2 ring-primary/20'
-          : isDone
-            ? 'w-3.5 sm:w-5 bg-foreground/60'
-            : 'w-2 sm:w-3 bg-muted-foreground/20'}"
-        title={`Step ${idx + 1} of ${steps.length}`}
-      ></div>
-    {/each}
-  </nav>
-</header>
+<SetupWizardHeader
+  contextLabel="Orbis"
+  stepLabel={stepLabels[currentStep]()}
+  {stepPosition}
+  {progressValue}
+  ariaLabel={m.onboarding_stages_title()}
+/>

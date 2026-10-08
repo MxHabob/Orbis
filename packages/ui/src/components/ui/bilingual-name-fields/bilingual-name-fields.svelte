@@ -6,6 +6,7 @@ import type {
   SuggestionResult,
   TranslationLanguage,
 } from "@orbis/translation";
+import { canApplyTranslationSuggestion } from "./suggestion-policy";
 import { Input } from "../input/index.js";
 
 type FieldControlArgs = {
@@ -180,10 +181,12 @@ function scheduleSuggestion(text: string, sourceLanguage: TranslationLanguage) {
         !hasBeenManuallyEdited(targetLanguage) &&
         targetValue === initialValueFor(targetLanguage);
       if (
-        targetValue.trim() &&
-        !isGenerated(targetLanguage) &&
-        !canReplaceLinkedSource &&
-        !canReplaceUneditedInitialValue
+        !canApplyTranslationSuggestion({
+          targetValue,
+          targetContainsCurrentSuggestion: isGenerated(targetLanguage),
+          linkedSourceStillMatches: canReplaceLinkedSource,
+          mayReplaceUneditedInitialValue: canReplaceUneditedInitialValue,
+        })
       ) {
         return;
       }
@@ -252,7 +255,7 @@ onDestroy(() => {
       {/if}
     </div>
     {#if arError}
-      <p id={`${arId}-error`} class="text-xs text-destructive">{arError}</p>
+      <p id={`${arId}-error`} class="text-xs text-destructive" role="alert">{arError}</p>
     {/if}
   </div>
 
@@ -285,7 +288,7 @@ onDestroy(() => {
       />
     </div>
     {#if enError}
-      <p id={`${enId}-error`} class="text-xs text-destructive">{enError}</p>
+      <p id={`${enId}-error`} class="text-xs text-destructive" role="alert">{enError}</p>
     {/if}
   </div>
 </div>

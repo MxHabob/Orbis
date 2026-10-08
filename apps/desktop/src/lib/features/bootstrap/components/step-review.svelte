@@ -1,8 +1,4 @@
-<!--
-  @component StepReview
-  Step 5: Pre-Flight Verification & System Bootstrap Launch.
-  Spacious overview dossier of all parameters + authentic 5-phase initialization execution pipeline.
--->
+<!-- @component StepReview -->
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
@@ -14,6 +10,7 @@ import {
   EDUCATIONAL_TRACK_OPTIONS,
   ORGANIZATION_SIZE_OPTIONS,
 } from "../types";
+import type { BootstrapResult } from "$lib/api/types";
 import { getBlueprint } from "@orbis/blueprints";
 import { Button } from "@orbis/ui/button";
 import { Check } from "@orbis/icons";
@@ -23,7 +20,10 @@ let {
   isSubmitting = false,
   isComplete = false,
   error = null,
-  activeTaskIndex = 0,
+  postBootstrapError = null,
+  authenticationRequired = false,
+  warnings = [],
+  result = null,
   onLaunch,
   onEnterWorkspace,
   isRTL = false,
@@ -32,7 +32,10 @@ let {
   isSubmitting?: boolean;
   isComplete?: boolean;
   error?: string | null;
-  activeTaskIndex?: number;
+  postBootstrapError?: string | null;
+  authenticationRequired?: boolean;
+  warnings?: string[];
+  result?: BootstrapResult | null;
   onLaunch: () => void;
   onEnterWorkspace: () => void;
   isRTL?: boolean;
@@ -45,29 +48,15 @@ const country = $derived(COUNTRIES_LIST.find((c) => c.code === form.countryCode)
 const track = $derived(EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack));
 const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize));
 
-const tasks = $derived([
-  m.ui_onboarding_review_task_identity_records(),
-  m.ui_onboarding_review_task_academic_structure(),
-  m.ui_onboarding_review_task_admin_credentials(),
-  m.ui_onboarding_review_task_financial_ledger(),
-  m.ui_onboarding_review_task_node_readiness(),
-]);
 </script>
 
 <div class="space-y-6 max-w-5xl mx-auto py-2">
   <div class="space-y-2 text-start">
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {m.ui_onboarding_review_step_6_of_6()}
-      </span>
-    </div>
-    <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {isComplete
-        ? (m.ui_onboarding_review_system_initialized_successfully())
-        : isSubmitting
-          ? (m.ui_onboarding_review_initializing_autonomous_node())
-          : (m.ui_onboarding_review_review_launch_setup())}
-    </h2>
+    {#if isComplete}
+      <h2 class="text-2xl font-bold tracking-tight text-foreground">
+        {m.ui_onboarding_review_system_initialized_successfully()}
+      </h2>
+    {/if}
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {isComplete
         ? (m.ui_onboarding_review_your_workspace_has_been_provisioned_and_is_ready_for_production())
@@ -85,12 +74,33 @@ const tasks = $derived([
 
       <div class="space-y-2 max-w-md mx-auto">
         <h3 class="text-xl font-bold text-foreground">
-          {form.organizationNameAr || form.organizationName}
+          {result?.organization_name || form.organizationNameAr || form.organizationName}
         </h3>
+        {#if result?.organization_slug}
+          <p class="font-mono text-xs text-muted-foreground">{result.organization_slug}</p>
+        {/if}
         <p class="text-xs text-muted-foreground leading-relaxed">
           {m.ui_onboarding_review_success_description()}
         </p>
       </div>
+
+      {#if warnings.length > 0}
+        <div class="mx-auto max-w-xl space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-start text-sm text-amber-800 dark:text-amber-200" role="status">
+          <p class="font-semibold">{m.ui_onboarding_review_initialization_warnings()}</p>
+          <ul class="list-inside list-disc space-y-1">
+            {#each warnings as warning (warning)}
+              <li>{warning}</li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
+
+      {#if postBootstrapError}
+        <div class="mx-auto max-w-xl rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-start text-sm text-destructive" role="alert">
+          <p class="font-semibold">{m.ui_onboarding_review_post_bootstrap_action_failed()}</p>
+          <p class="mt-1">{postBootstrapError}</p>
+        </div>
+      {/if}
 
       <div class="pt-4">
         <Button
@@ -99,46 +109,20 @@ const tasks = $derived([
           onclick={onEnterWorkspace}
           class="h-11 px-8 text-sm font-semibold shadow-md shadow-primary/20"
         >
-          <span>{m.ui_onboarding_review_enter_workspace()}</span>
+          <span>
+            {authenticationRequired
+              ? m.ui_onboarding_review_continue_to_sign_in()
+              : m.ui_onboarding_review_enter_workspace()}
+          </span>
         </Button>
       </div>
     </div>
   {:else if isSubmitting}
-    <!-- Real-Time Pipeline Progress Execution -->
-    <div class="rounded-2xl border border-border/70 bg-card p-8 space-y-6 shadow-md text-start">
-      <div class="flex items-center justify-between border-b border-border/40 pb-4">
-        <div class="space-y-1">
-          <div class="text-sm font-bold text-foreground">
-            {m.ui_onboarding_review_execution_pipeline()}
-          </div>
-          <div class="text-xs text-muted-foreground font-mono">
-            {m.ui_onboarding_review_phase_of({ value1: Math.min(activeTaskIndex + 1, tasks.length), value2: tasks.length })}
-          </div>
-        </div>
-
-        <LoadingIndicator size={24} class="size-6 text-primary" />
-      </div>
-
-      <div class="space-y-3">
-        {#each tasks as task, idx}
-          {@const isDone = idx < activeTaskIndex}
-          {@const isCurrent = idx === activeTaskIndex}
-
-          <div class="flex items-center gap-3 p-3 rounded-xl transition-all {isCurrent ? 'bg-primary/5 border border-primary/25' : isDone ? 'bg-muted/15' : 'opacity-40'}">
-            <div class="size-6 rounded-full flex items-center justify-center shrink-0 text-xs font-mono {isDone ? 'bg-emerald-500 text-white' : isCurrent ? 'bg-primary text-primary-foreground animate-pulse' : 'bg-muted text-muted-foreground'}">
-              {#if isDone}
-                <Check size={13} strokeWidth={3} />
-              {:else}
-                {idx + 1}
-              {/if}
-            </div>
-
-            <div class="text-xs font-medium {isCurrent ? 'text-foreground font-semibold' : isDone ? 'text-foreground/80' : 'text-muted-foreground'}">
-              {task}
-            </div>
-          </div>
-        {/each}
-      </div>
+    <div class="flex min-h-64 flex-col items-center justify-center gap-4 rounded-2xl border border-border/70 bg-card p-8 text-center">
+      <LoadingIndicator size={32} class="size-8 text-primary" />
+      <p class="max-w-lg text-sm leading-relaxed text-muted-foreground" aria-live="polite">
+        {m.ui_onboarding_review_please_wait_while_orbis_provisions_initial_records_and_configurations()}
+      </p>
     </div>
   {:else}
     <!-- Summary Dossier Matrix -->
@@ -171,6 +155,11 @@ const tasks = $derived([
             <span class="text-muted-foreground">{m.ui_onboarding_review_track()}</span>
             <span class="font-semibold text-foreground">{track?.label()}</span>
           </div>
+
+          <div class="flex justify-between items-center gap-4">
+            <span class="shrink-0 text-muted-foreground">{m.ui_onboarding_organization_expected_student_capacity()}</span>
+            <span class="text-end font-semibold text-foreground">{size?.label() ?? form.organizationSize}</span>
+          </div>
         </div>
       </div>
 
@@ -186,6 +175,11 @@ const tasks = $derived([
           <div class="flex justify-between items-center">
             <span class="text-muted-foreground">{m.ui_onboarding_review_country_region()}</span>
             <span class="font-semibold text-foreground">{country?.flag} {country?.name()}</span>
+          </div>
+
+          <div class="flex justify-between items-center gap-4">
+            <span class="shrink-0 text-muted-foreground">{m.ui_onboarding_organization_timezone()}</span>
+            <span class="text-end font-semibold text-foreground">{tz?.label() ?? form.timezone}</span>
           </div>
 
           <div class="flex justify-between items-center">
@@ -207,7 +201,7 @@ const tasks = $derived([
     </div>
 
     {#if error}
-      <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs space-y-1 text-start">
+      <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs space-y-1 text-start" role="alert">
         <div class="font-bold">{m.ui_onboarding_review_initialization_failed()}</div>
         <p>{error}</p>
       </div>
@@ -218,8 +212,12 @@ const tasks = $derived([
         type="button"
         size="lg"
         onclick={onLaunch}
+        disabled={isSubmitting}
         class="h-11 px-8 text-sm font-semibold shadow-md shadow-primary/20"
       >
+        {#if isSubmitting}
+          <LoadingIndicator size={16} class="me-2 size-4" />
+        {/if}
         <span>{m.ui_onboarding_review_launch_bootstrap()}</span>
       </Button>
     </div>

@@ -172,7 +172,7 @@
 </script>
 
 {#if type === "greeting" || type === "both"}
-  <DashboardGreeting showSubtitle={type === "greeting" || insights.length === 0} />
+  <DashboardGreeting showSubtitle={type === "greeting" || insights.length === 0} stats={stats} />
 {/if}
 
 {#if type === "summary" || type === "both"}

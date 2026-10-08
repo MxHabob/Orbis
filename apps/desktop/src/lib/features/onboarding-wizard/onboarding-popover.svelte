@@ -5,15 +5,21 @@
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
-import { systemStore, authStore } from "$lib/stores";
+import { effectiveContext, systemStore, authStore } from "$lib/stores";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { TaskList, Check, ChevronRight } from "@orbis/icons";
-import { deriveSteps } from "./onboarding-steps";
-import { onMount, type Snippet } from "svelte";
+import {
+  deriveSteps,
+  findNextIncompleteStep,
+  type OnboardingStep,
+} from "./onboarding-steps";
+import { type Snippet } from "svelte";
+import { createOnboardingStateQuery } from "./onboarding-queries";
 
 let {
   orgId = authStore.orgId ?? "",
@@ -28,41 +34,56 @@ let {
 } = $props();
 
 let isOpen = $state(false);
+let isLoadingOnboarding = $state(false);
+let onboardingLoadError = $state(false);
+const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
 
 const tasks = $derived(systemStore.onboardingTasks);
-const steps = $derived(deriveSteps(tasks));
+const steps = $derived(
+  deriveSteps(tasks, (permission) => effectiveContext.hasPermission(permission)),
+);
 const progress = $derived(systemStore.onboardingProgressPercentage);
 const isReady = $derived(systemStore.isInstitutionReady);
 const completedStepsCount = $derived(steps.filter((s) => s.status === "completed").length);
 
-const nextStep = $derived(
-  steps.find((s) => s.status !== "completed") ?? steps[0]
-);
-
-onMount(() => {
-  if (orgId) {
-    systemStore.loadOnboardingState(orgId);
-  }
-});
+const nextStep = $derived(findNextIncompleteStep(steps));
 
 async function handleOpenChange(open: boolean) {
   isOpen = open;
   if (open && orgId) {
-    await systemStore.loadOnboardingState(orgId);
+    isLoadingOnboarding = true;
+    onboardingLoadError = false;
+    systemStore.onboardingState = null;
+    try {
+      const result = await onboardingStateQuery.refetch();
+      if (result.isError || !result.data) {
+        systemStore.onboardingState = null;
+        onboardingLoadError = true;
+      } else {
+        systemStore.onboardingState = result.data;
+      }
+    } catch (error) {
+      console.error("Failed to load onboarding state for the progress menu:", error);
+      systemStore.onboardingState = null;
+      onboardingLoadError = true;
+    } finally {
+      isLoadingOnboarding = false;
+    }
   }
 }
 
-function handleNavigate(route: string) {
+function handleNavigate(step: OnboardingStep) {
+  if (!step.isAccessible) return;
   isOpen = false;
   if (orgId) {
-    goto(localizeHref(`/${orgId}/onboarding/${route}`));
+    goto(resolve(localizeHref(`/${orgId}/onboarding/${step.route}`)));
   }
 }
 
 function handleOpenHub() {
   isOpen = false;
   if (orgId) {
-    goto(localizeHref(`/${orgId}/onboarding`));
+    goto(resolve(localizeHref(`/${orgId}/onboarding`)));
   }
 }
 </script>
@@ -104,6 +125,15 @@ function handleOpenHub() {
     sideOffset={12}
     class="w-72 sm:w-[320px] p-5 overflow-hidden z-50 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 select-none flex flex-col gap-4"
   >
+    {#if isLoadingOnboarding}
+      <p class="text-sm text-muted-foreground" aria-live="polite">
+        {m.onboarding_state_loading()}
+      </p>
+    {:else if onboardingLoadError}
+      <p class="text-sm text-destructive" role="alert">
+        {m.onboarding_state_load_failed()}
+      </p>
+    {/if}
     <!-- Header with Circular Progress Ring -->
     <div class="flex items-start gap-3.5 pb-3.5 border-b border-border/40">
       <!-- Circular Progress Ring SVG -->
@@ -160,8 +190,9 @@ function handleOpenHub() {
 
         <button
           type="button"
-          onclick={() => handleNavigate(step.route)}
-          class="w-full flex items-start gap-3 p-2.5 rounded-xl text-start transition-colors hover:bg-muted/40 cursor-pointer group"
+          disabled={!step.isAccessible}
+          onclick={() => handleNavigate(step)}
+          class="group w-full flex items-start gap-3 p-2.5 rounded-xl text-start transition-colors hover:bg-muted/40 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <!-- Status Icon / Check Indicator -->
           <div class="size-5 shrink-0 flex items-center justify-center mt-0.5">
@@ -226,7 +257,7 @@ function handleOpenHub() {
         <Button
           variant="default"
           size="sm"
-          onclick={() => handleNavigate(nextStep.route)}
+          onclick={() => handleNavigate(nextStep)}
           class="text-xs font-semibold h-8 px-3 shadow-xs"
         >
           <span>{m.onboarding_popover_resume_wizard()} →</span>

@@ -25,6 +25,12 @@ export const queryKeys = {
     unit: (id: string) => [...queryKeys.org.all, "unit", id] as const,
   },
 
+  // ── Onboarding ──────────────────────────────────────────────
+  onboarding: {
+    all: ["onboarding"] as const,
+    state: (orgId: string) => [...queryKeys.onboarding.all, "state", orgId] as const,
+  },
+
   // ── Calendar ────────────────────────────────────────────────
   calendar: {
     all: ["calendar"] as const,

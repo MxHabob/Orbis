@@ -14,16 +14,20 @@ import { l } from "$lib/core/i18n";
 
 let {
   app,
+  connected = false,
+  actionLabel,
   onselect,
 }: {
   app: OrbisApp;
+  connected?: boolean;
+  actionLabel?: string;
   onselect: () => void;
 } = $props();
 </script>
 
 <button
   type="button"
-  class="block h-full w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-start text-inherit"
+  class="group block h-full w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-start text-inherit"
   onclick={onselect}
 >
   <Card class="h-full flex flex-col justify-between hover:border-foreground/30 transition-colors">
@@ -34,22 +38,19 @@ let {
           <AppIcon icon={app.icon} logo={app.logo} size={24} class="w-full h-full [&>svg]:max-w-[48px] [&>svg]:max-h-[26px]" />
         </div>
         <div class="flex gap-1.5 flex-wrap justify-end">
-          {#if app.status === "connected"}
+          {#if connected || app.status === "connected"}
             <Badge variant="outline" class="text-[10px] font-semibold text-primary border-primary/20 bg-primary/10 px-2 py-0.5">
               {m.ai_center_integrations_status_connected()}
             </Badge>
-          {/if}
-          {#if app.status === "error"}
+          {:else if app.status === "error"}
             <Badge variant="destructive" class="text-[10px] font-semibold px-2 py-0.5">
               {m.ai_center_integrations_status_error()}
             </Badge>
-          {/if}
-          {#if app.beta}
+          {:else if app.beta}
             <Badge variant="secondary" class="text-[10px] font-semibold px-2 py-0.5">
               {m.ai_center_integrations_status_beta()}
             </Badge>
-          {/if}
-          {#if !app.active}
+          {:else if !app.active}
             <Badge variant="outline" class="text-[10px] font-medium text-muted-foreground bg-muted px-2 py-0.5">
               {m.ai_center_integrations_status_coming_soon()}
             </Badge>
@@ -59,7 +60,7 @@ let {
 
       <!-- Name -->
       <h3 class="text-sm font-semibold text-foreground mb-1.5">
-        {app.name}
+        {l(app.name_ar, app.name)}
       </h3>
 
       <!-- Description -->
@@ -68,11 +69,16 @@ let {
       </p>
     </CardContent>
 
-    <!-- Footer: Category Tag -->
-    <CardFooter class="py-2.5 px-5">
+    <!-- Footer: Category Tag and optional action -->
+    <CardFooter class="py-2.5 px-5 flex items-center justify-between gap-2">
       <Badge variant="outline" class="text-[10px] font-mono font-medium text-muted-foreground border-border bg-muted/40">
         {l(getCategoryNameAr(app.category), getCategoryName(app.category))}
       </Badge>
+      {#if actionLabel}
+        <span class="text-xs font-semibold text-primary group-hover:underline">
+          {actionLabel}
+        </span>
+      {/if}
     </CardFooter>
   </Card>
 </button>

@@ -15,7 +15,7 @@ import { Badge } from "@orbis/ui/badge";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -65,8 +65,8 @@ async function loadData() {
   try {
     isLoading = true;
     const [yearsRes, periodsRes] = await Promise.all([
-      api.listAcademicYears().catch(() => []),
-      api.listAcademicPeriods().catch(() => []),
+      api.listAcademicYears(),
+      api.listAcademicPeriods(),
     ]);
     years = yearsRes;
     periods = periodsRes;
@@ -105,7 +105,7 @@ async function handleCreateYear() {
 
     years = [...years, newYear];
     selectedYearId = String(newYear.id);
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step3_year_created_success();
   } catch (err: any) {
     console.error("Failed to create academic year:", err);
@@ -150,7 +150,7 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
         orgId,
       );
       periods = await api.listAcademicPeriods();
-      await systemStore.loadOnboardingState(orgId);
+      await refreshOnboardingState(orgId, m.common_action_failed());
       successMessage = m.onboarding_step3_periods_generated_success();
       return;
     }
@@ -184,7 +184,7 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
       periods = [...periods, created];
     }
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step3_periods_generated_success();
   } catch (err: any) {
     console.error("Failed to generate periods:", err);
@@ -194,12 +194,6 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
   }
 }
 
-async function handleContinue() {
-  if (years.length === 0 && yearName.trim()) {
-    await handleCreateYear();
-  }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/academics`);
-}
 </script>
 
 <div class="space-y-6">
@@ -410,16 +404,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Inline Actions Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
-      <Button
-        variant="default"
-        disabled={years.length === 0 && !yearName.trim()}
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step3_continue_btn()}
-      </Button>
-    </div>
   {/if}
 </div>

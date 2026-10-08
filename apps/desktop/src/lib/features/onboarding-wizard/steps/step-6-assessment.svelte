@@ -17,7 +17,7 @@ import {
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -93,7 +93,7 @@ onMount(async () => {
 async function loadData() {
   try {
     isLoading = true;
-    schemes = await api.listAssessmentSchemes().catch(() => []);
+    schemes = await api.listAssessmentSchemes();
   } catch (err: any) {
     console.error("Failed to load assessment schemes:", err);
     errorMessage = err?.message || m.onboarding_step6_err_load();
@@ -133,7 +133,7 @@ async function handleCreateScheme() {
     schemes = [...schemes, created];
     schemeName = "";
     schemeNameAr = "";
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step6_scheme_created_success();
   } catch (err: any) {
     console.error("Failed to create assessment scheme:", err);
@@ -168,7 +168,7 @@ async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
     });
 
     schemes = [...schemes, created];
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step6_preset_applied({ name: preset.name });
   } catch (err: any) {
     console.error("Failed to add preset scheme:", err);
@@ -178,12 +178,6 @@ async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
   }
 }
 
-async function handleContinue() {
-  if (schemes.length === 0 && schemeName.trim()) {
-    await handleCreateScheme();
-  }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/operations`);
-}
 </script>
 
 <div class="space-y-6">
@@ -230,7 +224,7 @@ async function handleContinue() {
               🎯 {m.onboarding_step6_quick_schemes()}
             </div>
             <div class="grid gap-2 sm:grid-cols-3">
-              {#each PRESET_SCHEMES as preset}
+              {#each PRESET_SCHEMES as preset (preset.name)}
                 <div class="rounded-lg border border-border/60 bg-card p-3 flex flex-col justify-between gap-3 text-xs">
                   <div>
                     <div class="font-semibold text-foreground">
@@ -285,7 +279,7 @@ async function handleContinue() {
                   {scaleTypes.find((s) => s.value === scaleType)?.label || scaleType}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each scaleTypes as s}
+                  {#each scaleTypes as s (s.value)}
                     <SelectItem value={s.value}>{s.label}</SelectItem>
                   {/each}
                 </SelectContent>
@@ -356,16 +350,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Inline Actions Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
-      <Button
-        variant="default"
-        disabled={schemes.length === 0 && !schemeName.trim()}
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step6_continue_btn()}
-      </Button>
-    </div>
   {/if}
 </div>

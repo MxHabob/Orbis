@@ -78,11 +78,18 @@ impl SolverSidecarManager {
     }
 
     pub fn decrement_active_jobs(&self) {
-        let _ = self
-            .active_jobs
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |val| {
-                Some(val.saturating_sub(1))
-            });
+        let mut current = self.active_jobs.load(Ordering::Relaxed);
+        while current > 0 {
+            match self.active_jobs.compare_exchange_weak(
+                current,
+                current - 1,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(actual) => current = actual,
+            }
+        }
         self.mark_activity();
     }
 

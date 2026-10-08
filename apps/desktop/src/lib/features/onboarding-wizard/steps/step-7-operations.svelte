@@ -12,7 +12,7 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -56,8 +56,8 @@ async function loadData() {
   try {
     isLoading = true;
     const [settingsRes, docsRes] = await Promise.all([
-      api.getSettings().catch(() => null),
-      api.listDocumentRequirements().catch(() => []),
+      api.getSettings(),
+      api.listDocumentRequirements(),
     ]);
 
     docRequirements = docsRes;
@@ -78,13 +78,13 @@ async function handleSaveRegistrationPolicy() {
   successMessage = null;
 
   try {
-    const currentSettings = (await api.getSettings().catch(() => ({}))) || {};
+    const currentSettings = (await api.getSettings()) || {};
     await api.updateSettings({
       ...currentSettings,
       student_number_pattern: studentNumberPattern.trim() || "{YEAR}-{SEQ:5}",
     });
 
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step7_policy_saved_success();
   } catch (err: any) {
     console.error("Failed to save registration policies:", err);
@@ -118,7 +118,7 @@ async function handleCreateDocRequirement() {
     docNameEn = "";
     docNameAr = "";
     docCode = `DOC_${docRequirements.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step7_doc_created_success();
   } catch (err: any) {
     console.error("Failed to create document requirement:", err);
@@ -144,7 +144,7 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
     });
 
     docRequirements = [...docRequirements, created];
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step7_preset_added({ name: preset.nameEn });
   } catch (err: any) {
     console.error("Failed to add preset document:", err);
@@ -154,10 +154,6 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
   }
 }
 
-async function handleContinue() {
-  await handleSaveRegistrationPolicy();
-  await navigateOnboardingRoute(`/${orgId}/onboarding/integrations`);
-}
 </script>
 
 <div class="space-y-6">
@@ -256,7 +252,7 @@ async function handleContinue() {
               📄 {m.onboarding_step7_quick_docs()}
             </div>
             <div class="flex flex-wrap gap-2">
-              {#each PRESET_DOCUMENTS as preset}
+              {#each PRESET_DOCUMENTS as preset (preset.code)}
                 <Button
                   variant="outline"
                   size="sm"
@@ -369,14 +365,5 @@ async function handleContinue() {
     </OnboardingSection>
 
     <!-- Inline Actions Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
-      <Button
-        variant="default"
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step7_continue_btn()}
-      </Button>
-    </div>
   {/if}
 </div>

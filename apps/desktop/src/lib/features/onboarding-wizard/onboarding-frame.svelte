@@ -1,35 +1,78 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { onMount } from "svelte";
+  import { createOnboardingStateQuery } from "./onboarding-queries";
   import type { Snippet } from "svelte";
   import * as m from "$lib/paraglide/messages";
   import { getLocale } from "$lib/paraglide/runtime";
-  import { systemStore } from "$lib/stores";
+  import { effectiveContext, systemStore } from "$lib/stores";
   import { Button } from "@orbis/ui/button";
-  import { deriveSteps, findNextIncompleteStep } from "./onboarding-steps";
-  import { navigateOnboardingRoute } from "./navigation";
+  import { LoadingIndicator } from "@orbis/ui";
+  import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
+  import SetupWizardHeader from "$lib/shared/components/setup-wizard-header.svelte";
+  import SetupWizardFooter from "$lib/shared/components/setup-wizard-footer.svelte";
   import {
-    ChevronLeft,
-    ChevronRight,
-    XMark,
-    Check,
-    TaskList,
-  } from "@orbis/icons";
+    deriveSteps,
+    findNextIncompleteStep,
+    findStepForTask,
+  } from "./onboarding-steps";
+  import { navigateOnboardingRoute } from "./navigation";
 
   let { orgId, children }: { orgId: string; children: Snippet } = $props();
+  let hasLoadedState = $state(false);
+  let isLoadingState = $state(true);
+  let stateLoadError = $state(false);
+  const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
 
   const currentPath = $derived(page.url.pathname);
   const isRtl = $derived(getLocale().startsWith("ar"));
 
-  onMount(async () => {
-    await systemStore.loadOnboardingState(orgId);
-  });
+  onMount(loadOnboardingState);
 
-  const steps = $derived(deriveSteps(systemStore.onboardingTasks));
+  async function loadOnboardingState() {
+    isLoadingState = true;
+    stateLoadError = false;
+    hasLoadedState = false;
+    systemStore.onboardingState = null;
+    try {
+      const result = await onboardingStateQuery.refetch();
+      if (result.isError || !result.data) {
+        systemStore.onboardingState = null;
+        stateLoadError = true;
+        return;
+      }
+      systemStore.onboardingState = result.data;
+      hasLoadedState = true;
+    } catch (error) {
+      console.error("Failed to load onboarding state:", error);
+      systemStore.onboardingState = null;
+      stateLoadError = true;
+    } finally {
+      isLoadingState = false;
+    }
+  }
+
+  const steps = $derived(
+    deriveSteps(
+      systemStore.onboardingTasks,
+      (permission) => effectiveContext.hasPermission(permission),
+    ),
+  );
   const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 
   const currentStepIndex = $derived(
     steps.findIndex((step) => currentPath.endsWith(`/onboarding/${step.route}`))
+  );
+  const currentStep = $derived(
+    currentStepIndex >= 0 ? steps[currentStepIndex] : null,
+  );
+  const navigationStepIndex = $derived(
+    currentStepIndex >= 0
+      ? currentStepIndex
+      : steps.findIndex((step) => step.status === "in_progress"),
+  );
+  const stepPosition = $derived(
+    `${Math.max(navigationStepIndex + 1, 1)} / ${steps.length}`,
   );
 
   async function exitSetup() {
@@ -41,8 +84,9 @@
   }
 
   async function goToStep(index: number) {
-    if (index >= 0 && index < steps.length) {
-      await navigateOnboardingRoute(`/${orgId}/onboarding/${steps[index].route}`);
+    const step = steps[index];
+    if (step?.isAccessible) {
+      await navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`);
     }
   }
 
@@ -56,159 +100,102 @@
 
   async function goToNext() {
     if (currentStepIndex === -1) {
-      const next = findNextIncompleteStep(steps);
+      const recommendedStep = findStepForTask(
+        steps,
+        systemStore.onboardingState?.recommended_next_task?.id,
+      );
+      const next =
+        recommendedStep?.isAccessible && recommendedStep.status !== "completed"
+          ? recommendedStep
+          : findNextIncompleteStep(steps);
       if (next) {
-        await navigateOnboardingRoute(`/${orgId}/onboarding/${next.route}`);
+        await goToStep(steps.indexOf(next));
       } else {
-        await goToStep(0);
+        await goToStep(steps.length - 1);
       }
-    } else if (currentStepIndex < steps.length - 1) {
-      await goToStep(currentStepIndex + 1);
-    } else {
-      await exitSetup();
+    } else if (currentStepIndex < steps.length - 2) {
+      const next = steps
+        .slice(currentStepIndex + 1)
+        .find((step) => step.isAccessible);
+      if (next) {
+        await goToStep(steps.indexOf(next));
+      }
+    } else if (currentStepIndex === steps.length - 2) {
+      await goToStep(steps.length - 1);
     }
   }
 </script>
 
-<div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground selection:bg-primary/20">
-  <!-- Ambient background glow for high-end feel -->
-  <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-    <div class="absolute -top-[20%] left-1/2 -translate-x-1/2 h-[450px] w-[750px] bg-primary/5 blur-3xl dark:bg-primary/10"></div>
-  </div>
+<SetupWorkspace
+  viewportId="onboarding-viewport"
+>
+  {#snippet header()}
+    <SetupWizardHeader
+      contextLabel={systemStore.onboardingState?.org_name || orgId}
+      stepLabel={navigationStepIndex >= 0
+        ? steps[navigationStepIndex]?.label ?? m.onboarding_stages_title()
+        : m.onboarding_stages_title()}
+      {stepPosition}
+      progressValue={hasLoadedState ? overallProgress : 0}
+      ariaLabel={m.onboarding_stages_title()}
+      closeLabel={m.onboarding_exit_dashboard()}
+      onClose={exitSetup}
+    />
+  {/snippet}
 
-  <!-- Floating Header (Centered Top, Minimalist, No Titles or Text) -->
-  <header
-    class="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 sm:gap-3 bg-accent/30  backdrop-blur-md px-3 py-1.5 max-w-[calc(100vw-2rem)]"
-  >
-    <!-- Step Navigation Indicator Dots / Pills -->
-    <nav class="flex items-center gap-1.5 px-1 overflow-x-auto scrollbar-hide" aria-label={m.onboarding_stages_title()}>
-      {#each steps as step, index (step.id)}
-        {@const isActive = index === currentStepIndex}
-        {@const isCompleted = step.status === "completed"}
-        <button
-          type="button"
-          disabled={!step.isAccessible}
-          onclick={() => goToStep(index)}
-          class="group relative flex items-center justify-center p-1 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed"
-          title={step.label}
-          aria-label={step.label}
-          aria-current={isActive ? "step" : undefined}
-        >
-          {#if isActive}
-            <span class="h-2 w-6 rounded-full bg-primary shadow-xs shadow-primary/40 transition-all duration-300"></span>
-          {:else if isCompleted}
-            <span class="size-2 rounded-full bg-primary/70 transition-all duration-200 group-hover:scale-125"></span>
-          {:else}
-            <span class="size-2 rounded-full bg-muted-foreground/30 transition-all duration-200 group-hover:bg-muted-foreground/60 group-hover:scale-125"></span>
-          {/if}
-        </button>
-      {/each}
-    </nav>
-
-    <!-- Subtle Divider -->
-    <div class="h-3.5 w-px bg-border/60 shrink-0" aria-hidden="true"></div>
-
-    <!-- Circular Progress SVG Ring -->
-    <div
-      class="relative flex size-5 shrink-0 items-center justify-center"
-      title={`${overallProgress}%`}
-      aria-label={`${overallProgress}% completed`}
-    >
-      <svg class="size-5 -rotate-90 text-muted/30" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2.5" fill="none" />
-        <circle
-          cx="12"
-          cy="12"
-          r="9"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-dasharray="56.5487"
-          stroke-dashoffset={56.5487 - (56.5487 * overallProgress) / 100}
-          stroke-linecap="round"
-          fill="none"
-          class="text-primary transition-all duration-500 ease-out"
-        />
-      </svg>
-      {#if overallProgress === 100}
-        <Check class="absolute size-2.5 text-primary" />
+  {#if isLoadingState || stateLoadError}
+    <div class="mx-auto flex min-h-64 w-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
+      {#if isLoadingState}
+        <LoadingIndicator size={28} class="size-7 text-primary" />
+        <p class="text-sm text-muted-foreground" aria-live="polite">
+          {m.onboarding_state_loading()}
+        </p>
+      {:else}
+        <div class="w-full space-y-4 rounded-2xl border border-destructive/30 bg-card p-6 text-start">
+          <p class="text-sm font-semibold text-destructive" role="alert">
+            {m.onboarding_state_load_failed()}
+          </p>
+          <Button variant="outline" size="sm" onclick={loadOnboardingState}>
+            {m.onboarding_retry()}
+          </Button>
+        </div>
       {/if}
     </div>
-
-    <!-- Subtle Divider -->
-    <div class="h-3.5 w-px bg-border/60 shrink-0" aria-hidden="true"></div>
-
-    <!-- Close / Exit Button -->
-    <Button
-      variant="ghost"
-      size="icon"
-      onclick={exitSetup}
-      class="size-7 shrink-0 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-      title={m.onboarding_exit_dashboard()}
-      aria-label={m.onboarding_exit_dashboard()}
-    >
-      <XMark class="size-3.5" />
-    </Button>
-  </header>
-
-  <!-- Main Viewport -->
-  <main
-    id="onboarding-viewport"
-    class="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide pt-20 pb-24 px-4 sm:px-6 md:px-8"
-  >
-    <div class="mx-auto w-full max-w-3xl py-2">
+  {:else}
+    {#if currentStep && !currentStep.isAccessible}
+      <div class="mx-auto flex min-h-64 w-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
+        <div class="w-full space-y-4 rounded-2xl border border-border bg-card p-6">
+          <div class="space-y-2">
+            <h2 class="text-base font-semibold text-foreground">
+              {m.onboarding_step_unavailable_title()}
+            </h2>
+            <p class="text-sm text-muted-foreground">
+              {m.onboarding_step_unavailable_description()}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onclick={goToOverview}>
+            {m.common_nav_overview()}
+          </Button>
+        </div>
+      </div>
+    {:else}
       {@render children()}
-    </div>
-  </main>
+    {/if}
+  {/if}
 
-  <!-- Floating Footer (Centered Bottom, Minimalist, No Titles or Text) -->
-  <footer
-    class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 bg-accent/30  backdrop-blur-md px-2 py-1.5 max-w-[calc(100vw-2rem)]"
-  >
-    <!-- Previous Step Button -->
-    <Button
-      variant="outline"
-      size="icon"
-      disabled={currentStepIndex <= 0 && currentStepIndex !== -1}
-      onclick={goToPrev}
-      class="size-8"
-      title="Previous"
-      aria-label="Previous step"
-    >
-      {#if isRtl}
-        <ChevronRight class="size-4" />
-      {:else}
-        <ChevronLeft class="size-4" />
-      {/if}
-    </Button>
-
-    <!-- Overview / Hub Toggle Button -->
-    <Button
-      variant={currentStepIndex === -1 ? "secondary" : "ghost"}
-      size="icon"
-      onclick={goToOverview}
-      class="size-8 "
-      title="Overview"
-      aria-label="Onboarding Overview"
-    >
-      <TaskList class="size-4" />
-    </Button>
-
-    <!-- Next Step / Finish Button -->
-    <Button
-      variant="default"
-      size="icon"
-      onclick={goToNext}
-      class="size-8"
-      title={currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
-      aria-label={currentStepIndex === steps.length - 1 ? "Finish onboarding" : "Next step"}
-    >
-      {#if currentStepIndex === steps.length - 1}
-        <Check class="size-4" />
-      {:else if isRtl}
-        <ChevronLeft class="size-4" />
-      {:else}
-        <ChevronRight class="size-4" />
-      {/if}
-    </Button>
-  </footer>
-</div>
+  {#snippet footer()}
+    {#if hasLoadedState}
+      <SetupWizardFooter
+        backLabel={m.ui_onboarding_onboarding_footer_back()}
+        nextLabel={m.ui_onboarding_onboarding_footer_continue()}
+        secondaryLabel={m.common_nav_overview()}
+        canGoBack={currentStepIndex > 0}
+        canGoNext={currentStepIndex < steps.length - 1}
+        {isRtl}
+        onBack={goToPrev}
+        onNext={currentStepIndex < steps.length - 1 ? goToNext : undefined}
+        onSecondary={goToOverview}
+      />
+    {/if}
+  {/snippet}
+</SetupWorkspace>

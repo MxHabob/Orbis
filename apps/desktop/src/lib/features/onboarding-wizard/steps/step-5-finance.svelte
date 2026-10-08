@@ -18,7 +18,7 @@ import {
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -83,10 +83,10 @@ async function loadData() {
   try {
     isLoading = true;
     const [accRes, feeRes, discRes, org] = await Promise.all([
-      api.listAccounts().catch(() => []),
-      api.listFeeTemplates().catch(() => []),
-      api.listDiscountTemplates().catch(() => []),
-      api.getCurrentOrg().catch(() => null),
+      api.listAccounts(),
+      api.listFeeTemplates(),
+      api.listDiscountTemplates(),
+      api.getCurrentOrg(),
     ]);
     accounts = accRes;
     feeTemplates = feeRes;
@@ -126,7 +126,7 @@ async function handleCreateFeeTemplate() {
     feeTemplates = [...feeTemplates, created];
     feeName = "";
     feeNameAr = "";
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step5_fee_created_success();
   } catch (err: any) {
     console.error("Failed to create fee template:", err);
@@ -153,7 +153,7 @@ async function handleAddPresetFee(preset: typeof PRESET_FEES[0]) {
     });
 
     feeTemplates = [...feeTemplates, created];
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step5_fee_created_success();
   } catch (err: any) {
     console.error("Failed to add preset fee:", err);
@@ -178,7 +178,7 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
     });
 
     discountTemplates = [...discountTemplates, created];
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step5_discount_created_success();
   } catch (err: any) {
     console.error("Failed to add preset discount:", err);
@@ -188,12 +188,6 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
   }
 }
 
-async function handleContinue() {
-  if (feeTemplates.length === 0 && feeName.trim()) {
-    await handleCreateFeeTemplate();
-  }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/assessment`);
-}
 </script>
 
 <div class="space-y-6">
@@ -267,7 +261,7 @@ async function handleContinue() {
               💳 {m.onboarding_step5_quick_fees()}
             </div>
             <div class="flex flex-wrap gap-2">
-              {#each PRESET_FEES as preset}
+              {#each PRESET_FEES as preset (preset.name)}
                 <Button
                   variant="outline"
                   size="sm"
@@ -322,7 +316,7 @@ async function handleContinue() {
                   {FEE_CATEGORIES.find((c) => c.value === feeCategory)?.label || feeCategory}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each FEE_CATEGORIES as c}
+                  {#each FEE_CATEGORIES as c (c.value)}
                     <SelectItem value={c.value}>{c.label}</SelectItem>
                   {/each}
                 </SelectContent>
@@ -337,7 +331,7 @@ async function handleContinue() {
                   {FREQUENCIES.find((f) => f.value === feeFrequency)?.label || feeFrequency}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each FREQUENCIES as f}
+                  {#each FREQUENCIES as f (f.value)}
                     <SelectItem value={f.value}>{f.label}</SelectItem>
                   {/each}
                 </SelectContent>
@@ -401,7 +395,7 @@ async function handleContinue() {
               🎁 {m.onboarding_step5_quick_discounts()}
             </div>
             <div class="flex flex-wrap gap-2">
-              {#each PRESET_DISCOUNTS as preset}
+              {#each PRESET_DISCOUNTS as preset (preset.name)}
                 <Button
                   variant="outline"
                   size="sm"
@@ -439,16 +433,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Inline Actions Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
-      <Button
-        variant="default"
-        disabled={feeTemplates.length === 0 && !feeName.trim()}
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step5_continue_btn()}
-      </Button>
-    </div>
   {/if}
 </div>

@@ -3,7 +3,14 @@ import * as m from "$lib/paraglide/messages";
 
 type LocalizedText = () => string;
 
-export type OnboardingStep = "intro" | "blueprint" | "organization" | "admin" | "mfa" | "review";
+export type OnboardingStep =
+  | "intro"
+  | "blueprint"
+  | "organization"
+  | "region"
+  | "admin"
+  | "mfa"
+  | "review";
 
 export interface EducationalTrackOption {
   value: string;
@@ -177,6 +184,8 @@ export interface OnboardingFormModel {
   timezone: string;
   locale: string;
   dateFormat: string;
+  formatLocale: string;
+  timeFormat: "locale" | "12-hour" | "24-hour";
   isHijriEnabled: boolean;
   baseCurrencyCode: string;
   primaryColor: string;
@@ -209,6 +218,8 @@ export const INITIAL_ONBOARDING_VALUES: OnboardingFormModel = {
   timezone: "Asia/Riyadh",
   locale: "ar-SA",
   dateFormat: "YYYY-MM-DD",
+  formatLocale: "ar-SA",
+  timeFormat: "locale",
   isHijriEnabled: true,
   baseCurrencyCode: "SAR",
   primaryColor: "#4f46e5",

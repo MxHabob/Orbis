@@ -17,7 +17,7 @@ import {
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
-import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -68,8 +68,8 @@ async function loadData() {
   try {
     isLoading = true;
     const [unitsRes, roomsRes] = await Promise.all([
-      api.listOrgUnits().catch(() => []),
-      api.listRooms().catch(() => []),
+      api.listOrgUnits(),
+      api.listRooms(),
     ]);
     orgUnits = unitsRes;
     rooms = roomsRes;
@@ -105,7 +105,7 @@ async function handleCreateUnit() {
     unitName = "";
     unitNameAr = "";
     unitCode = `BR-0${orgUnits.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_branch_created_success();
   } catch (err: any) {
     console.error("Failed to create unit:", err);
@@ -140,7 +140,7 @@ async function handleCreateRoom() {
     roomName = "";
     roomNameAr = "";
     roomNumber = `R-10${rooms.length + 1}`;
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_room_created_success();
   } catch (err: any) {
     console.error("Failed to create room:", err);
@@ -150,12 +150,6 @@ async function handleCreateRoom() {
   }
 }
 
-async function handleContinue() {
-  if (orgUnits.length === 0 && (unitName.trim() || unitNameAr.trim())) {
-    await handleCreateUnit();
-  }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/calendar`);
-}
 </script>
 
 <div class="space-y-6">
@@ -406,16 +400,5 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Inline Actions Bar -->
-    <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
-      <Button
-        variant="default"
-        disabled={orgUnits.length === 0 && !unitName.trim()}
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step2_continue_btn()}
-      </Button>
-    </div>
   {/if}
 </div>

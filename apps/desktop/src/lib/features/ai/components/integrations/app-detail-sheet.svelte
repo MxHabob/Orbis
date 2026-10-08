@@ -19,28 +19,27 @@
     orgId,
     app,
     onclose,
+    onChange,
   }: {
     open: boolean;
     orgId: string;
     app: OrbisApp;
     onclose?: () => void;
+    onChange?: () => void;
   } = $props();
 
   const queryClient = useQueryClient();
   const providerName = $derived(app.adapter_name ?? app.id);
   let isConnecting = $state(false);
+  let isDisconnecting = $state(false);
   let connectSheetOpen = $state(false);
   let connectError = $state<string | null>(null);
 
   const statusQuery = createQuery(() => ({
     queryKey: ["integration-status", orgId, providerName],
     queryFn: async () => {
-      try {
-        const status = await api.getIntegrationStatus(providerName);
-        return status?.connected ?? false;
-      } catch {
-        return false;
-      }
+      const status = await api.getIntegrationStatus(providerName);
+      return status?.connected ?? false;
     },
     enabled: !!providerName,
     staleTime: 30 * 1000,
@@ -107,6 +106,7 @@
       ]);
       toast.success(m.ui_integration_connected({ name: app.name }));
       connectSheetOpen = false;
+      onChange?.();
     } catch (error) {
       connectError = extractErrorMessage(error);
       toast.error(connectError);
@@ -116,6 +116,8 @@
   }
 
   async function handleDisconnect() {
+    if (isDisconnecting) return;
+    isDisconnecting = true;
     try {
       await api.disconnectApp(providerName);
       await Promise.all([
@@ -125,8 +127,11 @@
         queryClient.invalidateQueries({ queryKey: ["integration"] }),
       ]);
       toast.success(m.ui_integration_disconnected({ name: app.name }));
+      onChange?.();
     } catch (error) {
       toast.error(extractErrorMessage(error));
+    } finally {
+      isDisconnecting = false;
     }
   }
 </script>
@@ -174,16 +179,28 @@
               </Badge>
             {/if}
           </div>
+          {#if statusQuery.isError}
+            <div class="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive" role="alert">
+              <span>{extractErrorMessage(statusQuery.error) || m.common_action_failed()}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onclick={() => void statusQuery.refetch()}
+              >
+                {m.onboarding_retry()}
+              </Button>
+            </div>
+          {/if}
         </div>
         <div class="flex gap-2 pt-3">
           {#if isConnected}
-            <Button variant="outline" size="sm" onclick={handleDisconnect}>
+            <Button variant="outline" size="sm" disabled={isDisconnecting} onclick={handleDisconnect}>
               {m.ui_copy_disconnect_c584faa5()}
             </Button>
           {:else}
             <Button
               size="sm"
-              disabled={!app.active || isConnecting}
+              disabled={!app.active || isConnecting || statusQuery.isError}
               onclick={() => {
                 connectError = null;
                 connectSheetOpen = true;

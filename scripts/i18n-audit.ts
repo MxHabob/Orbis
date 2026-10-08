@@ -58,17 +58,19 @@ async function main() {
       text: await readFile(file, "utf8"),
     })),
   );
-  const source = sourceText.map(({ text }) => text).join("\n");
   const usedKeys = new Set<string>();
   const literalMessageKeys = new Set<string>();
   const keyPattern = /\b(?:m|messages)\.([A-Za-z0-9_]+)\s*\(/g;
   const literalMessageKeyPattern = /["'](iam_[A-Za-z0-9_]+)["']/g;
 
+  const source = sourceText.map(({ text }) => text).join("\n");
   for (const match of source.matchAll(keyPattern)) {
     if (match[1]) usedKeys.add(match[1]);
   }
-  for (const match of source.matchAll(literalMessageKeyPattern)) {
-    if (match[1]) literalMessageKeys.add(match[1]);
+  for (const { text } of sourceText) {
+    for (const match of text.matchAll(literalMessageKeyPattern)) {
+      if (match[1]) literalMessageKeys.add(match[1]);
+    }
   }
 
   const arabicKeys = new Set(Object.keys(arabicMessages));

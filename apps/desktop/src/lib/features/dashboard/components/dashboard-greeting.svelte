@@ -7,8 +7,9 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
 import * as m from "$lib/paraglide/messages";
-import { authStore } from "$lib/stores";
+import { authStore, orgContext } from "$lib/stores";
 import { l } from "$lib/core/i18n";
+import type { DashboardCountsDto } from "$lib/api/types";
 import {
   Avatar,
   AvatarController,
@@ -18,8 +19,10 @@ import {
 
 let {
   showSubtitle = true,
+  stats = null,
 }: {
   showSubtitle?: boolean;
+  stats?: DashboardCountsDto | null;
 } = $props();
 
 const avatarController = new AvatarController();
@@ -67,17 +70,47 @@ const fullName = $derived(
 );
 const firstName = $derived(fullName ? fullName.trim().split(" ")[0] : "");
 
+// Institution differentiation from orgContext
+const instType = $derived(orgContext.institutionType);
+
+// Real operational status: Is the organization newly initialized / in setup phase?
+const isNewOrg = $derived(
+  stats != null ? (stats.total_students ?? 0) === 0 && (stats.total_classes ?? 0) === 0 : false
+);
+
 // Dynamic time-based Greeting & Conversational Subtitle
 const greeting = $derived.by(() => {
-  if (hourState >= 5 && hourState < 12) return m.common_greeting_morning();
+  if (hourState >= 4 && hourState < 12) return m.common_greeting_morning();
   if (hourState >= 12 && hourState < 17) return m.common_greeting_afternoon();
   return m.common_greeting_evening();
 });
 
 const subtitle = $derived.by(() => {
-  if (hourState >= 5 && hourState < 12) return m.common_greeting_sub_morning_1();
-  if (hourState >= 12 && hourState < 17) return m.common_greeting_sub_afternoon_1();
-  return m.common_greeting_sub_evening_1();
+  // 1. Initial setup / onboarding phase (meaningful operational directive)
+  if (isNewOrg) {
+    if (instType === "university") return m.greeting_university_setup_sub();
+    if (instType === "institute") return m.greeting_institute_setup_sub();
+    return m.greeting_school_setup_sub();
+  }
+
+  // 2. Active morning operations (04:00 - 12:00)
+  if (hourState >= 4 && hourState < 12) {
+    if (instType === "university") return m.greeting_university_morning_sub();
+    if (instType === "institute") return m.greeting_institute_morning_sub();
+    return m.greeting_school_morning_sub();
+  }
+
+  // 3. Active afternoon operations (12:00 - 17:00)
+  if (hourState >= 12 && hourState < 17) {
+    if (instType === "university") return m.greeting_university_afternoon_sub();
+    if (instType === "institute") return m.greeting_institute_afternoon_sub();
+    return m.greeting_school_afternoon_sub();
+  }
+
+  // 4. Evening wrap-up & reconciliations (17:00 - 04:00)
+  if (instType === "university") return m.greeting_university_evening_sub();
+  if (instType === "institute") return m.greeting_institute_evening_sub();
+  return m.greeting_school_evening_sub();
 });
 </script>
 
@@ -94,8 +127,8 @@ const subtitle = $derived.by(() => {
       <Avatar
         controller={avatarController}
         hat={currentHat}
-        width="80px"
-        height="80px"
+        width="0px"
+        height="90px"
       />
     </button>
 

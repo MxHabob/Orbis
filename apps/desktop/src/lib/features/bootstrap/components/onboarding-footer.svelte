@@ -5,84 +5,38 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Button } from "@orbis/ui/button";
-import { QuestionMarkCircle } from "@orbis/icons";
+import SetupWizardFooter from "$lib/shared/components/setup-wizard-footer.svelte";
 
 let {
   canGoBack = false,
+  canGoNext = true,
   isSkippable = false,
-  isLastStep = false,
   isSubmitting = false,
   onPrev,
   onNext,
   onSkip,
-  onHelp,
   isRTL = false,
 }: {
   canGoBack?: boolean;
+  canGoNext?: boolean;
   isSkippable?: boolean;
-  isLastStep?: boolean;
   isSubmitting?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onSkip?: () => void;
-  onHelp: () => void;
   isRTL?: boolean;
 } = $props();
 </script>
 
-<footer class="sticky bottom-2 z-30 w-full max-w-xl mx-auto rounded-full bg-card/90 backdrop-blur-xl border border-border/80 shadow-md shadow-black/5 px-4 sm:px-6 py-2.5 flex items-center justify-between transition-all shrink-0 mt-6">
-  <!-- Start Side: Help Trigger Button -->
-  <div class="flex items-center">
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      onclick={onHelp}
-      class="h-8 px-3 text-xs font-normal gap-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
-    >
-      <QuestionMarkCircle size={14} />
-      <span>{m.ui_onboarding_onboarding_footer_help()}</span>
-    </Button>
-  </div>
-
-  <!-- End Side: Navigation Action Buttons -->
-  <div class="flex items-center gap-2">
-    {#if canGoBack && !isSubmitting}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onclick={onPrev}
-        class="h-8 px-4 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
-      >
-        <span>{m.ui_onboarding_onboarding_footer_back()}</span>
-      </Button>
-    {/if}
-
-    {#if isSkippable && !isSubmitting}
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onclick={onSkip}
-        class="h-8 px-3.5 text-xs font-medium rounded-full text-muted-foreground hover:text-foreground"
-      >
-        <span>{m.ui_onboarding_onboarding_footer_skip()}</span>
-      </Button>
-    {/if}
-
-    {#if !isLastStep}
-      <Button
-        type="button"
-        variant="default"
-        size="sm"
-        onclick={onNext}
-        disabled={isSubmitting}
-        class="h-8 px-5 text-xs font-semibold rounded-full shadow-sm shadow-primary/20"
-      >
-        <span>{m.ui_onboarding_onboarding_footer_continue()}</span>
-      </Button>
-    {/if}
-  </div>
-</footer>
+<SetupWizardFooter
+  backLabel={m.ui_onboarding_onboarding_footer_back()}
+  nextLabel={m.ui_onboarding_onboarding_footer_continue()}
+  secondaryLabel={isSkippable ? m.ui_onboarding_onboarding_footer_skip() : undefined}
+  {canGoBack}
+  {canGoNext}
+  {isSubmitting}
+  {isRTL}
+  onBack={onPrev}
+  onNext={canGoNext ? onNext : undefined}
+  onSecondary={isSkippable ? onSkip : undefined}
+/>

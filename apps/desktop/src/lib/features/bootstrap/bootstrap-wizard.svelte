@@ -7,8 +7,10 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import { onMount, untrack } from "svelte";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import { createMutation } from "@tanstack/svelte-query";
 import { api } from "$lib/api/client";
 import type {
   BootstrapRequest,
@@ -22,26 +24,44 @@ import {
   type OnboardingFormModel,
   INITIAL_ONBOARDING_VALUES,
 } from "./types";
-import OnboardingHeader from "./components/onboarding-header.svelte";
 import OnboardingFooter from "./components/onboarding-footer.svelte";
 import StepReleaseIntro from "./components/step-release-intro.svelte";
 import StepBlueprint from "./components/step-blueprint.svelte";
 import StepOrganization from "./components/step-organization.svelte";
+import StepRegion from "./components/step-region.svelte";
 import StepAdmin from "./components/step-admin.svelte";
 import StepMfa from "./components/step-mfa.svelte";
 import StepReview from "./components/step-review.svelte";
-import { SupportDialog } from "../system";
+import OnboardingHeader from "./components/onboarding-header.svelte";
+import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
+import { buildBootstrapRequest } from "./bootstrap-request";
+import {
+  type BootstrapValidationCode,
+  bootstrapFormSchema,
+  normalizeBootstrapForm,
+  validateBootstrapForm,
+  validateBootstrapStep,
+} from "./bootstrap-validation";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let currentStep = $state<OnboardingStep>("intro");
-let form = $state<OnboardingFormModel>({ ...INITIAL_ONBOARDING_VALUES });
+const form = untrack(() => new FormController<OnboardingFormModel>({
+  initialValues: {
+    ...INITIAL_ONBOARDING_VALUES,
+    locale: getLocale().startsWith("ar") ? "ar-SA" : "en-US",
+  },
+  schema: bootstrapFormSchema,
+  normalize: normalizeBootstrapForm,
+}));
 let errors = $state<Record<string, string>>({});
-let isSubmitting = $state(false);
+const bootstrapMutation = createMutation(() => ({
+  mutationFn: (request: BootstrapRequest) => api.bootstrapOrganization(request),
+}));
+const isSubmitting = $derived(form.isSubmitting || bootstrapMutation.isPending);
 let isComplete = $state(false);
 let bootstrapError = $state<string | null>(null);
-let activeTaskIndex = $state(0);
+let postBootstrapError = $state<string | null>(null);
 let bootstrapResult = $state<BootstrapResult | null>(null);
-
-let isSupportOpen = $state(false);
 
 const isRTL = $derived(getLocale().startsWith("ar"));
 
@@ -49,6 +69,7 @@ const steps: Array<{ id: OnboardingStep }> = [
   { id: "intro" },
   { id: "blueprint" },
   { id: "organization" },
+  { id: "region" },
   { id: "admin" },
   { id: "mfa" },
   { id: "review" },
@@ -58,17 +79,25 @@ const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
 const canGoBack = $derived(currentStepIndex > 0);
 const isSkippable = $derived(currentStep === "mfa");
 const isLastStep = $derived(currentStep === "review");
-
+const stepLabels: Record<OnboardingStep, () => string> = {
+  intro: m.ui_onboarding_intro_release_notes,
+  blueprint: m.ui_onboarding_blueprint_select_institutional_blueprint,
+  organization: m.ui_onboarding_organization_organization_profile_identity,
+  region: m.ui_onboarding_organization_regional_fiscal_parameters,
+  admin: m.ui_onboarding_admin_primary_administrator_account,
+  mfa: m.ui_onboarding_mfa_two_factor_authentication_setup,
+  review: m.ui_onboarding_review_launch_bootstrap,
+};
 // Silent background environment detection and calibration
 async function loadEnvironment() {
   try {
     const data = await api.bootstrapDetectEnvironment();
     if (data) {
-      form.countryCode = data.country_code || "SA";
-      form.timezone = data.timezone || "Asia/Riyadh";
-      form.baseCurrencyCode = data.currency_code || "SAR";
-      form.isHijriEnabled = data.is_hijri_recommended ?? true;
-      form.dateFormat = data.date_format || "YYYY-MM-DD";
+      form.setField("countryCode", data.country_code || "SA");
+      form.setField("timezone", data.timezone || "Asia/Riyadh");
+      form.setField("baseCurrencyCode", data.currency_code || "SAR");
+      form.setField("isHijriEnabled", data.is_hijri_recommended ?? true);
+      form.setField("dateFormat", data.date_format || "YYYY-MM-DD");
     }
   } catch (err) {
     console.warn("Silent environment detection completed with defaults:", err);
@@ -80,47 +109,46 @@ onMount(() => {
 });
 
 function validateCurrentStep(): boolean {
-  const newErrors: Record<string, string> = {};
+  const validationErrors = validateBootstrapStep(currentStep, form.values);
+  errors = localizeValidationErrors(validationErrors);
+  return Object.keys(validationErrors).length === 0;
+}
 
-  if (currentStep === "intro") {
-    return true;
-  } else if (currentStep === "blueprint") {
-    if (!form.institutionType) {
-      newErrors.institutionType = m.ui_onboarding_bootstrap_please_select_a_blueprint();
-    }
-  } else if (currentStep === "organization") {
-    if (!form.organizationName.trim()) {
-      newErrors.organizationName = m.ui_onboarding_bootstrap_organization_name_in_english_is_required();
-    }
-    if (!form.organizationNameAr.trim()) {
-      newErrors.organizationNameAr = m.ui_onboarding_bootstrap_organization_name_in_arabic_is_required();
-    }
-  } else if (currentStep === "admin") {
-    if (!form.adminFirstName.trim()) {
-      newErrors.adminFirstName = m.ui_onboarding_bootstrap_first_name_is_required();
-    }
-    if (!form.adminLastName.trim()) {
-      newErrors.adminLastName = m.ui_onboarding_bootstrap_last_name_is_required();
-    }
-    if (!form.adminEmail.trim()) {
-      newErrors.adminEmail = m.ui_onboarding_bootstrap_email_address_is_required();
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.adminEmail.trim())) {
-      newErrors.adminEmail = m.ui_onboarding_bootstrap_invalid_email_format();
-    }
-    if (!form.adminPassword) {
-      newErrors.adminPassword = m.ui_onboarding_bootstrap_password_is_required();
-    } else if (form.adminPassword.length < 8) {
-      newErrors.adminPassword = m.operations_ui_password_min_length_error();
-    }
-    if (form.adminPassword !== form.adminConfirmPassword) {
-      newErrors.adminConfirmPassword = m.operations_ui_password_mismatch_error();
-    }
-  } else if (currentStep === "mfa") {
-    return true;
-  }
+function localizeValidationErrors(
+  validationErrors: Partial<Record<string, string>>,
+): Record<string, string> {
+  const messages: Record<BootstrapValidationCode, () => string> = {
+    organizationNameRequired: () => m.ui_onboarding_bootstrap_organization_name_in_english_is_required(),
+    adminFirstNameRequired: () => m.ui_onboarding_bootstrap_first_name_is_required(),
+    adminLastNameRequired: () => m.ui_onboarding_bootstrap_last_name_is_required(),
+    adminEmailRequired: () => m.ui_onboarding_bootstrap_email_address_is_required(),
+    adminEmailInvalid: () => m.ui_onboarding_bootstrap_invalid_email_format(),
+    adminPasswordRequired: () => m.ui_onboarding_bootstrap_password_is_required(),
+    adminPasswordTooShort: () =>
+      m.ui_onboarding_bootstrap_password_min_length(),
+    adminPasswordMismatch: () => m.setup_bootstrap_err_password_mismatch(),
+    timezoneRequired: () => m.ui_onboarding_bootstrap_timezone_is_required(),
+    localeRequired: () => m.ui_onboarding_bootstrap_locale_is_required(),
+  };
+  const isValidationCode = (
+    code: string,
+  ): code is BootstrapValidationCode => Object.hasOwn(messages, code);
 
-  errors = newErrors;
-  return Object.keys(newErrors).length === 0;
+  return Object.fromEntries(
+    Object.entries(validationErrors).map(([field, code]) => {
+      const localizedMessage =
+        code && isValidationCode(code) ? messages[code]() : undefined;
+      return [field, localizedMessage ?? code ?? ""];
+    }),
+  );
+}
+
+function firstInvalidStep(
+  validationErrors: Partial<Record<string, string>>,
+): OnboardingStep {
+  if (validationErrors.organizationName) return "organization";
+  if (validationErrors.timezone || validationErrors.locale) return "region";
+  return "admin";
 }
 
 function scrollToTop() {
@@ -137,6 +165,7 @@ function nextStep() {
 
   if (currentStepIndex < steps.length - 1) {
     currentStep = steps[currentStepIndex + 1].id;
+    errors = {};
     scrollToTop();
   }
 }
@@ -144,6 +173,7 @@ function nextStep() {
 function prevStep() {
   if (currentStepIndex > 0) {
     currentStep = steps[currentStepIndex - 1].id;
+    errors = {};
     scrollToTop();
   }
 }
@@ -151,6 +181,7 @@ function prevStep() {
 function skipStep() {
   if (currentStepIndex < steps.length - 1) {
     currentStep = steps[currentStepIndex + 1].id;
+    errors = {};
     scrollToTop();
   }
 }
@@ -158,128 +189,138 @@ function skipStep() {
 async function handleLaunchBootstrap() {
   if (isSubmitting || isComplete) return;
 
-  isSubmitting = true;
+  const validationErrors = validateBootstrapForm(form.values);
+  if (Object.keys(validationErrors).length > 0) {
+    errors = localizeValidationErrors(validationErrors);
+    currentStep = firstInvalidStep(validationErrors);
+    scrollToTop();
+    return;
+  }
+
   bootstrapError = null;
-  activeTaskIndex = 0;
-
-  const req: BootstrapRequest = {
-    institution_type: form.institutionType,
-    organization_name: form.organizationName.trim(),
-    organization_name_ar: form.organizationNameAr.trim() || undefined,
-    educational_track: form.educationalTrack,
-    organization_size: form.organizationSize,
-    country_code: form.countryCode,
-    city: form.city.trim() || undefined,
-    phone: form.phone.trim() || undefined,
-    website: form.website.trim() || undefined,
-    tax_id: form.taxId.trim() || undefined,
-    license_number: form.licenseNumber.trim() || undefined,
-    timezone: form.timezone,
-    locale: form.locale,
-    date_format: form.dateFormat,
-    is_hijri_enabled: form.isHijriEnabled,
-    base_currency_code: form.baseCurrencyCode,
-    primary_color: form.primaryColor,
-    admin_first_name: form.adminFirstName.trim(),
-    admin_last_name: form.adminLastName.trim(),
-    admin_first_name_ar: form.adminFirstNameAr.trim() || undefined,
-    admin_last_name_ar: form.adminLastNameAr.trim() || undefined,
-    admin_email: form.adminEmail.trim().toLowerCase(),
-    admin_password: form.adminPassword,
-    admin_phone: form.adminPhone.trim() || undefined,
-  };
-
-  const interval = setInterval(() => {
-    if (activeTaskIndex < 4) {
-      activeTaskIndex++;
+  postBootstrapError = null;
+  const submitted = await form.submit(async (payload) => {
+    const result = await bootstrapMutation.mutateAsync(
+      buildBootstrapRequest(payload),
+    );
+    if (!result.success) {
+      throw new Error(m.ui_onboarding_review_initialization_failed());
     }
-  }, 650);
-
-  try {
-    const result = await api.bootstrapOrganization(req);
     bootstrapResult = result;
-    activeTaskIndex = 5;
-    clearInterval(interval);
 
     try {
-      await authStore.login(form.adminEmail.trim().toLowerCase(), form.adminPassword);
-      await systemStore.loadReadiness();
+      await authStore.login(payload.adminEmail.toLowerCase(), payload.adminPassword);
     } catch (authErr) {
-      console.warn("Auto-login after bootstrap deferred:", authErr);
+      postBootstrapError = extractErrorMessage(authErr);
     }
+    if (!postBootstrapError) {
+      try {
+        const readiness = await systemStore.loadReadiness();
+        if (!readiness) {
+          postBootstrapError = m.common_action_failed();
+        }
+      } catch (readinessError) {
+        postBootstrapError = extractErrorMessage(readinessError);
+      }
+    }
+  });
 
+  if (submitted) {
     isComplete = true;
-  } catch (err) {
-    clearInterval(interval);
-    bootstrapError = extractErrorMessage(err);
-  } finally {
-    isSubmitting = false;
+  } else if (form.formError) {
+    bootstrapError = form.formError;
+  } else if (Object.keys(form.errors).length > 0) {
+    const validationErrors = Object.fromEntries(
+      Object.entries(form.errors).map(([field, messages]) => [
+        field,
+        messages[0],
+      ]),
+    );
+    errors = localizeValidationErrors(validationErrors);
+    const visibleFields = new Set([
+      "organizationName",
+      "timezone",
+      "locale",
+      "adminFirstName",
+      "adminLastName",
+      "adminEmail",
+      "adminPassword",
+      "adminConfirmPassword",
+    ]);
+    const hasVisibleFieldError = Object.keys(validationErrors).some((field) =>
+      visibleFields.has(field),
+    );
+    if (!hasVisibleFieldError) {
+      bootstrapError =
+        Object.values(validationErrors).filter(Boolean).join(" ") ||
+        m.common_action_failed();
+    } else {
+      currentStep = firstInvalidStep(validationErrors);
+    }
   }
 }
 
 function enterWorkspace() {
+  if (postBootstrapError && !authStore.isAuthenticated) {
+    goto(resolve(localizeHref("/login")), { replaceState: true });
+    return;
+  }
   const orgId = bootstrapResult?.organization_id || authStore.orgId;
   if (orgId) {
-    goto(localizeHref(`/${orgId}`), { replaceState: true });
+    goto(resolve(localizeHref(`/${orgId}`)), { replaceState: true });
   } else {
-    goto(localizeHref("/login"), { replaceState: true });
+    goto(resolve(localizeHref("/login")), { replaceState: true });
   }
 }
 </script>
 
-<div
-  id="onboarding-viewport"
-  class="h-full w-full overflow-y-auto bg-background text-foreground flex flex-col justify-between selection:bg-primary/20 selection:text-primary font-sans relative px-4 sm:px-6 lg:px-8 py-3 space-y-4"
+<SetupWorkspace
+  viewportId="onboarding-viewport"
 >
-  <!-- Floating Minimal Header Bar -->
-  <OnboardingHeader {currentStep} {steps} />
+  {#snippet header()}
+    <OnboardingHeader {currentStep} {steps} />
+  {/snippet}
 
-  <!-- Main Wizard Content Area with Full Screen Real Estate Utilization -->
-  <main class="flex-1 w-full max-w-5xl mx-auto my-auto py-2">
-    {#if currentStep === "intro"}
-      <StepReleaseIntro {isRTL} />
-    {:else if currentStep === "blueprint"}
-      <StepBlueprint bind:selectedType={form.institutionType} {isRTL} />
-    {:else if currentStep === "organization"}
-      <StepOrganization bind:form {errors} {isRTL} />
-    {:else if currentStep === "admin"}
-      <StepAdmin bind:form {errors} {isRTL} />
-    {:else if currentStep === "mfa"}
-      <StepMfa
-        adminEmail={form.adminEmail}
-        orgName={form.organizationName || form.organizationNameAr}
-        {isRTL}
-        onMfaActivated={() => nextStep()}
-        onSkip={skipStep}
-      />
-    {:else if currentStep === "review"}
-      <StepReview
-        {form}
-        {isSubmitting}
-        {isComplete}
-        error={bootstrapError}
-        {activeTaskIndex}
-        onLaunch={handleLaunchBootstrap}
-        onEnterWorkspace={enterWorkspace}
-        {isRTL}
-      />
-    {/if}
-  </main>
-
-  <!-- Floating Minimal Footer Bar (Hidden when successfully completed) -->
-  {#if !isComplete}
-    <OnboardingFooter
-      {canGoBack}
-      {isSkippable}
-      {isLastStep}
+  {#if currentStep === "intro"}
+    <StepReleaseIntro {isRTL} />
+  {:else if currentStep === "blueprint"}
+    <StepBlueprint bind:selectedType={form.values.institutionType} {isRTL} />
+  {:else if currentStep === "organization"}
+    <StepOrganization bind:form={form.values} {errors} {isRTL} />
+  {:else if currentStep === "region"}
+    <StepRegion bind:form={form.values} {errors} />
+  {:else if currentStep === "admin"}
+    <StepAdmin bind:form={form.values} {errors} {isRTL} />
+  {:else if currentStep === "mfa"}
+    <StepMfa />
+  {:else if currentStep === "review"}
+    <StepReview
+      form={form.values}
       {isSubmitting}
-      onPrev={prevStep}
-      onNext={nextStep}
-      onSkip={skipStep}
-      onHelp={() => (isSupportOpen = true)}
+      {isComplete}
+      error={bootstrapError}
+      postBootstrapError={postBootstrapError}
+      authenticationRequired={Boolean(postBootstrapError && !authStore.isAuthenticated)}
+      warnings={bootstrapResult?.warnings ?? []}
+      result={bootstrapResult}
+      onLaunch={handleLaunchBootstrap}
+      onEnterWorkspace={enterWorkspace}
       {isRTL}
     />
   {/if}
-</div>
 
-<SupportDialog bind:open={isSupportOpen} />
+  {#snippet footer()}
+    {#if !isComplete}
+      <OnboardingFooter
+        {canGoBack}
+        canGoNext={!isLastStep}
+        {isSkippable}
+        {isSubmitting}
+        onPrev={prevStep}
+        onNext={nextStep}
+        onSkip={skipStep}
+        {isRTL}
+      />
+    {/if}
+  {/snippet}
+</SetupWorkspace>

@@ -69,6 +69,8 @@ pub struct OrgDto {
     pub is_verified: bool,
     pub settings: Option<serde_json::Value>,
     pub features: Option<serde_json::Value>,
+    pub institution_type: String,
+    pub metadata: Option<serde_json::Value>,
     pub created_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,
     pub version: i32,
@@ -77,6 +79,14 @@ pub struct OrgDto {
 }
 
 fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto {
+    let institution_type = org
+        .metadata
+        .as_ref()
+        .and_then(|m| m.get("institution_type"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("school")
+        .to_string();
+
     OrgDto {
         id: org.id,
         name: org.name,
@@ -98,6 +108,8 @@ fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto
         is_verified: org.is_verified,
         settings: org.settings,
         features: org.features,
+        institution_type,
+        metadata: org.metadata,
         created_by: org.created_by,
         updated_by: org.updated_by,
         version: org.version,

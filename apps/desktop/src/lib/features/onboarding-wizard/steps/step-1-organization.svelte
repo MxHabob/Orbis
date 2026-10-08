@@ -1,8 +1,9 @@
 <script lang="ts">
+import { createMutation, useQueryClient } from "@tanstack/svelte-query";
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
+import { api, queryKeys } from "$lib/api";
 import { authStore, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -20,13 +21,34 @@ import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
-let isSaving = $state(false);
+const queryClient = useQueryClient();
+const saveOrganizationMutation = createMutation(() => ({
+  mutationFn: (request: {
+    name: string;
+    name_ar?: string;
+    slug?: string;
+    base_currency_code: string;
+    timezone: string;
+    locale: string;
+    is_hijri_enabled: boolean;
+  }) => api.updateCurrentOrg(request),
+  onSuccess: async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: queryKeys.org.current() }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.onboarding.state(orgId),
+      }),
+    ]);
+  },
+}));
+const isSaving = $derived(saveOrganizationMutation.isPending);
 let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
@@ -45,7 +67,7 @@ const isTaskComplete = $derived(stepTasks.every((t) => t.status === "completed")
 onMount(async () => {
   try {
     isLoading = true;
-    const org = (await api.getCurrentOrg().catch(() => null)) || systemStore.onboardingState?.organization || authStore.currentOrg;
+    const org = (await api.getCurrentOrg()) || systemStore.onboardingState?.organization || authStore.currentOrg;
     if (org) {
       name = org.name || name;
       nameAr = org.name_ar || nameAr;
@@ -72,12 +94,11 @@ async function saveOrganization() {
     return;
   }
 
-  isSaving = true;
   errorMessage = null;
   successMessage = null;
 
   try {
-    await api.updateCurrentOrg({
+    await saveOrganizationMutation.mutateAsync({
       name: name.trim(),
       name_ar: nameAr.trim() || undefined,
       slug: slug.trim() || undefined,
@@ -88,22 +109,14 @@ async function saveOrganization() {
     });
 
     // Refresh onboarding DAG state
-    await systemStore.loadOnboardingState(orgId);
+    await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step1_saved_success();
   } catch (err: any) {
     console.error("Failed to save organization profile:", err);
     errorMessage = err?.message || m.common_action_failed();
-  } finally {
-    isSaving = false;
   }
 }
 
-async function handleContinue() {
-  if (!isTaskComplete) {
-    await saveOrganization();
-  }
-  await navigateOnboardingRoute(`/${orgId}/onboarding/structure`);
-}
 </script>
 
 <div class="space-y-6">
@@ -228,7 +241,6 @@ async function handleContinue() {
       </div>
     </OnboardingSection>
 
-    <!-- Inline Actions Bar -->
     <div class="mt-8 flex items-center justify-end gap-3 pb-8 pt-4 border-t border-border/40">
       <Button
         variant="secondary"
@@ -237,15 +249,6 @@ async function handleContinue() {
         class="text-xs"
       >
         {isSaving ? m.onboarding_saving_btn() : m.onboarding_save_btn()}
-      </Button>
-
-      <Button
-        variant="default"
-        disabled={isSaving || !name.trim()}
-        onclick={handleContinue}
-        class="text-xs font-semibold shadow-xs"
-      >
-        {m.onboarding_step1_continue_btn()}
       </Button>
     </div>
   {/if}

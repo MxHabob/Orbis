@@ -1,7 +1,7 @@
 <!--
   @component StepAdmin
   Step 4: Initial Primary Administrator Account.
-  Spacious 2-column layout with live @orbis/avatar-engine preview, real-time password strength,
+  Spacious 2-column layout with a real user avatar preview and real-time password strength,
   and elevated design tokens.
 -->
 <script lang="ts">
@@ -9,7 +9,7 @@ import * as m from "$lib/paraglide/messages";
 import type { OnboardingFormModel } from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Avatar, AvatarController } from "@orbis/avatar-engine";
+import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -22,8 +22,6 @@ let {
   errors?: Record<string, string>;
   isRTL?: boolean;
 } = $props();
-
-const avatarController = new AvatarController();
 
 const passwordStrength = $derived.by(() => {
   const pwd = form.adminPassword || "";
@@ -47,14 +45,6 @@ const strengthLabel = $derived.by(() => {
 
 <div class="space-y-6 max-w-5xl mx-auto py-2">
   <div class="space-y-2 text-start">
-    <div class="flex items-center gap-2">
-      <span class="text-xs font-semibold text-primary uppercase font-mono tracking-wider">
-        {m.ui_onboarding_admin_step_4_of_6()}
-      </span>
-    </div>
-    <h2 class="text-2xl font-bold tracking-tight text-foreground">
-      {m.ui_onboarding_admin_primary_administrator_account()}
-    </h2>
     <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
       {m.operations_ui_admin_account_description()}
     </p>
@@ -64,13 +54,11 @@ const strengthLabel = $derived.by(() => {
     <!-- Left Column: Avatar & Role Identity Preview -->
     <div class="lg:col-span-4 rounded-2xl border border-border/70 bg-card p-6 flex flex-col items-center text-center justify-between shadow-xs">
       <div class="space-y-4 w-full flex flex-col items-center">
-        <div class="size-20 rounded-full bg-background border-2 border-primary/30 flex items-center justify-center overflow-hidden shadow-sm ring-4 ring-primary/10">
-          <Avatar
-            controller={avatarController}
-            width="72px"
-            height="72px"
-          />
-        </div>
+        <UserAvatar
+          name={`${form.adminFirstNameAr || form.adminFirstName} ${form.adminLastNameAr || form.adminLastName}`.trim() || m.ui_onboarding_admin_administrator()}
+          size="lg"
+          class="size-20 border-2 border-primary/30 shadow-sm ring-4 ring-primary/10"
+        />
 
         <div class="space-y-1 w-full">
           <div class="text-sm font-bold text-foreground truncate">
@@ -101,6 +89,7 @@ const strengthLabel = $derived.by(() => {
           enId="admin-fn-en"
           arLabel={m.ui_onboarding_admin_first_name_arabic()}
           enLabel={m.ui_onboarding_admin_first_name_english()}
+          enRequired
           bind:arValue={form.adminFirstNameAr}
           bind:enValue={form.adminFirstName}
           arPlaceholder={m.operations_ui_admin_first_name_arabic_example()}
@@ -117,6 +106,7 @@ const strengthLabel = $derived.by(() => {
           enId="admin-ln-en"
           arLabel={m.ui_onboarding_admin_last_name_arabic()}
           enLabel={m.ui_onboarding_admin_last_name_english()}
+          enRequired
           bind:arValue={form.adminLastNameAr}
           bind:enValue={form.adminLastName}
           arPlaceholder={m.operations_ui_admin_last_name_arabic_example()}
@@ -134,17 +124,36 @@ const strengthLabel = $derived.by(() => {
       <div class="space-y-1.5">
         <Label for="admin-email" class="text-xs font-medium text-foreground">
           {m.ui_onboarding_admin_primary_email_address()}
+          <span class="text-destructive" aria-hidden="true"> *</span>
         </Label>
         <Input
           id="admin-email"
           type="email"
           placeholder="admin@institution.edu"
           bind:value={form.adminEmail}
+          required
+          aria-invalid={errors.adminEmail ? "true" : undefined}
+          aria-describedby={errors.adminEmail ? "admin-email-error" : undefined}
           class="h-9 text-xs font-mono"
         />
         {#if errors.adminEmail}
-          <p class="text-[11px] text-destructive">{errors.adminEmail}</p>
+          <p id="admin-email-error" class="text-[11px] text-destructive" role="alert">
+            {errors.adminEmail}
+          </p>
         {/if}
+      </div>
+
+      <div class="space-y-1.5">
+        <Label for="admin-phone" class="text-xs font-medium text-foreground">
+          {m.setup_bootstrap_admin_phone_optional()}
+        </Label>
+        <Input
+          id="admin-phone"
+          type="tel"
+          autocomplete="tel"
+          bind:value={form.adminPhone}
+          class="h-9 text-xs"
+        />
       </div>
 
       <!-- Password and Confirmation -->
@@ -152,16 +161,22 @@ const strengthLabel = $derived.by(() => {
         <div class="space-y-1.5">
           <Label for="admin-pwd" class="text-xs font-medium text-foreground">
             {m.ui_onboarding_admin_password()}
+            <span class="text-destructive" aria-hidden="true"> *</span>
           </Label>
           <Input
             id="admin-pwd"
             type="password"
             placeholder="••••••••••••"
             bind:value={form.adminPassword}
+            required
+            aria-invalid={errors.adminPassword ? "true" : undefined}
+            aria-describedby={errors.adminPassword ? "admin-pwd-error" : undefined}
             class="h-9 text-xs"
           />
           {#if errors.adminPassword}
-            <p class="text-[11px] text-destructive">{errors.adminPassword}</p>
+            <p id="admin-pwd-error" class="text-[11px] text-destructive" role="alert">
+              {errors.adminPassword}
+            </p>
           {/if}
 
           <!-- Real-Time Password Strength Meter -->
@@ -184,16 +199,22 @@ const strengthLabel = $derived.by(() => {
         <div class="space-y-1.5">
           <Label for="admin-pwd-confirm" class="text-xs font-medium text-foreground">
             {m.ui_onboarding_admin_confirm_password()}
+            <span class="text-destructive" aria-hidden="true"> *</span>
           </Label>
           <Input
             id="admin-pwd-confirm"
             type="password"
             placeholder="••••••••••••"
             bind:value={form.adminConfirmPassword}
+            required
+            aria-invalid={errors.adminConfirmPassword ? "true" : undefined}
+            aria-describedby={errors.adminConfirmPassword ? "admin-pwd-confirm-error" : undefined}
             class="h-9 text-xs"
           />
           {#if errors.adminConfirmPassword}
-            <p class="text-[11px] text-destructive">{errors.adminConfirmPassword}</p>
+            <p id="admin-pwd-confirm-error" class="text-[11px] text-destructive" role="alert">
+              {errors.adminConfirmPassword}
+            </p>
           {/if}
         </div>
       </div>

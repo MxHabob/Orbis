@@ -236,12 +236,6 @@ export interface PersonDto {
   updated_at: string;
 }
 
-export interface BootstrapMfaInitResult {
-  secret: string;
-  otpauth_url: string;
-  recovery_codes: string[];
-}
-
 export interface StudentDetailDto {
   student: StudentDto;
   person: PersonDto;
@@ -1728,7 +1722,6 @@ export interface OrbisApiClient {
   bootstrapGenerateSlug(name: string, nameAr?: string): Promise<SlugGenerationResult>;
   bootstrapGetStatus(): Promise<BootstrapStatusResponse>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
-  bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult>;
   completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
 
   // ── Onboarding & DAG Readiness ──────────────────────────────

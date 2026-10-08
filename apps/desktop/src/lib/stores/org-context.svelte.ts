@@ -36,6 +36,8 @@ export interface OrgConfig {
   isVerified: boolean;
   settings: Record<string, unknown> | null;
   features: Record<string, unknown> | null;
+  institutionType: "school" | "university" | "institute";
+  metadata: Record<string, unknown> | null;
 }
 
 /**
@@ -125,6 +127,19 @@ class OrganizationContextStore {
   /** Organization current period ID from backend */
   currentPeriodId = $derived(this._config?.currentPeriodId ?? null);
 
+  /** Institution type: "school" | "university" | "institute" */
+  institutionType = $derived<"school" | "university" | "institute">(
+    this._config?.institutionType ?? "school"
+  );
+
+  /** Organization metadata */
+  metadata = $derived(this._config?.metadata ?? null);
+
+  /** Convenience helpers for institution type */
+  isSchool = $derived(this.institutionType === "school");
+  isUniversity = $derived(this.institutionType === "university");
+  isInstitute = $derived(this.institutionType === "institute");
+
   /** Full config object for components that need multiple fields */
   config = $derived(this._config);
 
@@ -147,6 +162,15 @@ class OrganizationContextStore {
   }
 
   setOrganization(org: OrgDto) {
+    const rawType = (
+      org.institution_type ||
+      (org.metadata as any)?.institution_type ||
+      "school"
+    ).toLowerCase();
+    const institutionType: "school" | "university" | "institute" =
+      rawType === "university" ? "university" :
+      rawType === "institute" || rawType === "training_center" ? "institute" : "school";
+
     this._config = {
       id: org.id,
       name: org.name,
@@ -168,6 +192,8 @@ class OrganizationContextStore {
       isVerified: org.is_verified ?? false,
       settings: (org.settings as Record<string, unknown> | null) ?? null,
       features: (org.features as Record<string, unknown> | null) ?? null,
+      institutionType,
+      metadata: (org.metadata as Record<string, unknown> | null) ?? null,
     };
     this.isInitialized = true;
   }

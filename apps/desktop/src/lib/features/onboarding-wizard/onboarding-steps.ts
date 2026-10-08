@@ -1,6 +1,5 @@
 import type { SetupTaskDto } from "$lib/api/types";
 import * as m from "$lib/paraglide/messages";
-import { getLocale } from "$lib/paraglide/runtime";
 
 // ═══════════════════════════════════════════════════════════════
 // Onboarding Step Model
@@ -10,7 +9,9 @@ export type OnboardingStepStatus =
   | "completed"
   | "in_progress"
   | "not_started"
-  | "blocked";
+  | "blocked"
+  | "optional"
+  | "not_applicable";
 
 export interface OnboardingStep {
   /** Unique step identifier */
@@ -37,6 +38,8 @@ export interface OnboardingStep {
   progress: number;
   /** Whether the user can navigate to this step */
   isAccessible: boolean;
+  /** Backend task IDs the user can access within this step */
+  accessibleTaskIds: string[];
 }
 
 export interface StepDefinition {
@@ -139,7 +142,11 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
 // Step Derivation — produces OnboardingStep[] from backend tasks
 // ═══════════════════════════════════════════════════════════════
 
-export function deriveSteps(tasks: SetupTaskDto[]): OnboardingStep[] {
+export function deriveSteps(
+  tasks: SetupTaskDto[],
+  hasPermission: (permission: string) => boolean,
+): OnboardingStep[] {
+  const taskById = new Map(tasks.map((task) => [task.id, task]));
   return STEP_DEFINITIONS.map((def) => {
     // Review step uses ALL tasks
     const stepTasks =
@@ -150,12 +157,19 @@ export function deriveSteps(tasks: SetupTaskDto[]): OnboardingStep[] {
     const status = deriveStepStatus(stepTasks, def.id === "review");
     const progress = deriveStepProgress(stepTasks);
     const isRequired = stepTasks.some((t) => t.is_required);
-
-    // A step is accessible if it has at least one non-blocked task,
-    // OR if it's the review step
-    const isAccessible =
-      def.id === "review" ||
-      stepTasks.some((t) => t.status !== "blocked");
+    const accessibleTaskIds = stepTasks.filter((task) => {
+      const canAccess = task.status !== "blocked" &&
+        task.status !== "not_applicable" &&
+        task.required_permissions.every(hasPermission);
+      const dependenciesMet = task.dependencies.every((dependencyId) => {
+        const dependency = taskById.get(dependencyId);
+        return dependency?.status === "completed" ||
+          dependency?.status === "optional" ||
+          dependency?.status === "not_applicable";
+      });
+      return canAccess && dependenciesMet;
+    }).map((task) => task.id);
+    const isAccessible = def.id === "review" || accessibleTaskIds.length > 0;
 
     return {
       id: def.id,
@@ -174,6 +188,7 @@ export function deriveSteps(tasks: SetupTaskDto[]): OnboardingStep[] {
       status,
       progress,
       isAccessible,
+      accessibleTaskIds,
     };
   });
 }
@@ -186,15 +201,22 @@ function deriveStepStatus(
 
   if (isReview) {
     const requiredTasks = tasks.filter((t) => t.is_required);
-    if (requiredTasks.every((t) => t.status === "completed")) return "completed";
+    if (requiredTasks.every((t) =>
+      t.status === "completed" || t.status === "not_applicable"
+    )) return "completed";
     if (requiredTasks.some((t) => t.status === "completed")) return "in_progress";
     return "not_started";
   }
 
-  if (tasks.every((t) => t.status === "completed")) return "completed";
-  if (tasks.every((t) => t.status === "blocked")) return "blocked";
+  const applicableTasks = tasks.filter((task) => task.status !== "not_applicable");
+  if (applicableTasks.length === 0) return "not_applicable";
+  const requiredTasks = applicableTasks.filter((task) => task.is_required);
+  const statusTasks = requiredTasks.length > 0 ? requiredTasks : applicableTasks;
+  if (statusTasks.every((task) => task.status === "completed")) return "completed";
+  if (statusTasks.every((task) => task.status === "optional")) return "optional";
+  if (statusTasks.some((task) => task.status === "blocked")) return "blocked";
   if (
-    tasks.some(
+    statusTasks.some(
       (t) =>
         t.status === "completed" ||
         t.status === "in_progress" ||
@@ -207,8 +229,10 @@ function deriveStepStatus(
 
 function deriveStepProgress(tasks: SetupTaskDto[]): number {
   if (tasks.length === 0) return 0;
-  const sum = tasks.reduce((acc, t) => acc + t.progress, 0);
-  return Math.round(sum / tasks.length);
+  const requiredTasks = tasks.filter((task) => task.is_required);
+  const progressTasks = requiredTasks.length > 0 ? requiredTasks : tasks;
+  const sum = progressTasks.reduce((acc, task) => acc + task.progress, 0);
+  return Math.round(sum / progressTasks.length);
 }
 
 /**
@@ -222,9 +246,26 @@ export function findNextIncompleteStep(
       (s) =>
         s.id !== "review" &&
         s.status !== "completed" &&
+        s.status !== "not_applicable" &&
         s.isAccessible,
     ) ?? null
   );
+}
+
+export function findStepForTask(
+  steps: OnboardingStep[],
+  taskId: string | undefined,
+): OnboardingStep | null {
+  if (!taskId) return null;
+  return steps.find((step) => step.taskIds.includes(taskId)) ?? null;
+}
+
+export function isTaskAccessible(
+  steps: OnboardingStep[],
+  taskId: string | undefined,
+): boolean {
+  const step = findStepForTask(steps, taskId);
+  return Boolean(taskId && step?.accessibleTaskIds.includes(taskId));
 }
 
 /**

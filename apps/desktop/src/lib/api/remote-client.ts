@@ -227,7 +227,6 @@ import type {
   OnboardingStateDto,
   ProvisionDefaultsReqDto,
   ProvisionDefaultsResultDto,
-  BootstrapMfaInitResult,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -1730,17 +1729,6 @@ export class RemoteClient implements OrbisApiClient {
 
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
     return this.call(sdk.executeBootstrap({ client: this.client, body: req }));
-  }
-
-  async bootstrapInitMfa(adminEmail?: string, orgName?: string): Promise<BootstrapMfaInitResult> {
-    const issuer = orgName || "Orbis";
-    const account = adminEmail || "admin";
-    const secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
-    return {
-      secret,
-      otpauth_url: `otpauth://totp/${issuer}:${account}?secret=${secret}&issuer=${issuer}`,
-      recovery_codes: ["1234-5678", "8765-4321"],
-    };
   }
 
   async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {

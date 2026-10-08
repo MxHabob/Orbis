@@ -1,15 +1,20 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
-import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
-import { systemStore } from "$lib/stores";
+import { effectiveContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Progress } from "@orbis/ui/progress";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
-import { deriveSteps } from "../onboarding-steps";
+import {
+  deriveSteps,
+  findStepForTask,
+  isTaskAccessible,
+} from "../onboarding-steps";
 import { navigateOnboardingRoute } from "../navigation";
+import { refreshOnboardingState } from "../refresh-onboarding-state";
+import { l } from "$lib/core/i18n";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -18,15 +23,11 @@ let isLaunching = $state(false);
 let launchSuccess = $state(false);
 let errorMessage = $state<string | null>(null);
 
-onMount(async () => {
-  await refreshDAG();
-});
-
 async function refreshDAG() {
   isRefreshing = true;
+  errorMessage = null;
   try {
-    await systemStore.loadOnboardingState(orgId);
-    await systemStore.loadReadiness();
+    await refreshOnboardingState(orgId, m.onboarding_step8_err_readiness());
   } catch (err: any) {
     console.error("Failed to refresh onboarding DAG state:", err);
     errorMessage = err?.message || m.onboarding_step8_err_readiness();
@@ -36,27 +37,37 @@ async function refreshDAG() {
 }
 
 const tasks = $derived(systemStore.onboardingTasks);
-const steps = $derived(deriveSteps(tasks));
+const steps = $derived(
+  deriveSteps(tasks, (permission) => effectiveContext.hasPermission(permission)),
+);
 const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 const isReady = $derived(systemStore.isInstitutionReady);
-const requiredTasks = $derived(tasks.filter((t) => t.is_required));
-const completedRequiredTasks = $derived(requiredTasks.filter((t) => t.status === "completed"));
+const warnings = $derived(systemStore.onboardingState?.warnings ?? []);
+const requiredTaskCount = $derived(systemStore.onboardingState?.required_tasks ?? 0);
+const completedRequiredTaskCount = $derived(systemStore.onboardingState?.required_completed ?? 0);
 
 async function handleCompleteAndLaunch() {
+  if (isLaunching || isRefreshing) return;
   isLaunching = true;
   errorMessage = null;
 
   try {
     await refreshDAG();
+    if (errorMessage) return;
+    if (!systemStore.isInstitutionReady) {
+      errorMessage = m.onboarding_step8_err_readiness();
+      return;
+    }
+
     launchSuccess = true;
 
-    // Wait a brief moment to show celebration state, then navigate to dashboard
     setTimeout(async () => {
       await navigateOnboardingRoute(`/${orgId}`);
-    }, 1200);
+    }, 900);
   } catch (err: any) {
     console.error("Failed to complete onboarding:", err);
     errorMessage = err?.message || m.onboarding_step8_err_launch();
+  } finally {
     isLaunching = false;
   }
 }
@@ -79,7 +90,23 @@ async function handleCompleteAndLaunch() {
     </div>
   {/if}
 
-  {#if launchSuccess}
+  {#if isRefreshing && !systemStore.onboardingState}
+    <div class="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card p-8 text-center">
+      <LoadingIndicator size={24} class="size-6 text-primary" />
+      <p class="text-sm text-muted-foreground" aria-live="polite">
+        {m.common_control_loading()}
+      </p>
+    </div>
+  {:else if !systemStore.onboardingState}
+    <div class="flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border border-border/70 bg-card p-8 text-center">
+      <p class="max-w-md text-sm text-muted-foreground">
+        {m.onboarding_step8_err_readiness()}
+      </p>
+      <Button variant="outline" size="sm" onclick={refreshDAG}>
+        {m.onboarding_step8_recheck_btn()}
+      </Button>
+    </div>
+  {:else if launchSuccess}
     <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-8 text-center space-y-4 animate-in fade-in zoom-in duration-300">
       <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-500 text-white text-3xl font-bold shadow-lg shadow-emerald-500/30">
         ✓
@@ -110,7 +137,10 @@ async function handleCompleteAndLaunch() {
               </Badge>
             {:else}
               <Badge variant="outline" class="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs py-1 px-2.5">
-                {m.onboarding_step8_required_tasks_count({ completed: completedRequiredTasks.length, total: requiredTasks.length })}
+                {m.onboarding_step8_required_tasks_count({
+                  completed: completedRequiredTaskCount,
+                  total: requiredTaskCount,
+                })}
               </Badge>
             {/if}
           </div>
@@ -130,65 +160,73 @@ async function handleCompleteAndLaunch() {
       <Progress value={overallProgress} class="h-2.5 bg-muted" />
     </div>
 
-    <!-- Stage-by-Stage Audit Matrix -->
+    {#if warnings.length > 0}
+      <div class="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-100" role="status">
+        <h2 class="font-semibold">{m.ui_onboarding_review_initialization_warnings()}</h2>
+        <ul class="list-inside list-disc space-y-1">
+          {#each warnings as warning (warning)}
+            <li>{warning}</li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
+
     <OnboardingSection
       title={m.onboarding_step8_checklist_title()}
       description={m.onboarding_step8_checklist_desc()}
     >
       <div class="divide-y divide-border/40 rounded-lg border border-border/50 bg-card overflow-hidden">
-        {#each steps.filter((s) => s.id !== "review") as step (step.id)}
-          <div class="flex items-center justify-between p-4 text-xs transition-colors hover:bg-muted/30">
-            <div class="flex items-center gap-3">
-              <!-- Step Status Badge -->
-              <div class="flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold {step.status === 'completed'
-                ? 'bg-emerald-500 text-white'
-                : step.status === 'in_progress'
-                ? 'bg-blue-500 text-white'
-                : 'bg-muted text-muted-foreground'}">
-                {#if step.status === "completed"}
-                  ✓
-                {:else}
-                  {step.order}
+        {#each tasks as task (task.id)}
+          {@const step = findStepForTask(steps, task.id)}
+          {@const statusLabel = task.status === "completed"
+            ? m.onboarding_step8_status_ready()
+            : task.status === "in_progress"
+              ? m.onboarding_task_status_in_progress()
+              : task.status === "blocked"
+                ? m.onboarding_task_status_blocked()
+                : task.status === "optional"
+                  ? m.onboarding_task_status_optional()
+                  : task.status === "not_applicable"
+                    ? m.onboarding_task_status_not_applicable()
+                    : m.onboarding_task_status_not_started()}
+          <div class="flex flex-wrap items-center justify-between gap-3 p-4 transition-colors hover:bg-muted/30">
+            <div class="min-w-0 flex-1 space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-medium text-foreground">
+                  {l(task.title_ar, task.title)}
+                </span>
+                {#if task.is_required}
+                  <Badge variant="secondary" class="text-[10px]">
+                    {m.onboarding_task_required_label()}
+                  </Badge>
+                {/if}
+                <Badge
+                  variant={task.status === "blocked" ? "destructive" : "outline"}
+                  class="text-[10px]"
+                >
+                  {statusLabel}
+                </Badge>
+                {#if task.status === "in_progress"}
+                  <span class="text-xs tabular-nums text-muted-foreground">{task.progress}%</span>
                 {/if}
               </div>
-
-              <div>
-                <div class="font-semibold text-foreground flex items-center gap-2">
-                  <span>{step.label}</span>
-                  {#if step.isRequired}
-                    <span class="text-[10px] text-amber-500 font-medium">*</span>
-                  {/if}
-                </div>
-                <div class="text-[11px] text-muted-foreground">
-                  {step.description}
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-3">
-              {#if step.status === "completed"}
-                <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                  {m.onboarding_step8_status_ready()}
-                </Badge>
-              {:else if step.status === "in_progress"}
-                <Badge variant="outline" class="border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px]">
-                  {step.progress}%
-                </Badge>
-              {:else}
-                <Badge variant="secondary" class="text-[10px]">
-                  {m.onboarding_step8_status_pending()}
-                </Badge>
+              {#if task.status === "blocked" && (task.blocking_reason_ar || task.blocking_reason)}
+                <p class="text-xs leading-relaxed text-muted-foreground">
+                  {l(task.blocking_reason_ar, task.blocking_reason)}
+                </p>
               {/if}
-
+            </div>
+            {#if step && step.id !== "review" && task.status !== "completed" && task.status !== "not_applicable"}
               <Button
                 variant="ghost"
                 size="sm"
+                disabled={!isTaskAccessible(steps, task.id)}
                 onclick={() => navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`)}
-                class="text-xs font-medium text-primary hover:text-primary hover:bg-primary/10"
+                class="shrink-0 text-xs font-medium text-primary hover:bg-primary/10 hover:text-primary"
               >
                 {m.onboarding_step8_configure_btn()}
               </Button>
-            </div>
+            {/if}
           </div>
         {/each}
       </div>
