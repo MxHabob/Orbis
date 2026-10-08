@@ -3,6 +3,7 @@ pub mod event_bus;
 pub mod gateways;
 pub mod iam;
 pub mod integrations;
+pub mod license;
 pub mod reporting;
 pub mod repositories;
 pub mod security;

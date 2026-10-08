@@ -51,56 +51,56 @@ Orbis is designed to run on an institution's own infrastructure, with a native d
   <table>
     <tr>
       <td width="50%" valign="top">
-
-#### Organization & Identity
-- Model headquarters, campuses, faculties, and departments in a hierarchy
-- Separate person records from user accounts for students, staff, and guardians
-- Manage branch-level operations with inherited institutional policies
-
+        <h4>Organization &amp; Identity</h4>
+        <ul>
+          <li>Model headquarters, campuses, faculties, and departments in a hierarchy</li>
+          <li>Separate person records from user accounts for students, staff, and guardians</li>
+          <li>Manage branch-level operations with inherited institutional policies</li>
+        </ul>
       </td>
       <td width="50%" valign="top">
-
-#### Academics & Student Lifecycle
-- Configure semesters, trimesters, academic years, or modular periods
-- Support cohort-based and credit-hour academic structures
-- Promote students through staged transitions with rollback support
-
-      </td>
-    </tr>
-    <tr>
-      <td width="50%" valign="top">
-
-#### Exams & Assessment
-- Coordinate exam cycles, halls, and proctor schedules
-- Generate seating numbers and protected secret numbers
-- Manage academic assessment workflows
-
-      </td>
-      <td width="50%" valign="top">
-
-#### Attendance & Timetabling
-- Record lesson-level and daily attendance
-- Route medical absence excuses through a review workflow
-- Detect teacher and room conflicts with constraint-based scheduling
-
+        <h4>Academics &amp; Student Lifecycle</h4>
+        <ul>
+          <li>Configure semesters, trimesters, academic years, or modular periods</li>
+          <li>Support cohort-based and credit-hour academic structures</li>
+          <li>Promote students through staged transitions with rollback support</li>
+        </ul>
       </td>
     </tr>
     <tr>
       <td width="50%" valign="top">
-
-#### Finance
-- Maintain a unified double-entry chart of accounts
-- Organize branch sub-treasuries and point-of-sale cash registers
-- Configure tuition, fees, discounts, installments, and multi-currency receipts
-
+        <h4>Exams &amp; Assessment</h4>
+        <ul>
+          <li>Coordinate exam cycles, halls, and proctor schedules</li>
+          <li>Generate seating numbers and protected secret numbers</li>
+          <li>Manage academic assessment workflows</li>
+        </ul>
       </td>
       <td width="50%" valign="top">
-
-#### Documents & Operations
-- Design certificates, transcripts, reports, and ID cards with DocForge
-- Store documents on local or private on-premise storage
-- Support role-based document access, audit logs, and background routines
-
+        <h4>Attendance &amp; Timetabling</h4>
+        <ul>
+          <li>Record lesson-level and daily attendance</li>
+          <li>Route medical absence excuses through a review workflow</li>
+          <li>Detect teacher and room conflicts with constraint-based scheduling</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td width="50%" valign="top">
+        <h4>Finance</h4>
+        <ul>
+          <li>Maintain a unified double-entry chart of accounts</li>
+          <li>Organize branch sub-treasuries and point-of-sale cash registers</li>
+          <li>Configure tuition, fees, discounts, installments, and multi-currency receipts</li>
+        </ul>
+      </td>
+      <td width="50%" valign="top">
+        <h4>Documents &amp; Operations</h4>
+        <ul>
+          <li>Design certificates, transcripts, reports, and ID cards with DocForge</li>
+          <li>Store documents on local or private on-premise storage</li>
+          <li>Support role-based document access, audit logs, and background routines</li>
+        </ul>
       </td>
     </tr>
   </table>
@@ -142,13 +142,7 @@ To report a translation issue or ask about contributing a translation, [contact 
 
 ## Contributors
 
-Orbis is developed and maintained by [Mulverse](https://github.com/mulverseco). The contributor gallery below is generated from this repository's GitHub contribution history and includes the project contributors as GitHub associates them.
-
-<div align="center">
-  <a href="https://github.com/MxHabob/Orbis/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=MxHabob/Orbis" alt="Orbis repository contributors" />
-  </a>
-</div>
+Orbis is developed and maintained by [Mulverse](https://github.com/mulverseco). View the [contributors to Orbis](https://github.com/MxHabob/Orbis/graphs/contributors) on GitHub.
 
 For licensing, collaboration, or contribution inquiries, please [contact the team](mailto:mulverseco@gmail.com).
 

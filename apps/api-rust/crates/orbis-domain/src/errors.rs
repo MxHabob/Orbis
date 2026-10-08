@@ -26,6 +26,8 @@ pub enum DomainError {
     ConcurrencyConflict(String),
     #[error("Storage error: {0}")]
     Storage(String),
+    #[error("License required: {0}")]
+    LicenseRequired(String),
 }
 
 #[derive(Error, Debug, Clone)]

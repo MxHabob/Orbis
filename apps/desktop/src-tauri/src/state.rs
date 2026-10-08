@@ -129,6 +129,7 @@ pub struct AppState {
     pub system_repo: Arc<dyn SystemRepository>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
+    pub license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
     pub app_data_dir: std::path::PathBuf,
     // ── Employee Affairs & User Groups ─────────────────────────
@@ -510,8 +511,30 @@ impl AppState {
         // ── Bootstrap & System Services ─────────────────────────────
         let system_repo_impl =
             Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
-        let entitlement_provider: Arc<dyn EntitlementProvider> =
-            Arc::new(orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider);
+
+        // ── Mulverse License Runtime ────────────────────────────────
+        let app_version = env!("CARGO_PKG_VERSION").to_string();
+        let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
+            orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
+                app_data_dir,
+                &app_version,
+                None, // Use default Mulverse Platform URL
+            )
+            .map_err(|e| format!("Failed to create license runtime: {e}"))?,
+        );
+
+        // Initialize the license runtime (loads persisted state, offline-first)
+        license_runtime
+            .initialize()
+            .await
+            .map_err(|e| format!("Failed to initialize license runtime: {e}"))?;
+
+        // Bridge: expose LicenseRuntime as EntitlementProvider for existing services
+        let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
+            orbis_infra::adapters::license_runtime::LicenseEntitlementBridge::new(
+                license_runtime.clone(),
+            ),
+        );
 
         let system_service = Arc::new(orbis_app::services::SystemService::new(
             system_repo_impl.clone(),
@@ -683,6 +706,7 @@ impl AppState {
             system_repo: system_repo_impl,
             system_service,
             entitlement_provider,
+            license_runtime: license_runtime.clone(),
             solver_sidecar,
             app_data_dir: app_data_dir.to_path_buf(),
             // ── Employee Affairs & User Groups ─────────────────────────
@@ -702,6 +726,13 @@ impl AppState {
                 org_repo.clone(),
             ));
         let _scheduler_handle = autopilot_scheduler.spawn(60);
+
+        // Spawn background license sync (30s initial delay, then per-entitlement interval)
+        let _license_sync_handle =
+            orbis_infra::adapters::license_runtime::spawn_background_sync(
+                license_runtime.clone(),
+                30,
+            );
 
         Ok(state)
     }

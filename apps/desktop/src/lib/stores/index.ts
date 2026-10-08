@@ -1,6 +1,7 @@
 // ── Core Stores (loaded eagerly — used on every page) ─────────────
 export { authStore } from "./auth.svelte";
 export { systemStore } from "./system.svelte";
+export { licenseStore } from "./license.svelte";
 export { themeStore } from "./theme.svelte";
 export { uiStore } from "./ui.svelte";
 export { confirmStore } from "./confirm.svelte";

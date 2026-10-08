@@ -32,6 +32,7 @@ pub mod identity;
 pub mod identity_provisioning;
 pub mod integration;
 pub mod journal_entry;
+pub mod license;
 pub mod mfa;
 pub mod org_unit;
 pub mod organization;
