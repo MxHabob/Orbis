@@ -37,6 +37,15 @@ jobs:
       - name: Checkout default branch
         uses: actions/checkout@v4
 
+      - name: Require dispatch from main
+        env:
+          REF: ${{ github.ref }}
+        run: |
+          if [[ "$REF" != "refs/heads/main" ]]; then
+            echo "::error::Mulverse sync retries must be dispatched from main."
+            exit 1
+          fi
+
       - name: Validate requested release version
         shell: bash
         run: |
