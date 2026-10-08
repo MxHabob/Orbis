@@ -73,6 +73,7 @@ pub struct CreateClassRequest {
     pub name: String,
     pub name_ar: Option<String>,
     pub level: String,
+    pub capacity: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
@@ -213,6 +214,7 @@ async fn create_class(
             p.name,
             p.name_ar,
             p.level,
+            p.capacity,
         )
         .await?;
     Ok(ApiResponse::ok(class_to_dto(c)))

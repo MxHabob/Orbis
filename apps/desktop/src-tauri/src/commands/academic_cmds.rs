@@ -67,6 +67,7 @@ pub struct CreateClassInput {
     pub name: String,
     pub name_ar: Option<String>,
     pub level: String,
+    pub capacity: Option<i32>,
 }
 
 #[derive(Serialize)]
@@ -228,6 +229,7 @@ pub async fn academic_create_class(
             request.name,
             request.name_ar,
             request.level,
+            request.capacity,
         )
         .await
         .map_err(|e| e.to_string())?;

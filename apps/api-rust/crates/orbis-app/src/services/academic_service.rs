@@ -144,6 +144,7 @@ impl AcademicService {
         name: String,
         name_ar: Option<String>,
         level: String,
+        capacity: Option<i32>,
     ) -> Result<Class, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ClassWrite)
@@ -162,7 +163,7 @@ impl AcademicService {
             level,
             division: None,
             homeroom_teacher_id: None,
-            capacity: Some(30),
+            capacity: Some(capacity.unwrap_or(30).max(1)),
             current_students: Some(0),
             room_id: None,
             color: None,

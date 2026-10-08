@@ -750,6 +750,7 @@ export type CreateAccountRequest = {
 };
 
 export type CreateClassRequest = {
+    capacity?: number | null;
     level: string;
     name: string;
     name_ar?: string | null;
@@ -806,8 +807,8 @@ export type CreateFeeTemplateRequest = {
     is_mandatory?: boolean | null;
     name: string;
     name_ar?: string | null;
-    receivable_account_id: string;
-    revenue_account_id: string;
+    receivable_account_id?: string | null;
+    revenue_account_id?: string | null;
 };
 
 export type CreateFolderRequest = {

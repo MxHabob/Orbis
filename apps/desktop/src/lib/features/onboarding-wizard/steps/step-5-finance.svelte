@@ -121,11 +121,11 @@ async function handleCreateFeeTemplate() {
     const created = await api.createFeeTemplate({
       name: feeName.trim() || feeNameAr.trim(),
       name_ar: feeNameAr.trim() || undefined,
-      amount: Number(feeAmount) || 0,
+      default_amount: Number(feeAmount),
       currency: feeCurrency,
       category: feeCategory,
-      frequency: feeFrequency,
-      is_active: true,
+      frequency: feeFrequency === "yearly" ? "annual" : feeFrequency === "termly" ? "termly" : feeFrequency,
+      is_mandatory: true,
     });
 
     feeTemplates = [...feeTemplates, created];
@@ -382,7 +382,7 @@ async function deleteDiscountTemplate(template: DiscountTemplateDto) {
                   </div>
                   <div class="flex items-center gap-2">
                     <Badge variant="secondary" class="font-mono text-xs font-semibold">
-                      {formatNumber(Number(ft.amount))} {ft.currency || feeCurrency}
+                      {formatNumber(Number(ft.default_amount))} {ft.currency || feeCurrency}
                     </Badge>
                     <DeleteRecordButton label={ft.name_ar || ft.name} onDelete={() => deleteFeeTemplate(ft)} />
                   </div>

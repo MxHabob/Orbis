@@ -11,7 +11,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { formatCurrency } from "$lib/core/i18n";
+import { formatCurrency, l } from "$lib/core/i18n";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import {
@@ -90,13 +90,19 @@ function collapseAll() {
   expandedNodeIds = new Set();
 }
 
+function getNodeName(node: AccountNode): string {
+  return l(node.name_ar, node.name_en || node.name) || m.finance_ui_account_fallback_name();
+}
+
 function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
   if (!query.trim()) return nodes;
   const q = query.trim().toLowerCase();
 
   const res: AccountNode[] = [];
   for (const node of nodes) {
-    const nameMatch = (node.name_ar || node.name || "").toLowerCase().includes(q);
+    const nameAr = (node.name_ar || "").toLowerCase();
+    const nameEn = (node.name_en || node.name || "").toLowerCase();
+    const nameMatch = nameAr.includes(q) || nameEn.includes(q);
     const codeMatch = (node.code || "").toLowerCase().includes(q);
     const matchingChildren = node.children ? filterTree(node.children, query) : [];
 
@@ -189,7 +195,7 @@ function getSubtype(node: AccountNode): string | null {
           {@const isSelected = selectedAccountId === node.id}
           {@const bal = getBalance(node)}
           {@const subtype = getSubtype(node)}
-          {@const name = node.name_ar || node.name || m.finance_ui_account_fallback_name()}
+          {@const name = getNodeName(node)}
 
           <div class="flex flex-col">
             <!-- Tree Item Row (Classic 22px Compact) -->

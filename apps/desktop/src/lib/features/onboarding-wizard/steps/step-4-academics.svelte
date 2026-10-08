@@ -3,13 +3,19 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto } from "$lib/api";
+import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto, type OrgUnitDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
@@ -29,6 +35,7 @@ let successMessage = $state<string | null>(null);
 let subjects = $state<SubjectDto[]>([]);
 let classes = $state<ClassDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
+let orgUnits = $state<OrgUnitDto[]>([]);
 
 // Subject Creation Form
 let subjectName = $state("");
@@ -39,10 +46,10 @@ let subjectCreditHours = $state("3");
 // Class Creation Form
 let className = $state("");
 let classNameAr = $state("");
-let classCode = $state("");
 let classGrade = $state("");
 let classCapacity = $state<number>(30);
 let selectedPeriodId = $state<string>("");
+let selectedUnitId = $state<string>("");
 
 const STANDARD_SUBJECTS = [
   { code: "MATH-01", name: "Mathematics", nameAr: "الرياضيات", credits: "4" },
@@ -78,7 +85,6 @@ function applySubjectPreset(subject: typeof STANDARD_SUBJECTS[number]) {
 function applyClassPreset(classPreset: typeof STANDARD_CLASSES[number]) {
   className = classPreset.name;
   classNameAr = classPreset.nameAr;
-  classCode = classPreset.code;
   classGrade = classPreset.grade;
   classCapacity = 30;
 }
@@ -90,16 +96,21 @@ onMount(async () => {
 async function loadData() {
   try {
     isLoading = true;
-    const [subRes, classRes, periodRes] = await Promise.all([
+    const [subRes, classRes, periodRes, unitRes] = await Promise.all([
       api.listSubjects(),
       api.listClasses(),
       api.listAcademicPeriods(),
+      api.listOrgUnits(),
     ]);
     subjects = subRes;
     classes = classRes;
     periods = periodRes;
+    orgUnits = unitRes;
     if (periods.length > 0 && !selectedPeriodId) {
       selectedPeriodId = String(periods[0].id);
+    }
+    if (orgUnits.length > 0 && !selectedUnitId) {
+      selectedUnitId = String(orgUnits[0].id);
     }
   } catch (err: any) {
     console.error("Failed to load academic data:", err);
@@ -172,24 +183,36 @@ async function handleCreateClass() {
     toast.error(m.onboarding_step4_class_err_name());
     return;
   }
+  if (!selectedUnitId) {
+    toast.error(m.shared_ui_organizational_unit_required());
+    return;
+  }
+  if (!selectedPeriodId) {
+    toast.error(m.shared_ui_academic_period_required());
+    return;
+  }
+  if (!Number.isInteger(classCapacity) || classCapacity <= 0) {
+    toast.error(m.ui_copy_settings_contain_invalid_values_fae2c24c());
+    return;
+  }
 
   isSubmittingClass = true;
   successMessage = null;
 
   try {
     const newClass = await api.createClass({
+      unit_id: selectedUnitId,
+      period_id: selectedPeriodId,
       name: className.trim() || classNameAr.trim(),
       name_ar: classNameAr.trim() || undefined,
-      code: classCode.trim() || `CLS-${String(classes.length + 1).padStart(2, "0")}`,
-      period_id: selectedPeriodId || undefined,
-      grade_level: classGrade.trim() || undefined,
-      capacity: classCapacity > 0 ? classCapacity : 30,
+      level: classGrade.trim() || "1",
+      capacity: classCapacity,
     });
 
     classes = [...classes, newClass];
     className = "";
     classNameAr = "";
-    classCode = "";
+    classGrade = "";
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
@@ -205,13 +228,21 @@ async function handleBatchImportClasses() {
   successMessage = null;
 
   try {
+    if (!selectedUnitId || !selectedPeriodId) {
+      toast.error(
+        !selectedUnitId
+          ? m.shared_ui_organizational_unit_required()
+          : m.shared_ui_academic_period_required(),
+      );
+      return;
+    }
     for (const cls of STANDARD_CLASSES) {
       const created = await api.createClass({
+        unit_id: selectedUnitId,
+        period_id: selectedPeriodId,
         name: cls.name,
         name_ar: cls.nameAr,
-        code: cls.code,
-        period_id: selectedPeriodId || undefined,
-        grade_level: cls.grade,
+        level: cls.grade,
         capacity: 30,
       });
       classes = [...classes, created];
@@ -411,6 +442,47 @@ async function handleBatchImportClasses() {
         <!-- Class Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium">{m.common_word_unit()}</Label>
+              <Select
+                type="single"
+                bind:value={selectedUnitId}
+                disabled={orgUnits.length <= 1 || isSubmittingClass}
+              >
+                <SelectTrigger class="w-full">
+                  {orgUnits.find((unit) => String(unit.id) === selectedUnitId)?.name_ar ||
+                    orgUnits.find((unit) => String(unit.id) === selectedUnitId)?.name ||
+                    m.common_word_unit()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each orgUnits as unit (unit.id)}
+                    <SelectItem value={String(unit.id)}>
+                      {unit.name_ar || unit.name}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium">{m.common_period_form_title_create()}</Label>
+              <Select
+                type="single"
+                bind:value={selectedPeriodId}
+                disabled={periods.length <= 1 || isSubmittingClass}
+              >
+                <SelectTrigger class="w-full">
+                  {periods.find((period) => String(period.id) === selectedPeriodId)?.name ||
+                    m.common_period_form_title_create()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each periods as period (period.id)}
+                    <SelectItem value={String(period.id)}>{period.name}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2">
             <div class="sm:col-span-2">
               <BilingualNameFields
                 arId="onboarding-class-name-ar"
@@ -477,7 +549,7 @@ async function handleBatchImportClasses() {
                       {cls.name_ar || cls.name}
                     </div>
                     <div class="text-[10px] text-muted-foreground">
-                      {cls.grade_level || "Grade"} | {cls.capacity || 30}
+                      {cls.level} | {cls.capacity || 30}
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">

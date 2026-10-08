@@ -433,6 +433,7 @@ pub struct CreateAccountInput {
     pub name: String,
     pub name_ar: Option<String>,
     pub account_type: String,
+    pub sub_type: Option<String>,
     pub parent_id: Option<String>,
     pub currency: Option<String>,
 }
@@ -575,7 +576,9 @@ pub async fn finance_create_account(
             ctx.tenant_id,
             request.code,
             request.name,
+            request.name_ar,
             account_type,
+            request.sub_type,
             request.currency.unwrap_or_else(|| "SAR".to_string()),
             parent_id,
         )
@@ -714,80 +717,32 @@ pub async fn finance_create_fee_template(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<FeeTemplateDto>, String> {
     let ctx = make_ctx(&state);
-    let accounts = state
-        .finance_service
-        .list_accounts(ctx.tenant_id)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let rec_id = if let Some(ref s) = request.receivable_account_id {
-        Uuid::parse_str(s).map_err(|_| "Invalid receivable_account_id")?
-    } else {
-        accounts
-            .iter()
-            .find(|a| a.code == "110301" || a.code == "1103" || a.code.starts_with("1103"))
-            .map(|a| a.id)
-            .unwrap_or_else(Uuid::new_v4)
-    };
-
-    let rev_id = if let Some(ref s) = request.revenue_account_id {
-        Uuid::parse_str(s).map_err(|_| "Invalid revenue_account_id")?
-    } else {
-        accounts
-            .iter()
-            .find(|a| a.code == "410301" || a.code == "410101" || a.code.starts_with("41"))
-            .map(|a| a.id)
-            .unwrap_or_else(Uuid::new_v4)
-    };
-
-    let currency = request.currency.unwrap_or_else(|| "YER".to_string());
-    let freq = match request
-        .frequency
-        .as_deref()
-        .unwrap_or("yearly")
-        .to_lowercase()
-        .as_str()
-    {
-        "once" => FeeFrequency::Once,
-        "monthly" => FeeFrequency::Monthly,
-        "termly" | "per_term" => FeeFrequency::PerTerm,
-        _ => FeeFrequency::Annual,
-    };
-
-    let tmpl_id = Uuid::new_v4();
-    let code = request.code.unwrap_or_else(|| {
-        format!(
-            "FEE-{}",
-            tmpl_id.to_string().chars().take(6).collect::<String>()
-        )
-    });
     let levels = parse_levels_from_json(request.applicable_levels);
-    let now = chrono::Utc::now();
-
-    let tmpl = FeeTemplate {
-        id: tmpl_id,
-        org_id: ctx.tenant_id,
-        code,
-        name: request.name,
-        name_ar: request.name_ar,
-        category: request.category.unwrap_or_else(|| "tuition".to_string()),
-        default_amount: request.default_amount,
-        currency_code: currency,
-        revenue_account_id: rev_id,
-        receivable_account_id: rec_id,
-        applicable_levels: levels,
-        applicable_study_modes: None,
-        frequency: freq,
-        is_mandatory: request.is_mandatory.unwrap_or(true),
-        is_active: true,
-        created_at: now,
-        updated_at: now,
-    };
-
-    state
+    let receivable_account_id = request
+        .receivable_account_id
+        .map(|id| Uuid::parse_str(&id).map_err(|_| "Invalid receivable_account_id"))
+        .transpose()?;
+    let revenue_account_id = request
+        .revenue_account_id
+        .map(|id| Uuid::parse_str(&id).map_err(|_| "Invalid revenue_account_id"))
+        .transpose()?;
+    let tmpl = state
         .finance_service
-        .fee_template_repo
-        .save(&tmpl)
+        .create_fee_template(
+            &ctx,
+            ctx.tenant_id,
+            request.code,
+            request.name,
+            request.name_ar,
+            request.category,
+            request.default_amount,
+            request.currency.unwrap_or_else(|| "YER".to_string()),
+            receivable_account_id,
+            revenue_account_id,
+            levels,
+            request.frequency,
+            request.is_mandatory,
+        )
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(fee_template_to_dto(tmpl)))

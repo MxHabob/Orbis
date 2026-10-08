@@ -455,6 +455,17 @@ impl FinanceService {
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
+        if name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Fee template name is required".into(),
+            ));
+        }
+        if amount <= Decimal::ZERO {
+            return Err(DomainError::Validation(
+                "Fee template amount must be greater than zero".into(),
+            ));
+        }
+
         let template = self
             .fee_template_repo
             .find_by_id(template_id)
@@ -614,37 +625,122 @@ impl FinanceService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
+        code: Option<String>,
         name: String,
+        name_ar: Option<String>,
+        category: Option<String>,
         amount: Decimal,
         currency_code: String,
-        receivable_account_id: Uuid,
-        revenue_account_id: Uuid,
+        receivable_account_id: Option<Uuid>,
+        revenue_account_id: Option<Uuid>,
+        applicable_levels: Option<Vec<String>>,
+        frequency: Option<String>,
+        is_mandatory: Option<bool>,
     ) -> Result<FeeTemplate, DomainError> {
         self.permission_checker
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
+        let category = category.unwrap_or_else(|| "tuition".to_string());
+        let receivable_purpose = match category.as_str() {
+            "transport" => AccountPurpose::StudentReceivableTransport,
+            "activity" => AccountPurpose::StudentReceivableActivities,
+            _ => AccountPurpose::StudentReceivableTuition,
+        };
+        let revenue_purpose = match category.as_str() {
+            "registration" => AccountPurpose::RegistrationRevenue,
+            "transport" => AccountPurpose::TransportRevenue,
+            "books" => AccountPurpose::BooksRevenue,
+            _ => AccountPurpose::TuitionRevenue,
+        };
+        let receivable_account_id = match receivable_account_id {
+            Some(id) => id,
+            None => self
+                .resolve_default_account(org_id, receivable_purpose)
+                .await?
+                .id,
+        };
+        let revenue_account_id = match revenue_account_id {
+            Some(id) => id,
+            None => self
+                .resolve_default_account(org_id, revenue_purpose)
+                .await?
+                .id,
+        };
+        let receivable_account = self
+            .account_repo
+            .find_by_id(receivable_account_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Receivable account {} not found",
+                    receivable_account_id
+                ))
+            })?;
+        if receivable_account.org_id != org_id
+            || receivable_account.account_type
+                != orbis_domain::entities::account::AccountType::Asset
+        {
+            return Err(DomainError::Validation(
+                "The receivable account must be an asset account in this organization".into(),
+            ));
+        }
+        let revenue_account = self
+            .account_repo
+            .find_by_id(revenue_account_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Revenue account {} not found",
+                    revenue_account_id
+                ))
+            })?;
+        if revenue_account.org_id != org_id
+            || revenue_account.account_type
+                != orbis_domain::entities::account::AccountType::Revenue
+        {
+            return Err(DomainError::Validation(
+                "The revenue account must be a revenue account in this organization".into(),
+            ));
+        }
+
+        let frequency = match frequency.as_deref().unwrap_or("yearly") {
+            "once" => orbis_domain::entities::fee_template::FeeFrequency::Once,
+            "monthly" => orbis_domain::entities::fee_template::FeeFrequency::Monthly,
+            "termly" | "per_term" => {
+                orbis_domain::entities::fee_template::FeeFrequency::PerTerm
+            }
+            "yearly" | "annual" => orbis_domain::entities::fee_template::FeeFrequency::Annual,
+            value => {
+                return Err(DomainError::Validation(format!(
+                    "Unsupported fee frequency '{}'",
+                    value
+                )));
+            }
+        };
         let now = Utc::now();
         let tmpl_id = Uuid::new_v4();
 
         let tmpl = FeeTemplate {
             id: tmpl_id,
             org_id,
-            code: format!(
-                "FEE-{}",
-                tmpl_id.to_string().chars().take(6).collect::<String>()
-            ),
+            code: code.unwrap_or_else(|| {
+                format!(
+                    "FEE-{}",
+                    tmpl_id.to_string().chars().take(6).collect::<String>()
+                )
+            }),
             name,
-            name_ar: None,
-            category: "tuition".into(),
+            name_ar,
+            category,
             default_amount: amount,
             currency_code,
-            frequency: orbis_domain::entities::fee_template::FeeFrequency::PerTerm,
+            frequency,
             receivable_account_id,
             revenue_account_id,
-            applicable_levels: None,
+            applicable_levels,
             applicable_study_modes: None,
-            is_mandatory: true,
+            is_mandatory: is_mandatory.unwrap_or(true),
             is_active: true,
             created_at: now,
             updated_at: now,
@@ -806,7 +902,9 @@ impl FinanceService {
         org_id: Uuid,
         code: String,
         name: String,
+        name_ar: Option<String>,
         account_type: orbis_domain::entities::account::AccountType,
+        sub_type: Option<String>,
         currency_code: String,
         parent_id: Option<Uuid>,
     ) -> Result<Account, DomainError> {
@@ -821,9 +919,9 @@ impl FinanceService {
             org_id,
             code,
             name,
-            name_ar: None,
+            name_ar,
             account_type,
-            sub_type: None,
+            sub_type,
             parent_id,
             path,
             depth: 1,
