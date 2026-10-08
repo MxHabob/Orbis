@@ -7,7 +7,7 @@ use crate::ports::repositories::{
     JournalEntryRepository, PaymentRepository, PolicyRepository, StudentFeeRepository,
 };
 use chrono::{NaiveDate, TimeZone, Utc};
-use orbis_domain::entities::account::Account;
+use orbis_domain::entities::account::{Account, AccountType};
 use orbis_domain::entities::discount_template::DiscountTemplate;
 use orbis_domain::entities::fee_template::FeeTemplate;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
@@ -21,6 +21,18 @@ use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
+
+fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
+    account.org_id == org_id
+        && account.is_active
+        && account.account_type == AccountType::Asset
+        && (account.sub_type.as_deref().is_some_and(|sub_type| {
+            sub_type.eq_ignore_ascii_case("cash") || sub_type.eq_ignore_ascii_case("bank")
+        }) || matches!(
+            account.code.as_str(),
+            "110101" | "110102" | "110103" | "110104"
+        ))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -249,6 +261,11 @@ impl FinanceService {
             .find_by_id(account_id)
             .await?
             .ok_or_else(|| DomainError::Validation(format!("Account {} not found", account_id)))?;
+        if !is_cash_or_bank_treasury(&account, org_id) {
+            return Err(DomainError::Validation(
+                "Payment account must be an active cash or bank treasury account".into(),
+            ));
+        }
         let transaction_currency = account.currency_code;
 
         let mut exchange_rate_value = Decimal::from(1);
@@ -1694,6 +1711,11 @@ impl FinanceService {
                     input.treasury_account_id
                 ))
             })?;
+        if !is_cash_or_bank_treasury(&treasury, org_id) {
+            return Err(DomainError::Validation(
+                "Disbursement source must be an active cash or bank treasury account".into(),
+            ));
+        }
         let beneficiary = self
             .account_repo
             .find_by_id(input.beneficiary_account_id)
@@ -2434,5 +2456,67 @@ impl FinanceService {
             .await;
 
         Ok(sub_account)
+    }
+}
+
+#[cfg(test)]
+mod treasury_account_tests {
+    use super::*;
+
+    fn account(org_id: Uuid) -> Account {
+        let now = Utc::now();
+        Account {
+            id: Uuid::new_v4(),
+            org_id,
+            code: "CUSTOM-1".into(),
+            name: "Test account".into(),
+            name_ar: None,
+            account_type: AccountType::Asset,
+            sub_type: None,
+            parent_id: None,
+            path: "/CUSTOM-1/".into(),
+            depth: 1,
+            currency_code: "YER".into(),
+            entity_type: None,
+            entity_id: None,
+            is_control_account: false,
+            is_system_account: false,
+            is_active: true,
+            balances: serde_json::json!({}),
+            created_by: None,
+            updated_by: None,
+            version: 1,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    #[test]
+    fn accepts_only_active_organization_cash_or_bank_asset_accounts() {
+        let org_id = Uuid::new_v4();
+        let mut account = account(org_id);
+
+        account.sub_type = Some("cash".into());
+        assert!(is_cash_or_bank_treasury(&account, org_id));
+        account.sub_type = Some("BANK".into());
+        assert!(is_cash_or_bank_treasury(&account, org_id));
+        account.sub_type = Some("general".into());
+        assert!(!is_cash_or_bank_treasury(&account, org_id));
+
+        account.sub_type = None;
+        account.code = "110101".into();
+        assert!(is_cash_or_bank_treasury(&account, org_id));
+        account.code = "110105".into();
+        assert!(!is_cash_or_bank_treasury(&account, org_id));
+
+        account.code = "CUSTOM-1".into();
+        account.sub_type = Some("cash".into());
+        account.account_type = AccountType::Expense;
+        assert!(!is_cash_or_bank_treasury(&account, org_id));
+        account.account_type = AccountType::Asset;
+        account.is_active = false;
+        assert!(!is_cash_or_bank_treasury(&account, org_id));
+        account.is_active = true;
+        assert!(!is_cash_or_bank_treasury(&account, Uuid::new_v4()));
     }
 }

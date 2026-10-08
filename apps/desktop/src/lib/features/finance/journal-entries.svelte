@@ -328,7 +328,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-primary/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">

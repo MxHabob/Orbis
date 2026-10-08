@@ -452,7 +452,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Form Card -->
     {#if activeForm === "create"}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-primary/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">
@@ -552,7 +552,7 @@ function exportCsv() {
 
     <!-- In-Page Installment Split Form Card -->
     {#if activeForm === "split"}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-indigo-500/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">
@@ -637,7 +637,7 @@ function exportCsv() {
 
     <!-- In-Page Refund Form Card -->
     {#if activeForm === "refund"}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-rose-500/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">

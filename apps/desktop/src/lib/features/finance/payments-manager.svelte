@@ -34,12 +34,16 @@ import {
   CheckCircle,
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
-import { createAvailablePaymentMethodsQuery } from "$lib/features/finance";
+import {
+  createAvailablePaymentMethodsQuery,
+} from "$lib/features/finance";
+import { isCashOrBankAccount } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -116,20 +120,14 @@ onMount(async () => {
 async function loadData() {
   isLoading = true;
   try {
-    const [paymentsList, cashAccounts, enrollmentsList] = await Promise.all([
+    const [paymentsList, accountsList, enrollmentsList] = await Promise.all([
       api.listPayments().catch(() => []),
       api.listAccounts().catch(() => []),
       api.listEnrollments ? api.listEnrollments().catch(() => []) : Promise.resolve([]),
     ]);
 
     payments = paymentsList || [];
-    treasuries = (cashAccounts || []).filter(
-      (a: any) =>
-        a.type === "asset" ||
-        a.account_type === "asset" ||
-        a.sub_type === "cash" ||
-        a.sub_type === "bank"
-    );
+    treasuries = (accountsList || []).filter(isCashOrBankAccount);
 
     students = (enrollmentsList || []).map((e: any) => ({
       id: String(e.id),
@@ -196,6 +194,7 @@ function removeReceiptLine(lineId: number) {
 function clearForm() {
   receiptNumber = "";
   paymentDate = "";
+  sourceToken = "";
   receiptLines = [createReceiptLine()];
 }
 
@@ -285,13 +284,14 @@ const gridSource = $derived(
   payments.map((p, idx) => {
     const student = students.find((s) => String(s.id) === String(p.enrollment_id));
     const studentName = p.student_name || student?.full_name || "—";
-    const treasury = treasuries.find((t) => String(t.id) === String(p.cash_account_id));
+    const treasury = treasuries.find((t) => String(t.id) === String(p.account_id || p.cash_account_id));
     const treasuryName = treasury ? (treasury.name_ar || treasury.name || m.finance_ui_treasury()) : m.finance_ui_main_treasury();
     const amt = Number(p.amount || 0);
     const curr = p.currency || "YER";
 
     return {
       ...p,
+      payment_method: p.payment_method || p.method,
       __idx: idx + 1,
       receipt_display: p.receipt_number || p.id.slice(0, 8),
       date_display: p.paid_at ? formatDate(p.paid_at) : (p.payment_date ? formatDate(p.payment_date) : (p.created_at ? formatDate(p.created_at) : "—")),
@@ -299,7 +299,11 @@ const gridSource = $derived(
       treasury_display: treasuryName,
       amount_formatted: formatCurrency(amt, curr),
       currency_display: curr,
-      method_display: p.payment_method === "Bank" ? m.finance_ui_payment_method_bank_transfer() : (p.payment_method === "Check" ? m.finance_ui_payment_method_check() : m.finance_ui_payment_method_cash()),
+      method_display: (p.method || p.payment_method) === "bank_transfer" || p.payment_method === "Bank"
+        ? m.finance_ui_payment_method_bank_transfer()
+        : (p.method === "check" || p.payment_method === "Check"
+          ? m.finance_ui_payment_method_check()
+          : m.finance_ui_payment_method_cash()),
       notes_display: p.notes || "—",
       status_display: m.finance_ui_receipt_status(),
     };
@@ -428,7 +432,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-primary/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">
@@ -472,13 +476,11 @@ function exportCsv() {
                 </div>
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_receiving_account()}</Label>
-                  <SearchableSelect
+                  <AccountSearchInput
                     value={selectedTreasuryId}
                     placeholder={m.finance_ui_treasury_select_placeholder()}
-                    items={treasuries}
-                    getItemValue={(treasury) => String(treasury.id)}
-                    getItemLabel={(treasury) => `${treasury.name_ar || treasury.name} (${treasury.currency || "YER"})`}
-                    onchange={(value) => { if (value) selectedTreasuryId = value; }}
+                    accounts={treasuries}
+                    onchange={(value) => (selectedTreasuryId = value ?? "")}
                     disabled={isSubmitting}
                     class="h-9 w-full text-xs"
                   />

@@ -21,16 +21,11 @@ import {
   type PaymentDto,
 } from "$lib/features/finance";
 import { api, extractErrorMessage, type StudentDto } from "$lib/api";
+import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Skeleton } from "@orbis/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import {
   Banknotes,
@@ -289,21 +284,14 @@ const rtl = $derived(getLocale() === "ar");
       <div class="flex items-center gap-1.5 bg-background border border-border/80 rounded-md px-2.5 py-1 text-[11px]">
         <BuildingLibrary size={13} class="text-muted-foreground" />
         <span class="text-muted-foreground">{m.finance_ui_receiving_treasury_label()}</span>
-        <Select
-          type="single"
-          value={formAccountId || activeAccountId}
-          onValueChange={(value) => (formAccountId = value ?? "")}
-        >
-          <SelectTrigger class="h-7 max-w-48 border-0 bg-transparent px-1 text-[11px] font-medium">
-            {cashAccounts.find((account) => account.id === (formAccountId || activeAccountId))?.name
-              ?? m.finance_ui_receiving_treasury_label()}
-          </SelectTrigger>
-          <SelectContent>
-          {#each cashAccounts as account (account.id)}
-            <SelectItem value={account.id}>{account.name} ({account.currency})</SelectItem>
-          {/each}
-          </SelectContent>
-        </Select>
+        <AccountSearchInput
+          value={activeAccountId}
+          accounts={cashAccounts}
+          placeholder={m.finance_ui_receiving_treasury_label()}
+          onchange={(accountId) => (formAccountId = accountId ?? "")}
+          size="sm"
+          class="max-w-44 border-0 bg-transparent font-medium"
+        />
       </div>
 
       <div class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded px-2 py-1">

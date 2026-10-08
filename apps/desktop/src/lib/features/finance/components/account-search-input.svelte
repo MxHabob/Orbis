@@ -71,8 +71,11 @@ const filteredByTypeAccounts = $derived.by(() => {
     ? accountTypeFilter.map((t) => t.toLowerCase())
     : [accountTypeFilter.toLowerCase()];
   return allAccounts.filter((a) => {
-    const type = (a.account_type || (a as any).type || (a as any).sub_type || "").toLowerCase();
-    return types.includes(type);
+    const accountTypes = [
+      a.account_type,
+      a.sub_type,
+    ].filter((type): type is string => Boolean(type)).map((type) => type.toLowerCase());
+    return accountTypes.some((type) => types.includes(type));
   });
 });
 
@@ -103,8 +106,9 @@ const filteredResults = $derived.by(() => {
     const code = String(acc.code || "").toLowerCase();
     const name = String(acc.name || "").toLowerCase();
     const nameAr = String(acc.name_ar || "").toLowerCase();
-    const type = String(acc.account_type || (acc as any).type || "").toLowerCase();
-    return code.includes(query) || name.includes(query) || nameAr.includes(query) || type.includes(query);
+    const type = String(acc.account_type || "").toLowerCase();
+    const subType = String(acc.sub_type || "").toLowerCase();
+    return code.includes(query) || name.includes(query) || nameAr.includes(query) || type.includes(query) || subType.includes(query);
   }).slice(0, 50);
 });
 

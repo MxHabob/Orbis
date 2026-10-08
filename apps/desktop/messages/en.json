@@ -1493,7 +1493,6 @@
   "common_ledger_name_en": "Name (English)",
   "common_ledger_period_all": "All Time",
   "common_ledger_placeholder_parent": "Select parent account...",
-  "common_ledger_search_parent": "Search main account...",
   "common_ledger_tab_cash_account": "Cash and Bank Account",
   "common_ledger_tab_entity": "Entity Account",
   "common_ledger_tab_gl": "GL Account",

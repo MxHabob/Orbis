@@ -15,7 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import { toast } from "@orbis/ui";
 import {
   cashAccountInputSchema,
@@ -119,24 +119,6 @@ let enType = $state<"vendor" | "partner" | "employee" | "student">("vendor");
 let enNameAr = $state("");
 let enNameEn = $state("");
 
-// Derived Combobox Items (All accounts across the Chart of Accounts)
-const parentItems = $derived.by(() => {
-  return [...ledgers]
-    .sort((a, b) => String(a.code || "").localeCompare(String(b.code || ""), undefined, { numeric: true }))
-    .map((l) => ({
-      id: l.id,
-      label: `${l.code} - ${l.name}`,
-      value: l.id,
-      code: l.code,
-      type: l.account_type || "asset",
-      depth: l.parent_id ?? 1,
-    }));
-});
-
-const selectedParentItem = $derived(
-  parentItems.find((item) => item.value === glParentId),
-);
-
 // Suggest next sequential code when parent is selected
 const suggestedCode = $derived.by(() => {
   if (!glParentId) return "";
@@ -168,14 +150,10 @@ const suggestedCode = $derived.by(() => {
   return `${parent.code}${children.length + 1}`;
 });
 
-function handleParentSelect(item: {
-  id: string;
-  label: string;
-  value: string;
-}) {
-  glParentId = item.value;
+function handleParentChange(accountId: string | null) {
+  glParentId = accountId ?? "";
   // Inherit account type from selected parent
-  const parentAcc = ledgers.find((l) => l.id === item.value);
+  const parentAcc = ledgers.find((ledger) => ledger.id === glParentId);
   if (parentAcc) {
     glAccountType =parentAcc.account_type || "asset";
   }
@@ -349,19 +327,12 @@ async function handleSubmit(e: SubmitEvent) {
         <!-- Parent Account Select -->
         <FormField label={m.common_ledger_label_parent()} required>
           {#snippet children()}
-          <SearchableSelect
+          <AccountSearchInput
             value={glParentId}
             placeholder={m.common_ledger_placeholder_parent()}
-            searchPlaceholder={m.common_ledger_search_parent()}
-            items={ledgers}
-            getItemValue={(l) => String(l.id)}
-            getItemLabel={(l) => `${l.code} - ${l.name}`}
-            getItemSubtitle={(l) => l.code}
-            getItemBadge={(l) => l.account_type || "asset"}
-            onchange={(val) => {
-              const item = parentItems.find((p) => p.value === val);
-              if (item) handleParentSelect(item);
-            }}
+            accounts={ledgers}
+            onchange={handleParentChange}
+            disabled={isSubmitting || isLoading}
             class="w-full text-xs"
           />
           {/snippet}
