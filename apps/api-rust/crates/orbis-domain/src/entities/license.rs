@@ -378,8 +378,7 @@ impl LicenseSnapshot {
     pub fn trial_days_remaining(&self) -> i64 {
         match self.trial_started_at {
             Some(started) => {
-                let end = started
-                    + chrono::Duration::days(self.trial_policy.duration_days as i64);
+                let end = started + chrono::Duration::days(self.trial_policy.duration_days as i64);
                 let remaining = end.signed_duration_since(Utc::now()).num_days();
                 remaining.max(0)
             }
@@ -505,12 +504,8 @@ impl LicenseSnapshot {
 
     /// Days until license expiration. Returns `None` for perpetual licenses.
     pub fn days_until_expiry(&self) -> Option<i64> {
-        self.valid_until().map(|until| {
-            until
-                .signed_duration_since(Utc::now())
-                .num_days()
-                .max(0)
-        })
+        self.valid_until()
+            .map(|until| until.signed_duration_since(Utc::now()).num_days().max(0))
     }
 }
 

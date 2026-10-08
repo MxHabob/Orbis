@@ -13,6 +13,7 @@ use uuid::Uuid;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
+use orbis_domain::iam::permission::Permission;
 
 #[derive(Serialize, ToSchema)]
 pub struct IntegrationDto {
@@ -29,6 +30,8 @@ pub struct IntegrationDto {
 pub struct IntegrationStatusDto {
     pub connected: bool,
     pub is_enabled: bool,
+    pub is_healthy: Option<bool>,
+    pub health_error: Option<String>,
     pub config: Option<IntegrationDto>,
 }
 
@@ -53,6 +56,24 @@ async fn connect_app(
     State(state): State<AppState>,
     Json(p): Json<ConnectAppRequest>,
 ) -> Result<Json<ApiResponse<IntegrationDto>>, ApiError> {
+    if p.category.eq_ignore_ascii_case("storage") {
+        state
+            .integration_service
+            .permission_checker
+            .check(&ctx, Permission::OrganizationWrite)
+            .await?;
+        state
+            .storage_resolver
+            .check_connection(
+                ctx.tenant_id,
+                &p.provider_name,
+                &p.category,
+                &p.settings,
+                &p.secrets,
+            )
+            .await
+            .map_err(|error| ApiError::bad_request(error.to_string()))?;
+    }
     let config = state
         .integration_service
         .connect_app(
@@ -113,22 +134,40 @@ async fn get_integration_status(
         .get_integration_by_provider(ctx.tenant_id, &provider_name)
         .await?;
     match config_opt {
-        Some(c) => Ok(ApiResponse::ok(IntegrationStatusDto {
-            connected: true,
-            is_enabled: c.is_enabled,
-            config: Some(IntegrationDto {
-                id: c.id,
-                org_id: c.org_id,
-                provider_name: c.provider_name,
-                category: c.category,
+        Some(c) => {
+            let (is_healthy, health_error) = if c.category.eq_ignore_ascii_case("storage") {
+                match state
+                    .storage_resolver
+                    .check_integration_connection(ctx.tenant_id, &c.provider_name)
+                    .await
+                {
+                    Ok(()) => (Some(true), None),
+                    Err(error) => (Some(false), Some(error.to_string())),
+                }
+            } else {
+                (None, None)
+            };
+            Ok(ApiResponse::ok(IntegrationStatusDto {
+                connected: true,
                 is_enabled: c.is_enabled,
-                env: c.env,
-                settings: c.settings,
-            }),
-        })),
+                is_healthy,
+                health_error,
+                config: Some(IntegrationDto {
+                    id: c.id,
+                    org_id: c.org_id,
+                    provider_name: c.provider_name,
+                    category: c.category,
+                    is_enabled: c.is_enabled,
+                    env: c.env,
+                    settings: c.settings,
+                }),
+            }))
+        }
         None => Ok(ApiResponse::ok(IntegrationStatusDto {
             connected: false,
             is_enabled: false,
+            is_healthy: None,
+            health_error: None,
             config: None,
         })),
     }

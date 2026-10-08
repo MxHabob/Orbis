@@ -118,9 +118,8 @@ impl MulverseLicenseRuntime {
             DomainError::Internal(format!("Failed to serialize license snapshot: {e}"))
         })?;
 
-        std::fs::write(&path, json).map_err(|e| {
-            DomainError::Internal(format!("Failed to write license snapshot: {e}"))
-        })?;
+        std::fs::write(&path, json)
+            .map_err(|e| DomainError::Internal(format!("Failed to write license snapshot: {e}")))?;
 
         debug!("License snapshot persisted to {:?}", path);
         Ok(())
@@ -181,9 +180,7 @@ impl MulverseLicenseRuntime {
                 }
 
                 // Check if expiring soon (within 14 days)
-                let days_remaining = valid_until
-                    .signed_duration_since(now)
-                    .num_days();
+                let days_remaining = valid_until.signed_duration_since(now).num_days();
                 if days_remaining <= 14 && days_remaining > 0 {
                     snapshot.state = LicenseState::Expiring;
                     return;
@@ -192,9 +189,7 @@ impl MulverseLicenseRuntime {
 
             // Check offline grace period
             if let Some(last_sync) = snapshot.last_sync_at {
-                let days_offline = now
-                    .signed_duration_since(last_sync)
-                    .num_days();
+                let days_offline = now.signed_duration_since(last_sync).num_days();
                 if days_offline > se.payload.offline_grace_period_days as i64 {
                     if !se.payload.offline_allowed {
                         warn!("Offline mode forbidden by license");
@@ -274,11 +269,8 @@ impl MulverseLicenseRuntime {
             .ok_or(LicenseVerificationError::UnknownKeyId)?;
 
         // Decode the public key
-        let key_bytes = base64::Engine::decode(
-            &base64::engine::general_purpose::STANDARD,
-            key_b64,
-        )
-        .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
+        let key_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, key_b64)
+            .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
 
         if key_bytes.len() != 32 {
             return Err(LicenseVerificationError::InvalidPublicKey);
@@ -288,11 +280,9 @@ impl MulverseLicenseRuntime {
         key_array.copy_from_slice(&key_bytes);
 
         // Decode the signature
-        let sig_bytes = base64::Engine::decode(
-            &base64::engine::general_purpose::STANDARD,
-            &entitlement.sig,
-        )
-        .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
+        let sig_bytes =
+            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &entitlement.sig)
+                .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
 
         // Canonicalize the payload to JSON for verification
         let canonical_payload = serde_json::to_string(&entitlement.payload)
@@ -343,10 +333,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             .read()
             .map(|guard| guard.clone())
             .unwrap_or_else(|_| {
-                LicenseSnapshot::new_unavailable(
-                    "unknown".to_string(),
-                    self.app_version.clone(),
-                )
+                LicenseSnapshot::new_unavailable("unknown".to_string(), self.app_version.clone())
             })
     }
 
@@ -361,9 +348,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         if let Some(mut snapshot) = self.load_persisted_snapshot() {
             // Verify signature if we have a signed entitlement
             if snapshot.signed_entitlement.is_some() {
-                match self.verify_entitlement_signature(
-                    snapshot.signed_entitlement.as_ref().unwrap(),
-                ) {
+                match self
+                    .verify_entitlement_signature(snapshot.signed_entitlement.as_ref().unwrap())
+                {
                     Ok(()) => {
                         debug!("Persisted signed entitlement verified");
                     }
@@ -415,8 +402,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         product_key: &str,
     ) -> Result<ActivationResponse, DomainError> {
         // Validate product key format
-        validate_product_key(product_key)
-            .map_err(|e| DomainError::Validation(e))?;
+        validate_product_key(product_key).map_err(|e| DomainError::Validation(e))?;
 
         let installation_id = self.installation_id();
 
@@ -426,9 +412,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             installation_id: installation_id.clone(),
             platform: std::env::consts::OS.to_string(),
             app_version: self.app_version.clone(),
-            machine_label: hostname::get()
-                .ok()
-                .and_then(|h| h.into_string().ok()),
+            machine_label: hostname::get().ok().and_then(|h| h.into_string().ok()),
         };
 
         info!(
@@ -644,12 +628,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         self.current_snapshot().get_limit(key)
     }
 
-    fn check_limit(
-        &self,
-        key: &str,
-        current_count: u64,
-        amount: u64,
-    ) -> Result<(), DomainError> {
+    fn check_limit(&self, key: &str, current_count: u64, amount: u64) -> Result<(), DomainError> {
         self.current_snapshot()
             .check_limit(key, current_count, amount)
             .map_err(|e| DomainError::Forbidden(e))
@@ -699,9 +678,7 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
             LicenseState::Active | LicenseState::Expiring => {
                 orbis_domain::entities::entitlement::EntitlementStatus::Active
             }
-            LicenseState::Trial => {
-                orbis_domain::entities::entitlement::EntitlementStatus::Trial
-            }
+            LicenseState::Trial => orbis_domain::entities::entitlement::EntitlementStatus::Trial,
             LicenseState::OfflineGrace => {
                 orbis_domain::entities::entitlement::EntitlementStatus::GracePeriod
             }
@@ -735,8 +712,7 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
             .valid_until()
             .or_else(|| {
                 snapshot.trial_started_at.map(|started| {
-                    started
-                        + chrono::Duration::days(snapshot.trial_policy.duration_days as i64)
+                    started + chrono::Duration::days(snapshot.trial_policy.duration_days as i64)
                 })
             })
             .map(|dt| dt.to_rfc3339());
@@ -781,8 +757,7 @@ fn load_or_generate_installation_id(app_data_dir: &Path) -> Result<String, Strin
             std::fs::create_dir_all(parent)
                 .map_err(|e| format!("Failed to create AppData dir: {e}"))?;
         }
-        std::fs::write(&path, &id)
-            .map_err(|e| format!("Failed to write installation ID: {e}"))?;
+        std::fs::write(&path, &id).map_err(|e| format!("Failed to write installation ID: {e}"))?;
 
         info!(installation_id = %id, "Generated new installation identity");
         Ok(id)

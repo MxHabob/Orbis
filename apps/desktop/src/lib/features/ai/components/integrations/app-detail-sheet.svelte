@@ -29,7 +29,10 @@
   } = $props();
 
   const queryClient = useQueryClient();
-  const providerName = $derived(app.adapter_name ?? app.id);
+  const providerName = $derived(app.id);
+  const legacyProviderName = $derived(
+    app.adapter_name && app.adapter_name !== app.id ? app.adapter_name : null,
+  );
   let isConnecting = $state(false);
   let isDisconnecting = $state(false);
   let connectSheetOpen = $state(false);
@@ -39,13 +42,19 @@
     queryKey: ["integration-status", orgId, providerName],
     queryFn: async () => {
       const status = await api.getIntegrationStatus(providerName);
-      return status?.connected ?? false;
+      if (!status?.connected && legacyProviderName) {
+        return api.getIntegrationStatus(legacyProviderName);
+      }
+      return status;
     },
     enabled: !!providerName,
     staleTime: 30 * 1000,
   }));
 
-  const isConnected = $derived(statusQuery.data ?? false);
+  const isConnected = $derived(statusQuery.data?.connected ?? false);
+  const connectedProviderName = $derived(
+    statusQuery.data?.config?.provider_name ?? providerName,
+  );
   const activeFeatures = $derived(
     typeof document !== "undefined" &&
       document.documentElement.dir === "rtl" &&
@@ -89,7 +98,13 @@
           settings[key] = value;
         }
       }
-
+      if (
+        app.provider_trait === "NotificationProvider" &&
+        app.notification_channels?.length
+      ) {
+        settings.__notification_channels = app.notification_channels;
+      }
+ 
       await api.connectApp({
         provider_name: providerName,
         category: app.category || "ai-provider",
@@ -102,6 +117,13 @@
         queryClient.invalidateQueries({
           queryKey: ["integration-status", orgId, providerName],
         }),
+        ...(legacyProviderName
+          ? [
+              queryClient.invalidateQueries({
+                queryKey: ["integration-status", orgId, legacyProviderName],
+              }),
+            ]
+          : []),
         queryClient.invalidateQueries({ queryKey: ["integration"] }),
       ]);
       toast.success(m.ui_integration_connected({ name: app.name }));
@@ -119,11 +141,18 @@
     if (isDisconnecting) return;
     isDisconnecting = true;
     try {
-      await api.disconnectApp(providerName);
+      await api.disconnectApp(connectedProviderName);
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["integration-status", orgId, providerName],
         }),
+        ...(legacyProviderName
+          ? [
+              queryClient.invalidateQueries({
+                queryKey: ["integration-status", orgId, legacyProviderName],
+              }),
+            ]
+          : []),
         queryClient.invalidateQueries({ queryKey: ["integration"] }),
       ]);
       toast.success(m.ui_integration_disconnected({ name: app.name }));
@@ -213,6 +242,19 @@
           {/if}
         </div>
       </SheetHeader>
+
+      {#if app.category === "storage" && isConnected && statusQuery.data?.is_healthy === false}
+        <div class="mx-6 mt-4 flex items-start justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive" role="alert">
+          <span>{statusQuery.data.health_error || m.common_action_failed()}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onclick={() => void statusQuery.refetch()}
+          >
+            {m.onboarding_retry()}
+          </Button>
+        </div>
+      {/if}
 
       <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
         <Accordion type="multiple" defaultValue={["description", "features"]} class="mt-3">

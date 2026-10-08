@@ -3,6 +3,7 @@
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
+use orbis_app::ports::storage::StorageAdapterResolver;
 use orbis_app::services::{
     CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput,
 };
@@ -137,6 +138,13 @@ pub async fn document_upload(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<DocumentDto>, String> {
     let ctx = make_ctx(&state);
+    let storage_provider = state
+        .storage_resolver
+        .resolve(ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?
+        .provider_id()
+        .to_string();
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|e| Uuid::parse_str(&e).ok());
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
@@ -167,9 +175,7 @@ pub async fn document_upload(
         mime_type: request.mime_type,
         extension: request.extension,
         checksum_sha256: request.checksum_sha256,
-        storage_provider: request
-            .storage_provider
-            .unwrap_or_else(|| "local".to_string()),
+        storage_provider,
         file_path: request.file_path.clone(),
         storage_key: request.storage_key.or(Some(request.file_path)),
         url: request.url,

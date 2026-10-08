@@ -1,6 +1,4 @@
-use async_trait::async_trait;
 use orbis_app::context::RequestContext;
-use orbis_app::ports::gateways::NotificationPort;
 use orbis_domain::errors::DomainError;
 use reqwest::Client;
 
@@ -20,23 +18,8 @@ impl WhatsAppAdapter {
             client: Client::new(),
         }
     }
-}
 
-#[async_trait]
-impl NotificationPort for WhatsAppAdapter {
-    async fn send_email(
-        &self,
-        _ctx: &RequestContext,
-        _to: &str,
-        _subject: &str,
-        _body: &str,
-    ) -> Result<(), DomainError> {
-        Err(DomainError::Validation(
-            "WhatsAppAdapter cannot send Email messages".into(),
-        ))
-    }
-
-    async fn send_whatsapp(
+    pub async fn send_whatsapp(
         &self,
         _ctx: &RequestContext,
         to: &str,
@@ -74,7 +57,7 @@ impl NotificationPort for WhatsAppAdapter {
         Ok(())
     }
 
-    async fn send_sms(
+    pub async fn send_sms(
         &self,
         _ctx: &RequestContext,
         to: &str,

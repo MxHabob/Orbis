@@ -71,9 +71,7 @@ impl MulverseClient {
         let url = format!("{}/api/v1/public/licenses/activate", self.base_url);
         debug!(product_key_prefix = %&request.product_key[..10], "Activating with Mulverse Platform");
 
-        let response = self
-            .post_with_retry(&url, request)
-            .await?;
+        let response = self.post_with_retry(&url, request).await?;
 
         if response.status() == reqwest::StatusCode::CREATED
             || response.status() == reqwest::StatusCode::OK
@@ -98,9 +96,7 @@ impl MulverseClient {
         let url = format!("{}/api/v1/public/licenses/refresh", self.base_url);
         debug!(license_id = %request.license_id, "Refreshing license with Mulverse Platform");
 
-        let response = self
-            .post_with_retry(&url, request)
-            .await?;
+        let response = self.post_with_retry(&url, request).await?;
 
         if response.status().is_success() {
             let body = response
@@ -116,16 +112,11 @@ impl MulverseClient {
     /// Deactivate an installation (release device seat).
     ///
     /// `POST /api/v1/public/licenses/deactivate`
-    pub async fn deactivate(
-        &self,
-        request: &DeactivationRequest,
-    ) -> Result<(), MulverseApiError> {
+    pub async fn deactivate(&self, request: &DeactivationRequest) -> Result<(), MulverseApiError> {
         let url = format!("{}/api/v1/public/licenses/deactivate", self.base_url);
         debug!(license_id = %request.license_id, "Deactivating with Mulverse Platform");
 
-        let response = self
-            .post_with_retry(&url, request)
-            .await?;
+        let response = self.post_with_retry(&url, request).await?;
 
         if response.status().is_success() {
             Ok(())
@@ -141,9 +132,7 @@ impl MulverseClient {
         let url = format!("{}/api/v1/public/keys/active", self.base_url);
         debug!("Fetching active signing key from Mulverse Platform");
 
-        let response = self
-            .get_with_retry(&url)
-            .await?;
+        let response = self.get_with_retry(&url).await?;
 
         if response.status().is_success() {
             let body = response
@@ -167,11 +156,9 @@ impl MulverseClient {
         platform: &str,
         architecture: &str,
     ) -> Result<UpdateCheckResponse, MulverseApiError> {
-        let mut url = reqwest::Url::parse(&format!(
-            "{}/api/v1/public/updates/check",
-            self.base_url
-        ))
-        .map_err(|e| MulverseApiError::ParseError(e.to_string()))?;
+        let mut url =
+            reqwest::Url::parse(&format!("{}/api/v1/public/updates/check", self.base_url))
+                .map_err(|e| MulverseApiError::ParseError(e.to_string()))?;
         url.query_pairs_mut()
             .append_pair("product_key", product_key)
             .append_pair("channel", channel)
@@ -181,9 +168,7 @@ impl MulverseClient {
         let url = url.to_string();
         debug!(version = %current_version, "Checking for updates with Mulverse Platform");
 
-        let response = self
-            .get_with_retry(&url)
-            .await?;
+        let response = self.get_with_retry(&url).await?;
 
         if response.status().is_success() {
             let body = response
@@ -245,10 +230,7 @@ impl MulverseClient {
     }
 
     /// GET with exponential backoff and jitter.
-    async fn get_with_retry(
-        &self,
-        url: &str,
-    ) -> Result<reqwest::Response, MulverseApiError> {
+    async fn get_with_retry(&self, url: &str) -> Result<reqwest::Response, MulverseApiError> {
         let mut last_error = None;
 
         for attempt in 0..MAX_RETRIES {
@@ -366,12 +348,18 @@ impl std::fmt::Display for MulverseApiError {
 impl MulverseApiError {
     /// Whether this error is a transient network issue (not a license problem).
     pub fn is_network_error(&self) -> bool {
-        matches!(self, Self::NetworkError(_) | Self::RateLimited | Self::ServerError(_))
+        matches!(
+            self,
+            Self::NetworkError(_) | Self::RateLimited | Self::ServerError(_)
+        )
     }
 
     /// Whether this error indicates the license/key is invalid or revoked.
     pub fn is_license_error(&self) -> bool {
-        matches!(self, Self::Forbidden(_) | Self::NotFound(_) | Self::SeatLimitExceeded(_))
+        matches!(
+            self,
+            Self::Forbidden(_) | Self::NotFound(_) | Self::SeatLimitExceeded(_)
+        )
     }
 }
 

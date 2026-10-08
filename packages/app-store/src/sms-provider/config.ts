@@ -72,6 +72,7 @@ Send notifications to entire classes or the whole school at once.`,
     },
   ],
   provider_trait: "NotificationProvider",
+  notification_channels: ["sms"],
 };
 
 export default config;

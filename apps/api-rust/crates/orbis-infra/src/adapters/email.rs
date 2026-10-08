@@ -1,6 +1,4 @@
-use async_trait::async_trait;
 use orbis_app::context::RequestContext;
-use orbis_app::ports::gateways::NotificationPort;
 use orbis_domain::errors::DomainError;
 use reqwest::Client;
 use serde_json::json;
@@ -17,15 +15,8 @@ impl EmailAdapter {
             client: Client::new(),
         }
     }
-}
 
-// Partial implementation for NotificationPort
-// Note: NotificationPort requires both send_email and send_whatsapp,
-// but in a real system we might split the traits.
-// For now, EmailAdapter just errors on whatsapp.
-#[async_trait]
-impl NotificationPort for EmailAdapter {
-    async fn send_email(
+    pub async fn send_email(
         &self,
         _ctx: &RequestContext,
         to: &str,
@@ -62,16 +53,5 @@ impl NotificationPort for EmailAdapter {
         }
 
         Ok(())
-    }
-
-    async fn send_whatsapp(
-        &self,
-        _ctx: &RequestContext,
-        _to: &str,
-        _message: &str,
-    ) -> Result<(), DomainError> {
-        Err(DomainError::Validation(
-            "EmailAdapter cannot send WhatsApp messages".into(),
-        ))
     }
 }

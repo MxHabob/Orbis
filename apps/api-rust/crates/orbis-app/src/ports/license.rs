@@ -95,12 +95,7 @@ pub trait LicenseRuntime: Send + Sync {
     /// Check if creating resources would exceed a license limit.
     ///
     /// Returns `Ok(())` if within limits, `Err` with detail if exceeded.
-    fn check_limit(
-        &self,
-        key: &str,
-        current_count: u64,
-        amount: u64,
-    ) -> Result<(), DomainError>;
+    fn check_limit(&self, key: &str, current_count: u64, amount: u64) -> Result<(), DomainError>;
 
     /// Verify the current signed entitlement's cryptographic signature.
     ///

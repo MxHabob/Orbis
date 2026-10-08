@@ -4,6 +4,7 @@ use hmac::{Hmac, Mac};
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use tokio::io::AsyncReadExt;
+use uuid::Uuid;
 
 use orbis_app::ports::storage::{ObjectStream, StorageAdapter};
 use orbis_domain::entities::storage::{
@@ -157,24 +158,10 @@ impl StorageAdapter for S3StorageAdapter {
     }
 
     async fn check_health(&self) -> Result<(), StorageError> {
-        let url = format!(
-            "{}/{}",
-            self.config.endpoint.trim_end_matches('/'),
-            self.config.bucket
-        );
-        let resp =
-            self.http_client.head(&url).send().await.map_err(|e| {
-                StorageError::Connection(format!("S3 connection check failed: {e}"))
-            })?;
-
-        if resp.status().is_success() || resp.status().as_u16() == 403 {
-            Ok(())
-        } else {
-            Err(StorageError::Connection(format!(
-                "S3 bucket check returned status: {}",
-                resp.status()
-            )))
-        }
+        let key = format!(".orbis-health-check/{}", Uuid::new_v4());
+        self.put_bytes(&key, b"orbis-storage-health-check", "text/plain")
+            .await?;
+        self.delete_object(&key).await
     }
 
     async fn put_object(

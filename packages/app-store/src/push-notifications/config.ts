@@ -45,6 +45,7 @@ Subscribe users to topics (class, grade level, school-wide) for targeted notific
     },
   ],
   provider_trait: "NotificationProvider",
+  notification_channels: ["push"],
 };
 
 export default config;

@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::autopilot::engine::AutopilotEngine;
 use crate::autopilot::evaluator::AutopilotEvaluator;
 use crate::context::RequestContext;
+use crate::ports::gateways::NotificationPort;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{AutopilotTaskRepository, PolicyRepository};
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskStatus};
@@ -31,6 +32,7 @@ pub struct AutopilotService {
     pub task_repo: Arc<dyn AutopilotTaskRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    pub notification_port: Option<Arc<dyn NotificationPort>>,
 }
 
 impl AutopilotService {
@@ -47,7 +49,13 @@ impl AutopilotService {
             task_repo,
             policy_repo,
             permission_checker,
+            notification_port: None,
         }
+    }
+
+    pub fn with_notification_port(mut self, notification_port: Arc<dyn NotificationPort>) -> Self {
+        self.notification_port = Some(notification_port);
+        self
     }
 
     /// Triggers an immediate Autopilot evaluation tick for the organization.

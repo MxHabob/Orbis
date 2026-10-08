@@ -4,6 +4,7 @@ use uuid::Uuid;
 use super::academic_policy::{AcademicPolicy, RankingScope, RoundingMode, TiePolicy};
 use super::admission::AdmissionConfiguration;
 use rust_decimal::Decimal;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OrganizationSettings {
@@ -154,6 +155,8 @@ impl Default for FinanceSettings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct NotificationSettings {
+    #[serde(default)]
+    pub default_integration_ids: HashMap<String, Uuid>,
     /// Default Integration UUID for Email delivery (e.g. SendGrid, Amazon SES)
     pub email_integration_id: Option<Uuid>,
     /// Default Integration UUID for SMS delivery (e.g. Twilio, Unifonic)
@@ -169,6 +172,7 @@ pub struct NotificationSettings {
 impl Default for NotificationSettings {
     fn default() -> Self {
         Self {
+            default_integration_ids: HashMap::new(),
             email_integration_id: None,
             sms_integration_id: None,
             whatsapp_integration_id: None,

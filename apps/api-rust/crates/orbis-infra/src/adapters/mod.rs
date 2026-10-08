@@ -8,6 +8,7 @@ pub mod llm_adapter;
 pub mod mada;
 pub mod moyasar;
 pub mod mulverse_client;
+pub mod notification;
 pub mod report_adapter;
 pub mod report_defaults;
 pub mod resolver;

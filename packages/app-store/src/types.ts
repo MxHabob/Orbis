@@ -105,6 +105,8 @@ export interface OrbisApp {
    * LlmProvider, IntegrationProvider, NotificationProvider, StorageProvider
    */
   provider_trait?: string;
+  /** Message channels this provider can deliver, used by notification routing and defaults. */
+  notification_channels?: string[];
 
   // ── Capabilities ──────────────────────────────────────────────
   /** Whether this app supports live video streaming */

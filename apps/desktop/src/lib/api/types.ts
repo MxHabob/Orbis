@@ -633,6 +633,8 @@ export interface AuditLogDto {
 export interface IntegrationStatusResponse {
   connected: boolean;
   is_enabled: boolean;
+  is_healthy?: boolean | null;
+  health_error?: string | null;
   config?: IntegrationDto | null;
 }
 

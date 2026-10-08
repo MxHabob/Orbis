@@ -1430,6 +1430,8 @@ export type IntegrationDto = {
 export type IntegrationStatusDto = {
     config?: IntegrationDto | null;
     connected: boolean;
+    health_error?: string | null;
+    is_healthy?: boolean | null;
     is_enabled: boolean;
 };
 
@@ -1540,6 +1542,7 @@ export type MfaVerifyEnrollmentRequest = {
 };
 
 export type NotificationSettingsDto = {
+    default_integration_ids?: Record<string, string>;
     email_integration_id?: string | null;
     finance_reminder_days: Array<number>;
     notify_parents_on_absence: boolean;

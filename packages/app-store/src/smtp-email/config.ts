@@ -103,6 +103,7 @@ Track email delivery status and handle bounces gracefully.`,
   ],
   adapter_name: "smtp",
   provider_trait: "NotificationProvider",
+  notification_channels: ["email"],
 };
 
 export default config;
