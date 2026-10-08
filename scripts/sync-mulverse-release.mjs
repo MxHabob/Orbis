@@ -196,7 +196,9 @@ if (release.status === "withdrawn") {
   );
 }
 if (release.version !== version || release.channel_id !== channel.id) {
-  throw new Error(`Mulverse returned inconsistent metadata for release ${version}.`);
+  throw new Error(
+    `Mulverse returned inconsistent metadata for release ${version}.`,
+  );
 }
 
 let registeredArtifacts = await request(

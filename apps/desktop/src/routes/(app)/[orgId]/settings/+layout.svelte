@@ -48,11 +48,6 @@ const navGroups = $derived([
         icon: Settings,
       },
       {
-        path: "license",
-        label: m.license_nav_title(),
-        icon: Bolt,
-      },
-      {
         path: "notifications",
         label: m.common_nav_notifications(),
         icon: AppNotification,

@@ -233,9 +233,6 @@ function handleSaveAvatar(e: Event) {
         onLanguageChange={handleLanguageChange}
       />
 
-
-      <BranchSettingsCard {org} {isSaving} />
-
       <AuthenticationSettingsCard {org} {isSaving} />
 
       <Card>
@@ -244,7 +241,7 @@ function handleSaveAvatar(e: Event) {
             {m.settings_entitlement_title()}
           </CardTitle>
           <a
-            href="/{orgId}/settings/license"
+            href="/{orgId}/billing"
             class="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
           >
             {m.license_nav_title()} &rarr;
