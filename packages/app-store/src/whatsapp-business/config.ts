@@ -7,7 +7,7 @@ const config: OrbisApp = {
   name: "WhatsApp Business",
   name_ar: "واتساب للأعمال",
   category: "communication",
-  active: true,
+  active: false,
   beta: true,
   icon: "MessageCircle",
   short_description:

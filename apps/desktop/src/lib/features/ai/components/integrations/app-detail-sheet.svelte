@@ -29,9 +29,16 @@
   } = $props();
 
   const queryClient = useQueryClient();
-  const providerName = $derived(app.id);
+  const providerName = $derived(
+    app.category === "storage" ? app.id : (app.adapter_name ?? app.id),
+  );
   const legacyProviderName = $derived(
-    app.adapter_name && app.adapter_name !== app.id ? app.adapter_name : null,
+    app.legacy_provider_name ??
+      (app.category !== "storage" &&
+      app.adapter_name &&
+      app.adapter_name !== providerName
+        ? app.adapter_name
+        : null),
   );
   let isConnecting = $state(false);
   let isDisconnecting = $state(false);

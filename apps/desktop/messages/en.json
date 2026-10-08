@@ -5417,6 +5417,7 @@
   "database_backup_max_files_label": "Maximum backup files",
   "database_browse_file": "Browse files",
   "database_browse_folder": "Browse folders",
+  "ui_copy_folder_picker_failed": "Unable to open the folder picker.",
   "database_create_confirm_btn": "Create database",
   "database_create_dialog_desc": "Create a new database at the selected location.",
   "database_create_dialog_title": "Create database",

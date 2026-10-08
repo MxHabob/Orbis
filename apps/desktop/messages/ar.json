@@ -5418,6 +5418,7 @@
   "database_backup_max_files_label": "الحد الأقصى لملفات النسخ الاحتياطي",
   "database_browse_file": "استعراض الملفات",
   "database_browse_folder": "استعراض المجلدات",
+  "ui_copy_folder_picker_failed": "تعذر فتح نافذة اختيار المجلد.",
   "database_create_confirm_btn": "إنشاء قاعدة البيانات",
   "database_create_dialog_desc": "إنشاء قاعدة بيانات جديدة في الموقع المحدد.",
   "database_create_dialog_title": "إنشاء قاعدة بيانات",

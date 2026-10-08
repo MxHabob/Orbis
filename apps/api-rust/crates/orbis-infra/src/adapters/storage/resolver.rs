@@ -141,9 +141,26 @@ impl StorageResolver {
             .to_ascii_lowercase();
 
         match provider.as_str() {
-            "local" => Ok(Arc::new(FilesystemStorageAdapter::new(
-                self.base_path.clone(),
-            ))),
+            "local" => {
+                let base_path = match optional_setting(settings, "local_path") {
+                    Some(path) => {
+                        let path = PathBuf::from(path);
+                        if !path.is_absolute() {
+                            return Err(StorageError::NotConfigured(
+                                "The local storage folder must be an absolute path".into(),
+                            ));
+                        }
+                        path
+                    }
+                    None => self.base_path.clone(),
+                };
+                if base_path.as_os_str().is_empty() {
+                    return Err(StorageError::NotConfigured(
+                        "Configure a local storage folder before connecting".into(),
+                    ));
+                }
+                Ok(Arc::new(FilesystemStorageAdapter::new(base_path)))
+            }
             "s3" | "minio" | "rustfs" => {
                 let bucket = required_setting(settings, "bucket")?;
                 let access_key_id =

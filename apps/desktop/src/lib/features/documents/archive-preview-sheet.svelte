@@ -137,9 +137,6 @@ function endPan() {
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-border/40 px-6 py-4">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
-            <DocumentPage class="w-5 h-5" />
-          </div>
           <div class="min-w-0">
             <h3 class="font-semibold text-foreground text-sm truncate leading-tight">{document.name}</h3>
             <p class="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
@@ -153,30 +150,6 @@ function endPan() {
             </p>
           </div>
         </div>
-
-        {#if isImage}
-          <div class="flex items-center gap-1 bg-muted/40 rounded-lg p-1 border border-border/30">
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onclick={() => setImageZoom(imageZoom - 0.25)}
-              title={m.operations_ui_minimize()}
-            >
-              <Collapse class="h-3.5 w-3.5" />
-            </Button>
-            <span class="text-[11px] font-mono font-medium px-1 text-muted-foreground">{Math.round(imageZoom * 100)}%</span>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onclick={() => setImageZoom(imageZoom + 0.25)}
-              title={m.operations_ui_maximize()}
-            >
-              <Expand class="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        {/if}
       </div>
 
       <!-- Preview Stage -->

@@ -13,6 +13,7 @@ import { Switch } from "@orbis/ui/switch";
 import { l } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import { createAppSettingsSchema } from "@orbis/schemas";
+import { open } from "@tauri-apps/plugin-dialog";
 import {
   Select,
   SelectContent,
@@ -31,6 +32,28 @@ let {
 } = $props();
 
 let values = $state<Record<string, any>>({});
+const isTauri = $derived(
+  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
+);
+const visibleSettings = $derived(
+  settings
+    .filter((setting) => {
+      if (setting.id === "local_path") return values.provider === "local";
+      if (
+        ["bucket", "access_key", "secret_key", "region", "endpoint"].includes(
+          setting.id,
+        )
+      ) {
+        return values.provider !== "local";
+      }
+      return true;
+    })
+    .map((setting) =>
+      setting.id === "endpoint"
+        ? { ...setting, required: values.provider !== "s3" }
+        : setting,
+    ),
+);
 
 $effect.pre(() => {
   const nextValues: Record<string, any> = {};
@@ -42,7 +65,7 @@ $effect.pre(() => {
 
 function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  const result = createAppSettingsSchema(settings).safeParse(values);
+  const result = createAppSettingsSchema(visibleSettings).safeParse(values);
   if (!result.success) {
     toast.error(
       m.ui_copy_please_review_the_connection_settings_e94d1183(),
@@ -51,10 +74,20 @@ function handleSubmit(e: SubmitEvent) {
   }
   onsubmit?.(result.data);
 }
+
+async function browseDirectory(settingId: string) {
+  try {
+    const selected = await open({ directory: true, multiple: false });
+    if (typeof selected === "string") values[settingId] = selected;
+  } catch (error) {
+    console.error("Failed to open the storage folder picker", error);
+    toast.error(m.ui_copy_folder_picker_failed());
+  }
+}
 </script>
 
 <form class="space-y-4" onsubmit={handleSubmit}>
-  {#each settings as setting (setting.id)}
+  {#each visibleSettings as setting (setting.id)}
     <FormField id={setting.id} label={l(setting.label_ar, setting.label) || setting.id} error={undefined} required={setting.required}>
       {#snippet children()}
 
@@ -71,6 +104,31 @@ function handleSubmit(e: SubmitEvent) {
           </span>
         </div>
 
+      {:else if setting.type === "directory"}
+        <div class="flex gap-2">
+          <Input
+            type="text"
+            id={setting.id}
+            bind:value={values[setting.id]}
+            placeholder={setting.placeholder}
+            required={setting.required}
+            class="h-9 min-w-0 flex-1 text-xs"
+          />
+          {#if isTauri}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="shrink-0"
+              onclick={() => browseDirectory(setting.id)}
+            >
+              {m.database_browse_folder()}
+            </Button>
+          {/if}
+        </div>
+        <p class="text-[10px] text-muted-foreground/70">
+          {l(setting.description_ar, setting.description)}
+        </p>
       {:else if setting.type === "select"}
         <Select
           type="single"
@@ -83,7 +141,7 @@ function handleSubmit(e: SubmitEvent) {
             {setting.options?.find(o => o.value === values[setting.id])?.label || values[setting.id] || m.ui_copy_select_an_option_0c7b180c()}
           </SelectTrigger>
           <SelectContent>
-            {#each setting.options ?? [] as opt}
+            {#each setting.options ?? [] as opt (opt.value)}
               <SelectItem value={opt.value}>{opt.label}</SelectItem>
             {/each}
           </SelectContent>

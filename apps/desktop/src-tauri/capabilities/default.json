@@ -25,6 +25,7 @@
     "global-shortcut:default",
     "core:image:default",
     "core:resources:default",
+    "dialog:allow-open",
     "core:menu:default",
     "core:tray:default",
     "core:path:default",

@@ -11,15 +11,15 @@ const config: OrbisApp = {
   beta: true,
   icon: "Smartphone",
   short_description:
-    "Send SMS notifications to parents and staff via Twilio, Vonage, or other SMS providers.",
+    "Send SMS notifications to parents and staff via Twilio.",
   short_description_ar: "إرسال رسائل نصية قصيرة لأولياء الأمور والموظفين.",
   description: `Connect an SMS gateway to send critical notifications that demand immediate attention.
 
 **Urgent Alerts**
 Send time-sensitive notifications like emergency closures, absence alerts, and fee deadlines.
 
-**Multiple Providers**
-Support for Twilio, Vonage, MessageBird, and other SMS providers.
+**Twilio Delivery**
+Send SMS using the configured Twilio integration and credentials.
 
 **Bulk SMS**
 Send notifications to entire classes or the whole school at once.`,
@@ -40,8 +40,6 @@ Send notifications to entire classes or the whole school at once.`,
       description: "Select your SMS gateway provider.",
       options: [
         { label: "Twilio", value: "twilio" },
-        { label: "Vonage", value: "vonage" },
-        { label: "MessageBird", value: "messagebird" },
       ],
     },
     {

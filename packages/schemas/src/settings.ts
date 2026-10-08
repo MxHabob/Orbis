@@ -28,7 +28,8 @@ export function createAppSettingsSchema(settings: AppSettingDefinition[]) {
     let field: z.ZodTypeAny;
     if (setting.type === "switch") field = z.boolean();
     else if (setting.type === "number") field = z.coerce.number().finite();
-    else if (setting.type === "url") field = z.string().url();
+    else if (setting.type === "url")
+      field = z.string().url().or(z.literal(""));
     else if (setting.type === "select") {
       const options = (setting.options ?? []).map((option) => option.value);
       field =

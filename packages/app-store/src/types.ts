@@ -12,7 +12,7 @@ export type AppCategory =
   | "communication" // NotificationProvider trait (email, sms, push, whatsapp)
   | "identity" // Directory services (AD, LDAP, Google, M365)
   | "hardware" // Physical devices (fingerprint, RFID, barcode, printer)
-  | "storage" // StorageProvider trait (local, S3, GCS)
+  | "storage" // StorageProvider trait (local filesystem or S3-compatible)
   | "ai-service" // AI capabilities (OCR, STT, TTS)
   | "ai-vision" // AI and Computer Vision (Authen)
   | "payment-gateway" // Payment Gateways (Mada, Moyasar, Tabby, Tamara, etc.)
@@ -34,7 +34,7 @@ export interface AppSetting {
   /** Help text in Arabic */
   description_ar?: string;
   /** Input type — determines the rendered form control */
-  type: "text" | "password" | "number" | "switch" | "select" | "url";
+  type: "text" | "password" | "number" | "switch" | "select" | "url" | "directory";
   /** Whether this setting must be filled to connect */
   required: boolean;
   /** Default value */
@@ -96,10 +96,12 @@ export interface OrbisApp {
 
   // ── Backend mapping ───────────────────────────────────────────
   /**
-   * Name of the Rust adapter in `infra-integration/src/adapters/`.
+   * Name of the Rust adapter in the backend.
    * undefined = adapter not yet implemented.
    */
   adapter_name?: string;
+  /** Previously stored integration key, kept only for reading existing installations. */
+  legacy_provider_name?: string;
   /**
    * Which provider trait this app implements:
    * LlmProvider, IntegrationProvider, NotificationProvider, StorageProvider
