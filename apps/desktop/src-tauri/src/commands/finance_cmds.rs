@@ -517,6 +517,9 @@ pub struct ProcessPaymentInput {
     pub payer_phone: Option<String>,
     pub reference: Option<String>,
     pub source: Option<String>,
+    pub receipt_number: Option<String>,
+    pub payment_date: Option<String>,
+    pub notes: Option<String>,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -952,6 +955,12 @@ pub async fn finance_process_payment(
     let student_id = request.student_id.and_then(|s| Uuid::parse_str(&s).ok());
     let enrollment_id = request.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
     let account_id = Uuid::parse_str(&request.account_id).map_err(|_| "Invalid account_id")?;
+    let payment_date = request
+        .payment_date
+        .as_deref()
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid payment_date; expected YYYY-MM-DD")?;
 
     let method = match request.method.to_lowercase().as_str() {
         "cash" => PaymentMethod::Cash,
@@ -978,6 +987,9 @@ pub async fn finance_process_payment(
             request.payer_phone,
             request.reference,
             request.source,
+            request.receipt_number,
+            payment_date,
+            request.notes,
         )
         .await
         .map_err(|e| e.to_string())?;

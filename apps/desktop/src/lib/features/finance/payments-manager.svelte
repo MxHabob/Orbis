@@ -39,13 +39,35 @@ import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 
-import {
-  createAvailablePaymentMethodsQuery,
-  type AvailablePaymentMethod,
-} from "$lib/features/finance";
-import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import { createAvailablePaymentMethodsQuery } from "$lib/features/finance";
 
 let { orgId }: { orgId: string } = $props();
+
+type ReceiptLine = {
+  id: number;
+  sequence: number;
+  studentId: string;
+  feeId: string;
+  amount: number | null;
+  notes: string;
+  fees: any[];
+  isLoadingFees: boolean;
+};
+
+let nextReceiptLineId = 1;
+function createReceiptLine(): ReceiptLine {
+  const id = nextReceiptLineId++;
+  return {
+    id,
+    sequence: id,
+    studentId: "",
+    feeId: "",
+    amount: null,
+    notes: "",
+    fees: [],
+    isLoadingFees: false,
+  };
+}
 
 // Dynamic payment methods from Integration Layer
 const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
@@ -61,25 +83,21 @@ let showAddForm = $state(false);
 
 // Form Fields
 let receiptNumber = $state("");
-let paymentDate = $state(new Date().toISOString().split("T")[0]);
-let selectedStudentId = $state("");
+let paymentDate = $state("");
 let selectedTreasuryId = $state("");
 let paymentMethod = $state("cash");
-let selectedCurrency = $state("YER");
-let checkInfo = $state("");
 let sourceToken = $state("");
-let notes = $state("");
-let generalAmount = $state<number | null>(null);
+let receiptLines = $state<ReceiptLine[]>([createReceiptLine()]);
+const selectedCurrency = $derived(
+  treasuries.find((account) => String(account.id) === String(selectedTreasuryId))?.currency || "YER",
+);
+const calculatedTotal = $derived(
+  receiptLines.reduce((total, line) => total + (Number(line.amount) || 0), 0),
+);
 
 const selectedPaymentMethodObj = $derived(
   availablePaymentMethods.find((m) => m.id === paymentMethod) || availablePaymentMethods[0]
 );
-
-// Student Fees for Allocation
-let studentFees = $state<any[]>([]);
-let isLoadingFees = $state(false);
-let selectedFeeIds = $state<Set<string>>(new Set());
-let feeAmounts = $state<Record<string, number>>({});
 
 // Filters
 let searchQuery = $state("");
@@ -130,72 +148,59 @@ async function loadData() {
   }
 }
 
-async function handleStudentChange(studentId: string) {
-  selectedStudentId = studentId;
-  selectedFeeIds = new Set();
-  feeAmounts = {};
-  studentFees = [];
-
+async function handleStudentChange(lineId: number, studentId: string | null) {
+  const line = receiptLines.find((item) => item.id === lineId);
+  if (!line) return;
+  line.studentId = studentId ?? "";
+  line.feeId = "";
+  line.amount = null;
+  line.fees = [];
+  line.isLoadingFees = Boolean(studentId);
   if (!studentId) return;
 
-  isLoadingFees = true;
   try {
-    const list = await api.listStudentFees(studentId);
-    studentFees = (list || []).filter((f: any) => f.status !== "paid");
-    // Pre-select first unpaid fee if available
-    if (studentFees.length > 0) {
-      const first = studentFees[0];
-      const fid = String(first.id);
-      selectedFeeIds.add(fid);
-      feeAmounts[fid] = Number(first.balance_due ?? first.balance ?? first.net_amount ?? 0);
-      selectedFeeIds = new Set(selectedFeeIds);
-    }
-  } catch (e) {
-    console.error("Failed to load student fees:", e);
+    const list = await api.listStudentFees({ student_id: studentId });
+    const currentLine = receiptLines.find((item) => item.id === lineId);
+    if (!currentLine || currentLine.studentId !== studentId) return;
+    currentLine.fees = (list || []).filter((fee: any) => fee.status !== "paid");
+  } catch (error) {
+    console.error("Failed to load student fees:", error);
+    toast.error(extractErrorMessage(error) || m.finance_ui_receipt_save_failed());
   } finally {
-    isLoadingFees = false;
+    const currentLine = receiptLines.find((item) => item.id === lineId);
+    if (currentLine?.studentId === studentId) currentLine.isLoadingFees = false;
   }
 }
 
-function toggleFee(fee: any) {
-  const fid = String(fee.id);
-  if (selectedFeeIds.has(fid)) {
-    selectedFeeIds.delete(fid);
-    delete feeAmounts[fid];
-  } else {
-    selectedFeeIds.add(fid);
-    feeAmounts[fid] = Number(fee.balance_due ?? fee.balance ?? fee.net_amount ?? 0);
-  }
-  selectedFeeIds = new Set(selectedFeeIds);
+function handleFeeChange(lineId: number, feeId: string | null) {
+  const line = receiptLines.find((item) => item.id === lineId);
+  if (!line) return;
+  line.feeId = feeId ?? "";
+  if (!feeId) return;
+  const fee = line.fees.find((item) => String(item.id) === feeId);
+  if (fee) line.amount = Number(fee.balance_due ?? fee.balance ?? fee.net_amount ?? 0);
 }
 
-const calculatedTotal = $derived.by(() => {
-  if (selectedFeeIds.size > 0) {
-    let sum = 0;
-    for (const fid of selectedFeeIds) {
-      sum += Number(feeAmounts[fid] || 0);
-    }
-    return sum;
+function addReceiptLine() {
+  receiptLines = [...receiptLines, createReceiptLine()];
+}
+
+function removeReceiptLine(lineId: number) {
+  if (receiptLines.length === 1) {
+    receiptLines = [createReceiptLine()];
+    return;
   }
-  return Number(generalAmount || 0);
-});
+  receiptLines = receiptLines.filter((line) => line.id !== lineId);
+}
 
 function clearForm() {
   receiptNumber = "";
-  paymentDate = new Date().toISOString().split("T")[0];
-  selectedStudentId = "";
-  paymentMethod = "Cash";
-  selectedCurrency = "YER";
-  checkInfo = "";
-  notes = "";
-  generalAmount = null;
-  selectedFeeIds = new Set();
-  feeAmounts = {};
-  studentFees = [];
+  paymentDate = "";
+  receiptLines = [createReceiptLine()];
 }
 
 async function handleSavePayment() {
-  if (!selectedStudentId) {
+  if (receiptLines.some((line) => !line.studentId)) {
     toast.error(m.finance_ui_student_required());
     return;
   }
@@ -204,52 +209,62 @@ async function handleSavePayment() {
     return;
   }
 
-  const total = calculatedTotal;
-  if (!total || total <= 0) {
+  if (receiptLines.some((line) => !line.amount || Number(line.amount) <= 0)) {
     toast.error(m.finance_ui_payment_amount_invalid());
     return;
   }
 
+  if (selectedPaymentMethodObj?.requires_source_token && !sourceToken.trim()) {
+    toast.error(m.finance_ui_payment_gateway_token_required());
+    return;
+  }
+
   isSubmitting = true;
+  let savedCount = 0;
+  let failure: unknown;
+  const batchSize = receiptLines.length;
   try {
-    const selectedStudent = students.find((s) => s.id === selectedStudentId);
-    if (selectedFeeIds.size > 0) {
-      // Create payment for each allocated fee
-      for (const feeId of selectedFeeIds) {
-        const amt = feeAmounts[feeId];
-        if (amt && amt > 0) {
-          await api.processPayment({
-            fee_id: feeId,
-            student_id: selectedStudentId,
-            account_id: selectedTreasuryId,
-            amount: amt,
-            method: paymentMethod,
-            reference: (checkInfo || receiptNumber).trim() || undefined,
-            source: sourceToken.trim() || undefined,
-            payer_name: selectedStudent?.full_name || undefined,
-          });
-        }
+    for (const line of [...receiptLines]) {
+      const selectedStudent = students.find((student) => student.id === line.studentId);
+      const baseReceiptNumber = receiptNumber.trim();
+      const lineReceiptNumber = baseReceiptNumber
+        ? batchSize > 1 || line.sequence > 1
+          ? `${baseReceiptNumber}-${String(line.sequence).padStart(2, "0")}`
+          : baseReceiptNumber
+        : undefined;
+
+      try {
+        await api.processPayment({
+          fee_id: line.feeId || undefined,
+          student_id: line.studentId,
+          account_id: selectedTreasuryId,
+          amount: Number(line.amount),
+          method: paymentMethod,
+          source: sourceToken.trim() || undefined,
+          payer_name: selectedStudent?.full_name || undefined,
+          receipt_number: lineReceiptNumber,
+          payment_date: paymentDate || undefined,
+          notes: line.notes.trim() || undefined,
+        });
+        savedCount += 1;
+        receiptLines = receiptLines.filter((item) => item.id !== line.id);
+      } catch (error) {
+        failure = error;
+        break;
       }
-    } else {
-      // General payment without specific fee allocation
-      await api.processPayment({
-        student_id: selectedStudentId,
-        account_id: selectedTreasuryId,
-        amount: total,
-        method: paymentMethod,
-        reference: (checkInfo || receiptNumber).trim() || undefined,
-        source: sourceToken.trim() || undefined,
-        payer_name: selectedStudent?.full_name || undefined,
-      });
     }
 
-    toast.success(m.finance_ui_receipt_posted_success());
-    clearForm();
-    showAddForm = false;
-    await loadData();
-  } catch (err: any) {
-    console.error("Failed to record payment:", err);
-    toast.error(extractErrorMessage(err) || m.finance_ui_receipt_save_failed());
+    if (savedCount > 0) {
+      toast.success(m.finance_ui_receipt_posted_success());
+      await loadData();
+    }
+    if (failure) {
+      console.error("Failed to record a receipt in the batch:", failure);
+      toast.error(extractErrorMessage(failure) || m.finance_ui_receipt_save_failed());
+    } else {
+      clearForm();
+      showAddForm = false;
+    }
   } finally {
     isSubmitting = false;
   }
@@ -279,7 +294,7 @@ const gridSource = $derived(
       ...p,
       __idx: idx + 1,
       receipt_display: p.receipt_number || p.id.slice(0, 8),
-      date_display: p.payment_date ? formatDate(p.payment_date) : (p.created_at ? formatDate(p.created_at) : "—"),
+      date_display: p.paid_at ? formatDate(p.paid_at) : (p.payment_date ? formatDate(p.payment_date) : (p.created_at ? formatDate(p.created_at) : "—")),
       student_display: studentName,
       treasury_display: treasuryName,
       amount_formatted: formatCurrency(amt, curr),
@@ -296,7 +311,8 @@ const filteredSource = $derived(
     if (methodFilter !== "all" && row.payment_method?.toLowerCase() !== methodFilter.toLowerCase()) {
       return false;
     }
-    if (filterDate && row.payment_date && !String(row.payment_date).startsWith(filterDate)) {
+    const paymentDate = row.paid_at || row.payment_date || row.created_at;
+    if (filterDate && paymentDate && !String(paymentDate).startsWith(filterDate)) {
       return false;
     }
     return true;
@@ -428,178 +444,205 @@ function exportCsv() {
             </div>
           </CardHeader>
 
-          <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
-                <SearchableSelect
-                  value={selectedStudentId}
-                  placeholder={m.finance_ui_student_select_placeholder()}
-                  searchPlaceholder={m.finance_ui_student_search_placeholder()}
-                  items={students}
-                  getItemValue={(s) => s.id}
-                  getItemLabel={(s) => s.full_name}
-                  onchange={(val) => { if (val) handleStudentChange(val); }}
-                  class="w-full h-8 text-xs bg-background border-border/60"
-                />
+          <CardContent class="flex flex-col gap-5 p-4">
+            <section class="rounded-lg border border-border/50 bg-muted/10 p-3 sm:p-4">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-xs font-semibold text-foreground">{m.finance_ui_receipt_create_heading()}</h3>
+                <span class="text-[11px] text-muted-foreground">{m.finance_ui_voucher_number_optional()}</span>
               </div>
-
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_receiving_account()}</Label>
-                <SearchableSelect
-                  value={selectedTreasuryId}
-                  placeholder={m.finance_ui_treasury_select_placeholder()}
-                  items={treasuries}
-                  getItemValue={(t) => t.id}
-                  getItemLabel={(t) => `${t.name_ar || t.name} (${t.currency || "YER"})`}
-                  onchange={(val) => { if (val) selectedTreasuryId = val; }}
-                  class="w-full h-8 text-xs bg-background border-border/60"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <div class="flex items-center justify-between mb-1">
-                  <Label class="text-xs font-semibold text-foreground">{m.finance_ui_payment_method()}</Label>
-                  {#if selectedPaymentMethodObj?.is_digital_gateway}
-                    <span class="text-[9px] text-primary font-medium bg-primary/10 px-1.5 py-0.5 rounded">
-                      {m.finance_ui_gateway_provider({ provider: selectedPaymentMethodObj.provider_name ?? "" })}
-                    </span>
-                  {/if}
+              <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
+                  <Input
+                    type="text"
+                    bind:value={receiptNumber}
+                    placeholder={m.finance_ui_automatic()}
+                    class="h-9 text-xs font-mono"
+                    disabled={isSubmitting}
+                  />
                 </div>
-                <Select
-                  type="single"
-                  value={paymentMethod}
-                  onValueChange={(value) => (paymentMethod = value ?? "cash")}
-                >
-                  <SelectTrigger class="h-8 w-full bg-background text-xs">
-                    {selectedPaymentMethodObj?.name ?? m.finance_ui_payment_method()}
-                  </SelectTrigger>
-                  <SelectContent>
-                  {#each availablePaymentMethods as method (method.id)}
-                    <SelectItem value={method.id}>
-                      {method.name} {method.is_digital_gateway ? m.finance_ui_gateway_provider({ provider: method.provider_name ?? "" }) : ""}
-                    </SelectItem>
-                  {/each}
-                  </SelectContent>
-                </Select>
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_date()}</Label>
+                  <Input
+                    type="date"
+                    bind:value={paymentDate}
+                    class="h-9 text-xs font-mono"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_receiving_account()}</Label>
+                  <SearchableSelect
+                    value={selectedTreasuryId}
+                    placeholder={m.finance_ui_treasury_select_placeholder()}
+                    items={treasuries}
+                    getItemValue={(treasury) => String(treasury.id)}
+                    getItemLabel={(treasury) => `${treasury.name_ar || treasury.name} (${treasury.currency || "YER"})`}
+                    onchange={(value) => { if (value) selectedTreasuryId = value; }}
+                    disabled={isSubmitting}
+                    class="h-9 w-full text-xs"
+                  />
+                </div>
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_payment_method()}</Label>
+                  <Select
+                    type="single"
+                    value={paymentMethod}
+                    onValueChange={(value) => (paymentMethod = value ?? "cash")}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger class="h-9 w-full bg-background text-xs">
+                      {selectedPaymentMethodObj?.name ?? m.finance_ui_payment_method()}
+                    </SelectTrigger>
+                    <SelectContent>
+                      {#each availablePaymentMethods as method (method.id)}
+                        <SelectItem value={method.id}>
+                          {method.name}{method.is_digital_gateway ? ` (${method.provider_name ?? ""})` : ""}
+                        </SelectItem>
+                      {/each}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+              {#if selectedPaymentMethodObj?.requires_source_token}
+                <div class="mt-4">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_payment_gateway_token_label()}</Label>
+                  <Input
+                    type="text"
+                    bind:value={sourceToken}
+                    placeholder={m.finance_ui_payment_gateway_token_placeholder()}
+                    class="h-9 text-xs font-mono"
+                    disabled={isSubmitting}
+                  />
+                </div>
+              {/if}
+              <p class="mt-3 text-[11px] text-muted-foreground">
+                {m.finance_ui_currency()}: {selectedCurrency}
+              </p>
+            </section>
 
-            {#if selectedPaymentMethodObj?.requires_source_token}
-              <div transition:slide={{ duration: 120 }}>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_payment_gateway_token_label()}</Label>
-                <Input
-                  type="text"
-                  bind:value={sourceToken}
-                  placeholder={m.finance_ui_payment_gateway_token_placeholder()}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
-              </div>
-            {/if}
-
-            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
-                <Input
-                  type="text"
-                  bind:value={receiptNumber}
-                  placeholder={m.finance_ui_automatic()}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
-                <Input
-                  type="date"
-                  bind:value={paymentDate}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
-              </div>
-
-              <div class="min-w-0">
-                <CurrencySelector
-                  bind:currentCurrency={selectedCurrency}
-                  title={m.finance_ui_currency()}
-                  description=""
-                  compact
+            <section class="flex flex-col gap-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-sm font-semibold text-foreground">{m.finance_ui_allocate_student_fees()}</h3>
+                  <p class="mt-0.5 text-[11px] text-muted-foreground">{receiptLines.length} · {m.finance_ui_receipt()}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="h-8 gap-1.5 text-xs"
+                  onclick={addReceiptLine}
                   disabled={isSubmitting}
-                />
+                >
+                  <Plus size={14} />
+                  {m.common_action_add()}
+                </Button>
               </div>
 
-              <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_total_received_amount()}</Label>
-                <Input
-                  type="number"
-                  value={calculatedTotal}
-                  oninput={(e) => { generalAmount = Number((e.target as HTMLInputElement).value); }}
-                  placeholder="0.00"
-                  class="h-8 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-background border-border/60"
-                  readonly={selectedFeeIds.size > 0}
-                />
-              </div>
-            </div>
+              {#each receiptLines as line (line.id)}
+                <div class="min-w-0 rounded-lg border border-border/60 bg-background p-3 sm:p-4">
+                  <div class="mb-3 flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-foreground">
+                      {m.finance_ui_receipt()} #{line.sequence}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      class="text-muted-foreground hover:text-destructive"
+                      onclick={() => removeReceiptLine(line.id)}
+                      disabled={isSubmitting && receiptLines.length === 1}
+                      aria-label={m.common_action_delete()}
+                    >
+                      <XMark size={14} />
+                    </Button>
+                  </div>
 
-            <!-- Unpaid Fees Allocation Table (if student selected) -->
-            {#if selectedStudentId && studentFees.length > 0}
-              <div class="rounded-lg border border-border/50 bg-background/50 p-3 flex flex-col gap-2">
-                <span class="text-[11px] font-bold text-foreground">{m.finance_ui_allocate_student_fees()}</span>
-                <div class="space-y-1.5 max-h-40 overflow-y-auto">
-                  {#each studentFees as fee (fee.id)}
-                    {@const fid = String(fee.id)}
-                    {@const isChecked = selectedFeeIds.has(fid)}
-                    <div class="flex flex-col gap-2 rounded-md border border-border/40 bg-card p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-                      <label class="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onchange={() => toggleFee(fee)}
-                          class="rounded border-border text-primary focus:ring-0"
-                        />
-                        <span class="font-medium text-foreground">{fee.fee_type_name || fee.notes || m.finance_ui_tuition_fees()}</span>
-                      </label>
-
-                      <div class="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
-                        <span class="text-muted-foreground font-mono text-[11px]">
-                          {m.finance_ui_due_amount()} {formatCurrency(Number(fee.balance_due ?? fee.balance ?? fee.net_amount ?? 0), selectedCurrency)}
-                        </span>
-                        {#if isChecked}
-                          <Input
-                            type="number"
-                            bind:value={feeAmounts[fid]}
-                            class="h-7 w-full max-w-28 text-xs font-mono font-bold text-end bg-background border-border"
-                          />
-                        {/if}
-                      </div>
+                  <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.25fr)_minmax(0,1.25fr)_minmax(8rem,0.7fr)]">
+                    <div class="min-w-0">
+                      <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_student()}</Label>
+                      <SearchableSelect
+                        value={line.studentId}
+                        placeholder={m.finance_ui_student_select_placeholder()}
+                        searchPlaceholder={m.finance_ui_student_search_placeholder()}
+                        items={students}
+                        getItemValue={(student) => student.id}
+                        getItemLabel={(student) => student.full_name}
+                        onchange={(value) => handleStudentChange(line.id, value)}
+                        disabled={isSubmitting}
+                        class="h-9 w-full text-xs"
+                      />
                     </div>
-                  {/each}
+                    <div class="min-w-0">
+                      <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_allocate_student_fees()}</Label>
+                      <SearchableSelect
+                        value={line.feeId}
+                        placeholder={line.isLoadingFees ? m.finance_ui_saving() : m.finance_ui_tuition_fees()}
+                        items={line.fees}
+                        getItemValue={(fee) => String(fee.id)}
+                        getItemLabel={(fee) => fee.fee_type_name || fee.notes || m.finance_ui_tuition_fees()}
+                        onchange={(value) => handleFeeChange(line.id, value)}
+                        disabled={isSubmitting || line.isLoadingFees || !line.studentId}
+                        class="h-9 w-full text-xs"
+                      />
+                    </div>
+                    <div class="min-w-0">
+                      <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_total_received_amount()}</Label>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="any"
+                        bind:value={line.amount}
+                        placeholder="0.00"
+                        class="h-9 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                  {#if line.feeId}
+                    {@const selectedFee = line.fees.find((fee) => String(fee.id) === line.feeId)}
+                    {#if selectedFee}
+                      <p class="mt-2 text-[11px] text-muted-foreground">
+                        {m.finance_ui_due_amount()} {formatCurrency(Number(selectedFee.balance_due ?? selectedFee.balance ?? selectedFee.net_amount ?? 0), selectedCurrency)}
+                      </p>
+                    {/if}
+                  {/if}
+                  <div class="mt-3">
+                    <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_description_notes()}</Label>
+                    <Input
+                      type="text"
+                      bind:value={line.notes}
+                      placeholder={m.finance_ui_receipt_notes_placeholder()}
+                      class="h-9 text-xs"
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
+              {/each}
+            </section>
+
+            <div class="flex flex-col-reverse gap-3 border-t border-border/40 pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="text-sm font-semibold text-foreground">
+                {m.finance_ui_total_received_amount()}:
+                <span class="font-mono text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(calculatedTotal, selectedCurrency)}
+                </span>
               </div>
-            {/if}
-
-            <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_description_notes()}</Label>
-              <Input
-                type="text"
-                bind:value={notes}
-                placeholder={m.finance_ui_receipt_notes_placeholder()}
-                class="h-8 text-xs bg-background border-border/60"
-              />
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-              <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm}>
-                {m.finance_ui_clear_fields()}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                class="h-8 text-xs font-bold px-4"
-                disabled={isSubmitting}
-                onclick={handleSavePayment}
-              >
-                {isSubmitting ? m.finance_ui_saving() : m.finance_ui_receipt_save()}
-              </Button>
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <Button variant="ghost" size="sm" class="h-9 text-xs" onclick={clearForm} disabled={isSubmitting}>
+                  {m.finance_ui_clear_fields()}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="h-9 text-xs font-bold"
+                  disabled={isSubmitting || receiptLines.some((line) => line.isLoadingFees)}
+                  onclick={handleSavePayment}
+                >
+                  {isSubmitting ? m.finance_ui_saving() : `${m.finance_ui_receipt_save()} (${receiptLines.length})`}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

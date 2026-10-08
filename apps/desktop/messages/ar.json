@@ -2310,6 +2310,7 @@
   "finance_ui_payment_gateway_activation_required": "فعّل بوابة الدفع واضبطها قبل استخدام هذه الطريقة.",
   "finance_ui_payment_gateway_token_label": "رمز بوابة الدفع",
   "finance_ui_payment_gateway_token_placeholder": "أدخل رمز بوابة الدفع",
+  "finance_ui_payment_gateway_token_required": "أدخل رمز بوابة الدفع قبل الحفظ.",
   "finance_ui_payment_method": "طريقة الدفع",
   "finance_ui_payment_method_bank_check": "شيك مصرفي",
   "finance_ui_payment_method_bank_transfer": "تحويل مصرفي",

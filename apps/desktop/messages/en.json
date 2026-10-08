@@ -2310,6 +2310,7 @@
   "finance_ui_payment_gateway_activation_required": "Activate and configure a payment gateway before using this method.",
   "finance_ui_payment_gateway_token_label": "Payment gateway token",
   "finance_ui_payment_gateway_token_placeholder": "Enter the payment gateway token",
+  "finance_ui_payment_gateway_token_required": "Enter the payment gateway token before saving.",
   "finance_ui_payment_method": "Payment method",
   "finance_ui_payment_method_bank_check": "Bank cheque",
   "finance_ui_payment_method_bank_transfer": "Bank transfer",

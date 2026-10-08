@@ -6,7 +6,7 @@ use crate::ports::repositories::{
     AccountRepository, CurrencyRepository, DiscountTemplateRepository, FeeTemplateRepository,
     JournalEntryRepository, PaymentRepository, PolicyRepository, StudentFeeRepository,
 };
-use chrono::Utc;
+use chrono::{NaiveDate, TimeZone, Utc};
 use orbis_domain::entities::account::Account;
 use orbis_domain::entities::discount_template::DiscountTemplate;
 use orbis_domain::entities::fee_template::FeeTemplate;
@@ -216,6 +216,9 @@ impl FinanceService {
         payer_phone: Option<String>,
         reference: Option<String>,
         source: Option<String>,
+        receipt_number: Option<String>,
+        payment_date: Option<NaiveDate>,
+        notes: Option<String>,
     ) -> Result<Payment, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ProcessPayment)
@@ -228,7 +231,11 @@ impl FinanceService {
         }
 
         let now = Utc::now();
-        let accounting_date = now.date_naive();
+        let paid_at = payment_date
+            .and_then(|date| date.and_hms_opt(0, 0, 0))
+            .map(|date| Utc.from_utc_datetime(&date))
+            .unwrap_or(now);
+        let accounting_date = paid_at.date_naive();
         let journal_entry_id = Uuid::new_v4();
         let payment_id = Uuid::new_v4();
 
@@ -390,15 +397,17 @@ impl FinanceService {
             base_amount,
             method,
             reference: final_reference.clone(),
-            receipt_number: Some(format!(
-                "REC-{}",
-                payment_id.to_string().chars().take(8).collect::<String>()
-            )),
+            receipt_number: Some(receipt_number.unwrap_or_else(|| {
+                format!(
+                    "REC-{}",
+                    payment_id.to_string().chars().take(8).collect::<String>()
+                )
+            })),
             journal_entry_id: Some(journal_entry_id),
             payer_name,
             payer_phone,
-            notes: None,
-            paid_at: now,
+            notes,
+            paid_at,
             created_by: ctx.user_id(),
             created_at: now,
             updated_at: now,

@@ -191,6 +191,7 @@ pub struct PaymentDto {
     pub amount: Decimal,
     pub method: String,
     pub reference: Option<String>,
+    pub receipt_number: Option<String>,
     pub journal_entry_id: Option<Uuid>,
     pub paid_at: DateTime<Utc>,
     pub created_by: Option<Uuid>,
@@ -210,6 +211,9 @@ pub struct ProcessPaymentRequest {
     pub payer_phone: Option<String>,
     pub reference: Option<String>,
     pub source: Option<String>,
+    pub receipt_number: Option<String>,
+    pub payment_date: Option<NaiveDate>,
+    pub notes: Option<String>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -843,6 +847,9 @@ pub async fn process_payment(
             p.payer_phone,
             p.reference,
             p.source,
+            p.receipt_number,
+            p.payment_date,
+            p.notes,
         )
         .await?;
 
@@ -856,6 +863,7 @@ pub async fn process_payment(
         amount: pay.amount,
         method: pay.method.to_string(),
         reference: pay.reference,
+        receipt_number: pay.receipt_number,
         journal_entry_id: pay.journal_entry_id,
         paid_at: pay.paid_at,
         created_by: pay.created_by,
@@ -893,6 +901,7 @@ pub async fn list_payments(
             amount: p.amount,
             method: p.method.to_string(),
             reference: p.reference,
+            receipt_number: p.receipt_number,
             journal_entry_id: p.journal_entry_id,
             paid_at: p.paid_at,
             created_by: p.created_by,
