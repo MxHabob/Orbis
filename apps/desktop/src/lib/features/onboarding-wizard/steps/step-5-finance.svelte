@@ -80,6 +80,10 @@ const PRESET_DISCOUNTS = [
 
 const stepTasks = $derived(getTasksForStep("finance", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const hasFeeAccounts = $derived(
+  accounts.some((account) => account.account_type === "asset" && account.code.startsWith("1103")) &&
+    accounts.some((account) => account.account_type === "revenue" && account.code.startsWith("410")),
+);
 
 onMount(async () => {
   await loadData();
@@ -121,7 +125,7 @@ async function handleCreateFeeTemplate() {
     const created = await api.createFeeTemplate({
       name: feeName.trim() || feeNameAr.trim(),
       name_ar: feeNameAr.trim() || undefined,
-      default_amount: Number(feeAmount),
+      default_amount: String(Number(feeAmount)),
       currency: feeCurrency,
       category: feeCategory,
       frequency: feeFrequency === "yearly" ? "annual" : feeFrequency === "termly" ? "termly" : feeFrequency,
@@ -241,26 +245,32 @@ async function deleteDiscountTemplate(template: DiscountTemplateDto) {
       title={m.onboarding_step5_coa_title()}
       description={m.onboarding_step5_coa_desc()}
       badge={accounts.length > 0 ? `${accounts.length}` : undefined}
-      isComplete={true}
+      isComplete={hasFeeAccounts}
     >
-      <div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <span class="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
-            ✓
-          </span>
-          <div>
-            <div class="text-xs font-semibold text-foreground">
-              {m.onboarding_step5_coa_active_title()}
-            </div>
-            <div class="text-[11px] text-muted-foreground">
-              {m.onboarding_step5_coa_active_desc()}
+      {#if hasFeeAccounts}
+        <div class="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold">
+              ✓
+            </span>
+            <div>
+              <div class="text-xs font-semibold text-foreground">
+                {m.onboarding_step5_coa_active_title()}
+              </div>
+              <div class="text-[11px] text-muted-foreground">
+                {m.onboarding_step5_coa_active_desc()}
+              </div>
             </div>
           </div>
+          <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs">
+            {m.onboarding_step5_coa_configured_badge()}
+          </Badge>
         </div>
-        <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs">
-          {m.onboarding_step5_coa_configured_badge()}
-        </Badge>
-      </div>
+      {:else}
+        <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">
+          {m.onboarding_step5_coa_missing()}
+        </div>
+      {/if}
     </OnboardingSection>
 
     <!-- Section 2: Fee Templates -->

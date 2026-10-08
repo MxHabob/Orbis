@@ -64,16 +64,33 @@ const STANDARD_SUBJECTS = [
 ];
 
 const STANDARD_CLASSES = [
-  { code: "G1-A", name: "Grade 1 - A", nameAr: "الصف الأول (أ)", grade: "Grade 1" },
-  { code: "G2-A", name: "Grade 2 - A", nameAr: "الصف الثاني (أ)", grade: "Grade 2" },
-  { code: "G3-A", name: "Grade 3 - A", nameAr: "الصف الثالث (أ)", grade: "Grade 3" },
-  { code: "G4-A", name: "Grade 4 - A", nameAr: "الصف الرابع (أ)", grade: "Grade 4" },
-  { code: "G5-A", name: "Grade 5 - A", nameAr: "الصف الخامس (أ)", grade: "Grade 5" },
-  { code: "G6-A", name: "Grade 6 - A", nameAr: "الصف السادس (أ)", grade: "Grade 6" },
+  { name: "Grade 1 - A", nameAr: "الصف الأول (أ)", grade: "Grade 1" },
+  { name: "Grade 2 - A", nameAr: "الصف الثاني (أ)", grade: "Grade 2" },
+  { name: "Grade 3 - A", nameAr: "الصف الثالث (أ)", grade: "Grade 3" },
+  { name: "Grade 4 - A", nameAr: "الصف الرابع (أ)", grade: "Grade 4" },
+  { name: "Grade 5 - A", nameAr: "الصف الخامس (أ)", grade: "Grade 5" },
+  { name: "Grade 6 - A", nameAr: "الصف السادس (أ)", grade: "Grade 6" },
 ];
 
 const stepTasks = $derived(getTasksForStep("academics", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const remainingStandardSubjects = $derived(
+  STANDARD_SUBJECTS.filter(
+    (preset) => !subjects.some((subject) => subject.code.toLowerCase() === preset.code.toLowerCase()),
+  ),
+);
+const remainingStandardClasses = $derived(
+  STANDARD_CLASSES.filter(
+    (preset) =>
+      !classes.some(
+        (classItem) =>
+          String(classItem.unit_id) === selectedUnitId &&
+          String(classItem.period_id) === selectedPeriodId &&
+          classItem.name.trim().toLowerCase() === preset.name.toLowerCase() &&
+          classItem.level.trim().toLowerCase() === preset.grade.toLowerCase(),
+      ),
+  ),
+);
 
 function applySubjectPreset(subject: typeof STANDARD_SUBJECTS[number]) {
   subjectName = subject.name;
@@ -125,13 +142,19 @@ async function handleCreateSubject() {
     toast.error(m.onboarding_step4_subject_err_name());
     return;
   }
+  const resolvedCode =
+    subjectCode.trim() || `SUB-${String(subjects.length + 1).padStart(2, "0")}`;
+  if (subjects.some((subject) => subject.code.toLowerCase() === resolvedCode.toLowerCase())) {
+    toast.error(m.onboarding_step4_subject_duplicate_code());
+    return;
+  }
 
   isSubmittingSubject = true;
   successMessage = null;
 
   try {
     const newSubject = await api.createSubject({
-      code: subjectCode.trim() || `SUB-${String(subjects.length + 1).padStart(2, "0")}`,
+      code: resolvedCode,
       name: subjectName.trim() || subjectNameAr.trim(),
       name_ar: subjectNameAr.trim() || undefined,
       credit_hours: subjectCreditHours,
@@ -153,11 +176,12 @@ async function handleCreateSubject() {
 }
 
 async function handleBatchImportSubjects() {
+  if (remainingStandardSubjects.length === 0) return;
   isSubmittingSubject = true;
   successMessage = null;
 
   try {
-    for (const sub of STANDARD_SUBJECTS) {
+    for (const sub of remainingStandardSubjects) {
       const created = await api.createSubject({
         code: sub.code,
         name: sub.name,
@@ -195,6 +219,20 @@ async function handleCreateClass() {
     toast.error(m.ui_copy_settings_contain_invalid_values_fae2c24c());
     return;
   }
+  const resolvedName = className.trim() || classNameAr.trim();
+  const resolvedLevel = classGrade.trim() || "1";
+  if (
+    classes.some(
+      (classItem) =>
+        String(classItem.unit_id) === selectedUnitId &&
+        String(classItem.period_id) === selectedPeriodId &&
+        classItem.name.trim().toLowerCase() === resolvedName.toLowerCase() &&
+        classItem.level.trim().toLowerCase() === resolvedLevel.toLowerCase(),
+    )
+  ) {
+    toast.error(m.onboarding_step4_class_duplicate());
+    return;
+  }
 
   isSubmittingClass = true;
   successMessage = null;
@@ -203,9 +241,9 @@ async function handleCreateClass() {
     const newClass = await api.createClass({
       unit_id: selectedUnitId,
       period_id: selectedPeriodId,
-      name: className.trim() || classNameAr.trim(),
+      name: resolvedName,
       name_ar: classNameAr.trim() || undefined,
-      level: classGrade.trim() || "1",
+      level: resolvedLevel,
       capacity: classCapacity,
     });
 
@@ -224,19 +262,21 @@ async function handleCreateClass() {
 }
 
 async function handleBatchImportClasses() {
+  if (!selectedUnitId || !selectedPeriodId) {
+    toast.error(
+      !selectedUnitId
+        ? m.shared_ui_organizational_unit_required()
+        : m.shared_ui_academic_period_required(),
+    );
+    return;
+  }
+  const pendingClasses = remainingStandardClasses;
+  if (pendingClasses.length === 0) return;
   isSubmittingClass = true;
   successMessage = null;
 
   try {
-    if (!selectedUnitId || !selectedPeriodId) {
-      toast.error(
-        !selectedUnitId
-          ? m.shared_ui_organizational_unit_required()
-          : m.shared_ui_academic_period_required(),
-      );
-      return;
-    }
-    for (const cls of STANDARD_CLASSES) {
+    for (const cls of pendingClasses) {
       const created = await api.createClass({
         unit_id: selectedUnitId,
         period_id: selectedPeriodId,
@@ -306,7 +346,7 @@ async function handleBatchImportClasses() {
               {l(subject.nameAr, subject.name)}
             </Button>
           {/each}
-          {#if subjects.length === 0}
+          {#if remainingStandardSubjects.length > 0}
             <Button
               variant="ghost"
               size="sm"
@@ -426,7 +466,7 @@ async function handleBatchImportClasses() {
               {l(classPreset.nameAr, classPreset.name)}
             </Button>
           {/each}
-          {#if classes.length === 0}
+          {#if remainingStandardClasses.length > 0}
             <Button
               variant="ghost"
               size="sm"

@@ -455,17 +455,6 @@ impl FinanceService {
             .check(ctx, Permission::FinanceWrite)
             .await?;
 
-        if name.trim().is_empty() {
-            return Err(DomainError::Validation(
-                "Fee template name is required".into(),
-            ));
-        }
-        if amount <= Decimal::ZERO {
-            return Err(DomainError::Validation(
-                "Fee template amount must be greater than zero".into(),
-            ));
-        }
-
         let template = self
             .fee_template_repo
             .find_by_id(template_id)
@@ -640,6 +629,17 @@ impl FinanceService {
         self.permission_checker
             .check(ctx, Permission::FinanceWrite)
             .await?;
+
+        if name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Fee template name is required".into(),
+            ));
+        }
+        if amount <= Decimal::ZERO {
+            return Err(DomainError::Validation(
+                "Fee template amount must be greater than zero".into(),
+            ));
+        }
 
         let category = category.unwrap_or_else(|| "tuition".to_string());
         let receivable_purpose = match category.as_str() {

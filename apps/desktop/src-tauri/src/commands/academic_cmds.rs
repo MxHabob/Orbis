@@ -34,6 +34,7 @@ pub struct SubjectDto {
 pub struct CreateSubjectInput {
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub unit_id: Option<String>,
     pub credit_hours: Option<Decimal>,
     #[serde(default)]
@@ -173,6 +174,7 @@ pub async fn academic_create_subject(
             unit_id,
             request.code,
             request.name,
+            request.name_ar,
             request.credit_hours,
             request.is_core,
         )

@@ -70,12 +70,32 @@ impl AcademicService {
         unit_id: Option<Uuid>,
         code: String,
         name: String,
+        name_ar: Option<String>,
         credit_hours: Option<Decimal>,
         is_core: bool,
     ) -> Result<Subject, DomainError> {
         self.permission_checker
             .check(ctx, Permission::SubjectWrite)
             .await?;
+
+        let normalized_code = code.trim();
+        if normalized_code.is_empty() {
+            return Err(DomainError::Validation(
+                "Subject code is required".into(),
+            ));
+        }
+        if self
+            .subject_repo
+            .find_by_org(org_id)
+            .await?
+            .iter()
+            .any(|subject| subject.code.eq_ignore_ascii_case(normalized_code))
+        {
+            return Err(DomainError::Validation(format!(
+                "A subject with code '{}' already exists",
+                normalized_code
+            )));
+        }
 
         let now = Utc::now();
         let subject_id = Uuid::new_v4();
@@ -84,9 +104,9 @@ impl AcademicService {
             id: subject_id,
             org_id,
             unit_id,
-            code,
+            code: normalized_code.to_string(),
             name,
-            name_ar: None,
+            name_ar,
             description: None,
             is_core,
             is_elective: !is_core,
@@ -150,6 +170,25 @@ impl AcademicService {
             .check(ctx, Permission::ClassWrite)
             .await?;
 
+        let normalized_name = name.trim().to_lowercase();
+        let normalized_level = level.trim().to_lowercase();
+        if normalized_name.is_empty() || normalized_level.is_empty() {
+            return Err(DomainError::Validation(
+                "Class name and level are required".into(),
+            ));
+        }
+        if self.class_repo.find_by_org(org_id).await?.iter().any(|class| {
+            class.unit_id == unit_id
+                && class.period_id == period_id
+                && class.name.trim().to_lowercase() == normalized_name
+                && class.level.trim().to_lowercase() == normalized_level
+        }) {
+            return Err(DomainError::Validation(format!(
+                "A class named '{}' already exists for this level and period",
+                name.trim()
+            )));
+        }
+
         let now = Utc::now();
         let class_id = Uuid::new_v4();
 
@@ -158,7 +197,7 @@ impl AcademicService {
             org_id,
             unit_id,
             period_id,
-            name,
+            name: name.trim().to_string(),
             name_ar,
             level,
             division: None,

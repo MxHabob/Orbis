@@ -157,6 +157,7 @@ async fn create_subject(
             p.unit_id,
             p.code,
             p.name,
+            p.name_ar,
             p.credit_hours,
             p.is_core.unwrap_or(true),
         )
