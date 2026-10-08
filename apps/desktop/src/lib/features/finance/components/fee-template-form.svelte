@@ -360,7 +360,7 @@ async function handleSubmit() {
           <span class="text-xs text-muted-foreground text-start">{m.common_loading()}</span>
         {:else}
           <div class="grid grid-cols-2 gap-2 mt-1">
-            {#each uniqueLevels as lvl}
+            {#each uniqueLevels as lvl (lvl.level)}
               <div class="flex items-center gap-2">
                 <Checkbox 
                   id={`ft_level_${lvl.level}`} 
