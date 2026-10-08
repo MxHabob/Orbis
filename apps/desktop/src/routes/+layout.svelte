@@ -3,7 +3,7 @@ import type { Pathname } from "$app/types";
 import { resolve } from "$app/paths";
 import { page } from "$app/state";
 import { locales, localizeHref, getLocale, getTextDirection } from "$lib/paraglide/runtime";
-import { themeStore } from "$lib/stores";
+import { appearanceStore, themeStore } from "$lib/stores";
 import { isDesktopApp } from "$lib/api";
 import { onMount } from "svelte";
 import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -48,7 +48,7 @@ onMount(() => {
 	{@render children()}
 </QueryClientProvider>
 
-<Toaster position="top-center"/>
+<Toaster position={appearanceStore.toastPosition} />
 
 <!-- Hidden locale links for paraglide -->
 <div style="display:none">

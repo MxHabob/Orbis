@@ -18,11 +18,15 @@ const menuItems = $derived([
     path: "security",
     label: m.common_account_menu_security(),
   },
+  {
+    path: "appearance",
+    label: m.appearance_nav_label(),
+  },
 ]);
 </script>
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide">
-  <div class="w-full p-6 flex flex-col gap-6">
+  <div class="w-full  flex flex-col gap-6">
     <!-- Secondary Navigation -->
     <SecondaryMenu items={menuItems} {basePath} />
 

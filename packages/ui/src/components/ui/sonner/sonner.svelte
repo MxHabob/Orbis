@@ -72,7 +72,10 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
   .toast-action { align-self: flex-end; }
   .toast-footer { padding-top: 0.25rem; }
   @media (max-width: 640px) {
-    .toaster { right: auto; left: 50%; width: min(380px, calc(100vw - 1.5rem)); transform: translateX(-50%); }
+    .toaster { right: auto; left: auto; width: min(380px, calc(100vw - 1.5rem)); transform: none; }
+    .toaster[data-position$="-left"] { left: 0.75rem; }
+    .toaster[data-position$="-center"] { left: 50%; transform: translateX(-50%); }
+    .toaster[data-position$="-right"] { right: 0.75rem; }
     .toaster[data-position^="top-"] { top: 0.75rem; bottom: auto; }
     .toaster[data-position^="bottom-"] { top: auto; bottom: 0.75rem; }
   }
