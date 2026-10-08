@@ -655,17 +655,19 @@ impl FinanceService {
         };
         let receivable_account_id = match receivable_account_id {
             Some(id) => id,
-            None => self
-                .resolve_default_account(org_id, receivable_purpose)
-                .await?
-                .id,
+            None => {
+                self.resolve_default_account(org_id, receivable_purpose)
+                    .await?
+                    .id
+            }
         };
         let revenue_account_id = match revenue_account_id {
             Some(id) => id,
-            None => self
-                .resolve_default_account(org_id, revenue_purpose)
-                .await?
-                .id,
+            None => {
+                self.resolve_default_account(org_id, revenue_purpose)
+                    .await?
+                    .id
+            }
         };
         let receivable_account = self
             .account_repo
@@ -690,14 +692,10 @@ impl FinanceService {
             .find_by_id(revenue_account_id)
             .await?
             .ok_or_else(|| {
-                DomainError::NotFound(format!(
-                    "Revenue account {} not found",
-                    revenue_account_id
-                ))
+                DomainError::NotFound(format!("Revenue account {} not found", revenue_account_id))
             })?;
         if revenue_account.org_id != org_id
-            || revenue_account.account_type
-                != orbis_domain::entities::account::AccountType::Revenue
+            || revenue_account.account_type != orbis_domain::entities::account::AccountType::Revenue
         {
             return Err(DomainError::Validation(
                 "The revenue account must be a revenue account in this organization".into(),
@@ -707,9 +705,7 @@ impl FinanceService {
         let frequency = match frequency.as_deref().unwrap_or("yearly") {
             "once" => orbis_domain::entities::fee_template::FeeFrequency::Once,
             "monthly" => orbis_domain::entities::fee_template::FeeFrequency::Monthly,
-            "termly" | "per_term" => {
-                orbis_domain::entities::fee_template::FeeFrequency::PerTerm
-            }
+            "termly" | "per_term" => orbis_domain::entities::fee_template::FeeFrequency::PerTerm,
             "yearly" | "annual" => orbis_domain::entities::fee_template::FeeFrequency::Annual,
             value => {
                 return Err(DomainError::Validation(format!(

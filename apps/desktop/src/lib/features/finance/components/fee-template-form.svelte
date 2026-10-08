@@ -195,15 +195,17 @@ const selectedFrequencyLabel = $derived(
 
 async function handleSubmit() {
   const applicableLevels =
-    !applyToAllGrades && selectedLevels.length > 0
-      ? JSON.stringify({ levels: selectedLevels })
-      : null;
+    !applyToAllGrades && selectedLevels.length > 0 ? selectedLevels : null;
   if (!applyToAllGrades && selectedLevels.length === 0) {
     toast.error(m.common_ft_error_levels_required());
     return;
   }
   const submitted = await form.submit(async (payload) => {
-    const request = { ...payload, applicable_levels: applicableLevels };
+    const request = {
+      ...payload,
+      default_amount: String(payload.default_amount),
+      applicable_levels: applicableLevels,
+    };
     if (template?.id) {
       await api.updateFeeTemplate(template.id, request);
       toast.success(m.common_ft_update_success());

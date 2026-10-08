@@ -86,7 +86,8 @@ const remainingStandardClasses = $derived(
         (classItem) =>
           String(classItem.unit_id) === selectedUnitId &&
           String(classItem.period_id) === selectedPeriodId &&
-          classItem.name.trim().toLowerCase() === preset.name.toLowerCase() &&
+          (classItem.name.trim().toLowerCase() === preset.name.toLowerCase() ||
+            classItem.name_ar?.trim().toLowerCase() === preset.nameAr.toLowerCase()) &&
           classItem.level.trim().toLowerCase() === preset.grade.toLowerCase(),
       ),
   ),
@@ -226,7 +227,9 @@ async function handleCreateClass() {
       (classItem) =>
         String(classItem.unit_id) === selectedUnitId &&
         String(classItem.period_id) === selectedPeriodId &&
-        classItem.name.trim().toLowerCase() === resolvedName.toLowerCase() &&
+        (classItem.name.trim().toLowerCase() === resolvedName.toLowerCase() ||
+          (!!classNameAr.trim() &&
+            classItem.name_ar?.trim().toLowerCase() === classNameAr.trim().toLowerCase())) &&
         classItem.level.trim().toLowerCase() === resolvedLevel.toLowerCase(),
     )
   ) {
@@ -590,6 +593,13 @@ async function handleBatchImportClasses() {
                     </div>
                     <div class="text-[10px] text-muted-foreground">
                       {cls.level} | {cls.capacity || 30}
+                      {#if orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))}
+                        · {orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))?.name_ar ||
+                          orgUnits.find((unit) => String(unit.id) === String(cls.unit_id))?.name}
+                      {/if}
+                      {#if periods.find((period) => String(period.id) === String(cls.period_id))}
+                        · {periods.find((period) => String(period.id) === String(cls.period_id))?.name}
+                      {/if}
                     </div>
                   </div>
                   <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
