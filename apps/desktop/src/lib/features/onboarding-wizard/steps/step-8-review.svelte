@@ -5,6 +5,7 @@ import { effectiveContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Progress } from "@orbis/ui/progress";
+import { Card, CardContent } from "@orbis/ui/card";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import {
@@ -91,23 +92,28 @@ async function handleCompleteAndLaunch() {
   {/if}
 
   {#if isRefreshing && !systemStore.onboardingState}
-    <div class="flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border border-border/70 bg-card p-8 text-center">
+    <Card>
+      <CardContent class="min-h-56 items-center justify-center gap-3 p-8 text-center">
       <LoadingIndicator size={24} class="size-6 text-primary" />
       <p class="text-sm text-muted-foreground" aria-live="polite">
         {m.common_control_loading()}
       </p>
-    </div>
+      </CardContent>
+    </Card>
   {:else if !systemStore.onboardingState}
-    <div class="flex min-h-56 flex-col items-center justify-center gap-4 rounded-2xl border border-border/70 bg-card p-8 text-center">
+    <Card>
+      <CardContent class="min-h-56 items-center justify-center gap-4 p-8 text-center">
       <p class="max-w-md text-sm text-muted-foreground">
         {m.onboarding_step8_err_readiness()}
       </p>
       <Button variant="outline" size="sm" onclick={refreshDAG}>
         {m.onboarding_step8_recheck_btn()}
       </Button>
-    </div>
+      </CardContent>
+    </Card>
   {:else if launchSuccess}
-    <div class="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-8 text-center space-y-4 animate-in fade-in zoom-in duration-300">
+    <Card>
+      <CardContent class="items-center space-y-4 bg-emerald-500/10 p-8 text-center animate-in fade-in zoom-in duration-300">
       <div class="mx-auto flex size-16 items-center justify-center rounded-full bg-emerald-500 text-white text-3xl font-bold shadow-lg shadow-emerald-500/30">
         ✓
       </div>
@@ -120,45 +126,48 @@ async function handleCompleteAndLaunch() {
       <div class="flex justify-center pt-2">
         <LoadingIndicator size={24} class="size-6 text-primary" />
       </div>
-    </div>
+      </CardContent>
+    </Card>
   {:else}
     <!-- Readiness Scorecard -->
-    <div class="rounded-xl border border-border/60 bg-card p-6 shadow-xs space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            {m.onboarding_step8_score_title()}
-          </span>
-          <div class="text-3xl font-extrabold text-foreground mt-1 flex items-center gap-3">
-            <span>{overallProgress}%</span>
-            {#if isReady}
-              <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs py-1 px-2.5">
-                {m.onboarding_step8_ready_badge()}
-              </Badge>
-            {:else}
-              <Badge variant="outline" class="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs py-1 px-2.5">
-                {m.onboarding_step8_required_tasks_count({
-                  completed: completedRequiredTaskCount,
-                  total: requiredTaskCount,
-                })}
-              </Badge>
-            {/if}
+    <Card>
+      <CardContent class="space-y-4 p-6">
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              {m.onboarding_step8_score_title()}
+            </span>
+            <div class="mt-1 flex items-center gap-3 text-3xl font-extrabold text-foreground">
+              <span>{overallProgress}%</span>
+              {#if isReady}
+                <Badge variant="outline" class="border-emerald-500/30 bg-emerald-500/10 text-xs py-1 px-2.5 text-emerald-600 dark:text-emerald-400">
+                  {m.onboarding_step8_ready_badge()}
+                </Badge>
+              {:else}
+                <Badge variant="outline" class="border-amber-500/30 bg-amber-500/10 text-xs py-1 px-2.5 text-amber-600 dark:text-amber-400">
+                  {m.onboarding_step8_required_tasks_count({
+                    completed: completedRequiredTaskCount,
+                    total: requiredTaskCount,
+                  })}
+                </Badge>
+              {/if}
+            </div>
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isRefreshing}
+            onclick={refreshDAG}
+            class="self-start text-xs sm:self-auto"
+          >
+            {isRefreshing ? m.onboarding_step8_rechecking_btn() : m.onboarding_step8_recheck_btn()}
+          </Button>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isRefreshing}
-          onclick={refreshDAG}
-          class="text-xs self-start sm:self-auto"
-        >
-          {isRefreshing ? m.onboarding_step8_rechecking_btn() : m.onboarding_step8_recheck_btn()}
-        </Button>
-      </div>
-
-      <Progress value={overallProgress} class="h-2.5 bg-muted" />
-    </div>
+        <Progress value={overallProgress} class="h-2.5 bg-muted" />
+      </CardContent>
+    </Card>
 
     {#if warnings.length > 0}
       <div class="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-900 dark:text-amber-100" role="status">
@@ -175,7 +184,8 @@ async function handleCompleteAndLaunch() {
       title={m.onboarding_step8_checklist_title()}
       description={m.onboarding_step8_checklist_desc()}
     >
-      <div class="divide-y divide-border/40 rounded-lg border border-border/50 bg-card overflow-hidden">
+      <Card>
+        <CardContent class="divide-y divide-border/40 overflow-hidden p-0">
         {#each tasks as task (task.id)}
           {@const step = findStepForTask(steps, task.id)}
           {@const statusLabel = task.status === "completed"
@@ -229,7 +239,8 @@ async function handleCompleteAndLaunch() {
             {/if}
           </div>
         {/each}
-      </div>
+        </CardContent>
+      </Card>
     </OnboardingSection>
 
     <!-- Inline Action & Final Launch Bar -->

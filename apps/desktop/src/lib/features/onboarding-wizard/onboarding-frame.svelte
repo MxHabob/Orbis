@@ -8,6 +8,8 @@
   import { effectiveContext, systemStore } from "$lib/stores";
   import { Button } from "@orbis/ui/button";
   import { LoadingIndicator } from "@orbis/ui";
+  import { Skeleton } from "@orbis/ui/skeleton";
+  import { Card, CardContent } from "@orbis/ui/card";
   import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
   import SetupWizardHeader from "$lib/shared/components/setup-wizard-header.svelte";
   import SetupWizardFooter from "$lib/shared/components/setup-wizard-footer.svelte";
@@ -138,6 +140,7 @@
       {stepPosition}
       progressValue={hasLoadedState ? overallProgress : 0}
       ariaLabel={m.onboarding_stages_title()}
+      isLoading={isLoadingState}
       closeLabel={m.onboarding_exit_dashboard()}
       onClose={exitSetup}
     />
@@ -146,25 +149,35 @@
   {#if isLoadingState || stateLoadError}
     <div class="mx-auto flex min-h-64 w-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
       {#if isLoadingState}
-        <LoadingIndicator size={28} class="size-7 text-primary" />
-        <p class="text-sm text-muted-foreground" aria-live="polite">
-          {m.onboarding_state_loading()}
-        </p>
+        <Card class="w-full">
+          <CardContent class="flex-row items-center gap-4 p-6">
+            <LoadingIndicator size={28} class="size-7 text-primary" label={m.onboarding_state_loading()} />
+            <div class="flex-1 space-y-3" aria-hidden="true">
+              <Skeleton class="h-4 w-1/3" />
+              <Skeleton class="h-3 w-full" />
+              <Skeleton class="h-3 w-4/5" />
+            </div>
+          </CardContent>
+        </Card>
+        <p class="sr-only" aria-live="polite">{m.onboarding_state_loading()}</p>
       {:else}
-        <div class="w-full space-y-4 rounded-2xl border border-destructive/30 bg-card p-6 text-start">
+        <Card class="w-full">
+          <CardContent class="space-y-4 p-6 text-start">
           <p class="text-sm font-semibold text-destructive" role="alert">
             {m.onboarding_state_load_failed()}
           </p>
           <Button variant="outline" size="sm" onclick={loadOnboardingState}>
             {m.onboarding_retry()}
           </Button>
-        </div>
+          </CardContent>
+        </Card>
       {/if}
     </div>
   {:else}
     {#if currentStep && !currentStep.isAccessible}
       <div class="mx-auto flex min-h-64 w-full max-w-xl flex-col items-center justify-center gap-4 px-4 py-10 text-center">
-        <div class="w-full space-y-4 rounded-2xl border border-border bg-card p-6">
+        <Card class="w-full">
+          <CardContent class="space-y-4 p-6">
           <div class="space-y-2">
             <h2 class="text-base font-semibold text-foreground">
               {m.onboarding_step_unavailable_title()}
@@ -176,7 +189,8 @@
           <Button variant="outline" size="sm" onclick={goToOverview}>
             {m.common_nav_overview()}
           </Button>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     {:else}
       {@render children()}

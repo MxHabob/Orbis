@@ -221,7 +221,8 @@ const strengthLabel = $derived.by(() => {
             </p>
           {/if}
         </div>
-        </CardContent>
+      </div>
+      </CardContent>
       </Card>
     </div>
 </div>

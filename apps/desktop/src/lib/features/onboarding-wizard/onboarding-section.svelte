@@ -19,7 +19,7 @@ let {
 } = $props();
 </script>
 
-<Card class="overflow-hidden rounded-2xl border-border/70 bg-card shadow-sm">
+<Card>
   <CardHeader class="gap-3 px-5 pt-5 sm:px-6 sm:pt-6">
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0 space-y-1.5">

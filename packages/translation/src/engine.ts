@@ -92,7 +92,18 @@ function translateWithDictionary(
         .slice(wordIndex, end + 1)
         .map((partIndex) => parts[partIndex]!)
         .join(" ");
-      const result = entries.get(normalizeTerm(phrase, sourceLanguage));
+      const normalizedPhrase = normalizeTerm(phrase, sourceLanguage);
+      let result = entries.get(normalizedPhrase);
+      if (
+        result === undefined &&
+        sourceLanguage === "ar" &&
+        wordIndex === end
+      ) {
+        const norm = normalizeTerm(parts[wordIndexes[wordIndex]!]!, "ar");
+        if (norm.startsWith("ال") && norm.length > 3) {
+          result = entries.get(norm.slice(2));
+        }
+      }
       if (result !== undefined) {
         matchedEnd = end;
         matchedValue = result;

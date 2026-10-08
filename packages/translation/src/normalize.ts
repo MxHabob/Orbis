@@ -1,4 +1,4 @@
-const arabicMarks = /[\u064B-\u065F\u0670\u06D6-\u06ED]/gu;
+const arabicMarks = /[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/gu;
 const alefVariants = /[أإآٱ]/gu;
 
 export function normalizeArabic(value: string): string {
@@ -6,6 +6,7 @@ export function normalizeArabic(value: string): string {
     .normalize("NFKC")
     .replace(arabicMarks, "")
     .replace(alefVariants, "ا")
+    .replace(/ة/gu, "ه")
     .replace(/ى/gu, "ي")
     .replace(/\s+/gu, " ")
     .trim();
@@ -22,3 +23,4 @@ export function normalizeEnglish(value: string): string {
 export function normalizeTerm(value: string, language: "ar" | "en"): string {
   return language === "ar" ? normalizeArabic(value) : normalizeEnglish(value);
 }
+

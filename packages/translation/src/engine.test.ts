@@ -192,6 +192,124 @@ describe("offline translation engine", () => {
     ).toEqual({ status: "unavailable", reason: "empty" });
   });
 
+  test("translates full educational institution names (e.g. Sanaa Model School)", () => {
+    expect(
+      engine.suggest({
+        text: "مدرسة صنعاء النموذجية",
+        sourceLanguage: "ar",
+        kind: "label",
+      }),
+    ).toEqual({
+      status: "suggestion",
+      text: "Sanaa Model School",
+      method: "dictionary",
+      approximate: false,
+    });
+
+    expect(
+      engine.suggest({
+        text: "جامعة صنعاء",
+        sourceLanguage: "ar",
+        kind: "label",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Sanaa University",
+    });
+
+    expect(
+      engine.suggest({
+        text: "كلية الهندسة وتكنولوجيا المعلومات",
+        sourceLanguage: "ar",
+        kind: "label",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Faculty of Engineering and Information Technology",
+    });
+
+    expect(
+      engine.suggest({
+        text: "الرسوم الدراسية",
+        sourceLanguage: "ar",
+        kind: "label",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Tuition Fees",
+    });
+
+    expect(
+      engine.suggest({
+        text: "المنهج الوطني",
+        sourceLanguage: "ar",
+        kind: "label",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "National Curriculum",
+    });
+  });
+
+  test("handles taa marbuta vs haa in user input", () => {
+    expect(
+      engine.suggest({
+        text: "مدرسه صنعاء النموذجيه",
+        sourceLanguage: "ar",
+        kind: "label",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Sanaa Model School",
+    });
+  });
+
+  test("translates multi-part Arabic compound person names", () => {
+    expect(
+      engine.suggest({
+        text: "محمد عبد الرحمن",
+        sourceLanguage: "ar",
+        kind: "person-name",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Mohammed Abdulrahman",
+    });
+
+    expect(
+      engine.suggest({
+        text: "فاطمة الزهراء علي",
+        sourceLanguage: "ar",
+        kind: "person-name",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Fatimah Al-Zahra Ali",
+    });
+
+    expect(
+      engine.suggest({
+        text: "أبو بكر سالم",
+        sourceLanguage: "ar",
+        kind: "person-name",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Abu Bakr Salem",
+    });
+
+    expect(
+      engine.suggest({
+        text: "سيف الدين عمر",
+        sourceLanguage: "ar",
+        kind: "person-name",
+      }),
+    ).toMatchObject({
+      status: "suggestion",
+      text: "Saif Al-Din Omar",
+    });
+  });
+
   test("suggestion latency stays below the 10 ms p95 budget", () => {
     const text = Array.from({ length: 30 }, () => "قاعة").join(" ");
     const samples: number[] = [];

@@ -12,6 +12,7 @@
   import { systemStore } from "$lib/stores";
   import { refreshOnboardingState } from "../refresh-onboarding-state";
   import { Button } from "@orbis/ui/button";
+  import { Card, CardContent } from "@orbis/ui/card";
   import OnboardingStepHeader from "../onboarding-step-header.svelte";
   import { getTasksForStep } from "../onboarding-steps";
 
@@ -149,7 +150,8 @@
       {m.common_control_loading()}
     </div>
   {:else}
-    <section class="space-y-4 rounded-xl border border-border/50 bg-card p-5">
+    <Card>
+      <CardContent class="space-y-4 p-5">
       <div class="space-y-1">
         <h2 class="text-base font-semibold">{m.onboarding_step_scheduling_year()}</h2>
         <p class="text-sm text-muted-foreground">{m.onboarding_step_scheduling_desc()}</p>
@@ -220,6 +222,7 @@
             : m.onboarding_step_scheduling_provision_btn()}
         </Button>
       </div>
-    </section>
+      </CardContent>
+    </Card>
   {/if}
 </div>

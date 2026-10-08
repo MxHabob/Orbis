@@ -2,6 +2,7 @@
   import * as m from "$lib/paraglide/messages";
   import { Button } from "@orbis/ui/button";
   import { ChevronLeft, ChevronRight } from "@orbis/icons";
+  import { LoadingIndicator } from "@orbis/ui";
 
   let {
     backLabel,
@@ -28,7 +29,9 @@
   } = $props();
 </script>
 
-<footer class="shrink-0 border-t border-border/70 bg-background/95 px-3 py-3 backdrop-blur sm:px-6">
+<footer
+  class="z-20 mx-4 mb-3 w-[calc(100%-2rem)] max-w-5xl shrink-0 self-center rounded-lg border border-border/70 bg-background/90 px-3 py-3 shadow-md backdrop-blur sm:mb-4 sm:px-6"
+>
   <nav
     class="mx-auto flex w-full max-w-5xl items-center justify-between gap-2"
     dir={isRTL ? "rtl" : "ltr"}
@@ -72,7 +75,11 @@
           onclick={onNext}
           disabled={!canGoNext || isSubmitting}
           class="gap-1 px-3 sm:gap-2 sm:px-4"
+          aria-busy={isSubmitting}
         >
+          {#if isSubmitting}
+            <LoadingIndicator size={16} class="size-4" label={m.common_control_loading()} />
+          {/if}
           <span>{nextLabel}</span>
           {#if isRTL}
             <ChevronLeft class="size-4" />
