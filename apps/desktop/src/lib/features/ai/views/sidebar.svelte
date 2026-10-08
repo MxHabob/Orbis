@@ -59,7 +59,7 @@ interactive tool inspections, and consequential action approvals.
 
   let preferredWidth = $state(pxToRem(400));
   const minWidth = $derived(pxToRem(320));
-  const maxWidth = $derived(pxToRem(650));
+  const maxWidth = $derived(pxToRem(1470));
 
   const activeSession = $derived(
     sessions.find((s) => s.id === activeSessionId) || null,
