@@ -11,6 +11,7 @@ import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { Card, CardContent } from "@orbis/ui/card";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
@@ -52,7 +53,8 @@ const strengthLabel = $derived.by(() => {
 
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-start">
     <!-- Left Column: Avatar & Role Identity Preview -->
-    <div class="lg:col-span-4 rounded-2xl border border-border/70 bg-card p-6 flex flex-col items-center text-center justify-between shadow-xs">
+    <Card class="lg:col-span-4">
+      <CardContent class="flex flex-col items-center justify-between p-6 text-center">
       <div class="space-y-4 w-full flex flex-col items-center">
         <UserAvatar
           name={`${form.adminFirstNameAr || form.adminFirstName} ${form.adminLastNameAr || form.adminLastName}`.trim() || m.ui_onboarding_admin_administrator()}
@@ -73,10 +75,12 @@ const strengthLabel = $derived.by(() => {
       <div class="w-full mt-6 pt-4 border-t border-border/40 text-xs text-muted-foreground leading-relaxed">
         {m.operations_ui_admin_password_security_notice()}
       </div>
-    </div>
+      </CardContent>
+    </Card>
 
     <!-- Right Column: Form Inputs -->
-    <div class="lg:col-span-8 rounded-2xl border border-border/70 bg-card p-6 space-y-5 shadow-xs">
+    <Card class="lg:col-span-8">
+      <CardContent class="space-y-5 p-6">
       <div class="border-b border-border/40 pb-3">
         <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
           {m.ui_onboarding_admin_administrator_credentials()}
@@ -217,7 +221,7 @@ const strengthLabel = $derived.by(() => {
             </p>
           {/if}
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
-  </div>
 </div>

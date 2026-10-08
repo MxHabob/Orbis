@@ -20,6 +20,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { Card, CardContent } from "@orbis/ui/card";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
@@ -41,8 +42,8 @@ let {
     </p>
   </div>
 
-  <section class="max-w-3xl rounded-2xl border border-border/70 bg-card p-5 text-start shadow-xs sm:p-7">
-    <div class="space-y-6">
+  <Card class="max-w-3xl">
+    <CardContent class="space-y-6 p-5 text-start sm:p-7">
       <BilingualNameFields
         arId="org-name-ar"
         enId="org-name-en"
@@ -109,6 +110,6 @@ let {
         </Select>
       </div>
       </div>
-    </div>
-  </section>
+    </CardContent>
+  </Card>
 </div>

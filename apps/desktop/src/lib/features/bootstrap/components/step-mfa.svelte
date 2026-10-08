@@ -2,6 +2,7 @@
   import * as m from "$lib/paraglide/messages";
   import { Badge } from "@orbis/ui/badge";
   import { ShieldCheck } from "@orbis/icons";
+  import { Card, CardContent } from "@orbis/ui/card";
 
 </script>
 
@@ -12,7 +13,8 @@
     </Badge>
   </div>
 
-  <section class="flex items-start gap-4 rounded-2xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+  <Card>
+    <CardContent class="flex items-start gap-4 p-5 sm:p-6">
     <div class="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
       <ShieldCheck class="size-5" aria-hidden="true" />
     </div>
@@ -24,5 +26,6 @@
         {m.ui_onboarding_mfa_you_can_safely_skip_this_step_and_configure_2fa_later_in_settings()}
       </p>
     </div>
-  </section>
+    </CardContent>
+  </Card>
 </div>

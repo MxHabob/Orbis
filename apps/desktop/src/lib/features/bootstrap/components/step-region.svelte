@@ -11,6 +11,7 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { Check } from "@orbis/icons";
+import { Card, CardContent } from "@orbis/ui/card";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import TimezoneSettings from "$lib/shared/components/timezone-settings.svelte";
 
@@ -37,7 +38,8 @@ function selectCountry(countryCode: string) {
     </p>
   </header>
 
-  <div class="space-y-6 rounded-2xl border border-border/70 bg-card p-5 shadow-xs sm:p-7">
+  <Card>
+    <CardContent class="space-y-6 p-5 sm:p-7">
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div class="space-y-1.5">
         <Label for="org-country" class="text-xs font-medium text-foreground">
@@ -191,5 +193,6 @@ function selectCountry(countryCode: string) {
         {/each}
       </div>
     </fieldset>
-  </div>
+    </CardContent>
+  </Card>
 </section>

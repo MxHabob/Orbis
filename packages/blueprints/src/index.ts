@@ -240,7 +240,7 @@ export const UNIVERSITY_BLUEPRINT: InstitutionBlueprint = {
 export const INSTITUTE_BLUEPRINT: InstitutionBlueprint = {
   type: "vocational_institute",
   nameEn: "Vocational & Training Institute",
-  nameAr: "معهد مهني / مركز تدريب وتأهيل",
+  nameAr: "معهد مهني",
   descriptionEn: "Tailored for training centers and institutes with certificate tracks, training cohorts, and flexible modules.",
   descriptionAr: "مصمم للمعاهد ومراكز التدريب المهني مع دعم المسارات التدريبية، الدفعات، والشهادات المعتمدة.",
   modules: {
@@ -288,6 +288,15 @@ export const INSTITUTE_BLUEPRINT: InstitutionBlueprint = {
   ],
 };
 
+export const LANGUAGE_CENTER_BLUEPRINT: InstitutionBlueprint = {
+  ...INSTITUTE_BLUEPRINT,
+  type: "language_center",
+  nameEn: "Language Learning Center",
+  nameAr: "مركز تعليم اللغات",
+  descriptionEn: "Designed for language programs with placement, intensive courses, flexible schedules, and certificates.",
+  descriptionAr: "مخصص لبرامج تعليم اللغات مع تحديد المستوى والدورات المكثفة والجداول المرنة والشهادات.",
+};
+
 // ═══════════════════════════════════════════════════════════════
 // Registry & Helper Functions
 // ═══════════════════════════════════════════════════════════════
@@ -296,7 +305,7 @@ export const BLUEPRINTS: Record<InstitutionType, InstitutionBlueprint> = {
   k12_school: SCHOOL_BLUEPRINT,
   university: UNIVERSITY_BLUEPRINT,
   vocational_institute: INSTITUTE_BLUEPRINT,
-  language_center: INSTITUTE_BLUEPRINT,
+  language_center: LANGUAGE_CENTER_BLUEPRINT,
 };
 
 /**

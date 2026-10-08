@@ -13,6 +13,7 @@ import {
 import type { BootstrapResult } from "$lib/api/types";
 import { getBlueprint } from "@orbis/blueprints";
 import { Button } from "@orbis/ui/button";
+import { Card, CardContent } from "@orbis/ui/card";
 import { Check } from "@orbis/icons";
 
 let {
@@ -67,7 +68,8 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
   </div>
 
   {#if isComplete}
-    <div class="rounded-2xl border border-border/70 bg-card shadow-lg text-center p-10 space-y-6">
+    <Card>
+      <CardContent class="space-y-6 p-10 text-center">
       <div class="size-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20 shadow-sm">
         <Check size={32} strokeWidth={2.5} />
       </div>
@@ -116,19 +118,23 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
           </span>
         </Button>
       </div>
-    </div>
+      </CardContent>
+    </Card>
   {:else if isSubmitting}
-    <div class="flex min-h-64 flex-col items-center justify-center gap-4 rounded-2xl border border-border/70 bg-card p-8 text-center">
+    <Card>
+      <CardContent class="flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center">
       <LoadingIndicator size={32} class="size-8 text-primary" />
       <p class="max-w-lg text-sm leading-relaxed text-muted-foreground" aria-live="polite">
         {m.ui_onboarding_review_please_wait_while_orbis_provisions_initial_records_and_configurations()}
       </p>
-    </div>
+      </CardContent>
+    </Card>
   {:else}
     <!-- Summary Dossier Matrix -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
       <!-- Blueprint & Organization -->
-      <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-4 shadow-xs">
+      <Card>
+        <CardContent class="space-y-4 p-6">
         <div class="border-b border-border/40 pb-2.5">
           <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
             {m.ui_onboarding_review_blueprint_institution()}
@@ -161,10 +167,12 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
             <span class="text-end font-semibold text-foreground">{size?.label() ?? form.organizationSize}</span>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <!-- Regional & Administrator -->
-      <div class="rounded-2xl border border-border/70 bg-card p-6 space-y-4 shadow-xs">
+      <Card>
+        <CardContent class="space-y-4 p-6">
         <div class="border-b border-border/40 pb-2.5">
           <h3 class="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
             {m.ui_onboarding_review_region_master_admin()}
@@ -197,7 +205,8 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
             <span class="font-semibold text-foreground font-mono truncate max-w-[200px]">{form.adminEmail}</span>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
 
     {#if error}

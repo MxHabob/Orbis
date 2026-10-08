@@ -4,6 +4,7 @@
   import { api } from "$lib/api/client";
   import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
   import { Badge } from "@orbis/ui/badge";
+  import { Card, CardContent } from "@orbis/ui/card";
   import { Calendar, Sparkles } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
   import EmptyState from "$lib/shared/components/empty-state.svelte";
@@ -47,7 +48,8 @@
 </script>
 
 <section class="mx-auto w-full max-w-5xl space-y-6 py-2">
-  <div class="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-lg">
+  <Card>
+    <CardContent class="p-0">
     <div class="space-y-2 border-b border-border/50 p-6 sm:p-8">
       {#if appInfo}
         <div class="flex flex-wrap items-center gap-2">
@@ -157,5 +159,6 @@
         />
       {/if}
     </div>
-  </div>
+    </CardContent>
+  </Card>
 </section>
