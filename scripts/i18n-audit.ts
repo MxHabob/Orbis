@@ -61,13 +61,46 @@ async function main() {
   const usedKeys = new Set<string>();
   const literalMessageKeys = new Set<string>();
   const keyPattern = /\b(?:m|messages)\.([A-Za-z0-9_]+)\s*\(/g;
+  const messageNamespacePattern =
+    /\bimport\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s*["'][^"']*paraglide\/messages(?:\.js)?["']/g;
   const literalMessageKeyPattern = /["'](iam_[A-Za-z0-9_]+)["']/g;
+  const nonMessageObjectProperties = new Set([
+    "content",
+    "executedTools",
+    "executed_tools",
+    "field",
+    "id",
+    "is_digital_gateway",
+    "name",
+    "present_records",
+    "proposedActions",
+    "proposed_actions",
+    "role",
+    "timestamp",
+    "total_attendance_records",
+    "user_id",
+    "value",
+  ]);
 
   const source = sourceText.map(({ text }) => text).join("\n");
   for (const match of source.matchAll(keyPattern)) {
     if (match[1]) usedKeys.add(match[1]);
   }
   for (const { text } of sourceText) {
+    for (const importMatch of text.matchAll(messageNamespacePattern)) {
+      const namespace = importMatch[1];
+      if (!namespace) continue;
+      const escapedNamespace = namespace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const messageReferencePattern = new RegExp(
+        `\\b${escapedNamespace}\\.([A-Za-z0-9_]+)\\b`,
+        "g",
+      );
+      for (const match of text.matchAll(messageReferencePattern)) {
+        if (match[1] && !nonMessageObjectProperties.has(match[1])) {
+          usedKeys.add(match[1]);
+        }
+      }
+    }
     for (const match of text.matchAll(literalMessageKeyPattern)) {
       if (match[1]) literalMessageKeys.add(match[1]);
     }
@@ -233,10 +266,7 @@ async function main() {
 
   function printList(title: string, values: string[]) {
     console.log(`\n${title} (${values.length})`);
-    for (const value of values.slice(0, 20)) console.log(`- ${value}`);
-    if (values.length > 20) {
-      console.log(`... and ${values.length - 20} more`);
-    }
+    for (const value of values) console.log(`- ${value}`);
   }
 
   console.log(

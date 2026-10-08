@@ -79,15 +79,6 @@ const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
 const canGoBack = $derived(currentStepIndex > 0);
 const isSkippable = $derived(currentStep === "mfa");
 const isLastStep = $derived(currentStep === "review");
-const stepLabels: Record<OnboardingStep, () => string> = {
-  intro: m.ui_onboarding_intro_release_notes,
-  blueprint: m.ui_onboarding_blueprint_select_institutional_blueprint,
-  organization: m.ui_onboarding_organization_organization_profile_identity,
-  region: m.ui_onboarding_organization_regional_fiscal_parameters,
-  admin: m.ui_onboarding_admin_primary_administrator_account,
-  mfa: m.ui_onboarding_mfa_two_factor_authentication_setup,
-  review: m.ui_onboarding_review_launch_bootstrap,
-};
 // Silent background environment detection and calibration
 async function loadEnvironment() {
   try {
