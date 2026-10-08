@@ -225,17 +225,42 @@ Checks if a newer release is published for the specified channel and platform.
 ```json
 {
   "update_available": true,
+  "current_version": "1.0.0",
   "latest_version": "1.1.0",
   "release_notes": "Added advanced student grading engine & multi-term analytics",
+  "published_at": "2026-06-15T10:30:00Z",
+  "min_upgrade_version": "1.0.0",
   "artifact": {
     "file_name": "Orbis_Setup_1.1.0.exe",
-    "storage_path": "artifacts/orbis/1.1.0/windows/x86_64/Orbis_Setup_1.1.0.exe",
+    "download_url": "https://api.mulverse.com/api/v1/public/updates/artifacts/00000000-0000-0000-0000-000000000000/download",
     "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "signature": "Tauri updater signature",
     "file_size_bytes": 45000000
-  },
-  "min_upgrade_version": "1.0.0"
+  }
 }
 ```
+
+The response never exposes the server's local storage path. The download URL serves bytes only for an available artifact belonging to a published release.
+
+### 4.4.1 `GET /api/v1/public/updates/tauri`
+
+Tauri updater-compatible dynamic manifest. It accepts `product_key`, `channel`, `current_version`, `target` (`windows` or `darwin`), and `arch` (for example `x86_64` or `aarch64`). It returns `204 No Content` when there is no update, or the Tauri manifest shape:
+
+```json
+{
+  "version": "1.1.0",
+  "notes": "Release notes",
+  "pub_date": "2026-06-15T10:30:00Z",
+  "url": "https://api.mulverse.com/api/v1/public/updates/artifacts/00000000-0000-0000-0000-000000000000/download",
+  "signature": "Tauri updater signature"
+}
+```
+
+### 4.4.2 Release artifact upload
+
+Release automation authenticates with `Authorization: Bearer <MULVERSE_RELEASE_API_TOKEN>`. Upload each binary using `PUT /api/v1/admin/releases/{id}/artifacts/{platform}/{architecture}` with the binary as the request body and `x-file-name`, `x-checksum-sha256`, and base64-encoded `x-signature-base64` headers. The API streams the file to `MULVERSE_ARTIFACT_STORAGE_DIR`, verifies its SHA-256, and registers it. Repeating an identical upload is safe; a different artifact for an occupied platform/architecture returns `409 Conflict`.
+
+Configure `MULVERSE_RELEASE_API_TOKEN`, a persistent `MULVERSE_ARTIFACT_STORAGE_DIR`, and the externally reachable `MULVERSE_PUBLIC_BASE_URL` on the platform server. Orbis GitHub Actions require the Mulverse API base URL, release token, product ID, and updater signing-key secrets/variables. The private GitHub draft is an authenticated source for automation only; client downloads come from Mulverse.
 
 ---
 

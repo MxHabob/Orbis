@@ -1,6 +1,5 @@
 pub mod authen;
 pub mod email;
-pub mod entitlement_adapter;
 pub mod hikvision;
 pub mod iam;
 pub mod identity;

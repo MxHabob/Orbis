@@ -10,6 +10,7 @@ import {
   AppNotification,
   ArchiveBox,
   ArrowUpTray,
+  Bolt,
   BookOpen,
   BuildingOffice,
   Calendar,
@@ -45,6 +46,11 @@ const navGroups = $derived([
         path: "",
         label: m.settings_nav_general(),
         icon: Settings,
+      },
+      {
+        path: "license",
+        label: m.license_nav_title(),
+        icon: Bolt,
       },
       {
         path: "notifications",

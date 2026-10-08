@@ -514,11 +514,12 @@ impl AppState {
 
         // ── Mulverse License Runtime ────────────────────────────────
         let app_version = env!("CARGO_PKG_VERSION").to_string();
+        let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
         let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
             orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
                 app_data_dir,
                 &app_version,
-                None, // Use default Mulverse Platform URL
+                mulverse_url.as_deref(),
             )
             .map_err(|e| format!("Failed to create license runtime: {e}"))?,
         );

@@ -48,7 +48,7 @@ onMount(() => {
 	{@render children()}
 </QueryClientProvider>
 
-<Toaster/>
+<Toaster position="top-center"/>
 
 <!-- Hidden locale links for paraglide -->
 <div style="display:none">

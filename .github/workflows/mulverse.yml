@@ -1,0 +1,65 @@
+name: Retry Mulverse Release Sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version to sync (for example 1.2.3)
+        required: true
+        type: string
+      channel:
+        description: Mulverse release channel stable_key
+        required: false
+        default: stable
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mulverse-release-${{ inputs.version }}-${{ inputs.channel }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Retry Mulverse release sync
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MULVERSE_API_BASE_URL: ${{ secrets.MULVERSE_API_BASE_URL }}
+      MULVERSE_API_TOKEN: ${{ secrets.MULVERSE_API_TOKEN }}
+      MULVERSE_PRODUCT_ID: ${{ secrets.MULVERSE_PRODUCT_ID }}
+      MULVERSE_CHANNEL_STABLE_KEY: ${{ inputs.channel }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_ARTIFACT_DIR: release-artifacts
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+
+      - name: Validate requested release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${RELEASE_VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must use MAJOR.MINOR.PATCH."
+            exit 1
+          fi
+          echo "RELEASE_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$VERSION" >> "$GITHUB_ENV"
+
+      - name: Download signed updater artifacts from the private release
+        run: |
+          mkdir -p "$RELEASE_ARTIFACT_DIR"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir "$RELEASE_ARTIFACT_DIR" \
+            --pattern "*.nsis.zip" \
+            --pattern "*.nsis.zip.sig" \
+            --pattern "*.app.tar.gz" \
+            --pattern "*.app.tar.gz.sig" \
+            --pattern "latest.json"
+
+      - name: Sync release idempotently to Mulverse
+        run: node scripts/sync-mulverse-release.mjs

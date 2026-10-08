@@ -3,7 +3,13 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { Bolt } from "@orbis/icons";
-import { uiStore } from "$lib/stores";
+import { uiStore, licenseStore } from "$lib/stores";
+
+const dotColor = $derived.by(() => {
+	if (licenseStore.isExpired || licenseStore.isRevoked) return "bg-destructive";
+	if (licenseStore.isTrial || licenseStore.isExpiring) return "bg-amber-500";
+	return "bg-primary";
+});
 </script>
 
 <Tooltip>
@@ -18,7 +24,7 @@ import { uiStore } from "$lib/stores";
 						aria-label={m.common_upgrade_title()}
 					>
 						<Bolt size={16} strokeWidth={1.8} class="text-foreground" />
-						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full bg-primary border border-background"></span>
+						<span class="absolute -top-0.5 -inset-e-0.5 w-1.5 h-1.5 rounded-full {dotColor} border border-background"></span>
 					</Button>
 		{/snippet}
 	</TooltipTrigger>

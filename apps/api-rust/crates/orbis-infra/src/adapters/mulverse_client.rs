@@ -19,7 +19,7 @@ use std::time::Duration;
 use tracing::{debug, warn};
 
 /// Default Mulverse Platform base URL.
-const DEFAULT_BASE_URL: &str = "https://platform.mulverse.com";
+const DEFAULT_BASE_URL: &str = "https://api.mulverse.com";
 
 /// HTTP request timeout.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
@@ -167,10 +167,18 @@ impl MulverseClient {
         platform: &str,
         architecture: &str,
     ) -> Result<UpdateCheckResponse, MulverseApiError> {
-        let url = format!(
-            "{}/api/v1/public/updates/check?product_key={}&channel={}&current_version={}&platform={}&architecture={}",
-            self.base_url, product_key, channel, current_version, platform, architecture
-        );
+        let mut url = reqwest::Url::parse(&format!(
+            "{}/api/v1/public/updates/check",
+            self.base_url
+        ))
+        .map_err(|e| MulverseApiError::ParseError(e.to_string()))?;
+        url.query_pairs_mut()
+            .append_pair("product_key", product_key)
+            .append_pair("channel", channel)
+            .append_pair("current_version", current_version)
+            .append_pair("platform", platform)
+            .append_pair("architecture", architecture);
+        let url = url.to_string();
         debug!(version = %current_version, "Checking for updates with Mulverse Platform");
 
         let response = self

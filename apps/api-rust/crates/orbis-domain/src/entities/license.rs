@@ -223,18 +223,21 @@ pub struct PublicKeyInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateCheckResponse {
     pub update_available: bool,
+    pub current_version: String,
     pub latest_version: Option<String>,
     pub release_notes: Option<String>,
     pub artifact: Option<UpdateArtifact>,
     pub min_upgrade_version: Option<String>,
+    pub published_at: Option<String>,
 }
 
 /// Update artifact metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateArtifact {
     pub file_name: String,
-    pub storage_path: String,
+    pub download_url: String,
     pub checksum_sha256: String,
+    pub signature: Option<String>,
     pub file_size_bytes: u64,
 }
 
