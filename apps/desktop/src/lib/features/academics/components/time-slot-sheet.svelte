@@ -24,6 +24,8 @@ import * as m from "$lib/paraglide/messages";
 import { createTimeSlotInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import TimeSlotForm from "./time-slot-form.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   open: boolean;
@@ -206,17 +208,25 @@ async function handleDeleteSlot(id: string) {
             </Button>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <FormField label={m.academics_schedule_name_ar()} error={form.errors.name_ar?.[0]} required>
-              {#snippet children()}
-              <Input bind:value={nameAr} placeholder={m.academics_schedule_placeholder_period({ number: 1 })} class="h-8 text-xs" required />
-              {/snippet}
-            </FormField>
-            <FormField label={m.academics_schedule_name_en()} error={form.errors.name?.[0]}>
-              {#snippet children()}
-              <Input bind:value={name} placeholder={m.academics_schedule_placeholder_period_en({ number: 1 })} class="h-8 text-xs" />
-              {/snippet}
-            </FormField>
+          <div>
+            <BilingualNameFields
+              arId="slot-name-ar"
+              enId="slot-name-en"
+              arLabel={m.academics_schedule_name_ar()}
+              enLabel={m.academics_schedule_name_en()}
+              bind:arValue={nameAr}
+              bind:enValue={name}
+              arPlaceholder={m.academics_schedule_placeholder_period({ number: 1 })}
+              enPlaceholder={m.academics_schedule_placeholder_period_en({ number: 1 })}
+              arError={form.errors.name_ar?.[0]}
+              enError={form.errors.name?.[0]}
+              kind="label"
+              requestSuggestion={suggestLocalTranslation}
+              arRequired
+              disabled={isSubmitting}
+              loadingMessage={m.bilingual_entry_loading()}
+              failureMessage={m.bilingual_entry_failure()}
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-3">

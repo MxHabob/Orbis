@@ -23,6 +23,7 @@ import {
 import { confirmStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
+import { formatDate } from "$lib/core/i18n";
 import {
   OrbisGrid,
   type GridActionEvent,
@@ -175,6 +176,7 @@ const gridSource = $derived(
     selected: selectedIds.has(doc.id),
     toggleSelection: toggleSelect,
     sizeLabel: formatSize(doc.file_size_bytes),
+    created_at_display: formatDate(doc.created_at, "datetime"),
   })),
 );
 
@@ -213,10 +215,10 @@ const documentColumns = $derived<OrbisColumnDef[]>([
     cellClass: "font-mono text-[11px] text-muted-foreground",
   },
   {
-    id: "created_at",
+    id: "created_at_display",
+    prop: "created_at_display",
     header: m.settings_ui_archive_upload_date(),
     width: 160,
-    type: "date",
     readonly: true,
     cellClass: "text-muted-foreground",
   },

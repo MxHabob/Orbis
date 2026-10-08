@@ -4,8 +4,9 @@
   import { api } from "$lib/api/client";
   import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
   import { Badge } from "@orbis/ui/badge";
-  import { Calendar } from "@orbis/icons";
+  import { Calendar, Sparkles } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+  import EmptyState from "$lib/shared/components/empty-state.svelte";
   import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
   let { isRTL = false }: { isRTL?: boolean } = $props();
@@ -13,7 +14,6 @@
   let appInfo = $state<AppInfo | null>(null);
   let latestRelease = $state<ReleaseChangelogItem | null>(null);
   let isLoading = $state(true);
-  let loadError = $state<string | null>(null);
 
   function formatDate(value?: string) {
     if (!value) return null;
@@ -26,14 +26,20 @@
   onMount(async () => {
     try {
       const [info, releases] = await Promise.all([
-        api.systemGetAppInfo(),
-        api.systemGetChangelog(),
+        api.systemGetAppInfo().catch((err) => {
+          console.warn("App info load failed:", err);
+          return null;
+        }),
+        api.systemGetChangelog().catch((err) => {
+          console.warn("Changelog load failed, treating as empty:", err);
+          return [] as ReleaseChangelogItem[];
+        }),
       ]);
       appInfo = info;
       latestRelease = releases.find((release) => release.is_latest) ?? releases[0] ?? null;
     } catch (error) {
-      console.error("Failed to load application release information:", error);
-      loadError = error instanceof Error ? error.message : String(error);
+      console.warn("Failed to load application release information:", error);
+      latestRelease = null;
     } finally {
       isLoading = false;
     }
@@ -59,8 +65,6 @@
     <div class="space-y-5 p-6 sm:p-8">
       {#if isLoading}
         <p class="animate-pulse text-sm text-muted-foreground">{m.ui_changelog_fetching_live_release_data_from_github()}</p>
-      {:else if loadError}
-        <p class="text-sm text-destructive" role="alert">{m.ui_onboarding_intro_load_failed()} {loadError}</p>
       {:else if latestRelease}
         {@const publishedDate = formatDate(latestRelease.published_at)}
         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -145,7 +149,12 @@
           </section>
         {/if}
       {:else}
-        <p class="text-sm text-muted-foreground">{m.ui_onboarding_intro_no_releases()}</p>
+        <EmptyState
+          icon={Sparkles}
+          title={m.ui_onboarding_intro_no_releases()}
+          description={m.ui_changelog_no_release_notes()}
+          class="py-12"
+        />
       {/if}
     </div>
   </div>

@@ -73,12 +73,12 @@
 <div class="relative flex h-full w-full min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground selection:bg-primary/20">
   <!-- Ambient background glow for high-end feel -->
   <div class="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-    <div class="absolute -top-[20%] left-1/2 -translate-x-1/2 h-[450px] w-[750px] rounded-full bg-primary/5 blur-3xl dark:bg-primary/10"></div>
+    <div class="absolute -top-[20%] left-1/2 -translate-x-1/2 h-[450px] w-[750px] bg-primary/5 blur-3xl dark:bg-primary/10"></div>
   </div>
 
   <!-- Floating Header (Centered Top, Minimalist, No Titles or Text) -->
   <header
-    class="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 sm:gap-3 rounded-full border border-border/70 bg-card/90 dark:bg-card/90 backdrop-blur-xl shadow-lg shadow-black/10 dark:shadow-black/30 px-3 py-1.5 transition-all duration-300 ring-1 ring-border/50 max-w-[calc(100vw-2rem)]"
+    class="absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 sm:gap-3 bg-accent/30  backdrop-blur-md px-3 py-1.5 max-w-[calc(100vw-2rem)]"
   >
     <!-- Step Navigation Indicator Dots / Pills -->
     <nav class="flex items-center gap-1.5 px-1 overflow-x-auto scrollbar-hide" aria-label={m.onboarding_stages_title()}>
@@ -162,15 +162,15 @@
 
   <!-- Floating Footer (Centered Bottom, Minimalist, No Titles or Text) -->
   <footer
-    class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full border border-border/70 bg-card/90 dark:bg-card/90 backdrop-blur-xl shadow-lg shadow-black/10 dark:shadow-black/30 px-2 py-1.5 transition-all duration-300 ring-1 ring-border/50 max-w-[calc(100vw-2rem)]"
+    class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 bg-accent/30  backdrop-blur-md px-2 py-1.5 max-w-[calc(100vw-2rem)]"
   >
     <!-- Previous Step Button -->
     <Button
-      variant="ghost"
+      variant="outline"
       size="icon"
       disabled={currentStepIndex <= 0 && currentStepIndex !== -1}
       onclick={goToPrev}
-      class="size-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-all disabled:opacity-30"
+      class="size-8"
       title="Previous"
       aria-label="Previous step"
     >
@@ -186,7 +186,7 @@
       variant={currentStepIndex === -1 ? "secondary" : "ghost"}
       size="icon"
       onclick={goToOverview}
-      class="size-8 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-all {currentStepIndex === -1 ? 'bg-primary/10 text-primary hover:bg-primary/15' : ''}"
+      class="size-8 "
       title="Overview"
       aria-label="Onboarding Overview"
     >
@@ -198,7 +198,7 @@
       variant="default"
       size="icon"
       onclick={goToNext}
-      class="size-8 rounded-full bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 transition-all"
+      class="size-8"
       title={currentStepIndex === steps.length - 1 ? "Finish" : "Next"}
       aria-label={currentStepIndex === steps.length - 1 ? "Finish onboarding" : "Next step"}
     >

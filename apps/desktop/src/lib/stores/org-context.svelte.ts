@@ -13,6 +13,7 @@
 
 import { api } from "$lib/api/client";
 import { extractErrorMessage } from "$lib/api";
+import type { OrgDto } from "$lib/api/types";
 
 export interface OrgConfig {
   id: string;
@@ -137,34 +138,38 @@ class OrganizationContextStore {
     this.isLoading = true;
     try {
       const org = await api.getCurrentOrg();
-      this._config = {
-        id: org.id,
-        name: org.name,
-        nameAr: org.name_ar ?? null,
-        slug: org.slug,
-        code: org.code ?? null,
-        timezone: org.timezone,
-        locale: org.locale,
-        dateFormat: org.date_format ?? null,
-        formatLocale: org.format_locale ?? null,
-        timeFormat: org.time_format ?? null,
-        isHijriEnabled: org.is_hijri_enabled ?? false,
-        baseCurrencyCode: org.base_currency_code ?? null,
-        primaryColor: org.primary_color ?? null,
-        logo: org.logo ?? null,
-        favicon: org.favicon ?? null,
-        currentPeriodId: org.current_period_id ?? null,
-        isActive: org.is_active ?? true,
-        isVerified: org.is_verified ?? false,
-        settings: (org.settings as Record<string, unknown> | null) ?? null,
-        features: (org.features as Record<string, unknown> | null) ?? null,
-      };
-      this.isInitialized = true;
+      this.setOrganization(org);
     } catch (e: unknown) {
       console.warn("Failed to load organization context:", extractErrorMessage(e));
     } finally {
       this.isLoading = false;
     }
+  }
+
+  setOrganization(org: OrgDto) {
+    this._config = {
+      id: org.id,
+      name: org.name,
+      nameAr: org.name_ar ?? null,
+      slug: org.slug,
+      code: org.code ?? null,
+      timezone: org.timezone,
+      locale: org.locale,
+      dateFormat: org.date_format ?? null,
+      formatLocale: org.format_locale ?? null,
+      timeFormat: org.time_format ?? null,
+      isHijriEnabled: org.is_hijri_enabled ?? false,
+      baseCurrencyCode: org.base_currency_code ?? null,
+      primaryColor: org.primary_color ?? null,
+      logo: org.logo ?? null,
+      favicon: org.favicon ?? null,
+      currentPeriodId: org.current_period_id ?? null,
+      isActive: org.is_active ?? true,
+      isVerified: org.is_verified ?? false,
+      settings: (org.settings as Record<string, unknown> | null) ?? null,
+      features: (org.features as Record<string, unknown> | null) ?? null,
+    };
+    this.isInitialized = true;
   }
 
   /**

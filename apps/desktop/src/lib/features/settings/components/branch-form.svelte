@@ -25,6 +25,8 @@ import {
 } from "@orbis/ui/sheet";
 import { EmployeeSelect } from "$lib/features/employees";
 import { toast } from "@orbis/ui";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 
 let {
@@ -127,34 +129,23 @@ async function handleSubmit(e: SubmitEvent) {
 
   <!-- Form Body -->
   <div class="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
-    <!-- Branch Name Arabic -->
-    <FormField id="branch_name_ar" label={m.ui_copy_branch_name_arabic_008219c2()} error={errors.nameAr} required>
-      {#snippet children()}
-      <Input
-        id="branch_name_ar"
-        type="text"
-        bind:value={nameAr}
-        placeholder={m.ui_copy_e_g_main_branch_riyadh_7bbe0d3f()}
-        disabled={isSubmitting}
-        class="h-9 text-sm"
-        required
-      />
-      {/snippet}
-    </FormField>
-
-    <!-- Branch Name English -->
-    <FormField id="branch_name_en" label={m.ui_copy_branch_name_english_533d70f3()}>
-      {#snippet children()}
-      <Input
-        id="branch_name_en"
-        type="text"
-        bind:value={nameEn}
-        placeholder={m.settings_ui_branch_name_example()}
-        disabled={isSubmitting}
-        class="h-9 text-sm"
-      />
-      {/snippet}
-    </FormField>
+    <BilingualNameFields
+      arId="branch_name_ar"
+      enId="branch_name_en"
+      arLabel={m.ui_copy_branch_name_arabic_008219c2()}
+      enLabel={m.ui_copy_branch_name_english_533d70f3()}
+      bind:arValue={nameAr}
+      bind:enValue={nameEn}
+      arPlaceholder={m.ui_copy_e_g_main_branch_riyadh_7bbe0d3f()}
+      enPlaceholder={m.settings_ui_branch_name_example()}
+      arError={errors.nameAr}
+      kind="label"
+      requestSuggestion={suggestLocalTranslation}
+      arRequired
+      disabled={isSubmitting}
+      loadingMessage={m.bilingual_entry_loading()}
+      failureMessage={m.bilingual_entry_failure()}
+    />
 
     <!-- Code & Capacity Grid -->
     <div class="grid grid-cols-2 gap-4">

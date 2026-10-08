@@ -122,6 +122,7 @@ export function formatDate(
   if (value === null || value === undefined || value === "") return "";
 
   let d: Date;
+  let dateOnly = false;
   if (value instanceof Date) {
     d = value;
   } else if (typeof value === "number") {
@@ -129,7 +130,8 @@ export function formatDate(
     d = new Date(normalized);
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-").map(Number);
-    d = new Date(year, month - 1, day);
+    d = new Date(Date.UTC(year, month - 1, day));
+    dateOnly = true;
   } else {
     d = new Date(value);
   }
@@ -148,7 +150,10 @@ export function formatDate(
       d,
       locale,
       orgContext.dateFormat ?? "DD/MM/YYYY",
-      options,
+      {
+        ...options,
+        timeZone: options?.timeZone ?? (dateOnly ? "UTC" : timezone),
+      },
     );
   }
 
@@ -161,6 +166,7 @@ export function formatDate(
     })} ${formatDate(d, "time")}`;
   }
 
+  const dateTimezone = options?.timeZone ?? (dateOnly ? "UTC" : timezone);
   const hasGranularFields = Boolean(
     options &&
       ("year" in options ||
@@ -189,10 +195,10 @@ export function formatDate(
       hour: "numeric" as const,
       minute: "2-digit" as const,
       timeZone: timezone,
-      ...(hourCycle && { hourCycle }),
     }),
-    ...(hasGranularFields && { timeZone: timezone }),
+    ...(hasGranularFields && { timeZone: dateTimezone }),
     ...options,
+    ...((type === "time" || type === "datetime") && hourCycle && { hourCycle }),
   };
 
   return getDateFormatter(locale, baseOptions).format(d);
@@ -216,8 +222,8 @@ function supportsOrganizationDateFormat(
   return (
     Object.keys(options).every((key) => formatFields.has(key)) &&
     options.year === "numeric" &&
-    options.month === "2-digit" &&
-    options.day === "2-digit"
+    options.day !== undefined &&
+    options.month !== undefined
   );
 }
 
@@ -236,10 +242,11 @@ function formatWithOrganizationDateFormat(
   }
   dateFormatToken.lastIndex = 0;
 
+  const timezone = options?.timeZone ?? getFormattingTimezone();
   const parts = getDateFormatter(locale, {
     calendar: options?.calendar,
     numberingSystem: options?.numberingSystem,
-    timeZone: options?.timeZone,
+    timeZone: timezone,
     year: "numeric",
     month: "long",
     day: "2-digit",
@@ -254,19 +261,19 @@ function formatWithOrganizationDateFormat(
   values.monthShort = getDateFormatter(locale, {
     calendar: options?.calendar,
     numberingSystem: options?.numberingSystem,
-    timeZone: options?.timeZone,
+    timeZone: timezone,
     month: "short",
   }).format(date);
   values.monthNumeric = getDateFormatter(locale, {
     calendar: options?.calendar,
     numberingSystem: options?.numberingSystem,
-    timeZone: options?.timeZone,
+    timeZone: timezone,
     month: "2-digit",
   }).format(date);
   values.dayNumeric = getDateFormatter(locale, {
     calendar: options?.calendar,
     numberingSystem: options?.numberingSystem,
-    timeZone: options?.timeZone,
+    timeZone: timezone,
     day: "numeric",
   }).format(date);
 

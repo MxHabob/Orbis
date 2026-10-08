@@ -1,4 +1,5 @@
 <script lang="ts">
+import { formatDate } from "$lib/core/i18n";
 import { LoadingIndicator } from "@orbis/ui";
 import {
   Sheet,
@@ -218,7 +219,7 @@ async function handleCancelJob(jobId: string) {
                 <div class="flex items-center gap-1.5">
                   <ClockRotateRight size={11} class="text-muted-foreground" />
                   <span class="text-[10px] text-muted-foreground font-mono">
-                    {new Date(job.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {formatDate(job.created_at, "time")}
                   </span>
                   <Badge variant="outline" class="h-4 text-[9px]">{job.status}</Badge>
                 </div>

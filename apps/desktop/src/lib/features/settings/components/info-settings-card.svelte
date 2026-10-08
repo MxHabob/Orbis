@@ -3,6 +3,8 @@ import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   slug: string;
@@ -43,24 +45,6 @@ let {
       {/snippet}
     </SettingsRow>
 
-    <!-- Arabic Display Name -->
-    <SettingsRow
-      title={m.settings_ui_organization_arabic_name()}
-      description={m.settings_ui_organization_arabic_name_description()}
-      labelFor="org_name_ar"
-    >
-      {#snippet children()}
-        <Input
-          id="org_name_ar"
-          type="text"
-          bind:value={nameAr}
-          disabled={isSaving}
-          class="h-9 w-full bg-background"
-        />
-      {/snippet}
-    </SettingsRow>
-
-    <!-- Display Name -->
     <SettingsRow
       title={m.settings_general_display_name()}
       description={m.settings_general_name_desc()}
@@ -68,7 +52,22 @@ let {
       required
     >
       {#snippet children()}
-        <Input id="org_name" type="text" bind:value={name} placeholder={m.settings_general_name_placeholder()} required disabled={isSaving} class="h-9 w-full bg-background" />
+        <BilingualNameFields
+          arId="org_name_ar"
+          enId="org_name"
+          arLabel={m.settings_ui_organization_arabic_name()}
+          enLabel={m.settings_general_display_name()}
+          bind:arValue={nameAr}
+          bind:enValue={name}
+          arDescription={m.settings_ui_organization_arabic_name_description()}
+          enPlaceholder={m.settings_general_name_placeholder()}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          enRequired
+          disabled={isSaving}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
       {/snippet}
     </SettingsRow>
 

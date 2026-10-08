@@ -23,6 +23,8 @@ import { useQueryClient, createQuery } from "@tanstack/svelte-query";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
 import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -74,7 +76,6 @@ let groupsSheetOpen = $state(false);
 // Form fields
 let fullName = $state("");
 let nameAr = $state("");
-let nameEn = $state("");
 let email = $state("");
 let phone = $state("");
 let role = $state("staff");
@@ -228,15 +229,21 @@ async function saveProfile() {
 
     <!-- Main Profile Fields -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Full Name -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label
-          for="fullName"
-          class="text-xs font-medium text-muted-foreground"
-        >
-          {m.common_word_fullname()} *
-        </Label>
-        <Input id="fullName" type="text" bind:value={fullName} required />
+      <div class="md:col-span-2">
+        <BilingualNameFields
+          arId="nameAr"
+          enId="fullName"
+          arLabel={m.ui_copy_full_name_arabic_4871e6bf()}
+          enLabel={m.common_word_fullname()}
+          bind:arValue={nameAr}
+          bind:enValue={fullName}
+          kind="person-name"
+          requestSuggestion={suggestLocalTranslation}
+          enRequired
+          disabled={isSaving}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
       </div>
 
       <!-- Email -->
@@ -245,14 +252,6 @@ async function saveProfile() {
           {m.common_word_email()} *
         </Label>
         <Input id="email" type="email" bind:value={email} required />
-      </div>
-
-      <!-- Arabic Name -->
-      <div class="flex flex-col gap-1.5 text-start">
-        <Label for="nameAr" class="text-xs font-medium text-muted-foreground">
-          {m.ui_copy_full_name_arabic_4871e6bf()}
-        </Label>
-        <Input id="nameAr" type="text" bind:value={nameAr} />
       </div>
 
       <!-- Dynamic Primary Role Select -->

@@ -9,12 +9,12 @@
   import { LoadingIndicator } from "@orbis/ui";
   import { ArrowPath, Calendar, Sparkles } from "@orbis/icons";
   import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+  import EmptyState from "$lib/shared/components/empty-state.svelte";
 
   let isOpen = $state(false);
   let latestRelease = $state<ReleaseChangelogItem | null>(null);
   let isLoading = $state(false);
   let hasLoaded = $state(false);
-  let loadError = $state(false);
   let openError = $state(false);
 
   const releaseDate = $derived.by(() => {
@@ -29,14 +29,13 @@
 
   async function loadChangelog() {
     isLoading = true;
-    loadError = false;
     hasLoaded = true;
     try {
       const releases = await api.systemGetChangelog();
       latestRelease = releases.find((release) => release.is_latest) ?? releases[0] ?? null;
     } catch (error) {
-      console.error("Failed to load the latest changelog entry:", error);
-      loadError = true;
+      console.warn("Failed to load the latest changelog entry:", error);
+      latestRelease = null;
     } finally {
       isLoading = false;
     }
@@ -105,13 +104,6 @@
         <p class="py-8 text-center text-xs text-muted-foreground" aria-live="polite">
           {m.ui_changelog_loading_release_changelog()}
         </p>
-      {:else if loadError}
-        <div class="space-y-3 py-4 text-center">
-          <p class="text-xs text-destructive" role="alert">{m.ui_changelog_load_failed()}</p>
-          <Button variant="outline" size="sm" onclick={() => void loadChangelog()}>
-            {m.common_retry()}
-          </Button>
-        </div>
       {:else if latestRelease}
         <article class="flex flex-col gap-3">
           <div class="flex items-start justify-between gap-2">
@@ -169,9 +161,14 @@
           </Button>
         </article>
       {:else}
-        <p class="py-8 text-center text-xs text-muted-foreground">
-          {m.ui_changelog_no_releases()}
-        </p>
+        <EmptyState
+          icon={Sparkles}
+          title={m.ui_changelog_no_releases()}
+          description={m.ui_changelog_no_release_notes()}
+          actionLabel={m.common_retry()}
+          onaction={() => void loadChangelog()}
+          class="py-6"
+        />
       {/if}
     </div>
   </PopoverContent>

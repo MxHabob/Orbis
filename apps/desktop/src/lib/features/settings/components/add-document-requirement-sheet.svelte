@@ -30,6 +30,8 @@ import { toast } from "@orbis/ui";
 
 import { api, type ClassDto, type DocumentRequirementDto } from "$lib/api";
 import { ClassSelect } from "$lib/features/academics";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   open = $bindable(false),
@@ -132,36 +134,23 @@ async function handleSubmit(e?: Event) {
       </SheetHeader>
 
       <form onsubmit={handleSubmit} class="flex flex-col gap-5">
-        <!-- Arabic Name -->
-        <div class="flex flex-col gap-1.5">
-          <Label for="docNameAr" class="text-xs font-semibold text-foreground flex items-center gap-1">
-            {m.ui_copy_document_title_arabic_43c58298()}
-            <span class="text-destructive">*</span>
-          </Label>
-          <Input
-            id="docNameAr"
-            placeholder={m.ui_copy_e_g_certified_birth_certificate_22f4f391()}
-            bind:value={nameAr}
-            class="h-9 text-xs"
-            onblur={autoGenerateCode}
-            autocomplete="off"
-          />
-        </div>
-
-        <!-- English Name -->
-        <div class="flex flex-col gap-1.5">
-          <Label for="docNameEn" class="text-xs font-semibold text-foreground">
-            {m.ui_copy_document_title_english_80382f1d()}
-          </Label>
-          <Input
-            id="docNameEn"
-            placeholder={m.settings_ui_document_requirement_example()}
-            bind:value={nameEn}
-            class="h-9 text-xs font-mono"
-            onblur={autoGenerateCode}
-            autocomplete="off"
-          />
-        </div>
+        <BilingualNameFields
+          arId="docNameAr"
+          enId="docNameEn"
+          arLabel={m.ui_copy_document_title_arabic_43c58298()}
+          enLabel={m.ui_copy_document_title_english_80382f1d()}
+          bind:arValue={nameAr}
+          bind:enValue={nameEn}
+          arPlaceholder={m.ui_copy_e_g_certified_birth_certificate_22f4f391()}
+          enPlaceholder={m.settings_ui_document_requirement_example()}
+          kind="label"
+          requestSuggestion={suggestLocalTranslation}
+          onArBlur={autoGenerateCode}
+          onEnBlur={autoGenerateCode}
+          disabled={isSubmitting}
+          loadingMessage={m.bilingual_entry_loading()}
+          failureMessage={m.bilingual_entry_failure()}
+        />
 
         <!-- Code Identifier -->
         <div class="flex flex-col gap-1.5">

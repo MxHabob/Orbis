@@ -18,6 +18,8 @@ import {
 } from "@orbis/ui/select";
 import { templateInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   open: boolean;
@@ -148,17 +150,24 @@ function documentLabel(type: string) {
     </DialogHeader>
 
     <div class="flex flex-col gap-3 py-1">
-      <FormField id="name-en" label={m.template_label_name_en()} error={form.errors.name?.[0]} required>
-        {#snippet children()}
-        <Input id="name-en" bind:value={name} placeholder={m.template_placeholder_name_en()} />
-        {/snippet}
-      </FormField>
-
-      <FormField id="name-ar" label={m.template_label_name_ar()} error={form.errors.name_ar?.[0]}>
-        {#snippet children()}
-        <Input id="name-ar" bind:value={nameAr} placeholder={m.template_placeholder_name_ar()} />
-        {/snippet}
-      </FormField>
+      <BilingualNameFields
+        arId="name-ar"
+        enId="name-en"
+        arLabel={m.template_label_name_ar()}
+        enLabel={m.template_label_name_en()}
+        bind:arValue={nameAr}
+        bind:enValue={name}
+        arPlaceholder={m.template_placeholder_name_ar()}
+        enPlaceholder={m.template_placeholder_name_en()}
+        arError={form.errors.name_ar?.[0]}
+        enError={form.errors.name?.[0]}
+        kind="label"
+        requestSuggestion={suggestLocalTranslation}
+        enRequired
+        disabled={form.isSubmitting}
+        loadingMessage={m.bilingual_entry_loading()}
+        failureMessage={m.bilingual_entry_failure()}
+      />
 
       <FormField id="desc" label={m.template_label_desc()} error={form.errors.description?.[0]}>
         {#snippet children()}

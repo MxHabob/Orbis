@@ -16,7 +16,9 @@ export function createOrganizationQuery(orgId: () => string) {
   return createQuery<OrgDto>(() => ({
     queryKey: queryKeys.org.current(),
     queryFn: async (): Promise<OrgDto> => {
-      return api.getCurrentOrg();
+      const organization = await api.getCurrentOrg();
+      orgContext.setOrganization(organization);
+      return organization;
     },
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
@@ -29,11 +31,11 @@ export function createUpdateOrganizationMutation() {
   return createMutation(() => ({
     mutationFn: (variables: { orgId: string; request: any }) =>
       api.updateCurrentOrg(variables.request),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({
+    onSuccess: async (organization) => {
+      await queryClient.invalidateQueries({
         queryKey: queryKeys.org.all,
       });
-      await orgContext.refresh();
+      orgContext.setOrganization(organization);
     },
   }));
 }

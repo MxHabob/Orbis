@@ -26,6 +26,8 @@ import {
   AccordionTrigger,
 } from "@orbis/ui/accordion";
 import { toast } from "@orbis/ui";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
   orgId,
@@ -240,34 +242,26 @@ async function handleSubmit() {
       <AccordionItem value="details" class="rounded-lg">
         <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_ft_sheet_create_title()}</AccordionTrigger>
         <AccordionContent>
-    <!-- Name (Arabic) -->
-    <FormField id="ft_form_name_ar" label={m.common_ft_col_name()} error={form.errors.name_ar?.[0]}>
-      {#snippet children()}
-      <Input 
-        id="ft_form_name_ar"
-        type="text" 
-        bind:value={form.values.name_ar}
-        onblur={() => form.markTouched("name_ar")}
-        placeholder={m.common_ft_name_ar_placeholder()}
-        disabled={form.isSubmitting}
-      />
-      {/snippet}
-    </FormField>
-
-    <!-- Name (English) -->
-    <FormField id="ft_form_name_en" label={m.common_user_form_name_en()} error={form.errors.name?.[0]} required>
-      {#snippet children()}
-      <Input 
-        id="ft_form_name_en"
-        type="text" 
-        bind:value={form.values.name}
-        onblur={() => form.markTouched("name")}
-        placeholder={m.common_ft_name_en_placeholder()}
-        required
-        disabled={form.isSubmitting}
-      />
-      {/snippet}
-    </FormField>
+    <BilingualNameFields
+      arId="ft_form_name_ar"
+      enId="ft_form_name_en"
+      arLabel={m.common_ft_col_name()}
+      enLabel={m.common_user_form_name_en()}
+      bind:arValue={form.values.name_ar}
+      bind:enValue={form.values.name}
+      arPlaceholder={m.common_ft_name_ar_placeholder()}
+      enPlaceholder={m.common_ft_name_en_placeholder()}
+      arError={form.errors.name_ar?.[0]}
+      enError={form.errors.name?.[0]}
+      onArBlur={() => form.markTouched("name_ar")}
+      onEnBlur={() => form.markTouched("name")}
+      kind="label"
+      requestSuggestion={suggestLocalTranslation}
+      enRequired
+      disabled={form.isSubmitting}
+      loadingMessage={m.bilingual_entry_loading()}
+      failureMessage={m.bilingual_entry_failure()}
+    />
 
     <!-- Code/Symbol -->
     <FormField id="ft_form_code" label={m.common_ledger_col_code()} error={form.errors.code?.[0]}>
