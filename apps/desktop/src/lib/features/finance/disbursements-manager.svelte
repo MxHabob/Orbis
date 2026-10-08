@@ -316,8 +316,8 @@ function exportCsv() {
           </CardHeader>
 
           <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_from_account()}</Label>
                 <SearchableSelect
                   value={treasuryAccountId}
@@ -330,7 +330,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_to_account()}</Label>
                 <AccountSearchInput
                   bind:value={beneficiaryAccountId}
@@ -340,8 +340,8 @@ function exportCsv() {
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input
                   type="text"
@@ -351,7 +351,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
                 <Input
                   type="date"
@@ -360,7 +360,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursed_amount()}</Label>
                 <Input
                   type="number"
@@ -370,7 +370,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
                 <SearchableSelect
                   value={selectedCurrency}

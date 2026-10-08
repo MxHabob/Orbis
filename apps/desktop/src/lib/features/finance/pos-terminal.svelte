@@ -22,7 +22,15 @@ import {
 } from "$lib/features/finance";
 import { api, extractErrorMessage, type StudentDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import {
   Banknotes,
@@ -281,14 +289,21 @@ const rtl = $derived(getLocale() === "ar");
       <div class="flex items-center gap-1.5 bg-background border border-border/80 rounded-md px-2.5 py-1 text-[11px]">
         <BuildingLibrary size={13} class="text-muted-foreground" />
         <span class="text-muted-foreground">{m.finance_ui_receiving_treasury_label()}</span>
-        <select
-          bind:value={formAccountId}
-          class="bg-transparent font-medium text-foreground outline-none cursor-pointer text-[11px]"
+        <Select
+          type="single"
+          value={formAccountId || activeAccountId}
+          onValueChange={(value) => (formAccountId = value ?? "")}
         >
+          <SelectTrigger class="h-7 max-w-48 border-0 bg-transparent px-1 text-[11px] font-medium">
+            {cashAccounts.find((account) => account.id === (formAccountId || activeAccountId))?.name
+              ?? m.finance_ui_receiving_treasury_label()}
+          </SelectTrigger>
+          <SelectContent>
           {#each cashAccounts as account (account.id)}
-            <option value={account.id}>{account.name} ({account.currency})</option>
+            <SelectItem value={account.id}>{account.name} ({account.currency})</SelectItem>
           {/each}
-        </select>
+          </SelectContent>
+        </Select>
       </div>
 
       <div class="flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/40 border border-border/40 rounded px-2 py-1">
@@ -299,10 +314,10 @@ const rtl = $derived(getLocale() === "ar");
   </header>
 
   <!-- Main POS Workspace Body: Split Grid -->
-  <div class="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
+  <div class="flex-1 grid min-h-0 grid-cols-1 gap-0 overflow-y-auto lg:grid-cols-12 lg:overflow-hidden">
     
     <!-- Left 7 Cols: Student Lookup & Fee Invoices Breakdown -->
-    <div class="col-span-7 border-e border-border/60 flex flex-col h-full overflow-hidden bg-background">
+    <div class="col-span-full flex min-h-[60vh] flex-col overflow-hidden border-e border-border/60 bg-background lg:col-span-7 lg:h-full lg:min-h-0">
       
       <!-- Student Search Input Box -->
       <div class="p-3 border-b border-border/50 bg-muted/10 relative shrink-0">
@@ -511,7 +526,7 @@ const rtl = $derived(getLocale() === "ar");
     </div>
 
     <!-- Right 5 Cols: Payment Collection Keypad & Execution -->
-    <div class="col-span-5 bg-muted/5 flex flex-col h-full overflow-hidden">
+    <div class="col-span-full flex min-h-[60vh] flex-col overflow-hidden bg-muted/5 lg:col-span-5 lg:h-full lg:min-h-0">
       <form onsubmit={handlePaymentSubmit} class="flex flex-col h-full overflow-y-auto p-4 gap-4">
         
         <div class="border-b border-border/60 pb-2">
@@ -586,7 +601,7 @@ const rtl = $derived(getLocale() === "ar");
             {/if}
           </div>
           <div class="relative">
-            <input
+            <Input
               id="pos_amount"
               type="number"
               step="any"
@@ -594,7 +609,7 @@ const rtl = $derived(getLocale() === "ar");
               required
               bind:value={formAmount}
               placeholder="0.00"
-              class="w-full bg-background border border-border/80 rounded-lg px-3 py-2.5 text-base font-bold font-mono text-foreground placeholder:text-muted-foreground/40 outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              class="h-11 w-full rounded-lg px-3 text-base font-bold font-mono"
             />
           </div>
         </div>
@@ -606,13 +621,13 @@ const rtl = $derived(getLocale() === "ar");
               <span>{m.finance_ui_payment_gateway_token_label()}</span>
               <span class="text-[9px] text-muted-foreground font-mono">{m.finance_ui_gateway_source_token()}</span>
             </label>
-            <input
+            <Input
               id="pos_token"
               type="text"
               dir="auto"
               bind:value={sourceToken}
               placeholder={m.finance_ui_pos_payment_token_placeholder()}
-              class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
+              class="h-9 w-full px-3 text-xs font-mono"
             />
           </div>
         {/if}
@@ -623,13 +638,13 @@ const rtl = $derived(getLocale() === "ar");
             <label for="pos_ref" class="text-[11px] font-semibold text-foreground">
               {formMethod === "check" ? m.finance_ui_check_reference_label() : m.finance_ui_transfer_reference_label()}
             </label>
-            <input
+            <Input
               id="pos_ref"
               type="text"
               dir="auto"
               bind:value={referenceNumber}
               placeholder={formMethod === "check" ? m.finance_ui_check_reference_placeholder() : m.finance_ui_transfer_reference_placeholder()}
-              class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary font-mono"
+              class="h-9 w-full px-3 text-xs font-mono"
             />
           </div>
         {/if}
@@ -637,23 +652,22 @@ const rtl = $derived(getLocale() === "ar");
         <!-- Notes -->
         <div class="flex flex-col gap-1.5">
           <label for="pos_notes" class="text-[11px] font-semibold text-foreground">{m.finance_ui_receipt_notes_optional()}</label>
-          <input
+          <Input
             id="pos_notes"
             type="text"
             dir="auto"
             bind:value={notes}
             placeholder={m.finance_ui_receipt_notes_placeholder()}
-            class="w-full bg-background border border-border/80 rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 outline-none focus:border-primary"
+            class="h-9 w-full px-3 text-xs"
           />
         </div>
 
         <!-- Receipt Print Option -->
         <div class="flex items-center gap-2 pt-1">
-          <input
-            type="checkbox"
+          <Checkbox
             id="auto_print"
-            bind:checked={shouldPrintReceipt}
-            class="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+            checked={shouldPrintReceipt}
+            onCheckedChange={(checked) => (shouldPrintReceipt = checked === true)}
           />
           <label for="auto_print" class="text-[11px] text-muted-foreground cursor-pointer select-none">
             {m.finance_ui_auto_print_receipt_docforge()}

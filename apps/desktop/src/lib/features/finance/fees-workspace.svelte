@@ -19,6 +19,12 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import {
   Plus,
@@ -403,16 +409,36 @@ function exportCsv() {
           />
         </div>
 
-        <select
-          bind:value={statusFilter}
-          class="h-8 text-xs rounded-md bg-card border border-border/60 px-2 text-foreground focus:outline-none"
+        <Select
+          type="single"
+          value={statusFilter}
+          onValueChange={(value) => {
+            if (value === "all" || value === "pending" || value === "partially_paid" || value === "paid" || value === "overdue") {
+              statusFilter = value;
+            }
+          }}
         >
-          <option value="all">{m.finance_ui_all_statuses()}</option>
-          <option value="pending">{m.finance_ui_fee_status_unpaid()}</option>
-          <option value="partially_paid">{m.finance_ui_fee_status_partially_paid()}</option>
-          <option value="paid">{m.finance_ui_fee_status_paid_full()}</option>
-          <option value="overdue">{m.finance_ui_fee_status_overdue()}</option>
-        </select>
+          <SelectTrigger class="h-8 w-auto min-w-36 bg-card text-xs">
+            {#if statusFilter === "all"}
+              {m.finance_ui_all_statuses()}
+            {:else if statusFilter === "pending"}
+              {m.finance_ui_fee_status_unpaid()}
+            {:else if statusFilter === "partially_paid"}
+              {m.finance_ui_fee_status_partially_paid()}
+            {:else if statusFilter === "paid"}
+              {m.finance_ui_fee_status_paid_full()}
+            {:else}
+              {m.finance_ui_fee_status_overdue()}
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.finance_ui_all_statuses()}</SelectItem>
+            <SelectItem value="pending">{m.finance_ui_fee_status_unpaid()}</SelectItem>
+            <SelectItem value="partially_paid">{m.finance_ui_fee_status_partially_paid()}</SelectItem>
+            <SelectItem value="paid">{m.finance_ui_fee_status_paid_full()}</SelectItem>
+            <SelectItem value="overdue">{m.finance_ui_fee_status_overdue()}</SelectItem>
+          </SelectContent>
+        </Select>
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
@@ -443,8 +469,8 @@ function exportCsv() {
           </CardHeader>
 
           <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
                 <SearchableSelect
                   value={formStudentId}
@@ -457,7 +483,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_fee_template()}</Label>
                 <SearchableSelect
                   value={formTemplateId}
@@ -470,7 +496,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_academic_period()}</Label>
                 <SearchableSelect
                   value={formPeriodId}
@@ -484,8 +510,8 @@ function exportCsv() {
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_discount_amount_optional()}</Label>
                 <Input
                   type="number"
@@ -495,7 +521,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_due_date()}</Label>
                 <Input
                   type="date"
@@ -543,8 +569,8 @@ function exportCsv() {
           </CardHeader>
 
           <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_unpaid_fee()}</Label>
                 <SearchableSelect
                   value={selectedFeeForSplit?.id || ""}
@@ -568,16 +594,25 @@ function exportCsv() {
 
               <div>
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_installment_count()}</Label>
-                <select
-                  bind:value={splitCount}
-                  class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
+                <Select
+                  type="single"
+                  value={String(splitCount)}
+                  onValueChange={(value) => {
+                    const count = Number(value);
+                    if (Number.isInteger(count) && count >= 2 && count <= 6) splitCount = count;
+                  }}
                 >
-                  <option value={2}>{m.finance_ui_installment_count_value({ count: 2 })}</option>
-                  <option value={3}>{m.finance_ui_installment_count_value({ count: 3 })}</option>
-                  <option value={4}>{m.finance_ui_installment_count_value({ count: 4 })}</option>
-                  <option value={5}>{m.finance_ui_installment_count_value({ count: 5 })}</option>
-                  <option value={6}>{m.finance_ui_installment_count_value({ count: 6 })}</option>
-                </select>
+                  <SelectTrigger class="h-8 w-full bg-background text-xs">
+                    {m.finance_ui_installment_count_value({ count: splitCount })}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {#each [2, 3, 4, 5, 6] as count (count)}
+                      <SelectItem value={String(count)}>
+                        {m.finance_ui_installment_count_value({ count })}
+                      </SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

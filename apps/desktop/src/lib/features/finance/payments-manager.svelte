@@ -17,6 +17,12 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import {
   Plus,
@@ -37,7 +43,7 @@ import {
   createAvailablePaymentMethodsQuery,
   type AvailablePaymentMethod,
 } from "$lib/features/finance";
-    import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -370,15 +376,23 @@ function exportCsv() {
           />
         </div>
 
-        <select
-          bind:value={methodFilter}
-          class="h-8 text-xs rounded-md bg-card border border-border/60 px-2 text-foreground focus:outline-none"
+        <Select
+          type="single"
+          value={methodFilter}
+          onValueChange={(value) => (methodFilter = value ?? "all")}
         >
-          <option value="all">{m.finance_ui_all_payment_methods()}</option>
+          <SelectTrigger class="h-8 w-auto min-w-36 bg-card text-xs">
+            {methodFilter === "all"
+              ? m.finance_ui_all_payment_methods()
+              : availablePaymentMethods.find((method) => method.id === methodFilter)?.name}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{m.finance_ui_all_payment_methods()}</SelectItem>
           {#each availablePaymentMethods as m (m.id)}
-            <option value={m.id}>{m.name}</option>
+              <SelectItem value={m.id}>{m.name}</SelectItem>
           {/each}
-        </select>
+          </SelectContent>
+        </Select>
 
         <Input
           type="date"
@@ -415,8 +429,8 @@ function exportCsv() {
           </CardHeader>
 
           <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
                 <SearchableSelect
                   value={selectedStudentId}
@@ -430,7 +444,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_receiving_account()}</Label>
                 <SearchableSelect
                   value={selectedTreasuryId}
@@ -443,7 +457,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <div class="flex items-center justify-between mb-1">
                   <Label class="text-xs font-semibold text-foreground">{m.finance_ui_payment_method()}</Label>
                   {#if selectedPaymentMethodObj?.is_digital_gateway}
@@ -452,16 +466,22 @@ function exportCsv() {
                     </span>
                   {/if}
                 </div>
-                <select
-                  bind:value={paymentMethod}
-                  class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
+                <Select
+                  type="single"
+                  value={paymentMethod}
+                  onValueChange={(value) => (paymentMethod = value ?? "cash")}
                 >
+                  <SelectTrigger class="h-8 w-full bg-background text-xs">
+                    {selectedPaymentMethodObj?.name ?? m.finance_ui_payment_method()}
+                  </SelectTrigger>
+                  <SelectContent>
                   {#each availablePaymentMethods as method (method.id)}
-                    <option value={method.id}>
+                    <SelectItem value={method.id}>
                       {method.name} {method.is_digital_gateway ? m.finance_ui_gateway_provider({ provider: method.provider_name ?? "" }) : ""}
-                    </option>
+                    </SelectItem>
                   {/each}
-                </select>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -477,8 +497,8 @@ function exportCsv() {
               </div>
             {/if}
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input
                   type="text"
@@ -488,7 +508,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
                 <Input
                   type="date"
@@ -497,12 +517,17 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
-                <CurrencySelector/>
+              <div class="min-w-0">
+                <CurrencySelector
+                  bind:currentCurrency={selectedCurrency}
+                  title={m.finance_ui_currency()}
+                  description=""
+                  compact
+                  disabled={isSubmitting}
+                />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_total_received_amount()}</Label>
                 <Input
                   type="number"
@@ -523,7 +548,7 @@ function exportCsv() {
                   {#each studentFees as fee (fee.id)}
                     {@const fid = String(fee.id)}
                     {@const isChecked = selectedFeeIds.has(fid)}
-                    <div class="flex items-center justify-between p-2 rounded-md border border-border/40 bg-card text-xs">
+                    <div class="flex flex-col gap-2 rounded-md border border-border/40 bg-card p-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                       <label class="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
@@ -534,7 +559,7 @@ function exportCsv() {
                         <span class="font-medium text-foreground">{fee.fee_type_name || fee.notes || m.finance_ui_tuition_fees()}</span>
                       </label>
 
-                      <div class="flex items-center gap-3">
+                      <div class="flex min-w-0 flex-wrap items-center gap-3 sm:justify-end">
                         <span class="text-muted-foreground font-mono text-[11px]">
                           {m.finance_ui_due_amount()} {formatCurrency(Number(fee.balance_due ?? fee.balance ?? fee.net_amount ?? 0), selectedCurrency)}
                         </span>
@@ -542,7 +567,7 @@ function exportCsv() {
                           <Input
                             type="number"
                             bind:value={feeAmounts[fid]}
-                            class="h-7 w-28 text-xs font-mono font-bold text-end bg-background border-border"
+                            class="h-7 w-full max-w-28 text-xs font-mono font-bold text-end bg-background border-border"
                           />
                         {/if}
                       </div>
