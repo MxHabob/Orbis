@@ -310,7 +310,12 @@ impl ClassSubjectRepository for AcademicRepoImpl {
             query = query.filter(class_subject::Column::PeriodId.eq(period_id));
         }
         if let Some(teacher_id) = filter.teacher_id {
-            query = query.filter(class_subject::Column::PrimaryTeacherId.eq(teacher_id));
+            query = query.filter(
+                class_subject::Column::PrimaryTeacherId
+                    .eq(teacher_id)
+                    .or(class_subject::Column::AssistantTeacherId.eq(teacher_id))
+                    .or(class_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+            );
         }
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();

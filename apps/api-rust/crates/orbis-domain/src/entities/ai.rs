@@ -66,6 +66,8 @@ pub struct UserAiContext {
     pub org_unit_id: Option<uuid::Uuid>,
     pub org_unit_path: Option<String>,
     pub employee_id: Option<uuid::Uuid>,
+    pub student_id: Option<uuid::Uuid>,
+    pub is_student: bool,
     pub is_teacher: bool,
     pub teaching_assignments: Vec<TeachingAssignmentInfo>,
     pub is_parent: bool,

@@ -98,6 +98,44 @@ async function copyInstallationId() {
   }
 }
 
+function getFeatureLabel(key: string): string {
+  switch (key) {
+    case "students": return m.license_feature_students();
+    case "ai_grading": return m.license_feature_ai_grading();
+    case "multi_branch": return m.license_feature_multi_branch();
+    case "offline_sync": return m.license_feature_offline_sync();
+    case "parent_portal": return m.license_feature_parent_portal();
+    case "campus_analytics": return m.license_feature_campus_analytics();
+    case "sso": return m.license_feature_sso();
+    case "exam_tools": return m.license_feature_exam_tools();
+    default: return key.replace(/_/g, " ");
+  }
+}
+
+function getLimitLabel(key: string): string {
+  switch (key) {
+    case "students.max": return m.license_limit_students_max();
+    case "staff.max": return m.license_limit_staff_max();
+    case "devices.max": return m.license_limit_devices_max();
+    case "branches.max": return m.license_limit_branches_max();
+    case "classes.max": return m.license_limit_classes_max();
+    case "storage_gb.max": return m.license_limit_storage_gb_max();
+    default: return key.replace(/_/g, " ").replace(/\.max$/, "");
+  }
+}
+
+function getUnitLabel(unit?: string): string {
+  switch (unit) {
+    case "students": return m.license_unit_students();
+    case "users": return m.license_unit_users();
+    case "devices": return m.license_unit_devices();
+    case "branches": return m.license_unit_branches();
+    case "classes": return m.license_unit_classes();
+    case "GB": return m.license_unit_gb();
+    default: return unit ?? "";
+  }
+}
+
 const statusBadge = $derived.by(() => {
   const state = licenseStore.state;
   switch (state) {
@@ -252,14 +290,14 @@ const statusBadge = $derived.by(() => {
           <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">
             {#each licenseStore.limits as limit}
               <div class="px-6 py-4 flex flex-col gap-1">
-                <span class="text-xs font-semibold text-muted-foreground capitalize">
-                  {limit.key.replace(/_/g, " ")}
+                <span class="text-xs font-semibold text-muted-foreground">
+                  {getLimitLabel(limit.key)}
                 </span>
                 <span class="text-2xl font-bold text-foreground font-mono tabular-nums">
-                  {limit.max_value !== null ? limit.max_value : m.license_limit_unlimited()}
+                  {limit.max_value !== null && limit.max_value !== undefined ? limit.max_value : m.license_limit_unlimited()}
                 </span>
                 <span class="text-[11px] text-muted-foreground">
-                  {limit.unit ?? ""}
+                  {getUnitLabel(limit.unit)}
                 </span>
               </div>
             {/each}
@@ -279,7 +317,7 @@ const statusBadge = $derived.by(() => {
             {#each licenseStore.enabledFeatures as feature}
               <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border bg-card text-xs font-semibold text-foreground">
                 <Check size={13} class="text-primary shrink-0" />
-                <span>{feature}</span>
+                <span>{getFeatureLabel(feature)}</span>
               </div>
             {/each}
           </div>

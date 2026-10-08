@@ -48,12 +48,13 @@ impl PermissionCheckerPort for DbPermissionChecker {
     async fn has_permission(
         &self,
         user_id: uuid::Uuid,
-        _org_id: uuid::Uuid,
+        org_id: uuid::Uuid,
         permission: &str,
     ) -> Result<bool, DomainError> {
         // 1. Check direct role permissions
         let user_roles = user_role_assignment::Entity::find()
             .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .filter(user_role_assignment::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -67,6 +68,7 @@ impl PermissionCheckerPort for DbPermissionChecker {
         if !role_ids.is_empty() {
             let role_permissions = role_permission::Entity::find()
                 .filter(role_permission::Column::RoleId.is_in(role_ids))
+                .filter(role_permission::Column::OrgId.eq(org_id))
                 .all(&self.db)
                 .await
                 .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -97,6 +99,7 @@ impl PermissionCheckerPort for DbPermissionChecker {
         // 2. Check group permissions
         let user_groups = user_group_membership::Entity::find()
             .filter(user_group_membership::Column::UserId.eq(user_id))
+            .filter(user_group_membership::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -105,6 +108,7 @@ impl PermissionCheckerPort for DbPermissionChecker {
         if !group_ids.is_empty() {
             let group_perms = group_permission::Entity::find()
                 .filter(group_permission::Column::GroupId.is_in(group_ids))
+                .filter(group_permission::Column::OrgId.eq(org_id))
                 .all(&self.db)
                 .await
                 .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -137,13 +141,14 @@ impl PermissionCheckerPort for DbPermissionChecker {
     async fn get_user_permissions(
         &self,
         user_id: uuid::Uuid,
-        _org_id: uuid::Uuid,
+        org_id: uuid::Uuid,
     ) -> Result<Vec<String>, DomainError> {
         let mut perms: Vec<String> = Vec::new();
 
         // 1. Direct role permissions
         let user_roles = user_role_assignment::Entity::find()
             .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .filter(user_role_assignment::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -152,6 +157,7 @@ impl PermissionCheckerPort for DbPermissionChecker {
         if !role_ids.is_empty() {
             let role_permissions = role_permission::Entity::find()
                 .filter(role_permission::Column::RoleId.is_in(role_ids))
+                .filter(role_permission::Column::OrgId.eq(org_id))
                 .all(&self.db)
                 .await
                 .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -176,6 +182,7 @@ impl PermissionCheckerPort for DbPermissionChecker {
         // 2. Group permissions
         let user_groups = user_group_membership::Entity::find()
             .filter(user_group_membership::Column::UserId.eq(user_id))
+            .filter(user_group_membership::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -184,6 +191,7 @@ impl PermissionCheckerPort for DbPermissionChecker {
         if !group_ids.is_empty() {
             let group_perms = group_permission::Entity::find()
                 .filter(group_permission::Column::GroupId.is_in(group_ids))
+                .filter(group_permission::Column::OrgId.eq(org_id))
                 .all(&self.db)
                 .await
                 .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -201,10 +209,11 @@ impl PermissionCheckerPort for DbPermissionChecker {
     async fn get_user_roles(
         &self,
         user_id: uuid::Uuid,
-        _org_id: uuid::Uuid,
+        org_id: uuid::Uuid,
     ) -> Result<Vec<String>, DomainError> {
         let user_roles = user_role_assignment::Entity::find()
             .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .filter(user_role_assignment::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -213,5 +222,37 @@ impl PermissionCheckerPort for DbPermissionChecker {
         roles.sort();
         roles.dedup();
         Ok(roles)
+    }
+
+    async fn get_org_unit_scope(
+        &self,
+        user_id: uuid::Uuid,
+        org_id: uuid::Uuid,
+    ) -> Result<Option<Vec<uuid::Uuid>>, DomainError> {
+        let assignments = user_role_assignment::Entity::find()
+            .filter(user_role_assignment::Column::UserId.eq(user_id))
+            .filter(user_role_assignment::Column::OrgId.eq(org_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        if assignments.iter().any(|assignment| {
+            assignment.scope_type.eq_ignore_ascii_case("global")
+                || assignment.scope_type.eq_ignore_ascii_case("organization")
+        }) {
+            return Ok(None);
+        }
+
+        let mut unit_ids: Vec<_> = assignments
+            .into_iter()
+            .filter(|assignment| {
+                assignment.scope_type.eq_ignore_ascii_case("org_unit")
+                    || assignment.scope_type.eq_ignore_ascii_case("unit")
+            })
+            .filter_map(|assignment| assignment.scope_id)
+            .collect();
+        unit_ids.sort();
+        unit_ids.dedup();
+        Ok(Some(unit_ids))
     }
 }

@@ -9,17 +9,17 @@
 //! - `POST /api/v1/public/licenses/refresh`   — Periodic heartbeat/refresh
 //! - `POST /api/v1/public/licenses/deactivate` — Release a device seat
 //! - `GET  /api/v1/public/keys/active`        — Fetch active signing key
-//! - `GET  /api/v1/public/updates/check`      — Check for updates
+//! - `GET  /api/v1/public/updates/tauri`      — Tauri Updater endpoint
 
 use orbis_domain::entities::license::{
-    ActivationRequest, ActivationResponse, DeactivationRequest, PublicKeyInfo, RefreshRequest,
-    UpdateCheckResponse,
+    ActivationRequest, ActivationResponse, DeactivationRequest, MULVERSE_PRODUCT_KEY,
+    PublicKeyInfo, RefreshRequest, TauriUpdateManifest,
 };
 use std::time::Duration;
 use tracing::{debug, warn};
 
 /// Default Mulverse Platform base URL.
-const DEFAULT_BASE_URL: &str = "https://api.mulverse.com";
+pub const DEFAULT_BASE_URL: &str = "https://api.mulverse.com";
 
 /// HTTP request timeout.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
@@ -61,6 +61,11 @@ impl MulverseClient {
         })
     }
 
+    /// Base URL accessor.
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     /// Activate a product key with Mulverse Platform.
     ///
     /// `POST /api/v1/public/licenses/activate`
@@ -69,7 +74,12 @@ impl MulverseClient {
         request: &ActivationRequest,
     ) -> Result<ActivationResponse, MulverseApiError> {
         let url = format!("{}/api/v1/public/licenses/activate", self.base_url);
-        debug!(product_key_prefix = %&request.product_key[..10], "Activating with Mulverse Platform");
+        let prefix = if request.product_key.len() >= 10 {
+            &request.product_key[..10]
+        } else {
+            &request.product_key
+        };
+        debug!(product_key_prefix = %prefix, "Activating with Mulverse Platform");
 
         let response = self.post_with_retry(&url, request).await?;
 
@@ -145,37 +155,40 @@ impl MulverseClient {
         }
     }
 
-    /// Check for application updates.
+    /// Check for Tauri updates via the official Tauri updater endpoint.
     ///
-    /// `GET /api/v1/public/updates/check`
-    pub async fn check_updates(
+    /// `GET /api/v1/public/updates/tauri`
+    pub async fn check_tauri_updates(
         &self,
-        product_key: &str,
         channel: &str,
         current_version: &str,
-        platform: &str,
-        architecture: &str,
-    ) -> Result<UpdateCheckResponse, MulverseApiError> {
+        target: &str,
+        arch: &str,
+    ) -> Result<Option<TauriUpdateManifest>, MulverseApiError> {
         let mut url =
-            reqwest::Url::parse(&format!("{}/api/v1/public/updates/check", self.base_url))
+            reqwest::Url::parse(&format!("{}/api/v1/public/updates/tauri", self.base_url))
                 .map_err(|e| MulverseApiError::ParseError(e.to_string()))?;
         url.query_pairs_mut()
-            .append_pair("product_key", product_key)
+            .append_pair("product_key", MULVERSE_PRODUCT_KEY)
             .append_pair("channel", channel)
             .append_pair("current_version", current_version)
-            .append_pair("platform", platform)
-            .append_pair("architecture", architecture);
+            .append_pair("target", target)
+            .append_pair("arch", arch);
         let url = url.to_string();
-        debug!(version = %current_version, "Checking for updates with Mulverse Platform");
+        debug!(version = %current_version, target = %target, arch = %arch, "Checking for updates with Mulverse Platform");
 
         let response = self.get_with_retry(&url).await?;
 
+        if response.status() == reqwest::StatusCode::NO_CONTENT {
+            return Ok(None);
+        }
+
         if response.status().is_success() {
             let body = response
-                .json::<UpdateCheckResponse>()
+                .json::<TauriUpdateManifest>()
                 .await
                 .map_err(|e| MulverseApiError::ParseError(e.to_string()))?;
-            Ok(body)
+            Ok(Some(body))
         } else {
             Err(self.parse_error_response(response).await)
         }
@@ -282,12 +295,11 @@ impl MulverseClient {
 /// Calculate exponential backoff delay with jitter.
 fn backoff_with_jitter(attempt: u32) -> Duration {
     let base = BASE_BACKOFF_MS * 2u64.pow(attempt);
-    // Add jitter: random value between 0 and base
     let jitter = rand_jitter(base);
     Duration::from_millis(base + jitter)
 }
 
-/// Simple jitter using a basic approach (no external RNG dependency for this).
+/// Simple jitter without external RNG dependency.
 fn rand_jitter(max_ms: u64) -> u64 {
     use std::time::SystemTime;
     let seed = SystemTime::now()
@@ -301,17 +313,11 @@ fn rand_jitter(max_ms: u64) -> u64 {
 // ERROR TYPES
 // ═══════════════════════════════════════════════════════════════
 
-/// Errors from the Mulverse Platform API.
-///
-/// These map directly to the error codes defined in the integration contract.
-/// Network failure is distinct from API errors — network failure must NOT
-/// be treated as a license failure.
 #[derive(Debug, Clone)]
 pub enum MulverseApiError {
     /// Network/connectivity error — Mulverse is unreachable.
-    /// This must NOT be treated as a license failure.
     NetworkError(String),
-    /// 400 — Validation error (e.g. empty installation_id).
+    /// 400 — Validation error.
     ValidationError(String),
     /// 403 — Forbidden (key/license revoked or expired).
     Forbidden(String),
@@ -346,7 +352,6 @@ impl std::fmt::Display for MulverseApiError {
 }
 
 impl MulverseApiError {
-    /// Whether this error is a transient network issue (not a license problem).
     pub fn is_network_error(&self) -> bool {
         matches!(
             self,
@@ -354,7 +359,6 @@ impl MulverseApiError {
         )
     }
 
-    /// Whether this error indicates the license/key is invalid or revoked.
     pub fn is_license_error(&self) -> bool {
         matches!(
             self,

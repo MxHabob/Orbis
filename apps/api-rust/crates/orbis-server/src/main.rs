@@ -353,11 +353,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_notification_port(notification_adapter.clone()),
     );
 
+    let employee_repo =
+        Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
     let ai_service = Arc::new(
         orbis_app::services::AiOrchestrationService::new(
             integration_resolver.clone(),
             permission_checker.clone(),
             student_service.clone(),
+            employee_repo.clone(),
             academic_service.clone(),
             assessment_service.clone(),
             finance_service.clone(),
@@ -369,8 +372,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // ── Employee Affairs & User Groups Wiring ───────────────────
-    let employee_repo =
-        Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
     let group_repo =
         Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
 

@@ -4,13 +4,19 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 use crate::core::validator;
+use orbis_domain::entities::license::{
+    ENTITLEMENT_AI_GRADING, ENTITLEMENT_CAMPUS_ANALYTICS, ENTITLEMENT_EXAM_TOOLS,
+    ENTITLEMENT_MULTI_BRANCH, ENTITLEMENT_OFFLINE_SYNC, ENTITLEMENT_PARENT_PORTAL,
+    ENTITLEMENT_SSO, ENTITLEMENT_STUDENTS,
+};
 
 /// License plan types.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum LicensePlan {
     Trial,
-    Basic,
-    Professional,
+    School,
+    SchoolPro,
+    University,
     Enterprise,
 }
 
@@ -18,8 +24,9 @@ impl std::fmt::Display for LicensePlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             LicensePlan::Trial => write!(f, "Trial"),
-            LicensePlan::Basic => write!(f, "Basic"),
-            LicensePlan::Professional => write!(f, "Professional"),
+            LicensePlan::School => write!(f, "School"),
+            LicensePlan::SchoolPro => write!(f, "School Pro"),
+            LicensePlan::University => write!(f, "University"),
             LicensePlan::Enterprise => write!(f, "Enterprise"),
         }
     }
@@ -45,7 +52,7 @@ impl std::fmt::Display for LicenseStatus {
     }
 }
 
-/// Information about an activated license.
+/// Information about an activated license in CLI.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LicenseInfo {
     pub key: String,
@@ -53,8 +60,12 @@ pub struct LicenseInfo {
     pub status: LicenseStatus,
     pub activated_at: String,
     pub expires_at: String,
-    pub max_users: u32,
+    pub max_staff: u32,
     pub max_students: u32,
+    pub max_devices: u32,
+    pub max_branches: u32,
+    pub max_classes: u32,
+    pub max_storage_gb: u32,
     pub features: Vec<String>,
 }
 
@@ -84,7 +95,7 @@ fn license_file_path() -> PathBuf {
     let identifier = if cfg!(debug_assertions) {
         "com.mulverse.orbis.dev"
     } else {
-        "com.mulverse.orbis.svelte"
+        "com.mulverse.orbis"
     };
 
     if let Some(mut data_dir) = dirs::data_dir() {
@@ -96,80 +107,34 @@ fn license_file_path() -> PathBuf {
     }
 }
 
-/// Validates and activates a license key.
-///
-/// In this implementation, validation is done offline by decoding the key format.
-/// The key format encodes plan type in the first segment:
-///   - `TRIA-xxxx-xxxx-xxxx` = Trial
-///   - `BASC-xxxx-xxxx-xxxx` = Basic
-///   - `PROF-xxxx-xxxx-xxxx` = Professional
-///   - `ENTR-xxxx-xxxx-xxxx` = Enterprise
-///
-/// Any valid XXXX-XXXX-XXXX-XXXX format is accepted, with plan defaulting to Professional.
+/// Validates and activates an Orbis license key (ORBIS-XXXXX-XXXXX-XXXXX-XXXXX).
 pub fn activate_license(key: &str) -> Result<LicenseInfo> {
     validator::validate_license_key(key)?;
 
     let normalized = key.trim().to_uppercase();
-    let prefix = &normalized[..4];
 
-    let (plan, max_users, max_students, features) = match prefix {
-        "TRIA" => (
-            LicensePlan::Trial,
-            10_u32,
-            100_u32,
-            vec!["core".to_string()],
-        ),
-        "BASC" => (
-            LicensePlan::Basic,
-            50,
-            500,
-            vec!["core".to_string(), "reports".to_string()],
-        ),
-        "PROF" => (
-            LicensePlan::Professional,
-            200,
-            2000,
-            vec![
-                "core".to_string(),
-                "reports".to_string(),
-                "finance".to_string(),
-                "exams".to_string(),
-            ],
-        ),
-        "ENTR" => (
-            LicensePlan::Enterprise,
-            500,
-            5000,
-            vec![
-                "core".to_string(),
-                "reports".to_string(),
-                "finance".to_string(),
-                "exams".to_string(),
-                "api".to_string(),
-                "multi_branch".to_string(),
-            ],
-        ),
-        _ => (
-            LicensePlan::Professional,
-            200,
-            2000,
-            vec![
-                "core".to_string(),
-                "reports".to_string(),
-                "finance".to_string(),
-                "exams".to_string(),
-            ],
-        ),
-    };
+    // Standard plan features per ORBIS_INTEGRATION_CONTRACT.md
+    let plan = LicensePlan::SchoolPro;
+    let max_students = 5000;
+    let max_staff = 250;
+    let max_devices = 200;
+    let max_branches = 12;
+    let max_classes = 120;
+    let max_storage_gb = 50;
 
-    // Trial licenses expire in 30 days, others in 365 days
-    let duration_days = match plan {
-        LicensePlan::Trial => 30,
-        _ => 365,
-    };
+    let features = vec![
+        ENTITLEMENT_STUDENTS.to_string(),
+        ENTITLEMENT_AI_GRADING.to_string(),
+        ENTITLEMENT_MULTI_BRANCH.to_string(),
+        ENTITLEMENT_OFFLINE_SYNC.to_string(),
+        ENTITLEMENT_PARENT_PORTAL.to_string(),
+        ENTITLEMENT_CAMPUS_ANALYTICS.to_string(),
+        ENTITLEMENT_SSO.to_string(),
+        ENTITLEMENT_EXAM_TOOLS.to_string(),
+    ];
 
     let now = Utc::now();
-    let expires = now + Duration::days(duration_days);
+    let expires = now + Duration::days(365);
 
     let info = LicenseInfo {
         key: normalized,
@@ -177,8 +142,12 @@ pub fn activate_license(key: &str) -> Result<LicenseInfo> {
         status: LicenseStatus::Active,
         activated_at: now.to_rfc3339(),
         expires_at: expires.to_rfc3339(),
-        max_users,
+        max_staff,
         max_students,
+        max_devices,
+        max_branches,
+        max_classes,
+        max_storage_gb,
         features,
     };
 
@@ -192,14 +161,22 @@ pub fn activate_trial() -> Result<LicenseInfo> {
     let expires = now + Duration::days(30);
 
     let info = LicenseInfo {
-        key: "TRIAL-MODE".to_string(),
+        key: "ORBIS-TRIAL-00000-00000-00000".to_string(),
         plan: LicensePlan::Trial,
         status: LicenseStatus::Active,
         activated_at: now.to_rfc3339(),
         expires_at: expires.to_rfc3339(),
-        max_users: 10,
+        max_staff: 25,
         max_students: 100,
-        features: vec!["core".to_string()],
+        max_devices: 10,
+        max_branches: 1,
+        max_classes: 10,
+        max_storage_gb: 5,
+        features: vec![
+            ENTITLEMENT_STUDENTS.to_string(),
+            ENTITLEMENT_OFFLINE_SYNC.to_string(),
+            ENTITLEMENT_EXAM_TOOLS.to_string(),
+        ],
     };
 
     save_license(&info)?;
@@ -221,7 +198,6 @@ pub fn load_license() -> Result<LicenseInfo> {
     let mut info: LicenseInfo = serde_json::from_str(&content)
         .map_err(|e| anyhow!("Failed to parse license file: {}", e))?;
 
-    // Check expiry
     if info.is_expired() {
         info.status = LicenseStatus::Expired;
     }
@@ -247,7 +223,6 @@ pub fn check_license_status() -> LicenseStatus {
 fn save_license(info: &LicenseInfo) -> Result<()> {
     let path = license_file_path();
 
-    // Ensure parent directory exists
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
             .map_err(|e| anyhow!("Failed to create license directory: {}", e))?;

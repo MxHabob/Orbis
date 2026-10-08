@@ -11,7 +11,9 @@
 //! The runtime operates offline-first: network failures never cause license failures.
 
 use async_trait::async_trait;
+use base64::Engine;
 use chrono::Utc;
+use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use orbis_app::ports::license::LicenseRuntime;
 use orbis_domain::entities::license::*;
 use orbis_domain::errors::DomainError;
@@ -26,10 +28,6 @@ use super::mulverse_client::MulverseClient;
 // ═══════════════════════════════════════════════════════════════
 
 /// Placeholder for the Mulverse Ed25519 public key.
-///
-/// In production, this will be replaced with the actual base64-encoded
-/// 32-byte Ed25519 public key from the Mulverse Platform.
-///
 /// Key rotation is supported: the runtime can fetch updated keys
 /// from `/api/v1/public/keys/active` during background sync.
 const EMBEDDED_PUBLIC_KEY_B64: &str = "";
@@ -45,13 +43,60 @@ const LICENSE_SNAPSHOT_FILE: &str = "license_snapshot.json";
 const INSTALLATION_ID_FILE: &str = "installation_id";
 
 // ═══════════════════════════════════════════════════════════════
+// OFFLINE CRYPTOGRAPHIC VERIFICATION (Contract Section 7)
+// ═══════════════════════════════════════════════════════════════
+
+/// يتحقق من صحة الترخيص محلياً بدون إنترنت
+pub fn verify_offline_license(
+    signed_doc: &SignedEntitlement,
+    public_key_base64: &str,
+    current_installation_id: &str,
+) -> Result<bool, LicenseVerificationError> {
+    // 1. فحص تطابق معرف التثبيت للجهاز
+    if signed_doc.payload.installation_id != current_installation_id {
+        return Err(LicenseVerificationError::InstallationIdMismatch);
+    }
+
+    // 2. فحص تطابق معرف المنتج
+    if signed_doc.payload.product_id != CANONICAL_PRODUCT_ID {
+        return Err(LicenseVerificationError::ProductMismatch);
+    }
+
+    // 3. التحقق من التوقيع التشفيري Ed25519
+    let pub_key_bytes = base64::engine::general_purpose::STANDARD
+        .decode(public_key_base64)
+        .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
+
+    let verifying_key = VerifyingKey::from_bytes(
+        pub_key_bytes
+            .as_slice()
+            .try_into()
+            .map_err(|_| LicenseVerificationError::InvalidPublicKey)?,
+    )
+    .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
+
+    let canonical_payload = serde_json::to_string(&signed_doc.payload)
+        .map_err(|_| LicenseVerificationError::InvalidPayload)?;
+
+    let sig_bytes = base64::engine::general_purpose::STANDARD
+        .decode(&signed_doc.sig)
+        .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
+
+    let signature = Signature::from_slice(&sig_bytes)
+        .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
+
+    verifying_key
+        .verify(canonical_payload.as_bytes(), &signature)
+        .map_err(|_| LicenseVerificationError::TamperedLicenseSignature)?;
+
+    Ok(true)
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MULVERSE LICENSE RUNTIME
 // ═══════════════════════════════════════════════════════════════
 
 /// The Mulverse license runtime — implements the `LicenseRuntime` port.
-///
-/// Manages the full license lifecycle including activation, verification,
-/// trial management, and background synchronization with Mulverse Platform.
 pub struct MulverseLicenseRuntime {
     /// Application data directory for persisting license state.
     app_data_dir: PathBuf,
@@ -69,8 +114,6 @@ pub struct MulverseLicenseRuntime {
 
 impl MulverseLicenseRuntime {
     /// Create a new license runtime.
-    ///
-    /// Does NOT perform initialization — call `initialize()` after construction.
     pub fn new(
         app_data_dir: &Path,
         app_version: &str,
@@ -151,8 +194,6 @@ impl MulverseLicenseRuntime {
     }
 
     /// Evaluate the current license state from the snapshot.
-    ///
-    /// This is the core state machine evaluation logic.
     fn evaluate_state(&self, snapshot: &mut LicenseSnapshot) {
         let now = Utc::now();
 
@@ -248,58 +289,24 @@ impl MulverseLicenseRuntime {
         &self,
         entitlement: &SignedEntitlement,
     ) -> Result<(), LicenseVerificationError> {
-        // If no embedded key and no fetched keys, we cannot verify
         let trusted_keys = self
             .trusted_keys
             .read()
             .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
 
         if trusted_keys.is_empty() {
-            // During development or before Mulverse provides keys,
-            // warn but allow operation. In production this must be enforced.
-            warn!("No trusted Mulverse public keys configured — signature verification skipped");
+            warn!("No trusted Mulverse public keys configured — signature verification skipped in dev mode");
             return Ok(());
         }
 
-        // Find the key matching the entitlement's kid
         let key_b64 = trusted_keys
             .iter()
             .find(|(kid, _)| *kid == entitlement.kid)
             .map(|(_, key)| key.as_str())
             .ok_or(LicenseVerificationError::UnknownKeyId)?;
 
-        // Decode the public key
-        let key_bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, key_b64)
-            .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
-
-        if key_bytes.len() != 32 {
-            return Err(LicenseVerificationError::InvalidPublicKey);
-        }
-
-        let mut key_array = [0u8; 32];
-        key_array.copy_from_slice(&key_bytes);
-
-        // Decode the signature
-        let sig_bytes =
-            base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &entitlement.sig)
-                .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
-
-        // Canonicalize the payload to JSON for verification
-        let canonical_payload = serde_json::to_string(&entitlement.payload)
-            .map_err(|_| LicenseVerificationError::InvalidPayload)?;
-
-        // Verify using ed25519-dalek
-        use ed25519_dalek::{Signature, Verifier, VerifyingKey};
-
-        let verifying_key = VerifyingKey::from_bytes(&key_array)
-            .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
-
-        let signature = Signature::from_slice(&sig_bytes)
-            .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
-
-        verifying_key
-            .verify(canonical_payload.as_bytes(), &signature)
-            .map_err(|_| LicenseVerificationError::TamperedLicenseSignature)?;
+        let current_id = self.installation_id();
+        verify_offline_license(entitlement, key_b64, &current_id)?;
 
         debug!(kid = %entitlement.kid, "Ed25519 signature verified successfully");
         Ok(())
@@ -310,7 +317,6 @@ impl MulverseLicenseRuntime {
         match self.mulverse_client.get_active_key().await {
             Ok(key_info) => {
                 if let Ok(mut keys) = self.trusted_keys.write() {
-                    // Add or update the key
                     if let Some(existing) = keys.iter_mut().find(|(kid, _)| *kid == key_info.kid) {
                         existing.1 = key_info.public_key_b64;
                     } else {
@@ -344,9 +350,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     async fn initialize(&self) -> Result<(), DomainError> {
         info!("Initializing Orbis license runtime");
 
-        // 1. Try to load persisted snapshot
         if let Some(mut snapshot) = self.load_persisted_snapshot() {
-            // Verify signature if we have a signed entitlement
             if snapshot.signed_entitlement.is_some() {
                 match self
                     .verify_entitlement_signature(snapshot.signed_entitlement.as_ref().unwrap())
@@ -362,7 +366,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 }
             }
 
-            // Verify installation ID matches
             let current_id = load_or_generate_installation_id(&self.app_data_dir)
                 .unwrap_or_else(|_| "unknown".to_string());
 
@@ -370,20 +373,17 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 warn!(
                     expected = %current_id,
                     found = %snapshot.installation_id,
-                    "Installation ID mismatch — license may have been copied"
+                    "Installation ID mismatch — updating to current installation"
                 );
-                // Don't immediately invalidate — the user might have re-installed
                 snapshot.installation_id = current_id;
             }
 
-            // Re-evaluate state
             self.evaluate_state(&mut snapshot);
             snapshot.app_version = self.app_version.clone();
             self.update_snapshot(snapshot)?;
 
             info!(state = ?self.current_snapshot().state, "License runtime initialized from persisted state");
         } else {
-            // No persisted state — start as unavailable
             let installation_id = load_or_generate_installation_id(&self.app_data_dir)
                 .unwrap_or_else(|_| generate_installation_id());
 
@@ -401,14 +401,12 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         &self,
         product_key: &str,
     ) -> Result<ActivationResponse, DomainError> {
-        // Validate product key format
-        validate_product_key(product_key).map_err(|e| DomainError::Validation(e))?;
+        validate_product_key(product_key).map_err(DomainError::Validation)?;
 
         let installation_id = self.installation_id();
 
         let request = ActivationRequest {
             product_key: product_key.trim().to_uppercase(),
-            license_id: None,
             installation_id: installation_id.clone(),
             platform: std::env::consts::OS.to_string(),
             app_version: self.app_version.clone(),
@@ -435,7 +433,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 }
             })?;
 
-        // Verify the received signed entitlement
         if let Err(e) = self.verify_entitlement_signature(&response.signed_entitlement) {
             error!("Received signed entitlement failed verification: {e}");
             return Err(DomainError::Internal(format!(
@@ -443,7 +440,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             )));
         }
 
-        // Verify installation ID matches
         if response.signed_entitlement.payload.installation_id != installation_id {
             error!("Activation response installation_id mismatch");
             return Err(DomainError::Internal(
@@ -451,7 +447,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             ));
         }
 
-        // Create snapshot with the new signed entitlement
         let mut snapshot = LicenseSnapshot {
             state: LicenseState::Active,
             signed_entitlement: Some(response.signed_entitlement.clone()),
@@ -479,14 +474,12 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     async fn start_trial(&self) -> Result<LicenseSnapshot, DomainError> {
         let current = self.current_snapshot();
 
-        // Prevent starting trial if one already existed
         if current.trial_started_at.is_some() {
             return Err(DomainError::Conflict(
                 "A trial period has already been used on this installation".to_string(),
             ));
         }
 
-        // Prevent starting trial if already licensed
         if current.signed_entitlement.is_some() {
             return Err(DomainError::Conflict(
                 "Cannot start trial — a valid license is already active".to_string(),
@@ -512,7 +505,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     async fn refresh(&self) -> Result<(), DomainError> {
         let current = self.current_snapshot();
 
-        // Only refresh if we have a signed entitlement with a license_id
         let se = match &current.signed_entitlement {
             Some(se) => se.clone(),
             None => {
@@ -529,13 +521,11 @@ impl LicenseRuntime for MulverseLicenseRuntime {
 
         match self.mulverse_client.refresh(&request).await {
             Ok(response) => {
-                // Verify the new signed entitlement
                 if let Err(e) = self.verify_entitlement_signature(&response.signed_entitlement) {
                     warn!("Refreshed entitlement failed verification: {e}");
-                    return Ok(()); // Keep existing valid entitlement
+                    return Ok(());
                 }
 
-                // Check if the license has been revoked
                 if response.activation.revoked_at.is_some() {
                     warn!(
                         license_id = %se.payload.license_id,
@@ -549,7 +539,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                     return Ok(());
                 }
 
-                // Update with fresh entitlement
                 let mut snapshot = current;
                 snapshot.signed_entitlement = Some(response.signed_entitlement);
                 snapshot.last_sync_at = Some(Utc::now());
@@ -561,11 +550,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
             Err(e) => {
                 if e.is_network_error() {
-                    // Network failure is NOT a license failure
                     debug!("License refresh failed (network): {e}");
                 } else if e.is_license_error() {
                     warn!("License refresh denied by Mulverse: {e}");
-                    // The license may have been revoked
                     let mut snapshot = current;
                     snapshot.state = LicenseState::Revoked;
                     snapshot.last_known_time = Utc::now();
@@ -576,9 +563,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
         }
 
-        // Also try to refresh trusted keys
         self.refresh_trusted_keys().await;
-
         Ok(())
     }
 
@@ -591,7 +576,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 installation_id: current.installation_id.clone(),
             };
 
-            // Best-effort deactivation — if network fails, still clear local state
             match self.mulverse_client.deactivate(&request).await {
                 Ok(()) => {
                     info!(
@@ -605,14 +589,12 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
         }
 
-        // Clear local state
         let snapshot = LicenseSnapshot::new_unavailable(
             current.installation_id.clone(),
             self.app_version.clone(),
         );
         self.update_snapshot(snapshot)?;
 
-        // Remove persisted file
         let path = self.app_data_dir.join(LICENSE_SNAPSHOT_FILE);
         let _ = std::fs::remove_file(&path);
 
@@ -625,20 +607,20 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     }
 
     fn get_limit(&self, key: &str) -> Option<u64> {
-        self.current_snapshot().get_limit(key)
+        self.current_snapshot().get_limit(key).map(|v| v as u64)
     }
 
     fn check_limit(&self, key: &str, current_count: u64, amount: u64) -> Result<(), DomainError> {
         self.current_snapshot()
             .check_limit(key, current_count, amount)
-            .map_err(|e| DomainError::Forbidden(e))
+            .map_err(DomainError::Forbidden)
     }
 
     fn verify_signature(&self) -> Result<(), LicenseVerificationError> {
         let snapshot = self.current_snapshot();
         match &snapshot.signed_entitlement {
             Some(se) => self.verify_entitlement_signature(se),
-            None => Ok(()), // No entitlement to verify
+            None => Ok(()),
         }
     }
 
@@ -652,9 +634,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
 // ═══════════════════════════════════════════════════════════════
 
 /// Bridge adapter: exposes `LicenseRuntime` as an `EntitlementProvider`.
-///
-/// This allows the existing Orbis services that depend on `EntitlementProvider`
-/// to transparently use the Mulverse license runtime without modification.
 pub struct LicenseEntitlementBridge {
     runtime: std::sync::Arc<dyn LicenseRuntime>,
 }
@@ -691,8 +670,11 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
         };
 
         let plan = snapshot.plan_key().map(String::from);
-        let max_users = snapshot.get_limit("users.max").map(|v| v as u32);
-        let max_students = snapshot.get_limit("students.max").map(|v| v as u32);
+        let max_users = snapshot
+            .get_limit(LIMIT_STAFF_MAX)
+            .or_else(|| snapshot.get_limit("users.max"))
+            .map(|v| v as u32);
+        let max_students = snapshot.get_limit(LIMIT_STUDENTS_MAX).map(|v| v as u32);
 
         let features = match &snapshot.signed_entitlement {
             Some(se) => se
@@ -740,9 +722,6 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
 // INSTALLATION IDENTITY HELPERS
 // ═══════════════════════════════════════════════════════════════
 
-/// Load or generate a stable installation identity.
-///
-/// Persisted as a plain file in AppData. Uses the same pattern as JWT secret generation.
 fn load_or_generate_installation_id(app_data_dir: &Path) -> Result<String, String> {
     let path = app_data_dir.join(INSTALLATION_ID_FILE);
 
@@ -768,23 +747,11 @@ fn load_or_generate_installation_id(app_data_dir: &Path) -> Result<String, Strin
 // BACKGROUND SYNC TASK
 // ═══════════════════════════════════════════════════════════════
 
-/// Spawn a background license sync task.
-///
-/// Periodically refreshes the license with Mulverse Platform.
-/// Uses the `verification_interval_hours` from the signed entitlement,
-/// defaulting to 24 hours.
-///
-/// This task:
-/// - Does NOT block application startup
-/// - Does NOT retry aggressively when offline
-/// - Does NOT produce UI error messages for sync failures
-/// - IS idempotent (repeated sync is safe)
 pub fn spawn_background_sync(
     runtime: std::sync::Arc<dyn LicenseRuntime>,
     initial_delay_secs: u64,
 ) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
-        // Initial delay to avoid blocking startup
         tokio::time::sleep(std::time::Duration::from_secs(initial_delay_secs)).await;
 
         loop {
@@ -793,14 +760,13 @@ pub fn spawn_background_sync(
                 Err(e) => debug!("Background license sync failed (non-fatal): {e}"),
             }
 
-            // Determine next sync interval from the signed entitlement
             let interval_hours = {
                 let snapshot = runtime.current_snapshot();
                 snapshot
                     .signed_entitlement
                     .as_ref()
                     .map(|se| se.payload.verification_interval_hours as u64)
-                    .unwrap_or(24)
+                    .unwrap_or(DEFAULT_VERIFICATION_INTERVAL_HOURS as u64)
             };
 
             let interval = std::time::Duration::from_secs(interval_hours * 3600);

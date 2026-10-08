@@ -1,98 +1,101 @@
 # 📑 Orbis ↔ Mulverse Platform Integration Contract
-
-> **Document Version:** `1.0.0`  
+> **Document Version:** `2.0.0`  
 > **Status:** `Active / Authoritative Specification`  
-> **Target Audience:** AI Coding Agents, Backend Engineers, Desktop Client Developers (Tauri/Rust/TypeScript), Security & QA Engineers.  
-> **Product Identification:** `ORBIS` / `ORBIS_APP` (Desktop School & University Management System)  
-> **Platform Provider:** `Mulverse Platform` (Enterprise Centralized Licensing & Distribution Engine)
+> **Target Audience:** Orbis Desktop Core Engineers, AI Coding Agents, Tauri / Rust Developers, CI/CD Devops.  
+> **Product Identification:** `ORBIS` (Desktop School & University Management System)  
+> **Platform Authority:** `Mulverse Platform` (`https://api.mulverse.com`)
 
 ---
 
-## 1. Executive Summary & Architectural Overview
+## 1. Quick Integration Overview (ما تقدمه المنصة لـ Orbis)
 
-This contract establishes the formal, deterministic integration specification between **Orbis Desktop Application** (Client) and the **Mulverse Platform** (Centralized Authority).
+لتفعيل وربط تطبيق **Orbis Desktop** بنظام التراخيص والتحديثات، يتم تزويد تطبيق Orbis بالبيانات والروابط التالية:
+
+| المتطلب / المعيار | القيمة / المسار | الوصف |
+| :--- | :--- | :--- |
+| **API Base URL** | `https://api.mulverse.com` | عنوان الـ API المركزي المتاح للعموم. |
+| **Product Key Prefix** | `ORBIS` | البادئة الرسمية لمفاتيح التراخيص (مثال: `ORBIS-A7B8C-9D0E1-2F3A4-5B6C7`). |
+| **Canonical Product ID** | `11111111-1111-4111-8111-111111111111` | المعرّف الثابت لمنتج Orbis في الكتالوج وقاعدة البيانات. |
+| **Signing Algorithm** | `Ed25519` | خوارزمية التوقيع التشفيري للتحقق من التراخيص بدون اتصال (Offline). |
+| **Public Key Endpoint** | `GET /api/v1/public/keys/active` | مسار جلب المفتاح العام النشط للتحقق التشفيري. |
+| **Activation Endpoint** | `POST /api/v1/public/licenses/activate` | نقطة تفعيل مقعد الجهاز وربطه بالـ `installation_id`. |
+| **Refresh Endpoint** | `POST /api/v1/public/licenses/refresh` | نقطة تجديد وإرسال نبضات التفعيل دورياً (Heartbeat). |
+| **Deactivate Endpoint** | `POST /api/v1/public/licenses/deactivate` | نقطة تحرير المقعد لتمكين تشغيله على جهاز آخر. |
+| **Tauri Updater Endpoint** | `GET /api/v1/public/updates/tauri` | مسار التحقق من التحديثات المتوافق مباشرة مع Tauri Updater. |
+| **Release Automation Token** | `MULVERSE_RELEASE_API_TOKEN` | الرمز السري المستخدم في CI/CD لرفع نسخ الـ Setup والـ Artifacts. |
+
+---
+
+## 2. التسلسل الإجرائي (Architecture & Lifecycle Flow)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Orbis as Orbis Desktop (Client)
     participant Platform as Mulverse Platform (API)
-    participant SecStorage as Local Secure Storage
+    participant SecStorage as Local Secure Storage (OS Keychain / DB)
 
-    Note over Orbis, Platform: Phase 1: Activation & Handshake
-    Orbis->>Platform: POST /api/v1/public/licenses/activate (ProductKey, InstallationId, MachineInfo)
-    Platform-->>Orbis: 201 Created (Activation + Ed25519 SignedEntitlement)
-    Orbis->>SecStorage: Persist SignedEntitlement + LastSyncTime
+    Note over Orbis, Platform: المرحلة 1: التفعيل لأول مرة (Activation)
+    Orbis->>Platform: POST /api/v1/public/licenses/activate (product_key, installation_id, machine_label)
+    Platform-->>Orbis: 201 Created (Activation Details + SignedEntitlement Token)
+    Orbis->>SecStorage: حفظ الـ SignedEntitlement وتاريخ آخر تحقق سليم
 
-    Note over Orbis, Platform: Phase 2: Offline / Local Verification
-    Orbis->>SecStorage: Read Local SignedEntitlement
-    Orbis->>Orbis: Verify Ed25519 Signature against Baked-in Public Key
-    Orbis->>Orbis: Validate Installation ID, Expiry, Entitlements & Limits
+    Note over Orbis, Platform: المرحلة 2: التحقق بدون اتصال (Offline Engine)
+    Orbis->>SecStorage: قراءة وثيقة SignedEntitlement
+    Orbis->>Orbis: التحقق التشفيري من توقيع Ed25519 بواسطة Public Key المدمج
+    Orbis->>Orbis: فحص تطابق المعرف (installation_id)، الصلاحية، والميزات والحدود
 
-    Note over Orbis, Platform: Phase 3: Heartbeat & Refresh (Periodic)
-    Orbis->>Platform: POST /api/v1/public/licenses/refresh (LicenseId, InstallationId)
-    Platform-->>Orbis: 200 OK (Updated SignedEntitlement)
-    Orbis->>SecStorage: Update Local Snapshot & Reset Grace Clock
+    Note over Orbis, Platform: المرحلة 3: المزامنة وتجديد المقعد (Periodic Heartbeat)
+    Orbis->>Platform: POST /api/v1/public/licenses/refresh (license_id, installation_id)
+    Platform-->>Orbis: 200 OK (وثيقة SignedEntitlement محدثة)
+    Orbis->>SecStorage: تحديث النسخة المحلية وإعادة ضبط عداد الـ Grace Period
 
-    Note over Orbis, Platform: Phase 4: Release & Updates
-    Orbis->>Platform: GET /api/v1/public/updates/check (ProductKey, Version, Platform, Arch)
-    Platform-->>Orbis: 200 OK (Update Metadata, Artifact SHA-256 & URL)
+    Note over Orbis, Platform: المرحلة 4: التحديثات التلقائية (Tauri Updater)
+    Orbis->>Platform: GET /api/v1/public/updates/tauri (product_key=ORBIS, target, arch, current_version)
+    Platform-->>Orbis: 200 OK (رابط التحميل، التوقيع، ملاحظات الإصدار)
 ```
 
 ---
 
-## 2. Core Domain Entities & Terminology
+## 3. مواصفات التشفير والتحقق من التراخيص (Cryptographic Engine)
 
-| Term                    | Domain Scope  | Description                                                                                |
-| :---------------------- | :------------ | :----------------------------------------------------------------------------------------- |
-| **`Product`**           | Platform      | Canonical software offering (`stable_key: "ORBIS"`, `type: "desktop_application"`).        |
-| **`Edition`**           | Catalog       | Commercial product edition (`SCHOOL` for K-12, `UNIVERSITY` for Higher Ed).                |
-| **`Plan`**              | Catalog       | Tiered commercial package (`BASIC`, `PRO`, `ENTERPRISE`).                                  |
-| **`Entitlement`**       | Domain Engine | Feature capability toggle (e.g. `students`, `ai_grading`, `multi_branch`, `offline_sync`). |
-| **`Limit`**             | Domain Engine | Enforceable quantitative boundary (e.g. `students.max: 500`, `devices.max: 3`).            |
-| **`ProductKey`**        | Identity      | Formatted high-entropy key: `ORBIS-XXXXX-XXXXX-XXXXX-XXXXX` (Base32, 125-bit entropy).     |
-| **`License`**           | Commercial    | The central authority granting an Organization the right to run Orbis under defined terms. |
-| **`Activation`**        | Client Seat   | An active hardware seat binding a License to a specific `installation_id`.                 |
-| **`SignedEntitlement`** | Cryptography  | Immutable, offline-verifiable document signed with Ed25519 by Mulverse Platform.           |
+### 3.1 هيكل وثيقة الترخيص الموقعة (`SignedEntitlement`)
 
----
-
-## 3. Cryptographic Verification & Offline Engine
-
-### 3.1 Asymmetric Algorithm & Keys
-
-- **Algorithm:** `Ed25519` (RFC 8032 Edwards-curve Digital Signature Algorithm).
-- **Public Key:** Base64-encoded 32-byte public key embedded in the Orbis desktop binary or cached via `/api/v1/public/keys/active`.
-- **Private Key:** Stored strictly inside Mulverse Platform KMS (never exposed to clients).
-
-### 3.2 Canonical `SignedEntitlement` Payload Schema
-
-The signature is generated by hashing and signing the canonical JSON representation of `EntitlementPayload`.
+عند نجاح التفعيل أو التجديد، يُرجع السيرفر كائن `signed_entitlement`:
 
 ```json
 {
   "v": 1,
-  "kid": "key_ed25519_2026_v1",
+  "kid": "965b4865-f6b7-4c96-a2aa-13e067ad7e31",
   "alg": "Ed25519",
   "payload": {
-    "license_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-    "product_key": "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST",
-    "product_id": "7a35e982-12a8-4c20-a8d0-6f02844857b2",
-    "organization_id": "3c4a2b10-e55f-4a0b-99f8-7b94c5e3170a",
+    "license_id": "44444444-4444-4444-8444-444444444444",
+    "product_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
+    "product_id": "11111111-1111-4111-8111-111111111111",
+    "organization_id": "00000000-0000-0000-0000-000000000002",
     "edition_key": "SCHOOL",
-    "plan_key": "PRO",
+    "plan_key": "SCHOOL_PRO",
     "entitlements": [
       { "key": "students", "granted": true },
       { "key": "ai_grading", "granted": true },
-      { "key": "multi_branch", "granted": false }
+      { "key": "multi_branch", "granted": true },
+      { "key": "offline_sync", "granted": true },
+      { "key": "parent_portal", "granted": true },
+      { "key": "campus_analytics", "granted": true },
+      { "key": "sso", "granted": false },
+      { "key": "exam_tools", "granted": true }
     ],
     "limits": [
-      { "key": "students.max", "max_value": 500 },
-      { "key": "users.max", "max_value": 25 }
+      { "key": "students.max", "max_value": 5000 },
+      { "key": "staff.max", "max_value": 250 },
+      { "key": "devices.max", "max_value": 200 },
+      { "key": "branches.max", "max_value": 12 },
+      { "key": "classes.max", "max_value": 120 },
+      { "key": "storage_gb.max", "max_value": 50 }
     ],
-    "activation_id": "5f1b6238-d621-4824-a74e-761502476ef3",
+    "activation_id": "66666666-6666-4666-8666-666666666666",
     "installation_id": "inst_win_8b9f71c42de34",
-    "issued_at": "2026-10-08T15:00:00Z",
+    "issued_at": "2026-10-09T00:00:00Z",
     "valid_from": "2026-10-01T00:00:00Z",
     "valid_until": "2027-10-01T00:00:00Z",
     "offline_allowed": true,
@@ -103,251 +106,132 @@ The signature is generated by hashing and signing the canonical JSON representat
 }
 ```
 
-### 3.3 Deterministic Verification Algorithm (Agent Checklist)
+---
 
-When Orbis starts up or enforces a feature check:
+## 4. قائمة الميزات والحدود القياسية (Entitlements & Limits Dictionary)
 
-1. **Payload Extraction:** Parse `SignedEntitlement` envelope (`v`, `kid`, `alg`, `payload`, `sig`).
-2. **Signature Check:** Verify `sig` against canonical bytes of `payload` using the trusted Mulverse Ed25519 public key corresponding to `kid`.
-   - _If signature check fails:_ **ABORT IMMEDIATELY** with `TAMPERED_LICENSE_SIGNATURE`.
-3. **Machine Identity Check:** Compare `payload.installation_id` with the host machine's persistent `installation_id`.
-   - _If mismatch:_ **ABORT** with `INSTALLATION_ID_MISMATCH`.
-4. **Time Bounds Check:**
-   - Verify: `current_utc_time >= payload.valid_from`.
-   - If `payload.valid_until` is present, verify: `current_utc_time <= payload.valid_until`.
-   - _If expired:_ **ABORT** with `LICENSE_EXPIRED`.
-5. **Offline Policy & Grace Period:**
-   - If network is unreachable:
-     - Check `payload.offline_allowed == true`. If `false`, **ABORT** with `OFFLINE_MODE_FORBIDDEN`.
-     - Check `(current_utc_time - last_successful_online_sync) <= payload.offline_grace_period_days`.
-     - If grace period exceeded, **LOCK APP** with `OFFLINE_GRACE_EXPIRED`.
-6. **Feature & Quota Enforcement:**
-   - **Boolean Entitlement Check:** `isFeatureEnabled(key)` returns `true` iff `entitlements.find(e => e.key === key)?.granted === true`.
-   - **Quota Check:** `getLimit(key)` returns `limits.find(l => l.key === key)?.max_value`. Prevent creating resources exceeding this value.
+يجب على كود Orbis استخدام نفس المفاتيح الرسمية التالية للتحكم في الميزات والقيود:
+
+### 4.1 الميزات (Feature Toggles / Entitlements)
+| المفتاح (Key) | النوع | الوصف في Orbis |
+| :--- | :--- | :--- |
+| `students` | `boolean` | إدارة شؤون الطلاب والسجلات الأكاديمية (SIS). |
+| `ai_grading` | `boolean` | التصحيح الآلي والتقييم الذكي للواجبات والاختبارات. |
+| `multi_branch` | `boolean` | إدارة الفروع المتعددة والمجمعات التعليمية. |
+| `offline_sync` | `boolean` | المزامنة المحلية عبر شبكة الـ LAN بدون إنترنت. |
+| `parent_portal` | `boolean` | بوابة أولياء الأمور وتطبيق المتابعة. |
+| `campus_analytics` | `boolean` | لوحات المؤشرات والتقارير الإحصائية المتقدمة. |
+| `sso` | `boolean` | الدخول الموحد والربط مع هويات مايكروسوفت وجوجل. |
+| `exam_tools` | `boolean` | محرك الاختبارات وبنوك الأسئلة وجداول الاختبارات. |
+
+### 4.2 الحدود والكميات (Resource Limits / Quotas)
+| المفتاح (Key) | الوحدة | الوصف |
+| :--- | :--- | :--- |
+| `students.max` | `students` | الحد الأقصى لعدد الطلاب المقيدين في النظام. |
+| `staff.max` | `users` | الحد الأقصى لحسابات المعلمين والإداريين. |
+| `devices.max` | `devices` | الحد الأقصى للأجهزة المثبت عليها التطبيق في المنظمة. |
+| `branches.max` | `branches` | الحد الأقصى لعدد الفروع المسموح إنشاؤها. |
+| `classes.max` | `classes` | الحد الأقصى لعدد الفصول والشُعب الدراسية. |
+| `storage_gb.max` | `GB` | السعة التخزينية المخصصة للمرفقات والنسخ الاحتياطي. |
 
 ---
 
-## 4. API Endpoints Specification
+## 5. مواصفات الـ Endpoints العامة للتكامل
 
-Base URL: `https://platform.mulverse.com` (or local development: `http://localhost:8080`)
-
-### 4.1 `POST /api/v1/public/licenses/activate`
-
-Activates a new device seat and binds it to an `installation_id`.
-
-- **Request Body:**
-
+### 5.1 تفعيل الترخيص (`POST /api/v1/public/licenses/activate`)
+* **Headers:** `Content-Type: application/json`
+* **Request Body:**
 ```json
 {
   "product_key": "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST",
-  "license_id": null,
   "installation_id": "inst_win_8b9f71c42de34",
   "platform": "windows",
   "app_version": "1.0.0",
-  "machine_label": "Admin Office PC 01"
+  "machine_label": "School Server 01"
 }
 ```
-
-- **Response `201 Created`:**
-
-```json
-{
-  "activation": {
-    "id": "5f1b6238-d621-4824-a74e-761502476ef3",
-    "license_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
-    "product_id": "7a35e982-12a8-4c20-a8d0-6f02844857b2",
-    "organization_id": "3c4a2b10-e55f-4a0b-99f8-7b94c5e3170a",
-    "installation_id": "inst_win_8b9f71c42de34",
-    "platform": "windows",
-    "app_version": "1.0.0",
-    "status": "active",
-    "activated_at": "2026-10-08T15:00:00Z",
-    "last_seen_at": "2026-10-08T15:00:00Z",
-    "deactivated_at": null,
-    "revoked_at": null,
-    "machine_label": "Admin Office PC 01",
-    "created_at": "2026-10-08T15:00:00Z",
-    "updated_at": "2026-10-08T15:00:00Z"
-  },
-  "signed_entitlement": {
-    "v": 1,
-    "kid": "key_ed25519_2026_v1",
-    "alg": "Ed25519",
-    "payload": { ... },
-    "sig": "..."
-  }
-}
-```
-
-- **Error Codes:**
-  - `400 Bad Request`: `VALIDATION_ERROR` (e.g. empty `installation_id`).
-  - `403 Forbidden`: `FORBIDDEN` (Key/License revoked or expired).
-  - `404 Not Found`: `NOT_FOUND` (Key not found).
-  - `409 Conflict`: `SEAT_LIMIT_EXCEEDED` (Maximum activations for this license reached).
+* **Response `201 Created`:** كائن `activation` مع `signed_entitlement`.
+* **الأخطاء الشائعة:**
+  * `400`: بيانات ناقصة أو غير صالحة.
+  * `404`: مفتاح الترخيص غير موجود.
+  * `409`: تم استنفاد عدد المقاعد المسموح بها للمفتاح (`Seat limit exceeded`).
 
 ---
 
-### 4.2 `POST /api/v1/public/licenses/refresh`
-
-Periodic seat heartbeat and entitlement renewal.
-
-- **Request Body:**
-
+### 5.2 التحقق والتجديد الدوري (`POST /api/v1/public/licenses/refresh`)
+* **Request Body:**
 ```json
 {
-  "license_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "license_id": "44444444-4444-4444-8444-444444444444",
   "installation_id": "inst_win_8b9f71c42de34",
-  "app_version": "1.0.1"
+  "app_version": "1.0.0"
 }
 ```
-
-- **Response `200 OK`:** Returns fresh `ActivationResponse` with updated timestamp and signature.
+* **Response `200 OK`:** كائن تفعيل محدث وتوقيع جديد.
 
 ---
 
-### 4.3 `POST /api/v1/public/licenses/deactivate`
-
-Explicitly relinquishes a device seat so it can be used on another machine.
-
-- **Request Body:**
-
+### 5.3 إلغاء التفعيل (`POST /api/v1/public/licenses/deactivate`)
+* **Request Body:**
 ```json
 {
-  "license_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "license_id": "44444444-4444-4444-8444-444444444444",
   "installation_id": "inst_win_8b9f71c42de34"
 }
 ```
-
-- **Response `200 OK`:** Returns updated `Activation` with `status: "deactivated"`.
+* **Response `200 OK`:** تحرير المقعد ليكون جاهزاً للاستخدام على جهاز آخر.
 
 ---
 
-### 4.4 `GET /api/v1/public/updates/check`
+### 5.4 التحديثات التلقائية لـ Tauri (`GET /api/v1/public/updates/tauri`)
+* **Query Parameters:**
+  * `product_key=ORBIS`
+  * `channel=stable` (أو `beta`)
+  * `current_version=1.0.0`
+  * `target=windows` (أو `darwin`, `linux`)
+  * `arch=x86_64` (أو `aarch64`)
+* **Response:**
+  * `204 No Content`: لا توجد تحديثات جديدة (الإصدار الحالي هو الأحدث).
+  * `200 OK`: ملف الـ Manifest المتوافق مع Tauri Updater:
+    ```json
+    {
+      "version": "1.1.0",
+      "notes": "Added student attendance biometrics and speed improvements.",
+      "pub_date": "2026-10-15T10:00:00Z",
+      "url": "https://api.mulverse.com/api/v1/public/updates/artifacts/00000000-0000-0000-0000-000000000000/download",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6..."
+    }
+    ```
 
-Checks if a newer release is published for the specified channel and platform.
+---
 
-- **Query Parameters:**
-  - `product_key`: `"ORBIS"` or `"ORBIS_APP"`
-  - `channel`: `"stable"` | `"beta"`
-  - `current_version`: `"1.0.0"`
-  - `platform`: `"windows"` | `"macos"` | `"linux"`
-  - `architecture`: `"x86_64"` | `"aarch64"`
+## 6. إعدادات Tauri Updater في تطبيق Orbis (`tauri.conf.json`)
 
-- **Response `200 OK`:**
+في مشروع Orbis Desktop، يتم تكوين الـ updater كالتالي:
 
 ```json
 {
-  "update_available": true,
-  "current_version": "1.0.0",
-  "latest_version": "1.1.0",
-  "release_notes": "Added advanced student grading engine & multi-term analytics",
-  "published_at": "2026-06-15T10:30:00Z",
-  "min_upgrade_version": "1.0.0",
-  "artifact": {
-    "file_name": "Orbis_Setup_1.1.0.exe",
-    "download_url": "https://api.mulverse.com/api/v1/public/updates/artifacts/00000000-0000-0000-0000-000000000000/download",
-    "checksum_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "signature": "Tauri updater signature",
-    "file_size_bytes": 45000000
+  "plugins": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://api.mulverse.com/api/v1/public/updates/tauri?product_key=ORBIS&channel=stable&current_version={{current_version}}&target={{target}}&arch={{arch}}"
+      ],
+      "pubkey": "YOUR_TAURI_UPDATER_PUBLIC_KEY"
+    }
   }
 }
 ```
 
-The response never exposes the server's local storage path. The download URL serves bytes only for an available artifact belonging to a published release.
-
-### 4.4.1 `GET /api/v1/public/updates/tauri`
-
-Tauri updater-compatible dynamic manifest. It accepts `product_key`, `channel`, `current_version`, `target` (`windows` or `darwin`), and `arch` (for example `x86_64` or `aarch64`). It returns `204 No Content` when there is no update, or the Tauri manifest shape:
-
-```json
-{
-  "version": "1.1.0",
-  "notes": "Release notes",
-  "pub_date": "2026-06-15T10:30:00Z",
-  "url": "https://api.mulverse.com/api/v1/public/updates/artifacts/00000000-0000-0000-0000-000000000000/download",
-  "signature": "Tauri updater signature"
-}
-```
-
-### 4.4.2 Release artifact upload
-
-Release automation authenticates with `Authorization: Bearer <MULVERSE_RELEASE_API_TOKEN>`. Upload each binary using `PUT /api/v1/admin/releases/{id}/artifacts/{platform}/{architecture}` with the binary as the request body and `x-file-name`, `x-checksum-sha256`, and base64-encoded `x-signature-base64` headers. The API streams the file to `MULVERSE_ARTIFACT_STORAGE_DIR`, verifies its SHA-256, and registers it. Repeating an identical upload is safe; a different artifact for an occupied platform/architecture returns `409 Conflict`.
-
-Configure `MULVERSE_RELEASE_API_TOKEN`, a persistent `MULVERSE_ARTIFACT_STORAGE_DIR`, and the externally reachable `MULVERSE_PUBLIC_BASE_URL` on the platform server. Orbis GitHub Actions require the Mulverse API base URL, release token, product ID, and updater signing-key secrets/variables. The private GitHub draft is an authenticated source for automation only; client downloads come from Mulverse.
-
 ---
 
-### 4.5 `GET /api/v1/public/keys/active`
-
-Retrieves the active Ed25519 public key metadata for key rotation sync.
-
-- **Response `200 OK`:**
-
-```json
-{
-  "kid": "key_ed25519_2026_v1",
-  "algorithm": "Ed25519",
-  "public_key_b64": "vSm2G...="
-}
-```
-
----
-
-## 5. Orbis Standard Entitlements & Limits Dictionary
-
-When defining catalog rules or checking features in Orbis, use these canonical keys:
-
-### 5.1 Entitlements (Boolean Capabilities)
-
-| Key                    | Type      | Description                                           |
-| :--------------------- | :-------- | :---------------------------------------------------- |
-| `students`             | `Boolean` | Access to Student Information System (SIS) & Rosters. |
-| `ai_grading`           | `Boolean` | AI Automated Grading Assistant & Homework Analysis.   |
-| `multi_branch`         | `Boolean` | Multi-campus / Multi-branch management.               |
-| `finance_ledger`       | `Boolean` | Tuition, Billing, Invoicing & Payroll Ledger.         |
-| `attendance_biometric` | `Boolean` | Biometric & RFID device integration for attendance.   |
-| `sms_gateway`          | `Boolean` | Direct SMS & WhatsApp notification alerts.            |
-| `offline_sync`         | `Boolean` | Peer-to-peer LAN database sync for offline clusters.  |
-
-### 5.2 Limits (Quantitative Quotas)
-
-| Key              | Unit       | Description                                           |
-| :--------------- | :--------- | :---------------------------------------------------- |
-| `students.max`   | `students` | Maximum active enrolled students in the database.     |
-| `users.max`      | `users`    | Maximum teacher/admin staff accounts allowed.         |
-| `branches.max`   | `branches` | Maximum physical campus branches allowed.             |
-| `devices.max`    | `devices`  | Maximum concurrent active device activations (seats). |
-| `storage_gb.max` | `GB`       | Cloud backup / document storage allocation cap.       |
-
----
-
-## 6. Client Implementation Rules (AI Agent Directives)
-
-1. **Installation Identity Generation:**
-   - Generate an installation ID on first launch: `inst_{platform}_{crypto_random_uuid}`.
-   - Persist it in the platform-native secure key store (e.g., Windows Credential Manager, macOS Keychain, or encrypted local SQLite).
-   - **NEVER** use hardware MAC address or CPU serial directly (these change with VM/NIC swaps).
-2. **Offline Resilience:**
-   - Always cache the last valid `SignedEntitlement` and timestamp of last verification.
-   - If offline, permit application operation if within `offline_grace_period_days`.
-   - When online, silently refresh the entitlement document every `verification_interval_hours`.
-3. **Fail-Secure Principle:**
-   - If a cryptographic check fails or license has expired and grace period elapsed, switch Orbis to **Read-Only** or **Locked** state.
-   - Clearly present the user with the reason (`LICENSE_EXPIRED`, `SEAT_REVOKED`, etc.) and a direct button to enter a new product key or contact support (`mulverseco@gmail.com`).
-4. **No Hardcoded Bypasses:**
-   - Never include hardcoded developer keys or mock bypasses in production builds.
-
----
-
-## 7. TypeScript / Rust SDK Code Example
-
-### 7.1 Rust Client Verification (Tauri / Native Backend)
+## 7. نموذج كود التحقق في Orbis (Rust / Tauri Backend Example)
 
 ```rust
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SignedEntitlement {
     pub v: u32,
     pub kid: String,
@@ -356,32 +240,65 @@ pub struct SignedEntitlement {
     pub sig: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EntitlementPayload {
+    pub license_id: String,
+    pub product_id: String,
+    pub installation_id: String,
+    pub valid_from: String,
+    pub valid_until: Option<String>,
+    pub offline_allowed: bool,
+    pub offline_grace_period_days: u32,
+    pub entitlements: Vec<EntitlementItem>,
+    pub limits: Vec<LimitItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EntitlementItem {
+    pub key: String,
+    pub granted: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LimitItem {
+    pub key: String,
+    pub max_value: i64,
+}
+
+/// يتحقق من صحة الترخيص محلياً بدون إنترنت
 pub fn verify_offline_license(
-    doc: &SignedEntitlement,
-    public_key_bytes: &[u8; 32],
+    signed_doc: &SignedEntitlement,
+    public_key_base64: &str,
     current_installation_id: &str,
 ) -> Result<bool, &'static str> {
-    // 1. Verify Installation ID
-    if doc.payload.installation_id != current_installation_id {
+    // 1. فحص تطابق معرف التثبيت للجهاز
+    if signed_doc.payload.installation_id != current_installation_id {
         return Err("INSTALLATION_ID_MISMATCH");
     }
 
-    // 2. Verify Cryptographic Signature
-    let verifying_key = VerifyingKey::from_bytes(public_key_bytes)
-        .map_err(|_| "INVALID_PUBLIC_KEY")?;
+    // 2. التحقق من التوقيع التشفيري Ed25519
+    let pub_key_bytes = base64::engine::general_purpose::STANDARD
+        .decode(public_key_base64)
+        .map_err(|_| "INVALID_PUBLIC_KEY_BASE64")?;
 
-    let canonical_payload_json = serde_json::to_string(&doc.payload)
-        .map_err(|_| "CANONICAL_SERIALIZATION_FAILED")?;
+    let verifying_key = VerifyingKey::from_bytes(
+        pub_key_bytes.as_slice().try_into().map_err(|_| "INVALID_KEY_LENGTH")?,
+    )
+    .map_err(|_| "INVALID_PUBLIC_KEY")?;
 
-    let sig_bytes = base64::decode(&doc.sig)
-        .map_err(|_| "INVALID_SIGNATURE_ENCODING")?;
+    let canonical_payload = serde_json::to_string(&signed_doc.payload)
+        .map_err(|_| "SERIALIZATION_FAILED")?;
+
+    let sig_bytes = base64::engine::general_purpose::STANDARD
+        .decode(&signed_doc.sig)
+        .map_err(|_| "INVALID_SIG_BASE64")?;
 
     let signature = Signature::from_slice(&sig_bytes)
-        .map_err(|_| "INVALID_SIGNATURE_LENGTH")?;
+        .map_err(|_| "INVALID_SIG_LENGTH")?;
 
     verifying_key
-        .verify(canonical_payload_json.as_bytes(), &signature)
-        .map_err(|_| "TAMPERED_LICENSE_SIGNATURE")?;
+        .verify(canonical_payload.as_bytes(), &signature)
+        .map_err(|_| "TAMPERED_OR_INVALID_LICENSE_SIGNATURE")?;
 
     Ok(true)
 }
@@ -389,12 +306,8 @@ pub fn verify_offline_license(
 
 ---
 
-## 8. Summary of Compliance & Verification Checklist
+## 8. توجيهات الأمان للمطورين ووكلاء الذكاء الاصطناعي (AI Rules)
 
-- [x] Canonical product key prefix: `ORBIS-`
-- [x] Asymmetric signature algorithm: `Ed25519`
-- [x] Application-level seat binding via `installation_id`
-- [x] Explicit offline grace period handling (`offline_grace_period_days`)
-- [x] Fine-grained feature toggle check via `entitlements` array
-- [x] Quantitative resource quota checks via `limits` array
-- [x] Fully synchronized with `@mulverse/sdk` and `apps/platform`
+1. **معرف التثبيت المستقر (`installation_id`):** يتم توليده مرة واحدة وتخزينه في مسار مشفر محمي بالنظام (Credential Manager على Windows أو Keychain على macOS)، ولا يجوز استخدام الـ MAC address المتقلب.
+2. **العمل بدون إنترنت (Offline Grace Period):** إذا انقطع الاتصال، يعمل التطبيق بكامل وظائفه المرخصة طالما لم تنتهِ مهلة الـ `offline_grace_period_days` (30 يوماً).
+3. **عدم وضع أي تجاوزات برمجية (No Hardcoded Bypasses):** يجب الاعتماد الكلي على التوقيع الرقمي للمنصة.

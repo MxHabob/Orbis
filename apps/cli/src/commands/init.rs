@@ -65,12 +65,12 @@ pub async fn execute() -> Result<()> {
             } else {
                 loop {
                     let key =
-                        prompts::prompt_license_key("Enter License Key (XXXX-XXXX-XXXX-XXXX):")?;
+                        prompts::prompt_license_key("Enter License Key (ORBIS-XXXXX-XXXXX-XXXXX-XXXXX):")?;
                     match license::activate_license(&key) {
                         Ok(info) => {
                             output::print_success(&format!(
-                                "License activated! Plan: {} | Max Users: {} | Max Students: {}",
-                                info.plan, info.max_users, info.max_students
+                                "License activated! Plan: {} | Max Students: {} | Max Staff: {}",
+                                info.plan, info.max_students, info.max_staff
                             ));
                             break info;
                         }
@@ -133,7 +133,7 @@ pub async fn execute() -> Result<()> {
 
     let mut admin_name;
     let mut admin_username;
-    let mut admin_password;
+    let mut _admin_password;
 
     // Phase 3: Organization Setup
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -196,7 +196,7 @@ pub async fn execute() -> Result<()> {
 
     admin_name = prompts::prompt_full_name("Admin Full Name:")?;
     admin_username = prompts::prompt_email("Admin Email:")?;
-    admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
+    _admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
 
     // Review & Edit Loop
     loop {
@@ -236,7 +236,7 @@ pub async fn execute() -> Result<()> {
             admin_name = prompts::prompt_text_with_default("Admin Full Name:", &admin_name)?;
             admin_username = prompts::prompt_text_with_default("Admin Email:", &admin_username)?;
             println!("  {}", "Re-enter admin password to confirm change:".cyan());
-            admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
+            _admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
         } else if review_choice.contains("Edit Organization Setup") {
             output::print_phase_header(3, TOTAL_PHASES, "Organization Setup (Editing)");
             org_name = prompts::prompt_text_with_default("Organization Name (EN):", &org_name)?;

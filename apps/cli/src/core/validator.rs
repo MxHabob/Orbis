@@ -128,16 +128,16 @@ pub fn password_strength(password: &str) -> &'static str {
     }
 }
 
-/// Validates a license key format: XXXX-XXXX-XXXX-XXXX (alphanumeric groups).
+/// Validates a license key format: ORBIS-XXXXX-XXXXX-XXXXX-XXXXX (5 segments of 5 alphanumeric chars).
 pub fn validate_license_key(key: &str) -> Result<()> {
     let trimmed = key.trim().to_uppercase();
     if trimmed.is_empty() {
         return Err(anyhow!("License key cannot be empty."));
     }
-    let re = Regex::new(r"^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$").unwrap();
+    let re = Regex::new(r"^ORBIS-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$").unwrap();
     if !re.is_match(&trimmed) {
         return Err(anyhow!(
-            "Invalid license key format. Expected: XXXX-XXXX-XXXX-XXXX"
+            "Invalid license key format. Expected: ORBIS-XXXXX-XXXXX-XXXXX-XXXXX"
         ));
     }
     Ok(())
@@ -184,16 +184,18 @@ mod tests {
 
     #[test]
     fn test_validate_license_key() {
-        assert!(validate_license_key("ABCD-1234-EFGH-5678").is_ok());
-        assert!(validate_license_key("abcd-1234-efgh-5678").is_ok());
+        assert!(validate_license_key("ORBIS-ABCDE-FGHIJ-KLMNO-PQRST").is_ok());
+        assert!(validate_license_key("orbis-abcde-fghij-klmno-pqrst").is_ok());
         assert!(validate_license_key("INVALID").is_err());
         assert!(validate_license_key("").is_err());
+        assert!(validate_license_key("ABCD-1234-EFGH-5678").is_err());
     }
 
     #[test]
     fn test_password_strength() {
         assert_eq!(password_strength("ab"), "Weak");
-        assert_eq!(password_strength("Abcdef12"), "Strong");
+        assert_eq!(password_strength("Abcdef12"), "Fair");
+        assert_eq!(password_strength("Abcdef12!"), "Strong");
         assert_eq!(password_strength("MyStr0ng!Pa$$w0rd"), "Very Strong");
     }
 }

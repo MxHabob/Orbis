@@ -109,20 +109,24 @@ fn show_license_details(info: &license::LicenseInfo) {
             ("Status:", &info.status.to_string()),
             ("Activated:", &info.activated_at),
             ("Expires:", &info.expires_at),
-            ("Max Users:", &info.max_users.to_string()),
             ("Max Students:", &info.max_students.to_string()),
+            ("Max Staff:", &info.max_staff.to_string()),
+            ("Max Devices:", &info.max_devices.to_string()),
+            ("Max Branches:", &info.max_branches.to_string()),
+            ("Max Classes:", &info.max_classes.to_string()),
+            ("Storage Quota:", &format!("{} GB", info.max_storage_gb)),
             ("Features:", &info.features.join(", ")),
         ],
     );
 }
 
 fn activate_new_license() -> Result<()> {
-    let key = prompts::prompt_license_key("Enter License Key (XXXX-XXXX-XXXX-XXXX):")?;
+    let key = prompts::prompt_license_key("Enter License Key (ORBIS-XXXXX-XXXXX-XXXXX-XXXXX):")?;
     match license::activate_license(&key) {
         Ok(info) => {
             output::print_success(&format!(
-                "License activated! Plan: {} | Max Users: {} | Max Students: {}",
-                info.plan, info.max_users, info.max_students
+                "License activated! Plan: {} | Max Students: {} | Max Staff: {}",
+                info.plan, info.max_students, info.max_staff
             ));
             show_license_info(&info);
             Ok(())

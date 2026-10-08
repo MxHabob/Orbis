@@ -1327,9 +1327,28 @@ export type LicenseState =
   | "revoked"
   | "invalid";
 
+export type EntitlementKey =
+  | "students"
+  | "ai_grading"
+  | "multi_branch"
+  | "offline_sync"
+  | "parent_portal"
+  | "campus_analytics"
+  | "sso"
+  | "exam_tools";
+
+export type LimitKey =
+  | "students.max"
+  | "staff.max"
+  | "devices.max"
+  | "branches.max"
+  | "classes.max"
+  | "storage_gb.max";
+
 export interface LimitEntry {
   key: string;
   max_value: number;
+  unit?: string;
 }
 
 export interface LicenseStateDto {

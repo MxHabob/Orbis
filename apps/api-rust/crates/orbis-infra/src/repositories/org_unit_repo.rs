@@ -63,7 +63,11 @@ impl OrgUnitRepository for OrgUnitRepoImpl {
         let models = OrgUnitEntity::find()
             .filter(org_unit::Column::OrgId.eq(org_id))
             .filter(org_unit::Column::IsActive.eq(true))
-            .filter(org_unit::Column::Path.starts_with(format!("{}/", path_prefix)))
+            .filter(
+                org_unit::Column::Path
+                    .starts_with(format!("{}.", path_prefix))
+                    .or(org_unit::Column::Path.starts_with(format!("{}/", path_prefix))),
+            )
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
