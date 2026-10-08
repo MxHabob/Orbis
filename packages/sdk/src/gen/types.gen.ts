@@ -1204,6 +1204,7 @@ export type EnrollmentDto = {
 export type EnrollmentSettingsDto = {
     allow_late_enrollment: boolean;
     allow_waitlist: boolean;
+    is_configured: boolean;
     max_class_size_default: number;
     registration_enabled: boolean;
     require_admin_approval: boolean;
@@ -6595,6 +6596,7 @@ export type EvaluateStudentRequirementsData = {
     query?: {
         grade_level_id?: string | null;
         is_national?: boolean | null;
+        is_special_needs?: boolean | null;
         is_transfer?: boolean | null;
     };
     url: '/api/v1/students/{id}/document-requirements';

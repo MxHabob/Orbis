@@ -104,6 +104,7 @@ pub struct EnrollmentSettings {
     pub sibling_priority_enabled: bool,
     pub max_class_size_default: i32,
     pub allow_late_enrollment: bool,
+    pub is_configured: bool,
 }
 
 impl Default for EnrollmentSettings {
@@ -115,6 +116,7 @@ impl Default for EnrollmentSettings {
             sibling_priority_enabled: true,
             max_class_size_default: 25,
             allow_late_enrollment: false,
+            is_configured: false,
         }
     }
 }

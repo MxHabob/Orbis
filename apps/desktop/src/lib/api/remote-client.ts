@@ -2092,7 +2092,12 @@ export class RemoteClient implements OrbisApiClient {
 
   async evaluateStudentDocumentRequirements(
     studentId: string,
-    params?: { grade_level_id?: string; is_national?: boolean; is_transfer?: boolean },
+    params?: {
+      grade_level_id?: string;
+      is_national?: boolean;
+      is_special_needs?: boolean;
+      is_transfer?: boolean;
+    },
   ): Promise<StudentDocumentFulfillmentDto[]> {
     return (await this.call(
       sdk.evaluateStudentRequirements({

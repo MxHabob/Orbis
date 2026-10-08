@@ -16,6 +16,7 @@ import {
 import { navigateOnboardingRoute } from "../navigation";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { l } from "$lib/core/i18n";
+import type { SetupTaskDto } from "$lib/api";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -45,6 +46,17 @@ const isReady = $derived(systemStore.isInstitutionReady);
 const warnings = $derived(systemStore.onboardingState?.warnings ?? []);
 const requiredTaskCount = $derived(systemStore.onboardingState?.required_tasks ?? 0);
 const completedRequiredTaskCount = $derived(systemStore.onboardingState?.required_completed ?? 0);
+
+function getBlockingReason(task: SetupTaskDto): string {
+  let reason = l(task.blocking_reason_ar, task.blocking_reason);
+  for (const dependencyId of task.dependencies) {
+    const dependency = tasks.find((item) => item.id === dependencyId);
+    if (dependency && reason.includes(dependencyId)) {
+      reason = reason.replaceAll(dependencyId, l(dependency.title_ar, dependency.title));
+    }
+  }
+  return reason;
+}
 
 async function handleCompleteAndLaunch() {
   if (isLaunching || isRefreshing) return;
@@ -201,8 +213,10 @@ async function handleCompleteAndLaunch() {
                   </Badge>
                 {/if}
                 <Badge
-                  variant={task.status === "blocked" ? "destructive" : "outline"}
-                  class="text-[10px]"
+                  variant="outline"
+                  class={task.status === "blocked"
+                    ? "border-amber-500/30 bg-amber-500/10 text-[10px] text-amber-700 dark:text-amber-300"
+                    : "text-[10px]"}
                 >
                   {statusLabel}
                 </Badge>
@@ -212,7 +226,7 @@ async function handleCompleteAndLaunch() {
               </div>
               {#if task.status === "blocked" && (task.blocking_reason_ar || task.blocking_reason)}
                 <p class="text-xs leading-relaxed text-muted-foreground">
-                  {l(task.blocking_reason_ar, task.blocking_reason)}
+                  {getBlockingReason(task)}
                 </p>
               {/if}
             </div>

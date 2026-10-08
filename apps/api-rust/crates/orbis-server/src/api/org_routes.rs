@@ -413,6 +413,8 @@ pub struct EnrollmentSettingsDto {
     pub sibling_priority_enabled: bool,
     pub max_class_size_default: i32,
     pub allow_late_enrollment: bool,
+    #[serde(default)]
+    pub is_configured: bool,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
@@ -548,6 +550,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 sibling_priority_enabled: s.enrollment.sibling_priority_enabled,
                 max_class_size_default: s.enrollment.max_class_size_default,
                 allow_late_enrollment: s.enrollment.allow_late_enrollment,
+                is_configured: s.enrollment.is_configured,
             },
             admission: AdmissionConfigurationDto {
                 numbering: NumberingSchemaDto {
@@ -663,6 +666,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 sibling_priority_enabled: s.enrollment.sibling_priority_enabled,
                 max_class_size_default: s.enrollment.max_class_size_default,
                 allow_late_enrollment: s.enrollment.allow_late_enrollment,
+                is_configured: s.enrollment.is_configured,
             },
             admission: orbis_domain::entities::admission::AdmissionConfiguration {
                 numbering: orbis_domain::entities::admission::NumberingSchema {

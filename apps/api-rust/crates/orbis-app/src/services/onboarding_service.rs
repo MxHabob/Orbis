@@ -1164,7 +1164,8 @@ impl OnboardingService {
         ));
 
         // Task 14: Student Registration & Admission Policy
-        let has_registration_policy = settings.enrollment.max_class_size_default > 0;
+        let has_registration_policy =
+            settings.enrollment.is_configured && settings.enrollment.max_class_size_default > 0;
         raw_tasks.push((
             "student_registration_policy",
             OnboardingTaskCategory::Students,
@@ -1173,7 +1174,7 @@ impl OnboardingService {
             "Set default class capacity, waitlist rules, late enrollment permissions, and numbering sequence.",
             "تحديد الحد الأقصى للطلاب، سياسة قائمة الانتظار، وشروط القبول المتأخر وتوليد الأرقام الأكاديمية.",
             true,
-            vec!["academic_classes".into(), "fee_templates".into()],
+            vec![],
             if has_registration_policy { 100 } else { 0 },
             has_registration_policy,
             "/settings/registration",
@@ -1181,7 +1182,7 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["organization:write".into()],
             "Student registration and enrollment rules configured.",
-            Some(("Requires classes and fee templates to be configured.", "يتطلب إعداد الفصول والرسوم أولاً.")),
+            None,
         ));
 
         // Task 15: Document Requirements (Optional)
@@ -1194,7 +1195,7 @@ impl OnboardingService {
             "Define mandatory student admission documents (birth certificate, national ID, vaccine card, transfer files).",
             "تحديد الوثائق الإلزامية لملف الطالب (شهادة الميلاد، الهوية، بطاقة التطعيم، ملف النقل).",
             false,
-            vec!["student_registration_policy".into()],
+            vec![],
             if has_doc_reqs { 100 } else { 0 },
             has_doc_reqs,
             "/settings/archive",
@@ -1202,7 +1203,7 @@ impl OnboardingService {
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["document:write".into()],
             "Document requirements or archive folders configured.",
-            Some(("Requires registration policy configuration.", "يتطلب إعداد سياسة التسجيل أولاً.")),
+            None,
         ));
 
         // Task 16: Certificate & Report Templates (Optional)

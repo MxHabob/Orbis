@@ -1649,13 +1649,19 @@ export class LocalClient implements OrbisApiClient {
 
   async evaluateStudentDocumentRequirements(
     studentId: string,
-    params?: { grade_level_id?: string; is_national?: boolean; is_transfer?: boolean },
+    params?: {
+      grade_level_id?: string;
+      is_national?: boolean;
+      is_special_needs?: boolean;
+      is_transfer?: boolean;
+    },
   ): Promise<StudentDocumentFulfillmentDto[]> {
     return unwrap(
       await invoke("document_evaluate_student_requirements", {
         studentId,
         gradeLevelId: params?.grade_level_id ?? null,
         isNational: params?.is_national ?? true,
+        isSpecialNeeds: params?.is_special_needs ?? false,
         isTransfer: params?.is_transfer ?? false,
       }),
     );

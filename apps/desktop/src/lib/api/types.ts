@@ -1624,6 +1624,7 @@ export interface OrbisApiClient {
     params?: {
       grade_level_id?: string;
       is_national?: boolean;
+      is_special_needs?: boolean;
       is_transfer?: boolean;
     },
   ): Promise<StudentDocumentFulfillmentDto[]>;

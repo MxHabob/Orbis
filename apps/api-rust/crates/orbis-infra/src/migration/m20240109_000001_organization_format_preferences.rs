@@ -15,11 +15,7 @@ impl MigrationTrait for Migration {
                 .alter_table(
                     Table::alter()
                         .table(Alias::new("organizations"))
-                        .add_column(
-                            ColumnDef::new(Alias::new("format_locale"))
-                                .string()
-                                .null(),
-                        )
+                        .add_column(ColumnDef::new(Alias::new("format_locale")).string().null())
                         .to_owned(),
                 )
                 .await;
@@ -34,11 +30,7 @@ impl MigrationTrait for Migration {
                 .alter_table(
                     Table::alter()
                         .table(Alias::new("organizations"))
-                        .add_column(
-                            ColumnDef::new(Alias::new("time_format"))
-                                .string()
-                                .null(),
-                        )
+                        .add_column(ColumnDef::new(Alias::new("time_format")).string().null())
                         .to_owned(),
                 )
                 .await;

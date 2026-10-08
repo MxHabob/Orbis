@@ -5,7 +5,6 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -46,25 +45,22 @@ let nameAr = $state("");
 let nameEn = $state("");
 let code = $state("");
 let selectedClassId = $state<string>("all");
-let condition = $state("all_students"); // all_students | national_only | foreign_only | transfer_students
+let condition = $state("all_students");
 let isMandatory = $state(true);
 let blocksEnrollment = $state(true);
 let description = $state("");
 let isSubmitting = $state(false);
 
-// Reset form when sheet opens
-$effect(() => {
-  if (open) {
-    nameAr = "";
-    nameEn = "";
-    code = "";
-    selectedClassId = "all";
-    condition = "all_students";
-    isMandatory = true;
-    blocksEnrollment = true;
-    description = "";
-  }
-});
+function resetForm() {
+  nameAr = "";
+  nameEn = "";
+  code = "";
+  selectedClassId = "all";
+  condition = "all_students";
+  isMandatory = true;
+  blocksEnrollment = true;
+  description = "";
+}
 
 // Auto-generate code from English or Arabic name
 function autoGenerateCode() {
@@ -114,7 +110,7 @@ async function handleSubmit(e?: Event) {
 }
 </script>
 
-<Sheet bind:open>
+<Sheet bind:open onOpenChange={(value) => value && resetForm()}>
   <SheetContent class="w-full sm:max-w-lg p-0 flex flex-col justify-between bg-background overflow-y-auto">
     <div class="p-6 flex flex-col gap-6 text-start">
       <SheetHeader class="border-b border-border/40 pb-4">
@@ -192,21 +188,21 @@ async function handleSubmit(e?: Event) {
             <SelectTrigger class="h-9 text-xs text-start">
               {#if condition === "all_students"}
                 {m.ui_copy_all_new_students_b14cd3e5()}
-              {:else if condition === "national_only"}
-                {m.ui_copy_nationals_citizens_only_9e9f080e()}
-              {:else if condition === "foreign_only"}
+              {:else if condition === "non_national_only"}
                 {m.ui_copy_foreign_expatriate_students_only_93492941()}
-              {:else if condition === "transfer_students"}
+              {:else if condition === "transfer_students_only"}
                 {m.ui_copy_transfer_students_only_bf6acf94()}
+              {:else if condition === "special_needs_only"}
+                {m.ui_copy_special_needs_5315c628()}
               {:else}
                 {condition}
               {/if}
             </SelectTrigger>
             <SelectContent class="text-start">
               <SelectItem value="all_students" class="text-xs">{m.ui_copy_all_new_students_b14cd3e5()}</SelectItem>
-              <SelectItem value="national_only" class="text-xs">{m.ui_copy_nationals_citizens_only_9e9f080e()}</SelectItem>
-              <SelectItem value="foreign_only" class="text-xs">{m.ui_copy_foreign_expatriate_students_only_93492941()}</SelectItem>
-              <SelectItem value="transfer_students" class="text-xs">{m.ui_copy_transfer_students_only_bf6acf94()}</SelectItem>
+              <SelectItem value="non_national_only" class="text-xs">{m.ui_copy_foreign_expatriate_students_only_93492941()}</SelectItem>
+              <SelectItem value="transfer_students_only" class="text-xs">{m.ui_copy_transfer_students_only_bf6acf94()}</SelectItem>
+              <SelectItem value="special_needs_only" class="text-xs">{m.ui_copy_special_needs_5315c628()}</SelectItem>
             </SelectContent>
           </Select>
         </div>
