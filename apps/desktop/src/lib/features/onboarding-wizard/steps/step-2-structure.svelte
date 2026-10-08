@@ -17,6 +17,7 @@ import {
 } from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
@@ -37,16 +38,16 @@ let rooms = $state<RoomDto[]>([]);
 // Branch Creation State
 let unitName = $state("");
 let unitNameAr = $state("");
-let unitCode = $state("BR-01");
+let unitCode = $state("");
 let unitType = $state("branch");
-let unitCapacity = $state<number>(500);
+let unitCapacity = $state<number>(0);
 
 // Room Creation State
 let roomName = $state("");
 let roomNameAr = $state("");
-let roomNumber = $state("R-101");
+let roomNumber = $state("");
 let roomType = $state("classroom");
-let roomCapacity = $state<number>(30);
+let roomCapacity = $state<number>(0);
 let roomBuilding = $state("");
 
 const ROOM_TYPES = [
@@ -60,6 +61,18 @@ const ROOM_TYPES = [
 
 const stepTasks = $derived(getTasksForStep("structure", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+
+function applyBranchPreset() {
+  unitCode = `BR-${String(orgUnits.length + 1).padStart(2, "0")}`;
+  unitType = "branch";
+  unitCapacity = 500;
+}
+
+function applyRoomPreset() {
+  roomNumber = `R-${String(rooms.length + 101).padStart(3, "0")}`;
+  roomType = "classroom";
+  roomCapacity = 30;
+}
 
 onMount(async () => {
   await loadData();
@@ -104,7 +117,8 @@ async function handleCreateUnit() {
     orgUnits = [...orgUnits, newUnit];
     unitName = "";
     unitNameAr = "";
-    unitCode = `BR-0${orgUnits.length + 1}`;
+    unitCode = "";
+    unitCapacity = 0;
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_branch_created_success();
   } catch (err: any) {
@@ -116,7 +130,7 @@ async function handleCreateUnit() {
 }
 
 async function handleCreateRoom() {
-  if (!roomName.trim() && !roomNameAr.trim() && !roomNumber.trim()) {
+  if (!roomNumber.trim()) {
     toast.error(m.onboarding_step2_room_err_name());
     return;
   }
@@ -128,9 +142,9 @@ async function handleCreateRoom() {
     const newRoom = await api.createRoom({
       name: roomName.trim() || roomNameAr.trim() || roomNumber.trim(),
       name_ar: roomNameAr.trim() || undefined,
-      room_number: roomNumber.trim() || "R-101",
+      room_number: roomNumber.trim(),
       room_type: roomType,
-      capacity: roomCapacity > 0 ? roomCapacity : 30,
+      capacity: roomCapacity > 0 ? roomCapacity : undefined,
       building: roomBuilding.trim() || undefined,
       is_active: true,
     });
@@ -138,7 +152,8 @@ async function handleCreateRoom() {
     rooms = [...rooms, newRoom];
     roomName = "";
     roomNameAr = "";
-    roomNumber = `R-10${rooms.length + 1}`;
+    roomNumber = "";
+    roomCapacity = 0;
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_room_created_success();
   } catch (err: any) {
@@ -194,6 +209,18 @@ async function deleteRoom(room: RoomDto) {
       isComplete={orgUnits.length > 0}
     >
       <div class="space-y-4">
+        <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSubmittingUnit}
+            onclick={applyBranchPreset}
+            class="text-xs"
+          >
+            BR-{String(orgUnits.length + 1).padStart(2, "0")} · 500
+          </Button>
+        </OnboardingPresetBar>
+
         <!-- Branch Creation Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <BilingualNameFields
@@ -297,6 +324,18 @@ async function deleteRoom(room: RoomDto) {
       isComplete={rooms.length > 0}
     >
       <div class="space-y-4">
+        <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSubmittingRoom}
+            onclick={applyRoomPreset}
+            class="text-xs"
+          >
+            R-{String(rooms.length + 101).padStart(3, "0")} · {ROOM_TYPES[0].label} · 30
+          </Button>
+        </OnboardingPresetBar>
+
         <!-- Room Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <BilingualNameFields
@@ -366,7 +405,7 @@ async function deleteRoom(room: RoomDto) {
             <Button
               variant="default"
               size="sm"
-              disabled={isSubmittingRoom || (!roomName.trim() && !roomNumber.trim())}
+              disabled={isSubmittingRoom || !roomNumber.trim()}
               onclick={handleCreateRoom}
               class="text-xs font-semibold"
             >

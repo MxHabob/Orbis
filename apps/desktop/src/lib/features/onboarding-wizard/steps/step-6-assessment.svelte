@@ -5,6 +5,7 @@ import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { api, type AssessmentSchemeDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
+import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -17,6 +18,7 @@ import {
 } from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
@@ -33,8 +35,8 @@ let successMessage = $state<string | null>(null);
 let schemes = $state<AssessmentSchemeDto[]>([]);
 
 // Scheme Form
-let schemeName = $state("Standard 100-Point Grading Scheme");
-let schemeNameAr = $state("نظام التقييم والدرجات المئوي المعتمد");
+let schemeName = $state("");
+let schemeNameAr = $state("");
 let scaleType = $state("percentage");
 let maxScore = $state<number>(100);
 let passingScore = $state<number>(50);
@@ -83,6 +85,8 @@ const PRESET_SCHEMES = [
     ],
   },
 ];
+type AssessmentComponent = (typeof PRESET_SCHEMES)[number]["components"][number];
+let schemeComponents = $state<AssessmentComponent[]>([]);
 
 const stepTasks = $derived(getTasksForStep("assessment", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
@@ -120,12 +124,13 @@ async function handleCreateScheme() {
       passing_score: passingScore,
       max_score: maxScore,
       formula: {
-        components: [
-          { name: "Coursework", weight: 20, max_score: 20, passing_score: 10 },
-          { name: "Midterm", weight: 30, max_score: 30, passing_score: 15 },
-          { name: "Final Exam", weight: 40, max_score: 40, passing_score: 20 },
-          { name: "Participation", weight: 10, max_score: 10, passing_score: 5 },
-        ],
+        components: schemeComponents.map((component) => ({
+          name: component.name,
+          name_ar: component.nameAr,
+          weight: component.weight,
+          max_score: component.weight,
+          passing_score: component.weight / 2,
+        })),
       },
       is_active: true,
     });
@@ -133,6 +138,7 @@ async function handleCreateScheme() {
     schemes = [...schemes, created];
     schemeName = "";
     schemeNameAr = "";
+    schemeComponents = [];
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step6_scheme_created_success();
   } catch (err: any) {
@@ -143,38 +149,13 @@ async function handleCreateScheme() {
   }
 }
 
-async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
-  isSubmitting = true;
-  successMessage = null;
-
-  try {
-    const created = await api.createAssessmentScheme({
-      name: preset.name,
-      name_ar: preset.nameAr,
-      scale_type: preset.scale,
-      passing_score: preset.pass,
-      max_score: preset.max,
-      formula: {
-        components: preset.components.map((c) => ({
-          name: c.name,
-          name_ar: c.nameAr,
-          weight: c.weight,
-          max_score: c.weight,
-          passing_score: c.weight / 2,
-        })),
-      },
-      is_active: true,
-    });
-
-    schemes = [...schemes, created];
-    await refreshOnboardingState(orgId, m.common_action_failed());
-    successMessage = m.onboarding_step6_preset_applied({ name: preset.name });
-  } catch (err: any) {
-    console.error("Failed to add preset scheme:", err);
-    toast.error(err?.message || m.onboarding_step6_err_create());
-  } finally {
-    isSubmitting = false;
-  }
+function applySchemePreset(preset: typeof PRESET_SCHEMES[number]) {
+  schemeName = preset.name;
+  schemeNameAr = preset.nameAr;
+  scaleType = preset.scale;
+  maxScore = preset.max;
+  passingScore = preset.pass;
+  schemeComponents = preset.components;
 }
 
 async function deleteScheme(scheme: AssessmentSchemeDto) {
@@ -216,35 +197,26 @@ async function deleteScheme(scheme: AssessmentSchemeDto) {
       isComplete={schemes.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Preset Schemes -->
-        {#if schemes.length === 0}
-          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-            <div class="text-xs font-semibold text-foreground">
-              🎯 {m.onboarding_step6_quick_schemes()}
-            </div>
-            <div class="grid gap-2 sm:grid-cols-3">
-              {#each PRESET_SCHEMES as preset (preset.name)}
-                <div class="rounded-lg border border-border/60 bg-card p-3 flex flex-col justify-between gap-3 text-xs">
-                  <div>
-                    <div class="font-semibold text-foreground">
-                      {preset.name}
-                    </div>
-                    <div class="text-[11px] text-muted-foreground mt-1">
-                      {m.onboarding_step6_max_pass_desc({ max: preset.max, pass: preset.pass })}
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={isSubmitting}
-                    onclick={() => handleAddPresetScheme(preset)}
-                    class="text-xs font-semibold w-full bg-background"
-                  >
-                    {m.onboarding_step6_adopt_scheme_btn()}
-                  </Button>
-                </div>
-              {/each}
-            </div>
+        <OnboardingPresetBar title={m.onboarding_step6_quick_schemes()}>
+          {#each PRESET_SCHEMES as preset (preset.name)}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSubmitting}
+              onclick={() => applySchemePreset(preset)}
+              class="text-xs"
+            >
+              {l(preset.nameAr, preset.name)} · {m.onboarding_step6_max_pass_desc({ max: preset.max, pass: preset.pass })}
+            </Button>
+          {/each}
+        </OnboardingPresetBar>
+        {#if schemeComponents.length > 0}
+          <div class="flex flex-wrap gap-2">
+            {#each schemeComponents as component (component.name)}
+              <span class="rounded-full bg-muted/50 px-2.5 py-1 text-xs">
+                {l(component.nameAr, component.name)} · {component.weight}%
+              </span>
+            {/each}
           </div>
         {/if}
 

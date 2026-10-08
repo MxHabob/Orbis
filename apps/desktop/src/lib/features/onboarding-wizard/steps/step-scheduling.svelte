@@ -9,18 +9,21 @@
     type AcademicYearDto,
     type ProvisionDefaultsReqDto,
   } from "$lib/api";
-  import { getHijriSchoolMonthLengths } from "$lib/core/i18n/hijri";
   import { systemStore } from "$lib/stores";
   import { refreshOnboardingState } from "../refresh-onboarding-state";
   import { Button } from "@orbis/ui/button";
+  import { Checkbox } from "@orbis/ui/checkbox";
+  import { Label } from "@orbis/ui/label";
   import { Card, CardContent } from "@orbis/ui/card";
   import OnboardingStepHeader from "../onboarding-step-header.svelte";
+  import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
   import { getTasksForStep } from "../onboarding-steps";
 
   let { orgId }: { orgId: string } = $props();
 
   let years = $state<AcademicYearDto[]>([]);
   let selectedYearId = $state("");
+  let enablePeriodAutopilot = $state(false);
   let isLoading = $state(true);
   const queryClient = useQueryClient();
   const provisionDefaultsMutation = createMutation(() => ({
@@ -88,30 +91,18 @@
       return;
     }
 
-    const hijriCalendar = getHijriSchoolMonthLengths(selectedYear.start_date);
-    if (!hijriCalendar) {
-      toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
-      return;
-    }
-
     successMessage = null;
     try {
       await provisionDefaultsMutation.mutateAsync({
-          academic_year_id: String(selectedYear.id),
-          academic_year_name: selectedYear.name,
-          academic_year_name_ar: selectedYear.name_ar,
-          start_date: selectedYear.start_date,
-          end_date: selectedYear.end_date,
-          provision_hijri_school_calendar: true,
-          hijri_start_year: hijriCalendar.hijriYear,
-          hijri_month_lengths: hijriCalendar.monthLengths,
-          provision_stages_and_grades: true,
-          provision_subjects: true,
-          provision_assessment_scheme: true,
-          provision_tuition_fee_template: true,
-          provision_time_slots: true,
-          enable_period_autopilot: true,
-        });
+        academic_year_id: String(selectedYear.id),
+        provision_hijri_school_calendar: false,
+        provision_stages_and_grades: false,
+        provision_subjects: false,
+        provision_assessment_scheme: false,
+        provision_tuition_fee_template: false,
+        provision_time_slots: true,
+        enable_period_autopilot: enablePeriodAutopilot,
+      });
       await refreshOnboardingState(orgId, m.common_action_failed());
       successMessage = m.onboarding_step_scheduling_success();
     } catch (error) {
@@ -160,41 +151,29 @@
       </select>
 
       {#if selectedYear}
-        <div class="grid gap-3 sm:grid-cols-2">
-          <div class="rounded-lg border border-border/50 bg-muted/20 p-4">
-            <div class="text-sm font-semibold">{m.onboarding_step_scheduling_hijri_summary()}</div>
-            <p class="mt-1 text-xs text-muted-foreground">8 {m.onboarding_step_scheduling_months()}</p>
-          </div>
-          <div class="rounded-lg border border-border/50 bg-muted/20 p-4">
-            <div class="text-sm font-semibold">{m.onboarding_step_scheduling_lessons()}</div>
-            <p class="mt-1 text-xs text-muted-foreground">
-              7 {m.onboarding_step_scheduling_daily_lessons()} · 2 {m.onboarding_step_scheduling_breaks()} · 5 {m.onboarding_step_scheduling_days()}
-            </p>
-          </div>
-          <div class="rounded-lg border border-border/50 bg-muted/20 p-4">
-            <div class="text-sm font-semibold">{m.onboarding_step_scheduling_exams()}</div>
-            <p class="mt-1 text-xs text-muted-foreground">{m.onboarding_step_scheduling_exams_desc()}</p>
-          </div>
-          <div class="rounded-lg border border-border/50 bg-muted/20 p-4">
-            <div class="text-sm font-semibold">{m.onboarding_step_scheduling_autopilot()}</div>
-            <p class="mt-1 text-xs text-muted-foreground">{m.onboarding_step_scheduling_autopilot_desc()}</p>
-          </div>
-        </div>
+        <OnboardingPresetBar
+          title={m.ui_copy_recommended_4917dbf2()}
+          description={`7 ${m.onboarding_step_scheduling_daily_lessons()} · 2 ${m.onboarding_step_scheduling_breaks()} · 5 ${m.onboarding_step_scheduling_days()}`}
+        >
+          {#each schoolDays as day (day)}
+            <span class="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">{day}</span>
+          {/each}
+          {#each defaultTimeSlots as slot (slot.start)}
+            <span class="rounded-full bg-muted/50 px-2.5 py-1 text-xs">
+              {slot.name} <time class="font-mono text-muted-foreground">{slot.start}–{slot.end}</time>
+            </span>
+          {/each}
+        </OnboardingPresetBar>
 
-        <div class="space-y-2 rounded-lg border border-border/50 p-4">
-          <h3 class="text-sm font-semibold">{m.onboarding_step_scheduling_lessons()}</h3>
-          <div class="flex flex-wrap gap-1.5" aria-label={m.onboarding_step_scheduling_days()}>
-            {#each schoolDays as day (day)}
-              <span class="rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary">{day}</span>
-            {/each}
-          </div>
-          <div class="grid gap-1 sm:grid-cols-2">
-            {#each defaultTimeSlots as slot (slot.start)}
-              <div class="flex items-center justify-between gap-3 rounded-md bg-muted/30 px-3 py-2 text-xs">
-                <span>{slot.name}</span>
-                <time class="font-mono text-muted-foreground">{slot.start}–{slot.end}</time>
-              </div>
-            {/each}
+        <div class="flex items-start gap-3 rounded-md border border-border/50 p-3">
+          <Checkbox id="onboarding-period-autopilot" bind:checked={enablePeriodAutopilot} />
+          <div class="space-y-0.5">
+            <Label for="onboarding-period-autopilot" class="text-sm font-medium">
+              {m.onboarding_step_scheduling_autopilot()}
+            </Label>
+            <p class="text-xs text-muted-foreground">
+              {m.onboarding_step_scheduling_autopilot_desc()}
+            </p>
           </div>
         </div>
       {/if}

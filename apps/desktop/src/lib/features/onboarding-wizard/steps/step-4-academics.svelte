@@ -5,12 +5,14 @@ import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
+import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
@@ -29,16 +31,16 @@ let classes = $state<ClassDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 
 // Subject Creation Form
-let subjectName = $state("Mathematics");
-let subjectNameAr = $state("الرياضيات");
-let subjectCode = $state("MATH-101");
+let subjectName = $state("");
+let subjectNameAr = $state("");
+let subjectCode = $state("");
 let subjectCreditHours = $state("3");
 
 // Class Creation Form
-let className = $state("Grade 1 - Section A");
-let classNameAr = $state("الصف الأول - شعبة (أ)");
-let classCode = $state("G1-A");
-let classGrade = $state("Grade 1");
+let className = $state("");
+let classNameAr = $state("");
+let classCode = $state("");
+let classGrade = $state("");
 let classCapacity = $state<number>(30);
 let selectedPeriodId = $state<string>("");
 
@@ -65,6 +67,21 @@ const STANDARD_CLASSES = [
 
 const stepTasks = $derived(getTasksForStep("academics", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+
+function applySubjectPreset(subject: typeof STANDARD_SUBJECTS[number]) {
+  subjectName = subject.name;
+  subjectNameAr = subject.nameAr;
+  subjectCode = subject.code;
+  subjectCreditHours = subject.credits;
+}
+
+function applyClassPreset(classPreset: typeof STANDARD_CLASSES[number]) {
+  className = classPreset.name;
+  classNameAr = classPreset.nameAr;
+  classCode = classPreset.code;
+  classGrade = classPreset.grade;
+  classCapacity = 30;
+}
 
 onMount(async () => {
   await loadData();
@@ -103,7 +120,7 @@ async function handleCreateSubject() {
 
   try {
     const newSubject = await api.createSubject({
-      code: subjectCode.trim() || `SUB-${subjects.length + 1}`,
+      code: subjectCode.trim() || `SUB-${String(subjects.length + 1).padStart(2, "0")}`,
       name: subjectName.trim() || subjectNameAr.trim(),
       name_ar: subjectNameAr.trim() || undefined,
       credit_hours: subjectCreditHours,
@@ -113,7 +130,7 @@ async function handleCreateSubject() {
     subjects = [...subjects, newSubject];
     subjectName = "";
     subjectNameAr = "";
-    subjectCode = `SUB-0${subjects.length + 1}`;
+    subjectCode = "";
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_subject_created_success();
   } catch (err: any) {
@@ -163,7 +180,7 @@ async function handleCreateClass() {
     const newClass = await api.createClass({
       name: className.trim() || classNameAr.trim(),
       name_ar: classNameAr.trim() || undefined,
-      code: classCode.trim() || `CLS-${classes.length + 1}`,
+      code: classCode.trim() || `CLS-${String(classes.length + 1).padStart(2, "0")}`,
       period_id: selectedPeriodId || undefined,
       grade_level: classGrade.trim() || undefined,
       capacity: classCapacity > 0 ? classCapacity : 30,
@@ -172,7 +189,7 @@ async function handleCreateClass() {
     classes = [...classes, newClass];
     className = "";
     classNameAr = "";
-    classCode = `CLS-0${classes.length + 1}`;
+    classCode = "";
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
@@ -243,28 +260,33 @@ async function handleBatchImportClasses() {
       isComplete={subjects.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Batch Import -->
-        {#if subjects.length === 0}
-          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-semibold text-foreground">
-                📚 {m.onboarding_step4_quick_subjects()}
-              </div>
-              <p class="text-xs text-muted-foreground">
-                {m.onboarding_step4_quick_subjects_desc()}
-              </p>
-            </div>
+        <OnboardingPresetBar
+          title={m.onboarding_step4_quick_subjects()}
+          description={m.onboarding_step4_quick_subjects_desc()}
+        >
+          {#each STANDARD_SUBJECTS as subject (subject.code)}
             <Button
               variant="outline"
               size="sm"
               disabled={isSubmittingSubject}
+              onclick={() => applySubjectPreset(subject)}
+              class="text-xs"
+            >
+              {l(subject.nameAr, subject.name)}
+            </Button>
+          {/each}
+          {#if subjects.length === 0}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isSubmittingSubject}
               onclick={handleBatchImportSubjects}
-              class="text-xs bg-background shrink-0 font-semibold"
+              class="text-xs"
             >
               {m.onboarding_step4_import_subjects_btn()}
             </Button>
-          </div>
-        {/if}
+          {/if}
+        </OnboardingPresetBar>
 
         <!-- Subject Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
@@ -293,7 +315,7 @@ async function handleBatchImportClasses() {
               </Label>
               <Input
                 bind:value={subjectCode}
-                placeholder="MATH-101"
+                placeholder="MATH-01"
                 class="font-mono text-xs"
               />
             </div>
@@ -358,28 +380,33 @@ async function handleBatchImportClasses() {
       isComplete={classes.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Batch Import Classes -->
-        {#if classes.length === 0}
-          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div class="text-xs font-semibold text-foreground">
-                👥 {m.onboarding_step4_quick_classes()}
-              </div>
-              <p class="text-xs text-muted-foreground">
-                {m.onboarding_step4_quick_classes_desc()}
-              </p>
-            </div>
+        <OnboardingPresetBar
+          title={m.onboarding_step4_quick_classes()}
+          description={m.onboarding_step4_quick_classes_desc()}
+        >
+          {#each STANDARD_CLASSES as classPreset (classPreset.code)}
             <Button
               variant="outline"
               size="sm"
               disabled={isSubmittingClass}
+              onclick={() => applyClassPreset(classPreset)}
+              class="text-xs"
+            >
+              {l(classPreset.nameAr, classPreset.name)}
+            </Button>
+          {/each}
+          {#if classes.length === 0}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={isSubmittingClass}
               onclick={handleBatchImportClasses}
-              class="text-xs bg-background shrink-0 font-semibold"
+              class="text-xs"
             >
               {m.onboarding_step4_import_classes_btn()}
             </Button>
-          </div>
-        {/if}
+          {/if}
+        </OnboardingPresetBar>
 
         <!-- Class Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">

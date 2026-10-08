@@ -15,6 +15,7 @@ import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
@@ -39,17 +40,11 @@ function dateInputValue(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-const defaultSchoolCalendar = getNextHijriSchoolCalendar();
-const defaultHijriYear =
-  defaultSchoolCalendar?.hijriYear ?? new Date().getFullYear() - 579;
-const defaultYearStart = defaultSchoolCalendar?.startDate ?? new Date();
-const defaultYearEnd = defaultSchoolCalendar?.endDate ?? new Date();
-
 // Academic Year Form
-let yearName = $state(`${defaultHijriYear}/${defaultHijriYear + 1}`);
-let yearNameAr = $state(`العام الدراسي ${defaultHijriYear}-${defaultHijriYear + 1}هـ`);
-let yearStartDate = $state(dateInputValue(defaultYearStart));
-let yearEndDate = $state(dateInputValue(defaultYearEnd));
+let yearName = $state("");
+let yearNameAr = $state("");
+let yearStartDate = $state("");
+let yearEndDate = $state("");
 
 // Selected Year for Period Creation
 let selectedYearId = $state<string>("");
@@ -57,6 +52,19 @@ let selectedYearId = $state<string>("");
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
 const isSchool = $derived(systemStore.onboardingState?.institution_type === "school");
+
+function applyRecommendedYear() {
+  const calendar = getNextHijriSchoolCalendar();
+  if (!calendar) {
+    toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
+    return;
+  }
+
+  yearName = `${calendar.hijriYear}/${calendar.hijriYear + 1}`;
+  yearNameAr = `العام الدراسي ${calendar.hijriYear}-${calendar.hijriYear + 1}هـ`;
+  yearStartDate = dateInputValue(calendar.startDate);
+  yearEndDate = dateInputValue(calendar.endDate);
+}
 
 onMount(async () => {
   await loadData();
@@ -105,6 +113,10 @@ async function handleCreateYear() {
 
     years = [...years, newYear];
     selectedYearId = String(newYear.id);
+    yearName = "";
+    yearNameAr = "";
+    yearStartDate = "";
+    yearEndDate = "";
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step3_year_created_success();
   } catch (err: any) {
@@ -126,7 +138,7 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
 
   try {
     const currentYear = years.find((year) => String(year.id) === String(selectedYearId));
-    if (scheme === "2_semesters") {
+    if (scheme === "2_semesters" && isSchool) {
       const calendar = getHijriSchoolMonthLengths(
         currentYear?.start_date ?? `${yearStartDate}T00:00:00Z`,
       );
@@ -144,7 +156,11 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
           provision_hijri_school_calendar: true,
           hijri_start_year: calendar.hijriYear,
           hijri_month_lengths: calendar.monthLengths,
-          enable_period_autopilot: true,
+          provision_stages_and_grades: false,
+          provision_subjects: false,
+          provision_assessment_scheme: false,
+          provision_tuition_fee_template: false,
+          enable_period_autopilot: false,
         },
         orgId,
       );
@@ -233,6 +249,20 @@ async function deletePeriod(period: AcademicPeriodDto) {
       isComplete={years.length > 0}
     >
       <div class="space-y-4">
+        {#if isSchool}
+          <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSubmittingYear}
+              onclick={applyRecommendedYear}
+              class="text-xs"
+            >
+              {m.onboarding_step3_hijri_school_calendar()}
+            </Button>
+          </OnboardingPresetBar>
+        {/if}
+
         <!-- Year Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
@@ -329,20 +359,16 @@ async function deletePeriod(period: AcademicPeriodDto) {
     >
       <div class="space-y-4">
         <!-- Quick Preset Generator Buttons -->
-        <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-          <div class="text-xs font-semibold text-foreground">
-            ⚡ {m.onboarding_step3_quick_schemes()}
-          </div>
-          <p class="text-xs text-muted-foreground">
-            {m.onboarding_step3_quick_schemes_desc()}
-          </p>
-          <div class="flex flex-wrap gap-2">
+        <OnboardingPresetBar
+          title={m.onboarding_step3_quick_schemes()}
+          description={m.onboarding_step3_quick_schemes_desc()}
+        >
             <Button
               variant="outline"
               size="sm"
               disabled={isSubmittingPeriod || years.length === 0}
               onclick={() => handleGenerateSemesters("2_semesters")}
-              class="text-xs bg-background hover:bg-muted"
+              class="text-xs"
             >
               {isSchool
                 ? m.onboarding_step3_hijri_school_calendar()
@@ -354,7 +380,7 @@ async function deletePeriod(period: AcademicPeriodDto) {
                 size="sm"
                 disabled={isSubmittingPeriod || years.length === 0}
                 onclick={() => handleGenerateSemesters("3_trimesters")}
-                class="text-xs bg-background hover:bg-muted"
+                class="text-xs"
               >
                 {m.onboarding_step3_3_trimesters()}
               </Button>
@@ -363,13 +389,12 @@ async function deletePeriod(period: AcademicPeriodDto) {
                 size="sm"
                 disabled={isSubmittingPeriod || years.length === 0}
                 onclick={() => handleGenerateSemesters("4_quarters")}
-                class="text-xs bg-background hover:bg-muted"
+                class="text-xs"
               >
                 {m.onboarding_step3_4_quarters()}
               </Button>
             {/if}
-          </div>
-        </div>
+        </OnboardingPresetBar>
 
         <!-- Existing Periods List -->
         {#if periods.length > 0}

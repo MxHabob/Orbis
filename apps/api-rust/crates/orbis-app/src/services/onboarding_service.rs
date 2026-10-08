@@ -1496,9 +1496,11 @@ impl OnboardingService {
         let now = Utc::now();
         let mut created_items = Vec::new();
 
-        // 1. Ensure at least one OrgUnit exists
+        // Only create the sample campus when class scaffolding was explicitly requested.
         let units = self.org_unit_repo.find_by_org(org_id).await?;
-        let main_unit_id = if units.is_empty() {
+        let main_unit_id = if let Some(unit) = units.first() {
+            Some(unit.id)
+        } else if req.provision_stages_and_grades.unwrap_or(false) {
             let unit_id = Uuid::new_v4();
             let unit = OrgUnit {
                 id: unit_id,
@@ -1529,9 +1531,9 @@ impl OnboardingService {
             };
             self.org_unit_repo.save(&unit).await?;
             created_items.push("Main Campus (OrgUnit)".to_string());
-            unit_id
+            Some(unit_id)
         } else {
-            units[0].id
+            None
         };
 
         // 2. Provision Academic Year & Blueprint Periods if missing
@@ -2211,7 +2213,7 @@ impl OnboardingService {
                 let sub = Subject {
                     id: Uuid::new_v4(),
                     org_id,
-                    unit_id: Some(main_unit_id),
+                    unit_id: main_unit_id,
                     code: code.to_string(),
                     name: name.to_string(),
                     name_ar: name_ar.map(|s| s.to_string()),
@@ -2392,6 +2394,11 @@ impl OnboardingService {
                     {
                         continue;
                     }
+                    let Some(main_unit_id) = main_unit_id else {
+                        return Err(DomainError::Validation(
+                            "Create an organizational unit before provisioning classes.".into(),
+                        ));
+                    };
                     let cls = Class {
                         id: Uuid::new_v4(),
                         org_id,

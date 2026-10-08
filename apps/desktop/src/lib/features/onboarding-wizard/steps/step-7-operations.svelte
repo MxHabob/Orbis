@@ -9,6 +9,7 @@ import {
   type OrganizationSettingsDto,
 } from "$lib/api";
 import { systemStore } from "$lib/stores";
+import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -22,6 +23,7 @@ import {
 } from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
+import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
@@ -35,27 +37,27 @@ let isSaving = $state(false);
 let isSubmittingDoc = $state(false);
 
 // Registration Policies State
-let studentNumberPrefix = $state("STU");
-let studentNumberYearFormat = $state<"full" | "short" | "none">("full");
+let studentNumberPrefix = $state("");
+let studentNumberYearFormat = $state<"full" | "short" | "none">("none");
 let studentNumberDigits = $state(4);
 let studentNumberSeparator = $state("-");
 let preventDuplicateNationalId = $state(true);
 
 // Document Requirements Data
 let docRequirements = $state<DocumentRequirementDto[]>([]);
-let docNameEn = $state("Birth Certificate");
-let docNameAr = $state("شهادة الميلاد");
-let docCode = $state("DOC_BIRTH_CERT");
-let docMandatory = $state(true);
-let docBlocksEnrollment = $state(true);
+let docNameEn = $state("");
+let docNameAr = $state("");
+let docCode = $state("");
+let docMandatory = $state(false);
+let docBlocksEnrollment = $state(false);
 let docCondition = $state("all_students");
 
 const PRESET_DOCUMENTS = [
-  { code: "DOC_BIRTH_CERT", nameEn: "Birth Certificate", nameAr: "شهادة الميلاد الرسمية", mandatory: true, blocks: true },
-  { code: "DOC_NATIONAL_ID", nameEn: "National ID / Iqama Copy", nameAr: "صورة الهوية الوطنية أو الإقامة", mandatory: true, blocks: true },
-  { code: "DOC_PREV_RECORD", nameEn: "Previous Academic Transcripts", nameAr: "الشهادات والسجلات الدراسية السابقة", mandatory: true, blocks: false },
-  { code: "DOC_VACCINE_CARD", nameEn: "Vaccination & Health Card", nameAr: "كارت التطعيمات والسجل الصحي", mandatory: false, blocks: false },
-  { code: "DOC_PHOTO", nameEn: "Recent Passport Photographs (4x6)", nameAr: "الصور الشخصية الحديثة (4×6)", mandatory: true, blocks: false },
+  { code: "DOC_BIRTH_CERT", nameEn: "Birth Certificate", nameAr: "شهادة الميلاد الرسمية", mandatory: true, blocks: true, condition: "all_students" },
+  { code: "DOC_NATIONAL_ID", nameEn: "National ID / Iqama Copy", nameAr: "صورة الهوية الوطنية أو الإقامة", mandatory: true, blocks: true, condition: "all_students" },
+  { code: "DOC_PREV_RECORD", nameEn: "Previous Academic Transcripts", nameAr: "الشهادات والسجلات الدراسية السابقة", mandatory: true, blocks: false, condition: "transfer_students_only" },
+  { code: "DOC_VACCINE_CARD", nameEn: "Vaccination & Health Card", nameAr: "كارت التطعيمات والسجل الصحي", mandatory: false, blocks: false, condition: "all_students" },
+  { code: "DOC_PHOTO", nameEn: "Recent Passport Photographs (4x6)", nameAr: "الصور الشخصية الحديثة (4×6)", mandatory: true, blocks: false, condition: "all_students" },
 ];
 
 const stepTasks = $derived(getTasksForStep("operations", systemStore.onboardingTasks));
@@ -71,6 +73,13 @@ const studentNumberPreview = $derived.by(() => {
   return parts.join(studentNumberSeparator);
 });
 
+function applyStudentNumberPreset() {
+  studentNumberPrefix = "STU";
+  studentNumberYearFormat = "full";
+  studentNumberDigits = 4;
+  studentNumberSeparator = "-";
+}
+
 onMount(async () => {
   await loadData();
 });
@@ -84,13 +93,13 @@ async function loadData() {
     ]);
 
     docRequirements = docsRes;
-    studentNumberPrefix = settingsRes.admission?.numbering?.prefix ?? "STU";
+    studentNumberPrefix = settingsRes.admission?.numbering?.prefix ?? "";
     studentNumberSeparator =
       settingsRes.admission?.numbering?.separator || "-";
     const savedYearFormat = settingsRes.admission?.numbering?.year_format;
     studentNumberYearFormat = savedYearFormat === "short" || savedYearFormat === "none"
       ? savedYearFormat
-      : "full";
+      : "none";
     studentNumberDigits = Math.min(
       6,
       Math.max(3, settingsRes.admission?.numbering?.sequence_digits ?? 4),
@@ -174,7 +183,13 @@ async function handleCreateDocRequirement() {
 
   try {
     const created = await api.createDocumentRequirement({
-      code: docCode.trim() || `DOC_${Date.now()}`,
+      code:
+        docCode.trim() ||
+        (docNameEn.trim() || docNameAr.trim())
+          .toUpperCase()
+          .replace(/[^A-Z0-9]+/g, "_")
+          .replace(/^_+|_+$/g, "") ||
+        `DOC_${docRequirements.length + 1}`,
       name_en: docNameEn.trim() || docNameAr.trim(),
       name_ar: docNameAr.trim() || docNameEn.trim(),
       is_mandatory: docMandatory,
@@ -186,7 +201,9 @@ async function handleCreateDocRequirement() {
     docRequirements = [...docRequirements, created];
     docNameEn = "";
     docNameAr = "";
-    docCode = `DOC_${docRequirements.length + 1}`;
+    docCode = "";
+    docMandatory = false;
+    docBlocksEnrollment = false;
     docCondition = "all_students";
     await refreshOnboardingState(orgId, m.common_action_failed());
     toast.success(m.onboarding_step7_doc_created_success());
@@ -198,29 +215,13 @@ async function handleCreateDocRequirement() {
   }
 }
 
-async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
-  isSubmittingDoc = true;
-
-  try {
-    const created = await api.createDocumentRequirement({
-      code: preset.code,
-      name_en: preset.nameEn,
-      name_ar: preset.nameAr,
-      is_mandatory: preset.mandatory,
-      blocks_enrollment: preset.blocks,
-      target_type: "global",
-      condition: "all_students",
-    });
-
-    docRequirements = [...docRequirements, created];
-    await refreshOnboardingState(orgId, m.common_action_failed());
-    toast.success(m.onboarding_step7_preset_added({ name: preset.nameEn }));
-  } catch (err: any) {
-    console.error("Failed to add preset document:", err);
-    toast.error(err?.message || m.onboarding_step7_err_create_doc());
-  } finally {
-    isSubmittingDoc = false;
-  }
+function applyDocumentPreset(preset: typeof PRESET_DOCUMENTS[number]) {
+  docNameEn = preset.nameEn;
+  docNameAr = preset.nameAr;
+  docCode = preset.code;
+  docMandatory = preset.mandatory;
+  docBlocksEnrollment = preset.blocks;
+  docCondition = preset.condition;
 }
 
 async function deleteDocumentRequirement(doc: DocumentRequirementDto) {
@@ -266,6 +267,17 @@ function conditionLabel(condition: string): string {
       isComplete={Boolean(studentNumberPrefix.trim())}
     >
       <div class="space-y-4">
+        <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isSaving}
+            onclick={applyStudentNumberPreset}
+            class="text-xs"
+          >
+            STU · YYYY · 0001
+          </Button>
+        </OnboardingPresetBar>
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
             <Label for="student-number-prefix" class="text-xs font-medium">
@@ -350,7 +362,7 @@ function conditionLabel(condition: string): string {
           <Button
             variant="secondary"
             size="sm"
-            disabled={isSaving}
+            disabled={isSaving || !studentNumberPrefix.trim()}
             onclick={handleSaveRegistrationPolicy}
             class="text-xs font-semibold"
           >
@@ -368,27 +380,19 @@ function conditionLabel(condition: string): string {
       isComplete={docRequirements.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Preset Document Badges -->
-        {#if docRequirements.length === 0}
-          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-            <div class="text-xs font-semibold text-foreground">
-              📄 {m.onboarding_step7_quick_docs()}
-            </div>
-            <div class="flex flex-wrap gap-2">
-              {#each PRESET_DOCUMENTS as preset (preset.code)}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={isSubmittingDoc}
-                  onclick={() => handleAddPresetDoc(preset)}
-                  class="text-xs bg-background hover:bg-muted"
-                >
-                  + {preset.nameEn}
-                </Button>
-              {/each}
-            </div>
-          </div>
-        {/if}
+        <OnboardingPresetBar title={m.onboarding_step7_quick_docs()}>
+          {#each PRESET_DOCUMENTS as preset (preset.code)}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={isSubmittingDoc}
+              onclick={() => applyDocumentPreset(preset)}
+              class="text-xs"
+            >
+              {l(preset.nameAr, preset.nameEn)}
+            </Button>
+          {/each}
+        </OnboardingPresetBar>
 
         <!-- Document Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
@@ -423,13 +427,13 @@ function conditionLabel(condition: string): string {
             </div>
             <div class="flex items-center gap-4 self-end pb-2">
               <div class="flex items-center gap-2">
-                <Checkbox id="doc-mand" bind:checked={docMandatory} />
+                <Checkbox id="doc-mand" bind:checked={docMandatory} disabled={isSubmittingDoc} />
                 <Label for="doc-mand" class="text-xs font-medium cursor-pointer">
                   {m.onboarding_step7_doc_mandatory()}
                 </Label>
               </div>
               <div class="flex items-center gap-2">
-                <Checkbox id="doc-block" bind:checked={docBlocksEnrollment} />
+                <Checkbox id="doc-block" bind:checked={docBlocksEnrollment} disabled={isSubmittingDoc} />
                 <Label for="doc-block" class="text-xs font-medium cursor-pointer">
                   {m.onboarding_step7_doc_blocking()}
                 </Label>
