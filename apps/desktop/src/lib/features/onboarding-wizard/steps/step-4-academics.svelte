@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -20,7 +21,6 @@ let { orgId }: { orgId: string } = $props();
 let isLoading = $state(true);
 let isSubmittingSubject = $state(false);
 let isSubmittingClass = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
@@ -86,7 +86,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load academic data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -94,12 +94,11 @@ async function loadData() {
 
 async function handleCreateSubject() {
   if (!subjectName.trim() && !subjectNameAr.trim()) {
-    errorMessage = m.onboarding_step4_subject_err_name();
+    toast.error(m.onboarding_step4_subject_err_name());
     return;
   }
 
   isSubmittingSubject = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -119,7 +118,7 @@ async function handleCreateSubject() {
     successMessage = m.onboarding_step4_subject_created_success();
   } catch (err: any) {
     console.error("Failed to create subject:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingSubject = false;
   }
@@ -127,7 +126,6 @@ async function handleCreateSubject() {
 
 async function handleBatchImportSubjects() {
   isSubmittingSubject = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -146,7 +144,7 @@ async function handleBatchImportSubjects() {
     successMessage = m.onboarding_step4_subjects_imported_success();
   } catch (err: any) {
     console.error("Failed to import subjects:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingSubject = false;
   }
@@ -154,12 +152,11 @@ async function handleBatchImportSubjects() {
 
 async function handleCreateClass() {
   if (!className.trim() && !classNameAr.trim()) {
-    errorMessage = m.onboarding_step4_class_err_name();
+    toast.error(m.onboarding_step4_class_err_name());
     return;
   }
 
   isSubmittingClass = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -180,7 +177,7 @@ async function handleCreateClass() {
     successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
     console.error("Failed to create class:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingClass = false;
   }
@@ -188,7 +185,6 @@ async function handleCreateClass() {
 
 async function handleBatchImportClasses() {
   isSubmittingClass = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -208,7 +204,7 @@ async function handleBatchImportClasses() {
     successMessage = m.onboarding_step4_classes_imported_success();
   } catch (err: any) {
     console.error("Failed to import classes:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingClass = false;
   }
@@ -225,12 +221,6 @@ async function handleBatchImportClasses() {
     status={isTaskComplete ? "completed" : subjects.length > 0 || classes.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">

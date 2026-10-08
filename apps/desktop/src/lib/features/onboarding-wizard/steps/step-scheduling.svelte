@@ -2,6 +2,7 @@
   import { createMutation, useQueryClient } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import * as m from "$lib/paraglide/messages";
+  import { toast } from "@orbis/ui";
   import {
     api,
     queryKeys,
@@ -32,7 +33,6 @@
     },
   }));
   const isSubmitting = $derived(provisionDefaultsMutation.isPending);
-  let errorMessage = $state<string | null>(null);
   let successMessage = $state<string | null>(null);
 
   const defaultTimeSlots = $derived([
@@ -76,8 +76,7 @@
       }
     } catch (error) {
       console.error("Failed to load academic years for scheduling setup:", error);
-      errorMessage =
-        error instanceof Error ? error.message : m.common_action_failed();
+      toast.error(error instanceof Error ? error.message : m.common_action_failed());
     } finally {
       isLoading = false;
     }
@@ -85,17 +84,16 @@
 
   async function provisionSchedule() {
     if (!selectedYear) {
-      errorMessage = m.onboarding_step_scheduling_missing_calendar();
+      toast.error(m.onboarding_step_scheduling_missing_calendar());
       return;
     }
 
     const hijriCalendar = getHijriSchoolMonthLengths(selectedYear.start_date);
     if (!hijriCalendar) {
-      errorMessage = m.onboarding_step_scheduling_invalid_hijri_start();
+      toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
       return;
     }
 
-    errorMessage = null;
     successMessage = null;
     try {
       await provisionDefaultsMutation.mutateAsync({
@@ -118,8 +116,7 @@
       successMessage = m.onboarding_step_scheduling_success();
     } catch (error) {
       console.error("Failed to provision the school timetable:", error);
-      errorMessage =
-        error instanceof Error ? error.message : m.common_action_failed();
+      toast.error(error instanceof Error ? error.message : m.common_action_failed());
     }
   }
 </script>
@@ -132,12 +129,6 @@
     isRequired={true}
     status={isTaskComplete ? "completed" : years.length > 0 ? "in_progress" : "not_started"}
   />
-
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm font-medium text-destructive" role="alert">
-      {errorMessage}
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm font-medium text-emerald-600 dark:text-emerald-400" role="status">

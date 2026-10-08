@@ -11,7 +11,6 @@
     canGoBack = true,
     canGoNext = true,
     isSubmitting = false,
-    isRTL = false,
     onBack,
     onNext,
     onSecondary,
@@ -22,7 +21,6 @@
     canGoBack?: boolean;
     canGoNext?: boolean;
     isSubmitting?: boolean;
-    isRTL?: boolean;
     onBack?: () => void;
     onNext?: () => void;
     onSecondary?: () => void;
@@ -34,7 +32,6 @@
 >
   <nav
     class="mx-auto flex w-full max-w-5xl items-center justify-between gap-2"
-    dir={isRTL ? "rtl" : "ltr"}
     aria-label={m.onboarding_stages_title()}
   >
     <div class="flex min-w-0 items-center gap-2">
@@ -46,11 +43,7 @@
           disabled={!canGoBack || isSubmitting}
           class="gap-1 px-2 sm:gap-2 sm:px-3"
         >
-          {#if isRTL}
-            <ChevronRight class="size-4" />
-          {:else}
-            <ChevronLeft class="size-4" />
-          {/if}
+          <ChevronLeft class="size-4 rtl:rotate-180" />
           <span>{backLabel}</span>
         </Button>
       {/if}
@@ -81,11 +74,7 @@
             <LoadingIndicator size={16} class="size-4" label={m.common_control_loading()} />
           {/if}
           <span>{nextLabel}</span>
-          {#if isRTL}
-            <ChevronLeft class="size-4" />
-          {:else}
-            <ChevronRight class="size-4" />
-          {/if}
+          <ChevronRight class="size-4 rtl:rotate-180" />
         </Button>
       {/if}
     </div>

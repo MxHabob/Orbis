@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
 import {
   getHijriSchoolMonthLengths,
@@ -18,13 +19,13 @@ import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmittingYear = $state(false);
 let isSubmittingPeriod = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
@@ -75,7 +76,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load calendar data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -83,16 +84,15 @@ async function loadData() {
 
 async function handleCreateYear() {
   if (!yearName.trim() && !yearNameAr.trim()) {
-    errorMessage = m.onboarding_step3_year_err_name();
+    toast.error(m.onboarding_step3_year_err_name());
     return;
   }
   if (!yearStartDate || !yearEndDate) {
-    errorMessage = m.onboarding_step3_year_err_dates();
+    toast.error(m.onboarding_step3_year_err_dates());
     return;
   }
 
   isSubmittingYear = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -109,7 +109,7 @@ async function handleCreateYear() {
     successMessage = m.onboarding_step3_year_created_success();
   } catch (err: any) {
     console.error("Failed to create academic year:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingYear = false;
   }
@@ -117,12 +117,11 @@ async function handleCreateYear() {
 
 async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | "4_quarters") {
   if (!selectedYearId) {
-    errorMessage = m.onboarding_step3_period_err_year();
+    toast.error(m.onboarding_step3_period_err_year());
     return;
   }
 
   isSubmittingPeriod = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -132,7 +131,7 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
         currentYear?.start_date ?? `${yearStartDate}T00:00:00Z`,
       );
       if (!calendar) {
-        errorMessage = m.onboarding_step_scheduling_invalid_hijri_start();
+        toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
         return;
       }
       await api.onboardingProvisionDefaults(
@@ -188,10 +187,17 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
     successMessage = m.onboarding_step3_periods_generated_success();
   } catch (err: any) {
     console.error("Failed to generate periods:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingPeriod = false;
   }
+}
+
+async function deletePeriod(period: AcademicPeriodDto) {
+  const deleted = await api.deleteAcademicPeriod(String(period.id));
+  if (!deleted) throw new Error(m.common_action_failed());
+  periods = periods.filter((item) => item.id !== period.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
 </script>
@@ -205,12 +211,6 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
     status={isTaskComplete ? "completed" : years.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -393,9 +393,12 @@ async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | 
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" class="text-[10px] uppercase">
-                    {p.period_type}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="secondary" class="text-[10px] uppercase">
+                      {p.period_type}
+                    </Badge>
+                    <DeleteRecordButton label={p.name_ar || p.name} onDelete={() => deletePeriod(p)} />
+                  </div>
                 </div>
               {/each}
             </div>

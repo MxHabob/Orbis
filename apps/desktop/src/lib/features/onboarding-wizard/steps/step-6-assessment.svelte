@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type AssessmentSchemeDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -20,12 +21,12 @@ import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmitting = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
@@ -96,7 +97,7 @@ async function loadData() {
     schemes = await api.listAssessmentSchemes();
   } catch (err: any) {
     console.error("Failed to load assessment schemes:", err);
-    errorMessage = err?.message || m.onboarding_step6_err_load();
+    toast.error(err?.message || m.onboarding_step6_err_load());
   } finally {
     isLoading = false;
   }
@@ -104,12 +105,11 @@ async function loadData() {
 
 async function handleCreateScheme() {
   if (!schemeName.trim() && !schemeNameAr.trim()) {
-    errorMessage = m.onboarding_step6_scheme_err_name();
+    toast.error(m.onboarding_step6_scheme_err_name());
     return;
   }
 
   isSubmitting = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -137,7 +137,7 @@ async function handleCreateScheme() {
     successMessage = m.onboarding_step6_scheme_created_success();
   } catch (err: any) {
     console.error("Failed to create assessment scheme:", err);
-    errorMessage = err?.message || m.onboarding_step6_err_create();
+    toast.error(err?.message || m.onboarding_step6_err_create());
   } finally {
     isSubmitting = false;
   }
@@ -145,7 +145,6 @@ async function handleCreateScheme() {
 
 async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
   isSubmitting = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -172,10 +171,16 @@ async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
     successMessage = m.onboarding_step6_preset_applied({ name: preset.name });
   } catch (err: any) {
     console.error("Failed to add preset scheme:", err);
-    errorMessage = err?.message || m.onboarding_step6_err_create();
+    toast.error(err?.message || m.onboarding_step6_err_create());
   } finally {
     isSubmitting = false;
   }
+}
+
+async function deleteScheme(scheme: AssessmentSchemeDto) {
+  await api.deleteAssessmentScheme(String(scheme.id));
+  schemes = schemes.filter((item) => item.id !== scheme.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
 </script>
@@ -189,12 +194,6 @@ async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
     status={isTaskComplete ? "completed" : schemes.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => (errorMessage = null)}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -339,9 +338,12 @@ async function handleAddPresetScheme(preset: typeof PRESET_SCHEMES[0]) {
                       {sc.scale_type || "percentage"} | {m.onboarding_step6_passing_label({ score: sc.passing_score })}
                     </div>
                   </div>
-                  <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                    {m.onboarding_step6_active_badge()}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
+                      {m.onboarding_step6_active_badge()}
+                    </Badge>
+                    <DeleteRecordButton label={sc.name_ar || sc.name} onDelete={() => deleteScheme(sc)} />
+                  </div>
                 </div>
               {/each}
             </div>

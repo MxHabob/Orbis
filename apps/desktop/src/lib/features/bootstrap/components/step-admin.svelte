@@ -17,11 +17,9 @@ import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 let {
   form = $bindable<OnboardingFormModel>(),
   errors = {},
-  isRTL = false,
 }: {
   form: OnboardingFormModel;
   errors?: Record<string, string>;
-  isRTL?: boolean;
 } = $props();
 
 const passwordStrength = $derived.by(() => {

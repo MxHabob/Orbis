@@ -17,6 +17,7 @@ import type {
   BootstrapResult,
 } from "$lib/api/types";
 import { authStore, systemStore } from "$lib/stores";
+import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import {
@@ -59,11 +60,8 @@ const bootstrapMutation = createMutation(() => ({
 }));
 const isSubmitting = $derived(form.isSubmitting || bootstrapMutation.isPending);
 let isComplete = $state(false);
-let bootstrapError = $state<string | null>(null);
 let postBootstrapError = $state<string | null>(null);
 let bootstrapResult = $state<BootstrapResult | null>(null);
-
-const isRTL = $derived(getLocale().startsWith("ar"));
 
 const steps: Array<{ id: OnboardingStep }> = [
   { id: "intro" },
@@ -188,7 +186,6 @@ async function handleLaunchBootstrap() {
     return;
   }
 
-  bootstrapError = null;
   postBootstrapError = null;
   const submitted = await form.submit(async (payload) => {
     const result = await bootstrapMutation.mutateAsync(
@@ -203,15 +200,18 @@ async function handleLaunchBootstrap() {
       await authStore.login(payload.adminEmail.toLowerCase(), payload.adminPassword);
     } catch (authErr) {
       postBootstrapError = extractErrorMessage(authErr);
+      toast.error(postBootstrapError);
     }
     if (!postBootstrapError) {
       try {
         const readiness = await systemStore.loadReadiness();
         if (!readiness) {
           postBootstrapError = m.common_action_failed();
+          toast.error(postBootstrapError);
         }
       } catch (readinessError) {
         postBootstrapError = extractErrorMessage(readinessError);
+        toast.error(postBootstrapError);
       }
     }
   });
@@ -219,7 +219,7 @@ async function handleLaunchBootstrap() {
   if (submitted) {
     isComplete = true;
   } else if (form.formError) {
-    bootstrapError = form.formError;
+    toast.error(form.formError);
   } else if (Object.keys(form.errors).length > 0) {
     const validationErrors = Object.fromEntries(
       Object.entries(form.errors).map(([field, messages]) => [
@@ -242,9 +242,10 @@ async function handleLaunchBootstrap() {
       visibleFields.has(field),
     );
     if (!hasVisibleFieldError) {
-      bootstrapError =
+      toast.error(
         Object.values(validationErrors).filter(Boolean).join(" ") ||
-        m.common_action_failed();
+          m.common_action_failed(),
+      );
     } else {
       currentStep = firstInvalidStep(validationErrors);
     }
@@ -273,15 +274,15 @@ function enterWorkspace() {
   {/snippet}
 
   {#if currentStep === "intro"}
-    <StepReleaseIntro {isRTL} />
+    <StepReleaseIntro />
   {:else if currentStep === "blueprint"}
-    <StepBlueprint bind:selectedType={form.values.institutionType} {isRTL} />
+    <StepBlueprint bind:selectedType={form.values.institutionType} />
   {:else if currentStep === "organization"}
-    <StepOrganization bind:form={form.values} {errors} {isRTL} />
+    <StepOrganization bind:form={form.values} {errors} />
   {:else if currentStep === "region"}
     <StepRegion bind:form={form.values} {errors} />
   {:else if currentStep === "admin"}
-    <StepAdmin bind:form={form.values} {errors} {isRTL} />
+    <StepAdmin bind:form={form.values} {errors} />
   {:else if currentStep === "mfa"}
     <StepMfa />
   {:else if currentStep === "review"}
@@ -289,14 +290,11 @@ function enterWorkspace() {
       form={form.values}
       {isSubmitting}
       {isComplete}
-      error={bootstrapError}
-      postBootstrapError={postBootstrapError}
       authenticationRequired={Boolean(postBootstrapError && !authStore.isAuthenticated)}
       warnings={bootstrapResult?.warnings ?? []}
       result={bootstrapResult}
       onLaunch={handleLaunchBootstrap}
       onEnterWorkspace={enterWorkspace}
-      {isRTL}
     />
   {/if}
 
@@ -310,7 +308,6 @@ function enterWorkspace() {
         onPrev={prevStep}
         onNext={nextStep}
         onSkip={skipStep}
-        {isRTL}
       />
     {/if}
   {/snippet}

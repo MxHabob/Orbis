@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type DocumentRequirementDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -15,13 +16,13 @@ import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSaving = $state(false);
 let isSubmittingDoc = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Registration Policies State
@@ -66,7 +67,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load operations data:", err);
-    errorMessage = err?.message || m.onboarding_step7_err_load();
+    toast.error(err?.message || m.onboarding_step7_err_load());
   } finally {
     isLoading = false;
   }
@@ -74,7 +75,6 @@ async function loadData() {
 
 async function handleSaveRegistrationPolicy() {
   isSaving = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -88,7 +88,7 @@ async function handleSaveRegistrationPolicy() {
     successMessage = m.onboarding_step7_policy_saved_success();
   } catch (err: any) {
     console.error("Failed to save registration policies:", err);
-    errorMessage = err?.message || m.onboarding_step7_policy_err();
+    toast.error(err?.message || m.onboarding_step7_policy_err());
   } finally {
     isSaving = false;
   }
@@ -96,12 +96,11 @@ async function handleSaveRegistrationPolicy() {
 
 async function handleCreateDocRequirement() {
   if (!docNameEn.trim() && !docNameAr.trim()) {
-    errorMessage = m.onboarding_step7_doc_err_name();
+    toast.error(m.onboarding_step7_doc_err_name());
     return;
   }
 
   isSubmittingDoc = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -122,7 +121,7 @@ async function handleCreateDocRequirement() {
     successMessage = m.onboarding_step7_doc_created_success();
   } catch (err: any) {
     console.error("Failed to create document requirement:", err);
-    errorMessage = err?.message || m.onboarding_step7_err_create_doc();
+    toast.error(err?.message || m.onboarding_step7_err_create_doc());
   } finally {
     isSubmittingDoc = false;
   }
@@ -130,7 +129,6 @@ async function handleCreateDocRequirement() {
 
 async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
   isSubmittingDoc = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -148,10 +146,16 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
     successMessage = m.onboarding_step7_preset_added({ name: preset.nameEn });
   } catch (err: any) {
     console.error("Failed to add preset document:", err);
-    errorMessage = err?.message || m.onboarding_step7_err_create_doc();
+    toast.error(err?.message || m.onboarding_step7_err_create_doc());
   } finally {
     isSubmittingDoc = false;
   }
+}
+
+async function deleteDocumentRequirement(doc: DocumentRequirementDto) {
+  await api.deleteDocumentRequirement(String(doc.id));
+  docRequirements = docRequirements.filter((item) => item.id !== doc.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
 </script>
@@ -165,12 +169,6 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
     status={isTaskComplete ? "completed" : docRequirements.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => (errorMessage = null)}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -209,13 +207,13 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
         </div>
 
         <div class="space-y-2 rounded-lg border border-border/40 bg-muted/20 p-3">
-          <div class="flex items-center space-x-2 space-x-reverse">
+          <div class="flex items-center gap-2">
             <Checkbox id="auto-gen" bind:checked={autoGenerateStudentId} />
             <Label for="auto-gen" class="text-xs font-medium cursor-pointer">
               {m.onboarding_step7_auto_gen()}
             </Label>
           </div>
-          <div class="flex items-center space-x-2 space-x-reverse">
+          <div class="flex items-center gap-2">
             <Checkbox id="prevent-dup" bind:checked={preventDuplicateNationalId} />
             <Label for="prevent-dup" class="text-xs font-medium cursor-pointer">
               {m.onboarding_step7_prevent_dup()}
@@ -299,13 +297,13 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
               />
             </div>
             <div class="flex items-center gap-4 self-end pb-2">
-              <div class="flex items-center space-x-2 space-x-reverse">
+              <div class="flex items-center gap-2">
                 <Checkbox id="doc-mand" bind:checked={docMandatory} />
                 <Label for="doc-mand" class="text-xs font-medium cursor-pointer">
                   {m.onboarding_step7_doc_mandatory()}
                 </Label>
               </div>
-              <div class="flex items-center space-x-2 space-x-reverse">
+              <div class="flex items-center gap-2">
                 <Checkbox id="doc-block" bind:checked={docBlocksEnrollment} />
                 <Label for="doc-block" class="text-xs font-medium cursor-pointer">
                   {m.onboarding_step7_doc_blocking()}
@@ -355,6 +353,7 @@ async function handleAddPresetDoc(preset: typeof PRESET_DOCUMENTS[0]) {
                         {m.onboarding_step7_blocking_badge()}
                       </Badge>
                     {/if}
+                    <DeleteRecordButton label={doc.name_ar || doc.name_en || doc.code} onDelete={() => deleteDocumentRequirement(doc)} />
                   </div>
                 </div>
               {/each}

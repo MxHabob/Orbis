@@ -4,7 +4,6 @@
   import { createOnboardingStateQuery } from "./onboarding-queries";
   import type { Snippet } from "svelte";
   import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
   import { effectiveContext, systemStore } from "$lib/stores";
   import { Button } from "@orbis/ui/button";
   import { LoadingIndicator } from "@orbis/ui";
@@ -27,7 +26,6 @@
   const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
 
   const currentPath = $derived(page.url.pathname);
-  const isRtl = $derived(getLocale().startsWith("ar"));
 
   onMount(loadOnboardingState);
 
@@ -205,7 +203,6 @@
         secondaryLabel={m.common_nav_overview()}
         canGoBack={currentStepIndex > 0}
         canGoNext={currentStepIndex < steps.length - 1}
-        {isRtl}
         onBack={goToPrev}
         onNext={currentStepIndex < steps.length - 1 ? goToNext : undefined}
         onSecondary={goToOverview}

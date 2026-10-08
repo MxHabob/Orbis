@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, type OrgUnitDto, type RoomDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -20,13 +21,13 @@ import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmittingUnit = $state(false);
 let isSubmittingRoom = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
@@ -75,7 +76,7 @@ async function loadData() {
     rooms = roomsRes;
   } catch (err: any) {
     console.error("Failed to load structure data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -83,12 +84,11 @@ async function loadData() {
 
 async function handleCreateUnit() {
   if (!unitName.trim() && !unitNameAr.trim()) {
-    errorMessage = m.onboarding_step2_branch_err_name();
+    toast.error(m.onboarding_step2_branch_err_name());
     return;
   }
 
   isSubmittingUnit = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -109,7 +109,7 @@ async function handleCreateUnit() {
     successMessage = m.onboarding_step2_branch_created_success();
   } catch (err: any) {
     console.error("Failed to create unit:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingUnit = false;
   }
@@ -117,12 +117,11 @@ async function handleCreateUnit() {
 
 async function handleCreateRoom() {
   if (!roomName.trim() && !roomNameAr.trim() && !roomNumber.trim()) {
-    errorMessage = m.onboarding_step2_room_err_name();
+    toast.error(m.onboarding_step2_room_err_name());
     return;
   }
 
   isSubmittingRoom = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -144,10 +143,22 @@ async function handleCreateRoom() {
     successMessage = m.onboarding_step2_room_created_success();
   } catch (err: any) {
     console.error("Failed to create room:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingRoom = false;
   }
+}
+
+async function deleteUnit(unit: OrgUnitDto) {
+  await api.deleteOrgUnit(String(unit.id));
+  orgUnits = orgUnits.filter((item) => item.id !== unit.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
+}
+
+async function deleteRoom(room: RoomDto) {
+  await api.deleteRoom(String(room.id));
+  rooms = rooms.filter((item) => item.id !== room.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
 </script>
@@ -161,12 +172,6 @@ async function handleCreateRoom() {
     status={isTaskComplete ? "completed" : orgUnits.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -274,6 +279,7 @@ async function handleCreateRoom() {
                     <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
                       {m.onboarding_active_badge()}
                     </Badge>
+                    <DeleteRecordButton label={unit.name_ar || unit.name} onDelete={() => deleteUnit(unit)} />
                   </div>
                 </div>
               {/each}
@@ -389,9 +395,12 @@ async function handleCreateRoom() {
                       </div>
                     </div>
                   </div>
-                  <Badge variant="secondary" class="text-[10px]">
-                    {room.capacity || 30} {m.onboarding_step2_seats_suffix()}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="secondary" class="text-[10px]">
+                      {room.capacity || 30} {m.onboarding_step2_seats_suffix()}
+                    </Badge>
+                    <DeleteRecordButton label={room.name_ar || room.name || room.room_number} onDelete={() => deleteRoom(room)} />
+                  </div>
                 </div>
               {/each}
             </div>

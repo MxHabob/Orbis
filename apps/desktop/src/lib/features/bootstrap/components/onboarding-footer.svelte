@@ -15,7 +15,6 @@ let {
   onPrev,
   onNext,
   onSkip,
-  isRTL = false,
 }: {
   canGoBack?: boolean;
   canGoNext?: boolean;
@@ -24,7 +23,6 @@ let {
   onPrev: () => void;
   onNext: () => void;
   onSkip?: () => void;
-  isRTL?: boolean;
 } = $props();
 </script>
 
@@ -35,7 +33,6 @@ let {
   {canGoBack}
   {canGoNext}
   {isSubmitting}
-  {isRTL}
   onBack={onPrev}
   onNext={canGoNext ? onNext : undefined}
   onSecondary={isSkippable ? onSkip : undefined}

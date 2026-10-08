@@ -5,16 +5,15 @@
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import { BLUEPRINTS, type InstitutionType, type InstitutionBlueprint } from "@orbis/blueprints";
 import { Check } from "@orbis/icons";
 import { Card, CardContent } from "@orbis/ui/card";
 
 let {
   selectedType = $bindable<InstitutionType>(),
-  isRTL = false,
 }: {
   selectedType: InstitutionType;
-  isRTL?: boolean;
 } = $props();
 
 interface BlueprintOption {
@@ -65,6 +64,7 @@ const blueprintsList: BlueprintOption[] = [
     ],
   },
 ];
+const isArabic = $derived(getLocale().startsWith("ar"));
 </script>
 
 <div class="mx-auto max-w-5xl space-y-5 py-2">
@@ -99,7 +99,7 @@ const blueprintsList: BlueprintOption[] = [
             <div class="min-w-0 flex-1">
               <div class="flex items-start justify-between gap-3">
                 <h3 class="text-base font-semibold leading-6 text-foreground transition-colors group-hover:text-primary">
-                  {isRTL ? item.blueprint.nameAr : item.blueprint.nameEn}
+                  {isArabic ? item.blueprint.nameAr : item.blueprint.nameEn}
                 </h3>
                 <span
                   aria-hidden="true"
@@ -111,7 +111,7 @@ const blueprintsList: BlueprintOption[] = [
                 </span>
               </div>
               <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                {isRTL ? item.blueprint.descriptionAr : item.blueprint.descriptionEn}
+                {isArabic ? item.blueprint.descriptionAr : item.blueprint.descriptionEn}
               </p>
             </div>
           </div>

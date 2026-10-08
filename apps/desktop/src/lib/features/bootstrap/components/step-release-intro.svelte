@@ -10,8 +10,6 @@
   import EmptyState from "$lib/shared/components/empty-state.svelte";
   import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
-  let { isRTL = false }: { isRTL?: boolean } = $props();
-
   let appInfo = $state<AppInfo | null>(null);
   let latestRelease = $state<ReleaseChangelogItem | null>(null);
   let isLoading = $state(true);

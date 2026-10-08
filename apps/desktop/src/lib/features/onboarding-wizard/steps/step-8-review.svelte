@@ -1,5 +1,5 @@
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
+import { LoadingIndicator, toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { effectiveContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -22,16 +22,15 @@ let { orgId }: { orgId: string } = $props();
 let isRefreshing = $state(false);
 let isLaunching = $state(false);
 let launchSuccess = $state(false);
-let errorMessage = $state<string | null>(null);
-
-async function refreshDAG() {
+async function refreshDAG(): Promise<boolean> {
   isRefreshing = true;
-  errorMessage = null;
   try {
     await refreshOnboardingState(orgId, m.onboarding_step8_err_readiness());
+    return true;
   } catch (err: any) {
     console.error("Failed to refresh onboarding DAG state:", err);
-    errorMessage = err?.message || m.onboarding_step8_err_readiness();
+    toast.error(err?.message || m.onboarding_step8_err_readiness());
+    return false;
   } finally {
     isRefreshing = false;
   }
@@ -50,13 +49,11 @@ const completedRequiredTaskCount = $derived(systemStore.onboardingState?.require
 async function handleCompleteAndLaunch() {
   if (isLaunching || isRefreshing) return;
   isLaunching = true;
-  errorMessage = null;
 
   try {
-    await refreshDAG();
-    if (errorMessage) return;
+    if (!(await refreshDAG())) return;
     if (!systemStore.isInstitutionReady) {
-      errorMessage = m.onboarding_step8_err_readiness();
+      toast.error(m.onboarding_step8_err_readiness());
       return;
     }
 
@@ -67,7 +64,7 @@ async function handleCompleteAndLaunch() {
     }, 900);
   } catch (err: any) {
     console.error("Failed to complete onboarding:", err);
-    errorMessage = err?.message || m.onboarding_step8_err_launch();
+    toast.error(err?.message || m.onboarding_step8_err_launch());
   } finally {
     isLaunching = false;
   }
@@ -83,13 +80,6 @@ async function handleCompleteAndLaunch() {
     isRequired={true}
     status={isReady ? "completed" : "in_progress"}
   />
-
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => (errorMessage = null)}>✕</Button>
-    </div>
-  {/if}
 
   {#if isRefreshing && !systemStore.onboardingState}
     <Card>

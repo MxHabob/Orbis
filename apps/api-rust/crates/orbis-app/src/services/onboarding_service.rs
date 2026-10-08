@@ -108,6 +108,25 @@ pub enum OnboardingTaskStatus {
     NotApplicable,
 }
 
+fn resolve_task_status(
+    is_completed: bool,
+    dependencies_met: bool,
+    progress: u8,
+    is_required: bool,
+) -> OnboardingTaskStatus {
+    if is_completed && dependencies_met {
+        OnboardingTaskStatus::Completed
+    } else if !dependencies_met {
+        OnboardingTaskStatus::Blocked
+    } else if progress > 0 {
+        OnboardingTaskStatus::InProgress
+    } else if is_required {
+        OnboardingTaskStatus::NotStarted
+    } else {
+        OnboardingTaskStatus::Optional
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SetupTask {
     pub id: String,
@@ -1230,11 +1249,6 @@ impl OnboardingService {
 
         // ── 3. Resolve Dependencies & Directed Statuses ────────
         let mut completed_task_ids = std::collections::HashSet::new();
-        for (id, _, _, _, _, _, _, _, _, is_completed, _, _, _, _, _, _) in &raw_tasks {
-            if *is_completed {
-                completed_task_ids.insert(id.to_string());
-            }
-        }
 
         let mut tasks = Vec::new();
         let mut blocked_count = 0;
@@ -1255,7 +1269,7 @@ impl OnboardingService {
             is_required,
             deps,
             raw_progress,
-            is_completed,
+            raw_is_completed,
             route,
             action_type,
             inst_types,
@@ -1266,45 +1280,57 @@ impl OnboardingService {
         {
             let id_str = id.to_string();
 
-            // Check if all prerequisites are fulfilled
-            let mut is_blocked = false;
+            // A raw completion predicate is only effective after its prerequisites pass.
+            let dependencies_met = deps
+                .iter()
+                .all(|dependency| completed_task_ids.contains(dependency));
+            let is_completed = raw_is_completed && dependencies_met;
+            let status = resolve_task_status(
+                raw_is_completed,
+                dependencies_met,
+                raw_progress,
+                is_required,
+            );
+            if is_completed {
+                completed_task_ids.insert(id_str.clone());
+            }
+
             let mut blocking_reason = None;
             let mut blocking_reason_ar = None;
 
-            for dep in &deps {
-                if !completed_task_ids.contains(dep) {
-                    is_blocked = true;
-                    if let Some((hint_en, hint_ar)) = blocking_hint {
-                        blocking_reason = Some(hint_en.to_string());
-                        blocking_reason_ar = Some(hint_ar.to_string());
-                    } else {
-                        blocking_reason = Some(format!("Requires prerequisite task '{}'", dep));
-                        blocking_reason_ar = Some(format!("يتطلب إنجاز المهمة السابقة '{}'", dep));
+            if !dependencies_met {
+                for dep in &deps {
+                    if !completed_task_ids.contains(dep) {
+                        if let Some((hint_en, hint_ar)) = blocking_hint {
+                            blocking_reason = Some(hint_en.to_string());
+                            blocking_reason_ar = Some(hint_ar.to_string());
+                        } else {
+                            blocking_reason = Some(format!("Requires prerequisite task '{}'", dep));
+                            blocking_reason_ar =
+                                Some(format!("يتطلب إنجاز المهمة السابقة '{}'", dep));
+                        }
+                        break;
                     }
-                    break;
                 }
             }
-
-            let status = if is_completed {
-                OnboardingTaskStatus::Completed
-            } else if is_blocked {
+            if status == OnboardingTaskStatus::Blocked {
                 blocked_count += 1;
-                OnboardingTaskStatus::Blocked
-            } else if raw_progress > 0 {
-                OnboardingTaskStatus::InProgress
-            } else if is_required {
-                OnboardingTaskStatus::NotStarted
-            } else {
-                OnboardingTaskStatus::Optional
-            };
+            }
 
-            let effective_progress = if is_completed { 100 } else { raw_progress };
+            let effective_progress = if is_completed {
+                100
+            } else if dependencies_met {
+                raw_progress
+            } else {
+                0
+            };
 
             if is_required {
                 required_count += 1;
                 if is_completed {
                     required_completed += 1;
                 }
+
                 required_progress_sum += effective_progress as u32;
             } else {
                 optional_count += 1;
@@ -2625,5 +2651,26 @@ impl OnboardingService {
             created_items,
             state: updated_state,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{OnboardingTaskStatus, resolve_task_status};
+
+    #[test]
+    fn task_with_default_data_is_blocked_until_its_dependencies_are_complete() {
+        assert_eq!(
+            resolve_task_status(true, false, 100, true),
+            OnboardingTaskStatus::Blocked
+        );
+    }
+
+    #[test]
+    fn task_is_completed_when_its_data_and_dependencies_are_complete() {
+        assert_eq!(
+            resolve_task_status(true, true, 100, true),
+            OnboardingTaskStatus::Completed
+        );
     }
 }

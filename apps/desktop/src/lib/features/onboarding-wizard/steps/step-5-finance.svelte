@@ -2,6 +2,7 @@
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { formatNumber } from "$lib/core/i18n";
 import { api, type FeeTemplateDto, type DiscountTemplateDto, type AccountDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
@@ -21,13 +22,13 @@ import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import DeleteRecordButton from "../components/delete-record-button.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isLoading = $state(true);
 let isSubmittingFee = $state(false);
 let isSubmittingDiscount = $state(false);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
@@ -96,7 +97,7 @@ async function loadData() {
     }
   } catch (err: any) {
     console.error("Failed to load finance data:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -104,12 +105,11 @@ async function loadData() {
 
 async function handleCreateFeeTemplate() {
   if (!feeName.trim() && !feeNameAr.trim()) {
-    errorMessage = m.onboarding_step5_fee_err_name();
+    toast.error(m.onboarding_step5_fee_err_name());
     return;
   }
 
   isSubmittingFee = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -130,7 +130,7 @@ async function handleCreateFeeTemplate() {
     successMessage = m.onboarding_step5_fee_created_success();
   } catch (err: any) {
     console.error("Failed to create fee template:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingFee = false;
   }
@@ -138,7 +138,6 @@ async function handleCreateFeeTemplate() {
 
 async function handleAddPresetFee(preset: typeof PRESET_FEES[0]) {
   isSubmittingFee = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -157,7 +156,7 @@ async function handleAddPresetFee(preset: typeof PRESET_FEES[0]) {
     successMessage = m.onboarding_step5_fee_created_success();
   } catch (err: any) {
     console.error("Failed to add preset fee:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingFee = false;
   }
@@ -165,7 +164,6 @@ async function handleAddPresetFee(preset: typeof PRESET_FEES[0]) {
 
 async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
   isSubmittingDiscount = true;
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -182,10 +180,24 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
     successMessage = m.onboarding_step5_discount_created_success();
   } catch (err: any) {
     console.error("Failed to add preset discount:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isSubmittingDiscount = false;
   }
+}
+
+async function deleteFeeTemplate(template: FeeTemplateDto) {
+  const deleted = await api.deleteFeeTemplate(String(template.id));
+  if (!deleted) throw new Error(m.common_action_failed());
+  feeTemplates = feeTemplates.filter((item) => item.id !== template.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
+}
+
+async function deleteDiscountTemplate(template: DiscountTemplateDto) {
+  const deleted = await api.deleteDiscountTemplate(String(template.id));
+  if (!deleted) throw new Error(m.common_action_failed());
+  discountTemplates = discountTemplates.filter((item) => item.id !== template.id);
+  await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
 </script>
@@ -199,12 +211,6 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
     status={isTaskComplete ? "completed" : feeTemplates.length > 0 ? "in_progress" : "not_started"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -369,9 +375,12 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
                       {ft.category || "tuition"} | {ft.frequency || "yearly"}
                     </div>
                   </div>
-                  <Badge variant="secondary" class="font-mono text-xs font-semibold">
-                    {formatNumber(Number(ft.amount))} {ft.currency || feeCurrency}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="secondary" class="font-mono text-xs font-semibold">
+                      {formatNumber(Number(ft.amount))} {ft.currency || feeCurrency}
+                    </Badge>
+                    <DeleteRecordButton label={ft.name_ar || ft.name} onDelete={() => deleteFeeTemplate(ft)} />
+                  </div>
                 </div>
               {/each}
             </div>
@@ -423,9 +432,12 @@ async function handleAddPresetDiscount(preset: typeof PRESET_DISCOUNTS[0]) {
                     {dt.discount_type || "percentage"}
                   </div>
                 </div>
-                <Badge variant="outline" class="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-xs">
-                  {dt.value}{dt.discount_type === 'percentage' ? '%' : ` ${feeCurrency}`}
-                </Badge>
+                <div class="flex items-center gap-2">
+                  <Badge variant="outline" class="border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-mono text-xs">
+                    {dt.value}{dt.discount_type === 'percentage' ? '%' : ` ${feeCurrency}`}
+                  </Badge>
+                  <DeleteRecordButton label={dt.name_ar || dt.name} onDelete={() => deleteDiscountTemplate(dt)} />
+                </div>
               </div>
             {/each}
           </div>

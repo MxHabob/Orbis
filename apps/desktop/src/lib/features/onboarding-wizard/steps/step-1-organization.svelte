@@ -3,6 +3,7 @@ import { createMutation, useQueryClient } from "@tanstack/svelte-query";
 import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
 import { api, queryKeys } from "$lib/api";
 import { authStore, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
@@ -49,7 +50,6 @@ const saveOrganizationMutation = createMutation(() => ({
   },
 }));
 const isSaving = $derived(saveOrganizationMutation.isPending);
-let errorMessage = $state<string | null>(null);
 let successMessage = $state<string | null>(null);
 
 // Form Fields
@@ -82,7 +82,7 @@ onMount(async () => {
     }
   } catch (err: any) {
     console.error("Failed to load organization profile:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   } finally {
     isLoading = false;
   }
@@ -90,11 +90,10 @@ onMount(async () => {
 
 async function saveOrganization() {
   if (!name.trim()) {
-    errorMessage = m.onboarding_step1_err_name();
+    toast.error(m.onboarding_step1_err_name());
     return;
   }
 
-  errorMessage = null;
   successMessage = null;
 
   try {
@@ -113,7 +112,7 @@ async function saveOrganization() {
     successMessage = m.onboarding_step1_saved_success();
   } catch (err: any) {
     console.error("Failed to save organization profile:", err);
-    errorMessage = err?.message || m.common_action_failed();
+    toast.error(err?.message || m.common_action_failed());
   }
 }
 
@@ -128,12 +127,6 @@ async function saveOrganization() {
     status={isTaskComplete ? "completed" : "in_progress"}
   />
 
-  {#if errorMessage}
-    <div class="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive font-medium flex items-center justify-between">
-      <span>{errorMessage}</span>
-      <Button variant="ghost" size="sm" onclick={() => errorMessage = null}>✕</Button>
-    </div>
-  {/if}
 
   {#if successMessage}
     <div class="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-600 dark:text-emerald-400 font-medium flex items-center justify-between">
@@ -227,7 +220,7 @@ async function saveOrganization() {
         </div>
 
         <!-- Hijri Calendar Toggle -->
-        <div class="flex items-center space-x-3 space-x-reverse rounded-lg border border-border/50 p-3 self-end">
+        <div class="flex items-center gap-3 rounded-lg border border-border/50 p-3 self-end">
           <Checkbox id="hijri-toggle" bind:checked={isHijriEnabled} />
           <div class="space-y-0.5">
             <Label for="hijri-toggle" class="text-xs font-medium cursor-pointer">

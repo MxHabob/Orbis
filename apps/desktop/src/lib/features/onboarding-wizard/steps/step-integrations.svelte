@@ -1,5 +1,5 @@
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
+import { LoadingIndicator, toast } from "@orbis/ui";
 import { createQuery } from "@tanstack/svelte-query";
 import * as m from "$lib/paraglide/messages";
 import { api, queryKeys } from "$lib/api";
@@ -26,12 +26,19 @@ let { orgId }: { orgId: string } = $props();
 
 let activeCategory = $state<"all" | AppCategory>("all");
 let searchQuery = $state("");
-let errorMessage = $state<string | null>(null);
 let selectedApp = $state<OrbisApp | null>(null);
 let detailSheetOpen = $state(false);
 const integrationsQuery = createQuery(() => ({
   queryKey: queryKeys.integration.list(orgId),
-  queryFn: () => api.listIntegrations(),
+  queryFn: async () => {
+    try {
+      return await api.listIntegrations();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : m.common_action_failed());
+      throw error;
+    }
+  },
+  retry: false,
   enabled: Boolean(orgId),
   staleTime: 30 * 1000,
 }));
@@ -46,15 +53,11 @@ const stepStatus = $derived(
 );
 
 async function loadData() {
-  errorMessage = null;
   try {
-    const result = await integrationsQuery.refetch();
-    if (result.isError) {
-      errorMessage = m.common_action_failed();
-    }
+    await integrationsQuery.refetch();
   } catch (error) {
     console.error("Failed to reload integrations:", error);
-    errorMessage = error instanceof Error ? error.message : m.common_action_failed();
+    toast.error(error instanceof Error ? error.message : m.common_action_failed());
   }
 }
 
@@ -99,7 +102,7 @@ function refreshAfterIntegrationChange() {
   void loadData();
   void refreshOnboardingState(orgId, m.common_action_failed()).catch((error) => {
     console.error("Failed to refresh onboarding state after integration changes:", error);
-    errorMessage = error instanceof Error ? error.message : m.common_action_failed();
+    toast.error(error instanceof Error ? error.message : m.common_action_failed());
   });
 }
 </script>
@@ -113,15 +116,6 @@ function refreshAfterIntegrationChange() {
     isRequired={false}
     status={stepStatus}
   />
-
-  {#if errorMessage || integrationsQuery.isError}
-    <div class="flex items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive" role="alert">
-      <span>{errorMessage ?? m.common_action_failed()}</span>
-      <Button variant="outline" size="sm" onclick={loadData}>
-        {m.onboarding_retry()}
-      </Button>
-    </div>
-  {/if}
 
   <!-- Integrations Gallery Header with Centered Search -->
   <div class="space-y-4 pt-1">

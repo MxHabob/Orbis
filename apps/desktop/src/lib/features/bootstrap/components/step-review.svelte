@@ -12,6 +12,7 @@ import {
 } from "../types";
 import type { BootstrapResult } from "$lib/api/types";
 import { getBlueprint } from "@orbis/blueprints";
+import { getLocale } from "$lib/paraglide/runtime";
 import { Button } from "@orbis/ui/button";
 import { Card, CardContent } from "@orbis/ui/card";
 import { Check } from "@orbis/icons";
@@ -20,26 +21,20 @@ let {
   form,
   isSubmitting = false,
   isComplete = false,
-  error = null,
-  postBootstrapError = null,
   authenticationRequired = false,
   warnings = [],
   result = null,
   onLaunch,
   onEnterWorkspace,
-  isRTL = false,
 }: {
   form: OnboardingFormModel;
   isSubmitting?: boolean;
   isComplete?: boolean;
-  error?: string | null;
-  postBootstrapError?: string | null;
   authenticationRequired?: boolean;
   warnings?: string[];
   result?: BootstrapResult | null;
   onLaunch: () => void;
   onEnterWorkspace: () => void;
-  isRTL?: boolean;
 } = $props();
 
 const blueprint = $derived(getBlueprint(form.institutionType));
@@ -48,6 +43,7 @@ const cur = $derived(CURRENCY_OPTIONS.find((c) => c.code === form.baseCurrencyCo
 const country = $derived(COUNTRIES_LIST.find((c) => c.code === form.countryCode));
 const track = $derived(EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack));
 const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize));
+const isArabic = $derived(getLocale().startsWith("ar"));
 
 </script>
 
@@ -97,13 +93,6 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
         </div>
       {/if}
 
-      {#if postBootstrapError}
-        <div class="mx-auto max-w-xl rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-start text-sm text-destructive" role="alert">
-          <p class="font-semibold">{m.ui_onboarding_review_post_bootstrap_action_failed()}</p>
-          <p class="mt-1">{postBootstrapError}</p>
-        </div>
-      {/if}
-
       <div class="pt-4">
         <Button
           type="button"
@@ -144,7 +133,7 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
         <div class="space-y-3 text-xs">
           <div class="flex justify-between items-center">
             <span class="text-muted-foreground">{m.ui_onboarding_review_blueprint()}</span>
-            <span class="font-semibold text-foreground">{isRTL ? blueprint.nameAr : blueprint.nameEn}</span>
+            <span class="font-semibold text-foreground">{isArabic ? blueprint.nameAr : blueprint.nameEn}</span>
           </div>
 
           <div class="flex justify-between items-center">
@@ -208,13 +197,6 @@ const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.org
         </CardContent>
       </Card>
     </div>
-
-    {#if error}
-      <div class="p-4 rounded-xl bg-destructive/10 border border-destructive/25 text-destructive text-xs space-y-1 text-start" role="alert">
-        <div class="font-bold">{m.ui_onboarding_review_initialization_failed()}</div>
-        <p>{error}</p>
-      </div>
-    {/if}
 
     <div class="pt-4 flex justify-end">
       <Button
