@@ -19,6 +19,7 @@ Follows GitButler's "Chrome Shell" pattern:
 -->
 <script lang="ts">
 import AppSidebar from "./app-sidebar.svelte";
+import LicenseBanner from "./license-banner.svelte";
 import { uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
@@ -78,6 +79,7 @@ function handleKeyDown(e: KeyboardEvent) {
 		</div>
 	{/if}
 	<div class="flex flex-1 flex-col overflow-hidden relative">
+		<LicenseBanner />
 		<div
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>
@@ -97,5 +99,12 @@ function handleKeyDown(e: KeyboardEvent) {
 {#if uiStore.showUpgradeDialog}
 	{#await import("./upgrade-dialog.svelte") then { default: UpgradeDialog }}
 		<UpgradeDialog bind:open={uiStore.showUpgradeDialog} />
+	{/await}
+{/if}
+
+<!-- Lazy-load ActivationDialog only when shown -->
+{#if uiStore.showActivationDialog}
+	{#await import("./activation-dialog.svelte") then { default: ActivationDialog }}
+		<ActivationDialog bind:open={uiStore.showActivationDialog} />
 	{/await}
 {/if}

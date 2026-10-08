@@ -43,6 +43,12 @@ class UIStore {
     this.showUpgradeDialog = show;
   }
 
+  showActivationDialog = $state(false);
+
+  setActivationDialog(show: boolean) {
+    this.showActivationDialog = show;
+  }
+
   toggleSearch() {
     this.showSearch = !this.showSearch;
   }

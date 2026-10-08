@@ -3,6 +3,7 @@
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
+use orbis_domain::iam::permission::Permission;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::State;
@@ -36,6 +37,25 @@ pub async fn integration_connect_app(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<IntegrationDto>, String> {
     let ctx = make_ctx(&state);
+    if request.category.eq_ignore_ascii_case("storage") {
+        state
+            .integration_service
+            .permission_checker
+            .check(&ctx, Permission::OrganizationWrite)
+            .await
+            .map_err(|error| error.to_string())?;
+        state
+            .storage_resolver
+            .check_connection(
+                ctx.tenant_id,
+                &request.provider_name,
+                &request.category,
+                &request.settings,
+                &request.secrets,
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+    }
     let config = state
         .integration_service
         .connect_app(
@@ -65,6 +85,8 @@ pub async fn integration_connect_app(
 pub struct IntegrationStatusDto {
     pub connected: bool,
     pub is_enabled: bool,
+    pub is_healthy: Option<bool>,
+    pub health_error: Option<String>,
     pub config: Option<IntegrationDto>,
 }
 
@@ -81,22 +103,40 @@ pub async fn integration_get_status(
         .map_err(|e| e.to_string())?;
 
     match config_opt {
-        Some(c) => Ok(ok(IntegrationStatusDto {
-            connected: true,
-            is_enabled: c.is_enabled,
-            config: Some(IntegrationDto {
-                id: c.id.to_string(),
-                org_id: c.org_id.to_string(),
-                provider_name: c.provider_name,
-                category: c.category,
+        Some(c) => {
+            let (is_healthy, health_error) = if c.category.eq_ignore_ascii_case("storage") {
+                match state
+                    .storage_resolver
+                    .check_integration_connection(ctx.tenant_id, &c.provider_name)
+                    .await
+                {
+                    Ok(()) => (Some(true), None),
+                    Err(error) => (Some(false), Some(error.to_string())),
+                }
+            } else {
+                (None, None)
+            };
+            Ok(ok(IntegrationStatusDto {
+                connected: true,
                 is_enabled: c.is_enabled,
-                env: c.env,
-                settings: c.settings,
-            }),
-        })),
+                is_healthy,
+                health_error,
+                config: Some(IntegrationDto {
+                    id: c.id.to_string(),
+                    org_id: c.org_id.to_string(),
+                    provider_name: c.provider_name,
+                    category: c.category,
+                    is_enabled: c.is_enabled,
+                    env: c.env,
+                    settings: c.settings,
+                }),
+            }))
+        }
         None => Ok(ok(IntegrationStatusDto {
             connected: false,
             is_enabled: false,
+            is_healthy: None,
+            health_error: None,
             config: None,
         })),
     }

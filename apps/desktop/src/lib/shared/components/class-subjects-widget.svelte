@@ -1,5 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { goto } from "$app/navigation";
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
@@ -50,9 +51,8 @@ function subjectName(subject: any): string {
         variant="ghost"
         size="xs"
         class="text-primary hover:text-primary hover:bg-primary/10 h-6 text-[11px] font-bold gap-1 px-2"
-        onclick={() => {
-          window.location.href = localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`);
-        }}
+        onclick={() =>
+          goto(localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`))}
       >
         <Plus size={12} />
         {m.ui_class_subjects_link_subject()}
@@ -62,7 +62,7 @@ function subjectName(subject: any): string {
 
   {#if isLoading}
     <div class="flex flex-col gap-2.5">
-      {#each Array(4) as _}
+      {#each Array(4) as _, index (index)}
         <Skeleton class="h-14 w-full rounded-xl" />
       {/each}
     </div>
@@ -77,9 +77,8 @@ function subjectName(subject: any): string {
         variant="outline"
         size="sm"
         class="mt-3 text-xs h-7 font-semibold"
-        onclick={() => {
-          window.location.href = localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`);
-        }}
+        onclick={() =>
+          goto(localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`))}
       >
         <Plus size={12} class="me-1" />
         {m.ui_class_subjects_link_new_subject()}

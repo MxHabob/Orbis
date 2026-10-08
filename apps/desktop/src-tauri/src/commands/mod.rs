@@ -16,6 +16,7 @@ pub mod folder_cmds;
 pub mod group_cmds;
 pub mod iam_cmds;
 pub mod integration_cmds;
+pub mod license_cmds;
 pub mod onboarding_cmds;
 pub mod org_cmds;
 pub mod progression_cmds;
@@ -368,6 +369,14 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         system_cmds::system_get_changelog,
         system_cmds::system_check_for_updates,
         system_cmds::system_install_update,
+        // ── License & Activation ────────────────────────────────
+        license_cmds::license_get_state,
+        license_cmds::license_activate_key,
+        license_cmds::license_start_trial,
+        license_cmds::license_deactivate,
+        license_cmds::license_refresh,
+        license_cmds::license_check_feature,
+        license_cmds::license_get_installation_id,
         // ── AI Platform ─────────────────────────────────────────
         ai_cmds::ai_chat,
         ai_cmds::ai_list_tools,

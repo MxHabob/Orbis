@@ -12,11 +12,17 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import {
   Plus,
@@ -32,8 +38,23 @@ import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
+import { isCashOrBankAccount } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
+
+type DisbursementLine = {
+  id: number;
+  sequence: number;
+  beneficiaryAccountId: string;
+  amount: number | null;
+  notes: string;
+};
+
+let nextDisbursementLineId = 1;
+function createDisbursementLine(): DisbursementLine {
+  const id = nextDisbursementLineId++;
+  return { id, sequence: id, beneficiaryAccountId: "", amount: null, notes: "" };
+}
 
 // ── State ──────────────────────────────────────────────────────────────
 let disbursements = $state<any[]>([]);
@@ -50,14 +71,14 @@ let showAddForm = $state(false);
 
 // Form Fields
 let referenceNumber = $state("");
-let voucherDate = $state(new Date().toISOString().split("T")[0]);
-let amount = $state<number | null>(null);
+let voucherDate = $state("");
 let selectedCurrency = $state("YER");
 let treasuryAccountId = $state(""); // Credit: Cash/Bank
-let beneficiaryAccountId = $state(""); // Debit: Expense/Supplier
 let paymentMethod = $state<"Cash" | "Bank" | "Check">("Cash");
-let checkOrTransferRef = $state("");
-let notes = $state("");
+let disbursementLines = $state<DisbursementLine[]>([createDisbursementLine()]);
+const calculatedTotal = $derived(
+  disbursementLines.reduce((total, line) => total + (Number(line.amount) || 0), 0),
+);
 
 // Filters
 let searchQuery = $state("");
@@ -82,13 +103,7 @@ async function loadData() {
     ]);
 
     accounts = accountsList || [];
-    treasuries = (accountsList || []).filter(
-      (a: any) =>
-        a.type === "asset" ||
-        a.account_type === "asset" ||
-        a.sub_type === "cash" ||
-        a.sub_type === "bank"
-    );
+    treasuries = (accountsList || []).filter(isCashOrBankAccount);
 
     if (treasuries.length > 0 && !treasuryAccountId) {
       treasuryAccountId = treasuries[0].id;
@@ -110,13 +125,22 @@ async function loadData() {
 
 function clearForm() {
   referenceNumber = "";
-  voucherDate = new Date().toISOString().split("T")[0];
-  amount = null;
+  voucherDate = "";
   selectedCurrency = "YER";
-  beneficiaryAccountId = "";
   paymentMethod = "Cash";
-  checkOrTransferRef = "";
-  notes = "";
+  disbursementLines = [createDisbursementLine()];
+}
+
+function addDisbursementLine() {
+  disbursementLines = [...disbursementLines, createDisbursementLine()];
+}
+
+function removeDisbursementLine(lineId: number) {
+  if (disbursementLines.length === 1) {
+    disbursementLines = [createDisbursementLine()];
+    return;
+  }
+  disbursementLines = disbursementLines.filter((line) => line.id !== lineId);
 }
 
 function getAccountName(id?: string | null): string {
@@ -127,7 +151,7 @@ function getAccountName(id?: string | null): string {
 }
 
 async function handleSaveDisbursement() {
-  if (!amount || amount <= 0) {
+  if (disbursementLines.some((line) => !line.amount || line.amount <= 0)) {
     toast.error(m.finance_ui_disbursement_amount_invalid());
     return;
   }
@@ -135,34 +159,57 @@ async function handleSaveDisbursement() {
     toast.error(m.finance_ui_disbursement_treasury_required());
     return;
   }
-  if (!beneficiaryAccountId) {
+  if (disbursementLines.some((line) => !line.beneficiaryAccountId)) {
     toast.error(m.finance_ui_disbursement_beneficiary_required());
     return;
   }
-  if (treasuryAccountId === beneficiaryAccountId) {
+  if (disbursementLines.some((line) => line.beneficiaryAccountId === treasuryAccountId)) {
     toast.error(m.finance_ui_disbursement_accounts_must_differ());
     return;
   }
 
   isSubmitting = true;
+  let savedCount = 0;
+  let failure: unknown;
+  const batchSize = disbursementLines.length;
   try {
-    await api.processDisbursement({
-      treasury_account_id: treasuryAccountId,
-      beneficiary_account_id: beneficiaryAccountId,
-      amount: Number(amount),
-      currency_code: selectedCurrency,
-      payment_method: paymentMethod.toLowerCase(),
-      reference: checkOrTransferRef.trim() || referenceNumber.trim() || undefined,
-      notes: notes.trim() || undefined,
-      voucher_date: voucherDate,
-    });
-    toast.success(m.finance_ui_disbursement_posted_success());
-    clearForm();
-    showAddForm = false;
-    await loadData();
-  } catch (err: any) {
-    console.error("Failed to record disbursement:", err);
-    toast.error(err?.message || m.finance_ui_disbursement_save_failed());
+    for (const line of [...disbursementLines]) {
+      const baseReference = referenceNumber.trim();
+      const lineReference = baseReference
+        ? batchSize > 1 || line.sequence > 1
+          ? `${baseReference}-${String(line.sequence).padStart(2, "0")}`
+          : baseReference
+        : undefined;
+      try {
+        await api.processDisbursement({
+          treasury_account_id: treasuryAccountId,
+          beneficiary_account_id: line.beneficiaryAccountId,
+          amount: Number(line.amount),
+          currency_code: selectedCurrency,
+          payment_method: paymentMethod.toLowerCase(),
+          reference: lineReference,
+          notes: line.notes.trim() || undefined,
+          voucher_date: voucherDate || undefined,
+        });
+        savedCount += 1;
+        disbursementLines = disbursementLines.filter((item) => item.id !== line.id);
+      } catch (err) {
+        failure = err;
+        break;
+      }
+    }
+
+    if (savedCount > 0) {
+      toast.success(m.finance_ui_disbursement_posted_success());
+      await loadData();
+    }
+    if (failure) {
+      console.error("Failed to record a disbursement in the batch:", failure);
+      toast.error(extractErrorMessage(failure) || m.finance_ui_disbursement_save_failed());
+    } else {
+      clearForm();
+      showAddForm = false;
+    }
   } finally {
     isSubmitting = false;
   }
@@ -299,7 +346,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-primary/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">
@@ -315,98 +362,172 @@ function exportCsv() {
             </div>
           </CardHeader>
 
-          <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_from_account()}</Label>
-                <SearchableSelect
-                  value={treasuryAccountId}
-                  placeholder={m.finance_ui_treasury_select_placeholder()}
-                  items={treasuries}
-                  getItemValue={(t) => t.id}
-                  getItemLabel={(t) => `${t.name_ar || t.name} (${t.currency || "YER"})`}
-                  onchange={(val) => { if (val) treasuryAccountId = val; }}
-                  class="w-full h-8 text-xs bg-background border-border/60"
-                />
+          <CardContent class="flex flex-col gap-5 p-4">
+            <section class="rounded-lg border border-border/50 bg-muted/10 p-3 sm:p-4">
+              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-xs font-semibold text-foreground">{m.finance_ui_disbursement_create_heading()}</h3>
+                <span class="text-[11px] text-muted-foreground">{m.finance_ui_voucher_number_optional()}</span>
+              </div>
+              <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
+                  <Input
+                    type="text"
+                    bind:value={referenceNumber}
+                    placeholder={m.finance_ui_automatic()}
+                    class="h-9 text-xs font-mono"
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_date()}</Label>
+                  <Input type="date" bind:value={voucherDate} class="h-9 text-xs font-mono" disabled={isSubmitting} />
+                </div>
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_from_account()}</Label>
+                  <AccountSearchInput
+                    value={treasuryAccountId}
+                    placeholder={m.finance_ui_treasury_select_placeholder()}
+                    accounts={treasuries}
+                    onchange={(value) => (treasuryAccountId = value ?? "")}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_payment_method()}</Label>
+                  <Select
+                    type="single"
+                    value={paymentMethod}
+                    onValueChange={(value) => {
+                      if (value === "Cash" || value === "Bank" || value === "Check") paymentMethod = value;
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger class="h-9 w-full bg-background text-xs">
+                      {paymentMethod === "Cash"
+                        ? m.finance_ui_payment_method_cash()
+                        : paymentMethod === "Bank"
+                          ? m.finance_ui_payment_method_bank_transfer()
+                          : m.finance_ui_payment_method_check()}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cash">{m.finance_ui_payment_method_cash()}</SelectItem>
+                      <SelectItem value="Bank">{m.finance_ui_payment_method_bank_transfer()}</SelectItem>
+                      <SelectItem value="Check">{m.finance_ui_payment_method_check()}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div class="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+                <div class="min-w-0">
+                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_currency()}</Label>
+                  <SearchableSelect
+                    value={selectedCurrency}
+                    placeholder={m.finance_ui_currency_placeholder()}
+                    items={currencies}
+                    getItemValue={(currency) => currency.code}
+                    getItemLabel={(currency) => currency.name}
+                    onchange={(value) => { if (value) selectedCurrency = value; }}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section class="flex flex-col gap-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 class="text-sm font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</h3>
+                  <p class="mt-0.5 text-[11px] text-muted-foreground">{disbursementLines.length} · {m.finance_ui_disbursement_save()}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  class="h-8 gap-1.5 text-xs"
+                  onclick={addDisbursementLine}
+                  disabled={isSubmitting}
+                >
+                  <Plus size={14} />
+                  {m.common_action_add()}
+                </Button>
               </div>
 
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_to_account()}</Label>
-                <AccountSearchInput
-                  bind:value={beneficiaryAccountId}
-                  {accounts}
-                  placeholder={m.finance_ui_expense_account_select_placeholder()}
-                />
+              {#each disbursementLines as line (line.id)}
+                <div class="min-w-0 rounded-lg border border-border/60 bg-background p-3 sm:p-4">
+                  <div class="mb-3 flex items-center justify-between gap-2">
+                    <span class="text-xs font-semibold text-foreground">
+                      {m.finance_ui_disbursement_save()} #{line.sequence}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      class="text-muted-foreground hover:text-destructive"
+                      onclick={() => removeDisbursementLine(line.id)}
+                      disabled={isSubmitting}
+                      aria-label={m.common_action_delete()}
+                    >
+                      <XMark size={14} />
+                    </Button>
+                  </div>
+                  <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(8rem,0.7fr)]">
+                    <div class="min-w-0">
+                      <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</Label>
+                      <AccountSearchInput
+                        value={line.beneficiaryAccountId}
+                        {accounts}
+                        placeholder={m.finance_ui_expense_account_select_placeholder()}
+                        onchange={(value) => (line.beneficiaryAccountId = value ?? "")}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div class="min-w-0">
+                      <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursed_amount()}</Label>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="any"
+                        bind:value={line.amount}
+                        placeholder="0.00"
+                        class="h-9 text-xs font-mono font-bold text-rose-600 dark:text-rose-400"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                  <div class="mt-3">
+                    <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_notes()}</Label>
+                    <Input
+                      type="text"
+                      bind:value={line.notes}
+                      placeholder={m.finance_ui_disbursement_notes_placeholder()}
+                      class="h-9 text-xs"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+              {/each}
+            </section>
+
+            <div class="flex flex-col-reverse gap-3 border-t border-border/40 pt-3 sm:flex-row sm:items-center sm:justify-between">
+              <div class="text-sm font-semibold text-foreground">
+                {m.finance_ui_disbursed_amount()}:
+                <span class="font-mono text-rose-600 dark:text-rose-400">{formatCurrency(calculatedTotal, selectedCurrency)}</span>
               </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
-                <Input
-                  type="text"
-                  bind:value={referenceNumber}
-                  placeholder={m.finance_ui_automatic()}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <Button variant="ghost" size="sm" class="h-9 text-xs" onclick={clearForm} disabled={isSubmitting}>
+                  {m.finance_ui_clear_fields()}
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  class="h-9 text-xs font-bold"
+                  disabled={isSubmitting}
+                  onclick={handleSaveDisbursement}
+                >
+                  {isSubmitting ? m.finance_ui_saving() : `${m.finance_ui_disbursement_save()} (${disbursementLines.length})`}
+                </Button>
               </div>
-
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
-                <Input
-                  type="date"
-                  bind:value={voucherDate}
-                  class="h-8 text-xs font-mono bg-background border-border/60"
-                />
-              </div>
-
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursed_amount()}</Label>
-                <Input
-                  type="number"
-                  bind:value={amount}
-                  placeholder="0.00"
-                  class="h-8 text-xs font-mono font-bold text-rose-600 dark:text-rose-400 bg-background border-border/60"
-                />
-              </div>
-
-              <div>
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
-                <SearchableSelect
-                  value={selectedCurrency}
-                  placeholder={m.finance_ui_currency_placeholder()}
-                  items={currencies}
-                  getItemValue={(c) => c.code}
-                  getItemLabel={(c) => c.name}
-                  onchange={(val) => { if (val) selectedCurrency = val; }}
-                  class="w-full h-8 text-xs bg-background border-border/60"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_disbursement_notes()}</Label>
-              <Input
-                type="text"
-                bind:value={notes}
-                placeholder={m.finance_ui_disbursement_notes_placeholder()}
-                class="h-8 text-xs bg-background border-border/60"
-              />
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-              <Button variant="ghost" size="sm" class="h-8 text-xs" onclick={clearForm}>
-                {m.finance_ui_clear_fields()}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                class="h-8 text-xs font-bold px-4"
-                disabled={isSubmitting}
-                onclick={handleSaveDisbursement}
-              >
-                {isSubmitting ? m.finance_ui_saving() : m.finance_ui_disbursement_save()}
-              </Button>
             </div>
           </CardContent>
         </Card>

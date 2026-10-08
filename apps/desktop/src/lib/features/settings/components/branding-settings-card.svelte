@@ -21,26 +21,28 @@ let { primaryColor = $bindable(), isSaving = false }: Props = $props();
     <!-- Primary Color -->
     <SettingsRow
       description={m.settings_general_color_desc()}
-      controlClass="justify-start gap-2"
+      controlClass="justify-start  gap-2"
       last
     >
       {#snippet children()}
         <FormField id="org_color" label={m.settings_general_color()}>
           {#snippet children()}
-            <input
-              id="org_color"
-              type="color"
-              bind:value={primaryColor}
-              class="w-9 h-9 cursor-pointer"
-              disabled={isSaving}
-            />
-            <Input
-              type="text"
-              bind:value={primaryColor}
-              placeholder="#84cc16"
-              class="font-mono uppercase h-9 w-28 text-center shrink-0 bg-background"
-              disabled={isSaving}
-            />
+            <div class="flex w-full items-center gap-2">
+              <input
+                id="org_color"
+                type="color"
+                bind:value={primaryColor}
+                class="size-9 shrink-0 cursor-pointer rounded-md border border-border bg-background p-1 shadow-sm"
+                disabled={isSaving}
+              />
+              <Input
+                type="text"
+                bind:value={primaryColor}
+                placeholder="#84cc16"
+                class="h-9 w-28 shrink-0 bg-background text-center font-mono uppercase"
+                disabled={isSaving}
+              />
+            </div>
           {/snippet}
         </FormField>
       {/snippet}

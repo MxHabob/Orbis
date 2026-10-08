@@ -7,7 +7,7 @@ const config: OrbisApp = {
   name: "Mulverse Cloud",
   name_ar: "سحابة مالفيرس",
   category: "storage",
-  active: true,
+  active: false,
   icon: "Cloud",
   short_description:
     "Secure, reliable, and scalable cloud storage solutions developed by Mulverse for student records and file backups.",

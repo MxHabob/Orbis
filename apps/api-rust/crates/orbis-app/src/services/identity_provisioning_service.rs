@@ -16,7 +16,7 @@ use orbis_domain::iam::permission::Permission;
 
 use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
-use crate::ports::gateways::NotificationPort;
+use crate::ports::gateways::{NotificationPort, NotificationRequest};
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     GroupRepository, IntegrationRepository, OrganizationRepository, PersonRepository,
@@ -577,7 +577,15 @@ impl IdentityProvisioningService {
             if let Some(ref email) = person.email {
                 if !email.trim().is_empty() {
                     match notification_port
-                        .send_email(ctx, email.trim(), &email_subject, &email_body)
+                        .send(
+                            ctx,
+                            &NotificationRequest::new(
+                                "email",
+                                email.trim(),
+                                Some(email_subject.clone()),
+                                email_body.clone(),
+                            ),
+                        )
                         .await
                     {
                         Ok(_) => {
@@ -620,7 +628,15 @@ impl IdentityProvisioningService {
             if let Some(ref phone) = person.phone {
                 if !phone.trim().is_empty() {
                     match notification_port
-                        .send_whatsapp(ctx, phone.trim(), &whatsapp_message)
+                        .send(
+                            ctx,
+                            &NotificationRequest::new(
+                                "whatsapp",
+                                phone.trim(),
+                                None,
+                                whatsapp_message.clone(),
+                            ),
+                        )
                         .await
                     {
                         Ok(_) => {
@@ -666,7 +682,10 @@ impl IdentityProvisioningService {
                         org_name, username, temporary_password, login_url
                     );
                     match notification_port
-                        .send_sms(ctx, phone.trim(), &sms_text)
+                        .send(
+                            ctx,
+                            &NotificationRequest::new("sms", phone.trim(), None, sms_text),
+                        )
                         .await
                     {
                         Ok(_) => {

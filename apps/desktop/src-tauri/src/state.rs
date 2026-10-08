@@ -118,7 +118,6 @@ pub struct AppState {
     pub folder_service: Arc<orbis_app::services::FolderService>,
     pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
     pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
-    pub storage_adapter: Arc<dyn orbis_app::ports::storage::StorageAdapter>,
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
@@ -129,6 +128,7 @@ pub struct AppState {
     pub system_repo: Arc<dyn SystemRepository>,
     pub system_service: Arc<orbis_app::services::SystemService>,
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
+    pub license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
     pub app_data_dir: std::path::PathBuf,
     // ── Employee Affairs & User Groups ─────────────────────────
@@ -268,6 +268,12 @@ impl AppState {
         let integration_resolver = Arc::new(
             orbis_infra::adapters::resolver::IntegrationResolver::new(integration_repo.clone()),
         );
+        let notification_adapter = Arc::new(
+            orbis_infra::adapters::notification::NotificationAdapter::new(
+                integration_repo.clone(),
+                settings_repo.clone(),
+            ),
+        );
 
         let identity_repo = Arc::new(
             orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() },
@@ -334,7 +340,7 @@ impl AppState {
             policy_repo.clone(),
             event_bus.clone(),
             integration_resolver.clone(),
-            integration_resolver.clone(),
+            notification_adapter.clone(),
             permission_checker.clone(),
         ));
 
@@ -435,9 +441,8 @@ impl AppState {
             storage_root,
             integration_repo.clone(),
         ));
-        let storage_adapter = storage_resolver.default_adapter();
         let file_storage_service = Arc::new(orbis_app::services::FileStorageService::new(
-            storage_adapter.clone(),
+            storage_resolver.clone(),
             document_repo.clone(),
             event_bus.clone(),
             permission_checker.clone(),
@@ -490,7 +495,8 @@ impl AppState {
             autopilot_task_repo.clone(),
             policy_repo.clone(),
             permission_checker.clone(),
-        ));
+        )
+        .with_notification_port(notification_adapter.clone()));
 
         let ai_service = Arc::new(
             orbis_app::services::AiOrchestrationService::new(
@@ -510,8 +516,31 @@ impl AppState {
         // ── Bootstrap & System Services ─────────────────────────────
         let system_repo_impl =
             Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
-        let entitlement_provider: Arc<dyn EntitlementProvider> =
-            Arc::new(orbis_infra::adapters::entitlement_adapter::UnlicensedEntitlementProvider);
+
+        // ── Mulverse License Runtime ────────────────────────────────
+        let app_version = env!("CARGO_PKG_VERSION").to_string();
+        let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
+        let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
+            orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
+                app_data_dir,
+                &app_version,
+                mulverse_url.as_deref(),
+            )
+            .map_err(|e| format!("Failed to create license runtime: {e}"))?,
+        );
+
+        // Initialize the license runtime (loads persisted state, offline-first)
+        license_runtime
+            .initialize()
+            .await
+            .map_err(|e| format!("Failed to initialize license runtime: {e}"))?;
+
+        // Bridge: expose LicenseRuntime as EntitlementProvider for existing services
+        let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
+            orbis_infra::adapters::license_runtime::LicenseEntitlementBridge::new(
+                license_runtime.clone(),
+            ),
+        );
 
         let system_service = Arc::new(orbis_app::services::SystemService::new(
             system_repo_impl.clone(),
@@ -534,7 +563,7 @@ impl AppState {
                 Some(integration_repo.clone()),
                 Some(session_repo.clone()),
                 Some(org_repo.clone()),
-                None,
+                Some(notification_adapter.clone()),
                 password_hasher.clone(),
                 event_bus.clone(),
                 permission_checker.clone(),
@@ -673,7 +702,6 @@ impl AppState {
             folder_service: folder_service.clone(),
             file_storage_service,
             storage_resolver,
-            storage_adapter,
             integration_service,
             workflow_service,
             report_service,
@@ -683,6 +711,7 @@ impl AppState {
             system_repo: system_repo_impl,
             system_service,
             entitlement_provider,
+            license_runtime: license_runtime.clone(),
             solver_sidecar,
             app_data_dir: app_data_dir.to_path_buf(),
             // ── Employee Affairs & User Groups ─────────────────────────
@@ -702,6 +731,13 @@ impl AppState {
                 org_repo.clone(),
             ));
         let _scheduler_handle = autopilot_scheduler.spawn(60);
+
+        // Spawn background license sync (30s initial delay, then per-entitlement interval)
+        let _license_sync_handle =
+            orbis_infra::adapters::license_runtime::spawn_background_sync(
+                license_runtime.clone(),
+                30,
+            );
 
         Ok(state)
     }

@@ -7,14 +7,29 @@ Triggered by the Bolt icon in the sidebar. Matches Sentry's upgrade layout.
 import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui";
-
-import { Bolt, Check } from "@orbis/icons";
+import { Check } from "@orbis/icons";
+import { licenseStore, uiStore } from "$lib/stores";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
 function handleClose() {
   open = false;
 }
+
+function handleActivate() {
+  open = false;
+  uiStore.setActivationDialog(true);
+}
+
+const currentPlanDisplay = $derived.by(() => {
+  if (licenseStore.isTrial) {
+    return `${licenseStore.plan ?? "Trial"} (${m.license_trial_days_remaining({ count: String(licenseStore.trialDaysRemaining) })})`;
+  }
+  if (licenseStore.plan) {
+    return licenseStore.edition ? `${licenseStore.plan} — ${licenseStore.edition}` : licenseStore.plan;
+  }
+  return m.common_upgrade_plan_dev();
+});
 </script>
 
 <Dialog bind:open>
@@ -63,6 +78,7 @@ function handleClose() {
       <div class="flex items-center gap-3 mt-8">
         <Button
           type="button"
+          onclick={handleActivate}
           class="px-5 py-2.5 text-[11.5px] font-bold"
         >
           {m.common_upgrade_btn_now()}
@@ -143,10 +159,10 @@ function handleClose() {
       <!-- Current Plan Status -->
       <div class="mt-10 flex flex-col gap-0.5 select-none">
         <span class="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">
-          {m.common_dt_type_system()}
+          {m.license_current_plan()}
         </span>
         <span class="text-[15px] font-extrabold text-foreground">
-          {m.common_upgrade_plan_dev()}
+          {currentPlanDisplay}
         </span>
         <a
           href="https://www.mulverse.com"

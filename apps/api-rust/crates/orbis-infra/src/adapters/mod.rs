@@ -1,12 +1,14 @@
 pub mod authen;
 pub mod email;
-pub mod entitlement_adapter;
 pub mod hikvision;
 pub mod iam;
 pub mod identity;
+pub mod license_runtime;
 pub mod llm_adapter;
 pub mod mada;
 pub mod moyasar;
+pub mod mulverse_client;
+pub mod notification;
 pub mod report_adapter;
 pub mod report_defaults;
 pub mod resolver;

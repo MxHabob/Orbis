@@ -92,6 +92,7 @@ export type AccountDto = {
     name_ar?: string | null;
     org_id: string;
     parent_id?: string | null;
+    sub_type?: string | null;
     updated_at: string;
     updated_by?: string | null;
     version: number;
@@ -1429,6 +1430,8 @@ export type IntegrationDto = {
 export type IntegrationStatusDto = {
     config?: IntegrationDto | null;
     connected: boolean;
+    health_error?: string | null;
+    is_healthy?: boolean | null;
     is_enabled: boolean;
 };
 
@@ -1539,6 +1542,7 @@ export type MfaVerifyEnrollmentRequest = {
 };
 
 export type NotificationSettingsDto = {
+    default_integration_ids?: Record<string, string>;
     email_integration_id?: string | null;
     finance_reminder_days: Array<number>;
     notify_parents_on_absence: boolean;
@@ -1696,6 +1700,7 @@ export type PaymentDto = {
     method: string;
     org_id: string;
     paid_at: string;
+    receipt_number?: string | null;
     reference?: string | null;
     student_id?: string | null;
     updated_at: string;
@@ -1763,8 +1768,11 @@ export type ProcessPaymentRequest = {
     enrollment_id?: string | null;
     fee_id?: string | null;
     method: string;
+    notes?: string | null;
     payer_name?: string | null;
     payer_phone?: string | null;
+    payment_date?: string | null;
+    receipt_number?: string | null;
     reference?: string | null;
     source?: string | null;
     student_id?: string | null;

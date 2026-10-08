@@ -33,17 +33,27 @@ import {
 } from "$lib/api";
 
 /** Treasuries for an organization. */
+export function isCashOrBankAccount(account: AccountDto): boolean {
+  const accountType = account.account_type.toLowerCase();
+  const subType = account.sub_type?.toLowerCase();
+  return (
+    account.is_active &&
+    accountType === "asset" &&
+    (subType === "cash" ||
+      subType === "bank" ||
+      ["110101", "110102", "110103", "110104"].includes(account.code))
+  );
+}
+
 export function createCashAccountsQuery(
   orgId: () => string,
   enabled: () => boolean = () => true,
 ) {
   return createQuery<AccountDto[]>(() => ({
-    queryKey: queryKeys.finance.accounts(orgId()),
+    queryKey: [...queryKeys.finance.accounts(orgId()), "cash"],
     queryFn: async () => {
       const accounts = await api.listAccounts();
-      return accounts.filter((account: AccountDto) =>
-        ["cash", "bank"].includes(account.account_type || (account as { sub_type?: string }).sub_type || ""),
-      );
+      return accounts.filter(isCashOrBankAccount);
     },
     enabled: !!orgId() && enabled(),
     staleTime: 5 * 60 * 1000,
@@ -662,4 +672,3 @@ export function createDisbursePayrollMutation() {
     },
   }));
 }
-

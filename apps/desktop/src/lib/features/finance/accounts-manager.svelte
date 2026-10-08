@@ -40,6 +40,12 @@ import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountTree, { type AccountNode } from "$lib/features/finance/components/account-tree.svelte";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { accountFilterFields } from "$lib/core/filter-configs";
 
 let { orgId }: { orgId: string } = $props();
@@ -426,7 +432,7 @@ function exportAccountsCsv() {
                 </div>
 
                 <!-- Row 2: اسم الحساب (عربي + إنجليزي) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_name_arabic()}</Label>
                     <Input
@@ -449,7 +455,7 @@ function exportAccountsCsv() {
                 </div>
 
                 <!-- Row 3: رقم الحساب + نوع المستوى (رئيسي / فرعي) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_code()}</Label>
                     <Input
@@ -462,45 +468,89 @@ function exportAccountsCsv() {
 
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_level()}</Label>
-                    <select
-                      bind:value={formAccountLevel}
-                      class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
+                    <Select
+                      type="single"
+                      value={formAccountLevel}
+                      onValueChange={(value) => {
+                        if (value === "primary" || value === "sub") formAccountLevel = value;
+                      }}
                     >
-                      <option value="primary">{m.finance_ui_account_level_primary()}</option>
-                      <option value="sub">{m.finance_ui_account_level_sub()}</option>
-                    </select>
+                      <SelectTrigger class="h-8 w-full bg-background text-xs">
+                        {formAccountLevel === "primary"
+                          ? m.finance_ui_account_level_primary()
+                          : m.finance_ui_account_level_sub()}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="primary">{m.finance_ui_account_level_primary()}</SelectItem>
+                        <SelectItem value="sub">{m.finance_ui_account_level_sub()}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
                 <!-- Row 4: التصنيف المالي + النوع الفرعي + العملة -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_category()}</Label>
-                    <select
-                      bind:value={formAccountType}
-                      class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
+                    <Select
+                      type="single"
+                      value={formAccountType}
+                      onValueChange={(value) => {
+                        if (value === "asset" || value === "liability" || value === "equity" || value === "revenue" || value === "expense") formAccountType = value;
+                      }}
                     >
-                      <option value="asset">{m.finance_ui_account_type_asset_numbered()}</option>
-                      <option value="liability">{m.finance_ui_account_type_liability_numbered()}</option>
-                      <option value="equity">{m.finance_ui_account_type_equity_numbered()}</option>
-                      <option value="revenue">{m.finance_ui_account_type_revenue_numbered()}</option>
-                      <option value="expense">{m.finance_ui_account_type_expense_numbered()}</option>
-                    </select>
+                      <SelectTrigger class="h-8 w-full bg-background text-xs">
+                        {formAccountType === "asset"
+                          ? m.finance_ui_account_type_asset_numbered()
+                          : formAccountType === "liability"
+                            ? m.finance_ui_account_type_liability_numbered()
+                            : formAccountType === "equity"
+                              ? m.finance_ui_account_type_equity_numbered()
+                              : formAccountType === "revenue"
+                                ? m.finance_ui_account_type_revenue_numbered()
+                                : m.finance_ui_account_type_expense_numbered()}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="asset">{m.finance_ui_account_type_asset_numbered()}</SelectItem>
+                        <SelectItem value="liability">{m.finance_ui_account_type_liability_numbered()}</SelectItem>
+                        <SelectItem value="equity">{m.finance_ui_account_type_equity_numbered()}</SelectItem>
+                        <SelectItem value="revenue">{m.finance_ui_account_type_revenue_numbered()}</SelectItem>
+                        <SelectItem value="expense">{m.finance_ui_account_type_expense_numbered()}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>
                     <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_subtype()}</Label>
-                    <select
-                      bind:value={formSubType}
-                      class="w-full h-8 text-xs rounded-md bg-background border border-border/60 px-2 text-foreground focus:outline-none"
+                    <Select
+                      type="single"
+                      value={formSubType}
+                      onValueChange={(value) => {
+                        if (value === "general" || value === "cash" || value === "bank" || value === "customer" || value === "supplier" || value === "employee") formSubType = value;
+                      }}
                     >
-                      <option value="general">{m.finance_ui_account_type_general()}</option>
-                      <option value="cash">{m.finance_ui_cash_treasury()}</option>
-                      <option value="bank">{m.finance_ui_account_type_bank()}</option>
-                      <option value="customer">{m.finance_ui_account_type_customer_student()}</option>
-                      <option value="supplier">{m.finance_ui_account_type_supplier()}</option>
-                      <option value="employee">{m.finance_ui_account_type_employee()}</option>
-                    </select>
+                      <SelectTrigger class="h-8 w-full bg-background text-xs">
+                        {formSubType === "general"
+                          ? m.finance_ui_account_type_general()
+                          : formSubType === "cash"
+                            ? m.finance_ui_cash_treasury()
+                            : formSubType === "bank"
+                              ? m.finance_ui_account_type_bank()
+                              : formSubType === "customer"
+                                ? m.finance_ui_account_type_customer_student()
+                                : formSubType === "supplier"
+                                  ? m.finance_ui_account_type_supplier()
+                                  : m.finance_ui_account_type_employee()}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">{m.finance_ui_account_type_general()}</SelectItem>
+                        <SelectItem value="cash">{m.finance_ui_cash_treasury()}</SelectItem>
+                        <SelectItem value="bank">{m.finance_ui_account_type_bank()}</SelectItem>
+                        <SelectItem value="customer">{m.finance_ui_account_type_customer_student()}</SelectItem>
+                        <SelectItem value="supplier">{m.finance_ui_account_type_supplier()}</SelectItem>
+                        <SelectItem value="employee">{m.finance_ui_account_type_employee()}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>

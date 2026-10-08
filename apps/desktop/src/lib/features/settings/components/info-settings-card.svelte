@@ -52,22 +52,23 @@ let {
       required
     >
       {#snippet children()}
-        <BilingualNameFields
-          arId="org_name_ar"
-          enId="org_name"
-          arLabel={m.settings_ui_organization_arabic_name()}
-          enLabel={m.settings_general_display_name()}
-          bind:arValue={nameAr}
-          bind:enValue={name}
-          arDescription={m.settings_ui_organization_arabic_name_description()}
-          enPlaceholder={m.settings_general_name_placeholder()}
-          kind="label"
-          requestSuggestion={suggestLocalTranslation}
-          enRequired
-          disabled={isSaving}
-          loadingMessage={m.bilingual_entry_loading()}
-          failureMessage={m.bilingual_entry_failure()}
-        />
+        <div class="w-full min-w-0">
+          <BilingualNameFields
+            arId="org_name_ar"
+            enId="org_name"
+            arLabel={m.settings_ui_organization_arabic_name()}
+            enLabel={m.settings_general_display_name()}
+            bind:arValue={nameAr}
+            bind:enValue={name}
+            enPlaceholder={m.settings_general_name_placeholder()}
+            kind="label"
+            requestSuggestion={suggestLocalTranslation}
+            enRequired
+            disabled={isSaving}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
+        </div>
       {/snippet}
     </SettingsRow>
 

@@ -5,11 +5,22 @@ import { LoadingIndicator } from "../loading-indicator/index.js";
 import { Progress } from "../progress/index.js";
 import { toastStore } from "./toast-state.svelte.js";
 
-let { ...restProps } = $props();
+type ToasterPosition =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+
+let { position = "bottom-right", ...restProps }: {
+  position?: ToasterPosition;
+  [key: string]: unknown;
+} = $props();
 const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
 </script>
 
-<div class="toaster" {...restProps}>
+<div class="toaster" data-position={position} {...restProps}>
   {#each visibleToasts as item (item.id)}
     <div class="toast-item" data-variant={item.variant} role="status" aria-live="polite">
       <div class="toast-main">
@@ -37,7 +48,13 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
 </div>
 
 <style>
-  .toaster { position: fixed; right: 1rem; bottom: 1rem; z-index: 100; display: flex; width: min(380px, calc(100vw - 2rem)); flex-direction: column; gap: 0.5rem; pointer-events: none; }
+  .toaster { position: fixed; z-index: 100; display: flex; width: min(380px, calc(100vw - 2rem)); flex-direction: column; gap: 0.5rem; pointer-events: none; }
+  .toaster[data-position="top-left"] { top: 1rem; left: 1rem; }
+  .toaster[data-position="top-center"] { top: 1rem; left: 50%; transform: translateX(-50%); }
+  .toaster[data-position="top-right"] { top: 1rem; right: 1rem; }
+  .toaster[data-position="bottom-left"] { bottom: 1rem; left: 1rem; }
+  .toaster[data-position="bottom-center"] { bottom: 1rem; left: 50%; transform: translateX(-50%); }
+  .toaster[data-position="bottom-right"] { right: 1rem; bottom: 1rem; }
   .toast-item { pointer-events: auto; display: flex; flex-direction: column; gap: 0.5rem; padding: 0.75rem 0.875rem; color: var(--color-popover-foreground); background: var(--color-popover); border: 1px solid var(--color-border); border-radius: 0.375rem; box-shadow: 0 2px 8px rgb(0 0 0 / 8%); }
   .toast-main { display: flex; align-items: flex-start; gap: 0.5rem; }
   .toast-icon { display: flex; flex: 0 0 1.25rem; align-items: center; justify-content: center; padding-top: 0.0625rem; color: var(--color-muted-foreground); }
@@ -54,5 +71,12 @@ const visibleToasts = $derived(toastStore.toasts.filter((item) => item.open));
   .toast-progress { height: 0.1875rem; border-radius: 0; }
   .toast-action { align-self: flex-end; }
   .toast-footer { padding-top: 0.25rem; }
-  @media (max-width: 640px) { .toaster { right: 0.75rem; bottom: 0.75rem; left: 0.75rem; width: auto; } }
+  @media (max-width: 640px) {
+    .toaster { right: auto; left: auto; width: min(380px, calc(100vw - 1.5rem)); transform: none; }
+    .toaster[data-position$="-left"] { left: 0.75rem; }
+    .toaster[data-position$="-center"] { left: 50%; transform: translateX(-50%); }
+    .toaster[data-position$="-right"] { right: 0.75rem; }
+    .toaster[data-position^="top-"] { top: 0.75rem; bottom: auto; }
+    .toaster[data-position^="bottom-"] { top: auto; bottom: 0.75rem; }
+  }
 </style>

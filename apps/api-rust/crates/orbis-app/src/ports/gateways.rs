@@ -66,29 +66,34 @@ use orbis_domain::entities::solver::{
 
 #[async_trait]
 pub trait NotificationPort: Send + Sync {
-    async fn send_email(
+    async fn send(
         &self,
         ctx: &RequestContext,
-        to: &str,
-        subject: &str,
-        body: &str,
+        request: &NotificationRequest,
     ) -> Result<(), DomainError>;
-    async fn send_whatsapp(
-        &self,
-        ctx: &RequestContext,
-        to: &str,
-        message: &str,
-    ) -> Result<(), DomainError>;
-    async fn send_sms(
-        &self,
-        ctx: &RequestContext,
-        to: &str,
-        message: &str,
-    ) -> Result<(), DomainError> {
-        let _ = (ctx, to, message);
-        Err(DomainError::Validation(
-            "SMS delivery not supported by this notification adapter".into(),
-        ))
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationRequest {
+    pub channel: String,
+    pub recipient: String,
+    pub subject: Option<String>,
+    pub body: String,
+}
+
+impl NotificationRequest {
+    pub fn new(
+        channel: impl Into<String>,
+        recipient: impl Into<String>,
+        subject: Option<String>,
+        body: impl Into<String>,
+    ) -> Self {
+        Self {
+            channel: channel.into(),
+            recipient: recipient.into(),
+            subject,
+            body: body.into(),
+        }
     }
 }
 

@@ -12,7 +12,7 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::DocumentRepository;
-use crate::ports::storage::{ObjectStream, StorageAdapter};
+use crate::ports::storage::{ObjectStream, StorageAdapterResolver};
 
 #[derive(Debug, Clone)]
 pub struct UploadFileInput {
@@ -33,7 +33,7 @@ pub struct UploadFileInput {
 }
 
 pub struct FileStorageService {
-    pub storage_adapter: Arc<dyn StorageAdapter>,
+    pub storage_resolver: Arc<dyn StorageAdapterResolver>,
     pub document_repo: Arc<dyn DocumentRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
@@ -41,13 +41,13 @@ pub struct FileStorageService {
 
 impl FileStorageService {
     pub fn new(
-        storage_adapter: Arc<dyn StorageAdapter>,
+        storage_resolver: Arc<dyn StorageAdapterResolver>,
         document_repo: Arc<dyn DocumentRepository>,
         event_bus: Arc<dyn EventBus>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
     ) -> Self {
         Self {
-            storage_adapter,
+            storage_resolver,
             document_repo,
             event_bus,
             permission_checker,
@@ -71,6 +71,7 @@ impl FileStorageService {
                 "File payload cannot be empty".to_string(),
             ));
         }
+        let storage_adapter = self.storage_resolver.resolve(org_id).await?;
 
         let doc_id = Uuid::new_v4();
         let sanitized_name = sanitize_filename(&input.name);
@@ -102,8 +103,7 @@ impl FileStorageService {
         );
 
         // 3. Store physical binary via storage adapter
-        let metadata = self
-            .storage_adapter
+        let metadata = storage_adapter
             .put_bytes(&storage_key, &input.data, &input.mime_type)
             .await
             .map_err(|e| DomainError::Storage(format!("Physical storage failed: {e}")))?;
@@ -134,7 +134,7 @@ impl FileStorageService {
             mime_type: Some(input.mime_type),
             extension,
             checksum_sha256: Some(metadata.sha256_checksum),
-            storage_provider: self.storage_adapter.provider_id().to_string(),
+            storage_provider: storage_adapter.provider_id().to_string(),
             file_path: storage_key.clone(),
             storage_key: Some(storage_key.clone()),
             url: None,
@@ -153,7 +153,11 @@ impl FileStorageService {
 
         // 4. Save metadata record (with compensation cleanup on error)
         if let Err(err) = self.document_repo.save(&doc).await {
-            let _ = self.storage_adapter.delete_object(&storage_key).await;
+            if let Err(cleanup_error) = storage_adapter.delete_object(&storage_key).await {
+                tracing::error!(
+                    "Failed to remove uploaded storage object after metadata save failed: {cleanup_error}"
+                );
+            }
             return Err(err);
         }
 
@@ -185,9 +189,9 @@ impl FileStorageService {
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
+        let storage_adapter = self.storage_resolver.resolve(doc.org_id).await?;
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
-        let bytes = self
-            .storage_adapter
+        let bytes = storage_adapter
             .get_bytes(key)
             .await
             .map_err(|e| DomainError::Storage(format!("Failed to retrieve file bytes: {e}")))?;
@@ -211,11 +215,12 @@ impl FileStorageService {
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
+        let storage_adapter = self.storage_resolver.resolve(doc.org_id).await?;
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
-        let stream =
-            self.storage_adapter.get_object(key).await.map_err(|e| {
-                DomainError::Storage(format!("Failed to retrieve file stream: {e}"))
-            })?;
+        let stream = storage_adapter
+            .get_object(key)
+            .await
+            .map_err(|e| DomainError::Storage(format!("Failed to retrieve file stream: {e}")))?;
 
         Ok((doc, stream))
     }
@@ -237,10 +242,11 @@ impl FileStorageService {
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
+        let storage_adapter = self.storage_resolver.resolve(doc.org_id).await?;
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
 
-        if self.storage_adapter.capabilities().supports_presigned_urls {
-            self.storage_adapter
+        if storage_adapter.capabilities().supports_presigned_urls {
+            storage_adapter
                 .generate_presigned_url(PresignedUrlRequest {
                     key: key.to_string(),
                     expires_in_seconds,
@@ -366,11 +372,10 @@ impl FileStorageService {
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Document {doc_id} not found")))?;
 
-        // 1. Delete physical object
+        let storage_adapter = self.storage_resolver.resolve(doc.org_id).await?;
         let key = doc.storage_key.as_deref().unwrap_or(&doc.file_path);
-        let _ = self.storage_adapter.delete_object(key).await;
+        storage_adapter.delete_object(key).await?;
 
-        // 2. Delete database row
         self.document_repo.purge(doc_id).await?;
 
         let event = DomainEvent::DocumentPurged {

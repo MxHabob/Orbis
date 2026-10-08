@@ -233,16 +233,19 @@ function handleSaveAvatar(e: Event) {
         onLanguageChange={handleLanguageChange}
       />
 
-
-      <BranchSettingsCard {org} {isSaving} />
-
       <AuthenticationSettingsCard {org} {isSaving} />
 
       <Card>
-        <CardHeader>
+        <CardHeader class="flex flex-row items-center justify-between">
           <CardTitle>
             {m.settings_entitlement_title()}
           </CardTitle>
+          <a
+            href="/{orgId}/billing"
+            class="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          >
+            {m.license_nav_title()} &rarr;
+          </a>
         </CardHeader>
         <CardContent class="p-0">
           <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x rtl:md:divide-x-reverse divide-border">

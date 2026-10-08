@@ -328,7 +328,7 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="shrink-0">
+      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
         <Card class="border border-primary/20 bg-card shadow-sm text-start">
           <CardHeader class="py-3 px-4 border-b border-border/40">
             <div class="flex items-center justify-between">
@@ -345,8 +345,8 @@ function exportCsv() {
           </CardHeader>
 
           <CardContent class="p-4 flex flex-col gap-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
                 <Input
                   type="text"
@@ -356,7 +356,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_date()}</Label>
                 <Input
                   type="date"
@@ -365,7 +365,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_amount()}</Label>
                 <Input
                   type="number"
@@ -375,7 +375,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
                 <SearchableSelect
                   value={selectedCurrency}
@@ -389,8 +389,8 @@ function exportCsv() {
               </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_debit_account()}</Label>
                 <AccountSearchInput
                   bind:value={debitAccountId}
@@ -399,7 +399,7 @@ function exportCsv() {
                 />
               </div>
 
-              <div>
+              <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_credit_account()}</Label>
                 <AccountSearchInput
                   bind:value={creditAccountId}

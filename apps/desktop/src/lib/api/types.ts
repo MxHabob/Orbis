@@ -633,6 +633,8 @@ export interface AuditLogDto {
 export interface IntegrationStatusResponse {
   connected: boolean;
   is_enabled: boolean;
+  is_healthy?: boolean | null;
+  health_error?: string | null;
   config?: IntegrationDto | null;
 }
 
@@ -1312,6 +1314,53 @@ export interface AcademicPolicy {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// LICENSE & ACTIVATION TYPES (Mulverse Platform)
+// ═══════════════════════════════════════════════════════════════
+
+export type LicenseState =
+  | "unavailable"
+  | "trial"
+  | "active"
+  | "expiring"
+  | "offline_grace"
+  | "expired"
+  | "revoked"
+  | "invalid";
+
+export interface LimitEntry {
+  key: string;
+  max_value: number;
+}
+
+export interface LicenseStateDto {
+  state: LicenseState;
+  product: string;
+  edition: string | null;
+  plan: string | null;
+  organization_id: string | null;
+  valid_until: string | null;
+  days_until_expiry: number | null;
+  trial_days_remaining: number;
+  is_operational: boolean;
+  is_restricted: boolean;
+  installation_id: string;
+  last_sync_at: string | null;
+  enabled_features: string[];
+  limits: LimitEntry[];
+  app_version: string;
+}
+
+export interface ActivateKeyRequest {
+  product_key: string;
+}
+
+export interface ActivationResultDto {
+  success: boolean;
+  license_state: LicenseStateDto;
+  message: string;
+}
+
+// ═══════════════════════════════════════════════════════════════
 // UNIFIED CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
 
@@ -1717,6 +1766,15 @@ export interface OrbisApiClient {
   systemInstallUpdate(): Promise<void>;
   openChangelogWindow(): Promise<void>;
   openAgentWindow(): Promise<void>;
+
+  // ── License & Activation ────────────────────────────────
+  licenseGetState(): Promise<LicenseStateDto>;
+  licenseActivateKey(req: ActivateKeyRequest): Promise<ActivationResultDto>;
+  licenseStartTrial(): Promise<LicenseStateDto>;
+  licenseDeactivate(): Promise<LicenseStateDto>;
+  licenseRefresh(): Promise<LicenseStateDto>;
+  licenseCheckFeature(featureKey: string): Promise<boolean>;
+  licenseGetInstallationId(): Promise<string>;
 
   // ── Bootstrap & Regional Initialization ─────────────────────
   bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult>;

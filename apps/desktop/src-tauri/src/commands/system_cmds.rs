@@ -246,7 +246,7 @@ pub async fn system_get_changelog(app: AppHandle) -> Result<Vec<ReleaseChangelog
     fetch_github_changelog(&current_version).await
 }
 
-/// Check for a signed update using the configured Tauri updater endpoint.
+/// Check for a signed update using the configured Mulverse updater endpoint.
 #[tauri::command]
 pub async fn system_check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, String> {
     use tauri_plugin_updater::UpdaterExt;
@@ -262,7 +262,7 @@ pub async fn system_check_for_updates(app: AppHandle) -> Result<UpdateCheckResul
             has_update: true,
             release_notes: update.body.clone(),
             release_date: update.date.map(|date| date.to_string()),
-            release_url: Some("https://github.com/MxHabob/Orbis/releases/latest".to_string()),
+            release_url: None,
             channel: "stable".to_string(),
             status: "update_available".to_string(),
             error_message: None,

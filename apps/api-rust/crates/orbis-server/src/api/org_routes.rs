@@ -6,6 +6,7 @@ use axum::{
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -472,6 +473,8 @@ pub struct FinanceSettingsDto {
 
 #[derive(Serialize, Deserialize, ToSchema, Default)]
 pub struct NotificationSettingsDto {
+    #[serde(default)]
+    pub default_integration_ids: HashMap<String, Uuid>,
     pub email_integration_id: Option<Uuid>,
     pub sms_integration_id: Option<Uuid>,
     pub whatsapp_integration_id: Option<Uuid>,
@@ -599,6 +602,7 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 invoicing_integration_id: s.finance.invoicing_integration_id,
             },
             notifications: NotificationSettingsDto {
+                default_integration_ids: s.notifications.default_integration_ids,
                 email_integration_id: s.notifications.email_integration_id,
                 sms_integration_id: s.notifications.sms_integration_id,
                 whatsapp_integration_id: s.notifications.whatsapp_integration_id,
@@ -715,6 +719,7 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 invoicing_integration_id: s.finance.invoicing_integration_id,
             },
             notifications: orbis_domain::entities::settings::NotificationSettings {
+                default_integration_ids: s.notifications.default_integration_ids,
                 email_integration_id: s.notifications.email_integration_id,
                 sms_integration_id: s.notifications.sms_integration_id,
                 whatsapp_integration_id: s.notifications.whatsapp_integration_id,

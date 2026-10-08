@@ -24,3 +24,6 @@ tera = "2.3.0"
 sha2 = { workspace = true }
 hex = { workspace = true }
 hmac = { workspace = true }
+ed25519-dalek = { version = "2", features = ["std"] }
+hostname = "0.4"
+rand = "0.8"

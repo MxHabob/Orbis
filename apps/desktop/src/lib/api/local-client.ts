@@ -227,6 +227,9 @@ import type {
   OnboardingStateDto,
   ProvisionDefaultsReqDto,
   ProvisionDefaultsResultDto,
+  LicenseStateDto,
+  ActivateKeyRequest,
+  ActivationResultDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -1324,6 +1327,30 @@ export class LocalClient implements OrbisApiClient {
   async openAgentWindow(): Promise<void> {
     return invoke<void>("open_agent_window");
   }
+
+  // ── License & Activation ────────────────────────────────
+  async licenseGetState(): Promise<LicenseStateDto> {
+    return invoke<LicenseStateDto>("license_get_state");
+  }
+  async licenseActivateKey(req: ActivateKeyRequest): Promise<ActivationResultDto> {
+    return invoke<ActivationResultDto>("license_activate_key", { request: req });
+  }
+  async licenseStartTrial(): Promise<LicenseStateDto> {
+    return invoke<LicenseStateDto>("license_start_trial");
+  }
+  async licenseDeactivate(): Promise<LicenseStateDto> {
+    return invoke<LicenseStateDto>("license_deactivate");
+  }
+  async licenseRefresh(): Promise<LicenseStateDto> {
+    return invoke<LicenseStateDto>("license_refresh");
+  }
+  async licenseCheckFeature(featureKey: string): Promise<boolean> {
+    return invoke<boolean>("license_check_feature", { featureKey });
+  }
+  async licenseGetInstallationId(): Promise<string> {
+    return invoke<string>("license_get_installation_id");
+  }
+
   async bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult> {
     return invoke<EnvironmentDetectionResult>("bootstrap_detect_environment");
   }

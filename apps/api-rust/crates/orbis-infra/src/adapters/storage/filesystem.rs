@@ -70,6 +70,19 @@ impl StorageAdapter for FilesystemStorageAdapter {
         fs::create_dir_all(&self.base_path).await.map_err(|e| {
             StorageError::Connection(format!("Filesystem storage base path inaccessible: {e}"))
         })?;
+        let probe_path = self
+            .base_path
+            .join(format!(".orbis-storage-check-{}", Uuid::new_v4()));
+        fs::write(&probe_path, b"orbis storage connection check")
+            .await
+            .map_err(|e| {
+                StorageError::Connection(format!("Filesystem storage folder is not writable: {e}"))
+            })?;
+        fs::remove_file(&probe_path).await.map_err(|e| {
+            StorageError::Connection(format!(
+                "Filesystem storage connection check could not remove its temporary file: {e}"
+            ))
+        })?;
         Ok(())
     }
 

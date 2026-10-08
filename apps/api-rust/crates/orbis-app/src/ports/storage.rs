@@ -4,7 +4,9 @@ use orbis_domain::entities::storage::{
 };
 use orbis_domain::errors::StorageError;
 use std::pin::Pin;
+use std::sync::Arc;
 use tokio::io::AsyncRead;
+use uuid::Uuid;
 
 /// Type alias for an async read stream.
 pub type ObjectStream = Pin<Box<dyn AsyncRead + Send + Sync>>;
@@ -77,4 +79,9 @@ pub trait StorageAdapter: Send + Sync {
         &self,
         request: PresignedUrlRequest,
     ) -> Result<String, StorageError>;
+}
+
+#[async_trait]
+pub trait StorageAdapterResolver: Send + Sync {
+    async fn resolve(&self, org_id: Uuid) -> Result<Arc<dyn StorageAdapter>, StorageError>;
 }

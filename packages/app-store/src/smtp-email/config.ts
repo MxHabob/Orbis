@@ -7,7 +7,7 @@ const config: OrbisApp = {
   name: "Email (SMTP)",
   name_ar: "البريد الإلكتروني (SMTP)",
   category: "communication",
-  active: true,
+  active: false,
   icon: "Mail",
   short_description:
     "Send automated email notifications to parents, teachers, and staff via SMTP.",
@@ -101,8 +101,9 @@ Track email delivery status and handle bounces gracefully.`,
       value: true,
     },
   ],
-  adapter_name: "smtp",
+  adapter_name: undefined,
   provider_trait: "NotificationProvider",
+  notification_channels: ["email"],
 };
 
 export default config;

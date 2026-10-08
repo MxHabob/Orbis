@@ -147,6 +147,18 @@ impl ApiError {
         }
     }
 
+    pub fn payment_required(msg: impl Into<String>) -> Self {
+        Self {
+            status: StatusCode::PAYMENT_REQUIRED,
+            body: OrbisErrorBody {
+                code: "LICENSE_REQUIRED".into(),
+                message: msg.into(),
+                details: None,
+                request_id: None,
+            },
+        }
+    }
+
     pub fn with_request_id(mut self, id: impl Into<String>) -> Self {
         self.body.request_id = Some(id.into());
         self
@@ -169,6 +181,9 @@ impl From<DomainError> for ApiError {
             DomainError::AuthenticationFailed => Self::unauthorized("Authentication failed"),
             DomainError::Unauthorized(_) => Self::unauthorized(err.to_string()),
             DomainError::Forbidden(_) => Self::forbidden(err.to_string()),
+            DomainError::LicenseRequired(msg) => {
+                Self::payment_required(format!("License required: {msg}"))
+            }
             DomainError::AlreadyInitialized => {
                 Self::conflict("System has already been initialized")
             }

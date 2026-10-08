@@ -10,6 +10,7 @@ import {
   AppNotification,
   ArchiveBox,
   ArrowUpTray,
+  Bolt,
   BookOpen,
   BuildingOffice,
   Calendar,

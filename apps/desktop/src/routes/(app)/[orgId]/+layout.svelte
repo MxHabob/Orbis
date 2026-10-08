@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
-import { authStore, systemStore } from "$lib/stores";
+import { authStore, systemStore, licenseStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { onMount } from "svelte";
@@ -27,7 +27,10 @@ onMount(async () => {
   }
 
   authReady = true;
-  await systemStore.loadReadiness();
+  await Promise.all([
+    systemStore.loadReadiness(),
+    licenseStore.loadState(),
+  ]);
 });
 </script>
 

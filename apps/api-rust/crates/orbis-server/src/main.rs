@@ -89,6 +89,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let integration_resolver = Arc::new(orbis_infra::adapters::resolver::IntegrationResolver::new(
         integration_repo.clone(),
     ));
+    let notification_adapter = Arc::new(
+        orbis_infra::adapters::notification::NotificationAdapter::new(
+            integration_repo.clone(),
+            settings_repo.clone(),
+        ),
+    );
     let permission_checker = Arc::new(DbPermissionChecker::new(db.clone()));
 
     let identity_repo =
@@ -188,7 +194,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         policy_repo.clone(),
         event_bus.clone(),
         integration_resolver.clone(),
-        integration_resolver.clone(),
+        notification_adapter.clone(),
         permission_checker.clone(),
     ));
 
@@ -289,9 +295,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         storage_root,
         integration_repo.clone(),
     ));
-    let storage_adapter = storage_resolver.default_adapter();
     let file_storage_service = Arc::new(orbis_app::services::FileStorageService::new(
-        storage_adapter.clone(),
+        storage_resolver.clone(),
         document_repo.clone(),
         event_bus.clone(),
         permission_checker.clone(),
@@ -337,13 +342,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         finance_repo.clone(),
     ));
 
-    let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
-        autopilot_evaluator.clone(),
-        autopilot_engine.clone(),
-        autopilot_task_repo.clone(),
-        policy_repo.clone(),
-        permission_checker.clone(),
-    ));
+    let autopilot_service = Arc::new(
+        orbis_app::services::AutopilotService::new(
+            autopilot_evaluator.clone(),
+            autopilot_engine.clone(),
+            autopilot_task_repo.clone(),
+            policy_repo.clone(),
+            permission_checker.clone(),
+        )
+        .with_notification_port(notification_adapter.clone()),
+    );
 
     let ai_service = Arc::new(
         orbis_app::services::AiOrchestrationService::new(
@@ -375,7 +383,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(integration_repo.clone()),
             Some(session_repo.clone()),
             Some(org_repo.clone()),
-            None,
+            Some(notification_adapter.clone()),
             password_hasher.clone(),
             event_bus.clone(),
             permission_checker.clone(),
@@ -509,7 +517,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         folder_service,
         file_storage_service,
         storage_resolver,
-        storage_adapter,
         integration_service,
         workflow_service,
         report_service,

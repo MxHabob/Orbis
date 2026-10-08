@@ -7,7 +7,7 @@ const config: OrbisApp = {
   name: "WhatsApp Business",
   name_ar: "واتساب للأعمال",
   category: "communication",
-  active: true,
+  active: false,
   beta: true,
   icon: "MessageCircle",
   short_description:
@@ -93,6 +93,7 @@ Send report cards as PDFs, photos of school events, and interactive buttons.`,
   ],
   adapter_name: undefined, // Not yet implemented in Rust
   provider_trait: "NotificationProvider",
+  notification_channels: ["whatsapp"],
 };
 
 export default config;

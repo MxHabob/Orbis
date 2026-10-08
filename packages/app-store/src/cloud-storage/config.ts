@@ -10,7 +10,7 @@ const config: OrbisApp = {
   active: true,
   icon: "HardDrive",
   short_description:
-    "Store documents, backups, and media on local filesystem or MinIO / private S3 storage.",
+    "Store documents, backups, and media on a configured local filesystem or S3-compatible provider.",
   short_description_ar:
     "تخزين المستندات والنسخ الاحتياطية على نظام الملفات المحلي أو وحدات MinIO الخاصة.",
   description: `Manage document storage and automated backups for your on-premise institution.
@@ -22,7 +22,7 @@ Store student photos, scanned documents, report cards, and certificates locally 
 Schedule automatic database and document backups to secure on-premise or remote backup targets.
 
 **Multiple Providers**
-Support for Local Filesystem (Default), MinIO (Private Server), Amazon S3, and Google Cloud Storage.`,
+Support for an explicitly configured local filesystem, Amazon S3, and MinIO / private S3-compatible storage.`,
   features: [
     "Local filesystem storage",
     "Private MinIO integration",
@@ -37,13 +37,23 @@ Support for Local Filesystem (Default), MinIO (Private Server), Amazon S3, and G
       type: "select",
       required: true,
       value: "local",
-      description: "Select cloud storage provider.",
+      description: "Select a storage provider.",
       options: [
         { label: "Local Filesystem", value: "local" },
         { label: "Amazon S3", value: "s3" },
-        { label: "Google Cloud Storage", value: "gcs" },
         { label: "MinIO", value: "minio" },
       ],
+    },
+    {
+      id: "local_path",
+      label: "Storage Folder",
+      label_ar: "مجلد التخزين",
+      type: "directory",
+      required: true,
+      value: "",
+      description: "Choose a folder on the machine running the Orbis backend.",
+      description_ar: "اختر مجلداً على الجهاز الذي يعمل عليه خادم Orbis.",
+      placeholder: "Select a folder",
     },
     {
       id: "bucket",
@@ -58,7 +68,7 @@ Support for Local Filesystem (Default), MinIO (Private Server), Amazon S3, and G
       id: "access_key",
       label: "Access Key",
       type: "text",
-      required: false,
+      required: true,
       value: "",
       description: "Access key ID (not needed for local).",
     },
@@ -66,7 +76,7 @@ Support for Local Filesystem (Default), MinIO (Private Server), Amazon S3, and G
       id: "secret_key",
       label: "Secret Key",
       type: "password",
-      required: false,
+      required: true,
       value: "",
       description: "Secret access key (not needed for local).",
     },
@@ -79,8 +89,18 @@ Support for Local Filesystem (Default), MinIO (Private Server), Amazon S3, and G
       description: "Cloud region (e.g. us-east-1).",
       placeholder: "us-east-1",
     },
+    {
+      id: "endpoint",
+      label: "S3-Compatible Endpoint",
+      type: "url",
+      required: false,
+      value: "",
+      description: "Required for MinIO or other private S3-compatible storage.",
+      placeholder: "https://storage.example.com",
+    },
   ],
-  adapter_name: "local_storage",
+  adapter_name: "storage",
+  legacy_provider_name: "local_storage",
   provider_trait: "StorageProvider",
 };
 

@@ -7,6 +7,12 @@
   import { FormField, toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+  } from "@orbis/ui/select";
 
   let {
     orgId,
@@ -63,8 +69,8 @@
     }
   });
 
-  function handleTemplateChange(e: Event) {
-    const val = (e.currentTarget as HTMLSelectElement).value;
+  function handleTemplateChange(val: string | undefined) {
+    if (!val) return;
     form.values.fee_template_id = val;
     const tpl = templates.find((t) => String(t.id) === val);
     if (tpl && tpl.default_amount !== undefined) {
@@ -109,23 +115,31 @@
     required
   >
     {#snippet children()}
-      <select
-        id="fee_student"
-        bind:value={form.values.enrollment_id}
-        onblur={() => form.markTouched("enrollment_id")}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
+      <Select
+        type="single"
+        value={form.values.enrollment_id || undefined}
+        onValueChange={(value) => {
+          if (value) form.values.enrollment_id = value;
+          form.markTouched("enrollment_id");
+        }}
         disabled={isLoadingDropdowns || form.isSubmitting}
       >
+        <SelectTrigger id="fee_student" class="h-9 w-full text-sm">
+          {students.find((student) => String(student.id) === form.values.enrollment_id)?.full_name
+            ?? m.common_fee_dropdown_loading_students()}
+        </SelectTrigger>
+        <SelectContent>
         {#if isLoadingDropdowns}
-          <option>{m.common_fee_dropdown_loading_students()}</option>
+          <SelectItem value="loading" disabled>{m.common_fee_dropdown_loading_students()}</SelectItem>
         {:else}
           {#each students as s (s.id)}
-            <option value={String(s.id)}>
+            <SelectItem value={String(s.id)}>
               {s.full_name || s.student_number || s.id}
-            </option>
+            </SelectItem>
           {/each}
         {/if}
-      </select>
+        </SelectContent>
+      </Select>
     {/snippet}
   </FormField>
 
@@ -137,24 +151,29 @@
     required
   >
     {#snippet children()}
-      <select
-        id="fee_ledger"
-        value={form.values.fee_template_id}
-        onchange={handleTemplateChange}
-        onblur={() => form.markTouched("fee_template_id")}
-        class="bg-background text-foreground border border-border rounded-md px-3 py-2 text-sm focus:ring-1 focus:ring-ring outline-none h-9 w-full"
+      <Select
+        type="single"
+        value={form.values.fee_template_id || undefined}
+        onValueChange={handleTemplateChange}
         disabled={isLoadingDropdowns || form.isSubmitting}
       >
+        <SelectTrigger id="fee_ledger" class="h-9 w-full text-sm">
+          {templates.find((template) => String(template.id) === form.values.fee_template_id)?.name_ar
+            || templates.find((template) => String(template.id) === form.values.fee_template_id)?.name
+            || m.common_fee_dropdown_loading_ledgers()}
+        </SelectTrigger>
+        <SelectContent>
         {#if isLoadingDropdowns}
-          <option>{m.common_fee_dropdown_loading_ledgers()}</option>
+          <SelectItem value="loading" disabled>{m.common_fee_dropdown_loading_ledgers()}</SelectItem>
         {:else}
           {#each templates as t (t.id)}
-            <option value={String(t.id)}>
+            <SelectItem value={String(t.id)}>
               {t.name_ar || t.name || t.code}
-            </option>
+            </SelectItem>
           {/each}
         {/if}
-      </select>
+        </SelectContent>
+      </Select>
     {/snippet}
   </FormField>
 

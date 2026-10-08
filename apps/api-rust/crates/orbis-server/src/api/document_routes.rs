@@ -13,9 +13,11 @@ use uuid::Uuid;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
+use orbis_app::ports::storage::StorageAdapterResolver;
 use orbis_app::services::{
     CreateDocumentInput, UpdateDocumentInput, UpdateDocumentRequirementInput,
 };
+use orbis_domain::errors::DomainError;
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct DocumentDto {
@@ -153,6 +155,13 @@ async fn upload_document(
     State(state): State<AppState>,
     Json(p): Json<UploadDocumentRequest>,
 ) -> Result<Json<ApiResponse<DocumentDto>>, ApiError> {
+    let storage_provider = state
+        .storage_resolver
+        .resolve(ctx.tenant_id)
+        .await
+        .map_err(|error| DomainError::Storage(error.to_string()))?
+        .provider_id()
+        .to_string();
     let uploaded_by = match ctx.actor {
         orbis_domain::iam::actor::Actor::User(uid) => Some(uid),
         _ => None,
@@ -175,7 +184,7 @@ async fn upload_document(
         mime_type: p.mime_type,
         extension: p.extension,
         checksum_sha256: p.checksum_sha256,
-        storage_provider: p.storage_provider.unwrap_or_else(|| "local".to_string()),
+        storage_provider,
         file_path: p.file_path.clone(),
         storage_key: p.storage_key.or(Some(p.file_path)),
         url: p.url,

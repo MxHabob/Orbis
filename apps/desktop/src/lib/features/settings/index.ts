@@ -27,6 +27,7 @@ export { default as AuditLogViewer } from "./audit-log-viewer.svelte";
 export { default as CurrenciesManager } from "./currencies-manager.svelte";
 export { default as DiscountTemplatesManager } from "./discount-templates-manager.svelte";
 export { default as FeeTemplatesManager } from "./fee-templates-manager.svelte";
+export { default as LicenseBillingManager } from "./license-billing-manager.svelte";
 export { default as NotificationsManager } from "./notifications-manager.svelte";
 export { default as PeriodsManager } from "./periods-manager.svelte";
 export { default as RolesPermissionsManager } from "./roles-permissions-manager.svelte";
