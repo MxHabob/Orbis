@@ -20,7 +20,7 @@ struct Cli {
 
 #[derive(Subcommand, Clone)]
 pub enum Commands {
-    /// Initialize the Orbis system (license, database, organization, admin)
+    /// Initialize the Orbis system (database, organization, admin)
     Init,
     /// Start the Orbis system
     Start,
@@ -28,8 +28,6 @@ pub enum Commands {
     Doctor,
     /// Backup the database securely
     Backup,
-    /// Manage product license and activation
-    License,
 }
 
 
@@ -40,7 +38,6 @@ enum MenuChoice {
     Start,
     Doctor,
     Backup,
-    License,
     ResetDatabase,
     Exit,
 }
@@ -64,9 +61,6 @@ async fn handle_command(command: &Commands) -> Result<()> {
         Commands::Backup => {
             commands::backup::execute().await?;
         }
-        Commands::License => {
-            commands::license::execute().await?;
-        }
     }
     Ok(())
 }
@@ -88,19 +82,16 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
         push("Start System (Launch Desktop)", MenuChoice::Start);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
         push("Backup Database Snapshot", MenuChoice::Backup);
-        push("Manage License & Plan", MenuChoice::License);
         push("Workspace Setup / Repair", MenuChoice::Init);
         push("Reset Database Store", MenuChoice::ResetDatabase);
     } else if status.is_initialized() {
         push("Start System (Complete Onboarding)", MenuChoice::Start);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Manage License & Plan", MenuChoice::License);
         push("Workspace Setup / Repair", MenuChoice::Init);
         push("Backup Database Snapshot", MenuChoice::Backup);
         push("Reset Database Store", MenuChoice::ResetDatabase);
     } else {
         push("Initialize Workspace (Setup Database & Admin)", MenuChoice::Init);
-        push("Manage Product License", MenuChoice::License);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
         push("Reset Database Store", MenuChoice::ResetDatabase);
     }
@@ -352,11 +343,6 @@ async fn main() -> Result<()> {
                                     ui::output::print_error(&e.to_string());
                                 }
                             }
-                            MenuChoice::License => {
-                                if let Err(e) = handle_command(&Commands::License).await {
-                                    ui::output::print_error(&e.to_string());
-                                }
-                            }
                             MenuChoice::ResetDatabase => {
                                 handle_reset_database().await;
                             }
@@ -377,4 +363,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-

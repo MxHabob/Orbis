@@ -3,8 +3,6 @@ use sea_orm::Database;
 use orbis_app::services::SystemService;
 use orbis_infra::repositories::system_repo::SystemRepoImpl;
 
-use crate::core::license;
-
 /// Comprehensive system status information.
 #[derive(Debug)]
 pub struct SystemStatus {
@@ -12,7 +10,6 @@ pub struct SystemStatus {
     pub has_organization: bool,
     pub has_admin: bool,
     pub has_academic_years: bool,
-    pub license_status: license::LicenseStatus,
     pub org_name: Option<String>,
 }
 
@@ -28,9 +25,8 @@ impl SystemStatus {
     }
 }
 
-/// Returns comprehensive system status by inspecting the database and license.
+/// Returns system status by inspecting the database and workspace readiness.
 pub async fn get_full_status() -> SystemStatus {
-    let lic_status = license::check_license_status();
     let config = crate::core::config::CliConfig::default();
     let db_url = config.db_url.replace("mode=rwc", "mode=ro");
 
@@ -40,7 +36,6 @@ pub async fn get_full_status() -> SystemStatus {
             has_organization: false,
             has_admin: false,
             has_academic_years: false,
-            license_status: lic_status,
             org_name: None,
         };
     };
@@ -54,7 +49,6 @@ pub async fn get_full_status() -> SystemStatus {
             has_organization: readiness.has_organization,
             has_admin: readiness.has_admin,
             has_academic_years: readiness.has_academic_year,
-            license_status: lic_status,
             org_name: readiness.org_name,
         },
         Err(_) => SystemStatus {
@@ -62,7 +56,6 @@ pub async fn get_full_status() -> SystemStatus {
             has_organization: false,
             has_admin: false,
             has_academic_years: false,
-            license_status: lic_status,
             org_name: None,
         },
     }

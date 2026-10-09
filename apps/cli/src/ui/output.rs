@@ -1,5 +1,4 @@
 use colored::*;
-use crate::core::license;
 
 // ── Antigravity / Gemini CLI Color Tokens ───────────────────────────────
 pub const COLOR_CYAN: (u8, u8, u8) = (56, 189, 248);       // Sky Cyan (#38BDF8)
@@ -80,24 +79,6 @@ pub fn print_banner(db_exists: bool, setup_completed: bool) {
         "○ uninitialized".truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2)
     };
 
-    let license_text = match license::check_license_status() {
-        license::LicenseStatus::Active => {
-            if let Ok(info) = license::load_license() {
-                let days = info.days_remaining();
-                if days <= 30 {
-                    format!("✦ {} ({}d left)", info.plan, days).truecolor(COLOR_AMBER.0, COLOR_AMBER.1, COLOR_AMBER.2)
-                } else {
-                    format!("✦ {}", info.plan).truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2)
-                }
-            } else {
-                "✦ active".truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2)
-            }
-        }
-        license::LicenseStatus::Expired => "✖ expired".truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2),
-        license::LicenseStatus::Invalid => "✖ invalid".truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2),
-        license::LicenseStatus::NotFound => "community".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2),
-    };
-
     let c1 = |s: &str| s.truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2).bold();
     let c3 = |s: &str| s.truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2).bold();
     let w = |s: &str| s.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2);
@@ -145,11 +126,10 @@ pub fn print_banner(db_exists: bool, setup_completed: bool) {
     println!();
 
     // Bottom status bar (Gemini CLI Style)
-    println!("  {} ({})    {}    {}    {}",
+    println!("  {} ({})    {}    {}",
         m("~/projects/Orbis"),
         "orbis.db".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2),
         status_text,
-        license_text,
         "https://www.mulverse.com".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2)
     );
     println!("  {}\n", "────────────────────────────────────────────────────────────────────────────────────────".truecolor(COLOR_BORDER.0, COLOR_BORDER.1, COLOR_BORDER.2));

@@ -78,25 +78,7 @@ pub async fn execute() -> Result<()> {
         all_good = false;
     }
 
-    // 3. License check
-    match crate::core::license::check_license_status() {
-        crate::core::license::LicenseStatus::Active => {
-            checks.push(("Product License", "Active & Verified".to_string(), true));
-        }
-        crate::core::license::LicenseStatus::NotFound => {
-            checks.push(("Product License", "Community / Evaluation".to_string(), true));
-        }
-        crate::core::license::LicenseStatus::Expired => {
-            checks.push(("Product License", "License Expired".to_string(), false));
-            all_good = false;
-        }
-        crate::core::license::LicenseStatus::Invalid => {
-            checks.push(("Product License", "Signature Invalid".to_string(), false));
-            all_good = false;
-        }
-    }
-
-    // 4. Desktop binary check
+    // 3. Desktop binary check
     let app_name = if cfg!(windows) {
         "Orbis-Svelte.exe"
     } else {
@@ -117,7 +99,7 @@ pub async fn execute() -> Result<()> {
         checks.push(("Desktop Application", format!("Not Compiled ({})", app_name), false));
     }
 
-    // 5. Environment mode
+    // 4. Environment mode
     let env_mode = if cfg!(debug_assertions) { "Development (Debug)" } else { "Production (Release)" };
     checks.push(("Runtime Mode", env_mode.to_string(), true));
 

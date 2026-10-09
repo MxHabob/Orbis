@@ -204,7 +204,3 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
         return Ok(password);
     }
 }
-
-pub fn prompt_license_key(message: &str) -> Result<String> {
-    prompt_text_validated(message, |v| validator::validate_license_key(v))
-}
