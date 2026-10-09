@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { licenseStore, uiStore, confirmStore } from "$lib/stores";
 import { Button, LoadingIndicator, toast } from "@orbis/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
-import { Check, Bolt, ArrowPath, Trash } from "@orbis/icons";
+import { Check, Bolt, ArrowPath, Trash, CreditCard } from "@orbis/icons";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -180,6 +180,7 @@ const statusBadge = $derived.by(() => {
       };
   }
 });
+
 </script>
 
 <div class="h-full w-full overflow-y-auto px-5 py-8 md:px-8 scrollbar-hide font-sans text-start">
@@ -267,15 +268,87 @@ const statusBadge = $derived.by(() => {
 
     <section aria-labelledby="license-details-heading" class="flex flex-col gap-2">
       <Card>
-        <CardHeader class="normal-case tracking-normal">
+        <CardHeader class="flex flex-wrap items-center justify-between gap-3 normal-case tracking-normal">
           <div class="flex min-w-0 flex-col">
             <CardTitle id="license-details-heading" class="text-sm font-semibold text-foreground normal-case tracking-normal">
               {m.license_billing_details()}
             </CardTitle>
             <CardDescription class="text-xs">{m.license_billing_details_description()}</CardDescription>
           </div>
+          <Button variant="outline" size="sm" onclick={handleOpenActivation} class="shrink-0 text-xs">
+            <Bolt size={14} class="me-1.5" />
+            {m.license_activate_btn()}
+          </Button>
         </CardHeader>
-        <CardContent class="p-5">
+        <CardContent class="grid gap-5 p-5 md:grid-cols-[15rem_minmax(0,1fr)] md:items-center">
+          <div
+            class="group relative flex aspect-[1.55] w-full max-w-[15rem] flex-col justify-between overflow-hidden rounded-2xl border border-primary-foreground/15 bg-gradient-to-br from-primary via-primary to-primary/80 p-4 text-primary-foreground sm:p-5"
+          >
+            <div
+              aria-hidden="true"
+              class="license-card-light-ray pointer-events-none absolute inset-y-[-60%] start-[-65%] z-0 w-1/2 -rotate-[22deg] opacity-0"
+            ></div>
+            <div class="relative z-10 flex items-start justify-between gap-3">
+              <span class="text-[10px] font-medium uppercase tracking-widest text-white/70">{m.license_billing_schedule_item()}</span>
+              <CreditCard size={22} class="shrink-0 text-white/80" />
+            </div>
+
+            <div class="relative z-10 min-w-0">
+              <p class="truncate text-xl font-semibold tracking-wide">
+                {licenseStore.plan ?? m.license_status_unavailable()}
+              </p>
+            </div>
+            <div class="relative z-10 flex items-end justify-between gap-3">
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="text-[9px] uppercase tracking-wider text-white/60">{m.license_valid_until()}</span>
+                <span class="truncate text-xs font-medium tabular-nums">
+                  {licenseStore.validUntil ? new Date(licenseStore.validUntil).toLocaleDateString() : "—"}
+                </span>
+              </div>
+              <span class="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/90">
+                {statusBadge.label}
+              </span>
+            </div>
+          </div>
+
+          <style>
+            .license-card-light-ray {
+              background: linear-gradient(
+                90deg,
+                transparent,
+                color-mix(in srgb, var(--primary-foreground) 3%, transparent) 30%,
+                color-mix(in srgb, var(--primary-foreground) 10%, transparent) 50%,
+                color-mix(in srgb, var(--primary-foreground) 3%, transparent) 70%,
+                transparent
+              );
+            }
+
+            .group:hover .license-card-light-ray {
+              animation: license-card-light-ray 1.8s ease-in-out infinite;
+            }
+
+            @keyframes license-card-light-ray {
+              0% {
+                opacity: 0;
+                transform: translateX(-15%) rotate(-22deg);
+              }
+              20%,
+              80% {
+                opacity: 1;
+              }
+              100% {
+                opacity: 0;
+                transform: translateX(330%) rotate(-22deg);
+              }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .group:hover .license-card-light-ray {
+                animation: none;
+                opacity: 0;
+              }
+            }
+          </style>
           <dl class="flex min-w-0 flex-col">
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_status_title()}</dt>
@@ -296,6 +369,26 @@ const statusBadge = $derived.by(() => {
               </dd>
             </div>
           </dl>
+        </CardContent>
+      </Card>
+    </section>
+
+    <section aria-labelledby="license-schedule-heading" class="flex flex-col gap-2">
+      <Card>
+        <CardHeader>
+          <CardTitle id="license-schedule-heading">{m.license_billing_schedule()}</CardTitle>
+        </CardHeader>
+        <CardContent class="p-5">
+          <div class="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3 text-sm sm:grid-cols-[1fr_1fr_auto]">
+            <span class="text-xs text-muted-foreground">{m.license_billing_schedule_item()}</span>
+            <span class="hidden text-xs text-muted-foreground sm:block">{m.license_plan_label()}</span>
+            <span class="text-end text-xs text-muted-foreground">{m.license_valid_until()}</span>
+            <span class="font-medium text-foreground">{statusBadge.label}</span>
+            <span class="hidden text-muted-foreground sm:block">{licenseStore.plan ?? m.license_status_unavailable()}</span>
+            <span class="text-end tabular-nums text-foreground">
+              {licenseStore.validUntil ? new Date(licenseStore.validUntil).toLocaleDateString() : "—"}
+            </span>
+            </div>
         </CardContent>
       </Card>
     </section>
