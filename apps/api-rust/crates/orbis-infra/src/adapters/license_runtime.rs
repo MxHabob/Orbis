@@ -27,13 +27,14 @@ use super::mulverse_client::MulverseClient;
 // EMBEDDED PUBLIC KEY — Compile-time Ed25519 verification key
 // ═══════════════════════════════════════════════════════════════
 
-/// Placeholder for the Mulverse Ed25519 public key.
-/// Key rotation is supported: the runtime can fetch updated keys
-/// from `/api/v1/public/keys/active` during background sync.
-const EMBEDDED_PUBLIC_KEY_B64: &str = "";
+/// Release builds pin the matching Mulverse Ed25519 public key at compile time.
+const EMBEDDED_PUBLIC_KEY_B64: Option<&str> = option_env!("MULVERSE_LICENSE_PUBLIC_KEY_B64");
 
 /// Key ID for the embedded public key.
-const EMBEDDED_KEY_ID: &str = "key_ed25519_2026_v1";
+const EMBEDDED_KEY_ID: &str = match option_env!("MULVERSE_LICENSE_KEY_ID") {
+    Some(key_id) => key_id,
+    None => "key_ed25519_2026_v1",
+};
 
 // ═══════════════════════════════════════════════════════════════
 // LICENSE FILE PATHS
@@ -52,6 +53,10 @@ pub fn verify_offline_license(
     public_key_base64: &str,
     current_installation_id: &str,
 ) -> Result<bool, LicenseVerificationError> {
+    if signed_doc.v != 1 || signed_doc.alg != "Ed25519" {
+        return Err(LicenseVerificationError::InvalidPayload);
+    }
+
     // 1. فحص تطابق معرف التثبيت للجهاز
     if signed_doc.payload.installation_id != current_installation_id {
         return Err(LicenseVerificationError::InstallationIdMismatch);
@@ -108,8 +113,8 @@ pub struct MulverseLicenseRuntime {
     mulverse_client: MulverseClient,
     /// Trial policy configuration.
     trial_policy: TrialPolicy,
-    /// Cached trusted public keys (kid → base64 public key).
-    trusted_keys: RwLock<Vec<(String, String)>>,
+    /// Public keys pinned into the application build (kid → base64 public key).
+    trusted_keys: Vec<(String, String)>,
 }
 
 impl MulverseLicenseRuntime {
@@ -129,13 +134,12 @@ impl MulverseLicenseRuntime {
         let initial_snapshot =
             LicenseSnapshot::new_unavailable(installation_id, app_version.to_string());
 
-        let mut trusted_keys = vec![];
-        if !EMBEDDED_PUBLIC_KEY_B64.is_empty() {
-            trusted_keys.push((
-                EMBEDDED_KEY_ID.to_string(),
-                EMBEDDED_PUBLIC_KEY_B64.to_string(),
-            ));
-        }
+        let trusted_keys = match EMBEDDED_PUBLIC_KEY_B64 {
+            Some(key) if !key.trim().is_empty() => {
+                vec![(EMBEDDED_KEY_ID.to_string(), key.to_string())]
+            }
+            _ => Vec::new(),
+        };
 
         Ok(Self {
             app_data_dir: app_data_dir.to_path_buf(),
@@ -143,7 +147,7 @@ impl MulverseLicenseRuntime {
             app_version: app_version.to_string(),
             mulverse_client,
             trial_policy: TrialPolicy::default(),
-            trusted_keys: RwLock::new(trusted_keys),
+            trusted_keys,
         })
     }
 
@@ -209,6 +213,11 @@ impl MulverseLicenseRuntime {
 
         // 2. If we have a signed entitlement, evaluate it
         if let Some(ref se) = snapshot.signed_entitlement {
+            if now < se.payload.valid_from {
+                snapshot.state = LicenseState::Pending;
+                return;
+            }
+
             // Check expiration
             if let Some(valid_until) = se.payload.valid_until {
                 if now > valid_until {
@@ -289,17 +298,12 @@ impl MulverseLicenseRuntime {
         &self,
         entitlement: &SignedEntitlement,
     ) -> Result<(), LicenseVerificationError> {
-        let trusted_keys = self
-            .trusted_keys
-            .read()
-            .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
-
-        if trusted_keys.is_empty() {
-            warn!("No trusted Mulverse public keys configured — signature verification skipped in dev mode");
-            return Ok(());
+        if self.trusted_keys.is_empty() {
+            return Err(LicenseVerificationError::NoTrustedKeysConfigured);
         }
 
-        let key_b64 = trusted_keys
+        let key_b64 = self
+            .trusted_keys
             .iter()
             .find(|(kid, _)| *kid == entitlement.kid)
             .map(|(_, key)| key.as_str())
@@ -310,25 +314,6 @@ impl MulverseLicenseRuntime {
 
         debug!(kid = %entitlement.kid, "Ed25519 signature verified successfully");
         Ok(())
-    }
-
-    /// Attempt to refresh the trusted key set from Mulverse Platform.
-    async fn refresh_trusted_keys(&self) {
-        match self.mulverse_client.get_active_key().await {
-            Ok(key_info) => {
-                if let Ok(mut keys) = self.trusted_keys.write() {
-                    if let Some(existing) = keys.iter_mut().find(|(kid, _)| *kid == key_info.kid) {
-                        existing.1 = key_info.public_key_b64;
-                    } else {
-                        keys.push((key_info.kid.clone(), key_info.public_key_b64));
-                    }
-                    info!(kid = %key_info.kid, "Updated trusted Mulverse signing key");
-                }
-            }
-            Err(e) => {
-                debug!("Failed to refresh Mulverse signing keys: {e}");
-            }
-        }
     }
 }
 
@@ -351,10 +336,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         info!("Initializing Orbis license runtime");
 
         if let Some(mut snapshot) = self.load_persisted_snapshot() {
-            if snapshot.signed_entitlement.is_some() {
-                match self
-                    .verify_entitlement_signature(snapshot.signed_entitlement.as_ref().unwrap())
-                {
+            let mut entitlement_invalid = false;
+            if let Some(entitlement) = snapshot.signed_entitlement.as_ref() {
+                match self.verify_entitlement_signature(entitlement) {
                     Ok(()) => {
                         debug!("Persisted signed entitlement verified");
                     }
@@ -362,6 +346,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                         warn!("Persisted signed entitlement verification failed: {e}");
                         snapshot.signed_entitlement = None;
                         snapshot.state = LicenseState::Invalid;
+                        entitlement_invalid = true;
                     }
                 }
             }
@@ -378,7 +363,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 snapshot.installation_id = current_id;
             }
 
-            self.evaluate_state(&mut snapshot);
+            if !entitlement_invalid && snapshot.state != LicenseState::Suspended {
+                self.evaluate_state(&mut snapshot);
+            }
             snapshot.app_version = self.app_version.clone();
             self.update_snapshot(snapshot)?;
 
@@ -459,6 +446,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         };
 
         self.evaluate_state(&mut snapshot);
+        if response.activation.status.eq_ignore_ascii_case("suspended") {
+            snapshot.state = LicenseState::Suspended;
+        }
         self.update_snapshot(snapshot)?;
 
         info!(
@@ -543,7 +533,11 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 snapshot.signed_entitlement = Some(response.signed_entitlement);
                 snapshot.last_sync_at = Some(Utc::now());
                 snapshot.last_known_time = Utc::now();
+                snapshot.state = LicenseState::Active;
                 self.evaluate_state(&mut snapshot);
+                if response.activation.status.eq_ignore_ascii_case("suspended") {
+                    snapshot.state = LicenseState::Suspended;
+                }
                 self.update_snapshot(snapshot)?;
 
                 debug!("License refreshed successfully");
@@ -563,7 +557,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
         }
 
-        self.refresh_trusted_keys().await;
         Ok(())
     }
 
@@ -658,11 +651,17 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
                 orbis_domain::entities::entitlement::EntitlementStatus::Active
             }
             LicenseState::Trial => orbis_domain::entities::entitlement::EntitlementStatus::Trial,
+            LicenseState::Pending => {
+                orbis_domain::entities::entitlement::EntitlementStatus::Pending
+            }
             LicenseState::OfflineGrace => {
                 orbis_domain::entities::entitlement::EntitlementStatus::GracePeriod
             }
             LicenseState::Expired | LicenseState::Revoked | LicenseState::Invalid => {
                 orbis_domain::entities::entitlement::EntitlementStatus::Expired
+            }
+            LicenseState::Suspended => {
+                orbis_domain::entities::entitlement::EntitlementStatus::Suspended
             }
             LicenseState::Unavailable => {
                 orbis_domain::entities::entitlement::EntitlementStatus::Unlicensed
@@ -773,4 +772,93 @@ pub fn spawn_background_sync(
             tokio::time::sleep(interval).await;
         }
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn signed_entitlement(
+        installation_id: &str,
+        valid_from: chrono::DateTime<Utc>,
+    ) -> SignedEntitlement {
+        SignedEntitlement {
+            v: 1,
+            kid: EMBEDDED_KEY_ID.to_string(),
+            alg: "Ed25519".to_string(),
+            payload: EntitlementPayload {
+                license_id: "license-test".to_string(),
+                product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_string(),
+                product_id: CANONICAL_PRODUCT_ID.to_string(),
+                organization_id: "org-test".to_string(),
+                edition_key: "SCHOOL".to_string(),
+                plan_key: "SCHOOL_PRO".to_string(),
+                entitlements: vec![],
+                limits: vec![],
+                activation_id: "activation-test".to_string(),
+                installation_id: installation_id.to_string(),
+                issued_at: Utc::now(),
+                valid_from,
+                valid_until: Some(Utc::now() + chrono::Duration::days(30)),
+                offline_allowed: true,
+                offline_grace_period_days: 30,
+                verification_interval_hours: 24,
+            },
+            sig: String::new(),
+        }
+    }
+
+    fn test_runtime() -> (MulverseLicenseRuntime, PathBuf) {
+        let app_data_dir = std::env::temp_dir().join(format!(
+            "orbis-license-runtime-test-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let runtime = MulverseLicenseRuntime::new(&app_data_dir, "test", Some("http://127.0.0.1"))
+            .expect("test runtime should initialize");
+        (runtime, app_data_dir)
+    }
+
+    #[test]
+    fn missing_pinned_key_fails_license_verification_closed() {
+        let (mut runtime, app_data_dir) = test_runtime();
+        runtime.trusted_keys.clear();
+
+        let entitlement = signed_entitlement(
+            &runtime.installation_id(),
+            Utc::now() + chrono::Duration::days(1),
+        );
+        assert_eq!(
+            runtime.verify_entitlement_signature(&entitlement),
+            Err(LicenseVerificationError::NoTrustedKeysConfigured)
+        );
+
+        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+    }
+
+    #[test]
+    fn entitlement_outside_validity_window_is_pending() {
+        let (runtime, app_data_dir) = test_runtime();
+        let mut snapshot = runtime.current_snapshot();
+        snapshot.signed_entitlement = Some(signed_entitlement(
+            &snapshot.installation_id,
+            Utc::now() + chrono::Duration::days(1),
+        ));
+
+        runtime.evaluate_state(&mut snapshot);
+
+        assert_eq!(snapshot.state, LicenseState::Pending);
+        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+    }
+
+    #[test]
+    fn unsupported_signature_algorithm_is_rejected() {
+        let entitlement = signed_entitlement("inst_test", Utc::now() + chrono::Duration::days(1));
+        let mut entitlement = entitlement;
+        entitlement.alg = "RS256".to_string();
+
+        assert_eq!(
+            verify_offline_license(&entitlement, "", "inst_test"),
+            Err(LicenseVerificationError::InvalidPayload)
+        );
+    }
 }

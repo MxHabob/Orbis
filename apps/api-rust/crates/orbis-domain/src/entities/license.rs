@@ -310,6 +310,8 @@ pub struct TauriUpdateManifest {
 pub enum LicenseState {
     /// No license or trial — initial state, activation screen shown.
     Unavailable,
+    /// License is valid but its `valid_from` time has not yet arrived.
+    Pending,
     /// Trial period is active. No product key has been activated.
     Trial,
     /// License is active and valid. Signed entitlement verified.
@@ -320,6 +322,8 @@ pub enum LicenseState {
     OfflineGrace,
     /// License or trial has expired.
     Expired,
+    /// License is temporarily disabled by the licensing authority.
+    Suspended,
     /// License has been revoked by Mulverse Platform.
     Revoked,
     /// License artifact is corrupt, tampered, or unverifiable.
@@ -342,7 +346,12 @@ impl LicenseState {
     pub fn is_restricted(&self) -> bool {
         matches!(
             self,
-            LicenseState::Expired | LicenseState::Revoked | LicenseState::Invalid
+            LicenseState::Unavailable
+                | LicenseState::Pending
+                | LicenseState::Expired
+                | LicenseState::Suspended
+                | LicenseState::Revoked
+                | LicenseState::Invalid
         )
     }
 
@@ -560,6 +569,8 @@ pub enum LicenseVerificationError {
     InvalidSignatureEncoding,
     /// The public key is invalid.
     InvalidPublicKey,
+    /// No pinned public key is configured for signature verification.
+    NoTrustedKeysConfigured,
     /// Clock rollback detected.
     ClockRollbackDetected,
     /// Product identity mismatch.
@@ -578,6 +589,9 @@ impl std::fmt::Display for LicenseVerificationError {
             Self::InvalidPayload => write!(f, "Invalid entitlement payload"),
             Self::InvalidSignatureEncoding => write!(f, "Invalid signature encoding"),
             Self::InvalidPublicKey => write!(f, "Invalid public verification key"),
+            Self::NoTrustedKeysConfigured => {
+                write!(f, "No trusted license verification keys are configured")
+            }
             Self::ClockRollbackDetected => write!(f, "System clock rollback detected"),
             Self::ProductMismatch => write!(f, "Product identity mismatch"),
         }
@@ -687,6 +701,8 @@ pub struct LicenseStateDto {
     pub last_sync_at: Option<DateTime<Utc>>,
     /// Enabled entitlement keys.
     pub enabled_features: Vec<String>,
+    /// Entitlement keys available when starting this installation's trial.
+    pub trial_features: Vec<String>,
     /// Active limits.
     pub limits: Vec<LimitEntryDto>,
     /// Application version.
@@ -761,6 +777,7 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
             installation_id: snapshot.installation_id.clone(),
             last_sync_at: snapshot.last_sync_at,
             enabled_features,
+            trial_features: snapshot.trial_policy.trial_features.clone(),
             limits,
             app_version: snapshot.app_version.clone(),
         }
@@ -801,9 +818,14 @@ mod tests {
         assert!(LicenseState::Expiring.is_operational());
         assert!(LicenseState::OfflineGrace.is_operational());
         assert!(!LicenseState::Expired.is_operational());
+        assert!(!LicenseState::Suspended.is_operational());
         assert!(!LicenseState::Revoked.is_operational());
         assert!(!LicenseState::Invalid.is_operational());
         assert!(!LicenseState::Unavailable.is_operational());
+        assert!(!LicenseState::Pending.is_operational());
+        assert!(LicenseState::Unavailable.is_restricted());
+        assert!(LicenseState::Pending.is_restricted());
+        assert!(LicenseState::Suspended.is_restricted());
     }
 
     #[test]
@@ -820,6 +842,19 @@ mod tests {
         assert_eq!(snapshot.get_limit(LIMIT_STUDENTS_MAX), Some(100));
         assert_eq!(snapshot.get_limit(LIMIT_STAFF_MAX), Some(25));
         assert_eq!(snapshot.get_limit(LIMIT_BRANCHES_MAX), None);
+    }
+
+    #[test]
+    fn license_state_dto_exposes_trial_features_before_trial_starts() {
+        let snapshot = LicenseSnapshot::new_unavailable(
+            "inst_windows_abc123".to_string(),
+            "1.0.0".to_string(),
+        );
+        let dto = LicenseStateDto::from(&snapshot);
+
+        assert_eq!(dto.trial_features, snapshot.trial_policy.trial_features);
+        assert!(dto.trial_features.contains(&ENTITLEMENT_STUDENTS.to_string()));
+        assert!(!dto.trial_features.contains(&ENTITLEMENT_MULTI_BRANCH.to_string()));
     }
 
     #[test]

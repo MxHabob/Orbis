@@ -1,7 +1,7 @@
-use std::sync::Arc;
-use sea_orm::Database;
 use orbis_app::services::SystemService;
 use orbis_infra::repositories::system_repo::SystemRepoImpl;
+use sea_orm::Database;
+use std::sync::Arc;
 
 /// Comprehensive system status information.
 #[derive(Debug)]

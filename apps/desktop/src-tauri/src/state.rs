@@ -176,6 +176,8 @@ impl AppState {
         );
         let student_repo =
             Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
+        let employee_repo =
+            Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
         let scheduling_repo = Arc::new(
             orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() },
         );
@@ -503,6 +505,7 @@ impl AppState {
                 integration_resolver.clone(),
                 permission_checker.clone(),
                 student_service.clone(),
+                employee_repo.clone(),
                 academic_service.clone(),
                 assessment_service.clone(),
                 finance_service.clone(),
@@ -549,8 +552,6 @@ impl AppState {
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
 
         // ── Employee Affairs & User Groups Wiring ───────────────────
-        let employee_repo =
-            Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
         let group_repo =
             Arc::new(orbis_infra::repositories::group_repo::GroupRepoImpl { db: db.clone() });
 

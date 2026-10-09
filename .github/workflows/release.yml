@@ -139,14 +139,16 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Validate updater signing configuration
+      - name: Validate application signing configuration
         shell: bash
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
+          MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
+          MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
         run: |
-          if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" ]]; then
-            echo "::error::Configure TAURI_SIGNING_PRIVATE_KEY and TAURI_UPDATER_PUBLIC_KEY before releasing."
+          if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" || -z "$MULVERSE_LICENSE_PUBLIC_KEY_B64" || -z "$MULVERSE_LICENSE_KEY_ID" ]]; then
+            echo "::error::Configure updater signing and Mulverse license verification variables before releasing."
             exit 1
           fi
 
@@ -164,6 +166,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
+          MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Orbis Release ${{ github.ref_name }}"

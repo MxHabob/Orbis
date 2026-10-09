@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use std::path::Path;
 use anyhow::Result;
 use colored::*;
-use sea_orm::Database;
 use orbis_app::services::SystemService;
 use orbis_infra::repositories::system_repo::SystemRepoImpl;
+use sea_orm::Database;
+use std::path::Path;
+use std::sync::Arc;
 
 use crate::ui::output::{self, COLOR_BORDER, COLOR_EMERALD, COLOR_MUTED, COLOR_ROSE};
 
@@ -33,9 +33,24 @@ pub async fn execute() -> Result<()> {
     };
 
     if db_exists {
-        checks.push(("Database Store", format!("Available ({})", if config.db_url.starts_with("postgres") { "PostgreSQL" } else { "orbis.db" }), true));
+        checks.push((
+            "Database Store",
+            format!(
+                "Available ({})",
+                if config.db_url.starts_with("postgres") {
+                    "PostgreSQL"
+                } else {
+                    "orbis.db"
+                }
+            ),
+            true,
+        ));
     } else {
-        checks.push(("Database Store", "Missing (Run init to provision)".to_string(), false));
+        checks.push((
+            "Database Store",
+            "Missing (Run init to provision)".to_string(),
+            false,
+        ));
         all_good = false;
     }
 
@@ -46,23 +61,42 @@ pub async fn execute() -> Result<()> {
 
         let health = system_service.health().await;
         if health.database_connected {
-            checks.push(("Database Connection", "Connected & Queryable".to_string(), true));
+            checks.push((
+                "Database Connection",
+                "Connected & Queryable".to_string(),
+                true,
+            ));
         } else {
-            checks.push(("Database Connection", "Connection Degraded".to_string(), false));
+            checks.push((
+                "Database Connection",
+                "Connection Degraded".to_string(),
+                false,
+            ));
             all_good = false;
         }
 
         match system_service.get_readiness().await {
             Ok(readiness) => {
                 if readiness.has_organization {
-                    checks.push(("Workspace Entity", format!("Configured ({})", readiness.org_name.unwrap_or_else(|| "Active".to_string())), true));
+                    checks.push((
+                        "Workspace Entity",
+                        format!(
+                            "Configured ({})",
+                            readiness.org_name.unwrap_or_else(|| "Active".to_string())
+                        ),
+                        true,
+                    ));
                 } else {
                     checks.push(("Workspace Entity", "Unconfigured".to_string(), false));
                     all_good = false;
                 }
 
                 if readiness.has_admin {
-                    checks.push(("Admin Identity", "Provisioned (Bcrypt + IAM)".to_string(), true));
+                    checks.push((
+                        "Admin Identity",
+                        "Provisioned (Bcrypt + IAM)".to_string(),
+                        true,
+                    ));
                 } else {
                     checks.push(("Admin Identity", "No Admin Found".to_string(), false));
                     all_good = false;
@@ -74,7 +108,11 @@ pub async fn execute() -> Result<()> {
             }
         }
     } else {
-        checks.push(("Database Connection", "Connection Failed".to_string(), false));
+        checks.push((
+            "Database Connection",
+            "Connection Failed".to_string(),
+            false,
+        ));
         all_good = false;
     }
 
@@ -96,32 +134,66 @@ pub async fn execute() -> Result<()> {
     if app_found {
         checks.push(("Desktop Application", format!("Found ({})", app_name), true));
     } else {
-        checks.push(("Desktop Application", format!("Not Compiled ({})", app_name), false));
+        checks.push((
+            "Desktop Application",
+            format!("Not Compiled ({})", app_name),
+            false,
+        ));
     }
 
     // 4. Environment mode
-    let env_mode = if cfg!(debug_assertions) { "Development (Debug)" } else { "Production (Release)" };
+    let env_mode = if cfg!(debug_assertions) {
+        "Development (Debug)"
+    } else {
+        "Production (Release)"
+    };
     checks.push(("Runtime Mode", env_mode.to_string(), true));
 
     // Render Diagnostics Table Card
     println!();
-    println!("  {}", border("╭─ DIAGNOSTICS REPORT ──────────────────────────────────────────╮"));
+    println!(
+        "  {}",
+        border("╭─ DIAGNOSTICS REPORT ──────────────────────────────────────────╮")
+    );
     for (label, detail, ok) in checks {
         let badge = if ok {
-            " ✔ PASS ".black().on_truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2).bold()
+            " ✔ PASS "
+                .black()
+                .on_truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2)
+                .bold()
         } else {
-            " ✖ FAIL ".black().on_truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2).bold()
+            " ✖ FAIL "
+                .black()
+                .on_truecolor(COLOR_ROSE.0, COLOR_ROSE.1, COLOR_ROSE.2)
+                .bold()
         };
-        let label_fmt = format!("{:<24}", label.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2));
+        let label_fmt = format!(
+            "{:<24}",
+            label.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2)
+        );
         let detail_fmt = format!("{:<22}", detail);
-        println!("  {}  {} {} {} {}", border("│"), badge, label_fmt, detail_fmt.bold(), border("│"));
+        println!(
+            "  {}  {} {} {} {}",
+            border("│"),
+            badge,
+            label_fmt,
+            detail_fmt.bold(),
+            border("│")
+        );
     }
-    println!("  {}", border("╰───────────────────────────────────────────────────────────────╯\n"));
+    println!(
+        "  {}",
+        border("╰───────────────────────────────────────────────────────────────╯\n")
+    );
 
     if all_good {
-        output::print_success("System integrity verified — All core services healthy and operational.");
+        output::print_success(
+            "System integrity verified — All core services healthy and operational.",
+        );
     } else {
-        output::print_warning("Integrity check identified issues. Run `cli init` to repair workspace provisioning.");
+        output::print_warning(
+            "Integrity check identified issues. Run `cli init` to repair workspace provisioning.",
+        );
     }
 
     Ok(())

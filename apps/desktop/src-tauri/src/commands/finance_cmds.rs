@@ -924,8 +924,13 @@ pub async fn finance_list_student_fees(
             .fee_template_id
             .as_deref()
             .and_then(|s| Uuid::parse_str(s).ok()),
+        period_id: f
+            .period_id
+            .as_deref()
+            .and_then(|s| Uuid::parse_str(s).ok()),
         status: f.status,
         is_overdue: f.is_overdue,
+        only_unpaid: None,
         pagination: Some(PaginationParams {
             page: f.page.or(Some(1)),
             page_size: f.page_size.or(Some(1000)),

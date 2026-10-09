@@ -30,9 +30,7 @@ pub struct ActivationResultDto {
 
 /// Get the current license state for UI display.
 #[tauri::command]
-pub async fn license_get_state(
-    state: State<'_, AppState>,
-) -> Result<LicenseStateDto, String> {
+pub async fn license_get_state(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
     Ok(state.license_runtime.current_state_dto())
 }
 
@@ -68,9 +66,7 @@ pub async fn license_activate_key(
 
 /// Start a trial evaluation period.
 #[tauri::command]
-pub async fn license_start_trial(
-    state: State<'_, AppState>,
-) -> Result<LicenseStateDto, String> {
+pub async fn license_start_trial(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
     state
         .license_runtime
         .start_trial()
@@ -82,9 +78,7 @@ pub async fn license_start_trial(
 
 /// Deactivate the current license (release device seat).
 #[tauri::command]
-pub async fn license_deactivate(
-    state: State<'_, AppState>,
-) -> Result<LicenseStateDto, String> {
+pub async fn license_deactivate(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
     state
         .license_runtime
         .deactivate()
@@ -96,9 +90,7 @@ pub async fn license_deactivate(
 
 /// Force a license refresh with Mulverse Platform.
 #[tauri::command]
-pub async fn license_refresh(
-    state: State<'_, AppState>,
-) -> Result<LicenseStateDto, String> {
+pub async fn license_refresh(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
     state
         .license_runtime
         .refresh()
@@ -119,8 +111,6 @@ pub async fn license_check_feature(
 
 /// Get the installation identity for support/diagnostics.
 #[tauri::command]
-pub async fn license_get_installation_id(
-    state: State<'_, AppState>,
-) -> Result<String, String> {
+pub async fn license_get_installation_id(state: State<'_, AppState>) -> Result<String, String> {
     Ok(state.license_runtime.installation_id())
 }

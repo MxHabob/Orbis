@@ -31,7 +31,7 @@ import {
   createPeriodsQuery,
 } from "$lib/features/academics";
 import { createPromotionJobsQuery } from "$lib/features/academics/promotion-queries";
-import { academicContext } from "$lib/stores";
+import { academicContext, licenseStore } from "$lib/stores";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 import { extractErrorMessage } from "$lib/api";
 
@@ -63,7 +63,10 @@ const activePeriod = $derived(
 const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
 const activePeriodName = $derived(activePeriod ? activePeriod.name : null);
 
-const examSessionsQuery = createExamSessionsQuery(() => activePeriodId);
+const canViewExams = $derived(licenseStore.isFeatureEnabled("exam_tools"));
+const examSessionsQuery = createExamSessionsQuery(() =>
+  canViewExams ? activePeriodId : undefined,
+);
 const examSessions = $derived(examSessionsQuery.data ?? []);
 
 const isLoading = $derived(
@@ -71,31 +74,25 @@ const isLoading = $derived(
     subjectsQuery.isLoading ||
     periodsQuery.isLoading ||
     promotionJobsQuery.isLoading ||
-    examSessionsQuery.isLoading,
+    (canViewExams && examSessionsQuery.isLoading),
 );
 
-const error = $derived(
-  classesQuery.error ||
+const error = $derived.by(() => {
+  const queryError =
+    classesQuery.error ||
     subjectsQuery.error ||
     periodsQuery.error ||
     promotionJobsQuery.error ||
-    examSessionsQuery.error
-    ? extractErrorMessage(
-        classesQuery.error ||
-          subjectsQuery.error ||
-          periodsQuery.error ||
-          promotionJobsQuery.error ||
-          examSessionsQuery.error,
-      )
-    : null,
-);
+    (canViewExams ? examSessionsQuery.error : null);
+  return queryError ? extractErrorMessage(queryError) : null;
+});
 
 function refetchAll() {
   classesQuery.refetch();
   subjectsQuery.refetch();
   periodsQuery.refetch();
   promotionJobsQuery.refetch();
-  examSessionsQuery.refetch();
+  if (canViewExams) examSessionsQuery.refetch();
 }
 
 const activeYearName = $derived(academicContext.yearLabelAr);
@@ -225,26 +222,28 @@ const advisorInsights = $derived.by(() => {
     });
   }
 
-  // 4. Exams Insight
-  const activeExamSession = examSessions.find(
-    (s: any) => s.status === "active" || s.status === "running",
-  );
-  if (activeExamSession) {
-    insights.push({
-      id: "exams-active",
-      text: m.academics_overview_insight_exams_active({
-        session: activeExamSession.name || "",
-      }),
-      variant: "success" as const,
-      icon: TaskList,
-    });
-  } else {
-    insights.push({
-      id: "exams-none",
-      text: m.academics_overview_insight_exams_none(),
-      variant: "neutral" as const,
-      icon: TaskList,
-    });
+  // Exam data is optional on this overview and must not fail the free plan.
+  if (canViewExams) {
+    const activeExamSession = examSessions.find(
+      (s: any) => s.status === "active" || s.status === "running",
+    );
+    if (activeExamSession) {
+      insights.push({
+        id: "exams-active",
+        text: m.academics_overview_insight_exams_active({
+          session: activeExamSession.name || "",
+        }),
+        variant: "success" as const,
+        icon: TaskList,
+      });
+    } else {
+      insights.push({
+        id: "exams-none",
+        text: m.academics_overview_insight_exams_none(),
+        variant: "neutral" as const,
+        icon: TaskList,
+      });
+    }
   }
 
   return insights;

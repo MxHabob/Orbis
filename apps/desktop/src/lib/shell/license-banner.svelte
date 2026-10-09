@@ -17,7 +17,7 @@ let dismissed = $state(false);
 const shouldShow = $derived.by(() => {
   if (dismissed || !licenseStore.licenseState) return false;
   const s = licenseStore.state;
-  if (s === "expired" || s === "revoked") return true;
+  if (s === "expired" || s === "suspended" || s === "revoked") return true;
   if (s === "trial" && licenseStore.trialDaysRemaining <= 7) return true;
   if (s === "expiring" && (licenseStore.daysUntilExpiry ?? 999) <= 14) return true;
   return false;
@@ -25,6 +25,7 @@ const shouldShow = $derived.by(() => {
 
 const bannerMessage = $derived.by(() => {
   const s = licenseStore.state;
+  if (s === "suspended") return m.license_banner_suspended();
   if (s === "expired" || s === "revoked") return m.license_banner_expired();
   if (s === "trial") return m.license_banner_trial_ending({ count: String(licenseStore.trialDaysRemaining) });
   if (s === "expiring") return m.license_banner_expiring({ count: String(licenseStore.daysUntilExpiry ?? 0) });
@@ -32,7 +33,9 @@ const bannerMessage = $derived.by(() => {
 });
 
 const isUrgent = $derived(
-  licenseStore.state === "expired" || licenseStore.state === "revoked"
+  licenseStore.state === "expired" ||
+  licenseStore.state === "suspended" ||
+  licenseStore.state === "revoked"
 );
 
 function handleActivate() {

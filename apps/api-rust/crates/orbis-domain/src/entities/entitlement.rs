@@ -1,7 +1,6 @@
 //! Entitlement contract — boundary between Orbis and a future external Licensing Service.
 //!
-//! Orbis consumes `EntitlementResult`; a future Licensing Service produces it.
-//! In this phase, the default provider always returns `Unlicensed` (unrestricted).
+//! Orbis consumes `EntitlementResult` from the local license runtime.
 
 use serde::{Deserialize, Serialize};
 
@@ -30,18 +29,22 @@ pub struct EntitlementResult {
 pub enum EntitlementStatus {
     /// License is active and valid.
     Active,
+    /// License is valid but not yet in its validity window.
+    Pending,
     /// Trial period is active.
     Trial,
     /// License has expired.
     Expired,
+    /// License is temporarily disabled by the licensing authority.
+    Suspended,
     /// License expired but within grace period.
     GracePeriod,
-    /// No license — system runs with defaults (unrestricted in this phase).
+    /// No license is activated.
     Unlicensed,
 }
 
 impl EntitlementResult {
-    /// Returns an unrestricted entitlement — the default for this phase.
+    /// Returns the no-license state. It grants no paid capabilities.
     pub fn unlicensed() -> Self {
         Self {
             status: EntitlementStatus::Unlicensed,
@@ -54,14 +57,25 @@ impl EntitlementResult {
         }
     }
 
-    /// Whether the system should operate normally (Active, Trial, GracePeriod, or Unlicensed).
+    /// Whether the system should allow licensed operations.
     pub fn is_operational(&self) -> bool {
         matches!(
             self.status,
-            EntitlementStatus::Active
-                | EntitlementStatus::Trial
-                | EntitlementStatus::GracePeriod
-                | EntitlementStatus::Unlicensed
+            EntitlementStatus::Active | EntitlementStatus::Trial | EntitlementStatus::GracePeriod
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EntitlementResult;
+
+    #[test]
+    fn unlicensed_entitlement_does_not_grant_operations() {
+        let entitlement = EntitlementResult::unlicensed();
+        assert!(!entitlement.is_operational());
+        assert!(entitlement.features.is_empty());
+        assert_eq!(entitlement.max_users, None);
+        assert_eq!(entitlement.max_students, None);
     }
 }

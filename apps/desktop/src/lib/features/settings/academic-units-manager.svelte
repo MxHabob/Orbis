@@ -22,7 +22,7 @@ import { fade } from "svelte/transition";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { BookOpen, BuildingOffice, ChevronDown, ChevronRight, Cube, Folder, Home, Keyframes, Pencil, Pin, Plus, QueueList, Search, Trash, Users } from "@orbis/icons";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
-import { confirmStore } from "$lib/stores";
+import { confirmStore, licenseStore } from "$lib/stores";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -55,6 +55,14 @@ async function loadUnits() {
     ]);
     units = list;
     rooms = fetchedRooms;
+    if (!initializedExpanded && list.length > 0) {
+      expandedIds = new Set(
+        list.map((unit) =>
+          String(unit.parent_id ? unit.parent_id : unit.id),
+        ),
+      );
+      initializedExpanded = true;
+    }
   } catch (e) {
     error = extractErrorMessage(e);
     toast.error(error);
@@ -98,24 +106,8 @@ function getUnitLocation(unit: any): string {
 }
 
 onMount(() => {
-  if (orgId) {
-    loadUnits();
-  }
-});
-
-// Auto-expand parents and root nodes on initial data load
-$effect(() => {
-  if (units.length > 0 && !initializedExpanded) {
-    const parentIds = new Set<string>();
-    for (const u of units) {
-      if (u.parent_id) {
-        parentIds.add(String(u.parent_id));
-      } else {
-        parentIds.add(String(u.id));
-      }
-    }
-    expandedIds = parentIds;
-    initializedExpanded = true;
+  if (orgId && licenseStore.isFeatureEnabled("multi_branch")) {
+    void loadUnits();
   }
 });
 

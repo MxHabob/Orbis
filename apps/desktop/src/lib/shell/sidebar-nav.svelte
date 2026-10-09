@@ -12,6 +12,7 @@ import { Sidebar } from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 type NavItem = {
+  key?: string;
   path?: string;
   label: string;
   icon?: any;
@@ -95,7 +96,7 @@ const resolvedGroups = $derived(groups || [{ items }]);
           </span>
         {/if}
 
-        {#each group.items as item (item.path ?? item.label)}
+        {#each group.items as item, itemIdx (item.key ?? item.path ?? `${item.label}-${itemIdx}`)}
           <Button
             href={item.path !== undefined ? localizeHref(item.path ? `${basePath}/${item.path}` : basePath) : undefined}
             onclick={item.onclick}

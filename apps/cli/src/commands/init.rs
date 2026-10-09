@@ -30,7 +30,13 @@ pub async fn execute() -> Result<()> {
 
     println!(
         "\n  Welcome to the {}. Let's get you set up.\n",
-        "Orbis Setup Wizard".truecolor(output::COLOR_PURPLE.0, output::COLOR_PURPLE.1, output::COLOR_PURPLE.2).bold()
+        "Orbis Setup Wizard"
+            .truecolor(
+                output::COLOR_PURPLE.0,
+                output::COLOR_PURPLE.1,
+                output::COLOR_PURPLE.2
+            )
+            .bold()
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -221,9 +227,7 @@ pub async fn execute() -> Result<()> {
     output::print_phase_header(4, TOTAL_PHASES, "Initializing System");
 
     // 5a. Database initialized
-    output::print_progress_ok(
-        "Database initialized and schema ready",
-    );
+    output::print_progress_ok("Database initialized and schema ready");
 
     // 5e. Desktop download (production only)
     let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());

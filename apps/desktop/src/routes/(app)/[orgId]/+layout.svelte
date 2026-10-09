@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
-import { authStore, systemStore, licenseStore } from "$lib/stores";
+import { authStore, systemStore, licenseStore, uiStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { onMount } from "svelte";
@@ -15,22 +15,28 @@ import { LoadingIndicator } from "@orbis/ui";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 let authReady = $state(false);
+let licenseReady = $state(false);
 
 const isOnboarding = $derived(page.url.pathname.includes("/onboarding"));
 
-onMount(async () => {
-  await authStore.restore();
+onMount(() => {
+  const initialize = async () => {
+    await authStore.restore();
 
-  if (!authStore.isAuthenticated) {
-    await goto("/login", { replaceState: true });
-    return;
-  }
+    if (!authStore.isAuthenticated) {
+      await goto("/login", { replaceState: true });
+      return;
+    }
 
-  authReady = true;
-  await Promise.all([
-    systemStore.loadReadiness(),
-    licenseStore.loadState(),
-  ]);
+    await Promise.all([
+      systemStore.loadReadiness(),
+      licenseStore.loadState(),
+    ]);
+    licenseReady = true;
+    authReady = true;
+  };
+
+  void initialize();
 });
 </script>
 
@@ -38,8 +44,13 @@ onMount(async () => {
   {#key localeState.revision}
     {#if isOnboarding}
       {@render children()}
+      {#if uiStore.showActivationDialog}
+        {#await import("$lib/shell/activation-dialog.svelte") then { default: ActivationDialog }}
+          <ActivationDialog bind:open={uiStore.showActivationDialog} />
+        {/await}
+      {/if}
     {:else}
-      <AppChrome orgId={data.orgId}>
+      <AppChrome orgId={data.orgId} {licenseReady}>
         {@render children()}
       </AppChrome>
     {/if}

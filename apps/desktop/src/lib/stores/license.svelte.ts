@@ -45,6 +45,7 @@ class LicenseStore {
 
   // Features & limits
   enabledFeatures = $derived(this.licenseState?.enabled_features ?? []);
+  trialFeatures = $derived(this.licenseState?.trial_features ?? []);
   limits = $derived(this.licenseState?.limits ?? []);
 
   // Identity
