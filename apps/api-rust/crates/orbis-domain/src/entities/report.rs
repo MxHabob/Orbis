@@ -562,7 +562,7 @@ impl std::fmt::Display for OutputFormat {
 
 impl OutputFormat {
     pub fn from_str(s: &str) -> Self {
-        match s {
+        match s.to_ascii_lowercase().as_str() {
             "pdf" => Self::Pdf,
             "xlsx" => Self::Xlsx,
             "csv" => Self::Csv,
@@ -572,7 +572,7 @@ impl OutputFormat {
         }
     }
 
-    pub fn mime_type(&self) -> &str {
+    pub fn mime_type(&self) -> &'static str {
         match self {
             Self::DataOnly | Self::Json => "application/json",
             Self::Pdf => "application/pdf",

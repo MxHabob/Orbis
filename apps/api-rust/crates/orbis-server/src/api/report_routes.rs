@@ -17,6 +17,7 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::report::*;
+use orbis_domain::iam::permission::Permission;
 
 // ═══════════════════════════════════════════════════════════════
 // DTOs
@@ -200,7 +201,6 @@ pub struct GenerateReportResponse {
 pub struct ReportJobStatusResponse {
     pub job_id: Uuid,
     pub status: String,
-    pub output_path: Option<String>,
     pub output_size_bytes: Option<i64>,
     pub error_message: Option<String>,
 }
@@ -846,30 +846,12 @@ pub async fn generate_report(
         locale,
     };
 
-    let (mut job, export) = state
+    check_report_permissions(&state, &ctx, &input.report_code).await?;
+    let job = state
         .report_service
-        .generate_report(&ctx, input)
+        .enqueue_report(&ctx, input)
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
-
-    let temp_dir = std::env::temp_dir().join("orbis_reports");
-    tokio::fs::create_dir_all(&temp_dir)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-
-    let file_path = temp_dir.join(format!("{}.{}", job.id, export.filename));
-    tokio::fs::write(&file_path, &export.data)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-
-    job.output_path = Some(file_path.to_string_lossy().to_string());
-    job.output_size_bytes = Some(export.data.len() as i64);
-
-    state
-        .report_job_repo
-        .save(&job)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
 
     Ok(ApiResponse::ok_with_id(
         GenerateReportResponse {
@@ -899,12 +881,13 @@ pub async fn get_report_job_status(
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?
         .ok_or_else(|| ApiError::not_found("Report job not found"))?;
+    ensure_report_job_owner(&ctx, &job)?;
+    check_report_permissions(&state, &ctx, &job.report_code).await?;
 
     Ok(ApiResponse::ok_with_id(
         ReportJobStatusResponse {
             job_id: job.id,
             status: job.status.to_string(),
-            output_path: job.output_path,
             output_size_bytes: job.output_size_bytes,
             error_message: job.error_message,
         },
@@ -921,15 +904,18 @@ pub async fn get_report_job_status(
 )]
 pub async fn download_report_file(
     State(state): State<AppState>,
-    _auth: AuthContext,
+    auth: AuthContext,
     Path(id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ApiError> {
+    let ctx = auth.0;
     let job = state
         .report_job_repo
         .find_by_id(id)
         .await
         .map_err(|e| ApiError::internal(e.to_string()))?
         .ok_or_else(|| ApiError::not_found("Report job not found"))?;
+    ensure_report_job_owner(&ctx, &job)?;
+    check_report_permissions(&state, &ctx, &job.report_code).await?;
 
     if job.status.to_string() != "completed" {
         return Err(ApiError::bad_request(
@@ -941,11 +927,80 @@ pub async fn download_report_file(
         .output_path
         .ok_or_else(|| ApiError::not_found("Report file path missing"))?;
 
+    if Utc::now() - job.created_at > chrono::Duration::hours(24) {
+        match tokio::fs::remove_file(&file_path).await {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(ApiError::internal(error.to_string())),
+        }
+        state
+            .report_job_repo
+            .update_status(
+                job.id,
+                &JobStatus::Failed,
+                None,
+                None,
+                Some("Report download has expired".into()),
+            )
+            .await
+            .map_err(|error| ApiError::internal(error.to_string()))?;
+        return Err(ApiError::not_found("Report download has expired"));
+    }
+
     let bytes = tokio::fs::read(&file_path)
         .await
         .map_err(|e| ApiError::internal(format!("Failed to read report file: {}", e)))?;
 
-    Ok(([(header::CONTENT_TYPE, "application/octet-stream")], bytes))
+    Ok((
+        [(header::CONTENT_TYPE, job.output_format.mime_type())],
+        bytes,
+    ))
+}
+
+async fn check_report_permissions(
+    state: &AppState,
+    ctx: &orbis_app::context::RequestContext,
+    report_code: &str,
+) -> Result<(), ApiError> {
+    if let Some(user_id) = ctx.actor.id() {
+        if state
+            .permission_checker
+            .get_org_unit_scope(user_id, ctx.tenant_id)
+            .await?
+            .is_some()
+        {
+            return Err(ApiError::forbidden(
+                "Report export is unavailable for users restricted to organizational units",
+            ));
+        }
+    }
+    state
+        .permission_checker
+        .check(ctx, Permission::ExportData)
+        .await?;
+    let definition = state
+        .report_service
+        .get_report_by_code(ctx.tenant_id, report_code)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+    if matches!(definition.domain, ReportDomain::Finance) {
+        state
+            .permission_checker
+            .check(ctx, Permission::FinanceRead)
+            .await?;
+    }
+    Ok(())
+}
+
+fn ensure_report_job_owner(
+    ctx: &orbis_app::context::RequestContext,
+    job: &ReportJob,
+) -> Result<(), ApiError> {
+    if job.org_id != ctx.tenant_id || ctx.actor.id() != Some(job.requested_by) {
+        return Err(ApiError::not_found("Report job not found"));
+    }
+    Ok(())
 }
 
 #[utoipa::path(

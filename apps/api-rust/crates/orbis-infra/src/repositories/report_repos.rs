@@ -40,7 +40,11 @@ fn model_to_definition(m: report_definition::Model) -> ReportDefinition {
         description_ar: m.description_ar,
         parameters: serde_json::from_str(&m.parameters_json).unwrap_or_default(),
         required_permissions: serde_json::from_str(&m.required_permissions).unwrap_or_default(),
-        supported_formats: serde_json::from_str(&m.supported_formats).unwrap_or_default(),
+        supported_formats: serde_json::from_str::<Vec<String>>(&m.supported_formats)
+            .unwrap_or_default()
+            .iter()
+            .map(|format| OutputFormat::from_str(format))
+            .collect(),
         data_provider_key: m.data_provider_key,
         is_system: m.is_system,
         is_active: m.is_active,

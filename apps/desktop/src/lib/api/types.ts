@@ -416,6 +416,8 @@ export interface TransferClassInput {
 export interface ReportJobStatusDto {
   job_id: string;
   status: string;
+  output_size_bytes?: number | null;
+  error_message?: string | null;
 }
 
 export interface BatchPrintParams {

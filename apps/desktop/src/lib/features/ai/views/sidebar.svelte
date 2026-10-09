@@ -16,6 +16,7 @@ interactive tool inspections, and consequential action approvals.
     createNewLocalSession,
     deleteFileSession,
     loadFileSessions,
+    parseAiUiData,
     saveFileContext,
     saveFileSession,
   } from "$lib/features/ai/session-store";
@@ -73,6 +74,34 @@ interactive tool inspections, and consequential action approvals.
       .flatMap((m) => m.proposedActions || [])
       .filter((a) => !a.status || a.status === "pending"),
   );
+
+  async function pollReportJob(current: AiChatSession, messageId: string, jobId: string) {
+    try {
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        const job = await api.getReportJobStatus(jobId);
+        const message = current.messages.find((item) => item.id === messageId);
+        const reportJob = message?.uiData?.find(
+          (item) => item.type === "report_job" && item.job_id === jobId,
+        );
+        if (!reportJob || reportJob.type !== "report_job") return;
+        reportJob.status = job.status;
+        sessions = [...sessions];
+        if (job.status === "completed" || job.status === "failed") return;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+    } catch (error) {
+      console.error("Failed to check report status:", error);
+      const message = current.messages.find((item) => item.id === messageId);
+      const reportJob = message?.uiData?.find(
+        (item) => item.type === "report_job" && item.job_id === jobId,
+      );
+      if (reportJob?.type === "report_job") {
+        reportJob.status = "failed";
+        reportJob.statusError = true;
+        sessions = [...sessions];
+      }
+    }
+  }
 
   const userName = $derived(
     authStore.user?.full_name || m.common_agent_default_user_name(),
@@ -284,6 +313,16 @@ interactive tool inspections, and consequential action approvals.
         current.messages[targetIdx].isError = false;
         current.messages[targetIdx].executedTools =
           response.executed_tools || [];
+        current.messages[targetIdx].uiData = Array.isArray(response.ui_data)
+          ? response.ui_data
+              .map((item) => parseAiUiData(item))
+              .filter((item): item is NonNullable<typeof item> => item !== null)
+          : [];
+        for (const item of current.messages[targetIdx].uiData) {
+          if (item.type === "report_job") {
+            void pollReportJob(current, assistantMsgId, item.job_id);
+          }
+        }
         current.messages[targetIdx].proposedActions = (
           response.proposed_actions || []
         ).map((a) => ({

@@ -281,6 +281,7 @@ use api::{
         // Integration
         api::integration_routes::connect_app,
         api::integration_routes::list_integrations,
+        api::integration_routes::list_notification_integrations,
         api::integration_routes::get_integration_status,
         api::integration_routes::disconnect_app,
         api::integration_routes::toggle_integration,
@@ -504,6 +505,8 @@ use api::{
             api::integration_routes::IntegrationStatusDto,
             api::integration_routes::ConnectAppRequest,
             api::integration_routes::ToggleIntegrationRequest,
+            api::integration_routes::NotificationIntegrationQuery,
+            api::integration_routes::NotificationIntegrationCheckDto,
             // Report & Template
             api::report_routes::TemplateDto,
             api::report_routes::CreateTemplateRequest,

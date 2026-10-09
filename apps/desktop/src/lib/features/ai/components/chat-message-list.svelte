@@ -1,6 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { marked } from "marked";
+import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
@@ -39,9 +40,44 @@ let {
 let expandedTools = $state<Record<string, boolean>>({});
 let expandedUserMessages = $state<Record<string, boolean>>({});
 let copiedMessageId = $state<string | null>(null);
+let reportDownloadErrors = $state<Record<string, boolean>>({});
 let editingMessageId = $state<string | null>(null);
 let editingText = $state("");
 let showScrollBottom = $state(false);
+
+async function downloadReport(jobId: string) {
+  try {
+    const bytes = await api.downloadReportFile(jobId);
+    const blob = new Blob([bytes], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `outstanding-fees-${jobId}.xlsx`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    reportDownloadErrors[jobId] = false;
+  } catch (error) {
+    console.error("Failed to download report:", error);
+    reportDownloadErrors[jobId] = true;
+  }
+}
+
+function feeStatusLabel(status: string) {
+  switch (status) {
+    case "pending":
+      return m.finance_ui_fee_status_unpaid();
+    case "partially_paid":
+      return m.finance_ui_fee_status_partially_paid();
+    case "overdue":
+      return m.finance_ui_fee_status_overdue();
+    default:
+      return status;
+  }
+}
 
 function handleScroll() {
   if (!chatContainer) return;
@@ -274,6 +310,67 @@ function handleContentClick(e: MouseEvent) {
                 </div>
               {/each}
             </div>
+          {/if}
+
+          {#if msg.uiData?.length}
+            {#each msg.uiData as data, uiIndex (`${msg.id}_ui_${uiIndex}`)}
+              {#if data.type === "unpaid_fees"}
+                <section class="w-full overflow-hidden rounded-2xl border border-border/70 bg-card/70 shadow-2xs">
+                  <h3 class="border-b border-border/60 px-4 py-3 text-sm font-semibold">
+                    {m.ai_ui_unpaid_fees_heading()} ({data.items.length})
+                  </h3>
+                  <div class="max-h-72 overflow-auto">
+                    <table class="w-full min-w-[560px] border-collapse text-start text-xs">
+                      <thead class="sticky top-0 bg-muted/90 text-muted-foreground">
+                        <tr>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_student()}</th>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_balance()}</th>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_status()}</th>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_due_date()}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {#each data.items as fee, rowIndex (`${msg.id}_${uiIndex}_${rowIndex}`)}
+                          <tr class="border-t border-border/50">
+                            <td class="px-3 py-2 font-medium">{fee.student_name}</td>
+                            <td class="px-3 py-2 tabular-nums">{fee.balance_due}</td>
+                            <td class="px-3 py-2">{feeStatusLabel(fee.status)}</td>
+                            <td class="px-3 py-2 tabular-nums">{fee.due_date}</td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              {:else if data.type === "report_job"}
+                <section class="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/70 p-3.5">
+                  <div class="min-w-0 text-xs text-muted-foreground">
+                    {#if data.status === "completed"}
+                      {m.ai_ui_unpaid_fees_report_ready()}
+                    {:else if data.status === "failed"}
+                      <span class="text-destructive">
+                        {data.statusError ? m.ai_ui_unpaid_fees_report_download_failed() : m.ai_ui_unpaid_fees_report_failed()}
+                      </span>
+                    {:else}
+                      {m.ai_ui_unpaid_fees_report_processing()}
+                    {/if}
+                    {#if reportDownloadErrors[data.job_id]}
+                      <p class="mt-1 text-destructive">{m.ai_ui_unpaid_fees_report_download_failed()}</p>
+                    {/if}
+                  </div>
+                  {#if data.status === "completed"}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      class="shrink-0"
+                      onclick={() => downloadReport(data.job_id)}
+                    >
+                      {m.ai_ui_unpaid_fees_report_ready()}
+                    </Button>
+                  {/if}
+                </section>
+              {/if}
+            {/each}
           {/if}
 
           <!-- Assistant Text Content Card -->

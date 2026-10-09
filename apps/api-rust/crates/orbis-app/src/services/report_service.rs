@@ -28,6 +28,7 @@ pub struct GenerateReportInput {
     pub locale: ReportLocale,
 }
 
+#[derive(Clone)]
 pub struct ReportService {
     pub definition_repo: Arc<dyn ReportDefinitionRepository>,
     pub template_repo: Arc<dyn ReportTemplateRepository>,
@@ -92,6 +93,161 @@ impl ReportService {
         ctx: &RequestContext,
         input: GenerateReportInput,
     ) -> Result<(ReportJob, ExportResult), DomainError> {
+        self.generate_report_with_job_id(ctx, input, Uuid::new_v4(), false)
+            .await
+    }
+
+    pub async fn create_pending_job(
+        &self,
+        ctx: &RequestContext,
+        input: &GenerateReportInput,
+        job_id: Uuid,
+    ) -> Result<ReportJob, DomainError> {
+        let definition = self
+            .definition_repo
+            .find_by_code(ctx.tenant_id, &input.report_code)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Report definition not found: {}",
+                    input.report_code
+                ))
+            })?;
+        if !definition.is_active {
+            return Err(DomainError::Validation(
+                "Report definition is inactive".into(),
+            ));
+        }
+        if !definition.supported_formats.contains(&input.output_format) {
+            return Err(DomainError::Validation(format!(
+                "Output format '{}' is not supported for report '{}'",
+                input.output_format, input.report_code
+            )));
+        }
+        validate_parameters(&input.parameters, &definition.parameters)?;
+
+        let job = ReportJob {
+            id: job_id,
+            org_id: ctx.tenant_id,
+            report_definition_id: definition.id,
+            template_id: None,
+            requested_by: ctx.actor.id().unwrap_or_default(),
+            report_code: input.report_code.clone(),
+            parameters: serde_json::to_value(&input.parameters)
+                .map_err(|error| DomainError::Internal(error.to_string()))?,
+            output_format: input.output_format.clone(),
+            locale: input.locale.clone(),
+            status: JobStatus::Pending,
+            output_path: None,
+            output_size_bytes: None,
+            error_message: None,
+            created_at: Utc::now(),
+            started_at: None,
+            completed_at: None,
+        };
+        self.job_repo.save(&job).await?;
+        Ok(job)
+    }
+
+    pub async fn enqueue_report(
+        &self,
+        ctx: &RequestContext,
+        input: GenerateReportInput,
+    ) -> Result<ReportJob, DomainError> {
+        let job = self.create_pending_job(ctx, &input, Uuid::new_v4()).await?;
+        let service = self.clone();
+        let worker_ctx = ctx.clone();
+        let job_id = job.id;
+        let output_extension = job.output_format.extension().to_string();
+
+        tokio::spawn(async move {
+            let result = service
+                .generate_report_for_job(&worker_ctx, input, job_id)
+                .await;
+            match result {
+                Ok(export) => {
+                    let temp_dir = std::env::temp_dir()
+                        .join("orbis_reports")
+                        .join(worker_ctx.tenant_id.to_string());
+                    let file_path = temp_dir.join(format!("{job_id}.{output_extension}"));
+                    let storage_result = async {
+                        if export.data.len() > 50 * 1024 * 1024 {
+                            return Err(std::io::Error::other(
+                                "Report exceeds the 50 MiB output limit",
+                            ));
+                        }
+                        tokio::fs::create_dir_all(&temp_dir).await?;
+                        tokio::fs::write(&file_path, &export.data).await?;
+                        service
+                            .job_repo
+                            .update_status(
+                                job_id,
+                                &JobStatus::Completed,
+                                Some(file_path.to_string_lossy().into_owned()),
+                                Some(export.data.len() as i64),
+                                None,
+                            )
+                            .await
+                            .map_err(|error| std::io::Error::other(error.to_string()))
+                    }
+                    .await;
+
+                    if let Err(error) = storage_result {
+                        let message = format!("Report file storage failed: {error}");
+                        if let Err(cleanup_error) = tokio::fs::remove_file(&file_path).await {
+                            if cleanup_error.kind() != std::io::ErrorKind::NotFound {
+                                tracing::error!(report_id = %job_id, error = %cleanup_error, "Unable to remove incomplete report file");
+                            }
+                        }
+                        if let Err(update_error) = service
+                            .job_repo
+                            .update_status(job_id, &JobStatus::Failed, None, None, Some(message))
+                            .await
+                        {
+                            tracing::error!(report_id = %job_id, error = %update_error, "Unable to persist report storage failure");
+                        }
+                    }
+                }
+                Err(error) => {
+                    if let Err(update_error) = service
+                        .job_repo
+                        .update_status(
+                            job_id,
+                            &JobStatus::Failed,
+                            None,
+                            None,
+                            Some(error.to_string()),
+                        )
+                        .await
+                    {
+                        tracing::error!(report_id = %job_id, error = %update_error, "Unable to persist report generation failure");
+                    }
+                }
+            }
+        });
+
+        Ok(job)
+    }
+
+    pub async fn generate_report_for_job(
+        &self,
+        ctx: &RequestContext,
+        input: GenerateReportInput,
+        job_id: Uuid,
+    ) -> Result<ExportResult, DomainError> {
+        let (_, export) = self
+            .generate_report_with_job_id(ctx, input, job_id, true)
+            .await?;
+        Ok(export)
+    }
+
+    async fn generate_report_with_job_id(
+        &self,
+        ctx: &RequestContext,
+        input: GenerateReportInput,
+        job_id: Uuid,
+        defer_completion: bool,
+    ) -> Result<(ReportJob, ExportResult), DomainError> {
         // 1. Look up definition
         let definition = self
             .definition_repo
@@ -123,7 +279,7 @@ impl ReportService {
 
         // 4. Create job record
         let mut job = ReportJob {
-            id: Uuid::new_v4(),
+            id: job_id,
             org_id: ctx.tenant_id,
             report_definition_id: definition.id,
             template_id: None,
@@ -261,20 +417,22 @@ impl ReportService {
         let duration_ms = (Utc::now() - start_time).num_milliseconds();
         let size_bytes = export_result.data.len() as i64;
 
-        job.status = JobStatus::Completed;
-        job.output_path = Some(export_result.filename.clone());
-        job.output_size_bytes = Some(size_bytes);
-        job.completed_at = Some(Utc::now());
+        if !defer_completion {
+            job.status = JobStatus::Completed;
+            job.output_path = Some(export_result.filename.clone());
+            job.output_size_bytes = Some(size_bytes);
+            job.completed_at = Some(Utc::now());
 
-        self.job_repo
-            .update_status(
-                job.id,
-                &JobStatus::Completed,
-                Some(export_result.filename.clone()),
-                Some(size_bytes),
-                None,
-            )
-            .await?;
+            self.job_repo
+                .update_status(
+                    job.id,
+                    &JobStatus::Completed,
+                    Some(export_result.filename.clone()),
+                    Some(size_bytes),
+                    None,
+                )
+                .await?;
+        }
 
         // 11. Audit log
         let audit = ReportAuditEntry {
@@ -292,7 +450,7 @@ impl ReportService {
             })),
             created_at: Utc::now(),
         };
-        let _ = self.audit_repo.save(&audit).await;
+        self.audit_repo.save(&audit).await?;
 
         Ok((job, export_result))
     }

@@ -17,6 +17,7 @@ use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
 use orbis_domain::entities::student_fee::{FeeStatus, StudentFee as DomainStudentFee};
 use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
     PaginatorTrait, QueryFilter, Set,
@@ -547,8 +548,31 @@ impl StudentFeeRepository for FinanceRepoImpl {
         if let Some(student_id) = filter.student_id {
             query = query.filter(student_fee::Column::StudentId.eq(student_id));
         }
+        if let Some(period_id) = filter.period_id {
+            query = query.filter(student_fee::Column::PeriodId.eq(Some(period_id)));
+        }
         if let Some(status) = filter.status {
             query = query.filter(student_fee::Column::Status.eq(status.to_string()));
+        }
+        if filter.only_unpaid == Some(true) {
+            query = query
+                .filter(Expr::cust_with_values(
+                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > ?",
+                    [Decimal::ZERO],
+                ))
+                .filter(student_fee::Column::Status.is_in([
+                    "pending",
+                    "partially_paid",
+                    "overdue",
+                ]));
+        }
+        if filter.is_overdue == Some(true) {
+            query = query
+                .filter(student_fee::Column::DueDate.lt(chrono::Utc::now().date_naive()))
+                .filter(Expr::cust_with_values(
+                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > ?",
+                    [Decimal::ZERO],
+                ));
         }
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();

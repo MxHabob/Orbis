@@ -120,6 +120,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build data provider registry — register all available providers
     let mut provider_registry = InMemoryDataProviderRegistry::new();
+    provider_registry.register_provider(Box::new(OutstandingFeesDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
@@ -136,6 +137,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     renderer_registry.register_renderer(Box::new(DataOnlyRenderer));
     renderer_registry.register_renderer(Box::new(JsonRenderer));
     renderer_registry.register_renderer(Box::new(CsvRenderer));
+    renderer_registry.register_renderer(Box::new(XlsxRenderer));
     renderer_registry.register_renderer(Box::new(HtmlRenderer));
     renderer_registry.register_renderer(Box::new(PdfRenderer));
     let renderer_registry = Arc::new(renderer_registry);
@@ -519,6 +521,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         file_storage_service,
         storage_resolver,
         integration_service,
+        notification_adapter,
         workflow_service,
         report_service,
         ai_service,

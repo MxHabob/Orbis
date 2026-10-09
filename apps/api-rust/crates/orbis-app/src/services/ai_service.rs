@@ -33,6 +33,18 @@ use orbis_domain::queries::filters::{
     StudentFilter,
 };
 
+const AI_UNPAID_FEES_TABLE_LIMIT: u64 = 50;
+
+fn is_large_unpaid_result(total_count: u64) -> bool {
+    total_count > AI_UNPAID_FEES_TABLE_LIMIT
+}
+
+fn take_private_ui_result(result: &mut serde_json::Value) -> Option<serde_json::Value> {
+    result
+        .as_object_mut()
+        .and_then(|object| object.remove("_ui_private_result"))
+}
+
 fn required_tool_permission(tool: &AiToolDefinition) -> Result<Permission, DomainError> {
     tool.required_permission
         .as_deref()
@@ -422,7 +434,20 @@ impl AiOrchestrationService {
                 continue;
             }
             match check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await {
-                Ok(()) => authorized.push(tool),
+                Ok(()) => {
+                    if tool.name == "generate_report" {
+                        match self
+                            .permission_checker
+                            .check(ctx, Permission::ExportData)
+                            .await
+                        {
+                            Ok(()) => {}
+                            Err(DomainError::Unauthorized(_)) => continue,
+                            Err(error) => return Err(error),
+                        }
+                    }
+                    authorized.push(tool)
+                }
                 Err(DomainError::Unauthorized(_)) => {}
                 Err(error) => return Err(error),
             }
@@ -446,7 +471,13 @@ impl AiOrchestrationService {
                 "AI tool is unavailable within the user's organizational-unit scope".into(),
             ));
         }
-        check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await
+        check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await?;
+        if tool_name == "generate_report" {
+            self.permission_checker
+                .check(ctx, Permission::ExportData)
+                .await?;
+        }
+        Ok(())
     }
 
     fn registered_tools() -> Vec<AiToolDefinition> {
@@ -537,6 +568,19 @@ impl AiOrchestrationService {
                 category: ToolCategory::Read,
             },
             AiToolDefinition {
+                name: "get_unpaid_fees".into(),
+                description: "Find students with unpaid fee balances. Results are shown securely in the application; large result sets are exported as a background XLSX report.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "period_id": {"type": "string", "description": "Optional academic period UUID"}
+                    }
+                }),
+                required_permission: Some("finance:read".into()),
+                is_consequential: false,
+                category: ToolCategory::Read,
+            },
+            AiToolDefinition {
                 name: "list_report_templates".into(),
                 description: "List available report and document templates in the system.".into(),
                 parameters_schema: json!({
@@ -554,7 +598,7 @@ impl AiOrchestrationService {
                     "type": "object",
                     "properties": {
                         "report_code": {"type": "string", "description": "Code of the report definition (e.g. STUDENT_TRANSCRIPT, FEE_COLLECTION)"},
-                        "output_format": {"type": "string", "enum": ["pdf", "csv", "json", "html"], "description": "Format for generated output"},
+                        "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"], "description": "Format for generated output"},
                         "parameters": {"type": "object", "description": "Parameters required by the report definition"}
                     },
                     "required": ["report_code", "output_format"]
@@ -912,6 +956,7 @@ impl AiOrchestrationService {
         let mut conversation_history = request.messages;
         let mut executed_tools_all = Vec::new();
         let mut proposed_actions_all = Vec::new();
+        let mut ui_data_all = Vec::new();
 
         const MAX_REACT_TURNS: usize = 5;
         let mut final_response = String::new();
@@ -1015,7 +1060,12 @@ impl AiOrchestrationService {
                         .await;
 
                     let (content, is_error) = match execution_result {
-                        Ok(data) => (data.to_string(), false),
+                        Ok(mut data) => {
+                            if let Some(private_data) = take_private_ui_result(&mut data) {
+                                ui_data_all.push(private_data);
+                            }
+                            (data.to_string(), false)
+                        }
                         Err(e) => (
                             format!("Error executing {}: {}", tool_call.tool_name, e),
                             true,
@@ -1057,6 +1107,7 @@ impl AiOrchestrationService {
             response: final_response,
             executed_tools: executed_tools_all,
             proposed_actions: proposed_actions_all,
+            ui_data: ui_data_all,
             resolved_user_context: Some(user_ctx),
             resolved_academic_context: Some(academic_ctx),
         })
@@ -1247,6 +1298,91 @@ impl AiOrchestrationService {
                     })).collect::<Vec<_>>()
                 }))
             }
+            "get_unpaid_fees" => {
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|value| value.as_str())
+                    .map(Uuid::parse_str)
+                    .transpose()
+                    .map_err(|_| DomainError::Validation("Invalid period UUID".into()))?;
+
+                let mut filter = StudentFeeFilter {
+                    period_id,
+                    only_unpaid: Some(true),
+                    pagination: Some(PaginationParams {
+                        page: Some(1),
+                        page_size: Some(51),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                };
+                filter.is_overdue = Some(false);
+                let fees = self
+                    .finance_service
+                    .list_student_fees(ctx.tenant_id, filter)
+                    .await?;
+
+                if is_large_unpaid_result(fees.total_count) {
+                    self.permission_checker
+                        .check(ctx, Permission::ExportData)
+                        .await?;
+                    let report = self
+                        .report_service
+                        .enqueue_report(
+                            ctx,
+                            GenerateReportInput {
+                                report_code: "rep.finance.outstanding-fees".into(),
+                                parameters: period_id
+                                    .map(|id| {
+                                        [("period_id".into(), ParamValue::Id(id.to_string()))]
+                                            .into_iter()
+                                            .collect()
+                                    })
+                                    .unwrap_or_default(),
+                                output_format: OutputFormat::Xlsx,
+                                locale: ReportLocale::Ar,
+                            },
+                        )
+                        .await?;
+                    return Ok(json!({
+                        "total_count": fees.total_count,
+                        "delivery": "background_report",
+                        "report_job_id": report.id,
+                        "report_status": report.status.to_string(),
+                        "_ui_private_result": {
+                            "type": "report_job",
+                            "job_id": report.id
+                        }
+                    }));
+                }
+
+                let mut rows = Vec::with_capacity(fees.items.len());
+                let mut total_balance = rust_decimal::Decimal::ZERO;
+                for fee in fees.items {
+                    self.ensure_student_tenant(ctx, fee.student_id).await?;
+                    let student = self
+                        .student_service
+                        .get_student(fee.student_id)
+                        .await?
+                        .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+                    total_balance += fee.balance_due;
+                    rows.push(json!({
+                        "student_name": student.person.full_name(),
+                        "balance_due": fee.balance_due.to_string(),
+                        "status": fee.status,
+                        "due_date": fee.due_date
+                    }));
+                }
+
+                Ok(json!({
+                    "total_count": fees.total_count,
+                    "total_balance": total_balance.to_string(),
+                    "_ui_private_result": {
+                        "type": "unpaid_fees",
+                        "items": rows
+                    }
+                }))
+            }
             "list_report_templates" => {
                 let templates = self.report_service.list_templates(ctx.tenant_id).await?;
                 Ok(json!({
@@ -1264,6 +1400,19 @@ impl AiOrchestrationService {
                     .get("report_code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| DomainError::Validation("report_code is required".into()))?;
+                let definition = self
+                    .report_service
+                    .get_report_by_code(ctx.tenant_id, report_code)
+                    .await?
+                    .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+                if matches!(
+                    definition.domain,
+                    orbis_domain::entities::report::ReportDomain::Finance
+                ) {
+                    self.permission_checker
+                        .check(ctx, Permission::FinanceRead)
+                        .await?;
+                }
                 let output_format_str = arguments
                     .get("output_format")
                     .and_then(|v| v.as_str())
@@ -1290,10 +1439,10 @@ impl AiOrchestrationService {
                     locale: ReportLocale::Ar,
                 };
 
-                let (job, _) = self.report_service.generate_report(ctx, input).await?;
+                let job = self.report_service.enqueue_report(ctx, input).await?;
                 Ok(json!({
                     "job_id": job.id,
-                    "status": format!("{:?}", job.status),
+                    "status": job.status.to_string(),
                     "report_code": job.report_code
                 }))
             }
@@ -2046,8 +2195,8 @@ impl AiOrchestrationService {
 mod tests {
     use super::{
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
-        required_tool_permission, teacher_assigned_to_class, tool_supports_unit_scoping,
-        unit_in_scope,
+        is_large_unpaid_result, required_tool_permission, take_private_ui_result,
+        teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;
@@ -2190,5 +2339,30 @@ mod tests {
         assert!(unit_in_scope(None, None));
         assert!(tool_supports_unit_scoping("get_student_profile"));
         assert!(!tool_supports_unit_scoping("get_financial_summary"));
+    }
+
+    #[test]
+    fn unpaid_fee_table_threshold_includes_exactly_fifty_rows() {
+        assert!(!is_large_unpaid_result(50));
+        assert!(is_large_unpaid_result(51));
+    }
+
+    #[test]
+    fn private_ui_rows_are_removed_from_the_tool_result_before_model_history() {
+        let mut result = json!({
+            "total_count": 1,
+            "_ui_private_result": {
+                "type": "unpaid_fees",
+                "items": [{"student_name": "Private Student"}]
+            }
+        });
+
+        let ui_data = take_private_ui_result(&mut result);
+
+        assert_eq!(result, json!({"total_count": 1}));
+        assert_eq!(
+            ui_data.expect("UI should receive the separate private result")["items"][0]["student_name"],
+            "Private Student"
+        );
     }
 }

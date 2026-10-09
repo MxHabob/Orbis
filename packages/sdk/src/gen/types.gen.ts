@@ -152,6 +152,7 @@ export type AiChatResponse = {
     resolved_academic_context?: AcademicAiContext | null;
     resolved_user_context?: UserAiContext | null;
     response: string;
+    ui_data?: Array<unknown>;
 };
 
 export type AiMessage = {
@@ -2013,7 +2014,6 @@ export type ReportDefinitionDto = {
 export type ReportJobStatusResponse = {
     error_message?: string | null;
     job_id: string;
-    output_path?: string | null;
     output_size_bytes?: number | null;
     status: string;
 };

@@ -2,7 +2,7 @@
 
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{delete, get, put},
 };
 use serde::{Deserialize, Serialize};
@@ -47,6 +47,55 @@ pub struct ConnectAppRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct ToggleIntegrationRequest {
     pub is_enabled: bool,
+}
+
+#[derive(Deserialize, ToSchema, utoipa::IntoParams)]
+pub struct NotificationIntegrationQuery {
+    pub channel: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct NotificationIntegrationCheckDto {
+    pub id: Uuid,
+    pub provider_name: String,
+    pub channel: String,
+    pub is_enabled: bool,
+    pub is_supported: bool,
+    pub is_healthy: Option<bool>,
+    pub is_eligible: bool,
+    pub reason: Option<String>,
+}
+
+#[utoipa::path(get, path = "/api/v1/integrations/notifications", params(NotificationIntegrationQuery),
+    responses((status = 200, body = Vec<NotificationIntegrationCheckDto>)), security(("bearer" = [])), tag = "Integration")]
+async fn list_notification_integrations(
+    ctx: AuthContext,
+    Query(query): Query<NotificationIntegrationQuery>,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<NotificationIntegrationCheckDto>>>, ApiError> {
+    state
+        .permission_checker
+        .check(&ctx, Permission::NotificationWrite)
+        .await?;
+    let checks = state
+        .notification_adapter
+        .check_integrations(ctx.tenant_id, &query.channel)
+        .await
+        .map_err(ApiError::from)?;
+    let dtos = checks
+        .into_iter()
+        .map(|check| NotificationIntegrationCheckDto {
+            id: check.id,
+            provider_name: check.provider_name,
+            channel: check.channel,
+            is_enabled: check.is_enabled,
+            is_supported: check.is_supported,
+            is_healthy: check.is_healthy,
+            is_eligible: check.is_eligible,
+            reason: check.reason.map(str::to_string),
+        })
+        .collect();
+    Ok(ApiResponse::ok(dtos))
 }
 
 #[utoipa::path(post, path = "/api/v1/integrations", request_body = ConnectAppRequest,
@@ -207,6 +256,10 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/integrations",
             get(list_integrations).post(connect_app),
+        )
+        .route(
+            "/api/v1/integrations/notifications",
+            get(list_notification_integrations),
         )
         .route(
             "/api/v1/integrations/:provider_name/status",

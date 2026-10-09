@@ -144,6 +144,8 @@ pub struct AiChatResponse {
     pub response: String,
     pub executed_tools: Vec<AiToolResult>,
     pub proposed_actions: Vec<AiProposedAction>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub ui_data: Vec<serde_json::Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolved_user_context: Option<UserAiContext>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

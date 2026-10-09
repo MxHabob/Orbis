@@ -11,3 +11,15 @@ Teacher access to students and class-based analysis is limited to active enrollm
 Users whose role assignments are scoped to organizational units receive only tools with explicit unit-scoped execution paths. Student and class records must be in the assigned unit or its descendants. Organization-wide tools without a safe unit filter are omitted from discovery and rejected at execution. Invalid or cross-organization unit ids do not widen scope.
 
 An authorization denial omits a tool from discovery or rejects its execution. An IAM/backend error is returned rather than treated as an authorization success.
+
+## Financial query and report handling
+
+`get_unpaid_fees` requires `finance:read` and is unavailable to users with organizational-unit restrictions until the fee query can be safely scoped to those units. It returns no more than 50 detail rows to the UI. The details are carried separately from tool output and are not added to model history or the locally saved chat transcript. More than 50 matches require `data:export` and create an XLSX report job instead.
+
+Report job creation requires `data:export`; financial report definitions also require `finance:read`. Status and download requests re-check those permissions and require the same organization and creator as the job. Status responses never include the server file path. Report files are held under an organization-specific temporary directory and downloads expire 24 hours after job creation; an expired file is removed when an expired download is requested.
+
+## Notification integration selection
+
+Notification callers may provide an explicit integration ID. The unified adapter resolves it only among the request organization's connected integrations, rejects disabled integrations and providers without a registered adapter for the selected channel, and never substitutes another integration when an explicit ID is invalid. Provider credentials are validated by the selected provider before it sends.
+
+`GET /api/v1/integrations/notifications?channel=<channel>` requires `notification:write` and reports connected integrations with their supported/eligible status. The health check performs a credential-authenticated provider request with a 10-second timeout; its response exposes only a coarse failure reason, never provider response bodies or credentials. Currently registered delivery channels are SendGrid `email` and Twilio `sms`/`whatsapp`. Other channels are reported as unsupported until a provider adapter is registered.
