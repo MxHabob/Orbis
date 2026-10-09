@@ -140,7 +140,6 @@ export default function SignInScreen() {
                 onPress={handleGoogleSignIn}
               >
                 <Text
-                  className="font-sans text-sm leading-5 font-semibold"
                   className="font-sans text-sm leading-5 font-semibold text-foreground"
                 >
                   {t("auth_continue_google")}

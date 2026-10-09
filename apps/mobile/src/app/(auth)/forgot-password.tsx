@@ -63,8 +63,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? "#09090B" : "#F8FAFC" }}
+      className="flex-1 bg-background"
     >
       <LinearGradient
         colors={
@@ -112,34 +111,21 @@ export default function ForgotPasswordScreen() {
             {/* Title Block */}
             <View className="mb-6">
               <Text
-                className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px]"
-                style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground"
               >
                 {t("auth_forgot_title")}
               </Text>
               <Text
-                className="mt-1 font-sans text-sm leading-5"
-                style={{
-                  color: isDark ? "rgba(255, 255, 255, 0.6)" : "#64748B",
-                }}
+                className="mt-one font-sans text-sm leading-5 text-muted-foreground"
               >
                 {t("auth_forgot_subtitle")}
               </Text>
             </View>
 
             {errorMsg ? (
-              <View
-                className="mb-4 rounded-lg border px-3 py-2"
-                style={{
-                  backgroundColor: isDark
-                    ? "rgba(239, 68, 68, 0.18)"
-                    : "#FEF2F2",
-                  borderColor: theme.error,
-                }}
-              >
+              <View className="mb-four rounded-lg border border-destructive bg-destructive/10 px-three py-two">
                 <Text
-                  className="font-sans text-xs leading-4 font-semibold"
-                  style={{ color: theme.error }}
+                  className="font-sans text-xs leading-4 font-semibold text-destructive"
                 >
                   {errorMsg}
                 </Text>
@@ -148,14 +134,8 @@ export default function ForgotPasswordScreen() {
 
             {/* Large Pill Input with embedded arrow */}
             <View
-              className="h-14 flex-row items-center rounded-full border px-4"
+              className="h-14 flex-row items-center rounded-full border border-border bg-background-element px-four"
               style={{
-                backgroundColor: isDark
-                  ? "rgba(255, 255, 255, 0.06)"
-                  : "#FFFFFF",
-                borderColor: isDark
-                  ? "rgba(255, 255, 255, 0.18)"
-                  : "rgba(0, 0, 0, 0.1)",
                 shadowColor: "#000000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.06,
@@ -164,15 +144,12 @@ export default function ForgotPasswordScreen() {
               }}
             >
               <TextInput
-                className="flex-1 px-2 font-sans text-base"
+                className="flex-1 px-2 font-sans text-base text-foreground"
                 style={{
-                  color: isDark ? "#FFFFFF" : "#0F172A",
                   textAlign: isArabic ? "right" : "left",
                 }}
                 placeholder={t("auth_email_placeholder")}
-                placeholderTextColor={
-                  isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                }
+                placeholderTextColor={theme.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -185,16 +162,15 @@ export default function ForgotPasswordScreen() {
               <Pressable
                 onPress={handleSend}
                 disabled={isLoading}
-                className="h-[38px] w-[38px] items-center justify-center rounded-full"
+                className="h-[38px] w-[38px] items-center justify-center rounded-full bg-foreground"
                 style={({ pressed }) => ({
-                  backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
                   transform: [{ scale: pressed ? 0.9 : 1 }],
                   opacity: isLoading ? 0.6 : 1,
                 })}
               >
                 <ArrowIcon
                   size={16}
-                  color={isDark ? "#0F172A" : "#FFFFFF"}
+                  color={theme.background}
                 />
               </Pressable>
             </View>
@@ -203,28 +179,19 @@ export default function ForgotPasswordScreen() {
           /* Confirmation State */
           <View className="flex-1 items-center justify-center px-4">
             <View
-              className="mb-5 h-20 w-20 items-center justify-center rounded-full"
-              style={{
-                backgroundColor: isDark
-                  ? "rgba(16, 185, 129, 0.15)"
-                  : theme.successLight,
-              }}
+              className="mb-five h-20 w-20 items-center justify-center rounded-full bg-success/10"
             >
               <CheckCircle size={44} color={theme.success} />
             </View>
 
             <Text
-              className="mb-2 text-center font-sans text-2xl leading-[30px] font-extrabold"
-              style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+              className="mb-two text-center font-sans text-2xl leading-[30px] font-extrabold text-foreground"
             >
               {t("auth_forgot_success_title")}
             </Text>
 
             <Text
-              className="mb-8 text-center font-sans text-sm leading-[22px]"
-              style={{
-                color: isDark ? "rgba(255, 255, 255, 0.6)" : "#64748B",
-              }}
+              className="mb-eight text-center font-sans text-sm leading-[22px] text-muted-foreground"
             >
               {t("auth_forgot_success_msg")}
             </Text>
@@ -232,24 +199,13 @@ export default function ForgotPasswordScreen() {
             <View className="w-full">
               <Pressable
                 onPress={() => router.replace("/(auth)/sign-in")}
-                className="h-[54px] items-center justify-center rounded-full"
-                style={({ pressed }) => [
-                  {
-                    backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                  {
-                    shadowColor: "#000000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 8,
-                    elevation: 4,
-                  },
-                ]}
+                className="h-[54px] items-center justify-center rounded-full bg-foreground shadow-md"
+                style={({ pressed }) => ({
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                })}
               >
                 <Text
-                  className="font-sans text-base leading-5 font-bold"
-                  style={{ color: isDark ? "#0F172A" : "#FFFFFF" }}
+                  className="font-sans text-base leading-5 font-bold text-background"
                 >
                   {t("auth_back_to_sign_in")}
                 </Text>

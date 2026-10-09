@@ -13,9 +13,9 @@
 
 use orbis_domain::entities::license::{
     ActivationRequest, ActivationResponse, DeactivationRequest, MULVERSE_PRODUCT_KEY,
-    PublicKeyInfo, RefreshRequest, TauriUpdateManifest,
+    PublicKeyInfo, RefreshRequest, SignedEntitlement, TauriUpdateManifest,
 };
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::time::Duration;
 use tracing::{debug, warn};
 
@@ -30,6 +30,48 @@ const MAX_RETRIES: u32 = 3;
 
 /// Base delay for exponential backoff (milliseconds).
 const BASE_BACKOFF_MS: u64 = 1000;
+
+#[derive(Debug, Deserialize)]
+pub struct TrialChallenge {
+    pub challenge_id: String,
+    pub challenge: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegisterTrialRequest {
+    pub device_public_key: String,
+    pub device_signature: String,
+    pub challenge_id: String,
+    pub challenge: String,
+    pub installation_id: String,
+    pub platform: String,
+    pub app_version: String,
+    pub machine_label: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RefreshTrialRequest {
+    pub trial_id: String,
+    pub device_public_key: String,
+    pub device_signature: String,
+    pub challenge_id: String,
+    pub challenge: String,
+    pub installation_id: String,
+    pub app_version: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrialDevice {
+    pub id: String,
+    pub status: String,
+    pub installation_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrialRegistrationResponse {
+    pub trial: TrialDevice,
+    pub signed_entitlement: SignedEntitlement,
+}
 
 #[derive(Deserialize)]
 struct ApiErrorEnvelope {
@@ -145,6 +187,36 @@ impl MulverseClient {
         }
     }
 
+    pub async fn create_trial_challenge(&self) -> Result<TrialChallenge, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/trials/challenge", self.base_url),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    pub async fn register_trial(
+        &self,
+        request: &RegisterTrialRequest,
+    ) -> Result<TrialRegistrationResponse, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/trials/register", self.base_url),
+            request,
+        )
+        .await
+    }
+
+    pub async fn refresh_trial(
+        &self,
+        request: &RefreshTrialRequest,
+    ) -> Result<TrialRegistrationResponse, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/trials/refresh", self.base_url),
+            request,
+        )
+        .await
+    }
+
     /// Deactivate an installation (release device seat).
     ///
     /// `POST /api/v1/public/licenses/deactivate`
@@ -230,6 +302,28 @@ impl MulverseClient {
     }
 
     // ── Internal helpers ─────────────────────────────────────────
+
+    async fn post_once<T, R>(&self, url: &str, body: &T) -> Result<R, MulverseApiError>
+    where
+        T: Serialize + ?Sized,
+        R: DeserializeOwned,
+    {
+        let response = self
+            .client
+            .post(url)
+            .json(body)
+            .send()
+            .await
+            .map_err(|error| MulverseApiError::NetworkError(error.to_string()))?;
+        if response.status().is_success() {
+            response
+                .json::<R>()
+                .await
+                .map_err(|error| MulverseApiError::ParseError(error.to_string()))
+        } else {
+            Err(self.parse_error_response(response).await)
+        }
+    }────
 
     /// POST with exponential backoff and jitter for transient failures.
     async fn post_with_retry<T: serde::Serialize>(

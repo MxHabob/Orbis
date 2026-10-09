@@ -18,10 +18,8 @@ import { useRouter } from "expo-router";
 import { api, useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
-import { PlatformColor } from "react-native";
 import {
   ArrowLeft,
   ArrowRight,
@@ -33,8 +31,6 @@ type RoleOption = "teacher" | "student" | "parent" | "admin";
 export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { t, isArabic } = useI18n();
   const toast = useToast();
   const { login } = useAuth();
@@ -107,8 +103,7 @@ export default function RegisterScreen() {
 
   return (
     <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? "#09090B" : "#F8FAFC" }}
+      className="flex-1 bg-background"
     >
 
       <KeyboardAwareView
@@ -127,7 +122,7 @@ export default function RegisterScreen() {
             onPress={handleBack}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <BackIcon size={18} color={isDark ? "#FFFFFF" : "#0F172A"} />
+            <BackIcon size={18} color={theme.foreground} />
           </Pressable>
 
           {/* Minimal Step Dots Indicator */}
@@ -135,16 +130,8 @@ export default function RegisterScreen() {
             {[1, 2, 3].map((s) => (
               <View
                 key={s}
-                className="h-[6px] rounded-[3px]"
-                style={{
-                  backgroundColor:
-                    s <= step
-                      ? theme.primary
-                      : isDark
-                        ? "rgba(255, 255, 255, 0.2)"
-                        : "rgba(0, 0, 0, 0.1)",
-                  width: s === step ? 20 : 6,
-                }}
+                className={`h-[6px] rounded-[3px] ${s <= step ? "bg-primary" : "bg-border"}`}
+                style={{ width: s === step ? 20 : 6 }}
               />
             ))}
           </View>
@@ -154,8 +141,7 @@ export default function RegisterScreen() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text
-              className="font-sans text-xs leading-4 font-semibold"
-              style={{ color: isDark ? "rgba(255, 255, 255, 0.6)" : "#64748B" }}
+              className="font-sans text-xs leading-4 font-semibold text-muted-foreground"
             >
               {t("auth_sign_in")}
             </Text>
@@ -168,15 +154,16 @@ export default function RegisterScreen() {
           {step === 1 && (
             <View className="w-full items-end">
               <View className="mb-6">
-                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px]">
+                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground">
                   {t("auth_full_name")}
                 </Text>
               </View>
 
               <View>
                 <TextInput
-                  className="w-[370px] rounded-[6px] border"
+                  className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
                   placeholder={t("auth_full_name_ph")}
+                  placeholderTextColor={theme.textMuted}
                   value={fullName}
                   onChangeText={setFullName}
                   autoFocus
@@ -191,15 +178,16 @@ export default function RegisterScreen() {
           {step === 2 && (
             <View className="w-full items-end">
               <View className="mb-6">
-                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px]">
+                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground">
                   {t("auth_email_label")}
                 </Text>
               </View>
 
               <View className="gap-3">
                   <TextInput
-                    className="w-[370px] rounded-[6px] border"
+                    className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
                     placeholder={t("auth_email_placeholder")}
+                    placeholderTextColor={theme.textMuted}
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
@@ -208,8 +196,9 @@ export default function RegisterScreen() {
                     />
    
                   <TextInput
-                    className="w-[370px] rounded-[6px] border"
+                    className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
                     placeholder="••••••••"
+                    placeholderTextColor={theme.textMuted}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}

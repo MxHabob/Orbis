@@ -12,7 +12,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Animated, {
   Easing,
   runOnJS,
@@ -167,20 +167,27 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {current && (
         <View
           pointerEvents="none"
-          style={[styles.container, { top: Math.max(insets.top, 16) + 8 }]}
+          className="absolute left-0 right-0 z-[99999] items-center justify-center px-four"
+          style={{
+            top: Math.max(insets.top, 16) + 8,
+            elevation: 99999,
+          }}
         >
           <Animated.View
+            className="max-w-[92%] flex-row items-center gap-two rounded-full border border-border bg-card px-four py-three shadow-md"
             style={[
-              styles.toast,
               {
-                backgroundColor: theme.card,
-                borderColor: theme.border,
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.14,
+                shadowRadius: 14,
+                elevation: 8,
               },
               animatedStyle,
             ]}
           >
             {getVariantIcon(current.variant)}
-            <Text style={[styles.message, { color: theme.text }]}>
+            <Text className="shrink text-[13px] leading-[18px] font-semibold text-foreground">
               {current.message}
             </Text>
           </Animated.View>
@@ -189,39 +196,3 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     </ToastContext.Provider>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 99999,
-    elevation: 99999,
-    paddingHorizontal: 16,
-  },
-  toast: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 9999,
-    borderWidth: 1,
-    maxWidth: "92%",
-    gap: 8,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.14,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  message: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
-    fontSize: 13,
-    lineHeight: 18,
-    flexShrink: 1,
-  },
-});
