@@ -7,11 +7,13 @@
 
   let {
     feature = null,
+    requireOperational = false,
     licenseReady,
     className = "",
     children,
   }: {
     feature?: EntitlementKey | null;
+    requireOperational?: boolean;
     licenseReady: boolean;
     className?: string;
     children: Snippet;
@@ -20,13 +22,14 @@
   let isStartingTrial = $state(false);
   const locked = $derived(
     licenseReady &&
-      feature !== null &&
-      !licenseStore.isFeatureEnabled(feature),
+      ((requireOperational && !licenseStore.isOperational) ||
+        (feature !== null && !licenseStore.isFeatureEnabled(feature))),
   );
   const canStartTrial = $derived(
     licenseStore.state === "unavailable" &&
-      feature !== null &&
-      licenseStore.trialFeatures.includes(feature),
+      (feature === null
+        ? licenseStore.trialFeatures.length > 0
+        : licenseStore.trialFeatures.includes(feature)),
   );
 
   async function startTrial() {

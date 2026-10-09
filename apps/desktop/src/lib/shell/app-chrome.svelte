@@ -64,6 +64,8 @@ const requiredFeature = $derived.by((): EntitlementKey | null => {
 });
 
 function handleKeyDown(e: KeyboardEvent) {
+  if (!licenseStore.isOperational) return;
+
   // Ctrl/Cmd + / -> Toggle Ask Orbis AI
   if ((e.ctrlKey || e.metaKey) && e.key === "/") {
     e.preventDefault();
@@ -96,6 +98,7 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <svelte:window onkeydown={handleKeyDown} />
 
+<LicenseFeatureGate requireOperational {licenseReady} className="h-full w-full min-w-0 flex-1 overflow-hidden">
 <div class="flex h-full max-w-full bg-background">
 	{#if !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
@@ -126,6 +129,7 @@ function handleKeyDown(e: KeyboardEvent) {
 		{/if}
 	</div>
 </div>
+</LicenseFeatureGate>
 
 <!-- Lazy-load UpgradeDialog only when shown -->
 {#if uiStore.showUpgradeDialog}

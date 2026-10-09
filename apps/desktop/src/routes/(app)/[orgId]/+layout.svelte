@@ -12,6 +12,7 @@ import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
 import { localeState } from "$lib/core/i18n";
 import { LoadingIndicator } from "@orbis/ui";
+import LicenseFeatureGate from "$lib/shell/license-feature-gate.svelte";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 let authReady = $state(false);
@@ -43,7 +44,9 @@ onMount(() => {
 {#if authReady}
   {#key localeState.revision}
     {#if isOnboarding}
-      {@render children()}
+      <LicenseFeatureGate requireOperational {licenseReady}>
+        {@render children()}
+      </LicenseFeatureGate>
       {#if uiStore.showActivationDialog}
         {#await import("$lib/shell/activation-dialog.svelte") then { default: ActivationDialog }}
           <ActivationDialog bind:open={uiStore.showActivationDialog} />

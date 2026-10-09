@@ -56,6 +56,17 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
             .state_ref()
             .try_get::<crate::state::AppState>()
         {
+            let snapshot = state.license_runtime.current_snapshot();
+            if !snapshot.state.is_operational()
+                && !is_allowed_without_operational_license(&command)
+            {
+                invoke.resolver.reject(format!(
+                    "This operation is unavailable while the license state is {:?}. Activate a valid license or start a trial to continue.",
+                    snapshot.state
+                ));
+                return true;
+            }
+
             if let Some(feature) = required_feature(&command)
                 && !state.license_runtime.is_feature_enabled(feature)
             {
@@ -73,6 +84,30 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
 
         handler(invoke)
     }
+}
+
+fn is_allowed_without_operational_license(command: &str) -> bool {
+    command.starts_with("auth_")
+        || command.starts_with("connection_")
+        || command.starts_with("window_")
+        || matches!(
+            command,
+            "license_get_state"
+                | "license_activate_key"
+                | "license_start_trial"
+                | "license_deactivate"
+                | "license_refresh"
+                | "license_check_feature"
+                | "license_get_installation_id"
+                | "system_health"
+                | "system_has_organization"
+                | "system_get_readiness"
+                | "system_get_entitlement"
+                | "system_get_app_info"
+                | "system_get_changelog"
+                | "system_check_for_updates"
+                | "system_install_update"
+        )
 }
 
 fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
@@ -484,7 +519,10 @@ fn required_feature(command: &str) -> Option<&'static str> {
 
 #[cfg(test)]
 mod license_policy_tests {
-    use super::{is_allowed_before_backend_initialization, required_feature};
+    use super::{
+        is_allowed_before_backend_initialization, is_allowed_without_operational_license,
+        required_feature,
+    };
 
     #[test]
     fn backend_initialization_only_allows_setup_surfaces() {
@@ -523,5 +561,17 @@ mod license_policy_tests {
         assert_eq!(required_feature("employee_register_employee"), None);
         assert_eq!(required_feature("finance_process_payment"), None);
         assert_eq!(required_feature("org_update_current"), None);
+    }
+
+    #[test]
+    fn non_operational_license_only_allows_auth_activation_and_support_commands() {
+        assert!(is_allowed_without_operational_license("auth_login"));
+        assert!(is_allowed_without_operational_license("license_get_state"));
+        assert!(is_allowed_without_operational_license("license_activate_key"));
+        assert!(is_allowed_without_operational_license("license_start_trial"));
+        assert!(is_allowed_without_operational_license("system_get_readiness"));
+        assert!(!is_allowed_without_operational_license("finance_list_accounts"));
+        assert!(!is_allowed_without_operational_license("student_list_students"));
+        assert!(!is_allowed_without_operational_license("org_get_current"));
     }
 }
