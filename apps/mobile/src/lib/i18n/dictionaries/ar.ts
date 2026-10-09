@@ -23,6 +23,10 @@ export const ar = {
   tab_home: "الرئيسية",
   tab_behavior_ai: "السلوك والذكاء",
   tab_profile: "حسابي",
+  digital_id_title: "الهوية الرقمية",
+  digital_id_context_required: "الهوية الرقمية متاحة للطالب أو لولي الأمر المرتبط بملف طالب.",
+  digital_id_privacy_notice:
+    "اعرض هذه البطاقة عند الحاجة للتحقق من بيانات الطالب، ولا تشارك صورة منها علناً.",
   home_welcome: "مرحباً بعودتك",
   home_dependents: "الأبناء المرتبطون",
   home_no_dependents: "لا توجد ملفات أبناء مرتبطة بهذا الحساب حالياً.",

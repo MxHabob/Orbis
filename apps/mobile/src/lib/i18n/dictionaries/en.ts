@@ -25,6 +25,11 @@ export const en: Record<TranslationKey, string> = {
   tab_home: "Home",
   tab_behavior_ai: "Behavior & AI",
   tab_profile: "My Account",
+  digital_id_title: "Digital ID",
+  digital_id_context_required:
+    "The digital ID is available to a student or a guardian linked to a student profile.",
+  digital_id_privacy_notice:
+    "Show this card when student details need to be verified. Do not share screenshots publicly.",
   home_welcome: "Welcome back",
   home_dependents: "Linked children",
   home_no_dependents: "No child profiles are currently linked to this account.",
