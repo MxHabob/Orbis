@@ -205,6 +205,12 @@ pub struct ReportJobStatusResponse {
     pub error_message: Option<String>,
 }
 
+#[derive(Serialize, ToSchema)]
+pub struct CancelReportResponse {
+    pub job_id: Uuid,
+    pub cancel_requested: bool,
+}
+
 #[derive(Deserialize, ToSchema)]
 pub struct BatchPrintRequest {
     pub report_code: String,
@@ -896,6 +902,52 @@ pub async fn get_report_job_status(
 }
 
 #[utoipa::path(
+    post,
+    path = "/api/v1/reports/jobs/{id}/cancel",
+    tag = "Report",
+    responses((status = 200, description = "Request report cancellation", body = CancelReportResponse)),
+    security(("bearer" = []))
+)]
+pub async fn cancel_report_job(
+    State(state): State<AppState>,
+    auth: AuthContext,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<CancelReportResponse>>, ApiError> {
+    let ctx = auth.0;
+    let job = state
+        .report_job_repo
+        .find_by_id(id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?
+        .ok_or_else(|| ApiError::not_found("Report job not found"))?;
+    ensure_report_job_owner(&ctx, &job)?;
+    check_report_permissions(&state, &ctx, &job.report_code).await?;
+    if !matches!(&job.status, JobStatus::Pending | JobStatus::Processing) {
+        return Err(ApiError::bad_request(
+            "Only pending or processing reports can be cancelled",
+        ));
+    }
+    let cancel_requested = state
+        .report_service
+        .cancel_report(id)
+        .await
+        .map_err(|error| ApiError::internal(error.to_string()))?;
+    if !cancel_requested {
+        return Err(ApiError::bad_request(
+            "The report worker is no longer active; refresh the report status",
+        ));
+    }
+
+    Ok(ApiResponse::ok_with_id(
+        CancelReportResponse {
+            job_id: id,
+            cancel_requested: true,
+        },
+        ctx.request_id,
+    ))
+}
+
+#[utoipa::path(
     get,
     path = "/api/v1/reports/jobs/{id}/download",
     tag = "Report",
@@ -927,11 +979,19 @@ pub async fn download_report_file(
         .output_path
         .ok_or_else(|| ApiError::not_found("Report file path missing"))?;
 
-    if Utc::now() - job.created_at > chrono::Duration::hours(24) {
-        match tokio::fs::remove_file(&file_path).await {
-            Ok(()) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-            Err(error) => return Err(ApiError::internal(error.to_string())),
+    if report_download_expired(job.created_at, Utc::now()) {
+        let extension = std::path::Path::new(&file_path)
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default();
+        let staging_path =
+            std::path::Path::new(&file_path).with_extension(format!("{extension}.part"));
+        for path in [std::path::Path::new(&file_path), staging_path.as_path()] {
+            match tokio::fs::remove_file(path).await {
+                Ok(()) => {}
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return Err(ApiError::internal(error.to_string())),
+            }
         }
         state
             .report_job_repo
@@ -1001,6 +1061,10 @@ fn ensure_report_job_owner(
         return Err(ApiError::not_found("Report job not found"));
     }
     Ok(())
+}
+
+fn report_download_expired(created_at: chrono::DateTime<Utc>, now: chrono::DateTime<Utc>) -> bool {
+    now - created_at > chrono::Duration::hours(24)
 }
 
 #[utoipa::path(
@@ -1436,6 +1500,7 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/reports/jobs/:id/status",
             get(get_report_job_status),
         )
+        .route("/api/v1/reports/jobs/:id/cancel", post(cancel_report_job))
         .route(
             "/api/v1/reports/jobs/:id/download",
             get(download_report_file),
@@ -1443,4 +1508,59 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/reports/batch-print", post(batch_print))
         .route("/api/v1/reports/schema/:key", get(get_provider_schema))
         .route("/api/v1/reports/audit-logs", get(list_audit_logs))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use orbis_app::context::ActionSource;
+    use orbis_domain::iam::actor::Actor;
+
+    #[test]
+    fn report_download_expires_after_twenty_four_hours() {
+        let created_at = Utc::now();
+        assert!(!report_download_expired(
+            created_at,
+            created_at + chrono::Duration::hours(24)
+        ));
+        assert!(report_download_expired(
+            created_at,
+            created_at + chrono::Duration::hours(24) + chrono::Duration::seconds(1)
+        ));
+    }
+
+    #[test]
+    fn report_job_is_hidden_from_other_users_and_organizations() {
+        let org_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+        let job = ReportJob {
+            id: Uuid::new_v4(),
+            org_id,
+            report_definition_id: Uuid::new_v4(),
+            template_id: None,
+            requested_by: user_id,
+            report_code: "rep.finance.income-statement".into(),
+            parameters: serde_json::json!({}),
+            output_format: OutputFormat::Xlsx,
+            locale: ReportLocale::Ar,
+            status: JobStatus::Pending,
+            output_path: None,
+            output_size_bytes: None,
+            error_message: None,
+            created_at: Utc::now(),
+            started_at: None,
+            completed_at: None,
+        };
+        let context = |tenant_id, actor_id| orbis_app::context::RequestContext {
+            tenant_id,
+            actor: Actor::User(actor_id),
+            request_id: "test".into(),
+            source: ActionSource::Api,
+            org_unit_path: None,
+        };
+
+        assert!(ensure_report_job_owner(&context(org_id, user_id), &job).is_ok());
+        assert!(ensure_report_job_owner(&context(org_id, Uuid::new_v4()), &job).is_err());
+        assert!(ensure_report_job_owner(&context(Uuid::new_v4(), user_id), &job).is_err());
+    }
 }

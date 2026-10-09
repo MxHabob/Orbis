@@ -1,6 +1,8 @@
 use chrono::Utc;
 use std::collections::HashMap;
+use std::path::Path;
 use std::sync::Arc;
+use tokio::sync::{Mutex, Semaphore, oneshot};
 use uuid::Uuid;
 
 use crate::context::RequestContext;
@@ -13,6 +15,92 @@ use orbis_domain::entities::report::{
     ReportAuditEntry, ReportDefinition, ReportJob, ReportLocale, ReportTemplate, TemplateStatus,
 };
 use orbis_domain::errors::DomainError;
+
+enum ReportExecutionOutcome<T> {
+    Cancelled,
+    Finished(Result<T, DomainError>),
+}
+
+async fn await_report_execution<T>(
+    cancel_rx: oneshot::Receiver<()>,
+    execution: impl std::future::Future<Output = Result<T, DomainError>>,
+) -> ReportExecutionOutcome<T> {
+    tokio::select! {
+        biased;
+        _ = cancel_rx => ReportExecutionOutcome::Cancelled,
+        result = execution => ReportExecutionOutcome::Finished(result),
+    }
+}
+
+async fn store_report_file(
+    directory: &Path,
+    file_path: &Path,
+    data: &[u8],
+) -> Result<(), DomainError> {
+    if data.len() > 50 * 1024 * 1024 {
+        return Err(DomainError::Internal(
+            "Report exceeds the 50 MiB output limit".into(),
+        ));
+    }
+
+    let staging_path = file_path.with_extension(format!(
+        "{}.part",
+        file_path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .unwrap_or_default()
+    ));
+    let storage_result = async {
+        tokio::fs::create_dir_all(directory)
+            .await
+            .map_err(|error| DomainError::Internal(format!("Report storage failed: {error}")))?;
+        #[cfg(unix)]
+        tokio::fs::set_permissions(
+            directory,
+            std::os::unix::fs::PermissionsExt::from_mode(0o700),
+        )
+        .await
+        .map_err(|error| DomainError::Internal(format!("Report storage failed: {error}")))?;
+        tokio::fs::write(&staging_path, data)
+            .await
+            .map_err(|error| DomainError::Internal(format!("Report storage failed: {error}")))?;
+        tokio::fs::rename(&staging_path, file_path)
+            .await
+            .map_err(|error| DomainError::Internal(format!("Report storage failed: {error}")))?;
+        Ok::<_, DomainError>(())
+    }
+    .await;
+
+    if let Err(error) = storage_result {
+        if let Err(cleanup_error) = tokio::fs::remove_file(&staging_path).await {
+            if cleanup_error.kind() != std::io::ErrorKind::NotFound {
+                tracing::error!(path = %staging_path.display(), error = %cleanup_error, "Unable to remove incomplete report output");
+            }
+        }
+        return Err(error);
+    }
+    Ok(())
+}
+
+async fn remove_report_file(file_path: &Path) -> Result<(), DomainError> {
+    let extension = file_path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .unwrap_or_default();
+    let staging_path = file_path.with_extension(format!("{extension}.part"));
+    for path in [file_path, staging_path.as_path()] {
+        match tokio::fs::remove_file(path).await {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(DomainError::Internal(format!(
+                    "Report file cleanup failed: {error}"
+                )));
+            }
+        }
+    }
+    Ok(())
+}
 
 /// Port for resolving organization branding context.
 #[async_trait::async_trait]
@@ -37,6 +125,8 @@ pub struct ReportService {
     pub provider_registry: Arc<dyn DataProviderRegistry>,
     pub renderer_registry: Arc<dyn RendererRegistry>,
     pub org_context_resolver: Arc<dyn OrgContextResolver>,
+    active_report_jobs: Arc<Mutex<HashMap<Uuid, oneshot::Sender<()>>>>,
+    report_worker_slots: Arc<Semaphore>,
 }
 
 impl ReportService {
@@ -57,6 +147,8 @@ impl ReportService {
             provider_registry,
             renderer_registry,
             org_context_resolver,
+            active_report_jobs: Arc::new(Mutex::new(HashMap::new())),
+            report_worker_slots: Arc::new(Semaphore::new(4)),
         }
     }
 
@@ -154,79 +246,147 @@ impl ReportService {
         ctx: &RequestContext,
         input: GenerateReportInput,
     ) -> Result<ReportJob, DomainError> {
+        let worker_slot = self
+            .report_worker_slots
+            .clone()
+            .try_acquire_owned()
+            .map_err(|_| {
+                DomainError::Validation("Report worker is busy; try again shortly".into())
+            })?;
         let job = self.create_pending_job(ctx, &input, Uuid::new_v4()).await?;
         let service = self.clone();
         let worker_ctx = ctx.clone();
         let job_id = job.id;
         let output_extension = job.output_format.extension().to_string();
+        let (cancel_tx, cancel_rx) = oneshot::channel();
+        self.active_report_jobs
+            .lock()
+            .await
+            .insert(job_id, cancel_tx);
 
         tokio::spawn(async move {
-            let result = service
-                .generate_report_for_job(&worker_ctx, input, job_id)
-                .await;
-            match result {
-                Ok(export) => {
-                    let temp_dir = std::env::temp_dir()
-                        .join("orbis_reports")
-                        .join(worker_ctx.tenant_id.to_string());
-                    let file_path = temp_dir.join(format!("{job_id}.{output_extension}"));
-                    let storage_result = async {
-                        if export.data.len() > 50 * 1024 * 1024 {
-                            return Err(std::io::Error::other(
-                                "Report exceeds the 50 MiB output limit",
-                            ));
-                        }
-                        tokio::fs::create_dir_all(&temp_dir).await?;
-                        tokio::fs::write(&file_path, &export.data).await?;
-                        service
-                            .job_repo
-                            .update_status(
-                                job_id,
-                                &JobStatus::Completed,
-                                Some(file_path.to_string_lossy().into_owned()),
-                                Some(export.data.len() as i64),
-                                None,
-                            )
-                            .await
-                            .map_err(|error| std::io::Error::other(error.to_string()))
-                    }
-                    .await;
-
-                    if let Err(error) = storage_result {
-                        let message = format!("Report file storage failed: {error}");
-                        if let Err(cleanup_error) = tokio::fs::remove_file(&file_path).await {
-                            if cleanup_error.kind() != std::io::ErrorKind::NotFound {
-                                tracing::error!(report_id = %job_id, error = %cleanup_error, "Unable to remove incomplete report file");
-                            }
-                        }
-                        if let Err(update_error) = service
-                            .job_repo
-                            .update_status(job_id, &JobStatus::Failed, None, None, Some(message))
-                            .await
-                        {
-                            tracing::error!(report_id = %job_id, error = %update_error, "Unable to persist report storage failure");
-                        }
-                    }
-                }
-                Err(error) => {
-                    if let Err(update_error) = service
+            let _worker_slot = worker_slot;
+            let execution = async {
+                let export = service
+                    .generate_report_for_job(&worker_ctx, input, job_id)
+                    .await?;
+                let temp_dir = std::env::temp_dir()
+                    .join("orbis_reports")
+                    .join(worker_ctx.tenant_id.to_string());
+                let file_path = temp_dir.join(format!("{job_id}.{output_extension}"));
+                let storage_result = async {
+                    store_report_file(&temp_dir, &file_path, &export.data).await?;
+                    service
                         .job_repo
                         .update_status(
                             job_id,
-                            &JobStatus::Failed,
+                            &JobStatus::Completed,
+                            Some(file_path.to_string_lossy().into_owned()),
+                            Some(export.data.len() as i64),
                             None,
-                            None,
-                            Some(error.to_string()),
                         )
                         .await
+                }
+                .await;
+                if let Err(error) = storage_result {
+                    if let Err(cleanup_error) = remove_report_file(&file_path).await {
+                        tracing::error!(report_id = %job_id, error = %cleanup_error, "Unable to remove incomplete report output");
+                    }
+                    return Err(error);
+                }
+                Ok::<_, DomainError>(file_path)
+            };
+
+            match await_report_execution(cancel_rx, execution).await {
+                ReportExecutionOutcome::Cancelled => {
+                    let file_path = std::env::temp_dir()
+                        .join("orbis_reports")
+                        .join(worker_ctx.tenant_id.to_string())
+                        .join(format!("{job_id}.{output_extension}"));
+                    if let Err(error) = remove_report_file(&file_path).await {
+                        tracing::error!(report_id = %job_id, error = %error, "Unable to remove cancelled report output");
+                    }
+                    if let Err(error) = service
+                        .job_repo
+                        .update_status(job_id, &JobStatus::Cancelled, None, None, None)
+                        .await
                     {
-                        tracing::error!(report_id = %job_id, error = %update_error, "Unable to persist report generation failure");
+                        tracing::error!(report_id = %job_id, error = %error, "Unable to persist report cancellation");
                     }
                 }
+                ReportExecutionOutcome::Finished(result) => match result {
+                    Ok(_) => {}
+                    Err(error) => {
+                        if let Err(update_error) = service
+                            .job_repo
+                            .update_status(
+                                job_id,
+                                &JobStatus::Failed,
+                                None,
+                                None,
+                                Some(error.to_string()),
+                            )
+                            .await
+                        {
+                            tracing::error!(report_id = %job_id, error = %update_error, "Unable to persist report failure");
+                        }
+                    }
+                },
             }
+            service.active_report_jobs.lock().await.remove(&job_id);
         });
 
         Ok(job)
+    }
+
+    pub async fn cancel_report(&self, job_id: Uuid) -> Result<bool, DomainError> {
+        let cancel = self.active_report_jobs.lock().await.remove(&job_id);
+        match cancel {
+            Some(cancel) => cancel.send(()).map(|()| true).map_err(|_| {
+                DomainError::Internal("Report worker stopped before cancellation".into())
+            }),
+            None => Ok(false),
+        }
+    }
+
+    pub async fn cleanup_expired_reports(&self) -> Result<usize, DomainError> {
+        let cutoff = Utc::now() - chrono::Duration::hours(24);
+        let mut removed = 0;
+        loop {
+            let expired = self
+                .job_repo
+                .find_expired_completed_before(cutoff, 100)
+                .await?;
+            if expired.is_empty() {
+                break;
+            }
+            let batch_size = expired.len();
+            for (job_id, file_path) in expired {
+                match tokio::fs::remove_file(&file_path).await {
+                    Ok(()) => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                    Err(error) => {
+                        return Err(DomainError::Internal(format!(
+                            "Expired report cleanup failed for {job_id}: {error}"
+                        )));
+                    }
+                }
+                self.job_repo
+                    .update_status(
+                        job_id,
+                        &JobStatus::Failed,
+                        None,
+                        None,
+                        Some("Report download has expired".into()),
+                    )
+                    .await?;
+                removed += 1;
+            }
+            if batch_size < 100 {
+                break;
+            }
+        }
+        Ok(removed)
     }
 
     pub async fn generate_report_for_job(
@@ -637,4 +797,95 @@ fn validate_param_type(
         )));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[tokio::test]
+    async fn report_worker_cancellation_interrupts_pending_generation() {
+        let (cancel_tx, cancel_rx) = oneshot::channel();
+        let worker = tokio::spawn(await_report_execution(
+            cancel_rx,
+            std::future::pending::<Result<(), DomainError>>(),
+        ));
+        cancel_tx
+            .send(())
+            .expect("worker cancellation receiver exists");
+
+        let outcome = tokio::time::timeout(Duration::from_millis(100), worker)
+            .await
+            .expect("cancellation must not wait for report generation")
+            .expect("worker task should not panic");
+        assert!(matches!(outcome, ReportExecutionOutcome::Cancelled));
+    }
+
+    #[tokio::test]
+    async fn report_worker_returns_generation_failures_to_status_persistence() {
+        let (_cancel_tx, cancel_rx) = oneshot::channel();
+        let outcome = await_report_execution(cancel_rx, async {
+            Err::<(), _>(DomainError::Internal("renderer failed".into()))
+        })
+        .await;
+
+        assert!(matches!(
+            outcome,
+            ReportExecutionOutcome::Finished(Err(DomainError::Internal(message)))
+                if message == "renderer failed"
+        ));
+    }
+
+    #[tokio::test]
+    async fn report_storage_publishes_complete_file_and_removes_staging_output() {
+        let directory = std::env::temp_dir().join(format!("orbis-report-test-{}", Uuid::new_v4()));
+        let file_path = directory.join("test.xlsx");
+        let staging_path = directory.join("test.xlsx.part");
+        let data = b"complete workbook bytes";
+
+        store_report_file(&directory, &file_path, data)
+            .await
+            .expect("report should be atomically stored");
+        assert_eq!(
+            tokio::fs::read(&file_path)
+                .await
+                .expect("completed report is readable"),
+            data
+        );
+        assert!(
+            tokio::fs::metadata(&staging_path).await.is_err(),
+            "staging output must not remain after publication"
+        );
+        remove_report_file(&file_path)
+            .await
+            .expect("report output should be removable");
+        tokio::fs::remove_dir(&directory)
+            .await
+            .expect("test directory should be empty after cleanup");
+    }
+
+    #[tokio::test]
+    async fn report_storage_failure_does_not_leave_a_partial_download() {
+        let directory = std::env::temp_dir().join(format!("orbis-report-test-{}", Uuid::new_v4()));
+        let file_path = directory.join("test.xlsx");
+        tokio::fs::create_dir_all(&file_path)
+            .await
+            .expect("create a conflicting destination");
+
+        let result = store_report_file(&directory, &file_path, b"workbook").await;
+        assert!(matches!(result, Err(DomainError::Internal(_))));
+        assert!(
+            tokio::fs::metadata(directory.join("test.xlsx.part"))
+                .await
+                .is_err(),
+            "failed publication must remove its staging file"
+        );
+        tokio::fs::remove_dir(&file_path)
+            .await
+            .expect("remove conflicting destination");
+        tokio::fs::remove_dir(&directory)
+            .await
+            .expect("remove test directory");
+    }
 }

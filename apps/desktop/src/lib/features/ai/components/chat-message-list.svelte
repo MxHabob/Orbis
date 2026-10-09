@@ -1,7 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { marked } from "marked";
-import { api } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
@@ -40,31 +39,9 @@ let {
 let expandedTools = $state<Record<string, boolean>>({});
 let expandedUserMessages = $state<Record<string, boolean>>({});
 let copiedMessageId = $state<string | null>(null);
-let reportDownloadErrors = $state<Record<string, boolean>>({});
 let editingMessageId = $state<string | null>(null);
 let editingText = $state("");
 let showScrollBottom = $state(false);
-
-async function downloadReport(jobId: string) {
-  try {
-    const bytes = await api.downloadReportFile(jobId);
-    const blob = new Blob([bytes], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `outstanding-fees-${jobId}.xlsx`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    reportDownloadErrors[jobId] = false;
-  } catch (error) {
-    console.error("Failed to download report:", error);
-    reportDownloadErrors[jobId] = true;
-  }
-}
 
 function feeStatusLabel(status: string) {
   switch (status) {
@@ -341,33 +318,6 @@ function handleContentClick(e: MouseEvent) {
                       </tbody>
                     </table>
                   </div>
-                </section>
-              {:else if data.type === "report_job"}
-                <section class="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card/70 p-3.5">
-                  <div class="min-w-0 text-xs text-muted-foreground">
-                    {#if data.status === "completed"}
-                      {m.ai_ui_unpaid_fees_report_ready()}
-                    {:else if data.status === "failed"}
-                      <span class="text-destructive">
-                        {data.statusError ? m.ai_ui_unpaid_fees_report_download_failed() : m.ai_ui_unpaid_fees_report_failed()}
-                      </span>
-                    {:else}
-                      {m.ai_ui_unpaid_fees_report_processing()}
-                    {/if}
-                    {#if reportDownloadErrors[data.job_id]}
-                      <p class="mt-1 text-destructive">{m.ai_ui_unpaid_fees_report_download_failed()}</p>
-                    {/if}
-                  </div>
-                  {#if data.status === "completed"}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      class="shrink-0"
-                      onclick={() => downloadReport(data.job_id)}
-                    >
-                      {m.ai_ui_unpaid_fees_report_ready()}
-                    </Button>
-                  {/if}
                 </section>
               {/if}
             {/each}

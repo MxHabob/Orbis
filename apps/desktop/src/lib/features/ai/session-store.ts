@@ -16,8 +16,7 @@ export interface UnpaidFeeUiRow {
 }
 
 export type AiUiData =
-  | { type: "unpaid_fees"; items: UnpaidFeeUiRow[] }
-  | { type: "report_job"; job_id: string; status?: string; statusError?: boolean };
+  | { type: "unpaid_fees"; items: UnpaidFeeUiRow[] };
 
 export interface AiChatMessage {
   id: string;
@@ -33,9 +32,6 @@ export interface AiChatMessage {
 export function parseAiUiData(value: unknown): AiUiData | null {
   if (!value || typeof value !== "object" || !("type" in value)) return null;
   const candidate = value as Record<string, unknown>;
-  if (candidate.type === "report_job" && typeof candidate.job_id === "string") {
-    return { type: "report_job", job_id: candidate.job_id };
-  }
   if (candidate.type !== "unpaid_fees" || !Array.isArray(candidate.items)) {
     return null;
   }

@@ -430,18 +430,8 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             provider_key: "academic.term_result",
         },
         // ═══════════════════════════════════════════════════════════════════════
-        // 4. FINANCIAL & ACCOUNTING REPORTS (46 Reports)
+        // 4. FINANCIAL & ACCOUNTING REPORTS (45 Reports)
         // ═══════════════════════════════════════════════════════════════════════
-        ReportDefEntry {
-            code: "rep.finance.outstanding-fees",
-            name: "Outstanding Student Fees",
-            name_ar: "الرسوم الدراسية غير المسددة",
-            domain: "finance",
-            category: "fees",
-            description: "Students with an unpaid fee balance, grouped by fee obligation",
-            description_ar: "الطلاب الذين لديهم رسوم غير مسددة مع تفاصيل الالتزام",
-            provider_key: "finance.outstanding_fees",
-        },
         ReportDefEntry {
             code: "rep.finance.trial-balance",
             name: "General Ledger Trial Balance Report",

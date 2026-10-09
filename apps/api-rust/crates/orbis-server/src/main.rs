@@ -120,7 +120,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build data provider registry — register all available providers
     let mut provider_registry = InMemoryDataProviderRegistry::new();
-    provider_registry.register_provider(Box::new(OutstandingFeesDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(FeeCollectionDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(StudentListDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(TermResultDataProvider { db: db.clone() }));
@@ -523,7 +522,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         integration_service,
         notification_adapter,
         workflow_service,
-        report_service,
+        report_service: report_service.clone(),
         ai_service,
         autopilot_service: autopilot_service.clone(),
         autopilot_task_repo: autopilot_task_repo.clone(),
@@ -555,6 +554,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         org_repo.clone(),
     ));
     let _scheduler_handle = autopilot_scheduler.spawn(60);
+
+    let report_cleanup_service = report_service.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60 * 60));
+        loop {
+            interval.tick().await;
+            match report_cleanup_service.cleanup_expired_reports().await {
+                Ok(removed) if removed > 0 => {
+                    tracing::info!(removed, "Expired report files cleaned up");
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    tracing::error!(error = %error, "Expired report cleanup failed");
+                }
+            }
+        }
+    });
 
     // Build Axum Router
     let app = app_router(state);

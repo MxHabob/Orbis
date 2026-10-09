@@ -33,12 +33,6 @@ use orbis_domain::queries::filters::{
     StudentFilter,
 };
 
-const AI_UNPAID_FEES_TABLE_LIMIT: u64 = 50;
-
-fn is_large_unpaid_result(total_count: u64) -> bool {
-    total_count > AI_UNPAID_FEES_TABLE_LIMIT
-}
-
 fn take_private_ui_result(result: &mut serde_json::Value) -> Option<serde_json::Value> {
     result
         .as_object_mut()
@@ -1311,7 +1305,7 @@ impl AiOrchestrationService {
                     only_unpaid: Some(true),
                     pagination: Some(PaginationParams {
                         page: Some(1),
-                        page_size: Some(51),
+                        page_size: Some(50),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -1322,40 +1316,7 @@ impl AiOrchestrationService {
                     .list_student_fees(ctx.tenant_id, filter)
                     .await?;
 
-                if is_large_unpaid_result(fees.total_count) {
-                    self.permission_checker
-                        .check(ctx, Permission::ExportData)
-                        .await?;
-                    let report = self
-                        .report_service
-                        .enqueue_report(
-                            ctx,
-                            GenerateReportInput {
-                                report_code: "rep.finance.outstanding-fees".into(),
-                                parameters: period_id
-                                    .map(|id| {
-                                        [("period_id".into(), ParamValue::Id(id.to_string()))]
-                                            .into_iter()
-                                            .collect()
-                                    })
-                                    .unwrap_or_default(),
-                                output_format: OutputFormat::Xlsx,
-                                locale: ReportLocale::Ar,
-                            },
-                        )
-                        .await?;
-                    return Ok(json!({
-                        "total_count": fees.total_count,
-                        "delivery": "background_report",
-                        "report_job_id": report.id,
-                        "report_status": report.status.to_string(),
-                        "_ui_private_result": {
-                            "type": "report_job",
-                            "job_id": report.id
-                        }
-                    }));
-                }
-
+                let has_more = fees.total_count > fees.items.len() as u64;
                 let mut rows = Vec::with_capacity(fees.items.len());
                 let mut total_balance = rust_decimal::Decimal::ZERO;
                 for fee in fees.items {
@@ -1376,6 +1337,7 @@ impl AiOrchestrationService {
 
                 Ok(json!({
                     "total_count": fees.total_count,
+                    "has_more": has_more,
                     "total_balance": total_balance.to_string(),
                     "_ui_private_result": {
                         "type": "unpaid_fees",
@@ -2195,7 +2157,7 @@ impl AiOrchestrationService {
 mod tests {
     use super::{
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
-        is_large_unpaid_result, required_tool_permission, take_private_ui_result,
+        required_tool_permission, take_private_ui_result,
         teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
     };
     use crate::context::{ActionSource, RequestContext};
@@ -2249,6 +2211,19 @@ mod tests {
     }
 
     #[test]
+    fn unpaid_fees_requires_finance_read() {
+        let tool = AiOrchestrationService::registered_tools()
+            .into_iter()
+            .find(|tool| tool.name == "get_unpaid_fees")
+            .expect("unpaid-fee query tool is registered");
+
+        assert_eq!(
+            required_tool_permission(&tool).expect("tool permission is required"),
+            Permission::FinanceRead
+        );
+    }
+
+    #[test]
     fn missing_or_unknown_tool_permissions_are_denied() {
         for required_permission in [None, Some("not:a:permission".into())] {
             let tool = AiToolDefinition {
@@ -2274,8 +2249,8 @@ mod tests {
         };
         let tool = AiOrchestrationService::registered_tools()
             .into_iter()
-            .next()
-            .expect("registered tools exist");
+            .find(|tool| tool.name == "get_unpaid_fees")
+            .expect("unpaid-fee query tool is registered");
 
         let result = check_tool_permission(&DenyPermissionChecker, &ctx, &tool).await;
         assert!(matches!(result, Err(DomainError::Unauthorized(_))));
@@ -2339,12 +2314,7 @@ mod tests {
         assert!(unit_in_scope(None, None));
         assert!(tool_supports_unit_scoping("get_student_profile"));
         assert!(!tool_supports_unit_scoping("get_financial_summary"));
-    }
-
-    #[test]
-    fn unpaid_fee_table_threshold_includes_exactly_fifty_rows() {
-        assert!(!is_large_unpaid_result(50));
-        assert!(is_large_unpaid_result(51));
+        assert!(!tool_supports_unit_scoping("get_unpaid_fees"));
     }
 
     #[test]

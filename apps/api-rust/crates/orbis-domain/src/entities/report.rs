@@ -502,6 +502,7 @@ pub enum JobStatus {
     Processing,
     Completed,
     Failed,
+    Cancelled,
 }
 
 impl std::fmt::Display for JobStatus {
@@ -511,6 +512,7 @@ impl std::fmt::Display for JobStatus {
             Self::Processing => write!(f, "processing"),
             Self::Completed => write!(f, "completed"),
             Self::Failed => write!(f, "failed"),
+            Self::Cancelled => write!(f, "cancelled"),
         }
     }
 }
@@ -521,6 +523,7 @@ impl JobStatus {
             "processing" => Self::Processing,
             "completed" => Self::Completed,
             "failed" => Self::Failed,
+            "cancelled" => Self::Cancelled,
             _ => Self::Pending,
         }
     }
