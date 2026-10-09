@@ -13,7 +13,7 @@
 use async_trait::async_trait;
 use base64::Engine;
 use chrono::Utc;
-use ed25519_dalek::{Signature, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use orbis_app::ports::license::LicenseRuntime;
 use orbis_domain::entities::license::*;
 use orbis_domain::errors::DomainError;
@@ -23,6 +23,11 @@ use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
 
 use super::mulverse_client::MulverseClient;
+use super::mulverse_client::{
+    MulverseApiError, RefreshTrialRequest, RegisterTrialRequest, TrialChallenge,
+    TrialRegistrationResponse,
+};
+use super::trial_device_identity;
 
 // ═══════════════════════════════════════════════════════════════
 // EMBEDDED PUBLIC KEY — Compile-time Ed25519 verification key
@@ -43,6 +48,12 @@ const EMBEDDED_KEY_ID: &str = match option_env!("MULVERSE_LICENSE_KEY_ID") {
 
 const LICENSE_SNAPSHOT_FILE: &str = "license_snapshot.json";
 const INSTALLATION_ID_FILE: &str = "installation_id";
+const PROVISIONAL_TRIAL_DAYS: u32 = 7;
+
+enum TrialSyncError {
+    Api(MulverseApiError),
+    Domain(DomainError),
+}
 
 // ═══════════════════════════════════════════════════════════════
 // OFFLINE CRYPTOGRAPHIC VERIFICATION (Contract Section 7)
@@ -204,6 +215,16 @@ impl MulverseLicenseRuntime {
     fn evaluate_state(&self, snapshot: &mut LicenseSnapshot) {
         let now = Utc::now();
 
+        if matches!(
+            snapshot.state,
+            LicenseState::Suspended
+                | LicenseState::Revoked
+                | LicenseState::DeactivationPending
+                | LicenseState::Invalid
+        ) {
+            return;
+        }
+
         // 1. Clock rollback detection
         if snapshot.detect_clock_rollback() {
             warn!("Clock rollback detected");
@@ -318,17 +339,182 @@ impl MulverseLicenseRuntime {
         debug!(kid = %entitlement.kid, "Ed25519 signature verified successfully");
         Ok(())
     }
+
+    fn sign_trial_challenge(
+        &self,
+        challenge: &TrialChallenge,
+        fields: &[String],
+    ) -> Result<(String, String), DomainError> {
+        let key = trial_device_identity::load_or_create(&self.app_data_dir)
+            .map_err(DomainError::Internal)?;
+        let mut message = String::from("mulverse-trial-v1");
+        for field in fields {
+            message.push('\n');
+            message.push_str(field);
+        }
+        message.push('\n');
+        message.push_str(&challenge.challenge);
+        let signature = key.sign(message.as_bytes());
+        Ok((
+            base64::engine::general_purpose::STANDARD
+                .encode(key.verifying_key().to_bytes()),
+            base64::engine::general_purpose::STANDARD.encode(signature.to_bytes()),
+        ))
+    }
+
+    async fn register_central_trial(
+        &self,
+    ) -> Result<TrialRegistrationResponse, TrialSyncError> {
+        let challenge = self
+            .mulverse_client
+            .create_trial_challenge()
+            .await
+            .map_err(TrialSyncError::Api)?;
+        let installation_id = self.installation_id();
+        let fields = vec![
+            "register".to_owned(),
+            challenge.challenge_id.clone(),
+            installation_id.clone(),
+            std::env::consts::OS.to_owned(),
+            self.app_version.clone(),
+        ];
+        let (device_public_key, device_signature) =
+            self.sign_trial_challenge(&challenge, &fields).map_err(TrialSyncError::Domain)?;
+        self.mulverse_client
+            .register_trial(&RegisterTrialRequest {
+                device_public_key,
+                device_signature,
+                challenge_id: challenge.challenge_id,
+                challenge: challenge.challenge,
+                installation_id,
+                platform: std::env::consts::OS.to_owned(),
+                app_version: self.app_version.clone(),
+                machine_label: hostname::get().ok().and_then(|value| value.into_string().ok()),
+            })
+            .await
+            .map_err(TrialSyncError::Api)
+    }
+
+    async fn refresh_central_trial(
+        &self,
+        trial_id: &str,
+    ) -> Result<TrialRegistrationResponse, TrialSyncError> {
+        let challenge = self
+            .mulverse_client
+            .create_trial_challenge()
+            .await
+            .map_err(TrialSyncError::Api)?;
+        let installation_id = self.installation_id();
+        let fields = vec![
+            "refresh".to_owned(),
+            challenge.challenge_id.clone(),
+            trial_id.to_owned(),
+            installation_id.clone(),
+            self.app_version.clone(),
+        ];
+        let (device_public_key, device_signature) =
+            self.sign_trial_challenge(&challenge, &fields).map_err(TrialSyncError::Domain)?;
+        self.mulverse_client
+            .refresh_trial(&RefreshTrialRequest {
+                trial_id: trial_id.to_owned(),
+                device_public_key,
+                device_signature,
+                challenge_id: challenge.challenge_id,
+                challenge: challenge.challenge,
+                installation_id,
+                app_version: self.app_version.clone(),
+            })
+            .await
+            .map_err(TrialSyncError::Api)
+    }
+
+    fn snapshot_from_trial_response(
+        &self,
+        current: &LicenseSnapshot,
+        response: TrialRegistrationResponse,
+    ) -> Result<LicenseSnapshot, DomainError> {
+        if response.trial.status != "active"
+            || response.trial.installation_id != current.installation_id
+        {
+            return Err(DomainError::Forbidden(
+                "Mulverse returned an inactive or mismatched trial device".to_owned(),
+            ));
+        }
+        let entitlement = response.signed_entitlement;
+        if entitlement.payload.license_id != response.trial.id
+            || entitlement.payload.plan_key != "TRIAL"
+            || entitlement.payload.installation_id != current.installation_id
+        {
+            return Err(DomainError::Internal(
+                "Mulverse returned a trial entitlement bound to different device data".to_owned(),
+            ));
+        }
+        self.verify_entitlement_signature(&entitlement)
+            .map_err(|error| {
+                DomainError::Internal(format!(
+                    "Central trial entitlement signature verification failed: {error}"
+                ))
+            })?;
+
+        let mut snapshot = LicenseSnapshot::new_unavailable(
+            current.installation_id.clone(),
+            self.app_version.clone(),
+        );
+        snapshot.signed_entitlement = Some(entitlement.clone());
+        snapshot.trial_started_at = Some(entitlement.payload.valid_from);
+        snapshot.trial_policy.duration_days = self.trial_policy.duration_days;
+        snapshot.last_sync_at = Some(Utc::now());
+        snapshot.last_known_time = Utc::now();
+        self.evaluate_state(&mut snapshot);
+        Ok(snapshot)
+    }
+
+    fn provisional_trial_snapshot(
+        &self,
+        current: &LicenseSnapshot,
+    ) -> Result<LicenseSnapshot, DomainError> {
+        let mut snapshot = current.clone();
+        if snapshot.trial_started_at.is_none() {
+            snapshot = LicenseSnapshot::new_trial(
+                current.installation_id.clone(),
+                self.app_version.clone(),
+                self.trial_policy.clone(),
+            );
+        }
+        snapshot.trial_policy.duration_days = PROVISIONAL_TRIAL_DAYS;
+        snapshot.last_known_time = Utc::now();
+        self.evaluate_state(&mut snapshot);
+        if snapshot.state != LicenseState::Trial {
+            return Err(DomainError::Conflict(
+                "The seven-day offline trial period has expired. Connect to Mulverse to continue."
+                    .to_owned(),
+            ));
+        }
+        Ok(snapshot)
+    }
 }
 
 #[async_trait]
 impl LicenseRuntime for MulverseLicenseRuntime {
     fn current_snapshot(&self) -> LicenseSnapshot {
-        self.snapshot
-            .read()
-            .map(|guard| guard.clone())
-            .unwrap_or_else(|_| {
+        let mut snapshot = match self.snapshot.write() {
+            Ok(mut guard) => {
+                if guard.signed_entitlement.is_none() && guard.trial_started_at.is_some() {
+                    guard.trial_policy.duration_days =
+                        guard.trial_policy.duration_days.min(PROVISIONAL_TRIAL_DAYS);
+                }
+                self.evaluate_state(&mut guard);
+                guard.clone()
+            }
+            Err(_) => {
                 LicenseSnapshot::new_unavailable("unknown".to_string(), self.app_version.clone())
-            })
+            }
+        };
+        if snapshot.signed_entitlement.is_none() && snapshot.trial_started_at.is_some() {
+            snapshot.trial_policy.duration_days =
+                snapshot.trial_policy.duration_days.min(PROVISIONAL_TRIAL_DAYS);
+        }
+        snapshot
     }
 
     fn current_state_dto(&self) -> LicenseStateDto {
@@ -364,6 +550,11 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                     "Installation ID mismatch — updating to current installation"
                 );
                 snapshot.installation_id = current_id;
+            }
+
+            if snapshot.signed_entitlement.is_none() && snapshot.trial_started_at.is_some() {
+                snapshot.trial_policy.duration_days =
+                    snapshot.trial_policy.duration_days.min(PROVISIONAL_TRIAL_DAYS);
             }
 
             if !entitlement_invalid && snapshot.state != LicenseState::Suspended {
@@ -469,32 +660,28 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         let _lifecycle_guard = self.lifecycle_lock.lock().await;
         let current = self.current_snapshot();
 
-        if current.trial_started_at.is_some() {
-            return Err(DomainError::Conflict(
-                "A trial period has already been used on this installation".to_string(),
-            ));
-        }
-
         if current.signed_entitlement.is_some() {
             return Err(DomainError::Conflict(
                 "Cannot start trial — a valid license is already active".to_string(),
             ));
         }
 
-        let snapshot = LicenseSnapshot::new_trial(
-            current.installation_id.clone(),
-            self.app_version.clone(),
-            self.trial_policy.clone(),
-        );
-
-        self.update_snapshot(snapshot.clone())?;
-
-        info!(
-            duration_days = self.trial_policy.duration_days,
-            "Trial evaluation period started"
-        );
-
-        Ok(snapshot)
+        match self.register_central_trial().await {
+            Ok(response) => {
+                let snapshot = self.snapshot_from_trial_response(&current, response)?;
+                self.update_snapshot(snapshot.clone())?;
+                info!("Centralized trial registration succeeded");
+                Ok(snapshot)
+            }
+            Err(TrialSyncError::Api(error)) if error.is_network_error() => {
+                let snapshot = self.provisional_trial_snapshot(&current)?;
+                self.update_snapshot(snapshot.clone())?;
+                warn!("Mulverse unavailable; started a seven-day provisional offline trial");
+                Ok(snapshot)
+            }
+            Err(TrialSyncError::Api(error)) => Err(DomainError::from(error)),
+            Err(TrialSyncError::Domain(error)) => Err(error),
+        }
     }
 
     async fn refresh(&self) -> Result<(), DomainError> {
@@ -510,10 +697,60 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         let se = match &current.signed_entitlement {
             Some(se) => se.clone(),
             None => {
+                if current.trial_started_at.is_some() {
+                    return match self.register_central_trial().await {
+                        Ok(response) => {
+                            let snapshot = self.snapshot_from_trial_response(&current, response)?;
+                            self.update_snapshot(snapshot)?;
+                            Ok(())
+                        }
+                        Err(TrialSyncError::Api(error)) if error.is_network_error() => {
+                            let mut snapshot = current;
+                            self.evaluate_state(&mut snapshot);
+                            self.update_snapshot(snapshot)?;
+                            Ok(())
+                        }
+                        Err(TrialSyncError::Api(error)) if error.is_license_error() => {
+                            let mut snapshot = current;
+                            snapshot.state = LicenseState::Revoked;
+                            snapshot.last_known_time = Utc::now();
+                            self.update_snapshot(snapshot)?;
+                            Err(DomainError::from(error))
+                        }
+                        Err(TrialSyncError::Api(error)) => Err(DomainError::from(error)),
+                        Err(TrialSyncError::Domain(error)) => Err(error),
+                    };
+                }
                 debug!("No signed entitlement to refresh");
                 return Ok(());
             }
         };
+
+        if se.payload.plan_key.eq_ignore_ascii_case("TRIAL") {
+            return match self.refresh_central_trial(&se.payload.license_id).await {
+                Ok(response) => {
+                    let snapshot = self.snapshot_from_trial_response(&current, response)?;
+                    self.update_snapshot(snapshot)?;
+                    Ok(())
+                }
+                Err(TrialSyncError::Api(error)) if error.is_network_error() => {
+                    let mut snapshot = current;
+                    self.evaluate_state(&mut snapshot);
+                    self.update_snapshot(snapshot)?;
+                    Ok(())
+                }
+                Err(TrialSyncError::Api(error)) if error.is_license_error() => {
+                    let mut snapshot = current;
+                    snapshot.state = LicenseState::Revoked;
+                    snapshot.last_known_time = Utc::now();
+                    self.update_snapshot(snapshot)?;
+                    warn!(error = %error, "Central trial was denied by Mulverse");
+                    Ok(())
+                }
+                Err(TrialSyncError::Api(error)) => Err(DomainError::from(error)),
+                Err(TrialSyncError::Domain(error)) => Err(error),
+            };
+        }
 
         let request = RefreshRequest {
             license_id: se.payload.license_id.clone(),
@@ -576,7 +813,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         let _lifecycle_guard = self.lifecycle_lock.lock().await;
         let current = self.current_snapshot();
 
-        if let Some(ref se) = current.signed_entitlement {
+        if let Some(ref se) = current.signed_entitlement
+            && !se.payload.plan_key.eq_ignore_ascii_case("TRIAL")
+        {
             let request = DeactivationRequest {
                 license_id: se.payload.license_id.clone(),
                 installation_id: current.installation_id.clone(),

@@ -323,7 +323,7 @@ impl MulverseClient {
         } else {
             Err(self.parse_error_response(response).await)
         }
-    }────
+    }
 
     /// POST with exponential backoff and jitter for transient failures.
     async fn post_with_retry<T: serde::Serialize>(
