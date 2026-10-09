@@ -8,6 +8,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -125,6 +126,20 @@ const studyModes = [
           failureMessage={m.bilingual_entry_failure()}
         />
       </div>
+
+      {#if !state.isEditMode}
+        <div class="px-6 py-4 flex items-start gap-3">
+          <Checkbox
+            id="student-create-login-account"
+            checked={state.createLoginAccount}
+            onCheckedChange={(value) => (state.createLoginAccount = !!value)}
+          />
+          <label for="student-create-login-account" class="flex flex-col gap-1 text-start cursor-pointer">
+            <span class="text-xs font-semibold text-foreground">{m.bulk_entry_employee_header_provision_user()}</span>
+            <span class="text-[11px] text-muted-foreground">{m.students_create_login_account_description()}</span>
+          </label>
+        </div>
+      {/if}
 
       <!-- Target Class & Section with CapacityIndicator -->
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">

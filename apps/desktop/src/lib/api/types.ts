@@ -300,6 +300,7 @@ export interface RegisterStudentInput {
   special_needs_notes?: string;
   phone?: string;
   email?: string;
+  address?: string;
   initial_period_id?: string;
   initial_class_id?: string;
   study_mode?: string;
@@ -1362,6 +1363,7 @@ export interface LicenseStateDto {
   product: string;
   edition: string | null;
   plan: string | null;
+  plan_name: string | null;
   organization_id: string | null;
   valid_until: string | null;
   days_until_expiry: number | null;

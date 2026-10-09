@@ -6,7 +6,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 <script lang="ts">
   import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { api, queryKeys } from "$lib/api";
+  import { api, queryKeys, extractErrorMessage } from "$lib/api";
   import { createClassesQuery, createPeriodsQuery } from "$lib/features/academics";
   import { createStudentQuery, createEnrollmentsQuery } from "$lib/features/students";
   import * as m from "$lib/paraglide/messages";
@@ -36,7 +36,8 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   } from "@orbis/icons";
   import { toast } from "@orbis/ui";
   import { academicContext, confirmStore } from "$lib/stores";
-  import { Avatar, AvatarFallback, AvatarImage } from "@orbis/ui/avatar";
+  import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+  import { useStudentFolder } from "$lib/features/documents/queries";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import {
@@ -85,6 +86,25 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
       person?.full_name ||
       ""
   );
+  const studentFolderQuery = useStudentFolder(
+    () => student?.id || studentId,
+    () => studentFullName,
+  );
+
+  async function handleStudentAvatarUpload(url: string) {
+    try {
+      await api.updateStudentProfile({
+        student_id: student?.id || studentId,
+        avatar_url: url,
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.student.detail(student?.id || studentId),
+      });
+      toast.success(m.students_avatar_updated());
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
+  }
 
   const currentClass = $derived(
     enrollment?.class_id
@@ -402,22 +422,27 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
           class="h-full p-4 flex flex-col gap-5 overflow-y-auto scrollbar-hide text-start bg-transparent"
         >
           {#if studentDetail}
-            <!-- Squared Avatar Display -->
+            <!-- Squared Avatar Upload -->
             <div class="w-full flex justify-center">
-              <Avatar
-                class="w-[85%] max-w-[180px] min-w-[120px] aspect-square h-auto rounded-xl shadow-xs border border-border/50"
-              >
-                <AvatarImage
-                  src={person?.avatar_url || undefined}
-                  alt={studentFullName || ""}
-                />
-                <AvatarFallback
-                  class="text-5xl font-bold rounded-xl flex items-center justify-center bg-muted text-muted-foreground"
-                >
-                  {String(studentFullName || "S").slice(0, 1)}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarUpload
+                avatarUrl={person?.avatar_url || null}
+                entityType="student"
+                entityId={student?.id || studentId}
+                folderId={studentFolderQuery.data?.id}
+                isLoading={!studentFolderQuery.data}
+                fallbackText={studentFullName || "S"}
+                size={180}
+                class="rounded-xl shadow-xs border border-border/50"
+                onupload={handleStudentAvatarUpload}
+              />
             </div>
+            {#if studentFolderQuery.error}
+              <p class="text-[10px] text-destructive text-center">
+                {m.students_archive_folder_failed({
+                  error: extractErrorMessage(studentFolderQuery.error),
+                })}
+              </p>
+            {/if}
 
             <!-- Student Metadata List -->
             <div

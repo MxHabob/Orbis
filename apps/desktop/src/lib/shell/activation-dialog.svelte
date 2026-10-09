@@ -24,7 +24,8 @@ let isDeactivating = $state(false);
 let activationError = $state<string | null>(null);
 let activationSuccess = $state(false);
 const planDisplay = $derived(
-  formatLicensePlan(licenseStore.plan) ??
+  formatLicensePlan(licenseStore.planName) ??
+    formatLicensePlan(licenseStore.plan) ??
     formatLicensePlan(licenseStore.edition) ??
     m.settings_entitlement_plan_unavailable(),
 );

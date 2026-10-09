@@ -18,6 +18,12 @@ import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 import { PersonalInfoState } from "./state/personal-info.svelte";
 import { GuardianState } from "./state/guardian-info.svelte";
+import { splitPersonName } from "$lib/shared/utils/person-name";
+import {
+  ensureStudentRegistrationArtifacts,
+  getOrCreateStudentArchiveFolder,
+  provisionStudentLoginAccount,
+} from "./registration-effects";
 import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
@@ -66,6 +72,7 @@ export class StudentFormState {
     email: false,
   });
   registrationStatus = $state("draft");
+  createLoginAccount = $state(false);
 
   // Warnings for duplicate values
   duplicateWarnings = $state<{
@@ -389,29 +396,23 @@ export class StudentFormState {
     this.isSaving = true;
     let targetStudentId = "";
     let targetEnrollmentId = this.studentId || "";
+    let registrationArtifactWarnings: string[] = [];
+    let studentArchiveFolderId: string | undefined;
 
     try {
       if (!this.isEditMode) {
         // 1. Register Student & initial enrollment atomically via StudentService
-        const namePartsAr = (this.personal.nameAr || "").trim().split(/\s+/);
-        const namePartsEn = (this.personal.nameEn || "").trim().split(/\s+/);
-
-        const firstName = namePartsEn[0] || namePartsAr[0] || "طالب";
-        const lastName = namePartsEn.length > 1 ? namePartsEn[namePartsEn.length - 1] : (namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : "جديد");
-        const middleName = namePartsEn.length > 2 ? namePartsEn.slice(1, -1).join(" ") : undefined;
-
-        const firstNameAr = namePartsAr[0] || undefined;
-        const lastNameAr = namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : undefined;
-        const middleNameAr = namePartsAr.length > 2 ? namePartsAr.slice(1, -1).join(" ") : undefined;
+        const namePartsAr = splitPersonName(this.personal.nameAr || this.personal.nameEn);
+        const namePartsEn = splitPersonName(this.personal.nameEn || this.personal.nameAr);
 
         const detail = await api.registerStudent({
           student_number: this.personal.studentNumber || undefined,
-          first_name: firstName,
-          middle_name: middleName,
-          last_name: lastName,
-          first_name_ar: firstNameAr,
-          middle_name_ar: middleNameAr,
-          last_name_ar: lastNameAr,
+          first_name: namePartsEn.firstName,
+          middle_name: namePartsEn.middleName,
+          last_name: namePartsEn.lastName,
+          first_name_ar: namePartsAr.firstName,
+          middle_name_ar: namePartsAr.middleName,
+          last_name_ar: namePartsAr.lastName,
           display_name: displayName,
           national_id: this.personal.nationalId || undefined,
           passport_number: this.personal.passportNumber || undefined,
@@ -423,6 +424,7 @@ export class StudentFormState {
           medical_notes: this.personal.medicalNotes || undefined,
           phone: this.personal.phone || undefined,
           email: this.personal.email.trim() || undefined,
+          address: this.personal.address || undefined,
           initial_period_id: effectiveContext.currentPeriodId || undefined,
           initial_class_id: this.personal.classId || undefined,
           study_mode: this.studyMode,
@@ -432,30 +434,66 @@ export class StudentFormState {
         if (detail.enrollment?.id) {
           targetEnrollmentId = detail.enrollment.id;
         }
+        const registrationArtifacts = await ensureStudentRegistrationArtifacts(
+          targetStudentId,
+          displayName,
+        );
+        studentArchiveFolderId = registrationArtifacts.studentFolder?.id;
+        registrationArtifactWarnings.push(
+          ...registrationArtifacts.warnings,
+        );
+        if (registrationArtifacts.folderError) {
+          registrationArtifactWarnings.push(
+            m.students_archive_folder_failed({ error: registrationArtifacts.folderError }),
+          );
+        }
+        if (this.createLoginAccount) {
+          try {
+            const account = await provisionStudentLoginAccount({
+              studentId: targetStudentId,
+              fullNameAr: this.personal.nameAr,
+              fullNameEn: this.personal.nameEn,
+              email: this.personal.email,
+              phone: this.personal.phone,
+              preferredUsername:
+                this.personal.email || this.personal.phone || this.personal.studentNumber,
+            });
+            toast.success(
+              m.students_login_account_created({ username: account.username }),
+            );
+          } catch (error) {
+            registrationArtifactWarnings.push(
+              m.students_login_account_failed({ error: extractErrorMessage(error) }),
+            );
+          }
+        }
         toast.success(m.common_form_success_create());
       } else {
         targetStudentId = this.originalStudent?.student?.id || this.studentId!;
         targetEnrollmentId = this.originalStudent?.enrollment?.id || "";
+        try {
+          const studentFolder = await getOrCreateStudentArchiveFolder(
+            targetStudentId,
+            displayName,
+          );
+          studentArchiveFolderId = studentFolder.id;
+        } catch (error) {
+          registrationArtifactWarnings.push(
+            m.students_archive_folder_failed({ error: extractErrorMessage(error) }),
+          );
+        }
 
-        const namePartsAr = (this.personal.nameAr || "").trim().split(/\s+/);
-        const namePartsEn = (this.personal.nameEn || "").trim().split(/\s+/);
-
-        const firstName = namePartsEn[0] || namePartsAr[0] || "طالب";
-        const lastName = namePartsEn.length > 1 ? namePartsEn[namePartsEn.length - 1] : (namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : "جديد");
-        const middleName = namePartsEn.length > 2 ? namePartsEn.slice(1, -1).join(" ") : undefined;
-
-        const firstNameAr = namePartsAr[0] || undefined;
-        const lastNameAr = namePartsAr.length > 1 ? namePartsAr[namePartsAr.length - 1] : undefined;
-        const middleNameAr = namePartsAr.length > 2 ? namePartsAr.slice(1, -1).join(" ") : undefined;
+        const namePartsAr = splitPersonName(this.personal.nameAr || this.personal.nameEn);
+        const namePartsEn = splitPersonName(this.personal.nameEn || this.personal.nameAr);
 
         await api.updateStudentProfile({
           student_id: targetStudentId,
-          first_name: firstName,
-          middle_name: middleName,
-          last_name: lastName,
-          first_name_ar: firstNameAr,
-          middle_name_ar: middleNameAr,
-          last_name_ar: lastNameAr,
+          first_name: namePartsEn.firstName,
+          middle_name: namePartsEn.middleName,
+          last_name: namePartsEn.lastName,
+          first_name_ar: namePartsAr.firstName,
+          middle_name_ar: namePartsAr.middleName,
+          last_name_ar: namePartsAr.lastName,
           display_name: displayName,
           national_id: this.personal.nationalId || undefined,
           passport_number: this.personal.passportNumber || undefined,
@@ -512,24 +550,56 @@ export class StudentFormState {
           }
         }
       }
-      // 4. Upload staged document attachments and staged avatar photo with concrete studentId
+      // 4. Store staged files in the student's archive folder.
       if (targetStudentId) {
-        await this.document.uploadPendingAttachments(targetStudentId);
-
-        if (this.avatarFile) {
+        if (!studentArchiveFolderId) {
           try {
-            await api.uploadDocument({
+            studentArchiveFolderId = (
+              await getOrCreateStudentArchiveFolder(targetStudentId, displayName)
+            ).id;
+          } catch (error) {
+            registrationArtifactWarnings.push(
+              m.students_archive_upload_skipped({ error: extractErrorMessage(error) }),
+            );
+          }
+        }
+
+        if (studentArchiveFolderId) {
+          registrationArtifactWarnings.push(
+            ...(await this.document.uploadPendingAttachments(
+              targetStudentId,
+              studentArchiveFolderId,
+            )),
+          );
+        }
+
+        if (this.avatarFile && studentArchiveFolderId) {
+          try {
+            const avatarDocument = await api.uploadFile({
+              file: this.avatarFile,
               name: this.avatarFile.name,
-              mime_type: this.avatarFile.type || "image/jpeg",
               entity_type: "student",
               entity_id: targetStudentId,
+              folder_id: studentArchiveFolderId,
               category: "avatar",
+              asset_type: "image",
               visibility: "public",
-              file_path: this.avatarFile.name,
-              file_size_bytes: this.avatarFile.size,
             });
+            const avatarUrl = avatarDocument.url || avatarDocument.file_path;
+            if (avatarUrl) {
+              await api.updateStudentProfile({
+                student_id: targetStudentId,
+                avatar_url: avatarUrl,
+              });
+              this.avatarUrl = avatarUrl;
+            }
           } catch (avatarErr) {
-            console.warn("Failed to upload staged avatar on student save:", avatarErr);
+            registrationArtifactWarnings.push(
+              m.students_archive_upload_failed({
+                fileName: this.avatarFile.name,
+                error: extractErrorMessage(avatarErr),
+              }),
+            );
           }
         }
       }
@@ -559,6 +629,10 @@ export class StudentFormState {
         queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
         queryClient.invalidateQueries({ queryKey: queryKeys.workflow.all });
         queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+      }
+
+      if (registrationArtifactWarnings.length > 0) {
+        toast.warning(registrationArtifactWarnings.join("؛ "));
       }
 
       goto(localizeHref(`/${this.orgId}/students`));

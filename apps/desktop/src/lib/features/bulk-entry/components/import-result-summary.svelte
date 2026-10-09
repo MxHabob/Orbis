@@ -62,7 +62,7 @@
     <div class="p-4 rounded-2xl bg-destructive/5 border border-destructive/20 space-y-2.5">
       <span class="text-xs font-bold text-destructive block">{m.bulk_entry_quarantined_errors()}</span>
       <div class="max-h-40 overflow-y-auto space-y-1.5 text-xs text-muted-foreground pr-1">
-        {#each result.errors.slice(0, 10) as err}
+        {#each result.errors.slice(0, 10) as err (err.rowNumber)}
           <div class="p-2 rounded-lg bg-card border border-border flex items-start gap-2">
             <span class="px-1.5 py-0.5 rounded bg-destructive/15 text-destructive font-bold font-mono text-[10px]">
               {m.bulk_entry_row_number({ number: err.rowNumber })}
@@ -73,6 +73,27 @@
         {#if result.errors.length > 10}
           <span class="text-[11px] text-muted-foreground block text-center mt-1">
             {m.bulk_entry_more_rows({ count: result.errors.length - 10 })}
+          </span>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  {#if result.warnings.length > 0}
+    <div class="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2.5">
+      <span class="text-xs font-bold text-amber-700 dark:text-amber-400 block">{m.bulk_entry_registration_setup_warnings()}</span>
+      <div class="max-h-40 overflow-y-auto space-y-1.5 text-xs text-muted-foreground pr-1">
+        {#each result.warnings.slice(0, 10) as warning (`${warning.rowNumber}:${warning.reason}`)}
+          <div class="p-2 rounded-lg bg-card border border-border flex items-start gap-2">
+            <span class="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold font-mono text-[10px]">
+              {m.bulk_entry_row_number({ number: warning.rowNumber })}
+            </span>
+            <span class="text-foreground">{warning.reason}</span>
+          </div>
+        {/each}
+        {#if result.warnings.length > 10}
+          <span class="text-[11px] text-muted-foreground block text-center mt-1">
+            +{result.warnings.length - 10}
           </span>
         {/if}
       </div>

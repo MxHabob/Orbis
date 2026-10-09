@@ -87,29 +87,34 @@ export class DocumentInfoState {
     toast.success(m.operations_ui_student_document_attached({ fileName: file.name }));
   }
 
-  async uploadPendingAttachments(targetStudentId: string) {
-    if (!targetStudentId) return;
+  async uploadPendingAttachments(
+    targetStudentId: string,
+    folderId: string,
+  ): Promise<string[]> {
+    if (!targetStudentId || !folderId) return [];
 
     const pendingKeys = Object.keys(this.attachments).filter((k) => {
       const att = this.attachments[k];
       return att && att.file && !att.documentId;
     });
+    const errors: string[] = [];
 
     for (const key of pendingKeys) {
       const att = this.attachments[key];
-      if (!att?.file) continue;
+      const file = att?.file;
+      if (!att || !file) continue;
 
       this.isUploading[key] = true;
       try {
-        const doc = await api.uploadDocument({
-          name: att.fileName || att.file.name,
-          mime_type: att.mimeType || att.file.type || "application/octet-stream",
+        const doc = await api.uploadFile({
+          file,
+          name: att.fileName || file.name,
           entity_type: "student",
           entity_id: targetStudentId,
+          folder_id: folderId,
           category: att.requirementCode,
+          asset_type: "document",
           visibility: "private",
-          file_path: att.file.name,
-          file_size_bytes: att.fileSize || att.file.size,
         });
 
         this.attachments[key] = {
@@ -121,10 +126,18 @@ export class DocumentInfoState {
         };
       } catch (err) {
         console.error(`Failed to upload attached document ${key}:`, err);
+        errors.push(
+          m.students_archive_upload_failed({
+            fileName: att.fileName || file.name,
+            error: err instanceof Error ? err.message : String(err),
+          }),
+        );
       } finally {
         this.isUploading[key] = false;
       }
     }
+
+    return errors;
   }
 
   removeAttachment(reqCode: string) {

@@ -78,6 +78,11 @@
               </div>
 
               <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
+                <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_user_accounts()}</span>
+                <span class="text-base font-bold text-primary mt-1 block">{m.bulk_entry_preview_account_count({ count: studentDetails.userAccountsToProvision })}</span>
+              </div>
+
+              <div class="p-3 rounded-lg bg-muted/40 border border-border/80">
                 <span class="text-xs text-muted-foreground block">{m.bulk_entry_preview_mandatory_fees()}</span>
                 <span class="text-base font-bold text-foreground mt-1 block">{m.bulk_entry_preview_fee_count({ count: studentDetails.mandatoryFeesAssignedCount })}</span>
               </div>
@@ -93,7 +98,7 @@
               <div class="p-3.5 rounded-xl bg-muted/30 border border-border">
                 <span class="text-xs font-bold text-foreground block mb-2">{m.bulk_entry_preview_class_distribution()}</span>
                 <div class="flex flex-wrap gap-2">
-                  {#each Object.entries(studentDetails.classPlacementsSummary) as [className, count]}
+                  {#each Object.entries(studentDetails.classPlacementsSummary) as [className, count] (className)}
                     <span class="px-2.5 py-1 rounded-md bg-card border border-border text-xs font-medium text-foreground flex items-center gap-1.5 shadow-xs">
                       <span>{className}</span>
                       <span class="px-1.5 py-0.2 rounded-full bg-primary/15 text-primary text-[10px] font-bold">{count}</span>

@@ -86,6 +86,30 @@ export async function parseSpreadsheetBytes(
 
     if (matchedMeta) {
       columnMap[c] = matchedMeta.id;
+      continue;
+    }
+
+    if (profile.id === "students" || profile.id === "employees") {
+      const normalizedHeader = headerText.replace(/\*/g, "").trim().toLowerCase();
+      const legacyStudentHeaders: Record<string, string> = {
+        "first_name_ar": "legacy_first_name_ar",
+        "الاسم الأول (عربي)": "legacy_first_name_ar",
+        "first name (arabic)": "legacy_first_name_ar",
+        "middle_name_ar": "legacy_middle_name_ar",
+        "اسم الأب (عربي)": "legacy_middle_name_ar",
+        "middle name (arabic)": "legacy_middle_name_ar",
+        "last_name_ar": "legacy_last_name_ar",
+        "اسم العائلة (عربي)": "legacy_last_name_ar",
+        "last name (arabic)": "legacy_last_name_ar",
+        "first_name": "legacy_first_name",
+        "first name (english)": "legacy_first_name",
+        "first name": "legacy_first_name",
+        "last_name": "legacy_last_name",
+        "last name (english)": "legacy_last_name",
+        "last name": "legacy_last_name",
+      };
+      const legacyColumnId = legacyStudentHeaders[normalizedHeader];
+      if (legacyColumnId) columnMap[c] = legacyColumnId;
     }
   }
 
@@ -112,6 +136,31 @@ export async function parseSpreadsheetBytes(
           cellVal = String(cellVal).trim();
         }
         rowData[colId] = cellVal;
+      }
+    }
+
+    if (profile.id === "students" || profile.id === "employees") {
+      const legacyArabicName = [
+        rowData.legacy_first_name_ar,
+        rowData.legacy_middle_name_ar,
+        rowData.legacy_last_name_ar,
+      ]
+        .filter((part) => String(part ?? "").trim())
+        .join(" ");
+      const legacyEnglishName = [rowData.legacy_first_name, rowData.legacy_last_name]
+        .filter((part) => String(part ?? "").trim())
+        .join(" ");
+
+      if (!rowData.full_name_ar && legacyArabicName) rowData.full_name_ar = legacyArabicName;
+      if (!rowData.full_name_en && legacyEnglishName) rowData.full_name_en = legacyEnglishName;
+      for (const legacyId of [
+        "legacy_first_name_ar",
+        "legacy_middle_name_ar",
+        "legacy_last_name_ar",
+        "legacy_first_name",
+        "legacy_last_name",
+      ]) {
+        delete rowData[legacyId];
       }
     }
 

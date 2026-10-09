@@ -1963,6 +1963,7 @@ export type RegisterEmployeeResponseDto = {
 };
 
 export type RegisterStudentRequest = {
+    address?: string | null;
     avatar_url?: string | null;
     birth_date?: string | null;
     blood_type?: string | null;

@@ -1035,6 +1035,7 @@ mod tests {
                 organization_id: "org-test".to_string(),
                 edition_key: Some("SCHOOL".to_string()),
                 plan_key: Some("SCHOOL_PRO".to_string()),
+                plan_name: Some("School Professional".to_string()),
                 entitlements: vec![],
                 limits: vec![],
                 activation_id: "activation-test".to_string(),

@@ -33,6 +33,7 @@ class LicenseStore {
 
   // Plan & edition
   plan = $derived(this.licenseState?.plan ?? null);
+  planName = $derived(this.licenseState?.plan_name ?? null);
   edition = $derived(this.licenseState?.edition ?? null);
   product = $derived(this.licenseState?.product ?? "ORBIS");
 

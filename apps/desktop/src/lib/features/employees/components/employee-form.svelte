@@ -24,6 +24,7 @@ import {
   AccordionTrigger,
 } from "@orbis/ui/accordion";
 import { FormField, toast } from "@orbis/ui";
+import { Checkbox } from "@orbis/ui/checkbox";
 import {
   Banknotes,
   BuildingOffice,
@@ -44,6 +45,7 @@ import NationalitySelect from "$lib/shared/components/nationality-select.svelte"
 import { formatNumber } from "$lib/core/i18n";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { splitPersonName } from "$lib/shared/utils/person-name";
 
 interface Props {
   orgId: string;
@@ -64,12 +66,17 @@ let {
 const initialEmployee = untrack(() => employee);
 
 // Form State (Initialized directly from employee prop without $effect)
-let firstName = $state(initialEmployee?.first_name || "");
-let middleName = $state(initialEmployee?.middle_name || "");
-let lastName = $state(initialEmployee?.last_name || "");
-let firstNameAr = $state(initialEmployee?.first_name_ar || "");
-let middleNameAr = $state(initialEmployee?.middle_name_ar || "");
-let lastNameAr = $state(initialEmployee?.last_name_ar || "");
+let fullNameEn = $state(
+  [initialEmployee?.first_name, initialEmployee?.middle_name, initialEmployee?.last_name]
+    .filter(Boolean)
+    .join(" "),
+);
+let fullNameAr = $state(
+  [initialEmployee?.first_name_ar, initialEmployee?.middle_name_ar, initialEmployee?.last_name_ar]
+    .filter(Boolean)
+    .join(" "),
+);
+let createLoginAccount = $state(false);
 let nationalId = $state(initialEmployee?.national_id || "");
 let passportNumber = $state(initialEmployee?.passport_number || "");
 let gender = $state(initialEmployee?.gender || "male");
@@ -135,10 +142,12 @@ const updateMutation = createUpdateEmployeeMutation();
 const isSaving = $derived(registerMutation.isPending || updateMutation.isPending);
 
 async function handleSubmit() {
-  if (!firstNameAr.trim() && !firstName.trim()) {
+  if (!fullNameAr.trim() && !fullNameEn.trim()) {
     toast.error(m.employees_error_name_required());
     return;
   }
+  const namePartsAr = splitPersonName(fullNameAr || fullNameEn, "موظف");
+  const namePartsEn = splitPersonName(fullNameEn || fullNameAr, "Employee");
 
   // Serialize payroll + text notes into notes JSON
   const payrollPayload = {
@@ -159,12 +168,13 @@ async function handleSubmit() {
 
   if (mode === "create") {
     const payload: RegisterEmployeeRequest = {
-      first_name: firstName.trim() || firstNameAr.trim(),
-      middle_name: middleName.trim() || undefined,
-      last_name: lastName.trim() || lastNameAr.trim() || undefined,
-      first_name_ar: firstNameAr.trim() || undefined,
-      middle_name_ar: middleNameAr.trim() || undefined,
-      last_name_ar: lastNameAr.trim() || undefined,
+      first_name: namePartsEn.firstName,
+      middle_name: namePartsEn.middleName,
+      last_name: namePartsEn.lastName,
+      first_name_ar: namePartsAr.firstName,
+      middle_name_ar: namePartsAr.middleName,
+      last_name_ar: namePartsAr.lastName,
+      display_name: fullNameAr.trim() || fullNameEn.trim(),
       national_id: nationalId.trim() || undefined,
       passport_number: passportNumber.trim() || undefined,
       gender: gender || "male",
@@ -185,12 +195,26 @@ async function handleSubmit() {
       employment_type: (employmentType || "full_time").toLowerCase(),
       work_shift: (workShift || "morning").toLowerCase(),
       notes: serializedNotes,
-      account: null,
+      account: createLoginAccount
+        ? {
+            enabled: true,
+            preferred_username: email.trim() || employeeNumber.trim() || undefined,
+            role: (employeeType || "teacher").toLowerCase() === "teacher" ? "teacher" : "staff",
+            delivery_channel: email.trim() ? "email" : phone.trim() ? "sms" : "manual",
+          }
+        : null,
     };
 
     try {
       const response = await registerMutation.mutateAsync(payload);
       toast.success(m.employees_save_success());
+      if (response.provisioning) {
+        toast.success(
+          m.employees_login_account_created({
+            username: response.provisioning.username,
+          }),
+        );
+      }
 
       if (onSuccess) {
         onSuccess(response.employee);
@@ -200,12 +224,13 @@ async function handleSubmit() {
     }
   } else if (mode === "edit" && employee) {
     const payload: UpdateEmployeeRequest = {
-      first_name: firstName.trim() || undefined,
-      middle_name: middleName.trim() || undefined,
-      last_name: lastName.trim() || undefined,
-      first_name_ar: firstNameAr.trim() || undefined,
-      middle_name_ar: middleNameAr.trim() || undefined,
-      last_name_ar: lastNameAr.trim() || undefined,
+      first_name: namePartsEn.firstName,
+      middle_name: namePartsEn.middleName,
+      last_name: namePartsEn.lastName,
+      first_name_ar: namePartsAr.firstName,
+      middle_name_ar: namePartsAr.middleName,
+      last_name_ar: namePartsAr.lastName,
+      display_name: fullNameAr.trim() || fullNameEn.trim(),
       national_id: nationalId.trim() || undefined,
       passport_number: passportNumber.trim() || undefined,
       gender: gender || undefined,
@@ -300,47 +325,17 @@ function handleCancelClick() {
         <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
           
           <BilingualNameFields
-            arId="employee-first-name-ar"
-            enId="employee-first-name"
-            arLabel={m.employees_first_name_ar()}
-            enLabel={m.employees_first_name()}
-            bind:arValue={firstNameAr}
-            bind:enValue={firstName}
-            arPlaceholder={m.operations_ui_employee_first_name_example()}
-            enPlaceholder="Mohammed"
+            arId="employee-full-name-ar"
+            enId="employee-full-name-en"
+            arLabel={m.common_form_full_name_ar()}
+            enLabel={m.common_form_full_name_en()}
+            bind:arValue={fullNameAr}
+            bind:enValue={fullNameEn}
+            arPlaceholder={m.common_form_full_name_ar_placeholder()}
+            enPlaceholder={m.common_form_full_name_en_placeholder()}
             kind="person-name"
             requestSuggestion={suggestLocalTranslation}
             arRequired
-            disabled={isSaving}
-            loadingMessage={m.bilingual_entry_loading()}
-            failureMessage={m.bilingual_entry_failure()}
-          />
-          <BilingualNameFields
-            arId="employee-middle-name-ar"
-            enId="employee-middle-name"
-            arLabel={m.employees_middle_name_ar()}
-            enLabel={m.employees_middle_name()}
-            bind:arValue={middleNameAr}
-            bind:enValue={middleName}
-            arPlaceholder={m.operations_ui_employee_father_name_example()}
-            enPlaceholder="Abdullah"
-            kind="person-name"
-            requestSuggestion={suggestLocalTranslation}
-            disabled={isSaving}
-            loadingMessage={m.bilingual_entry_loading()}
-            failureMessage={m.bilingual_entry_failure()}
-          />
-          <BilingualNameFields
-            arId="employee-last-name-ar"
-            enId="employee-last-name"
-            arLabel={m.employees_last_name_ar()}
-            enLabel={m.employees_last_name()}
-            bind:arValue={lastNameAr}
-            bind:enValue={lastName}
-            arPlaceholder={m.operations_ui_employee_last_name_example()}
-            enPlaceholder="Al-Ghamdi"
-            kind="person-name"
-            requestSuggestion={suggestLocalTranslation}
             disabled={isSaving}
             loadingMessage={m.bilingual_entry_loading()}
             failureMessage={m.bilingual_entry_failure()}
@@ -463,6 +458,20 @@ function handleCancelClick() {
             />
             {/snippet}
           </FormField>
+
+          {#if mode === "create"}
+            <div class="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+              <Checkbox
+                id="employee-create-login-account"
+                checked={createLoginAccount}
+                onCheckedChange={(value) => (createLoginAccount = value === true)}
+              />
+              <label for="employee-create-login-account" class="flex flex-col gap-1 text-start cursor-pointer">
+                <span class="text-xs font-semibold text-foreground">{m.bulk_entry_employee_header_provision_user()}</span>
+                <span class="text-[11px] text-muted-foreground">{m.employees_create_login_account_description()}</span>
+              </label>
+            </div>
+          {/if}
 
         </AccordionContent>
       </AccordionItem>

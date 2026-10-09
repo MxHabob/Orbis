@@ -31,6 +31,7 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
   let failedCount = 0;
   const failedRowNumbers: number[] = [];
   const errors: Array<{ rowNumber: number; reason: string }> = [];
+  const warnings: Array<{ rowNumber: number; reason: string }> = [];
 
   for (let c = 0; c < totalChunks; c++) {
     const start = c * chunkSize;
@@ -53,12 +54,23 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
     try {
       const plainChunk = chunkRows.map((r) => r.data as T);
       const res = await profile.commitChunk(plainChunk, orgId, refData);
+      warnings.push(...(res.warnings ?? []));
 
       if (res.success) {
         for (const row of chunkRows) {
-          row.status = "committed";
-          row.data.status = m.bulk_entry_status_committed();
-          committedCount++;
+          const rowError = res.rowErrors?.find((error) => error.rowNumber === row.rowNumber);
+          if (rowError) {
+            row.status = "failed";
+            row.commitError = rowError.reason;
+            row.data.status = m.bulk_entry_status_failed({ reason: rowError.reason });
+            failedCount++;
+            failedRowNumbers.push(row.rowNumber);
+            errors.push(rowError);
+          } else {
+            row.status = "committed";
+            row.data.status = m.bulk_entry_status_committed();
+            committedCount++;
+          }
         }
       } else {
         // Quarantine failed rows
@@ -110,5 +122,6 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
     skippedCount: rows.length - totalRows,
     failedRowNumbers,
     errors,
+    warnings,
   };
 }

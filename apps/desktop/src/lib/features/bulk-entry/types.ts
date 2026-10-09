@@ -77,6 +77,7 @@ export interface StudentPreviewDetails {
   studentsToUpdate: number;
   personsToCreate: number;
   personsToLink: number;
+  userAccountsToProvision: number;
   guardiansToLink: number;
   newParentAccounts: number;
   mandatoryFeesAssignedCount: number;
@@ -134,6 +135,14 @@ export interface BulkCommitResult {
   }>;
   failedRowNumbers: number[];
   errors: Array<{ rowNumber: number; reason: string }>;
+  warnings: Array<{ rowNumber: number; reason: string }>;
+}
+
+export interface BulkChunkCommitResult {
+  success: boolean;
+  errors?: string[];
+  rowErrors?: Array<{ rowNumber: number; reason: string }>;
+  warnings?: Array<{ rowNumber: number; reason: string }>;
 }
 
 export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Record<string, unknown>> {
@@ -147,5 +156,5 @@ export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Re
   validateCell: (colId: string, value: unknown, row: TRow, refData: BulkReferenceData) => BulkCellIssue | null;
   validateRow: (row: TRow, allRows: TRow[], rowIndex: number, refData: BulkReferenceData) => BulkCellIssue[];
   generatePreview: (rows: TRow[], refData: BulkReferenceData) => Promise<BulkPreviewSummary<TSummary>>;
-  commitChunk: (rows: TRow[], orgId: string, refData: BulkReferenceData) => Promise<{ success: boolean; errors?: string[] }>;
+  commitChunk: (rows: TRow[], orgId: string, refData: BulkReferenceData) => Promise<BulkChunkCommitResult>;
 }

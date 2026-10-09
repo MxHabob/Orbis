@@ -176,6 +176,9 @@ pub struct EntitlementPayload {
     pub edition_key: Option<String>,
     /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE", "SCHOOL_PRO"), if assigned.
     pub plan_key: Option<String>,
+    /// Human-readable plan name provided by Mulverse; absent in older signed documents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plan_name: Option<String>,
     /// Boolean feature capabilities.
     pub entitlements: Vec<EntitlementItem>,
     /// Quantitative limits.
@@ -535,6 +538,13 @@ impl LicenseSnapshot {
             .and_then(|se| se.payload.plan_key.as_deref())
     }
 
+    /// Human-readable plan name provided by Mulverse.
+    pub fn plan_name(&self) -> Option<&str> {
+        self.signed_entitlement
+            .as_ref()
+            .and_then(|se| se.payload.plan_name.as_deref())
+    }
+
     /// The license ID from the active license.
     pub fn license_id(&self) -> Option<&str> {
         self.signed_entitlement
@@ -703,6 +713,8 @@ pub struct LicenseStateDto {
     pub edition: Option<String>,
     /// Plan (e.g. "BASIC", "PRO", "SCHOOL_PRO").
     pub plan: Option<String>,
+    /// Human-readable commercial plan name, when provided.
+    pub plan_name: Option<String>,
     /// Organization ID associated with the license.
     pub organization_id: Option<String>,
     /// License expiration date.
@@ -804,6 +816,7 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
             product: MULVERSE_PRODUCT_KEY.to_string(),
             edition: snapshot.edition_key().map(String::from),
             plan: snapshot.plan_key().map(String::from),
+            plan_name: snapshot.plan_name().map(String::from),
             organization_id: snapshot.organization_id().map(String::from),
             valid_until: snapshot.valid_until(),
             days_until_expiry: snapshot.days_until_expiry(),
@@ -997,6 +1010,7 @@ mod tests {
                 organization_id: "org-test".to_string(),
                 edition_key: Some("SCHOOL".to_string()),
                 plan_key: Some("ENTERPRISE".to_string()),
+                plan_name: Some("Enterprise".to_string()),
                 entitlements: vec![],
                 limits: vec![],
                 activation_id: "activation-test".to_string(),
@@ -1020,6 +1034,7 @@ mod tests {
         );
 
         let dto = LicenseStateDto::from(&snapshot);
+        assert_eq!(dto.plan_name.as_deref(), Some("Enterprise"));
         assert_eq!(dto.limits.len(), ALL_LIMIT_KEYS.len());
         assert!(dto.limits.iter().all(|limit| limit.max_value.is_none()));
         let serialized = serde_json::to_value(&dto).expect("license DTO should serialize");
@@ -1027,6 +1042,32 @@ mod tests {
             serialized["limits"][0]["max_value"],
             serde_json::Value::Null
         );
+    }
+
+    #[test]
+    fn old_signed_entitlements_without_plan_name_keep_their_serialized_payload_shape() {
+        let payload: EntitlementPayload = serde_json::from_value(serde_json::json!({
+            "license_id": "license",
+            "product_key": "ORBIS-TEST",
+            "product_id": CANONICAL_PRODUCT_ID,
+            "organization_id": "organization",
+            "edition_key": null,
+            "plan_key": "PRO",
+            "entitlements": [],
+            "limits": [],
+            "activation_id": "activation",
+            "installation_id": "installation",
+            "issued_at": "2026-10-10T00:00:00Z",
+            "valid_from": "2026-10-10T00:00:00Z",
+            "valid_until": null,
+            "offline_allowed": true,
+            "offline_grace_period_days": 14,
+            "verification_interval_hours": 24
+        }))
+        .expect("legacy entitlement should deserialize");
+
+        let serialized = serde_json::to_value(payload).expect("payload should serialize");
+        assert!(serialized.get("plan_name").is_none());
     }
 
     #[test]

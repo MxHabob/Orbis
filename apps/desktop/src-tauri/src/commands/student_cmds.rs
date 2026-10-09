@@ -261,6 +261,7 @@ pub struct RegisterStudentRequest {
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub initial_period_id: Option<String>,
     pub initial_class_id: Option<String>,
@@ -466,6 +467,7 @@ pub async fn student_register_student(
         special_needs_notes: request.special_needs_notes,
         phone: request.phone,
         email: request.email,
+        address: request.address,
         avatar_url: request.avatar_url,
         initial_period_id,
         initial_class_id,
@@ -902,6 +904,7 @@ pub async fn student_bulk_register(
             special_needs_notes: item.registration.special_needs_notes,
             phone: item.registration.phone,
             email: item.registration.email,
+            address: item.registration.address,
             avatar_url: None,
             initial_period_id: item
                 .registration

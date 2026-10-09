@@ -54,10 +54,14 @@
   // Declarative TanStack Query for Reference Data (Zero $effect data loading!)
   const refDataQuery = createBulkReferenceDataQuery(
     () => selectedProfileId,
+    () => orgContext.orgId || "",
     () => orgContext.baseCurrency || "",
   );
   const refData = $derived(refDataQuery.data ?? null);
   const isLoadingRefData = $derived(refDataQuery.isLoading);
+  const referenceDataError = $derived(
+    refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
+  );
 
   let fileName = $state<string | null>(null);
   let rawRows = $state<BulkRowState[]>([]);
@@ -359,10 +363,10 @@
       commitResult = result;
       isProgressModalOpen = false;
 
-      if (result.failedCount === 0) {
+      if (result.failedCount === 0 && result.warnings.length === 0) {
         toast.success(m.bulk_entry_toast_committed({ count: result.committedCount }));
       } else {
-        toast.warning(m.bulk_entry_toast_commit_partial({ count: result.failedCount }));
+        toast.warning(m.bulk_entry_toast_commit_partial({ count: result.failedCount + result.warnings.length }));
       }
     } catch (err: any) {
       isProgressModalOpen = false;
@@ -396,7 +400,7 @@
     <div class="flex items-center gap-1.5 flex-wrap">
       {#if !hideProfileSelector}
         <div class="flex items-center bg-muted/70 p-0.5 rounded-lg border border-border/60">
-          {#each Object.entries(BULK_PROFILES) as [id, prof]}
+          {#each Object.entries(BULK_PROFILES) as [id, prof] (id)}
             <button
               type="button"
               onclick={() => handleProfileChange(id as BulkProfileId)}
@@ -473,6 +477,15 @@
       </Button>
     </div>
   </div>
+
+  {#if referenceDataError}
+    <div class="mx-4 mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center justify-between gap-3" role="alert">
+      <span class="text-xs text-destructive">{referenceDataError}</span>
+      <Button variant="outline" size="sm" onclick={() => refDataQuery.refetch()}>
+        إعادة المحاولة
+      </Button>
+    </div>
+  {/if}
 
   {#if commitResult}
     <!-- Completion View -->

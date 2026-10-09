@@ -35,9 +35,11 @@ import { ArrowForward, ArrowUpTray, CheckCircle, Clip, DocumentPage, InfoCircle,
 import { toast } from "@orbis/ui";
 import { queryKeys } from "$lib/api";
 import { formatDate } from "$lib/core/i18n";
+import { useStudentFolder } from "$lib/features/documents/queries";
 
 let { studentId }: { orgId: string; studentId: string } = $props();
 const queryClient = useQueryClient();
+const studentFolderQuery = useStudentFolder(() => studentId);
 
 const documentsQuery = createQuery(() => ({
   queryKey: queryKeys.student.documents(studentId),
@@ -61,9 +63,9 @@ let newDocTitle = $state("");
 let newDocDescription = $state("");
 let newDocUrl = $state("");
 
-let uploadFileUrl = $state("");
-let uploadFileSize = $state("1.5 MB");
-let uploadFileExt = $state("pdf");
+let uploadFile = $state<File | null>(null);
+let uploadFileInput: HTMLInputElement | undefined;
+let isUploadingFile = $state(false);
 
 async function handleAddDocument() {
   if (!newDocName.trim()) {
@@ -72,11 +74,14 @@ async function handleAddDocument() {
   }
 
   try {
+    const folder =
+      studentFolderQuery.data ?? (await api.getOrCreateStudentFolder(studentId));
     const request: UploadDocumentRequest = {
       name: newDocName.trim(),
       mime_type: "application/pdf",
       entity_type: "student",
       entity_id: studentId,
+      folder_id: folder.id,
       category: "general",
       visibility: "private",
       file_path: newDocUrl.trim() || newDocName.trim(),
@@ -94,6 +99,9 @@ async function handleAddDocument() {
 
     await queryClient.invalidateQueries({
       queryKey: queryKeys.student.documents(studentId),
+    });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.folder.contents(folder.id),
     });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
@@ -124,46 +132,53 @@ async function handleDelete(docId: string) {
 
 function openUploadModal(doc: DocumentDto) {
   selectedDoc = doc;
-  uploadFileUrl = "";
-  uploadFileSize = "1.5 MB";
-  uploadFileExt = "pdf";
+  uploadFile = null;
+  if (uploadFileInput) uploadFileInput.value = "";
   showUploadModal = true;
 }
 
 async function handleUploadFile() {
-  if (!uploadFileUrl.trim()) {
+  if (!uploadFile) {
     toast.error(m.common_docs_upload_url_required());
     return;
   }
 
+  isUploadingFile = true;
   try {
-    if (selectedDoc?.id) {
-      await api.deleteDocument(selectedDoc.id).catch(() => {});
-    }
-
-    const sizeInBytes = uploadFileSize.includes("MB")
-      ? Math.round(parseFloat(uploadFileSize) * 1024 * 1024)
-      : Math.round(parseFloat(uploadFileSize) * 1024);
-
-    const request: UploadDocumentRequest = {
-      name: selectedDoc?.name || "Uploaded Document",
-      mime_type: uploadFileExt.includes("pdf") ? "application/pdf" : "image/jpeg",
+    const folder =
+      studentFolderQuery.data ?? (await api.getOrCreateStudentFolder(studentId));
+    const uploadedDocument = await api.uploadFile({
+      file: uploadFile,
+      name: uploadFile.name,
       entity_type: "student",
       entity_id: studentId,
+      folder_id: folder.id,
       category: selectedDoc?.category || "general",
+      asset_type: "document",
       visibility: "private",
-      file_path: uploadFileUrl.trim(),
-      file_size_bytes: sizeInBytes,
-    };
+      description: selectedDoc?.description || undefined,
+    });
 
-    await api.uploadDocument(request);
+    if (selectedDoc?.id) {
+      try {
+        await api.deleteDocument(selectedDoc.id);
+      } catch (error) {
+        toast.warning(extractErrorMessage(error));
+      }
+    }
     toast.success(m.common_docs_upload_success());
     showUploadModal = false;
+    uploadFile = null;
     await queryClient.invalidateQueries({
       queryKey: queryKeys.student.documents(studentId),
     });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.folder.contents(folder.id),
+    });
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
+  } finally {
+    isUploadingFile = false;
   }
 }
 </script>
@@ -442,34 +457,22 @@ async function handleUploadFile() {
 
       <div class="space-y-4 py-2">
         <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_upload_dialog_url()} *</Label>
+          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_upload_dialog_title()} *</Label>
           <Input 
-            type="text" 
-            placeholder={m.common_docs_form_upload_url_placeholder()} 
-            class="text-xs font-mono" 
-            bind:value={uploadFileUrl}
+            bind:this={uploadFileInput}
+            type="file"
+            accept=".pdf,image/*,.doc,.docx"
+            class="text-xs"
+            onchange={(event) => {
+              uploadFile = (event.currentTarget as HTMLInputElement).files?.[0] ?? null;
+            }}
           />
         </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_file_size()}</Label>
-            <Input 
-              type="text" 
-              class="text-xs" 
-              bind:value={uploadFileSize}
-            />
-          </div>
-
-          <div class="flex flex-col gap-1.5">
-            <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_file_ext()}</Label>
-            <Input 
-              type="text" 
-              class="text-xs font-mono uppercase" 
-              bind:value={uploadFileExt}
-            />
-          </div>
-        </div>
+        {#if uploadFile}
+          <p class="text-[10px] text-muted-foreground">
+            {uploadFile.name} · {(uploadFile.size / 1024).toFixed(1)} KB
+          </p>
+        {/if}
       </div>
 
       <div class="flex items-center justify-end gap-3 border-t border-border/80 pt-4 mt-2">
@@ -483,9 +486,10 @@ async function handleUploadFile() {
         <Button 
           variant="lime" 
           class="text-xs h-8 px-5 cursor-pointer font-semibold"
+          disabled={!uploadFile || isUploadingFile}
           onclick={handleUploadFile}
         >
-          {m.common_docs_btn_upload()}
+          {#if isUploadingFile}<LoadingIndicator size={13} />{:else}{m.common_docs_btn_upload()}{/if}
         </Button>
       </div>
     </div>

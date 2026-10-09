@@ -19,7 +19,8 @@ let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
 let copiedId = $state(false);
 const planDisplay = $derived(
-  formatLicensePlan(licenseStore.plan) ??
+  formatLicensePlan(licenseStore.planName) ??
+    formatLicensePlan(licenseStore.plan) ??
     formatLicensePlan(licenseStore.edition) ??
     m.settings_entitlement_plan_unavailable(),
 );

@@ -23,6 +23,7 @@ let {
   class: className,
   entityType = "user",
   entityId,
+  folderId,
   category = "avatar",
   deferred = false,
   onupload,
@@ -36,6 +37,7 @@ let {
   class?: string;
   entityType?: string;
   entityId: string;
+  folderId?: string;
   category?: string;
   deferred?: boolean;
   onupload?: (url: string) => void;
@@ -96,6 +98,7 @@ function handleFileChange(event: Event) {
       name: selectedFile.name,
       entity_type: entityType,
       entity_id: entityId,
+      folder_id: folderId,
       category: category,
       visibility: "public",
     },

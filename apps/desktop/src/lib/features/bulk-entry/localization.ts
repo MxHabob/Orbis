@@ -1,5 +1,8 @@
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import type { BulkImportProfile, BulkProfileId } from "./types";
+
+const localizedHeader = (ar: string, en: string) => () => (getLocale() === "ar" ? ar : en);
 
 const profileNames: Record<BulkProfileId, () => string> = {
   students: m.bulk_entry_profile_students,
@@ -9,11 +12,17 @@ const profileNames: Record<BulkProfileId, () => string> = {
 
 const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
   students: {
-    first_name_ar: m.bulk_entry_student_header_first_name_ar,
-    middle_name_ar: m.bulk_entry_student_header_middle_name_ar,
-    last_name_ar: m.bulk_entry_student_header_last_name_ar,
-    first_name: m.bulk_entry_student_header_first_name,
-    last_name: m.bulk_entry_student_header_last_name,
+    full_name_ar: m.bulk_entry_student_header_first_name_ar,
+    full_name_en: m.bulk_entry_student_header_first_name,
+    place_of_birth: localizedHeader("مكان الميلاد", "Place of Birth"),
+    nationality: localizedHeader("الجنسية", "Nationality"),
+    passport_number: localizedHeader("رقم جواز السفر", "Passport Number"),
+    blood_type: localizedHeader("فصيلة الدم", "Blood Type"),
+    study_mode: localizedHeader("نمط الدراسة", "Study Mode"),
+    address: localizedHeader("العنوان", "Address"),
+    medical_notes: localizedHeader("ملاحظات طبية", "Medical Notes"),
+    special_needs_notes: localizedHeader("الاحتياجات الخاصة", "Special Needs"),
+    create_login_account: m.bulk_entry_employee_header_provision_user,
     national_id: m.bulk_entry_student_header_national_id,
     gender: m.bulk_entry_header_gender,
     birth_date: m.bulk_entry_student_header_birth_date,
@@ -24,12 +33,10 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     guardian_name: m.bulk_entry_student_header_guardian_name,
     guardian_phone: m.bulk_entry_student_header_guardian_phone,
     guardian_relationship: m.bulk_entry_student_header_guardian_relationship,
-    fee_template_name: m.bulk_entry_student_header_fee_template,
   },
   employees: {
-    first_name_ar: m.bulk_entry_employee_header_first_name_ar,
-    middle_name_ar: m.bulk_entry_employee_header_middle_name_ar,
-    last_name_ar: m.bulk_entry_employee_header_last_name_ar,
+    full_name_ar: m.bulk_entry_employee_header_first_name_ar,
+    full_name_en: localizedHeader("الاسم الكامل (إنجليزي)", "Full Name (English)"),
     national_id: m.bulk_entry_employee_header_national_id,
     gender: m.bulk_entry_header_gender,
     employee_type: m.bulk_entry_employee_header_employee_type,

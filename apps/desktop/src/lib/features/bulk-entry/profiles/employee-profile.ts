@@ -1,23 +1,21 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterEmployeeCommandItem } from "$lib/api";
+import { splitPersonName } from "$lib/shared/utils/person-name";
 import * as m from "$lib/paraglide/messages";
 import type {
   BulkImportProfile,
   BulkReferenceData,
   ColumnDefinitionMetadata,
   BulkCellIssue,
+  BulkChunkCommitResult,
   BulkPreviewSummary,
   EmployeePreviewDetails,
 } from "../types";
 
 export interface EmployeeRowData {
   rowNumber?: number;
-  first_name: string;
-  middle_name?: string;
-  last_name: string;
-  first_name_ar?: string;
-  middle_name_ar?: string;
-  last_name_ar?: string;
+  full_name_ar: string;
+  full_name_en?: string;
   national_id?: string;
   gender: "male" | "female";
   birth_date?: string;
@@ -37,28 +35,20 @@ export interface EmployeeRowData {
 
 export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
   {
-    id: "first_name_ar",
-    headerAr: "الاسم الأول (عربي)*",
-    headerEn: "First Name (Arabic)*",
+    id: "full_name_ar",
+    headerAr: "الاسم الكامل (عربي)*",
+    headerEn: "Full Name (Arabic)*",
     required: true,
     type: "text",
-    example: "محمود",
+    example: "محمود صالح العمري",
   },
   {
-    id: "middle_name_ar",
-    headerAr: "اسم الأب (عربي)",
-    headerEn: "Middle Name (Arabic)",
+    id: "full_name_en",
+    headerAr: "الاسم الكامل (إنجليزي)",
+    headerEn: "Full Name (English)",
     required: false,
     type: "text",
-    example: "صالح",
-  },
-  {
-    id: "last_name_ar",
-    headerAr: "اسم العائلة (عربي)*",
-    headerEn: "Last Name (Arabic)*",
-    required: true,
-    type: "text",
-    example: "العمري",
+    example: "Mahmoud Saleh Al-Omari",
   },
   {
     id: "national_id",
@@ -188,9 +178,8 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
 export const employeeGridColumns: OrbisColumnDef[] = [
   { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
   { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "first_name_ar", header: m.bulk_entry_employee_header_first_name_ar(), width: 130 },
-  { id: "middle_name_ar", header: m.bulk_entry_employee_header_middle_name_ar(), width: 120 },
-  { id: "last_name_ar", header: m.bulk_entry_employee_header_last_name_ar(), width: 130 },
+  { id: "full_name_ar", header: m.bulk_entry_employee_header_first_name_ar(), width: 200 },
+  { id: "full_name_en", header: "Full Name (English)", width: 200 },
   { id: "national_id", header: m.bulk_entry_employee_header_national_id(), width: 130 },
   { id: "gender", header: m.bulk_entry_header_gender(), width: 90, type: "enum", options: [{ value: "male", label: m.bulk_entry_enum_gender_male() }, { value: "female", label: m.bulk_entry_enum_gender_female() }] },
   { id: "employee_type", header: m.bulk_entry_employee_header_employee_type(), width: 140 },
@@ -213,7 +202,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     ar: "إدخال بيانات الموظفين والمعلمين، وتعيين المجموعات وتوليد بيانات الدخول الآمنة آلياً",
     en: "Bulk register staff, teachers, assign user groups, and automatically provision CSPRNG credentials",
   },
-  templateVersion: "ORBIS-TPL-EMP-2026.1",
+  templateVersion: "ORBIS-TPL-EMP-2026.2",
   columnMetadata: employeeColumnMetadata,
   gridColumns: employeeGridColumns,
 
@@ -262,7 +251,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
   validateCell(colId: string, value: unknown, _row: EmployeeRowData, _refData: BulkReferenceData): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
 
-    if (["first_name_ar", "last_name_ar", "national_id", "employee_type", "hire_date"].includes(colId)) {
+    if (["full_name_ar", "national_id", "employee_type", "hire_date"].includes(colId)) {
       if (!strVal) {
         return {
           severity: "BLOCKING_ERROR",
@@ -312,14 +301,16 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     const groups: Record<string, number> = {};
 
     for (const row of rows) {
-      if (!row.first_name_ar || !row.last_name_ar || !row.national_id || !row.employee_type || !row.hire_date) {
+      if (!row.full_name_ar?.trim() || !row.national_id?.trim() || !row.employee_type || !row.hire_date) {
         errorCount++;
       } else {
         validCount++;
         const d = row.department || "عام (General)";
         depts[d] = (depts[d] || 0) + 1;
 
-        const isProvision = row.provision_user === true || String(row.provision_user).toLowerCase() === "true" || String(row.provision_user) === "نعم";
+        const isProvision =
+          row.provision_user === true ||
+          ["true", "1", "نعم", "yes"].includes(String(row.provision_user ?? "").trim().toLowerCase());
         if (isProvision) provisionCount++;
 
         const g = row.user_group_name || "الافتراضية";
@@ -343,14 +334,19 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     };
   },
 
-  async commitChunk(rows: EmployeeRowData[], _orgId: string, refData: BulkReferenceData): Promise<{ success: boolean; errors?: string[] }> {
+  async commitChunk(
+    rows: EmployeeRowData[],
+    _orgId: string,
+    refData: BulkReferenceData,
+  ): Promise<BulkChunkCommitResult> {
     const items: BulkRegisterEmployeeCommandItem[] = [];
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i]!;
-      const firstNameAr = row.first_name_ar?.trim() || "موظف";
-      const lastNameAr = row.last_name_ar?.trim() || "جديد";
-      const middleNameAr = row.middle_name_ar?.trim();
+      const fullNameAr = row.full_name_ar.trim();
+      const namePartsAr = splitPersonName(fullNameAr, "موظف");
+      const fullNameEn = row.full_name_en?.trim() || fullNameAr;
+      const namePartsEn = splitPersonName(fullNameEn, "Employee");
 
       let typeStr = "teacher";
       const rawType = String(row.employee_type || "").toLowerCase().trim();
@@ -362,9 +358,9 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
 
       const isProvision =
         row.provision_user === true ||
-        String(row.provision_user).toLowerCase() === "true" ||
-        String(row.provision_user) === "نعم" ||
-        String(row.provision_user) === "1";
+        ["true", "1", "نعم", "yes"].includes(
+          String(row.provision_user ?? "").trim().toLowerCase(),
+        );
 
       let matchedGroupIds: string[] = [];
       if (row.user_group_name?.trim()) {
@@ -375,13 +371,13 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
       items.push({
         row_index: row.rowNumber || i + 1,
         registration: {
-          first_name: firstNameAr,
-          middle_name: middleNameAr,
-          last_name: lastNameAr,
-          first_name_ar: firstNameAr,
-          middle_name_ar: middleNameAr,
-          last_name_ar: lastNameAr,
-          display_name: `${firstNameAr} ${lastNameAr}`,
+          first_name: namePartsEn.firstName,
+          middle_name: namePartsEn.middleName,
+          last_name: namePartsEn.lastName,
+          first_name_ar: namePartsAr.firstName,
+          middle_name_ar: namePartsAr.middleName,
+          last_name_ar: namePartsAr.lastName,
+          display_name: fullNameAr,
           national_id: row.national_id?.trim() || undefined,
           gender: row.gender || "male",
           phone: row.phone?.trim() || undefined,
@@ -394,9 +390,10 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
           account: isProvision
             ? {
                 enabled: true,
-                preferred_username: row.email?.trim() || undefined,
+                preferred_username: row.email?.trim() || row.employee_number?.trim() || undefined,
                 role: typeStr === "teacher" ? "teacher" : "staff",
                 group_ids: matchedGroupIds,
+                delivery_channel: row.email?.trim() ? "email" : row.phone?.trim() ? "sms" : "manual",
               }
             : undefined,
         },
@@ -404,18 +401,21 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     }
 
     try {
-      const bulkRes = await api.bulkRegisterEmployees(items, { atomic: true });
-      const errors: string[] = [];
+      const bulkRes = await api.bulkRegisterEmployees(items, { atomic: false });
+      const rowErrors: Array<{ rowNumber: number; reason: string }> = [];
 
       for (const it of bulkRes.items) {
         if (!it.success && it.error) {
-          errors.push(m.bulk_entry_row_error({ row: it.row_index, reason: it.error }));
+          rowErrors.push({
+            rowNumber: it.row_index,
+            reason: m.bulk_entry_row_error({ row: it.row_index, reason: it.error }),
+          });
         }
       }
 
       return {
-        success: bulkRes.failed === 0,
-        errors: errors.length > 0 ? errors : undefined,
+        success: true,
+        rowErrors: rowErrors.length > 0 ? rowErrors : undefined,
       };
     } catch (err: any) {
       return {
