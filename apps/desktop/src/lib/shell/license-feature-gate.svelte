@@ -20,6 +20,12 @@
   } = $props();
 
   let isStartingTrial = $state(false);
+  let isRefreshingTrial = $state(false);
+  const isTrialAwaitingOrganization = $derived(
+    licenseStore.state === "pending" &&
+      licenseStore.plan?.toUpperCase() === "TRIAL" &&
+      !licenseStore.licenseState?.organization_id,
+  );
   const locked = $derived(
     licenseReady &&
       ((requireOperational && !licenseStore.isOperational) ||
@@ -45,6 +51,22 @@
     }
     isStartingTrial = false;
   }
+
+  async function refreshTrialBinding() {
+    isRefreshingTrial = true;
+    try {
+      const refreshed = await licenseStore.refresh();
+      if (refreshed?.is_operational) {
+        toast.success(m.license_trial_waiting_ready());
+      } else if (refreshed?.state === "pending") {
+        toast.info(m.license_trial_waiting_still_pending());
+      } else if (licenseStore.error) {
+        toast.error(licenseStore.error);
+      }
+    } finally {
+      isRefreshingTrial = false;
+    }
+  }
 </script>
 
 <div
@@ -67,15 +89,34 @@
     >
       <div class="flex max-w-md flex-col items-center gap-3 rounded-xl border border-border bg-card/95 p-6 text-center shadow-xl">
         <h2 class="text-base font-semibold text-foreground">
-          {requireOperational
-            ? m.license_setup_step_title()
-            : m.license_gate_title()}
+          {#if isTrialAwaitingOrganization}
+            {m.license_trial_waiting_title()}
+          {:else if requireOperational}
+            {m.license_setup_step_title()}
+          {:else}
+            {m.license_gate_title()}
+          {/if}
         </h2>
         <p class="text-sm text-muted-foreground">
-          {requireOperational
-            ? m.license_setup_step_description()
-            : m.license_gate_description()}
+          {#if isTrialAwaitingOrganization}
+            {m.license_trial_waiting_description()}
+          {:else if requireOperational}
+            {m.license_setup_step_description()}
+          {:else}
+            {m.license_gate_description()}
+          {/if}
         </p>
+        {#if isTrialAwaitingOrganization}
+          <Button
+            onclick={refreshTrialBinding}
+            variant="outline"
+            disabled={isRefreshingTrial}
+          >
+            {isRefreshingTrial
+              ? m.license_trial_waiting_checking()
+              : m.license_trial_waiting_check()}
+          </Button>
+        {/if}
         <Button
           onclick={() => uiStore.setActivationDialog(true)}
           variant={licenseStore.state === "unavailable" ? "outline" : "default"}

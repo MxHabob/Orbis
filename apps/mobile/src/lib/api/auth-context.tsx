@@ -63,6 +63,16 @@ export interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function hasData(value: unknown): value is { data: unknown } {
+  return typeof value === "object" && value !== null && "data" in value;
+}
+
+function unwrapApiData<T>(response: unknown): T {
+  const sdkData = hasData(response) ? response.data : response;
+  const apiData = hasData(sdkData) ? sdkData.data : sdkData;
+  return apiData as T;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
   const [effectiveContext, setEffectiveContext] =
@@ -85,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const checkSetupStatus = useCallback(async (): Promise<boolean> => {
     try {
       const res = await api.getCurrentOrg({ throwOnError: true });
-      const org = (res as any).data ?? res;
+      const org = unwrapApiData<{ id?: string } | null>(res);
       const complete = !!org && !!org.id;
       setIsSetupComplete(complete);
       await setSecureItem(
@@ -140,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       try {
         const res = await api.login({ body: { email, password }, throwOnError: true });
-        const data = (res as any).data ?? res;
+        const data = unwrapApiData<LoginResponse>(res);
         if (data?.token && data?.user) {
           await setSession({
             token: data.token,
@@ -166,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       try {
         const res = await api.googleLogin({ body: { id_token: idToken }, throwOnError: true });
-        const data = (res as any).data ?? res;
+        const data = unwrapApiData<LoginResponse>(res);
         if (data?.token && data?.user) {
           await setSession({
             token: data.token,
@@ -192,7 +202,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       try {
         const res = await api.mfaChallenge({ body: req as any, throwOnError: true });
-        const data = (res as any).data ?? res;
+        const data = unwrapApiData<LoginResponse>(res);
         if (data?.token && data?.user) {
           await setSession({
             token: data.token,
@@ -215,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const mfaVerifyEnrollment = useCallback(
     async (req: MfaVerifyEnrollmentRequest): Promise<boolean> => {
       const res = await api.mfaVerifyEnrollment({ body: req, throwOnError: true });
-      return (res as any).data ?? res;
+      return unwrapApiData<boolean>(res);
     },
     [],
   );
@@ -245,25 +255,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
         ]);
 
-      if (savedToken && savedUserStr) {
+      if (savedToken) {
+        setToken(savedToken);
+        if (savedUserStr) {
+          try {
+            setUser(JSON.parse(savedUserStr) as UserDto);
+          } catch (error) {
+            console.warn("[Auth] Discarding invalid cached user:", error);
+            await deleteSecureItem(STORAGE_KEYS.USER);
+          }
+        }
+
+        if (savedCtxStr) {
+          try {
+            setEffectiveContext(JSON.parse(savedCtxStr) as EffectiveContextDto);
+          } catch (error) {
+            console.warn("[Auth] Discarding invalid cached context:", error);
+            await deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT);
+          }
+        }
+
+        if (savedSetup !== null) {
+          setIsSetupComplete(savedSetup === "true");
+        }
+
         try {
-          const parsedUser = JSON.parse(savedUserStr) as UserDto;
-          setToken(savedToken);
-          setUser(parsedUser);
-          if (savedCtxStr) {
-            try {
-              const parsedCtx = JSON.parse(savedCtxStr) as EffectiveContextDto;
-              setEffectiveContext(parsedCtx);
-            } catch {}
-          }
-
-          if (savedSetup !== null) {
-            setIsSetupComplete(savedSetup === "true");
-          }
-
-          // Revalidate session with backend in background
           const res = await api.getSession({ throwOnError: true });
-          const session = (res as any).data ?? res;
+          const session = unwrapApiData<{ user?: UserDto; effective_context?: EffectiveContextDto }>(res);
           if (session?.user) {
             setUser(session.user);
             await setSecureItem(

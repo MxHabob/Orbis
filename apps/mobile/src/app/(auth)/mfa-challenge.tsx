@@ -107,7 +107,7 @@ export default function MFAChallengeScreen() {
 
       toast.success(t("auth_verify"));
 
-      router.replace("/");
+      router.replace("/(app)/(tabs)");
     } catch (err: any) {
       const msg = err?.message || t("auth_error_invalid_credentials");
       setErrorMsg(msg);

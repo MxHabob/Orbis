@@ -347,13 +347,20 @@ impl MulverseLicenseRuntime {
         Ok(())
     }
 
-    fn sign_trial_challenge(
+    async fn sign_trial_challenge(
         &self,
         challenge: &TrialChallenge,
         fields: &[String],
+        installation_id: &str,
     ) -> Result<(String, String), DomainError> {
-        let key = trial_device_identity::load_or_create(&self.app_data_dir)
-            .map_err(DomainError::Internal)?;
+        let app_data_dir = self.app_data_dir.clone();
+        let installation_id = installation_id.to_owned();
+        let key = tokio::task::spawn_blocking(move || {
+            trial_device_identity::load_or_create(&app_data_dir, &installation_id)
+        })
+        .await
+        .map_err(|error| DomainError::Internal(format!("Trial identity worker failed: {error}")))?
+        .map_err(DomainError::Internal)?;
         let mut message = String::from("mulverse-trial-v1");
         for field in fields {
             message.push('\n');
@@ -383,7 +390,8 @@ impl MulverseLicenseRuntime {
             self.app_version.clone(),
         ];
         let (device_public_key, device_signature) = self
-            .sign_trial_challenge(&challenge, &fields)
+            .sign_trial_challenge(&challenge, &fields, &installation_id)
+            .await
             .map_err(TrialSyncError::Domain)?;
         self.mulverse_client
             .register_trial(&RegisterTrialRequest {
@@ -420,7 +428,8 @@ impl MulverseLicenseRuntime {
             self.app_version.clone(),
         ];
         let (device_public_key, device_signature) = self
-            .sign_trial_challenge(&challenge, &fields)
+            .sign_trial_challenge(&challenge, &fields, &installation_id)
+            .await
             .map_err(TrialSyncError::Domain)?;
         self.mulverse_client
             .refresh_trial(&RefreshTrialRequest {

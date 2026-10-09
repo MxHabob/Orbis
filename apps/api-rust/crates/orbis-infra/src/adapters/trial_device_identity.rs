@@ -1,101 +1,126 @@
 use ed25519_dalek::SigningKey;
+use fs2::FileExt;
+use keyring::{Entry, Error as KeyringError};
 use rand::RngCore;
 use std::fs::{self, OpenOptions};
-use std::io::Write;
 use std::path::Path;
+use zeroize::{Zeroize, Zeroizing};
 
-const TRIAL_KEY_FILE: &str = "trial_device_key.dpapi";
+const TRIAL_KEY_SERVICE: &str = "com.mulverse.orbis.trial-device";
+#[cfg(windows)]
+const LEGACY_TRIAL_KEY_FILE: &str = "trial_device_key.dpapi";
+const TRIAL_KEY_LOCK_FILE: &str = ".trial-device-key.lock";
 
-pub fn load_or_create(app_data_dir: &Path) -> Result<SigningKey, String> {
-    let path = app_data_dir.join(TRIAL_KEY_FILE);
-    if path.exists() {
-        return load(&path);
-    }
-
+pub fn load_or_create(app_data_dir: &Path, installation_id: &str) -> Result<SigningKey, String> {
     fs::create_dir_all(app_data_dir)
         .map_err(|error| format!("Failed to create trial key directory: {error}"))?;
-    let mut seed = [0_u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut seed);
-    let protected = protect(&seed)?;
+    let lock_path = app_data_dir.join(TRIAL_KEY_LOCK_FILE);
+    let lock = OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .read(true)
+        .write(true)
+        .open(lock_path)
+        .map_err(|error| format!("Failed to open trial identity lock: {error}"))?;
+    lock.lock_exclusive()
+        .map_err(|error| format!("Failed to lock trial identity: {error}"))?;
 
-    match OpenOptions::new().write(true).create_new(true).open(&path) {
-        Ok(mut file) => {
-            file.write_all(&protected)
-                .and_then(|()| file.sync_all())
-                .map_err(|error| format!("Failed to persist protected trial key: {error}"))?;
-            Ok(SigningKey::from_bytes(&seed))
-        }
-        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => load(&path),
-        Err(error) => Err(format!("Failed to create protected trial key: {error}")),
+    let result = load_or_create_locked(app_data_dir, installation_id);
+    let unlock_result =
+        FileExt::unlock(&lock).map_err(|error| format!("Failed to unlock trial identity: {error}"));
+    match (result, unlock_result) {
+        (Err(error), _) => Err(error),
+        (Ok(_), Err(error)) => Err(error),
+        (Ok(key), Ok(())) => Ok(key),
     }
 }
 
-fn load(path: &Path) -> Result<SigningKey, String> {
-    let protected =
-        fs::read(path).map_err(|error| format!("Failed to read protected trial key: {error}"))?;
-    let seed = unprotect(&protected)?;
-    let seed: [u8; 32] = seed
-        .try_into()
-        .map_err(|_| "Protected trial key has an invalid size".to_owned())?;
-    Ok(SigningKey::from_bytes(&seed))
+fn load_or_create_locked(app_data_dir: &Path, installation_id: &str) -> Result<SigningKey, String> {
+    let account = format!("installation:{installation_id}");
+    let entry = Entry::new(TRIAL_KEY_SERVICE, &account).map_err(|error| {
+        format!("Failed to open the operating system's secure key store: {error}")
+    })?;
+
+    match entry.get_password() {
+        Ok(encoded_seed) => decode_seed(&encoded_seed),
+        Err(KeyringError::NoEntry) => {
+            #[cfg(windows)]
+            if let Some(seed) = load_legacy_seed(app_data_dir)? {
+                store_seed(&entry, &seed)?;
+                remove_legacy_key(app_data_dir);
+                return Ok(SigningKey::from_bytes(&seed));
+            }
+
+            let mut seed = Zeroizing::new([0_u8; 32]);
+            rand::rngs::OsRng.fill_bytes(&mut *seed);
+            store_seed(&entry, &seed)?;
+            Ok(SigningKey::from_bytes(&seed))
+        }
+        Err(error) => Err(format!(
+            "Failed to read the trial identity from the operating system's secure key store: {error}"
+        )),
+    }
+}
+
+fn decode_seed(encoded_seed: &str) -> Result<SigningKey, String> {
+    let mut seed = Zeroizing::new(
+        base64::engine::general_purpose::STANDARD
+            .decode(encoded_seed)
+            .map_err(|_| "The stored trial identity is invalid".to_owned())?,
+    );
+    let seed_array = Zeroizing::new(
+        seed.as_slice()
+            .try_into()
+            .map_err(|_| "The stored trial identity has an invalid size".to_owned())?,
+    );
+    seed.zeroize();
+    Ok(SigningKey::from_bytes(&seed_array))
+}
+
+fn store_seed(entry: &Entry, seed: &[u8; 32]) -> Result<(), String> {
+    use base64::Engine;
+
+    let encoded_seed = base64::engine::general_purpose::STANDARD.encode(seed);
+    entry.set_password(&encoded_seed).map_err(|error| {
+        format!("Failed to save trial identity in the operating system's secure key store: {error}")
+    })?;
+    match entry.get_password() {
+        Ok(saved) if saved == encoded_seed => Ok(()),
+        Ok(_) => Err(
+            "The operating system's secure key store returned a different trial identity"
+                .to_owned(),
+        ),
+        Err(error) => Err(format!(
+            "Failed to verify the saved trial identity in the operating system's secure key store: {error}"
+        )),
+    }
 }
 
 #[cfg(windows)]
-fn protect(value: &[u8]) -> Result<Vec<u8>, String> {
-    use std::ptr::{null, null_mut};
-    use windows_sys::Win32::Security::Cryptography::{
-        CRYPT_INTEGER_BLOB, CRYPTPROTECT_UI_FORBIDDEN, CryptProtectData,
-    };
+fn load_legacy_seed(app_data_dir: &Path) -> Result<Option<Zeroizing<[u8; 32]>>, String> {
+    let path = app_data_dir.join(LEGACY_TRIAL_KEY_FILE);
+    if !path.exists() {
+        return Ok(None);
+    }
 
-    let input = CRYPT_INTEGER_BLOB {
-        cbData: value
-            .len()
+    let protected = fs::read(path).map_err(|error| {
+        format!("Failed to read the previous protected trial identity: {error}")
+    })?;
+    let mut seed = Zeroizing::new(unprotect(&protected)?);
+    let seed_array = Zeroizing::new(
+        seed.as_slice()
             .try_into()
-            .map_err(|_| "Trial key is too large".to_owned())?,
-        pbData: value.as_ptr().cast_mut(),
-    };
-    let mut output = CRYPT_INTEGER_BLOB {
-        cbData: 0,
-        pbData: null_mut(),
-    };
-    // DPAPI binds the private key to the current Windows user profile.
-    let success = unsafe {
-        CryptProtectData(
-            &input,
-            null(),
-            null(),
-            null(),
-            null(),
-            CRYPTPROTECT_UI_FORBIDDEN,
-            &mut output,
-        )
-    };
-    if success == 0 {
-        return Err(format!(
-            "Windows could not protect the trial device key: {}",
-            std::io::Error::last_os_error()
-        ));
-    }
-    if output.pbData.is_null() {
-        return Err("Windows returned an empty protected trial key".to_owned());
-    }
-    if output.cbData == 0 {
-        unsafe {
-            windows_sys::Win32::Foundation::LocalFree(output.pbData.cast());
-        }
-        return Err("Windows returned an empty protected trial key".to_owned());
-    }
-    let protected =
-        unsafe { std::slice::from_raw_parts(output.pbData, output.cbData as usize) }.to_vec();
-    unsafe {
-        windows_sys::Win32::Foundation::LocalFree(output.pbData.cast());
-    }
-    Ok(protected)
+            .map_err(|_| "The previous protected trial identity has an invalid size".to_owned())?,
+    );
+    seed.zeroize();
+    Ok(Some(seed_array))
 }
 
-#[cfg(not(windows))]
-fn protect(_value: &[u8]) -> Result<Vec<u8>, String> {
-    Err("Central trial registration requires Windows DPAPI key protection".to_owned())
+#[cfg(windows)]
+fn remove_legacy_key(app_data_dir: &Path) {
+    if let Err(error) = fs::remove_file(app_data_dir.join(LEGACY_TRIAL_KEY_FILE)) {
+        tracing::warn!(%error, "Could not remove the migrated DPAPI trial identity file");
+    }
 }
 
 #[cfg(windows)]
@@ -109,7 +134,7 @@ fn unprotect(value: &[u8]) -> Result<Vec<u8>, String> {
         cbData: value
             .len()
             .try_into()
-            .map_err(|_| "Protected trial key is too large".to_owned())?,
+            .map_err(|_| "The previous protected trial identity is too large".to_owned())?,
         pbData: value.as_ptr().cast_mut(),
     };
     let mut output = CRYPT_INTEGER_BLOB {
@@ -129,30 +154,28 @@ fn unprotect(value: &[u8]) -> Result<Vec<u8>, String> {
     };
     if success == 0 {
         return Err(format!(
-            "Windows could not unlock the trial device key: {}",
+            "Windows could not unlock the previous protected trial identity: {}",
             std::io::Error::last_os_error()
         ));
     }
     if output.pbData.is_null() {
-        return Err("Windows returned an empty trial device key".to_owned());
+        return Err("Windows returned an empty previous trial identity".to_owned());
     }
     if output.cbData == 0 {
         unsafe {
             windows_sys::Win32::Foundation::LocalFree(output.pbData.cast());
         }
-        return Err("Windows returned an empty trial device key".to_owned());
+        return Err("Windows returned an empty previous trial identity".to_owned());
     }
     let seed =
         unsafe { std::slice::from_raw_parts(output.pbData, output.cbData as usize) }.to_vec();
     unsafe {
+        std::ptr::write_bytes(output.pbData, 0, output.cbData as usize);
+    }
+    unsafe {
         windows_sys::Win32::Foundation::LocalFree(output.pbData.cast());
     }
     Ok(seed)
-}
-
-#[cfg(not(windows))]
-fn unprotect(_value: &[u8]) -> Result<Vec<u8>, String> {
-    Err("Central trial registration requires Windows DPAPI key protection".to_owned())
 }
 
 #[cfg(all(test, windows))]
@@ -161,14 +184,28 @@ mod tests {
     use uuid::Uuid;
 
     #[test]
-    fn dpapi_protected_device_key_is_stable_and_not_stored_as_plaintext() {
-        let directory = std::env::temp_dir().join(format!("orbis-trial-key-test-{}", Uuid::new_v4()));
-        let first = load_or_create(&directory).expect("DPAPI should protect the generated key");
-        let second = load_or_create(&directory).expect("DPAPI should unlock the saved key");
+    fn native_secure_store_keeps_trial_identity_stable() {
+        let directory =
+            std::env::temp_dir().join(format!("orbis-trial-key-test-{}", Uuid::new_v4()));
+        let installation_id = Uuid::new_v4().to_string();
+        let first = load_or_create(&directory, &installation_id)
+            .expect("Windows Credential Manager should save the generated key");
+        let second = load_or_create(&directory, &installation_id)
+            .expect("Windows Credential Manager should unlock the saved key");
         assert_eq!(first.to_bytes(), second.to_bytes());
-
-        let saved = fs::read(directory.join(TRIAL_KEY_FILE)).expect("protected key should exist");
-        assert_ne!(saved, first.to_bytes());
+        remove_keyring_entry(&installation_id);
         fs::remove_dir_all(directory).expect("test directory should be cleaned up");
+    }
+
+    fn remove_keyring_entry(installation_id: &str) {
+        let entry = Entry::new(
+            TRIAL_KEY_SERVICE,
+            &format!("installation:{installation_id}"),
+        )
+        .expect("test entry should be valid");
+        match entry.delete_credential() {
+            Ok(()) | Err(KeyringError::NoEntry) => {}
+            Err(error) => panic!("test secure-store entry should be removed: {error}"),
+        }
     }
 }
