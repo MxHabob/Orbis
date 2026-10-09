@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Check, XMark } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -25,25 +25,12 @@ export function Switch({
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={() => onValueChange?.(!value)}
-      style={({ pressed }) => [
-        styles.track,
-        {
-          backgroundColor: value ? theme.primary : theme.backgroundElement,
-          borderColor: value ? theme.primary : theme.border,
-        },
-        disabled && styles.disabled,
-        pressed && styles.pressed,
-      ]}
+      className={`h-6 w-11 justify-start rounded-sm border ${value ? "border-primary bg-primary" : "border-border bg-background-element"} ${disabled ? "opacity-50" : ""}`}
+      style={({ pressed }) => (pressed && !disabled ? { opacity: 0.8 } : undefined)}
     >
       <View
-        style={[
-          styles.thumb,
-          {
-            borderColor: value ? theme.primary : theme.border,
-            backgroundColor: theme.background,
-            transform: [{ translateX: value ? 20 : 0 }],
-          },
-        ]}
+        className={`h-[22px] w-[22px] rounded-md border bg-background shadow-sm ${value ? "border-primary" : "border-border"}`}
+        style={{ transform: [{ translateX: value ? 20 : 0 }] }}
       >
         {value ? (
           <Check size={12} color={theme.primary} />
@@ -54,30 +41,3 @@ export function Switch({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  track: {
-    width: 44,
-    height: 24,
-    borderRadius: 4,
-    borderWidth: 1,
-    justifyContent: "flex-start",
-  },
-  thumb: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
-    borderWidth: 1,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-});

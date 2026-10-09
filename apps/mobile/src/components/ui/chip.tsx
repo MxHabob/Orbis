@@ -11,7 +11,6 @@ import {
   Pressable,
   type ViewStyle,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
 
 export interface ChipProps {
   label: string;
@@ -32,21 +31,15 @@ export function Chip({
   disabled = false,
   style,
 }: ChipProps) {
-  const theme = useTheme();
-
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
-      className="flex-row items-center gap-1 rounded-full border px-3 py-1.5"
+      className={`flex-row items-center gap-1 rounded-full border px-3 py-1.5 ${selected ? "border-primary bg-accent-light" : "border-border bg-background-element"}`}
       style={({ pressed }) => [
-        {
-          backgroundColor: selected ? theme.accentLight : theme.backgroundElement,
-          borderColor: selected ? theme.primary : theme.border,
-          opacity: disabled ? 0.5 : 1,
-        },
+        disabled && { opacity: 0.5 },
         pressed && !disabled && { opacity: 0.8 },
         style,
       ]}
@@ -54,13 +47,7 @@ export function Chip({
       {icon && <View className="items-center justify-center">{icon}</View>}
 
       <Text
-        className="text-xs"
-        style={[
-          {
-            color: selected ? theme.primary : theme.foreground,
-            fontWeight: selected ? "600" : "500",
-          },
-        ]}
+        className={`text-xs ${selected ? "font-semibold text-primary" : "font-medium text-foreground"}`}
       >
         {label}
       </Text>
@@ -74,10 +61,7 @@ export function Chip({
           className="ml-0.5 items-center justify-center"
         >
           <View
-            className="relative h-3.5 w-3.5 items-center justify-center rounded-full"
-            style={[
-              { backgroundColor: selected ? theme.primary : theme.textMuted },
-            ]}
+            className={`relative h-3.5 w-3.5 items-center justify-center rounded-full ${selected ? "bg-primary" : "bg-muted-foreground"}`}
           >
             <View className="absolute h-[1.2px] w-2 rotate-45 bg-white" />
             <View className="absolute h-[1.2px] w-2 -rotate-45 bg-white" />

@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { InfoCircle } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "./button";
@@ -25,39 +25,33 @@ export function ErrorFallback({
   const theme = useTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View className="flex-1 items-center justify-center bg-background p-six">
       <View
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.card,
-            borderColor: theme.border,
-          },
-        ]}
+        className="w-full max-w-[380px] items-center gap-four rounded-2xl border border-border bg-card p-eight shadow-lg"
       >
-        <View
-          style={[styles.iconWrapper, { backgroundColor: theme.errorLight }]}
-        >
+        <View className="mb-two h-16 w-16 items-center justify-center rounded-full bg-error-light">
           <InfoCircle size={40} color={theme.destructive} />
         </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>
+        <Text className="text-center text-lg leading-6 font-bold text-foreground">
           Something went wrong
         </Text>
 
-        <Text style={[styles.message, { color: theme.textSecondary }]}>
+        <Text className="text-center text-sm leading-5 text-muted-foreground">
           {__DEV__
             ? error.message
             : "An unexpected error occurred. Please try again."}
         </Text>
 
-        <Button
-          title="Try Again"
-          onPress={resetErrorBoundary}
-          variant="default"
-          size="default"
-          style={styles.button}
-        />
+        <View className="mt-two">
+          <Button
+            title="Try Again"
+            onPress={resetErrorBoundary}
+            variant="default"
+            size="default"
+            style={{ minWidth: 160 }}
+          />
+        </View>
       </View>
     </View>
   );
@@ -111,47 +105,3 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 }
 
 export const ErrorBoundary = AppErrorBoundary;
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 380,
-    padding: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    alignItems: "center",
-    gap: 16,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  iconWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 9999,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  title: {
-    ...{"fontSize":18,"lineHeight":24,"fontWeight":"700"},
-    textAlign: "center",
-  },
-  message: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  button: {
-    marginTop: 8,
-    minWidth: 160,
-  },
-});

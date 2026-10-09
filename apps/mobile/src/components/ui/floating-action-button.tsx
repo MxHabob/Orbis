@@ -9,7 +9,6 @@ import {
   Pressable,
   StyleSheet,
   type ViewStyle,
-  type TextStyle,
   Text,
   View,
   ActivityIndicator,
@@ -61,35 +60,27 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
         accessibilityLabel={accessibilityLabel}
         disabled={isDisabled}
         onPress={isDisabled ? undefined : onPress}
+        className={`absolute z-[90] items-center justify-center border border-b-[3px] border-primary border-b-btn-shadow-primary bg-primary ${label ? "h-12 rounded-full px-four" : "h-14 w-14 rounded-full"}`}
         style={({ pressed }) => [
-          styles.container,
+          styles.elevation,
           positionStyle,
           {
-            backgroundColor: theme.primary,
-            borderColor: theme.primaryDark,
-            borderBottomColor: theme.btnShadowPrimary,
             opacity: isDisabled ? 0.6 : 1,
             transform: [
               ...(position === "bottom-center" ? [{ translateX: -28 }] : []),
               { scale: pressed && !isDisabled ? 0.95 : 1 },
             ],
           },
-          label ? styles.extendedContainer : styles.circleContainer,
           style,
         ]}
       >
         {loading ? (
           <ActivityIndicator size="small" color={theme.primaryForeground} />
         ) : (
-          <View style={styles.innerRow}>
+          <View className="flex-row items-center justify-center gap-two">
             {icon}
             {label ? (
-              <Text
-                style={[
-                  styles.label,
-                  { color: theme.primaryForeground },
-                ]}
-              >
+              <Text className="text-sm leading-5 font-semibold text-primary-foreground">
                 {label}
               </Text>
             ) : null}
@@ -103,31 +94,7 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
 FloatingActionButton.displayName = "FloatingActionButton";
 
 const styles = StyleSheet.create({
-  container: {
-    zIndex: 90,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderBottomWidth: 3,
+  elevation: {
     ...{"shadowColor":"#000000","shadowOffset":{"width":0,"height":4},"shadowOpacity":0.12,"shadowRadius":8,"elevation":6},
-  },
-  circleContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 9999,
-  },
-  extendedContainer: {
-    height: 48,
-    paddingHorizontal: 16,
-    borderRadius: 9999,
-  },
-  innerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  label: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
   },
 });

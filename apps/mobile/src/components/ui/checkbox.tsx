@@ -1,6 +1,5 @@
 import React from "react";
 import { Pressable } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
 
 export interface CheckboxProps {
   value: boolean;
@@ -15,8 +14,6 @@ export function Checkbox({
   disabled = false,
   accessibilityLabel,
 }: CheckboxProps) {
-  const theme = useTheme();
-
   return (
     <Pressable
       accessibilityRole="checkbox"
@@ -24,13 +21,8 @@ export function Checkbox({
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={() => onValueChange?.(!value)}
-      className="h-4 w-4 items-center justify-center rounded-full"
+      className={`h-4 w-4 items-center justify-center rounded-full ${value ? "border-4 border-primary" : "border border-input"}`}
       style={({ pressed }) => [
-        {
-          backgroundColor: "transparent",
-          borderColor: value ? theme.primary : theme.input,
-          borderWidth: value ? 4 : 1,
-        },
         disabled && { opacity: 0.5 },
         pressed && { opacity: 0.75 },
       ]}

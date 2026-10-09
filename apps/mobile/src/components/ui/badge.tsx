@@ -12,7 +12,6 @@ import {
   type ViewStyle,
   type TextStyle,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
 
 export type BadgeVariant =
   | "default"
@@ -38,92 +37,36 @@ export interface BadgeProps {
   textStyle?: TextStyle;
 }
 
+const badgeVariantClasses: Record<BadgeVariant, { container: string; text: string }> = {
+  default: { container: "border-primary/20 bg-primary/10", text: "text-primary" },
+  primary: { container: "border-primary/20 bg-primary/10", text: "text-primary" },
+  secondary: { container: "border-border bg-secondary", text: "text-secondary-foreground" },
+  outline: { container: "border-border bg-transparent", text: "text-foreground" },
+  destructive: { container: "border-destructive/20 bg-destructive/10", text: "text-destructive" },
+  error: { container: "border-destructive/20 bg-destructive/10", text: "text-destructive" },
+  warning: { container: "border-warning/30 bg-warning-light", text: "text-warning" },
+  success: { container: "border-success/30 bg-success-light", text: "text-success" },
+  info: { container: "border-info/30 bg-info-light", text: "text-info" },
+  lime: { container: "border-brand-lime/30 bg-brand-lime/15", text: "text-brand-lime-dark" },
+  pink: { container: "border-brand-pink/20 bg-brand-pink/10", text: "text-brand-pink" },
+  purple: { container: "border-primary/20 bg-primary/10", text: "text-primary" },
+  neutral: { container: "border-border bg-secondary", text: "text-secondary-foreground" },
+};
+
 export const Badge = React.memo<BadgeProps>(
   ({ label, variant = "default", size = "md", icon, style, textStyle }) => {
-    const theme = useTheme();
-
-    const getColors = (): { bg: string; text: string; border?: string } => {
-      switch (variant) {
-        case "secondary":
-        case "neutral":
-          return {
-            bg: theme.secondary,
-            text: theme.secondaryForeground,
-            border: theme.border,
-          };
-        case "outline":
-          return {
-            bg: "transparent",
-            text: theme.foreground,
-            border: theme.border,
-          };
-        case "destructive":
-        case "error":
-          return {
-            bg: theme.errorLight,
-            text: theme.destructive,
-            border: theme.errorLight,
-          };
-        case "warning":
-          return {
-            bg: theme.warningLight,
-            text: theme.warning,
-            border: theme.warningLight,
-          };
-        case "success":
-          return {
-            bg: theme.successLight,
-            text: theme.success,
-            border: theme.successLight,
-          };
-        case "info":
-          return {
-            bg: theme.infoLight,
-            text: theme.info,
-            border: theme.infoLight,
-          };
-        case "lime":
-          return { bg: "#ECFCCB", text: "#3F6212", border: "#D9F99D" };
-        case "pink":
-          return { bg: "#FCE7F3", text: "#BE185D", border: "#FBCFE8" };
-        case "purple":
-        case "primary":
-        case "default":
-        default:
-          return {
-            bg: theme.primaryLight,
-            text: theme.primary,
-            border: theme.primaryLight,
-          };
-      }
-    };
-
-    const colors = getColors();
     const isSm = size === "sm";
+    const variantClasses = badgeVariantClasses[variant];
 
     return (
       <View
-        className="flex-row items-center self-start gap-1 rounded-full"
-        style={[
-          {
-            backgroundColor: colors.bg,
-            borderColor: colors.border || "transparent",
-            borderWidth: colors.border ? 1 : 0,
-            paddingVertical: isSm ? 2 : 4,
-            paddingHorizontal: isSm ? 8 : 10,
-            borderRadius: 9999,
-          },
-          style,
-        ]}
+        className={`flex-row items-center self-start gap-1 rounded-full border ${isSm ? "px-two py-half" : "px-[10px] py-one"} ${variantClasses.container}`}
+        style={style}
       >
         {icon && <View className="mr-0.5">{icon}</View>}
         <Text
-          className="text-center"
-          style={[
-            isSm ? {"fontSize":11,"lineHeight":14,"fontWeight":"500"} : {"fontSize":12,"lineHeight":16,"fontWeight":"600"},
-            { color: colors.text },
-            textStyle,
-          ]}
+          className={`text-center ${isSm ? "text-[11px] leading-[14px] font-medium" : "text-xs leading-4 font-semibold"} ${variantClasses.text}`}
+          style={textStyle}
         >
           {label}
         </Text>

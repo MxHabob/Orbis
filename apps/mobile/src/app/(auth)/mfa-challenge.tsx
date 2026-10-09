@@ -8,7 +8,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   TextInput,
@@ -137,12 +136,7 @@ export default function MFAChallengeScreen() {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? "#09090B" : "#F8FAFC" },
-      ]}
-    >
+    <View className="flex-1 bg-background">
       {/* Radiant Atmospheric Purple/Violet Top Glow */}
       <LinearGradient
         colors={
@@ -152,56 +146,46 @@ export default function MFAChallengeScreen() {
         }
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.6 }}
-        style={StyleSheet.absoluteFill}
+        className="absolute inset-0"
         pointerEvents="none"
       />
 
       <KeyboardAwareView
-        style={styles.keyboardContainer}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingTop: Platform.OS === "ios" ? 54 : 36,
+          paddingBottom: 32,
+        }}
       >
         {/* Minimalist Top Bar (Like Reference 1) */}
-        <View style={styles.topBar}>
+        <View className="mb-four flex-row items-center justify-between">
           <Text
-            style={[
-              styles.topBarTitle,
-              { color: isDark ? "rgba(255, 255, 255, 0.7)" : "#64748B" },
-            ]}
+            className="text-xs leading-4 font-semibold tracking-[0.5px] text-muted-foreground uppercase"
           >
             {t("auth_setup_title")}
           </Text>
           <Pressable
             onPress={() => router.back()}
-            style={[
-              styles.closeBtn,
-              {
-                backgroundColor: isDark
-                  ? "rgba(255, 255, 255, 0.1)"
-                  : "rgba(0, 0, 0, 0.05)",
-              },
-            ]}
+            className="h-8 w-8 items-center justify-center rounded-full bg-muted"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <XMark size={16} color={isDark ? "#FFFFFF" : "#0F172A"} />
+            <XMark size={16} color={theme.foreground} />
           </Pressable>
         </View>
 
         {/* Minimal Stepper Status Header */}
-        <View style={styles.stepperHeader}>
-          <View style={styles.stepIndicatorRow}>
+        <View className="mb-six">
+          <View className="flex-row items-center gap-two">
             <View
-              style={[
-                styles.stepDotDone,
-                { backgroundColor: isDark ? "#A855F7" : "#7C3AED" },
-              ]}
+              className="h-5 w-5 items-center justify-center rounded-full bg-primary"
             >
-              <Text style={styles.stepCheckmark}>✓</Text>
+              <Text className="text-[11px] font-extrabold text-white">✓</Text>
             </View>
             <Text
-              style={[
-                styles.stepLabel,
-                { color: isDark ? "rgba(255,255,255,0.6)" : "#64748B" },
-              ]}
+              className="text-xs leading-4 font-semibold text-muted-foreground"
             >
               {t("auth_setup_step_device")}
             </Text>
@@ -209,21 +193,15 @@ export default function MFAChallengeScreen() {
         </View>
 
         {/* Main Content Area */}
-        <View style={styles.mainSection}>
+        <View className="flex-1 justify-center">
           <Text
-            style={[
-              styles.heading,
-              { color: isDark ? "#FFFFFF" : "#0F172A" },
-            ]}
+            className="mb-one text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground"
           >
             {isBackupMode ? t("auth_mfa_backup_code") : t("auth_setup_step_recovery")}
           </Text>
 
           <Text
-            style={[
-              styles.subheading,
-              { color: isDark ? "rgba(255, 255, 255, 0.6)" : "#64748B" },
-            ]}
+            className="text-sm leading-5 text-muted-foreground"
           >
             {isBackupMode
               ? t("auth_mfa_backup_ph")
@@ -234,13 +212,10 @@ export default function MFAChallengeScreen() {
           {!isBackupMode && (
             <Pressable
               onPress={() => countdown === 0 && setCountdown(55)}
-              style={styles.resendLink}
+              className="mb-four mt-two"
             >
               <Text
-                style={[
-                  styles.resendText,
-                  { color: isDark ? "#C084FC" : theme.primary },
-                ]}
+                className="text-xs leading-4 font-semibold text-primary"
               >
                 {countdown > 0
                   ? `${t("auth_mfa_resend")} (${countdown}s)`
@@ -250,18 +225,8 @@ export default function MFAChallengeScreen() {
           )}
 
           {errorMsg ? (
-            <View
-              style={[
-                styles.errorPill,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(239, 68, 68, 0.18)"
-                    : "#FEF2F2",
-                  borderColor: theme.error,
-                },
-              ]}
-            >
-              <Text style={[styles.errorPillText, { color: theme.error }]}>
+            <View className="mb-four rounded-lg border border-destructive bg-destructive/10 px-three py-two">
+              <Text className="text-xs leading-4 font-semibold text-destructive">
                 {errorMsg}
               </Text>
             </View>
@@ -269,7 +234,7 @@ export default function MFAChallengeScreen() {
 
           {!isBackupMode ? (
             /* 6 Large PIN Boxes with breathing room */
-            <View style={styles.pinContainer}>
+            <View className="my-four flex-row justify-between">
               {digits.map((digit, idx) => {
                 const isCurrent =
                   digits.findIndex((d) => d === "") === idx ||
@@ -280,25 +245,14 @@ export default function MFAChallengeScreen() {
                     ref={(el) => {
                       inputRefs.current[idx] = el;
                     }}
-                    style={[
-                      styles.pinBox,
-                      {
-                        backgroundColor: isDark
-                          ? "rgba(255, 255, 255, 0.06)"
-                          : "#FFFFFF",
-                        borderColor: digit
-                          ? theme.primary
-                          : isCurrent
-                            ? isDark
-                              ? "#C084FC"
-                              : theme.primaryDark
-                            : isDark
-                              ? "rgba(255, 255, 255, 0.15)"
-                              : "rgba(0, 0, 0, 0.1)",
-                        color: isDark ? "#FFFFFF" : "#0F172A",
-                        shadowColor: digit ? theme.primary : "#000000",
-                      },
-                    ]}
+                    className={`h-[58px] w-12 rounded-xl border-[1.5px] bg-background-element text-center text-[22px] font-extrabold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
+                    style={{
+                      shadowColor: digit ? theme.primary : "#000000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 4,
+                      elevation: 2,
+                    }}
                     value={digit}
                     onChangeText={(val) => handleDigitChange(val, idx)}
                     onKeyPress={(e) => handleKeyPress(e, idx)}
@@ -312,29 +266,12 @@ export default function MFAChallengeScreen() {
             </View>
           ) : (
             /* Backup Code Input */
-            <View style={styles.backupContainer}>
-              <View
-                style={[
-                  styles.largePillInputContainer,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(255, 255, 255, 0.06)"
-                      : "#FFFFFF",
-                    borderColor: isDark
-                      ? "rgba(255, 255, 255, 0.18)"
-                      : "rgba(0, 0, 0, 0.1)",
-                  },
-                ]}
-              >
+            <View className="my-four">
+              <View className="h-14 flex-row items-center rounded-full border border-border bg-background-element px-four">
                 <TextInput
-                  style={[
-                    styles.largePillTextInput,
-                    { color: isDark ? "#FFFFFF" : "#0F172A" },
-                  ]}
+                  className="flex-1 px-two text-base text-foreground"
                   placeholder="XXXX-XXXX-XXXX"
-                  placeholderTextColor={
-                    isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                  }
+                  placeholderTextColor={theme.textMuted}
                   value={backupCode}
                   onChangeText={setBackupCode}
                   autoCapitalize="characters"
@@ -350,15 +287,10 @@ export default function MFAChallengeScreen() {
               setIsBackupMode(!isBackupMode);
               setErrorMsg(null);
             }}
-            style={styles.switchModeLink}
+            className="mt-three items-center"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text
-              style={[
-                styles.switchModeText,
-                { color: isDark ? "rgba(255,255,255,0.6)" : "#64748B" },
-              ]}
-            >
+            <Text className="text-xs leading-4 font-semibold text-muted-foreground">
               {isBackupMode
                 ? t("auth_mfa_standard_code")
                 : t("auth_mfa_backup_code")}
@@ -367,25 +299,17 @@ export default function MFAChallengeScreen() {
         </View>
 
         {/* Bottom Tactile Pill Button */}
-        <View style={styles.footer}>
+        <View className="mt-six">
           <Pressable
             onPress={handleManualSubmit}
             disabled={isSubmitting}
-            style={({ pressed }) => [
-              styles.continuePillBtn,
-              {
-                backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-                opacity: isSubmitting ? 0.7 : 1,
-              },
-            ]}
+            className="h-[54px] items-center justify-center rounded-full bg-foreground shadow-md"
+            style={({ pressed }) => ({
+              transform: [{ scale: pressed ? 0.98 : 1 }],
+              opacity: isSubmitting ? 0.7 : 1,
+            })}
           >
-            <Text
-              style={[
-                styles.continuePillBtnText,
-                { color: isDark ? "#0F172A" : "#FFFFFF" },
-              ]}
-            >
+            <Text className="text-base leading-5 font-bold text-background">
               {t("auth_verify")}
             </Text>
           </Pressable>
@@ -394,154 +318,3 @@ export default function MFAChallengeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 54 : 36,
-    paddingBottom: 32,
-  },
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-  },
-  topBarTitle: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepperHeader: {
-    marginBottom: 24,
-  },
-  stepIndicatorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  stepDotDone: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepCheckmark: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "800",
-  },
-  stepLabel: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
-  },
-  mainSection: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  heading: {
-    ...{"fontSize":32,"lineHeight":38,"fontWeight":"800"},
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-    marginBottom: 8,
-  },
-  subheading: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
-    lineHeight: 20,
-  },
-  resendLink: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  resendText: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
-  },
-  errorPill: {
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 16,
-  },
-  errorPillText: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"400"},
-    fontWeight: "600",
-  },
-  pinContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginVertical: 16,
-  },
-  pinBox: {
-    width: 48,
-    height: 58,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    fontSize: 22,
-    fontWeight: "800",
-    textAlign: "center",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  backupContainer: {
-    marginVertical: 16,
-  },
-  largePillInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 56,
-    borderRadius: 9999,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-  },
-  largePillTextInput: {
-    flex: 1,
-    fontSize: 16,
-    paddingHorizontal: 8,
-  },
-  switchModeLink: {
-    alignItems: "center",
-    marginTop: 12,
-  },
-  switchModeText: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
-  },
-  footer: {
-    marginTop: 24,
-  },
-  continuePillBtn: {
-    height: 54,
-    borderRadius: 9999,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  continuePillBtnText: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});

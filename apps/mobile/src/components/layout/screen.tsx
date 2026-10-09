@@ -55,9 +55,9 @@ export function Screen({
 
   const content = (
     <View
-      className="flex-1 w-full"
+      className="flex-1 w-full bg-background"
       style={[
-        { backgroundColor: resolvedBg },
+        backgroundColor ? { backgroundColor } : undefined,
         edgePadding,
         style,
       ]}

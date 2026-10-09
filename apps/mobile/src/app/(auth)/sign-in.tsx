@@ -106,8 +106,7 @@ export default function SignInScreen() {
 
   return (
     <View
-      className="flex-1"
-      style={{ backgroundColor: isDark ? "#09090B" : "#F8FAFC" }}
+      className="flex-1 bg-background"
     >
 
       <KeyboardAwareView
@@ -124,7 +123,7 @@ export default function SignInScreen() {
             {CAPABILITIES.map((cap, idx) => {
               return (
                     <View>
-                      <Text className="font-sans text-2xl leading-[30px] font-extrabold">
+                      <Text className="font-sans text-2xl leading-[30px] font-extrabold text-foreground">
                         {t(cap.labelKey)}
                       </Text>
                     </View>
@@ -142,7 +141,7 @@ export default function SignInScreen() {
               >
                 <Text
                   className="font-sans text-sm leading-5 font-semibold"
-                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                  className="font-sans text-sm leading-5 font-semibold text-foreground"
                 >
                   {t("auth_continue_google")}
                 </Text>
@@ -154,8 +153,7 @@ export default function SignInScreen() {
                 variant="secondary"
               >
                 <Text
-                  className="font-sans text-sm leading-5 font-semibold"
-                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                  className="font-sans text-sm leading-5 font-semibold text-foreground"
                 >
                   {t("auth_sign_in")}
                 </Text>

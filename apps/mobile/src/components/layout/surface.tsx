@@ -8,9 +8,8 @@ import React from "react";
 import {
   View,
   type ViewProps,
-  type ViewStyle,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
+import type { ViewStyle } from "react-native";
 
 type SpacingScale =
   | "half"
@@ -67,49 +66,22 @@ export function Surface({
   children,
   ...props
 }: SurfaceProps) {
-  const theme = useTheme();
-
-  let variantStyle: ViewStyle = {};
-  let variantClass = "";
-  switch (variant) {
-    case "elevated":
-      variantStyle = {
-        backgroundColor: theme.cardElevated,
-        borderWidth: 1,
-        borderColor: theme.cardBorder,
-      };
-      variantClass = "shadow-md";
-      break;
-    case "outlined":
-      variantStyle = {
-        backgroundColor: theme.card,
-        borderWidth: 1,
-        borderColor: theme.border,
-      };
-      break;
-    case "sunken":
-      variantStyle = {
-        backgroundColor: theme.backgroundElement,
-      };
-      break;
-    case "flat":
-    default:
-      variantStyle = {
-        backgroundColor: theme.card,
-      };
-      break;
-  }
+  const variantClasses: Record<SurfaceProps["variant"] & string, string> = {
+    flat: "bg-card",
+    elevated: "border border-card-border bg-card-elevated shadow-md",
+    outlined: "border border-border bg-card",
+    sunken: "bg-background-element",
+  };
 
   const computedStyle: ViewStyle = {
     padding: typeof padding === "number" ? padding : undefined,
-    ...variantStyle,
   };
   const paddingClass =
     typeof padding === "string" ? paddingClasses[padding] : undefined;
 
   return (
     <View
-      className={`${radiusClasses[radius]} ${paddingClass ?? ""} ${variantClass}`}
+      className={`${radiusClasses[radius]} ${paddingClass ?? ""} ${variantClasses[variant]}`}
       style={[computedStyle, style]}
       {...props}
     >

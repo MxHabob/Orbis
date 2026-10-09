@@ -4,6 +4,10 @@
 @import "nativewind/theme";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant data-open (&[data-state="open"], &[data-open]);
+@custom-variant data-closed (&[data-state="closed"], &[data-closed]);
+@custom-variant data-checked (&[data-state="checked"], &[data-checked]);
+@custom-variant data-unchecked (&[data-state="unchecked"], &[data-unchecked]);
 
 :root {
   --radius: 0.5rem;
@@ -59,6 +63,7 @@
   --brand-violet: oklch(0.23 0 0);
   --brand-indigo: oklch(0.6 0.08 250);
   --brand-rose: oklch(0.65 0.16 25);
+  --brand-lime-foreground: #152e05;
 
   --primary-light: var(--accent);
   --primary-dark: var(--brand-purple-dark);
@@ -241,6 +246,7 @@
   --color-brand-violet: var(--brand-violet);
   --color-brand-indigo: var(--brand-indigo);
   --color-brand-rose: var(--brand-rose);
+  --color-brand-lime-foreground: var(--brand-lime-foreground);
 
   --color-primary-light: var(--primary-light);
   --color-primary-dark: var(--primary-dark);
@@ -265,4 +271,45 @@
   --color-tab-bar-border: var(--tab-bar-border);
   --color-tab-bar-active: var(--tab-bar-active);
   --color-tab-bar-inactive: var(--tab-bar-inactive);
+
+  --animate-shimmer: shimmer 2.5s linear infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-caret-blink: caret-blink 1.25s ease-out infinite;
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes caret-blink {
+    0%,
+    70%,
+    100% {
+      opacity: 1;
+    }
+    20%,
+    50% {
+      opacity: 0;
+    }
+  }
 }

@@ -5,7 +5,7 @@
  */
 
 import React from "react";
-import { View, Text, StyleSheet, type ViewStyle } from "react-native";
+import { View, Text, type ViewStyle } from "react-native";
 import { ArchiveBox } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "./button";
@@ -30,12 +30,12 @@ export function EmptyState({
   const theme = useTheme();
 
   return (
-    <View style={[styles.container, style]}>
+    <View
+      className="items-center justify-center gap-two px-five py-six"
+      style={style}
+    >
       <View
-        style={[
-          styles.iconWrapper,
-          { backgroundColor: theme.backgroundElement },
-        ]}
+        className="mb-two h-[68px] w-[68px] items-center justify-center rounded-full bg-background-element"
       >
         {IconComponent ? (
           typeof IconComponent === "function" ? (
@@ -47,52 +47,24 @@ export function EmptyState({
           <ArchiveBox size={36} color={theme.textSecondary} />
         )}
       </View>
-      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+      <Text className="text-center text-base leading-[22px] font-semibold text-foreground">
+        {title}
+      </Text>
       {description && (
-        <Text style={[styles.description, { color: theme.textSecondary }]}>
+        <Text className="max-w-[320px] text-center text-sm leading-5 text-muted-foreground">
           {description}
         </Text>
       )}
       {actionTitle && onAction && (
-        <Button
-          title={actionTitle}
-          onPress={onAction}
-          variant="secondary"
-          size="sm"
-          style={styles.actionButton}
-        />
+        <View className="mt-three">
+          <Button
+            title={actionTitle}
+            onPress={onAction}
+            variant="secondary"
+            size="sm"
+          />
+        </View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  iconWrapper: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  title: {
-    ...{"fontSize":16,"lineHeight":22,"fontWeight":"600"},
-    textAlign: "center",
-  },
-  description: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
-    textAlign: "center",
-    maxWidth: 320,
-    lineHeight: 20,
-  },
-  actionButton: {
-    marginTop: 12,
-  },
-});

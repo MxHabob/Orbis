@@ -13,6 +13,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { useColorScheme } from "react-native";
 
+import { useTheme } from "@/hooks/use-theme";
 import { AuthProvider } from "@/lib/api";
 import { AppQueryProvider } from "@/providers/query-provider";
 import { EffectiveContextProvider } from "@/providers/effective-context";

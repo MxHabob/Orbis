@@ -9,10 +9,8 @@ import {
   View,
   Text,
   Pressable,
-  StyleSheet,
   type ViewStyle,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
 
 export interface RadioProps {
   selected: boolean;
@@ -31,49 +29,36 @@ export function Radio({
   disabled = false,
   style,
 }: RadioProps) {
-  const theme = useTheme();
-
   return (
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={disabled ? undefined : onSelect}
+      className="flex-row items-start gap-two py-one"
       style={({ pressed }) => [
-        styles.container,
         { opacity: disabled ? 0.5 : 1 },
-        pressed && !disabled && styles.pressed,
+        pressed && !disabled && { opacity: 0.75 },
         style,
       ]}
     >
       <View
-        style={[
-          styles.outerCircle,
-          {
-            borderColor: selected ? theme.primary : theme.border,
-            backgroundColor: selected ? theme.accentLight : "transparent",
-          },
-        ]}
+        className={`mt-px h-[22px] w-[22px] items-center justify-center rounded-full border-2 ${selected ? "border-primary bg-accent-light" : "border-border bg-transparent"}`}
       >
         {selected && (
-          <View
-            style={[
-              styles.innerDot,
-              { backgroundColor: theme.primary },
-            ]}
-          />
+          <View className="h-2.5 w-2.5 rounded-full bg-primary" />
         )}
       </View>
 
       {(label || description) && (
-        <View style={styles.textContainer}>
+        <View className="flex-1">
           {label && (
-            <Text style={[styles.label, { color: theme.foreground }]}>
+            <Text className="text-sm leading-5 font-semibold text-foreground">
               {label}
             </Text>
           )}
           {description && (
-            <Text style={[styles.description, { color: theme.textSecondary }]}>
+            <Text className="mt-0.5 text-xs leading-4 text-muted-foreground">
               {description}
             </Text>
           )}
@@ -104,7 +89,7 @@ export function RadioGroup<T extends string = string>({
   style,
 }: RadioGroupProps<T>) {
   return (
-    <View style={[styles.group, style]}>
+    <View className="gap-three" style={style}>
       {options.map((opt) => (
         <Radio
           key={opt.value}
@@ -118,42 +103,3 @@ export function RadioGroup<T extends string = string>({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  group: {
-    gap: 12,
-  },
-  container: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    paddingVertical: 4,
-  },
-  outerCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 9999,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 1,
-  },
-  innerDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 9999,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  label: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
-  },
-  description: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"400"},
-    marginTop: 2,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-});

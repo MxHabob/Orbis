@@ -9,10 +9,8 @@ import React from "react";
 import {
   View,
   type ViewProps,
-  type ViewStyle,
   Pressable,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
 
 type SpacingScale =
   | "half"
@@ -57,41 +55,14 @@ export const Card = React.memo<CardProps>(
     children,
     ...props
   }) => {
-    const theme = useTheme();
-
-    const getVariantStyle = (): ViewStyle => {
-      switch (variant) {
-        case "elevated":
-        case "interactive":
-          return {
-            backgroundColor: theme.card,
-            borderWidth: 0,
-            shadowOpacity: 0,
-            elevation: 0,
-          };
-        case "outline":
-          return {
-            backgroundColor: "transparent",
-            borderColor: theme.border,
-            borderWidth: 1,
-          };
-        case "flat":
-          return { backgroundColor: "transparent", borderWidth: 0 };
-        case "default":
-        default:
-          return {
-            backgroundColor: theme.card,
-            borderWidth: 0,
-            shadowOpacity: 0,
-            elevation: 0,
-          };
-      }
+    const variantClasses: Record<NonNullable<CardProps["variant"]>, string> = {
+      default: "bg-card",
+      elevated: "bg-card",
+      outline: "border border-border bg-transparent",
+      flat: "bg-transparent",
+      interactive: "bg-card",
     };
-
-    const containerStyle: ViewStyle = {
-      ...getVariantStyle(),
-    };
-    const className = `rounded-lg ${paddingClasses[padding]}`;
+    const className = `rounded-lg ${paddingClasses[padding]} ${variantClasses[variant]}`;
 
     if (onPress) {
       return (
@@ -99,7 +70,6 @@ export const Card = React.memo<CardProps>(
           className={className}
           onPress={onPress}
           style={({ pressed }) => [
-            containerStyle,
             style,
             pressed && { opacity: 0.88, transform: [{ translateY: 1 }] },
           ]}
@@ -111,7 +81,7 @@ export const Card = React.memo<CardProps>(
     }
 
     return (
-      <View className={className} style={[containerStyle, style]} {...props}>
+      <View className={className} style={style} {...props}>
         {children}
       </View>
     );
