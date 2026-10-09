@@ -602,7 +602,11 @@ pub fn get_master_template_definitions() -> Vec<(
                     "receipt.payerName": { "source": "receipt.payer_name", "type": "string", "label": "Payer Name", "labelAr": "استلمنا من السيد/ة" },
                     "receipt.studentName": { "source": "receipt.student_name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
                     "receipt.amount": { "source": "receipt.amount", "type": "number", "label": "Amount", "labelAr": "المبلغ رقماً" },
-                    "receipt.amountWords": { "source": "receipt.amount_words", "type": "string", "label": "Amount in Words", "labelAr": "المبلغ كتابة" }
+                    "receipt.amountWords": { "source": "receipt.amount_words", "type": "string", "label": "Amount in Words", "labelAr": "المبلغ كتابة" },
+                    "receipt.description": { "source": "receipt.description", "type": "string", "label": "Description", "labelAr": "البيان" },
+                    "receipt.paymentMethod": { "source": "receipt.payment_method", "type": "string", "label": "Payment Method", "labelAr": "طريقة الدفع" },
+                    "receipt.referenceNumber": { "source": "receipt.reference_number", "type": "string", "label": "Reference Number", "labelAr": "رقم المرجع" },
+                    "receipt.cashierName": { "source": "receipt.cashier_name", "type": "string", "label": "Cashier", "labelAr": "أمين الصندوق" }
                 },
                 "assets": {},
                 "pages": [{
@@ -613,82 +617,124 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "rcpt-border",
-                            "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.2, "borderRadius": 3 },
-                            "position": { "x": 10, "y": 10, "width": 190, "height": 135 }
+                            "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#d8e2eb", "strokeWidth": 0.7, "borderRadius": 4 },
+                            "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
                         },
-                        // Header
+                        // Branded header
+                        {
+                            "type": "Shape",
+                            "id": "rcpt-header-bg",
+                            "props": { "shape": "rectangle", "fillColor": "#0f766e", "strokeColor": "#0f766e", "strokeWidth": 0, "borderRadius": 4 },
+                            "position": { "x": 8, "y": 8, "width": 194, "height": 42 }
+                        },
                         {
                             "type": "Text",
                             "id": "rcpt-org-title",
-                            "props": { "content": "{{$org.name_ar}}\nالرقم الضريبي: {{$org.tax_number}}", "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl", "lineHeight": 1.4 },
-                            "position": { "x": 115, "y": 14, "width": 80, "height": 12 }
+                            "props": { "content": "{{$org.name_ar}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 18, "y": 12, "width": 174, "height": 7 }
                         },
                         {
                             "type": "Text",
                             "id": "rcpt-title",
-                            "props": { "content": "سـنـد قـبـض مـالـي\nOFFICIAL PAYMENT RECEIPT", "fontSize": 14, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
-                            "position": { "x": 60, "y": 14, "width": 90, "height": 14 }
+                            "props": { "content": "سـنـد قـبـض مـالـي\nOFFICIAL PAYMENT RECEIPT", "fontSize": 14, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
+                            "position": { "x": 18, "y": 20, "width": 174, "height": 15 }
                         },
                         {
                             "type": "Text",
                             "id": "rcpt-meta",
-                            "props": { "content": "رقم السند: {{receipt.number}}\nالتاريخ: {{receipt.date}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#2563eb", "textAlign": "end", "direction": "rtl", "lineHeight": 1.4 },
-                            "position": { "x": 15, "y": 14, "width": 55, "height": 12 }
+                            "props": { "content": "رقم السند: {{receipt.number}}  |  التاريخ: {{receipt.date}}", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#e2e8f0", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 18, "y": 37, "width": 174, "height": 7 }
                         },
                         // Divider
                         {
                             "type": "Separator",
                             "id": "rcpt-sep-1",
-                            "props": { "direction": "horizontal", "color": "#0f172a", "thickness": 0.8 },
-                            "position": { "x": 10, "y": 30, "width": 190, "height": 1 }
+                            "props": { "direction": "horizontal", "color": "#d8e2eb", "thickness": 0.5 },
+                            "position": { "x": 18, "y": 54, "width": 174, "height": 1 }
                         },
-                        // Body Fields
+                        // Receipt parties
                         {
                             "type": "Text",
                             "id": "rcpt-body",
                             "props": {
-                                "content": "استلمنا من السيد / السيدة: {{receipt.payerName}}\nعن الطالب / الطالبة: {{receipt.studentName}}\nمبلغاً وقدره: {{receipt.amount}} {{$org.currency}}\nفقط وقدره: {{receipt.amountWords}}\nوذلك مقابل: {{receipt.description}}",
-                                "fontSize": 10.5,
+                                "content": "استلمنا من: {{receipt.payerName}}\nعن الطالب / الطالبة: {{receipt.studentName}}",
+                                "fontSize": 10,
                                 "fontFamily": "Rubik",
-                                "fontWeight": "normal",
-                                "color": "#1e293b",
-                                "textAlign": "start",
+                                "fontWeight": "bold",
+                                "color": "#334155",
+                                "textAlign": "end",
                                 "direction": "rtl",
-                                "lineHeight": 2.0
+                                "lineHeight": 1.7
                             },
-                            "position": { "x": 55, "y": 34, "width": 140, "height": 65 }
+                            "position": { "x": 22, "y": 60, "width": 166, "height": 17 }
+                        },
+                        {
+                            "type": "Shape",
+                            "id": "rcpt-amount-bg",
+                            "props": { "shape": "rectangle", "fillColor": "#f0fdfa", "strokeColor": "#cce9e3", "strokeWidth": 0.5, "borderRadius": 3 },
+                            "position": { "x": 22, "y": 84, "width": 166, "height": 34 }
+                        },
+                        {
+                            "type": "Text",
+                            "id": "rcpt-amount",
+                            "props": { "content": "مبلغ القبض: {{receipt.amount}} {{$org.currency}}", "fontSize": 16, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f766e", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 27, "y": 90, "width": 156, "height": 11 }
+                        },
+                        {
+                            "type": "Text",
+                            "id": "rcpt-amount-words",
+                            "props": { "content": "فقط كتابة: {{receipt.amountWords}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 27, "y": 104, "width": 156, "height": 8 }
+                        },
+                        {
+                            "type": "Text",
+                            "id": "rcpt-description",
+                            "props": { "content": "وذلك مقابل: {{receipt.description}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "end", "direction": "rtl" },
+                            "position": { "x": 22, "y": 127, "width": 166, "height": 12 }
                         },
                         // QR Code (ZATCA compliant)
                         {
                             "type": "QRCode",
                             "id": "rcpt-qr",
-                            "props": { "data": "{{receipt.number}}", "size": 28 },
-                            "position": { "x": 18, "y": 42, "width": 28, "height": 28 }
+                            "props": { "data": "{{receipt.number}}", "size": 32 },
+                            "position": { "x": 28, "y": 166, "width": 32, "height": 32 }
                         },
                         {
                             "type": "Text",
                             "id": "qr-lbl",
                             "props": { "content": "رمز التحقق الإلكتروني", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
-                            "position": { "x": 15, "y": 72, "width": 34, "height": 4 }
+                            "position": { "x": 22, "y": 200, "width": 44, "height": 5 }
                         },
                         // Payment Mode & Signatures
                         {
                             "type": "Separator",
                             "id": "rcpt-sep-2",
                             "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.5 },
-                            "position": { "x": 10, "y": 105, "width": 190, "height": 1 }
+                            "position": { "x": 18, "y": 151, "width": 174, "height": 1 }
                         },
                         {
                             "type": "Text",
                             "id": "rcpt-method",
-                            "props": { "content": "طريقة الدفع: {{receipt.paymentMethod}} | رقم المرجع: {{receipt.referenceNumber}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
-                            "position": { "x": 110, "y": 110, "width": 85, "height": 5 }
+                            "props": { "content": "طريقة الدفع: {{receipt.paymentMethod}}\nرقم المرجع: {{receipt.referenceNumber}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "end", "direction": "rtl", "lineHeight": 1.7 },
+                            "position": { "x": 78, "y": 166, "width": 105, "height": 14 }
                         },
                         {
                             "type": "Text",
                             "id": "sig-cashier",
-                            "props": { "content": "أمين الصندوق / المحاسب: {{receipt.cashierName}}\nالتوقيع: ___________________", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl", "lineHeight": 1.5 },
-                            "position": { "x": 15, "y": 110, "width": 85, "height": 15 }
+                            "props": { "content": "أمين الصندوق / المحاسب: {{receipt.cashierName}}\n\nالتوقيع: ___________________", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.5 },
+                            "position": { "x": 78, "y": 213, "width": 105, "height": 20 }
+                        },
+                        {
+                            "type": "Separator",
+                            "id": "rcpt-sep-footer",
+                            "props": { "direction": "horizontal", "color": "#e2e8f0", "thickness": 0.5 },
+                            "position": { "x": 18, "y": 263, "width": 174, "height": 1 }
+                        },
+                        {
+                            "type": "Text",
+                            "id": "rcpt-footer",
+                            "props": { "content": "هذا السند صادر إلكترونياً من {{$org.name_ar}}", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#64748b", "textAlign": "center", "direction": "rtl" },
+                            "position": { "x": 18, "y": 270, "width": 174, "height": 7 }
                         }
                     ]
                 }]
@@ -1253,5 +1299,21 @@ mod tests {
             assert!(!serialized.contains("المملكة العربية السعودية"));
             assert!(!serialized.contains("وزارة التعليم"));
         }
+    }
+
+    #[test]
+    fn payment_receipt_uses_organization_currency_and_spaced_layout() {
+        let templates = get_master_template_definitions();
+        let receipt = templates
+            .iter()
+            .find(|template| template.0 == "finance.payment-receipt")
+            .expect("payment receipt template");
+        let serialized = receipt.7.to_string();
+
+        assert!(serialized.contains("{{$org.currency}}"));
+        assert!(!serialized.contains("ريال سعودي"));
+        assert!(!serialized.contains("SAR"));
+        assert!(serialized.contains("rcpt-amount-bg"));
+        assert!(serialized.contains("rcpt-header-bg"));
     }
 }

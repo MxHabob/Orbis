@@ -584,12 +584,12 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
         },
         ReportDefEntry {
             code: "rep.finance.payment-receipt-slip",
-            name: "Official Electronic Payment Receipt",
-            name_ar: "سند قبض مالي إلكتروني رسمي مزود بـ QR",
+            name: "Official Payment Receipt Voucher",
+            name_ar: "سند قبض مالي رسمي",
             domain: "finance",
             category: "cash",
-            description: "Official printable payment receipt voucher with QR verification",
-            description_ar: "سند استلام وقبض مالي معتمد مع رمز التحقق الإلكتروني",
+            description: "Printable payment receipt showing the transaction amount, currency, and payment details",
+            description_ar: "سند قبض قابل للطباعة يعرض مبلغ العملية وعملتها وتفاصيل الدفع",
             provider_key: "finance.payment_receipt",
         },
         ReportDefEntry {

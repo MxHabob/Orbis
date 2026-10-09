@@ -468,6 +468,7 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("is_rtl", &is_rtl);
         context.insert("org_name", &dataset.org.name);
         context.insert("org_name_ar", &dataset.org.name_ar);
+        context.insert("currency", &dataset.org.currency_code);
         context.insert("primary_color", &dataset.org.primary_color);
         context.insert("org_website", &dataset.org.website);
         context.insert("report_name", &dataset.report_name);
@@ -596,6 +597,7 @@ impl OrgContextResolver for DbOrgContextResolver {
             id: org.id,
             name: org.name.clone(),
             name_ar: org.name_ar.clone().unwrap_or_default(),
+            currency_code: org.base_currency_code.clone(),
             code: org.code.clone(),
             logo_url: org.logo.clone(),
             logo_data: None,
@@ -1259,7 +1261,7 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
         let payment_filter = parameters.get("payment_id").and_then(|v| v.as_str());
 
         let mut sql = r#"SELECT
-            py.id, py.receipt_number, py.amount, py.payment_method, py.payment_date, py.notes,
+            py.id, py.receipt_number, py.amount, py.currency_code, py.payment_method, py.payment_date, py.notes,
             p.full_name as student_name,
             ft.name as fee_name
         FROM payments py
@@ -1299,6 +1301,8 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
                     "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
                     "fee_name": row.try_get::<String>("", "fee_name").unwrap_or_default(),
                     "amount": row.try_get::<f64>("", "amount").unwrap_or(0.0),
+                    "currency": row.try_get::<Option<String>>("", "currency_code").ok().flatten()
+                        .or_else(|| org_context.currency_code.clone()).unwrap_or_default(),
                     "payment_method": row.try_get::<String>("", "payment_method").unwrap_or_default(),
                     "payment_date": row.try_get::<String>("", "payment_date").unwrap_or_default(),
                     "notes": row.try_get::<String>("", "notes").unwrap_or_default(),
