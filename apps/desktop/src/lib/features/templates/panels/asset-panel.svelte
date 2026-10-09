@@ -19,7 +19,7 @@ import {
 import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
 import {
   useDocuments,
-  useUploadDocument,
+  useUploadFile,
   useDeleteDocument,
   resolveDocumentUrl,
   getDocumentSource,
@@ -36,7 +36,7 @@ let fileInput: HTMLInputElement;
 
 // --- Queries & Mutations ---
 const documentsQuery = useDocuments(() => ({ entityType: "template" }));
-const uploadMutation = useUploadDocument();
+const uploadMutation = useUploadFile();
 const deleteMutation = useDeleteDocument();
 
 // Flatten pages into a single array of documents
@@ -60,7 +60,7 @@ let filteredAssets = $derived(
 
 async function handleAssetDragStart(e: DragEvent, doc: any) {
   e.dataTransfer?.setData("application/x-docforge-asset", doc.id);
-  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   if (srcUrl) {
     e.dataTransfer?.setData("text/uri-list", srcUrl);
   }
@@ -70,7 +70,7 @@ async function handleAssetDragStart(e: DragEvent, doc: any) {
 // ── Insert asset as Image node ───────────────────────────────
 
 async function insertAssetAsImage(doc: any) {
-  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   store.addAsset(doc.id, "image");
   store.addElement("Image", {
     assetRef: doc.id,
@@ -105,13 +105,14 @@ function handleFileSelect(e: Event) {
   uploadMutation.mutate(
     {
       file,
+      name: file.name,
       entity_type: "template",
       entity_id: store.document.meta.id || "shared",
       category: "image",
       visibility: "private",
     },
     {
-      onSuccess: (uploaded: any) => {
+      onSuccess: (uploaded) => {
         if (uploaded?.id) {
           store.addAsset(uploaded.id, "image");
         }
@@ -195,7 +196,7 @@ function triggerUpload() {
           >
             <!-- Thumbnail -->
             <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
-              {#await resolveDocumentUrl(getDocumentSource(doc))}
+              {#await resolveDocumentUrl(getDocumentSource(doc), doc.id)}
                 <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
               {:then srcUrl}
                 <img

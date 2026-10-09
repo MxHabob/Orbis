@@ -9,8 +9,9 @@ import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
 import { AdjustmentsHorizontal, ArrowPath, User } from "@orbis/icons";
 import {
-  useUploadDocument,
+  useUploadFile,
   resolveDocumentUrl,
+  resolveEntityDocumentUrl,
 } from "$lib/features/documents/queries";
 
 let {
@@ -43,7 +44,7 @@ let {
 
 import { onMount } from "svelte";
 
-const uploadMutation = useUploadDocument();
+const uploadMutation = useUploadFile();
 let fileInputRef: HTMLInputElement | undefined = $state();
 let localPreviewUrl: string | null = $state(null);
 
@@ -51,13 +52,17 @@ let resolvedAvatarUrl: string | null = $state(null);
 
 onMount(() => {
   if (avatarUrl && !localPreviewUrl) {
-    resolveDocumentUrl(avatarUrl).then((url) => {
-      resolvedAvatarUrl = url;
-    });
+    resolveEntityDocumentUrl(avatarUrl, entityType, entityId)
+      .then((url) => {
+        resolvedAvatarUrl = url;
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load avatar:", error);
+      });
   }
 });
 
-let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl || avatarUrl);
+let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl);
 
 function triggerFileInput() {
   if (isLoading || uploadMutation.isPending) return;
@@ -88,15 +93,24 @@ function handleFileChange(event: Event) {
   uploadMutation.mutate(
     {
       file: selectedFile,
+      name: selectedFile.name,
       entity_type: entityType,
       entity_id: entityId,
       category: category,
       visibility: "public",
     },
     {
-      onSuccess: (data: any) => {
-        const serverUrl = data.url;
+      onSuccess: (data) => {
+        const serverUrl = data.url || data.file_path;
         avatarUrl = serverUrl;
+        resolveDocumentUrl(serverUrl, data.id)
+          .then((url) => {
+            resolvedAvatarUrl = url;
+            localPreviewUrl = null;
+          })
+          .catch((error: unknown) => {
+            console.error("Failed to load uploaded avatar:", error);
+          });
         if (onupload) onupload(serverUrl);
       },
       onError: (err) => {

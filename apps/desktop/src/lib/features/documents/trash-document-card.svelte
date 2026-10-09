@@ -118,7 +118,7 @@ function formatDate(value?: string | null) {
 
     <!-- Media Rendering -->
     {#if isNearViewport && isImage}
-      {#await resolveDocumentUrl(source) then mediaUrl}
+      {#await resolveDocumentUrl(source, document.id) then mediaUrl}
         <img
           src={mediaUrl}
           alt={document.name}
@@ -132,7 +132,7 @@ function formatDate(value?: string | null) {
         <DocumentPage class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
     {:else if isNearViewport && isVideo}
-      {#await resolveDocumentUrl(source) then sourceUrl}
+      {#await resolveDocumentUrl(source, document.id) then sourceUrl}
         <video src={sourceUrl} muted preload="none" class="h-full w-full object-cover opacity-80"></video>
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/30">
           <span class="rounded-full bg-black/60 p-2 text-white"><Play class="h-4 w-4 fill-current" /></span>

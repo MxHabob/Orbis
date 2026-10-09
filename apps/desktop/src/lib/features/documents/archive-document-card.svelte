@@ -86,13 +86,13 @@ function formatSize(bytes?: number | null) {
 
     <!-- Media Rendering -->
     {#if isNearViewport && isImage}
-      {#await resolveDocumentUrl(source) then mediaUrl}
+      {#await resolveDocumentUrl(source, document.id) then mediaUrl}
         <img src={mediaUrl} alt={document.name} loading="lazy" decoding="async" width="320" height="240" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
       {:catch}
         <DocumentPage class="m-auto h-8 w-8 text-muted-foreground/60" />
       {/await}
     {:else if isNearViewport && isVideo}
-      {#await resolveDocumentUrl(source) then sourceUrl}
+      {#await resolveDocumentUrl(source, document.id) then sourceUrl}
         <video src={sourceUrl} muted preload="none" class="h-full w-full object-cover" aria-label={document.name}></video>
         <div class="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
           <span class="rounded-full bg-black/60 p-2 text-white"><Play class="h-4 w-4 fill-current" /></span>
@@ -127,7 +127,7 @@ function formatSize(bytes?: number | null) {
       </Button>
 
       {#if isNearViewport}
-        {#await resolveDocumentUrl(source) then sourceUrl}
+        {#await resolveDocumentUrl(source, document.id) then sourceUrl}
           <a
             href={sourceUrl}
             download={document.name}

@@ -1175,7 +1175,7 @@ export class LocalClient implements OrbisApiClient {
     id: string,
     req: UpdateTemplateRequest,
   ): Promise<TemplateDto> {
-    return unwrap(await invoke("template_update", { id, request: req }));
+    return unwrap(await invoke("template_update", { id, input: req }));
   }
   async deleteTemplate(id: string): Promise<void> {
     await invoke("template_delete", { id });

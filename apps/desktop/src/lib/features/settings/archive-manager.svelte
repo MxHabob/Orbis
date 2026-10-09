@@ -277,7 +277,7 @@ function handleGridAction(event: GridActionEvent) {
 
 async function downloadDocument(doc: DocumentDto) {
   try {
-    const url = await resolveDocumentUrl(getDocumentSource(doc));
+    const url = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
     const link = document.createElement("a");
     link.href = url;
     link.download = doc.name;
@@ -363,7 +363,7 @@ function navigateToFolder(targetFolderId?: string | null) {
 // Preview Handler
 async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   isPreviewOpen = true;
 }
 

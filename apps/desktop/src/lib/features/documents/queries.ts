@@ -27,6 +27,7 @@ import { appDataDir, join } from "@tauri-apps/api/path";
 // --- Helpers ---
 
 const resolvedDocumentUrls = new Map<string, string>();
+const downloadedDocumentUrls = new Map<string, string>();
 let storageDirectoryPromise: Promise<string> | undefined;
 
 /**
@@ -35,7 +36,30 @@ let storageDirectoryPromise: Promise<string> | undefined;
  */
 export async function resolveDocumentUrl(
   pathOrUrl: string | undefined | null,
+  documentId?: string | null,
 ): Promise<string> {
+  if (
+    pathOrUrl?.startsWith("http://") ||
+    pathOrUrl?.startsWith("https://") ||
+    pathOrUrl?.startsWith("data:") ||
+    pathOrUrl?.startsWith("blob:")
+  ) {
+    return pathOrUrl;
+  }
+
+  if (documentId) {
+    const cacheKey = `document:${documentId}`;
+    const cachedDocumentUrl = downloadedDocumentUrls.get(cacheKey);
+    if (cachedDocumentUrl) return cachedDocumentUrl;
+
+    const file = await api.downloadDocumentFile(documentId);
+    const blob =
+      file instanceof Blob ? file : new Blob([file.slice().buffer]);
+    const documentUrl = URL.createObjectURL(blob);
+    downloadedDocumentUrls.set(cacheKey, documentUrl);
+    return documentUrl;
+  }
+
   if (!pathOrUrl) return "";
 
   // 1. Direct URLs (web, data, blob, Tauri asset protocol)
@@ -93,6 +117,35 @@ export async function resolveDocumentUrl(
     console.warn("Tauri path resolution failed, using fallback:", e);
     return pathOrUrl;
   }
+}
+
+export async function resolveEntityDocumentUrl(
+  pathOrUrl: string | undefined | null,
+  entityType: string,
+  entityId: string,
+): Promise<string> {
+  if (!pathOrUrl) return "";
+  if (
+    pathOrUrl.startsWith("http://") ||
+    pathOrUrl.startsWith("https://") ||
+    pathOrUrl.startsWith("data:") ||
+    pathOrUrl.startsWith("blob:") ||
+    pathOrUrl.startsWith("asset:")
+  ) {
+    return pathOrUrl;
+  }
+
+  const documents = await api.listDocumentsByEntity(entityType, entityId);
+  const matchingDocument = documents.find(
+    (document) =>
+      document.file_path === pathOrUrl ||
+      document.storage_key === pathOrUrl ||
+      document.url === pathOrUrl,
+  );
+
+  return matchingDocument
+    ? resolveDocumentUrl(pathOrUrl, matchingDocument.id)
+    : resolveDocumentUrl(pathOrUrl);
 }
 
 export function getDocumentSource(document: {
@@ -481,4 +534,3 @@ export function useDeleteFolder() {
     },
   }));
 }
-

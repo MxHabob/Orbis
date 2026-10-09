@@ -8,8 +8,9 @@ import * as m from "$lib/paraglide/messages";
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray } from "@orbis/icons";
 import {
-  useUploadDocument,
+  useUploadFile,
   resolveDocumentUrl,
+  resolveEntityDocumentUrl,
 } from "$lib/features/documents/queries";
 
 let {
@@ -30,16 +31,24 @@ let {
   onupload?: (url: string) => void;
 } = $props();
 
-const uploadMutation = useUploadDocument();
+const uploadMutation = useUploadFile();
 let fileInputRef: HTMLInputElement | undefined = $state();
 let localPreviewUrl: string | null = $state(null);
 
 let resolvedLogoUrl: string | null = $state(null);
 $effect(() => {
   if (logoUrl && !localPreviewUrl) {
-    resolveDocumentUrl(logoUrl).then((url) => {
-      resolvedLogoUrl = url;
-    });
+    let isCurrent = true;
+    resolveEntityDocumentUrl(logoUrl, entityType, entityId)
+      .then((url) => {
+        if (isCurrent) resolvedLogoUrl = url;
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load organization logo:", error);
+      });
+    return () => {
+      isCurrent = false;
+    };
   }
 });
 
@@ -64,15 +73,24 @@ function handleFileChange(event: Event) {
   uploadMutation.mutate(
     {
       file,
+      name: file.name,
       entity_type: entityType,
       entity_id: entityId,
       category: category,
       visibility: "public",
     },
     {
-      onSuccess: (data: any) => {
-        const serverUrl = data.url;
+      onSuccess: (data) => {
+        const serverUrl = data.url || data.file_path;
         logoUrl = serverUrl;
+        resolveDocumentUrl(serverUrl, data.id)
+          .then((url) => {
+            resolvedLogoUrl = url;
+            localPreviewUrl = null;
+          })
+          .catch((error: unknown) => {
+            console.error("Failed to load uploaded logo:", error);
+          });
         if (onupload) onupload(serverUrl);
       },
       onError: (err) => {

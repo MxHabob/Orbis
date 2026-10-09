@@ -257,7 +257,7 @@ function handleGridAction(event: GridActionEvent) {
 // Preview handler
 async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   isPreviewOpen = true;
 }
 

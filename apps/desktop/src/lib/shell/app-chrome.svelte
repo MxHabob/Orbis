@@ -118,13 +118,15 @@ function handleKeyDown(e: KeyboardEvent) {
 		</div>
 		{#if uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
-				<LicenseFeatureGate
-					feature="ai_grading"
-					{licenseReady}
-					className="absolute inset-y-0 end-0 z-50 w-[min(28rem,90vw)]"
-				>
-					<AskOrbisSidebar />
-				</LicenseFeatureGate>
+				<div class="absolute inset-y-0 end-0 z-50 w-[min(28rem,90vw)]">
+					<LicenseFeatureGate
+						feature="ai_grading"
+						{licenseReady}
+						className="h-full w-full"
+					>
+						<AskOrbisSidebar />
+					</LicenseFeatureGate>
+				</div>
 			{/key}
 		{/if}
 	</div>
