@@ -89,7 +89,7 @@ pub fn verify_offline_license(
     )
     .map_err(|_| LicenseVerificationError::InvalidPublicKey)?;
 
-    let canonical_payload = serde_json::to_string(&signed_doc.payload)
+    let serialized_payload = serde_json::to_string(&signed_doc.payload)
         .map_err(|_| LicenseVerificationError::InvalidPayload)?;
 
     let sig_bytes = base64::engine::general_purpose::STANDARD
@@ -100,7 +100,7 @@ pub fn verify_offline_license(
         .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
 
     verifying_key
-        .verify(canonical_payload.as_bytes(), &signature)
+        .verify(serialized_payload.as_bytes(), &signature)
         .map_err(|_| LicenseVerificationError::TamperedLicenseSignature)?;
 
     Ok(true)

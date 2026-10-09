@@ -157,7 +157,7 @@ pub struct SignedEntitlement {
     pub alg: String,
     /// The entitlement payload data.
     pub payload: EntitlementPayload,
-    /// Base64-encoded Ed25519 signature over canonical JSON of `payload`.
+    /// Base64-encoded Ed25519 signature over the compact serde_json payload.
     pub sig: String,
 }
 
