@@ -52,6 +52,8 @@ export const queryKeys = {
         "classSubjects",
         { classId, periodId },
       ] as const,
+    classRoster: (classId: string) =>
+      [...queryKeys.academic.all, "classRoster", classId] as const,
   },
 
   // ── Student ─────────────────────────────────────────────────
@@ -91,6 +93,8 @@ export const queryKeys = {
       [...queryKeys.assessment.all, "grades", filter ?? {}] as const,
     attendance: (classId: string, date: string) =>
       [...queryKeys.assessment.all, "attendance", { classId, date }] as const,
+    classGrades: (classSubjectId: string) =>
+      [...queryKeys.assessment.all, "classGrades", classSubjectId] as const,
   },
 
   // ── Exam ────────────────────────────────────────────────────

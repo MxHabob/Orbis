@@ -265,7 +265,11 @@ impl MulverseLicenseRuntime {
                 }
             }
 
-            if se.payload.plan_key.eq_ignore_ascii_case("TRIAL")
+            if se
+                .payload
+                .plan_key
+                .as_deref()
+                .is_some_and(|plan| plan.eq_ignore_ascii_case("TRIAL"))
                 && se.payload.organization_id.is_empty()
             {
                 snapshot.state = LicenseState::Pending;
@@ -278,8 +282,13 @@ impl MulverseLicenseRuntime {
             }
 
             // Use the server-signed issuance time, not the editable local sync timestamp.
-            let grace_period_until = se.payload.issued_at
-                + chrono::Duration::days(se.payload.offline_grace_period_days as i64);
+            let grace_days = se
+                .payload
+                .offline_grace_period_days
+                .unwrap_or_default()
+                .max(0);
+            let grace_period_until =
+                se.payload.issued_at + chrono::Duration::days(grace_days as i64);
             if now > grace_period_until {
                 if !se.payload.offline_allowed {
                     warn!("Offline mode forbidden by license");
@@ -287,8 +296,7 @@ impl MulverseLicenseRuntime {
                 } else {
                     warn!(
                         days_offline = now.signed_duration_since(se.payload.issued_at).num_days(),
-                        grace_days = se.payload.offline_grace_period_days,
-                        "Offline grace period exceeded"
+                        grace_days, "Offline grace period exceeded"
                     );
                     snapshot.state = LicenseState::Expired;
                 }
@@ -462,7 +470,11 @@ impl MulverseLicenseRuntime {
         }
         let entitlement = response.signed_entitlement;
         if entitlement.payload.license_id != response.trial.id
-            || !entitlement.payload.plan_key.eq_ignore_ascii_case("TRIAL")
+            || !entitlement
+                .payload
+                .plan_key
+                .as_deref()
+                .is_some_and(|plan| plan.eq_ignore_ascii_case("TRIAL"))
             || entitlement.payload.product_id != CANONICAL_PRODUCT_ID
             || entitlement.payload.installation_id != current.installation_id
         {
@@ -639,8 +651,8 @@ impl LicenseRuntime for MulverseLicenseRuntime {
 
         info!(
             license_id = %response.activation.license_id,
-            edition = %response.signed_entitlement.payload.edition_key,
-            plan = %response.signed_entitlement.payload.plan_key,
+            edition = ?response.signed_entitlement.payload.edition_key,
+            plan = ?response.signed_entitlement.payload.plan_key,
             "Product key activated successfully"
         );
 
@@ -687,7 +699,12 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
         };
 
-        if se.payload.plan_key.eq_ignore_ascii_case("TRIAL") {
+        if se
+            .payload
+            .plan_key
+            .as_deref()
+            .is_some_and(|plan| plan.eq_ignore_ascii_case("TRIAL"))
+        {
             return match self.refresh_central_trial(&se.payload.license_id).await {
                 Ok(response) => {
                     let snapshot = self.snapshot_from_trial_response(&current, response)?;
@@ -775,7 +792,11 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         let current = self.current_snapshot();
 
         if let Some(ref se) = current.signed_entitlement
-            && !se.payload.plan_key.eq_ignore_ascii_case("TRIAL")
+            && !se
+                .payload
+                .plan_key
+                .as_deref()
+                .is_some_and(|plan| plan.eq_ignore_ascii_case("TRIAL"))
         {
             let request = DeactivationRequest {
                 license_id: se.payload.license_id.clone(),
@@ -923,9 +944,12 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
             .map(|dt| dt.to_rfc3339());
 
         let grace_period_until = snapshot.signed_entitlement.as_ref().map(|se| {
-            (se.payload.issued_at
-                + chrono::Duration::days(se.payload.offline_grace_period_days as i64))
-            .to_rfc3339()
+            let grace_days = se
+                .payload
+                .offline_grace_period_days
+                .unwrap_or_default()
+                .max(0);
+            (se.payload.issued_at + chrono::Duration::days(grace_days as i64)).to_rfc3339()
         });
 
         Ok(orbis_domain::entities::entitlement::EntitlementResult {
@@ -966,7 +990,9 @@ pub fn spawn_background_sync(
                 snapshot
                     .signed_entitlement
                     .as_ref()
-                    .map(|se| se.payload.verification_interval_hours as u64)
+                    .and_then(|se| se.payload.verification_interval_hours)
+                    .filter(|hours| *hours > 0)
+                    .map(|hours| hours as u64)
                     .unwrap_or(DEFAULT_VERIFICATION_INTERVAL_HOURS as u64)
             };
 
@@ -993,8 +1019,8 @@ mod tests {
                 product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_string(),
                 product_id: CANONICAL_PRODUCT_ID.to_string(),
                 organization_id: "org-test".to_string(),
-                edition_key: "SCHOOL".to_string(),
-                plan_key: "SCHOOL_PRO".to_string(),
+                edition_key: Some("SCHOOL".to_string()),
+                plan_key: Some("SCHOOL_PRO".to_string()),
                 entitlements: vec![],
                 limits: vec![],
                 activation_id: "activation-test".to_string(),
@@ -1003,8 +1029,8 @@ mod tests {
                 valid_from,
                 valid_until: Some(Utc::now() + chrono::Duration::days(30)),
                 offline_allowed: true,
-                offline_grace_period_days: 30,
-                verification_interval_hours: 24,
+                offline_grace_period_days: Some(30),
+                verification_interval_hours: Some(24),
             },
             sig: String::new(),
         }
@@ -1100,7 +1126,7 @@ mod tests {
             Utc::now() - chrono::Duration::days(40),
         );
         entitlement.payload.issued_at = Utc::now() - chrono::Duration::days(31);
-        entitlement.payload.offline_grace_period_days = 30;
+        entitlement.payload.offline_grace_period_days = Some(30);
         entitlement.payload.valid_until = Some(Utc::now() + chrono::Duration::days(10));
         snapshot.signed_entitlement = Some(entitlement);
         snapshot.last_sync_at = Some(Utc::now());
@@ -1119,9 +1145,9 @@ mod tests {
             &snapshot.installation_id,
             Utc::now() - chrono::Duration::days(1),
         );
-        entitlement.payload.plan_key = "TRIAL".to_owned();
+        entitlement.payload.plan_key = Some("TRIAL".to_owned());
         entitlement.payload.organization_id.clear();
-        entitlement.payload.offline_grace_period_days = 7;
+        entitlement.payload.offline_grace_period_days = Some(7);
         snapshot.signed_entitlement = Some(entitlement);
         snapshot.last_sync_at = Some(Utc::now());
         snapshot.state = LicenseState::Active;

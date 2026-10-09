@@ -14,6 +14,8 @@ import type {
 export type {
   AcademicContextResponse,
   AttendanceDto,
+  BatchMarkAttendanceRequest,
+  BatchRecordGradesRequest,
   ClassDto,
   ClassSubjectDto,
   DashboardCountsDto,
@@ -24,6 +26,7 @@ export type {
   OrgDto,
   OrganizationSettingsDto,
   RecordGradeRequest,
+  RecordGradeItemRequest,
   ScheduledLessonDto,
   StudentFeeDto,
   StudentDto,

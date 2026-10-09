@@ -172,10 +172,10 @@ pub struct EntitlementPayload {
     pub product_id: String,
     /// Organization UUID that owns this license.
     pub organization_id: String,
-    /// Edition key (e.g. "SCHOOL", "UNIVERSITY").
-    pub edition_key: String,
-    /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE", "SCHOOL_PRO").
-    pub plan_key: String,
+    /// Edition key (e.g. "SCHOOL", "UNIVERSITY"), if assigned to the license.
+    pub edition_key: Option<String>,
+    /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE", "SCHOOL_PRO"), if assigned.
+    pub plan_key: Option<String>,
     /// Boolean feature capabilities.
     pub entitlements: Vec<EntitlementItem>,
     /// Quantitative limits.
@@ -192,10 +192,10 @@ pub struct EntitlementPayload {
     pub valid_until: Option<DateTime<Utc>>,
     /// Whether offline operation is allowed.
     pub offline_allowed: bool,
-    /// Days the app can operate without contacting Mulverse (default 30).
-    pub offline_grace_period_days: u32,
-    /// How often (hours) the app should verify/refresh online (default 24).
-    pub verification_interval_hours: u32,
+    /// Days the app can operate without contacting Mulverse.
+    pub offline_grace_period_days: Option<i32>,
+    /// How often (hours) the app should verify/refresh online.
+    pub verification_interval_hours: Option<i32>,
 }
 
 /// A boolean entitlement entry from the Mulverse catalog.
@@ -254,10 +254,10 @@ pub struct ActivationInfo {
     pub organization_id: String,
     pub installation_id: String,
     pub platform: String,
-    pub app_version: String,
+    pub app_version: Option<String>,
     pub status: String,
     pub activated_at: DateTime<Utc>,
-    pub last_seen_at: DateTime<Utc>,
+    pub last_seen_at: Option<DateTime<Utc>>,
     pub deactivated_at: Option<DateTime<Utc>>,
     pub revoked_at: Option<DateTime<Utc>>,
     pub machine_label: Option<String>,
@@ -471,7 +471,15 @@ impl LicenseSnapshot {
     /// Returns `None` if no limit is set (unlimited).
     pub fn get_limit(&self, key: &str) -> Option<i64> {
         match &self.signed_entitlement {
-            Some(se) if se.payload.plan_key.eq_ignore_ascii_case(PLAN_ENTERPRISE) => None,
+            Some(se)
+                if se
+                    .payload
+                    .plan_key
+                    .as_deref()
+                    .is_some_and(|plan| plan.eq_ignore_ascii_case(PLAN_ENTERPRISE)) =>
+            {
+                None
+            }
             Some(se) => se
                 .payload
                 .limits
@@ -517,14 +525,14 @@ impl LicenseSnapshot {
     pub fn edition_key(&self) -> Option<&str> {
         self.signed_entitlement
             .as_ref()
-            .map(|se| se.payload.edition_key.as_str())
+            .and_then(|se| se.payload.edition_key.as_deref())
     }
 
     /// The plan key (e.g. "BASIC", "PRO", "SCHOOL_PRO") from the active license.
     pub fn plan_key(&self) -> Option<&str> {
         self.signed_entitlement
             .as_ref()
-            .map(|se| se.payload.plan_key.as_str())
+            .and_then(|se| se.payload.plan_key.as_deref())
     }
 
     /// The license ID from the active license.
@@ -741,14 +749,22 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
         };
 
         let limits: Vec<LimitEntryDto> = match &snapshot.signed_entitlement {
-            Some(se) if se.payload.plan_key.eq_ignore_ascii_case(PLAN_ENTERPRISE) => ALL_LIMIT_KEYS
-                .iter()
-                .map(|key| LimitEntryDto {
-                    key: (*key).to_string(),
-                    max_value: None,
-                    unit: get_limit_unit(key).to_string(),
-                })
-                .collect(),
+            Some(se)
+                if se
+                    .payload
+                    .plan_key
+                    .as_deref()
+                    .is_some_and(|plan| plan.eq_ignore_ascii_case(PLAN_ENTERPRISE)) =>
+            {
+                ALL_LIMIT_KEYS
+                    .iter()
+                    .map(|key| LimitEntryDto {
+                        key: (*key).to_string(),
+                        max_value: None,
+                        unit: get_limit_unit(key).to_string(),
+                    })
+                    .collect()
+            }
             Some(se) => se
                 .payload
                 .limits
@@ -807,6 +823,66 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn activation_response_accepts_nullable_fields_from_mulverse() {
+        let response = serde_json::from_value::<ActivationResponse>(serde_json::json!({
+            "activation": {
+                "id": "activation-id",
+                "license_id": "license-id",
+                "product_id": CANONICAL_PRODUCT_ID,
+                "organization_id": "organization-id",
+                "installation_id": "installation-id",
+                "platform": "windows",
+                "app_version": null,
+                "status": "active",
+                "activated_at": "2026-10-09T12:00:00Z",
+                "last_seen_at": null,
+                "deactivated_at": null,
+                "revoked_at": null,
+                "machine_label": null,
+                "created_at": "2026-10-09T12:00:00Z",
+                "updated_at": "2026-10-09T12:00:00Z"
+            },
+            "signed_entitlement": {
+                "v": 1,
+                "kid": "test-key",
+                "alg": "Ed25519",
+                "payload": {
+                    "license_id": "license-id",
+                    "product_key": "FREE_TRIAL",
+                    "product_id": CANONICAL_PRODUCT_ID,
+                    "organization_id": "organization-id",
+                    "edition_key": null,
+                    "plan_key": null,
+                    "entitlements": [],
+                    "limits": [],
+                    "activation_id": "activation-id",
+                    "installation_id": "installation-id",
+                    "issued_at": "2026-10-09T12:00:00Z",
+                    "valid_from": "2026-10-09T12:00:00Z",
+                    "valid_until": null,
+                    "offline_allowed": true,
+                    "offline_grace_period_days": null,
+                    "verification_interval_hours": null
+                },
+                "sig": "signature"
+            }
+        }))
+        .expect("Mulverse nullable activation and entitlement fields should deserialize");
+
+        assert_eq!(response.activation.app_version, None);
+        assert_eq!(response.activation.last_seen_at, None);
+        assert_eq!(response.signed_entitlement.payload.edition_key, None);
+        assert_eq!(response.signed_entitlement.payload.plan_key, None);
+        assert_eq!(
+            response
+                .signed_entitlement
+                .payload
+                .offline_grace_period_days,
+            None
+        );
+    }
 
     #[test]
     fn test_validate_product_key_valid() {
@@ -919,8 +995,8 @@ mod tests {
                 product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_string(),
                 product_id: CANONICAL_PRODUCT_ID.to_string(),
                 organization_id: "org-test".to_string(),
-                edition_key: "SCHOOL".to_string(),
-                plan_key: "ENTERPRISE".to_string(),
+                edition_key: Some("SCHOOL".to_string()),
+                plan_key: Some("ENTERPRISE".to_string()),
                 entitlements: vec![],
                 limits: vec![],
                 activation_id: "activation-test".to_string(),
@@ -929,8 +1005,8 @@ mod tests {
                 valid_from: Utc::now(),
                 valid_until: None,
                 offline_allowed: true,
-                offline_grace_period_days: DEFAULT_OFFLINE_GRACE_PERIOD_DAYS,
-                verification_interval_hours: DEFAULT_VERIFICATION_INTERVAL_HOURS,
+                offline_grace_period_days: Some(DEFAULT_OFFLINE_GRACE_PERIOD_DAYS as i32),
+                verification_interval_hours: Some(DEFAULT_VERIFICATION_INTERVAL_HOURS as i32),
             },
             sig: "test-signature".to_string(),
         });

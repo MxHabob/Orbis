@@ -27,6 +27,8 @@ import type {
   UserDto,
   OrganizationSettingsDto,
   MarkAttendanceRequest,
+  BatchMarkAttendanceRequest,
+  BatchRecordGradesRequest,
   RecordGradeRequest,
 } from "@/lib/api/types";
 import { queryKeys } from "@/lib/api/query-keys";
@@ -121,6 +123,240 @@ export function useClassesQuery(enabled = true) {
       return classes;
     },
     enabled,
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
+export interface TeacherRosterEntry {
+  student: StudentDto;
+  enrollment: EnrollmentDto;
+}
+
+export interface TeacherClassData {
+  classItem: ClassDto;
+  roster: TeacherRosterEntry[];
+  classSubjects: ClassSubjectDto[];
+  subjects: SubjectDto[];
+}
+
+export function useTeacherClassDataQuery(classId?: string) {
+  return useQuery({
+    queryKey: queryKeys.academic.classRoster(classId ?? ""),
+    queryFn: async (): Promise<TeacherClassData> => {
+      if (!classId) throw new Error("A class ID is required.");
+      const classResponse = await api.getClass({
+        path: { id: classId },
+        throwOnError: true,
+      });
+      const classItem = extractData<ClassDto>(classResponse);
+      if (!classItem) {
+        throw new Error("The class response was invalid.");
+      }
+      const [
+        enrollmentsResponse,
+        classSubjectsResponse,
+        subjectsResponse,
+      ] = await Promise.all([
+        api.listEnrollments({
+          query: { class_id: classId },
+          throwOnError: true,
+        }),
+        api.listClassSubjects({
+          query: { class_id: classId, period_id: classItem.period_id },
+          throwOnError: true,
+        }),
+        api.listSubjects({ throwOnError: true }),
+      ]);
+      const enrollments = extractData<EnrollmentDto[]>(enrollmentsResponse);
+      const classSubjects = extractData<ClassSubjectDto[]>(classSubjectsResponse);
+      const subjects = extractData<SubjectDto[]>(subjectsResponse);
+      if (
+        !Array.isArray(enrollments) ||
+        !Array.isArray(classSubjects) ||
+        !Array.isArray(subjects)
+      ) {
+        throw new Error("The class roster response contained invalid data.");
+      }
+      const activeEnrollments = enrollments.filter(
+        (enrollment) =>
+          enrollment.status === "active" &&
+          enrollment.class_id === classId &&
+          enrollment.period_id === classItem.period_id,
+      );
+      const activeStudentIds = new Set(
+        activeEnrollments.map((enrollment) => enrollment.student_id),
+      );
+      const studentsById = new Map<string, StudentDto>();
+      const pageSize = 100;
+      for (
+        let page = 1;
+        page <= Math.ceil(activeStudentIds.size / pageSize);
+        page += 1
+      ) {
+        const response = await api.listStudents({
+          query: {
+            class_id: classId,
+            period_id: classItem.period_id,
+            page,
+            page_size: pageSize,
+          },
+          throwOnError: true,
+        });
+        const pageOfStudents = extractData<StudentDto[]>(response);
+        if (!Array.isArray(pageOfStudents)) {
+          throw new Error("The student list response was not a list.");
+        }
+        for (const student of pageOfStudents) {
+          if (activeStudentIds.has(student.id)) {
+            studentsById.set(student.id, student);
+          }
+        }
+        if (pageOfStudents.length < pageSize) break;
+      }
+      return {
+        classItem,
+        roster: activeEnrollments.flatMap((enrollment) => {
+          const student = studentsById.get(enrollment.student_id);
+          return student ? [{ student, enrollment }] : [];
+        }),
+        classSubjects: classSubjects.filter((item) => item.is_active),
+        subjects,
+      };
+    },
+    enabled: Boolean(classId),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
+export function useClassAttendanceQuery(classId?: string, date?: string) {
+  return useQuery({
+    queryKey: queryKeys.assessment.attendance(classId ?? "", date ?? ""),
+    queryFn: async (): Promise<AttendanceDto[]> => {
+      if (!classId || !date) throw new Error("A class and date are required.");
+      const response = await api.client.get<
+        { 200: AttendanceDto[] },
+        unknown,
+        true
+      >({
+        url: "/api/v1/attendance",
+        query: { class_id: classId, date },
+        throwOnError: true,
+      });
+      const attendance = extractData<AttendanceDto[]>(response);
+      if (!Array.isArray(attendance)) {
+        throw new Error("The class attendance response was not a list.");
+      }
+      return attendance;
+    },
+    enabled: Boolean(classId && date),
+    staleTime: 30_000,
+    gcTime: GC_TIME,
+  });
+}
+
+export function useClassGradesQuery(classSubjectId?: string) {
+  return useQuery({
+    queryKey: queryKeys.assessment.classGrades(classSubjectId ?? ""),
+    queryFn: async (): Promise<GradeDto[]> => {
+      if (!classSubjectId) throw new Error("A class subject is required.");
+      const response = await api.client.get<
+        { 200: GradeDto[] },
+        unknown,
+        true
+      >({
+        url: "/api/v1/grades",
+        query: { class_subject_id: classSubjectId },
+        throwOnError: true,
+      });
+      const grades = extractData<GradeDto[]>(response);
+      if (!Array.isArray(grades)) {
+        throw new Error("The class grades response was not a list.");
+      }
+      return grades;
+    },
+    enabled: Boolean(classSubjectId),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
+export function useClassScheduleQuery(classId?: string) {
+  return useQuery({
+    queryKey: queryKeys.scheduling.lessons({ classSubjectId: classId }),
+    queryFn: async (): Promise<StudentScheduleItem[]> => {
+      if (!classId) throw new Error("A class ID is required.");
+      const [classResponse, subjectResponse] = await Promise.all([
+        api.getClass({ path: { id: classId }, throwOnError: true }),
+        api.listSubjects({ throwOnError: true }),
+      ]);
+      const classItem = extractData<ClassDto>(classResponse);
+      const subjects = extractData<SubjectDto[]>(subjectResponse);
+      if (!classItem || !Array.isArray(subjects)) {
+        throw new Error("The class schedule response was invalid.");
+      }
+      const classSubjectsResponse = await api.listClassSubjects({
+        query: { class_id: classId, period_id: classItem.period_id },
+        throwOnError: true,
+      });
+      const classSubjects = extractData<ClassSubjectDto[]>(classSubjectsResponse);
+      if (!Array.isArray(classSubjects)) {
+        throw new Error("The class subject response was not a list.");
+      }
+      const activeClassSubjects = classSubjects.filter((item) => item.is_active);
+      const [lessonResponses, slotResponse] = await Promise.all([
+        Promise.all(
+          activeClassSubjects.map((classSubject) =>
+            api.client.get<{ 200: ScheduledLessonDto[] }, unknown, true>({
+              url: "/api/v1/scheduled-lessons",
+              query: { class_subject_id: classSubject.id },
+              throwOnError: true,
+            }),
+          ),
+        ),
+        api.client.get<{ 200: TimeSlotDto[] }, unknown, true>({
+          url: "/api/v1/time-slots",
+          query: { period_id: classItem.period_id },
+          throwOnError: true,
+        }),
+      ]);
+      const lessons = lessonResponses.flatMap((response) => {
+        const data = extractData<ScheduledLessonDto[]>(response);
+        if (!Array.isArray(data)) {
+          throw new Error("The scheduled lessons response was not a list.");
+        }
+        return data;
+      });
+      const timeSlots = extractData<TimeSlotDto[]>(slotResponse);
+      if (!Array.isArray(timeSlots)) {
+        throw new Error("The time slots response was not a list.");
+      }
+      const timeSlotsById = new Map(timeSlots.map((slot) => [slot.id, slot]));
+      const classSubjectsById = new Map(
+        activeClassSubjects.map((item) => [item.id, item]),
+      );
+      const subjectsById = new Map(subjects.map((subject) => [subject.id, subject]));
+      return lessons
+        .flatMap((lesson) => {
+          const timeSlot = timeSlotsById.get(lesson.time_slot_id);
+          const classSubject = classSubjectsById.get(lesson.class_subject_id);
+          if (!timeSlot || !classSubject) return [];
+          return [
+            {
+              lesson,
+              timeSlot,
+              subject: subjectsById.get(classSubject.subject_id),
+            },
+          ];
+        })
+        .sort(
+          (a, b) =>
+            a.timeSlot.day_of_week - b.timeSlot.day_of_week ||
+            a.timeSlot.slot_index - b.timeSlot.slot_index,
+        );
+    },
+    enabled: Boolean(classId),
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });
@@ -589,6 +825,35 @@ export function useMarkAttendanceMutation() {
   });
 }
 
+export function useBatchMarkAttendanceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (variables: BatchMarkAttendanceRequest) => {
+      const response = await api.batchMarkAttendance({
+        body: variables,
+        throwOnError: true,
+      });
+      return extractData(response);
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.assessment.attendance(
+          variables.class_id,
+          variables.date,
+        ),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.assessment.all,
+      });
+      for (const item of variables.items) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.student.attendance(item.student_id),
+        });
+      }
+    },
+  });
+}
+
 /**
  * Mutation: Record Assessment Grade
  */
@@ -602,6 +867,29 @@ export function useRecordGradeMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.assessment.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.org.dashboard() });
+    },
+  });
+}
+
+export function useBatchRecordGradesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (variables: BatchRecordGradesRequest) => {
+      const response = await api.batchRecordGrades({
+        body: variables,
+        throwOnError: true,
+      });
+      return extractData(response);
+    },
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.assessment.all,
+      });
+      for (const item of variables.items) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.student.detail(item.student_id),
+        });
+      }
     },
   });
 }

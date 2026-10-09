@@ -86,8 +86,8 @@ sequenceDiagram
     "product_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
     "product_id": "11111111-1111-4111-8111-111111111111",
     "organization_id": "00000000-0000-0000-0000-000000000002",
-    "edition_key": "SCHOOL",
-    "plan_key": "SCHOOL_PRO",
+    "edition_key": null,
+    "plan_key": null,
     "entitlements": [
       { "key": "students", "granted": true },
       { "key": "ai_grading", "granted": true },
@@ -112,12 +112,14 @@ sequenceDiagram
     "valid_from": "2026-10-01T00:00:00Z",
     "valid_until": "2027-10-01T00:00:00Z",
     "offline_allowed": true,
-    "offline_grace_period_days": 30,
+    "offline_grace_period_days": 14,
     "verification_interval_hours": 24
   },
   "sig": "MEQCIE/2u3s..."
 }
 ```
+
+حقول `edition_key` و`plan_key` وسياسات التحقق من الاتصال اختيارية وقد تُعاد بقيمة `null` من Mulverse؛ يجب على العميل قبولها وعدم استنتاج صلاحية أو مزايا غير موجودة في الاستحقاق الموقع.
 
 ---
 
@@ -195,7 +197,7 @@ sequenceDiagram
   "machine_label": "School Server 01"
 }
 ```
-* **Response `201 Created`:** كائن `activation` مع `signed_entitlement`.
+* **Response `201 Created`:** كائن `activation` مع `signed_entitlement`. حقلا `activation.app_version` و`activation.last_seen_at` اختياريان وقد تكون قيمتهما `null`.
 * **الأخطاء الشائعة:**
   * `400`: بيانات ناقصة أو غير صالحة.
   * `404`: مفتاح الترخيص غير موجود.
@@ -293,7 +295,8 @@ pub struct EntitlementPayload {
     pub valid_from: String,
     pub valid_until: Option<String>,
     pub offline_allowed: bool,
-    pub offline_grace_period_days: u32,
+    pub offline_grace_period_days: Option<i32>,
+    pub verification_interval_hours: Option<i32>,
     pub entitlements: Vec<EntitlementItem>,
     pub limits: Vec<LimitItem>,
 }
