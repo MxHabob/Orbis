@@ -424,8 +424,12 @@ impl LicenseSnapshot {
         match self.trial_started_at {
             Some(started) => {
                 let end = started + chrono::Duration::days(self.trial_policy.duration_days as i64);
-                let remaining = end.signed_duration_since(Utc::now()).num_days();
-                remaining.max(0)
+                let remaining_seconds = end.signed_duration_since(Utc::now()).num_seconds();
+                if remaining_seconds <= 0 {
+                    0
+                } else {
+                    (remaining_seconds + 86_399) / 86_400
+                }
             }
             None => 0,
         }
@@ -433,7 +437,9 @@ impl LicenseSnapshot {
 
     /// Whether the trial has expired.
     pub fn is_trial_expired(&self) -> bool {
-        self.state == LicenseState::Trial && self.trial_days_remaining() == 0
+        self.trial_started_at.is_some_and(|started| {
+            started + chrono::Duration::days(self.trial_policy.duration_days as i64) <= Utc::now()
+        })
     }
 
     /// Detect obvious clock rollback.

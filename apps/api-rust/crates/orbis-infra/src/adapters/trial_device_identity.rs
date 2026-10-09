@@ -154,3 +154,21 @@ fn unprotect(value: &[u8]) -> Result<Vec<u8>, String> {
 fn unprotect(_value: &[u8]) -> Result<Vec<u8>, String> {
     Err("Central trial registration requires Windows DPAPI key protection".to_owned())
 }
+
+#[cfg(all(test, windows))]
+mod tests {
+    use super::*;
+    use uuid::Uuid;
+
+    #[test]
+    fn dpapi_protected_device_key_is_stable_and_not_stored_as_plaintext() {
+        let directory = std::env::temp_dir().join(format!("orbis-trial-key-test-{}", Uuid::new_v4()));
+        let first = load_or_create(&directory).expect("DPAPI should protect the generated key");
+        let second = load_or_create(&directory).expect("DPAPI should unlock the saved key");
+        assert_eq!(first.to_bytes(), second.to_bytes());
+
+        let saved = fs::read(directory.join(TRIAL_KEY_FILE)).expect("protected key should exist");
+        assert_ne!(saved, first.to_bytes());
+        fs::remove_dir_all(directory).expect("test directory should be cleaned up");
+    }
+}

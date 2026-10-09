@@ -261,6 +261,13 @@ impl MulverseLicenseRuntime {
                 }
             }
 
+            if se.payload.plan_key.eq_ignore_ascii_case("TRIAL")
+                && se.payload.organization_id.is_empty()
+            {
+                snapshot.state = LicenseState::Pending;
+                return;
+            }
+
             // Check offline grace period
             if let Some(last_sync) = snapshot.last_sync_at {
                 let days_offline = now.signed_duration_since(last_sync).num_days();
@@ -1154,6 +1161,7 @@ mod tests {
         let current = runtime.current_snapshot();
         assert_eq!(current.trial_policy.duration_days, PROVISIONAL_TRIAL_DAYS);
         assert_eq!(current.state, LicenseState::Expired);
+        assert_eq!(runtime.current_snapshot().state, LicenseState::Expired);
         std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
     }
 
@@ -1171,6 +1179,27 @@ mod tests {
         let current = runtime.current_snapshot();
         assert_eq!(current.trial_policy.duration_days, PROVISIONAL_TRIAL_DAYS);
         assert_eq!(current.state, LicenseState::Trial);
+        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+    }
+
+    #[test]
+    fn unbound_central_trial_waits_for_organization_assignment() {
+        let (runtime, app_data_dir) = test_runtime();
+        let mut snapshot = runtime.current_snapshot();
+        let mut entitlement = signed_entitlement(
+            &snapshot.installation_id,
+            Utc::now() - chrono::Duration::days(1),
+        );
+        entitlement.payload.plan_key = "TRIAL".to_owned();
+        entitlement.payload.organization_id.clear();
+        entitlement.payload.offline_grace_period_days = PROVISIONAL_TRIAL_DAYS;
+        snapshot.signed_entitlement = Some(entitlement);
+        snapshot.last_sync_at = Some(Utc::now());
+        snapshot.state = LicenseState::Active;
+
+        runtime.evaluate_state(&mut snapshot);
+
+        assert_eq!(snapshot.state, LicenseState::Pending);
         std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
     }
 }
