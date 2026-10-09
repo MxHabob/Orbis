@@ -48,7 +48,6 @@ const EMBEDDED_KEY_ID: &str = match option_env!("MULVERSE_LICENSE_KEY_ID") {
 
 const LICENSE_SNAPSHOT_FILE: &str = "license_snapshot.json";
 const INSTALLATION_ID_FILE: &str = "installation_id";
-const PROVISIONAL_TRIAL_DAYS: u32 = 7;
 
 enum TrialSyncError {
     Api(MulverseApiError),
@@ -301,17 +300,8 @@ impl MulverseLicenseRuntime {
             return;
         }
 
-        // 3. No signed entitlement — evaluate trial
-        if snapshot.trial_started_at.is_some() {
-            if snapshot.is_trial_expired() {
-                snapshot.state = LicenseState::Expired;
-            } else {
-                snapshot.state = LicenseState::Trial;
-            }
-            return;
-        }
-
-        // 4. No entitlement, no trial — unavailable
+        // Trial state is authoritative only when backed by a verified signed entitlement.
+        snapshot.trial_started_at = None;
         snapshot.state = LicenseState::Unavailable;
     }
 
@@ -495,41 +485,13 @@ impl MulverseLicenseRuntime {
         self.evaluate_state(&mut snapshot);
         Ok(snapshot)
     }
-
-    fn provisional_trial_snapshot(
-        &self,
-        current: &LicenseSnapshot,
-    ) -> Result<LicenseSnapshot, DomainError> {
-        let mut snapshot = current.clone();
-        if snapshot.trial_started_at.is_none() {
-            snapshot = LicenseSnapshot::new_trial(
-                current.installation_id.clone(),
-                self.app_version.clone(),
-                self.trial_policy.clone(),
-            );
-        }
-        snapshot.trial_policy.duration_days = PROVISIONAL_TRIAL_DAYS;
-        snapshot.last_known_time = Utc::now();
-        self.evaluate_state(&mut snapshot);
-        if snapshot.state != LicenseState::Trial {
-            return Err(DomainError::Conflict(
-                "The seven-day offline trial period has expired. Connect to Mulverse to continue."
-                    .to_owned(),
-            ));
-        }
-        Ok(snapshot)
-    }
 }
 
 #[async_trait]
 impl LicenseRuntime for MulverseLicenseRuntime {
     fn current_snapshot(&self) -> LicenseSnapshot {
-        let mut snapshot = match self.snapshot.write() {
+        let snapshot = match self.snapshot.write() {
             Ok(mut guard) => {
-                if guard.signed_entitlement.is_none() && guard.trial_started_at.is_some() {
-                    guard.trial_policy.duration_days =
-                        guard.trial_policy.duration_days.min(PROVISIONAL_TRIAL_DAYS);
-                }
                 self.evaluate_state(&mut guard);
                 guard.clone()
             }
@@ -537,12 +499,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 LicenseSnapshot::new_unavailable("unknown".to_string(), self.app_version.clone())
             }
         };
-        if snapshot.signed_entitlement.is_none() && snapshot.trial_started_at.is_some() {
-            snapshot.trial_policy.duration_days = snapshot
-                .trial_policy
-                .duration_days
-                .min(PROVISIONAL_TRIAL_DAYS);
-        }
         snapshot
     }
 
@@ -579,13 +535,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                     "Installation ID mismatch — updating to current installation"
                 );
                 snapshot.installation_id = current_id;
-            }
-
-            if snapshot.signed_entitlement.is_none() && snapshot.trial_started_at.is_some() {
-                snapshot.trial_policy.duration_days = snapshot
-                    .trial_policy
-                    .duration_days
-                    .min(PROVISIONAL_TRIAL_DAYS);
             }
 
             if !entitlement_invalid && snapshot.state != LicenseState::Suspended {
@@ -704,12 +653,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 info!("Centralized trial registration succeeded");
                 Ok(snapshot)
             }
-            Err(TrialSyncError::Api(error)) if error.is_network_error() => {
-                let snapshot = self.provisional_trial_snapshot(&current)?;
-                self.update_snapshot(snapshot.clone())?;
-                warn!("Mulverse unavailable; started a seven-day provisional offline trial");
-                Ok(snapshot)
-            }
             Err(TrialSyncError::Api(error)) => Err(DomainError::from(error)),
             Err(TrialSyncError::Domain(error)) => Err(error),
         }
@@ -728,30 +671,6 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         let se = match &current.signed_entitlement {
             Some(se) => se.clone(),
             None => {
-                if current.trial_started_at.is_some() {
-                    return match self.register_central_trial().await {
-                        Ok(response) => {
-                            let snapshot = self.snapshot_from_trial_response(&current, response)?;
-                            self.update_snapshot(snapshot)?;
-                            Ok(())
-                        }
-                        Err(TrialSyncError::Api(error)) if error.is_network_error() => {
-                            let mut snapshot = current;
-                            self.evaluate_state(&mut snapshot);
-                            self.update_snapshot(snapshot)?;
-                            Ok(())
-                        }
-                        Err(TrialSyncError::Api(error)) if error.is_license_error() => {
-                            let mut snapshot = current;
-                            snapshot.state = LicenseState::Revoked;
-                            snapshot.last_known_time = Utc::now();
-                            self.update_snapshot(snapshot)?;
-                            Err(DomainError::from(error))
-                        }
-                        Err(TrialSyncError::Api(error)) => Err(DomainError::from(error)),
-                        Err(TrialSyncError::Domain(error)) => Err(error),
-                    };
-                }
                 debug!("No signed entitlement to refresh");
                 return Ok(());
             }
@@ -1157,37 +1076,18 @@ mod tests {
     }
 
     #[test]
-    fn provisional_offline_trial_expires_after_seven_days() {
+    fn unsigned_local_trial_snapshot_does_not_grant_access() {
         let (runtime, app_data_dir) = test_runtime();
         let mut snapshot = runtime.current_snapshot();
-        snapshot.trial_started_at = Some(Utc::now() - chrono::Duration::days(8));
-        snapshot.trial_policy.duration_days = 30;
+        snapshot.trial_started_at = Some(Utc::now() - chrono::Duration::days(1));
         snapshot.state = LicenseState::Trial;
         runtime
             .update_snapshot(snapshot)
-            .expect("trial snapshot should persist");
+            .expect("test snapshot should persist");
 
         let current = runtime.current_snapshot();
-        assert_eq!(current.trial_policy.duration_days, PROVISIONAL_TRIAL_DAYS);
-        assert_eq!(current.state, LicenseState::Expired);
-        assert_eq!(runtime.current_snapshot().state, LicenseState::Expired);
-        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
-    }
-
-    #[test]
-    fn provisional_offline_trial_is_operational_within_seven_days() {
-        let (runtime, app_data_dir) = test_runtime();
-        let mut snapshot = runtime.current_snapshot();
-        snapshot.trial_started_at = Some(Utc::now() - chrono::Duration::days(6));
-        snapshot.trial_policy.duration_days = 30;
-        snapshot.state = LicenseState::Trial;
-        runtime
-            .update_snapshot(snapshot)
-            .expect("trial snapshot should persist");
-
-        let current = runtime.current_snapshot();
-        assert_eq!(current.trial_policy.duration_days, PROVISIONAL_TRIAL_DAYS);
-        assert_eq!(current.state, LicenseState::Trial);
+        assert_eq!(current.trial_started_at, None);
+        assert_eq!(current.state, LicenseState::Unavailable);
         std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
     }
 
@@ -1201,7 +1101,7 @@ mod tests {
         );
         entitlement.payload.plan_key = "TRIAL".to_owned();
         entitlement.payload.organization_id.clear();
-        entitlement.payload.offline_grace_period_days = PROVISIONAL_TRIAL_DAYS;
+        entitlement.payload.offline_grace_period_days = 7;
         snapshot.signed_entitlement = Some(entitlement);
         snapshot.last_sync_at = Some(Utc::now());
         snapshot.state = LicenseState::Active;

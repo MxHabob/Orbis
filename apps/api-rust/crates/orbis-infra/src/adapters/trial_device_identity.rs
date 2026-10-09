@@ -1,3 +1,4 @@
+use base64::Engine;
 use ed25519_dalek::SigningKey;
 use fs2::FileExt;
 use keyring::{Entry, Error as KeyringError};
@@ -7,6 +8,7 @@ use std::path::Path;
 use zeroize::{Zeroize, Zeroizing};
 
 const TRIAL_KEY_SERVICE: &str = "com.mulverse.orbis.trial-device";
+const TRIAL_KEY_ACCOUNT: &str = "device";
 #[cfg(windows)]
 const LEGACY_TRIAL_KEY_FILE: &str = "trial_device_key.dpapi";
 const TRIAL_KEY_LOCK_FILE: &str = ".trial-device-key.lock";
@@ -36,14 +38,20 @@ pub fn load_or_create(app_data_dir: &Path, installation_id: &str) -> Result<Sign
 }
 
 fn load_or_create_locked(app_data_dir: &Path, installation_id: &str) -> Result<SigningKey, String> {
-    let account = format!("installation:{installation_id}");
-    let entry = Entry::new(TRIAL_KEY_SERVICE, &account).map_err(|error| {
+    let entry = Entry::new(TRIAL_KEY_SERVICE, TRIAL_KEY_ACCOUNT).map_err(|error| {
         format!("Failed to open the operating system's secure key store: {error}")
     })?;
 
     match entry.get_password() {
         Ok(encoded_seed) => decode_seed(&encoded_seed),
         Err(KeyringError::NoEntry) => {
+            if let Some(legacy_key) = load_installation_key(installation_id)? {
+                let seed = Zeroizing::new(legacy_key.to_bytes());
+                store_seed(&entry, &seed)?;
+                remove_installation_key(installation_id);
+                return Ok(legacy_key);
+            }
+
             #[cfg(windows)]
             if let Some(seed) = load_legacy_seed(app_data_dir)? {
                 store_seed(&entry, &seed)?;
@@ -59,6 +67,33 @@ fn load_or_create_locked(app_data_dir: &Path, installation_id: &str) -> Result<S
         Err(error) => Err(format!(
             "Failed to read the trial identity from the operating system's secure key store: {error}"
         )),
+    }
+}
+
+fn load_installation_key(installation_id: &str) -> Result<Option<SigningKey>, String> {
+    let account = format!("installation:{installation_id}");
+    let entry = Entry::new(TRIAL_KEY_SERVICE, &account).map_err(|error| {
+        format!("Failed to open the previous trial identity in the operating system's secure key store: {error}")
+    })?;
+    match entry.get_password() {
+        Ok(encoded_seed) => decode_seed(&encoded_seed).map(Some),
+        Err(KeyringError::NoEntry) => Ok(None),
+        Err(error) => Err(format!(
+            "Failed to read the previous trial identity from the operating system's secure key store: {error}"
+        )),
+    }
+}
+
+fn remove_installation_key(installation_id: &str) {
+    let account = format!("installation:{installation_id}");
+    let result = Entry::new(TRIAL_KEY_SERVICE, &account)
+        .map_err(|error| error.to_string())
+        .and_then(|entry| match entry.delete_credential() {
+            Ok(()) | Err(KeyringError::NoEntry) => Ok(()),
+            Err(error) => Err(error.to_string()),
+        });
+    if let Err(error) = result {
+        tracing::warn!(%error, "Could not remove the migrated installation-scoped trial identity");
     }
 }
 
@@ -190,19 +225,15 @@ mod tests {
         let installation_id = Uuid::new_v4().to_string();
         let first = load_or_create(&directory, &installation_id)
             .expect("Windows Credential Manager should save the generated key");
-        let second = load_or_create(&directory, &installation_id)
+        let second = load_or_create(&directory, &Uuid::new_v4().to_string())
             .expect("Windows Credential Manager should unlock the saved key");
         assert_eq!(first.to_bytes(), second.to_bytes());
-        remove_keyring_entry(&installation_id);
+        remove_keyring_entry(TRIAL_KEY_ACCOUNT);
         fs::remove_dir_all(directory).expect("test directory should be cleaned up");
     }
 
-    fn remove_keyring_entry(installation_id: &str) {
-        let entry = Entry::new(
-            TRIAL_KEY_SERVICE,
-            &format!("installation:{installation_id}"),
-        )
-        .expect("test entry should be valid");
+    fn remove_keyring_entry(account: &str) {
+        let entry = Entry::new(TRIAL_KEY_SERVICE, account).expect("test entry should be valid");
         match entry.delete_credential() {
             Ok(()) | Err(KeyringError::NoEntry) => {}
             Err(error) => panic!("test secure-store entry should be removed: {error}"),

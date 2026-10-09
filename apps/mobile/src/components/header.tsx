@@ -102,7 +102,7 @@ export function Header({
 
   const sideSize = width < 360 ? 46 : 48;
 
-  const titleWidth = Math.min(Math.max(width * 0.42, 128), 190);
+  const titleWidth = Math.min(Math.max(width * 0.42, 128), 160);
 
   const marqueeX = React.useRef(new Animated.Value(0)).current;
   const estimatedTitleWidth = Math.max((title?.length ?? 0) * 8.6, 0);
@@ -176,12 +176,12 @@ export function Header({
       style={[
         {
           paddingTop: insets.top + 8,
-          paddingHorizontal: 12,
+          paddingHorizontal: 16,
         },
         style,
       ]}
     >
-      <View className="min-h-12 w-full flex-row items-center justify-between">
+      <View className="min-h-12 w-full flex-row items-center justify-between gap-2">
         {/* LEFT */}
         <View className="shrink-0 items-center justify-center" style={{ width: sideSize, height: sideSize }}>
           {leftAction ? (
@@ -193,7 +193,7 @@ export function Header({
               hitSlop={8}
               onPress={showBack ? handleBack : handleProfile}
               style={({ pressed }) => [
-                styles.floatingControl,
+                styles.floatingSurface,
                 {
                   width: sideSize,
                   height: sideSize,
@@ -208,7 +208,7 @@ export function Header({
                 },
                 pressed && { transform: [{ scale: 0.94 }] },
               ]}
-              className="items-center justify-center border"
+              className="items-center justify-center"
             >
               {showBack ? (
                 isArabic ? (
@@ -236,9 +236,9 @@ export function Header({
         <View className="mx-three h-12 flex-1 items-center justify-center">
           {showTitle && title && !largeTitle ? (
             <View
-              className="h-10 items-center justify-center overflow-hidden rounded-full px-4"
+              className="h-11 items-center justify-center overflow-hidden rounded-full px-3"
               style={[
-                styles.titleControl,
+                styles.floatingSurface,
                 {
                   width: titleWidth,
                   backgroundColor: transparent
@@ -297,7 +297,7 @@ export function Header({
               hitSlop={8}
               onPress={handleCrown}
               style={({ pressed }) => [
-                styles.floatingControl,
+                styles.floatingSurface,
                 {
                   width: sideSize,
                   height: sideSize,
@@ -313,7 +313,7 @@ export function Header({
                 },
                 pressed && { transform: [{ scale: 0.94 }] },
               ]}
-              className="items-center justify-center border"
+              className="items-center justify-center"
             >
               <AppNotification
                 size={20}
@@ -364,21 +364,14 @@ export function Header({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  floatingControl: {
+  floatingSurface: {
     borderWidth: StyleSheet.hairlineWidth,
+    elevation: 4,
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.055,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
   },
-  titleControl: {
-    borderWidth: StyleSheet.hairlineWidth,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.055,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-
 });
 
 export default Header;

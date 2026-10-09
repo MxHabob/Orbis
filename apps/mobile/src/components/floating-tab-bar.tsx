@@ -204,7 +204,6 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
             styles.iconButton,
             {
               backgroundColor: isAppsFocused ? theme.accentLight : surface,
-              borderColor: isAppsFocused ? theme.primary : border,
             },
           ]}
         >
@@ -246,7 +245,6 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
           styles.iconButton,
           {
             backgroundColor: isAnalyticsFocused ? theme.accentLight : surface,
-            borderColor: isAnalyticsFocused ? theme.primary : border,
           },
         ]}
       >
