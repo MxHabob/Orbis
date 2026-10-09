@@ -33,14 +33,13 @@ use super::trial_device_identity;
 // EMBEDDED PUBLIC KEY — Compile-time Ed25519 verification key
 // ═══════════════════════════════════════════════════════════════
 
-/// Release builds pin the matching Mulverse Ed25519 public key at compile time.
-const EMBEDDED_PUBLIC_KEY_B64: Option<&str> = option_env!("MULVERSE_LICENSE_PUBLIC_KEY_B64");
+/// Current production verification key; release builds must override it explicitly.
+const DEFAULT_PUBLIC_KEY_B64: &str = "AVyDbeWL6/4Dwl4LwuqeyaXigGwKEyAMbxFk1swPwQo=";
+const BUILD_PUBLIC_KEY_B64: Option<&str> = option_env!("MULVERSE_LICENSE_PUBLIC_KEY_B64");
 
-/// Key ID for the embedded public key.
-const EMBEDDED_KEY_ID: &str = match option_env!("MULVERSE_LICENSE_KEY_ID") {
-    Some(key_id) => key_id,
-    None => "key_ed25519_2026_v1",
-};
+/// Key ID for the current production public key.
+const DEFAULT_KEY_ID: &str = "c1208ae1-6d8f-49bf-adb0-5c639c47c3a5";
+const BUILD_KEY_ID: Option<&str> = option_env!("MULVERSE_LICENSE_KEY_ID");
 
 // ═══════════════════════════════════════════════════════════════
 // LICENSE FILE PATHS
@@ -158,12 +157,13 @@ impl MulverseLicenseRuntime {
         let initial_snapshot =
             LicenseSnapshot::new_unavailable(installation_id, app_version.to_string());
 
-        let trusted_keys = match EMBEDDED_PUBLIC_KEY_B64 {
-            Some(key) if !key.trim().is_empty() => {
-                vec![(EMBEDDED_KEY_ID.to_string(), key.to_string())]
-            }
-            _ => Vec::new(),
-        };
+        let public_key = BUILD_PUBLIC_KEY_B64
+            .filter(|key| !key.trim().is_empty())
+            .unwrap_or(DEFAULT_PUBLIC_KEY_B64);
+        let key_id = BUILD_KEY_ID
+            .filter(|key_id| !key_id.trim().is_empty())
+            .unwrap_or(DEFAULT_KEY_ID);
+        let trusted_keys = vec![(key_id.to_string(), public_key.to_string())];
 
         Ok(Self {
             app_data_dir: app_data_dir.to_path_buf(),
@@ -1012,7 +1012,7 @@ mod tests {
     ) -> SignedEntitlement {
         SignedEntitlement {
             v: 1,
-            kid: EMBEDDED_KEY_ID.to_string(),
+            kid: DEFAULT_KEY_ID.to_string(),
             alg: "Ed25519".to_string(),
             payload: EntitlementPayload {
                 license_id: "license-test".to_string(),
@@ -1072,6 +1072,15 @@ mod tests {
         );
 
         cleanup_test_data(app_data_dir);
+    }
+
+    #[test]
+    fn production_verification_key_is_a_valid_ed25519_key() {
+        let decoded = base64::engine::general_purpose::STANDARD
+            .decode(DEFAULT_PUBLIC_KEY_B64)
+            .expect("default public key should be valid base64");
+        assert_eq!(decoded.len(), 32);
+        assert_eq!(DEFAULT_KEY_ID, "c1208ae1-6d8f-49bf-adb0-5c639c47c3a5");
     }
 
     #[test]

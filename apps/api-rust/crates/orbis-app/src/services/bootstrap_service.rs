@@ -870,7 +870,6 @@ impl BootstrapService {
         // Create admin permissions for super_admin and org_admin roles
         self.create_admin_permissions(org_id, "super_admin").await?;
         self.create_admin_permissions(org_id, "org_admin").await?;
-
         Ok(())
     }
 
