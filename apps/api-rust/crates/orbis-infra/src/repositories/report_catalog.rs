@@ -430,7 +430,7 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             provider_key: "academic.term_result",
         },
         // ═══════════════════════════════════════════════════════════════════════
-        // 4. FINANCIAL & ACCOUNTING REPORTS (46 Reports)
+        // 4. FINANCIAL & ACCOUNTING REPORTS (45 Reports)
         // ═══════════════════════════════════════════════════════════════════════
         ReportDefEntry {
             code: "rep.finance.trial-balance",
@@ -822,7 +822,7 @@ pub async fn provision_master_report_definitions<C: ConnectionTrait>(
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
             "INSERT INTO report_definitions (id, org_id, code, name, name_ar, domain, category, description, description_ar, parameters_json, required_permissions, supported_formats, data_provider_key, is_system, is_active, sort_order, version, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, '[]', '[]', '[\"PDF\",\"CSV\",\"XLSX\",\"HTML\"]', $10, 1, 1, $11, 1, $12, $13 \
+             SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, '[]', '[]', '[\"pdf\",\"csv\",\"xlsx\",\"html\"]', $10, 1, 1, $11, 1, $12, $13 \
              WHERE NOT EXISTS (SELECT 1 FROM report_definitions WHERE org_id = $2 AND code = $3)",
             vec![
                 rid.into(), org_id.into(), entry.code.into(),

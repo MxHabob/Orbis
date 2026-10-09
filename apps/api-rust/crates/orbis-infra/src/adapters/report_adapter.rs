@@ -17,8 +17,11 @@ use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
 use sea_orm::DatabaseConnection;
 use std::collections::HashMap;
+use std::io::{Cursor, Write};
 use tera::{Context, Tera};
 use uuid::Uuid;
+use zip::write::FileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 // ═══════════════════════════════════════════════════════════════
 // DATA PROVIDER REGISTRY
@@ -221,6 +224,226 @@ impl DocumentRenderer for CsvRenderer {
     }
 }
 
+pub struct XlsxRenderer;
+
+#[async_trait]
+impl DocumentRenderer for XlsxRenderer {
+    fn supported_format(&self) -> OutputFormat {
+        OutputFormat::Xlsx
+    }
+
+    async fn render(
+        &self,
+        dataset: &ReportDataset,
+        _template: Option<&ReportTemplate>,
+        _master: Option<&ReportTemplate>,
+    ) -> Result<ExportResult, DomainError> {
+        let visible_columns: Vec<_> = dataset
+            .columns
+            .iter()
+            .filter(|column| column.visible)
+            .collect();
+        let mut worksheet = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>"#,
+        );
+        worksheet.push_str("<row r=\"1\">");
+        for (index, column) in visible_columns.iter().enumerate() {
+            worksheet.push_str(&xlsx_cell(
+                index + 1,
+                1,
+                &serde_json::Value::String(column.header.clone()),
+            ));
+        }
+        worksheet.push_str("</row>");
+
+        for (row_index, row) in dataset.rows.iter().enumerate() {
+            let excel_row = row_index + 2;
+            worksheet.push_str(&format!("<row r=\"{excel_row}\">"));
+            for (column_index, column) in visible_columns.iter().enumerate() {
+                let value = row.get(&column.key).unwrap_or(&serde_json::Value::Null);
+                worksheet.push_str(&xlsx_cell(column_index + 1, excel_row, value));
+            }
+            worksheet.push_str("</row>");
+        }
+        worksheet.push_str("</sheetData></worksheet>");
+
+        let mut archive = ZipWriter::new(Cursor::new(Vec::new()));
+        let options = FileOptions::default().compression_method(CompressionMethod::Deflated);
+        let parts = [
+            (
+                "[Content_Types].xml",
+                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>"#,
+            ),
+            (
+                "_rels/.rels",
+                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>"#,
+            ),
+            (
+                "xl/workbook.xml",
+                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Report" sheetId="1" r:id="rId1"/></sheets></workbook>"#,
+            ),
+            (
+                "xl/_rels/workbook.xml.rels",
+                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#,
+            ),
+        ];
+        for (name, contents) in parts {
+            archive.start_file(name, options).map_err(|error| {
+                DomainError::Internal(format!("XLSX package write failed: {error}"))
+            })?;
+            archive.write_all(contents.as_bytes()).map_err(|error| {
+                DomainError::Internal(format!("XLSX package write failed: {error}"))
+            })?;
+        }
+        archive
+            .start_file("xl/worksheets/sheet1.xml", options)
+            .map_err(|error| {
+                DomainError::Internal(format!("XLSX worksheet write failed: {error}"))
+            })?;
+        archive.write_all(worksheet.as_bytes()).map_err(|error| {
+            DomainError::Internal(format!("XLSX worksheet write failed: {error}"))
+        })?;
+        let bytes = archive
+            .finish()
+            .map_err(|error| {
+                DomainError::Internal(format!("XLSX package finalization failed: {error}"))
+            })?
+            .into_inner();
+        let size = bytes.len() as u64;
+        Ok(ExportResult {
+            format: OutputFormat::Xlsx,
+            mime_type: OutputFormat::Xlsx.mime_type().into(),
+            filename: format!("{}.xlsx", dataset.report_code.replace('.', "_")),
+            data: bytes,
+            size,
+        })
+    }
+}
+
+fn xlsx_cell(column: usize, row: usize, value: &serde_json::Value) -> String {
+    let cell = format!("{}{}", xlsx_column_name(column), row);
+    match value {
+        serde_json::Value::Null => format!("<c r=\"{cell}\"/>"),
+        serde_json::Value::Number(number) => {
+            format!("<c r=\"{cell}\"><v>{number}</v></c>")
+        }
+        serde_json::Value::Bool(boolean) => {
+            format!("<c r=\"{cell}\" t=\"b\"><v>{}</v></c>", u8::from(*boolean))
+        }
+        _ => {
+            let text = match value {
+                serde_json::Value::String(text) => text.clone(),
+                _ => value.to_string(),
+            };
+            format!(
+                "<c r=\"{cell}\" t=\"inlineStr\"><is><t xml:space=\"preserve\">{}</t></is></c>",
+                escape_xml(&text)
+            )
+        }
+    }
+}
+
+fn xlsx_column_name(mut column: usize) -> String {
+    let mut name = String::new();
+    while column > 0 {
+        let remainder = (column - 1) % 26;
+        name.insert(0, (b'A' + remainder as u8) as char);
+        column = (column - 1) / 26;
+    }
+    name
+}
+
+fn escape_xml(value: &str) -> String {
+    let valid_xml = value
+        .chars()
+        .filter(|character| {
+            matches!(
+                *character,
+                '\u{9}'
+                    | '\u{A}'
+                    | '\u{D}'
+                    | '\u{20}'..='\u{D7FF}'
+                    | '\u{E000}'..='\u{FFFD}'
+                    | '\u{10000}'..='\u{10FFFF}'
+            )
+        })
+        .collect::<String>();
+    valid_xml
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&apos;")
+}
+
+#[cfg(test)]
+mod xlsx_tests {
+    use super::*;
+    use chrono::Utc;
+    use std::io::Read;
+    use zip::ZipArchive;
+
+    #[tokio::test]
+    async fn xlsx_renderer_creates_a_valid_workbook_with_escaped_cell_content() {
+        let dataset = ReportDataset {
+            report_code: "finance.fee_collection".into(),
+            report_name: "Fee collection".into(),
+            report_name_ar: "تحصيل الرسوم".into(),
+            org: OrgReportContext::default(),
+            parameter_summary: Vec::new(),
+            columns: vec![
+                ColumnDef {
+                    key: "student_name".into(),
+                    header: "Student".into(),
+                    header_ar: "الطالب".into(),
+                    data_type: ColumnDataType::Text,
+                    width: None,
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "balance".into(),
+                    header: "Balance".into(),
+                    header_ar: "الرصيد".into(),
+                    data_type: ColumnDataType::Currency,
+                    width: None,
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+            ],
+            rows: vec![serde_json::json!({
+                "student_name": "A&B <Student>",
+                "balance": 125.50
+            })],
+            groups: None,
+            aggregations: None,
+            total_count: 1,
+            generated_at: Utc::now(),
+            generated_by: None,
+        };
+
+        let export = XlsxRenderer
+            .render(&dataset, None, None)
+            .await
+            .expect("xlsx rendering should succeed");
+        let mut archive = ZipArchive::new(Cursor::new(export.data))
+            .expect("renderer must produce a readable zip archive");
+        let mut sheet = String::new();
+        archive
+            .by_name("xl/worksheets/sheet1.xml")
+            .expect("worksheet must be present")
+            .read_to_string(&mut sheet)
+            .expect("worksheet xml should be readable");
+
+        assert!(sheet.contains("A&amp;B &lt;Student&gt;"));
+        assert!(sheet.contains("<c r=\"B2\"><v>125.5</v></c>"));
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // HTML RENDERER (also serves as PDF source)
 // ═══════════════════════════════════════════════════════════════
@@ -408,52 +631,72 @@ impl ReportDataProvider for FeeCollectionDataProvider {
         _parameters: &HashMap<String, ParamValue>,
         _locale: &ReportLocale,
     ) -> Result<ReportDataset, DomainError> {
+        use rust_decimal::prelude::ToPrimitive;
         use sea_orm::{ConnectionTrait, Statement};
 
-        // Query real fee data from the database
-        let rows_result = self.db.query_all(
-            Statement::from_sql_and_values(
+        let rows = self
+            .db
+            .query_all(Statement::from_sql_and_values(
                 self.db.get_database_backend(),
                 r#"SELECT
-                    sf.id,
                     sf.net_amount as amount,
-                    COALESCE((SELECT SUM(amount) FROM payments p WHERE p.fee_id = sf.id), 0.0) as paid_amount,
+                    COALESCE(sf.paid_amount, 0) as paid_amount,
                     sf.status,
-                    p.full_name as student_name,
-                    ft.name as fee_name
+                    s.full_name as student_name,
+                    COALESCE(ft.name, '') as fee_name
                 FROM student_fees sf
-                LEFT JOIN persons p ON sf.student_id = p.id
+                INNER JOIN students s ON sf.student_id = s.id AND s.org_id = sf.org_id
                 LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
                 WHERE sf.org_id = $1
-                ORDER BY p.full_name"#,
+                ORDER BY s.full_name"#,
                 vec![org_id.into()],
-            )
-        ).await;
+            ))
+            .await
+            .map_err(|error| {
+                DomainError::Internal(format!("Fee collection query failed: {error}"))
+            })?;
 
         let mut data_rows = Vec::new();
         let mut total_amount = 0.0f64;
         let mut total_paid = 0.0f64;
         let mut seq = 0u64;
 
-        if let Ok(rows) = rows_result {
-            for row in &rows {
-                seq += 1;
-                let amount: f64 = row.try_get::<f64>("", "amount").unwrap_or(0.0);
-                let paid: f64 = row.try_get::<f64>("", "paid_amount").unwrap_or(0.0);
-                let balance = amount - paid;
-                total_amount += amount;
-                total_paid += paid;
+        for row in &rows {
+            seq += 1;
+            let amount: rust_decimal::Decimal = row
+                .try_get("", "amount")
+                .map_err(|error| DomainError::Internal(format!("Invalid fee amount: {error}")))?;
+            let paid: rust_decimal::Decimal = row
+                .try_get("", "paid_amount")
+                .map_err(|error| DomainError::Internal(format!("Invalid paid amount: {error}")))?;
+            let student_name: String = row
+                .try_get("", "student_name")
+                .map_err(|error| DomainError::Internal(format!("Invalid student name: {error}")))?;
+            let fee_name: String = row
+                .try_get("", "fee_name")
+                .map_err(|error| DomainError::Internal(format!("Invalid fee name: {error}")))?;
+            let status: String = row
+                .try_get("", "status")
+                .map_err(|error| DomainError::Internal(format!("Invalid fee status: {error}")))?;
+            let amount = amount.to_f64().ok_or_else(|| {
+                DomainError::Internal("Fee amount could not be represented".into())
+            })?;
+            let paid = paid.to_f64().ok_or_else(|| {
+                DomainError::Internal("Paid amount could not be represented".into())
+            })?;
+            let balance = amount - paid;
+            total_amount += amount;
+            total_paid += paid;
 
-                data_rows.push(serde_json::json!({
-                    "seq": seq,
-                    "student_name": row.try_get::<String>("", "student_name").unwrap_or_default(),
-                    "fee_name": row.try_get::<String>("", "fee_name").unwrap_or_default(),
-                    "amount": amount,
-                    "paid_amount": paid,
-                    "balance": balance,
-                    "status": row.try_get::<String>("", "status").unwrap_or_default(),
-                }));
-            }
+            data_rows.push(serde_json::json!({
+                "seq": seq,
+                "student_name": student_name,
+                "fee_name": fee_name,
+                "amount": amount,
+                "paid_amount": paid,
+                "balance": balance,
+                "status": status,
+            }));
         }
 
         let total_count = data_rows.len() as u64;

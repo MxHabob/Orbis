@@ -49,7 +49,12 @@ pub async fn ai_chat(
 pub async fn ai_list_tools(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<AiToolDefinition>>, String> {
-    let tools = state.ai_service.get_available_tools();
+    let ctx = make_ctx(&state);
+    let tools = state
+        .ai_service
+        .get_authorized_tools(&ctx)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(ok(tools))
 }
 

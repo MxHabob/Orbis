@@ -98,6 +98,7 @@ pub struct AppState {
     pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
     pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
+    pub notification_adapter: Arc<orbis_infra::adapters::notification::NotificationAdapter>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
     pub ai_service: Arc<orbis_app::services::AiOrchestrationService>,

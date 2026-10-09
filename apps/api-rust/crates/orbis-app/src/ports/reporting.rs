@@ -101,6 +101,11 @@ pub trait ReportJobRepository: Send + Sync {
         error: Option<String>,
     ) -> Result<(), DomainError>;
     async fn list_by_org(&self, org_id: Uuid, limit: u32) -> Result<Vec<ReportJob>, DomainError>;
+    async fn find_expired_completed_before(
+        &self,
+        cutoff: chrono::DateTime<chrono::Utc>,
+        limit: u32,
+    ) -> Result<Vec<(Uuid, String)>, DomainError>;
 }
 
 #[async_trait]

@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::context::RequestContext;
 use crate::ports::gateways::LlmGatewayPort;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::repositories::EmployeeRepository;
 use crate::services::{
     academic_service::AcademicService,
     assessment_service::AssessmentService,
@@ -28,13 +29,85 @@ use orbis_domain::entities::report::{OutputFormat, ParamValue, ReportLocale};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    AttendanceFilter, GradeFilter, StudentFeeFilter, StudentFilter,
+    AttendanceFilter, ClassSubjectFilter, GradeFilter, PaginationParams, StudentFeeFilter,
+    StudentFilter,
 };
+
+fn take_private_ui_result(result: &mut serde_json::Value) -> Option<serde_json::Value> {
+    result
+        .as_object_mut()
+        .and_then(|object| object.remove("_ui_private_result"))
+}
+
+fn required_tool_permission(tool: &AiToolDefinition) -> Result<Permission, DomainError> {
+    tool.required_permission
+        .as_deref()
+        .and_then(Permission::from_str)
+        .ok_or_else(|| {
+            DomainError::Forbidden(format!(
+                "AI tool '{}' has no recognized required permission",
+                tool.name
+            ))
+        })
+}
+
+async fn check_tool_permission(
+    checker: &dyn PermissionCheckerPort,
+    ctx: &RequestContext,
+    tool: &AiToolDefinition,
+) -> Result<(), DomainError> {
+    checker.check(ctx, required_tool_permission(tool)?).await
+}
+
+fn ensure_tenant_matches(record_org_id: Uuid, tenant_id: Uuid) -> Result<(), DomainError> {
+    if record_org_id == tenant_id {
+        Ok(())
+    } else {
+        Err(DomainError::NotFound("Record not found".into()))
+    }
+}
+
+fn teacher_assigned_to_class(
+    teacher_id: Uuid,
+    class_id: Uuid,
+    homeroom_teacher_id: Option<Uuid>,
+    assignments: &[orbis_domain::entities::class_subject::ClassSubject],
+) -> bool {
+    homeroom_teacher_id == Some(teacher_id)
+        || assignments.iter().any(|assignment| {
+            assignment.class_id == class_id
+                && (assignment.primary_teacher_id == teacher_id
+                    || assignment.assistant_teacher_id == Some(teacher_id)
+                    || assignment.substitute_teacher_id == Some(teacher_id))
+        })
+}
+
+fn unit_in_scope(unit_id: Option<Uuid>, allowed_units: Option<&[Uuid]>) -> bool {
+    match allowed_units {
+        None => true,
+        Some(allowed) => unit_id.is_some_and(|id| allowed.contains(&id)),
+    }
+}
+
+fn tool_supports_unit_scoping(tool_name: &str) -> bool {
+    matches!(
+        tool_name,
+        "search_students"
+            | "get_student_profile"
+            | "get_student_grades"
+            | "get_student_attendance"
+            | "get_student_fees"
+            | "analyze_at_risk_students"
+            | "analyze_class_performance"
+            | "draft_parent_notice"
+    )
+}
 
 pub struct AiOrchestrationService {
     pub llm_gateway: Arc<dyn LlmGatewayPort>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
     pub student_service: Arc<StudentService>,
+    pub employee_repo: Arc<dyn EmployeeRepository>,
     pub academic_service: Arc<AcademicService>,
     pub assessment_service: Arc<AssessmentService>,
     pub finance_service: Arc<FinanceService>,
@@ -45,10 +118,278 @@ pub struct AiOrchestrationService {
 }
 
 impl AiOrchestrationService {
+    async fn ensure_student_tenant(
+        &self,
+        ctx: &RequestContext,
+        student_id: Uuid,
+    ) -> Result<(), DomainError> {
+        let student = self
+            .student_service
+            .get_student(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+        ensure_tenant_matches(student.student.org_id, ctx.tenant_id)?;
+        let allowed_units = self.user_org_unit_allowlist(ctx).await?;
+        if !unit_in_scope(student.student.org_unit_id, allowed_units.as_deref()) {
+            return Err(DomainError::NotFound("Student not found".into()));
+        }
+
+        let Some(employee) = self.teacher_employee(ctx).await? else {
+            return Ok(());
+        };
+
+        let enrollments = self
+            .student_service
+            .enrollment_repo
+            .find_by_student(student.student.id)
+            .await?;
+        for enrollment in enrollments
+            .into_iter()
+            .filter(|enrollment| enrollment.org_id == ctx.tenant_id)
+        {
+            let Some(class_id) = enrollment.class_id else {
+                continue;
+            };
+            let class = self
+                .academic_service
+                .class_repo
+                .find_by_id(class_id)
+                .await?;
+            let Some(class) = class.filter(|class| class.org_id == ctx.tenant_id) else {
+                continue;
+            };
+            let assignments = self
+                .class_subjects_for_teacher(employee.id, enrollment.period_id)
+                .await?;
+            if teacher_assigned_to_class(
+                employee.id,
+                class_id,
+                class.homeroom_teacher_id,
+                &assignments,
+            ) {
+                return Ok(());
+            }
+        }
+        Err(DomainError::NotFound("Student not found".into()))
+    }
+
+    async fn teacher_employee(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<Option<orbis_domain::entities::employee::Employee>, DomainError> {
+        let Some(user_id) = ctx.user_id() else {
+            return Ok(None);
+        };
+        let Some(employee) = self
+            .employee_repo
+            .find_by_user_id(ctx.tenant_id, user_id)
+            .await?
+        else {
+            return Ok(None);
+        };
+        Ok(employee.is_teacher().then_some(employee))
+    }
+
+    async fn class_subjects_for_teacher(
+        &self,
+        teacher_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::class_subject::ClassSubject>, DomainError> {
+        self.academic_service
+            .class_subject_repo
+            .find_by_teacher(teacher_id, period_id)
+            .await
+    }
+
+    async fn teaching_assignments(
+        &self,
+        ctx: &RequestContext,
+        teacher_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::ai::TeachingAssignmentInfo>, DomainError> {
+        let assignments = self
+            .academic_service
+            .class_subject_repo
+            .list(
+                ctx.tenant_id,
+                ClassSubjectFilter {
+                    teacher_id: Some(teacher_id),
+                    pagination: Some(PaginationParams {
+                        page: Some(1),
+                        page_size: Some(PaginationParams::MAX_PAGE_SIZE),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+            )
+            .await?;
+        let mut result = Vec::new();
+        for assignment in assignments.items {
+            let Some(class) = self
+                .academic_service
+                .class_repo
+                .find_by_id(assignment.class_id)
+                .await?
+            else {
+                continue;
+            };
+            if class.org_id != ctx.tenant_id {
+                continue;
+            }
+            let Some(subject) = self
+                .academic_service
+                .subject_repo
+                .find_by_id(assignment.subject_id)
+                .await?
+            else {
+                continue;
+            };
+            if subject.org_id != ctx.tenant_id {
+                continue;
+            }
+            result.push(orbis_domain::entities::ai::TeachingAssignmentInfo {
+                class_subject_id: assignment.id,
+                class_id: assignment.class_id,
+                class_name: class.name,
+                subject_id: assignment.subject_id,
+                subject_name: subject.name,
+                period_id: Some(assignment.period_id),
+            });
+        }
+        Ok(result)
+    }
+
+    async fn ensure_class_tenant(
+        &self,
+        ctx: &RequestContext,
+        class_id: Uuid,
+    ) -> Result<(), DomainError> {
+        let class = self
+            .academic_service
+            .class_repo
+            .find_by_id(class_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
+        ensure_tenant_matches(class.org_id, ctx.tenant_id)?;
+        let allowed_units = self.user_org_unit_allowlist(ctx).await?;
+        if !unit_in_scope(class.unit_id.into(), allowed_units.as_deref()) {
+            return Err(DomainError::NotFound("Class not found".into()));
+        }
+        Ok(())
+    }
+
+    async fn user_org_unit_allowlist(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<Option<Vec<Uuid>>, DomainError> {
+        let Some(user_id) = ctx.user_id() else {
+            return Ok(None);
+        };
+        let Some(scoped_units) = self
+            .permission_checker
+            .get_org_unit_scope(user_id, ctx.tenant_id)
+            .await?
+        else {
+            return Ok(None);
+        };
+        let mut allowed = Vec::new();
+        for unit_id in scoped_units {
+            let Some(unit) = self.org_service.org_unit_repo.find_by_id(unit_id).await? else {
+                continue;
+            };
+            if unit.org_id != ctx.tenant_id {
+                continue;
+            }
+            allowed.push(unit.id);
+            let descendants = self
+                .org_service
+                .org_unit_repo
+                .find_descendants(ctx.tenant_id, &unit.path)
+                .await?;
+            allowed.extend(
+                descendants
+                    .into_iter()
+                    .filter(|descendant| descendant.org_id == ctx.tenant_id)
+                    .map(|descendant| descendant.id),
+            );
+        }
+        allowed.sort();
+        allowed.dedup();
+        Ok(Some(allowed))
+    }
+
+    async fn ensure_class_access(
+        &self,
+        ctx: &RequestContext,
+        class_id: Uuid,
+        period_id: Option<Uuid>,
+    ) -> Result<(), DomainError> {
+        self.ensure_class_tenant(ctx, class_id).await?;
+        let Some(employee) = self.teacher_employee(ctx).await? else {
+            return Ok(());
+        };
+
+        let assignments = if let Some(period_id) = period_id {
+            self.class_subjects_for_teacher(employee.id, period_id)
+                .await?
+        } else {
+            self.academic_service
+                .class_subject_repo
+                .find_by_class(class_id)
+                .await?
+                .into_iter()
+                .filter(|assignment| {
+                    assignment.primary_teacher_id == employee.id
+                        || assignment.assistant_teacher_id == Some(employee.id)
+                        || assignment.substitute_teacher_id == Some(employee.id)
+                })
+                .collect()
+        };
+        let class = self
+            .academic_service
+            .class_repo
+            .find_by_id(class_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
+        if teacher_assigned_to_class(
+            employee.id,
+            class_id,
+            class.homeroom_teacher_id,
+            &assignments,
+        ) {
+            Ok(())
+        } else {
+            Err(DomainError::NotFound("Class not found".into()))
+        }
+    }
+
+    async fn ensure_class_subject_access(
+        &self,
+        ctx: &RequestContext,
+        class_subject_id: Uuid,
+    ) -> Result<orbis_domain::entities::class_subject::ClassSubject, DomainError> {
+        let assignment = self
+            .academic_service
+            .class_subject_repo
+            .find_by_id(class_subject_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Class subject not found".into()))?;
+        self.ensure_class_access(ctx, assignment.class_id, Some(assignment.period_id))
+            .await?;
+        let subject = self
+            .academic_service
+            .subject_repo
+            .find_by_id(assignment.subject_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Subject not found".into()))?;
+        ensure_tenant_matches(subject.org_id, ctx.tenant_id)?;
+        Ok(assignment)
+    }
+
     pub fn new(
         llm_gateway: Arc<dyn LlmGatewayPort>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
         student_service: Arc<StudentService>,
+        employee_repo: Arc<dyn EmployeeRepository>,
         academic_service: Arc<AcademicService>,
         assessment_service: Arc<AssessmentService>,
         finance_service: Arc<FinanceService>,
@@ -60,6 +401,7 @@ impl AiOrchestrationService {
             llm_gateway,
             permission_checker,
             student_service,
+            employee_repo,
             academic_service,
             assessment_service,
             finance_service,
@@ -75,8 +417,64 @@ impl AiOrchestrationService {
         self
     }
 
-    /// Registry of available domain tools with JSON schemas and permission requirements.
-    pub fn get_available_tools(&self) -> Vec<AiToolDefinition> {
+    pub async fn get_authorized_tools(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<Vec<AiToolDefinition>, DomainError> {
+        let has_unit_scope = self.user_org_unit_allowlist(ctx).await?.is_some();
+        let mut authorized = Vec::new();
+        for tool in Self::registered_tools() {
+            if has_unit_scope && !tool_supports_unit_scoping(&tool.name) {
+                continue;
+            }
+            match check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await {
+                Ok(()) => {
+                    if tool.name == "generate_report" {
+                        match self
+                            .permission_checker
+                            .check(ctx, Permission::ExportData)
+                            .await
+                        {
+                            Ok(()) => {}
+                            Err(DomainError::Unauthorized(_)) => continue,
+                            Err(error) => return Err(error),
+                        }
+                    }
+                    authorized.push(tool)
+                }
+                Err(DomainError::Unauthorized(_)) => {}
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(authorized)
+    }
+
+    async fn authorize_tool(
+        &self,
+        ctx: &RequestContext,
+        tool_name: &str,
+    ) -> Result<(), DomainError> {
+        let tool = Self::registered_tools()
+            .into_iter()
+            .find(|tool| tool.name == tool_name)
+            .ok_or_else(|| DomainError::Forbidden("Unknown AI tool".into()))?;
+        if self.user_org_unit_allowlist(ctx).await?.is_some()
+            && !tool_supports_unit_scoping(tool_name)
+        {
+            return Err(DomainError::Forbidden(
+                "AI tool is unavailable within the user's organizational-unit scope".into(),
+            ));
+        }
+        check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await?;
+        if tool_name == "generate_report" {
+            self.permission_checker
+                .check(ctx, Permission::ExportData)
+                .await?;
+        }
+        Ok(())
+    }
+
+    fn registered_tools() -> Vec<AiToolDefinition> {
         vec![
             AiToolDefinition {
                 name: "search_students".into(),
@@ -164,6 +562,19 @@ impl AiOrchestrationService {
                 category: ToolCategory::Read,
             },
             AiToolDefinition {
+                name: "get_unpaid_fees".into(),
+                description: "Find students with unpaid fee balances. Results are shown securely in the application; large result sets are exported as a background XLSX report.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "period_id": {"type": "string", "description": "Optional academic period UUID"}
+                    }
+                }),
+                required_permission: Some("finance:read".into()),
+                is_consequential: false,
+                category: ToolCategory::Read,
+            },
+            AiToolDefinition {
                 name: "list_report_templates".into(),
                 description: "List available report and document templates in the system.".into(),
                 parameters_schema: json!({
@@ -181,7 +592,7 @@ impl AiOrchestrationService {
                     "type": "object",
                     "properties": {
                         "report_code": {"type": "string", "description": "Code of the report definition (e.g. STUDENT_TRANSCRIPT, FEE_COLLECTION)"},
-                        "output_format": {"type": "string", "enum": ["pdf", "csv", "json", "html"], "description": "Format for generated output"},
+                        "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"], "description": "Format for generated output"},
                         "parameters": {"type": "object", "description": "Parameters required by the report definition"}
                     },
                     "required": ["report_code", "output_format"]
@@ -339,14 +750,17 @@ impl AiOrchestrationService {
     }
 
     /// Resolves rich identity, roles, and permissions of the active user.
-    pub async fn resolve_user_ai_context(&self, ctx: &RequestContext) -> UserAiContext {
+    pub async fn resolve_user_ai_context(
+        &self,
+        ctx: &RequestContext,
+    ) -> Result<UserAiContext, DomainError> {
         let mut uctx = UserAiContext {
             org_id: ctx.tenant_id,
             org_unit_path: ctx.org_unit_path.clone(),
             ..Default::default()
         };
 
-        if let Ok(Some(org)) = self.org_service.get_organization(ctx.tenant_id).await {
+        if let Some(org) = self.org_service.get_organization(ctx.tenant_id).await? {
             uctx.org_name = Some(org.name);
         }
 
@@ -356,15 +770,46 @@ impl AiOrchestrationService {
                 let roles = self
                     .permission_checker
                     .get_user_roles(*uid, ctx.tenant_id)
-                    .await
-                    .unwrap_or_default();
+                    .await?;
                 let perms = self
                     .permission_checker
                     .get_user_permissions(*uid, ctx.tenant_id)
-                    .await
-                    .unwrap_or_default();
+                    .await?;
                 uctx.roles = roles.clone();
                 uctx.permissions = perms;
+                if let Some(allowed_units) = self.user_org_unit_allowlist(ctx).await? {
+                    let mut paths = Vec::new();
+                    for unit_id in allowed_units {
+                        if let Some(unit) = self
+                            .org_service
+                            .org_unit_repo
+                            .find_by_id(unit_id)
+                            .await?
+                            .filter(|unit| unit.org_id == ctx.tenant_id)
+                        {
+                            paths.push(unit.path);
+                        }
+                    }
+                    uctx.org_unit_path = Some(paths.join(", "));
+                }
+                if let Some(employee) = self
+                    .employee_repo
+                    .find_by_user_id(ctx.tenant_id, *uid)
+                    .await?
+                {
+                    if employee.is_teacher() {
+                        uctx.employee_id = Some(employee.id);
+                        uctx.is_teacher = true;
+                        if !roles.iter().any(|role| {
+                            role.eq_ignore_ascii_case("admin")
+                                || role.eq_ignore_ascii_case("super_admin")
+                        }) {
+                            uctx.effective_role = Some("teacher".into());
+                        }
+                        uctx.teaching_assignments =
+                            self.teaching_assignments(ctx, employee.id).await?;
+                    }
+                }
 
                 if roles.iter().any(|r| {
                     r.eq_ignore_ascii_case("super_admin") || r.eq_ignore_ascii_case("admin")
@@ -398,15 +843,15 @@ impl AiOrchestrationService {
             }
         }
 
-        uctx
+        Ok(uctx)
     }
 
     /// Resolves academic year, period, class, and subject context from request and domain.
     pub async fn resolve_academic_ai_context(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         request: &AiChatRequest,
-    ) -> AcademicAiContext {
+    ) -> Result<AcademicAiContext, DomainError> {
         let mut actx = request.academic_context.clone().unwrap_or_default();
 
         if let Some(ref ui) = request.ui_context {
@@ -424,23 +869,62 @@ impl AiOrchestrationService {
             }
         }
 
-        if let Some(cid) = actx.class_id {
-            if actx.class_name.is_none() {
-                if let Ok(Some(class)) = self.academic_service.class_repo.find_by_id(cid).await {
-                    actx.class_name = Some(class.name);
+        if actx.class_id.is_none() && actx.class_subject_id.is_none() {
+            if let Some(employee) = self.teacher_employee(ctx).await? {
+                let assignments = self.teaching_assignments(ctx, employee.id).await?;
+                if assignments.len() == 1 {
+                    let assignment = &assignments[0];
+                    actx.class_id = Some(assignment.class_id);
+                    actx.class_name = Some(assignment.class_name.clone());
+                    actx.subject_id = Some(assignment.subject_id);
+                    actx.subject_name = Some(assignment.subject_name.clone());
+                    actx.class_subject_id = Some(assignment.class_subject_id);
+                    actx.period_id = assignment.period_id;
                 }
             }
+        }
+
+        if let Some(cid) = actx.class_id {
+            let class = self
+                .academic_service
+                .class_repo
+                .find_by_id(cid)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
+            ensure_tenant_matches(class.org_id, ctx.tenant_id)?;
+            self.ensure_class_access(ctx, cid, actx.period_id).await?;
+            actx.class_name = Some(class.name);
         }
 
         if let Some(sid) = actx.subject_id {
-            if actx.subject_name.is_none() {
-                if let Ok(Some(subj)) = self.academic_service.subject_repo.find_by_id(sid).await {
-                    actx.subject_name = Some(subj.name);
-                }
-            }
+            let subject = self
+                .academic_service
+                .subject_repo
+                .find_by_id(sid)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Subject not found".into()))?;
+            ensure_tenant_matches(subject.org_id, ctx.tenant_id)?;
+            actx.subject_name = Some(subject.name);
         }
 
-        actx
+        if let Some(class_subject_id) = actx.class_subject_id {
+            let assignment = self
+                .ensure_class_subject_access(ctx, class_subject_id)
+                .await?;
+            if actx.class_id.is_some_and(|id| id != assignment.class_id)
+                || actx
+                    .subject_id
+                    .is_some_and(|id| id != assignment.subject_id)
+                || actx.period_id.is_some_and(|id| id != assignment.period_id)
+            {
+                return Err(DomainError::NotFound("Class subject not found".into()));
+            }
+            actx.class_id = Some(assignment.class_id);
+            actx.subject_id = Some(assignment.subject_id);
+            actx.period_id = Some(assignment.period_id);
+        }
+
+        Ok(actx)
     }
 
     /// Primary Stateless ReAct Multi-turn Execution Loop with Strict Permission Enforcement.
@@ -449,9 +933,9 @@ impl AiOrchestrationService {
         ctx: &RequestContext,
         request: AiChatRequest,
     ) -> Result<AiChatResponse, DomainError> {
-        let tools = self.get_available_tools();
-        let user_ctx = self.resolve_user_ai_context(ctx).await;
-        let academic_ctx = self.resolve_academic_ai_context(ctx, &request).await;
+        let tools = self.get_authorized_tools(ctx).await?;
+        let user_ctx = self.resolve_user_ai_context(ctx).await?;
+        let academic_ctx = self.resolve_academic_ai_context(ctx, &request).await?;
 
         let system_prompt = self
             .build_system_prompt(
@@ -466,6 +950,7 @@ impl AiOrchestrationService {
         let mut conversation_history = request.messages;
         let mut executed_tools_all = Vec::new();
         let mut proposed_actions_all = Vec::new();
+        let mut ui_data_all = Vec::new();
 
         const MAX_REACT_TURNS: usize = 5;
         let mut final_response = String::new();
@@ -506,31 +991,25 @@ impl AiOrchestrationService {
 
                 if let Some(def) = tool_def {
                     // Strict Authorization Enforcement before any execution or action staging
-                    if let Some(ref perm_str) = def.required_permission {
-                        if let Some(perm) = Permission::from_str(perm_str) {
-                            if let Err(e) = self.permission_checker.check(ctx, perm).await {
-                                let err_msg = format!(
-                                    "Permission denied: Actor does not possess the required permission '{}' for tool '{}'. {}",
-                                    perm_str, tool_call.tool_name, e
-                                );
-
-                                conversation_history.push(AiMessage {
-                                    role: "tool".into(),
-                                    content: err_msg.clone(),
-                                    tool_calls: None,
-                                    tool_call_id: Some(tool_call.id.clone()),
-                                    created_at: Some(Utc::now()),
-                                });
-
-                                executed_tools_all.push(AiToolResult {
-                                    tool_call_id: tool_call.id.clone(),
-                                    tool_name: tool_call.tool_name.clone(),
-                                    content: err_msg,
-                                    is_error: true,
-                                });
-                                continue;
-                            }
-                        }
+                    if let Err(error) = self.authorize_tool(ctx, &def.name).await {
+                        let err_msg = format!(
+                            "Permission denied for tool '{}': {}",
+                            tool_call.tool_name, error
+                        );
+                        conversation_history.push(AiMessage {
+                            role: "tool".into(),
+                            content: err_msg.clone(),
+                            tool_calls: None,
+                            tool_call_id: Some(tool_call.id.clone()),
+                            created_at: Some(Utc::now()),
+                        });
+                        executed_tools_all.push(AiToolResult {
+                            tool_call_id: tool_call.id.clone(),
+                            tool_name: tool_call.tool_name.clone(),
+                            content: err_msg,
+                            is_error: true,
+                        });
+                        continue;
                     }
 
                     if def.is_consequential {
@@ -575,7 +1054,12 @@ impl AiOrchestrationService {
                         .await;
 
                     let (content, is_error) = match execution_result {
-                        Ok(data) => (data.to_string(), false),
+                        Ok(mut data) => {
+                            if let Some(private_data) = take_private_ui_result(&mut data) {
+                                ui_data_all.push(private_data);
+                            }
+                            (data.to_string(), false)
+                        }
                         Err(e) => (
                             format!("Error executing {}: {}", tool_call.tool_name, e),
                             true,
@@ -617,6 +1101,7 @@ impl AiOrchestrationService {
             response: final_response,
             executed_tools: executed_tools_all,
             proposed_actions: proposed_actions_all,
+            ui_data: ui_data_all,
             resolved_user_context: Some(user_ctx),
             resolved_academic_context: Some(academic_ctx),
         })
@@ -630,14 +1115,7 @@ impl AiOrchestrationService {
         tool_name: &str,
         arguments: &serde_json::Value,
     ) -> Result<serde_json::Value, DomainError> {
-        let tools = self.get_available_tools();
-        if let Some(def) = tools.iter().find(|t| t.name == tool_name) {
-            if let Some(ref perm_str) = def.required_permission {
-                if let Some(perm) = Permission::from_str(perm_str) {
-                    self.permission_checker.check(ctx, perm).await?;
-                }
-            }
-        }
+        self.authorize_tool(ctx, tool_name).await?;
 
         match tool_name {
             "search_students" => {
@@ -654,6 +1132,15 @@ impl AiOrchestrationService {
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
 
+                if let Some(class_id) = class_id {
+                    self.ensure_class_access(ctx, class_id, period_id).await?;
+                } else if self.teacher_employee(ctx).await?.is_some()
+                    || self.user_org_unit_allowlist(ctx).await?.is_some()
+                {
+                    return Err(DomainError::Validation(
+                        "Select a class within your authorized scope for student search".into(),
+                    ));
+                }
                 let mut filter = StudentFilter::default();
                 if !term.is_empty() {
                     filter.search = Some(term.to_string());
@@ -683,8 +1170,9 @@ impl AiOrchestrationService {
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
                 let profile_opt = self.student_service.get_student(sid).await?;
-                let profile = profile_opt
-                    .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", sid)))?;
+                let profile =
+                    profile_opt.ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+                ensure_tenant_matches(profile.student.org_id, ctx.tenant_id)?;
                 Ok(json!({
                     "id": profile.student.id,
                     "student_number": profile.student.student_number,
@@ -699,6 +1187,7 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                self.ensure_student_tenant(ctx, sid).await?;
                 let period_id = arguments
                     .get("period_id")
                     .and_then(|v| v.as_str())
@@ -730,10 +1219,14 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                self.ensure_student_tenant(ctx, sid).await?;
                 let class_id = arguments
                     .get("class_id")
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
+                if let Some(class_id) = class_id {
+                    self.ensure_class_access(ctx, class_id, None).await?;
+                }
                 let status = arguments
                     .get("status")
                     .and_then(|v| v.as_str())
@@ -781,6 +1274,7 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                self.ensure_student_tenant(ctx, sid).await?;
                 let mut filter = StudentFeeFilter::default();
                 filter.student_id = Some(sid);
                 let fees = self
@@ -796,6 +1290,59 @@ impl AiOrchestrationService {
                         "status": f.status,
                         "due_date": f.due_date
                     })).collect::<Vec<_>>()
+                }))
+            }
+            "get_unpaid_fees" => {
+                let period_id = arguments
+                    .get("period_id")
+                    .and_then(|value| value.as_str())
+                    .map(Uuid::parse_str)
+                    .transpose()
+                    .map_err(|_| DomainError::Validation("Invalid period UUID".into()))?;
+
+                let mut filter = StudentFeeFilter {
+                    period_id,
+                    only_unpaid: Some(true),
+                    pagination: Some(PaginationParams {
+                        page: Some(1),
+                        page_size: Some(50),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                };
+                filter.is_overdue = Some(false);
+                let fees = self
+                    .finance_service
+                    .list_student_fees(ctx.tenant_id, filter)
+                    .await?;
+
+                let has_more = fees.total_count > fees.items.len() as u64;
+                let mut rows = Vec::with_capacity(fees.items.len());
+                let mut total_balance = rust_decimal::Decimal::ZERO;
+                for fee in fees.items {
+                    self.ensure_student_tenant(ctx, fee.student_id).await?;
+                    let student = self
+                        .student_service
+                        .get_student(fee.student_id)
+                        .await?
+                        .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+                    total_balance += fee.balance_due;
+                    rows.push(json!({
+                        "student_name": student.person.full_name(),
+                        "balance_due": fee.balance_due.to_string(),
+                        "status": fee.status,
+                        "due_date": fee.due_date
+                    }));
+                }
+
+                Ok(json!({
+                    "total_count": fees.total_count,
+                    "has_more": has_more,
+                    "total_balance": total_balance.to_string(),
+                    "_ui_private_result": {
+                        "type": "unpaid_fees",
+                        "items": rows
+                    }
                 }))
             }
             "list_report_templates" => {
@@ -815,6 +1362,19 @@ impl AiOrchestrationService {
                     .get("report_code")
                     .and_then(|v| v.as_str())
                     .ok_or_else(|| DomainError::Validation("report_code is required".into()))?;
+                let definition = self
+                    .report_service
+                    .get_report_by_code(ctx.tenant_id, report_code)
+                    .await?
+                    .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+                if matches!(
+                    definition.domain,
+                    orbis_domain::entities::report::ReportDomain::Finance
+                ) {
+                    self.permission_checker
+                        .check(ctx, Permission::FinanceRead)
+                        .await?;
+                }
                 let output_format_str = arguments
                     .get("output_format")
                     .and_then(|v| v.as_str())
@@ -841,10 +1401,10 @@ impl AiOrchestrationService {
                     locale: ReportLocale::Ar,
                 };
 
-                let (job, _) = self.report_service.generate_report(ctx, input).await?;
+                let job = self.report_service.enqueue_report(ctx, input).await?;
                 Ok(json!({
                     "job_id": job.id,
-                    "status": format!("{:?}", job.status),
+                    "status": job.status.to_string(),
                     "report_code": job.report_code
                 }))
             }
@@ -937,6 +1497,15 @@ impl AiOrchestrationService {
                     .get("period_id")
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
+                if let Some(class_id) = class_id {
+                    self.ensure_class_access(ctx, class_id, period_id).await?;
+                } else if self.teacher_employee(ctx).await?.is_some()
+                    || self.user_org_unit_allowlist(ctx).await?.is_some()
+                {
+                    return Err(DomainError::Validation(
+                        "Select a class within your authorized scope for at-risk analysis".into(),
+                    ));
+                }
 
                 let mut filter = StudentFilter::default();
                 filter.class_id = class_id;
@@ -1233,6 +1802,24 @@ impl AiOrchestrationService {
                     .get("period_id")
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
+                if let Some(class_id) = class_id {
+                    self.ensure_class_access(ctx, class_id, period_id).await?;
+                }
+                if let Some(class_subject_id) = class_subject_id {
+                    let class_subject = self
+                        .ensure_class_subject_access(ctx, class_subject_id)
+                        .await?;
+                    if class_id.is_some_and(|id| id != class_subject.class_id) {
+                        return Err(DomainError::NotFound("Class subject not found".into()));
+                    }
+                } else if self.teacher_employee(ctx).await?.is_some()
+                    || self.user_org_unit_allowlist(ctx).await?.is_some()
+                {
+                    return Err(DomainError::Validation(
+                        "Select a class subject within your authorized scope for performance analysis"
+                            .into(),
+                    ));
+                }
 
                 let mut gr_filter = GradeFilter::default();
                 gr_filter.class_subject_id = class_subject_id;
@@ -1373,6 +1960,7 @@ impl AiOrchestrationService {
                     .ok_or_else(|| DomainError::Validation("student_id is required".into()))?;
                 let sid = Uuid::parse_str(sid_str)
                     .map_err(|_| DomainError::Validation("Invalid student UUID".into()))?;
+                self.ensure_student_tenant(ctx, sid).await?;
                 let notice_type = arguments
                     .get("notice_type")
                     .and_then(|v| v.as_str())
@@ -1387,8 +1975,9 @@ impl AiOrchestrationService {
                     .unwrap_or("");
 
                 let student_opt = self.student_service.get_student(sid).await?;
-                let student = student_opt
-                    .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", sid)))?;
+                let student =
+                    student_opt.ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+                ensure_tenant_matches(student.student.org_id, ctx.tenant_id)?;
 
                 let student_name =
                     format!("{} {}", student.person.first_name, student.person.last_name);
@@ -1497,6 +2086,27 @@ impl AiOrchestrationService {
             }
         }
 
+        if !user_context.teaching_assignments.is_empty() {
+            prompt.push_str("\n[VERIFIED TEACHING ASSIGNMENTS]\n");
+            for assignment in &user_context.teaching_assignments {
+                prompt.push_str(&format!(
+                    "- Class: {} ({}), Subject: {} ({}), Period: {}, Assignment: {}\n",
+                    assignment.class_name,
+                    assignment.class_id,
+                    assignment.subject_name,
+                    assignment.subject_id,
+                    assignment
+                        .period_id
+                        .map(|id| id.to_string())
+                        .unwrap_or_else(|| "unspecified".into()),
+                    assignment.class_subject_id
+                ));
+            }
+            prompt.push_str(
+                "Use only these assignments for teacher-specific academic requests. If more than one applies and the request does not distinguish them, ask the user to choose.\n",
+            );
+        }
+
         if let Some(ui) = ui_context {
             prompt.push_str("\n[ACTIVE UI SCREEN CONTEXT]\n");
             if let Some(ref route) = ui.route {
@@ -1540,5 +2150,189 @@ impl AiOrchestrationService {
         );
 
         prompt
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
+        required_tool_permission, take_private_ui_result,
+        teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
+    };
+    use crate::context::{ActionSource, RequestContext};
+    use crate::ports::iam::PermissionCheckerPort;
+    use async_trait::async_trait;
+    use orbis_domain::entities::ai::{AiToolDefinition, ToolCategory};
+    use orbis_domain::errors::DomainError;
+    use orbis_domain::iam::actor::Actor;
+    use orbis_domain::iam::permission::Permission;
+    use serde_json::json;
+    use std::collections::HashSet;
+    use uuid::Uuid;
+
+    struct DenyPermissionChecker;
+
+    #[async_trait]
+    impl PermissionCheckerPort for DenyPermissionChecker {
+        async fn check(
+            &self,
+            _ctx: &RequestContext,
+            permission: Permission,
+        ) -> Result<(), DomainError> {
+            Err(DomainError::Unauthorized(format!(
+                "Missing permission: {}",
+                permission.as_str()
+            )))
+        }
+    }
+
+    #[test]
+    fn every_registered_tool_has_a_known_permission() {
+        let tools = AiOrchestrationService::registered_tools();
+        let mut names = HashSet::new();
+
+        assert!(!tools.is_empty());
+        for tool in tools {
+            assert!(
+                names.insert(tool.name.clone()),
+                "duplicate tool: {}",
+                tool.name
+            );
+            let permission = tool
+                .required_permission
+                .as_deref()
+                .unwrap_or_else(|| panic!("tool {} has no required permission", tool.name));
+            let parsed = Permission::from_str(permission).unwrap_or_else(|| {
+                panic!("tool {} has unknown permission {permission}", tool.name)
+            });
+            assert_eq!(parsed.as_str(), permission);
+        }
+    }
+
+    #[test]
+    fn unpaid_fees_requires_finance_read() {
+        let tool = AiOrchestrationService::registered_tools()
+            .into_iter()
+            .find(|tool| tool.name == "get_unpaid_fees")
+            .expect("unpaid-fee query tool is registered");
+
+        assert_eq!(
+            required_tool_permission(&tool).expect("tool permission is required"),
+            Permission::FinanceRead
+        );
+    }
+
+    #[test]
+    fn missing_or_unknown_tool_permissions_are_denied() {
+        for required_permission in [None, Some("not:a:permission".into())] {
+            let tool = AiToolDefinition {
+                name: "invalid_tool".into(),
+                description: String::new(),
+                parameters_schema: json!({"type": "object"}),
+                required_permission,
+                is_consequential: false,
+                category: ToolCategory::Read,
+            };
+            assert!(required_tool_permission(&tool).is_err());
+        }
+    }
+
+    #[tokio::test]
+    async fn unauthorized_tool_is_rejected_before_dispatch() {
+        let ctx = RequestContext {
+            tenant_id: Uuid::new_v4(),
+            actor: Actor::User(Uuid::new_v4()),
+            request_id: "test".into(),
+            source: ActionSource::Api,
+            org_unit_path: None,
+        };
+        let tool = AiOrchestrationService::registered_tools()
+            .into_iter()
+            .find(|tool| tool.name == "get_unpaid_fees")
+            .expect("unpaid-fee query tool is registered");
+
+        let result = check_tool_permission(&DenyPermissionChecker, &ctx, &tool).await;
+        assert!(matches!(result, Err(DomainError::Unauthorized(_))));
+    }
+
+    #[test]
+    fn cross_tenant_ai_records_are_hidden_as_not_found() {
+        let tenant_id = Uuid::new_v4();
+        assert!(ensure_tenant_matches(tenant_id, tenant_id).is_ok());
+        assert!(matches!(
+            ensure_tenant_matches(Uuid::new_v4(), tenant_id),
+            Err(DomainError::NotFound(_))
+        ));
+    }
+
+    #[test]
+    fn teacher_class_scope_requires_a_matching_assignment() {
+        let teacher_id = Uuid::new_v4();
+        let class_id = Uuid::new_v4();
+        let other_class_id = Uuid::new_v4();
+        let assignment = orbis_domain::entities::class_subject::ClassSubject {
+            id: Uuid::new_v4(),
+            class_id,
+            subject_id: Uuid::new_v4(),
+            period_id: Uuid::new_v4(),
+            primary_teacher_id: teacher_id,
+            assistant_teacher_id: None,
+            substitute_teacher_id: None,
+            grade_groups: None,
+            weekly_hours: None,
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            scheme_id: None,
+            is_active: true,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        };
+
+        assert!(teacher_assigned_to_class(
+            teacher_id,
+            class_id,
+            None,
+            std::slice::from_ref(&assignment)
+        ));
+        assert!(!teacher_assigned_to_class(
+            teacher_id,
+            other_class_id,
+            None,
+            std::slice::from_ref(&assignment)
+        ));
+    }
+
+    #[test]
+    fn unit_scoped_tools_require_records_inside_the_allowlist() {
+        let allowed_unit = Uuid::new_v4();
+        let other_unit = Uuid::new_v4();
+        assert!(unit_in_scope(Some(allowed_unit), Some(&[allowed_unit])));
+        assert!(!unit_in_scope(Some(other_unit), Some(&[allowed_unit])));
+        assert!(!unit_in_scope(None, Some(&[allowed_unit])));
+        assert!(unit_in_scope(None, None));
+        assert!(tool_supports_unit_scoping("get_student_profile"));
+        assert!(!tool_supports_unit_scoping("get_financial_summary"));
+        assert!(!tool_supports_unit_scoping("get_unpaid_fees"));
+    }
+
+    #[test]
+    fn private_ui_rows_are_removed_from_the_tool_result_before_model_history() {
+        let mut result = json!({
+            "total_count": 1,
+            "_ui_private_result": {
+                "type": "unpaid_fees",
+                "items": [{"student_name": "Private Student"}]
+            }
+        });
+
+        let ui_data = take_private_ui_result(&mut result);
+
+        assert_eq!(result, json!({"total_count": 1}));
+        assert_eq!(
+            ui_data.expect("UI should receive the separate private result")["items"][0]["student_name"],
+            "Private Student"
+        );
     }
 }

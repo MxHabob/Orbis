@@ -40,7 +40,11 @@ fn model_to_definition(m: report_definition::Model) -> ReportDefinition {
         description_ar: m.description_ar,
         parameters: serde_json::from_str(&m.parameters_json).unwrap_or_default(),
         required_permissions: serde_json::from_str(&m.required_permissions).unwrap_or_default(),
-        supported_formats: serde_json::from_str(&m.supported_formats).unwrap_or_default(),
+        supported_formats: serde_json::from_str::<Vec<String>>(&m.supported_formats)
+            .unwrap_or_default()
+            .iter()
+            .map(|format| OutputFormat::from_str(format))
+            .collect(),
         data_provider_key: m.data_provider_key,
         is_system: m.is_system,
         is_active: m.is_active,
@@ -561,19 +565,16 @@ impl ReportJobRepository for ReportJobRepoImpl {
         {
             let mut active: report_job::ActiveModel = model.into();
             active.status = Set(status.to_string());
-            if let Some(p) = output_path {
-                active.output_path = Set(Some(p));
-            }
-            if let Some(s) = output_size {
-                active.output_size_bytes = Set(Some(s));
-            }
-            if let Some(e) = error {
-                active.error_message = Set(Some(e));
-            }
+            active.output_path = Set(output_path);
+            active.output_size_bytes = Set(output_size);
+            active.error_message = Set(error);
             if *status == JobStatus::Processing {
                 active.started_at = Set(Some(chrono::Utc::now().into()));
             }
-            if *status == JobStatus::Completed || *status == JobStatus::Failed {
+            if matches!(
+                status,
+                JobStatus::Completed | JobStatus::Failed | JobStatus::Cancelled
+            ) {
                 active.completed_at = Set(Some(chrono::Utc::now().into()));
             }
             active.update(&self.db).await.map_err(db_err)?;
@@ -611,6 +612,27 @@ impl ReportJobRepository for ReportJobRepoImpl {
                 started_at: m.started_at.map(|d| d.into()),
                 completed_at: m.completed_at.map(|d| d.into()),
             })
+            .collect())
+    }
+
+    async fn find_expired_completed_before(
+        &self,
+        cutoff: chrono::DateTime<chrono::Utc>,
+        limit: u32,
+    ) -> Result<Vec<(Uuid, String)>, DomainError> {
+        let models = report_job::Entity::find()
+            .filter(report_job::Column::Status.eq(JobStatus::Completed.to_string()))
+            .filter(report_job::Column::CreatedAt.lt(cutoff))
+            .filter(report_job::Column::OutputPath.is_not_null())
+            .order_by_asc(report_job::Column::CreatedAt)
+            .limit(limit as u64)
+            .all(&self.db)
+            .await
+            .map_err(db_err)?;
+
+        Ok(models
+            .into_iter()
+            .filter_map(|model| model.output_path.map(|path| (model.id, path)))
             .collect())
     }
 }

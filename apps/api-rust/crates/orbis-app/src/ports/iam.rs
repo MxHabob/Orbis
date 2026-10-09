@@ -41,4 +41,16 @@ pub trait PermissionCheckerPort: Send + Sync {
         let _ = (user_id, org_id);
         Ok(vec![])
     }
+
+    /// Returns explicit organizational-unit scope restrictions for a user.
+    /// `None` means organization-wide; `Some` is an allowlist, including an
+    /// empty list to represent no accessible units.
+    async fn get_org_unit_scope(
+        &self,
+        user_id: Uuid,
+        org_id: Uuid,
+    ) -> Result<Option<Vec<Uuid>>, DomainError> {
+        let _ = (user_id, org_id);
+        Ok(None)
+    }
 }

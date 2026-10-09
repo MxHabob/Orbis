@@ -787,8 +787,10 @@ pub async fn list_fees(
         student_id: q.student_id,
         enrollment_id: q.enrollment_id,
         fee_template_id: None,
+        period_id: None,
         status: None,
         is_overdue: None,
+        only_unpaid: None,
         pagination: None,
     };
     let fees = state

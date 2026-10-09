@@ -416,6 +416,8 @@ export interface TransferClassInput {
 export interface ReportJobStatusDto {
   job_id: string;
   status: string;
+  output_size_bytes?: number | null;
+  error_message?: string | null;
 }
 
 export interface BatchPrintParams {
@@ -1327,9 +1329,28 @@ export type LicenseState =
   | "revoked"
   | "invalid";
 
+export type EntitlementKey =
+  | "students"
+  | "ai_grading"
+  | "multi_branch"
+  | "offline_sync"
+  | "parent_portal"
+  | "campus_analytics"
+  | "sso"
+  | "exam_tools";
+
+export type LimitKey =
+  | "students.max"
+  | "staff.max"
+  | "devices.max"
+  | "branches.max"
+  | "classes.max"
+  | "storage_gb.max";
+
 export interface LimitEntry {
   key: string;
   max_value: number;
+  unit?: string;
 }
 
 export interface LicenseStateDto {

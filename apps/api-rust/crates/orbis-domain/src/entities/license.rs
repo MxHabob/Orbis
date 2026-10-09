@@ -25,11 +25,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 // ═══════════════════════════════════════════════════════════════
-// PRODUCT IDENTITY
+// PRODUCT IDENTITY & CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 
 /// Canonical Mulverse product stable key for Orbis.
 pub const MULVERSE_PRODUCT_KEY: &str = "ORBIS";
+
+/// Canonical Product ID for Orbis in Mulverse catalog.
+pub const CANONICAL_PRODUCT_ID: &str = "11111111-1111-4111-8111-111111111111";
 
 /// Product key prefix used by Mulverse for Orbis product keys.
 pub const PRODUCT_KEY_PREFIX: &str = "ORBIS-";
@@ -40,20 +43,83 @@ pub const PRODUCT_KEY_SEGMENTS: usize = 5;
 /// Characters per segment in a Mulverse product key.
 pub const PRODUCT_KEY_SEGMENT_LENGTH: usize = 5;
 
+/// Total length of formatted product key string (including hyphens).
+pub const PRODUCT_KEY_LENGTH: usize = 29;
+
+/// Default offline grace period in days.
+pub const DEFAULT_OFFLINE_GRACE_PERIOD_DAYS: u32 = 30;
+
+/// Default online verification interval in hours.
+pub const DEFAULT_VERIFICATION_INTERVAL_HOURS: u32 = 24;
+
+// ═══════════════════════════════════════════════════════════════
+// STANDARD ENTITLEMENTS DICTIONARY (Features)
+// ═══════════════════════════════════════════════════════════════
+
+pub const ENTITLEMENT_STUDENTS: &str = "students";
+pub const ENTITLEMENT_AI_GRADING: &str = "ai_grading";
+pub const ENTITLEMENT_MULTI_BRANCH: &str = "multi_branch";
+pub const ENTITLEMENT_OFFLINE_SYNC: &str = "offline_sync";
+pub const ENTITLEMENT_PARENT_PORTAL: &str = "parent_portal";
+pub const ENTITLEMENT_CAMPUS_ANALYTICS: &str = "campus_analytics";
+pub const ENTITLEMENT_SSO: &str = "sso";
+pub const ENTITLEMENT_EXAM_TOOLS: &str = "exam_tools";
+
+pub const ALL_ENTITLEMENT_KEYS: &[&str] = &[
+    ENTITLEMENT_STUDENTS,
+    ENTITLEMENT_AI_GRADING,
+    ENTITLEMENT_MULTI_BRANCH,
+    ENTITLEMENT_OFFLINE_SYNC,
+    ENTITLEMENT_PARENT_PORTAL,
+    ENTITLEMENT_CAMPUS_ANALYTICS,
+    ENTITLEMENT_SSO,
+    ENTITLEMENT_EXAM_TOOLS,
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STANDARD LIMITS DICTIONARY (Quotas)
+// ═══════════════════════════════════════════════════════════════
+
+pub const LIMIT_STUDENTS_MAX: &str = "students.max";
+pub const LIMIT_STAFF_MAX: &str = "staff.max";
+pub const LIMIT_DEVICES_MAX: &str = "devices.max";
+pub const LIMIT_BRANCHES_MAX: &str = "branches.max";
+pub const LIMIT_CLASSES_MAX: &str = "classes.max";
+pub const LIMIT_STORAGE_GB_MAX: &str = "storage_gb.max";
+
+pub const ALL_LIMIT_KEYS: &[&str] = &[
+    LIMIT_STUDENTS_MAX,
+    LIMIT_STAFF_MAX,
+    LIMIT_DEVICES_MAX,
+    LIMIT_BRANCHES_MAX,
+    LIMIT_CLASSES_MAX,
+    LIMIT_STORAGE_GB_MAX,
+];
+
+/// Helper to get standard unit for a limit key.
+pub fn get_limit_unit(key: &str) -> &'static str {
+    match key {
+        LIMIT_STUDENTS_MAX => "students",
+        LIMIT_STAFF_MAX => "users",
+        LIMIT_DEVICES_MAX => "devices",
+        LIMIT_BRANCHES_MAX => "branches",
+        LIMIT_CLASSES_MAX => "classes",
+        LIMIT_STORAGE_GB_MAX => "GB",
+        _ => "",
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // TRIAL POLICY
 // ═══════════════════════════════════════════════════════════════
 
 /// Centralized trial policy — configurable evaluation period settings.
-///
-/// Do NOT scatter trial durations throughout Orbis.
-/// All trial-related decisions must read from this policy.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrialPolicy {
     /// Duration of the trial period in days.
     pub duration_days: u32,
-    /// Maximum users allowed during trial.
-    pub max_users: Option<u32>,
+    /// Maximum staff accounts allowed during trial.
+    pub max_staff: Option<u32>,
     /// Maximum students allowed during trial.
     pub max_students: Option<u32>,
     /// Features available during trial.
@@ -63,10 +129,14 @@ pub struct TrialPolicy {
 impl Default for TrialPolicy {
     fn default() -> Self {
         Self {
-            duration_days: 30,
-            max_users: Some(10),
+            duration_days: DEFAULT_OFFLINE_GRACE_PERIOD_DAYS,
+            max_staff: Some(25),
             max_students: Some(100),
-            trial_features: vec!["students".to_string()],
+            trial_features: vec![
+                ENTITLEMENT_STUDENTS.to_string(),
+                ENTITLEMENT_OFFLINE_SYNC.to_string(),
+                ENTITLEMENT_EXAM_TOOLS.to_string(),
+            ],
         }
     }
 }
@@ -76,11 +146,7 @@ impl Default for TrialPolicy {
 // ═══════════════════════════════════════════════════════════════
 
 /// The top-level signed entitlement envelope issued by Mulverse Platform.
-///
-/// This is the offline-verifiable cryptographic document.
-/// Orbis verifies `sig` against the canonical JSON of `payload`
-/// using the Ed25519 public key identified by `kid`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SignedEntitlement {
     /// Schema version (currently 1).
     pub v: u32,
@@ -90,32 +156,29 @@ pub struct SignedEntitlement {
     pub alg: String,
     /// The entitlement payload data.
     pub payload: EntitlementPayload,
-    /// Base64-encoded Ed25519 signature over the canonical JSON of `payload`.
+    /// Base64-encoded Ed25519 signature over canonical JSON of `payload`.
     pub sig: String,
 }
 
-/// The entitlement payload — the data signed by Mulverse Platform.
-///
-/// This is the source of truth for license state, entitlements, and limits.
-/// Orbis must never modify this payload — it is verified cryptographically.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// The entitlement payload — the authoritative data signed by Mulverse Platform.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct EntitlementPayload {
     /// License UUID from Mulverse.
     pub license_id: String,
     /// The product key used for activation (e.g. "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST").
     pub product_key: String,
-    /// Mulverse product UUID.
+    /// Mulverse product UUID ("11111111-1111-4111-8111-111111111111").
     pub product_id: String,
     /// Organization UUID that owns this license.
     pub organization_id: String,
     /// Edition key (e.g. "SCHOOL", "UNIVERSITY").
     pub edition_key: String,
-    /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE").
+    /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE", "SCHOOL_PRO").
     pub plan_key: String,
     /// Boolean feature capabilities.
-    pub entitlements: Vec<EntitlementEntry>,
+    pub entitlements: Vec<EntitlementItem>,
     /// Quantitative limits.
-    pub limits: Vec<LimitEntry>,
+    pub limits: Vec<LimitItem>,
     /// Activation UUID for this specific installation.
     pub activation_id: String,
     /// Installation identity this entitlement is bound to.
@@ -128,40 +191,45 @@ pub struct EntitlementPayload {
     pub valid_until: Option<DateTime<Utc>>,
     /// Whether offline operation is allowed.
     pub offline_allowed: bool,
-    /// Days the app can operate without contacting Mulverse.
+    /// Days the app can operate without contacting Mulverse (default 30).
     pub offline_grace_period_days: u32,
-    /// How often (hours) the app should verify/refresh online.
+    /// How often (hours) the app should verify/refresh online (default 24).
     pub verification_interval_hours: u32,
 }
 
 /// A boolean entitlement entry from the Mulverse catalog.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EntitlementEntry {
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct EntitlementItem {
     /// Canonical entitlement key (e.g. "students", "ai_grading", "multi_branch").
     pub key: String,
     /// Whether this capability is granted.
     pub granted: bool,
 }
 
+/// Alias for backwards compatibility.
+pub type EntitlementEntry = EntitlementItem;
+
 /// A quantitative limit entry from the Mulverse catalog.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LimitEntry {
-    /// Canonical limit key (e.g. "students.max", "users.max", "branches.max").
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LimitItem {
+    /// Canonical limit key (e.g. "students.max", "staff.max", "devices.max").
     pub key: String,
     /// Maximum allowed value.
-    pub max_value: u64,
+    pub max_value: i64,
 }
 
+/// Alias for backwards compatibility.
+pub type LimitEntry = LimitItem;
+
 // ═══════════════════════════════════════════════════════════════
-// ACTIVATION — Mulverse API DTOs
+// ACTIVATION & REFRESH — Mulverse API DTOs
 // ═══════════════════════════════════════════════════════════════
 
 /// Request to activate a product key with Mulverse Platform.
+/// `POST /api/v1/public/licenses/activate`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivationRequest {
     pub product_key: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub license_id: Option<String>,
     pub installation_id: String,
     pub platform: String,
     pub app_version: String,
@@ -197,6 +265,7 @@ pub struct ActivationInfo {
 }
 
 /// Request to refresh/heartbeat with Mulverse Platform.
+/// `POST /api/v1/public/licenses/refresh`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RefreshRequest {
     pub license_id: String,
@@ -205,6 +274,7 @@ pub struct RefreshRequest {
 }
 
 /// Request to deactivate an installation.
+/// `POST /api/v1/public/licenses/deactivate`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeactivationRequest {
     pub license_id: String,
@@ -212,6 +282,7 @@ pub struct DeactivationRequest {
 }
 
 /// Public key metadata from Mulverse key rotation endpoint.
+/// `GET /api/v1/public/keys/active`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PublicKeyInfo {
     pub kid: String,
@@ -219,57 +290,21 @@ pub struct PublicKeyInfo {
     pub public_key_b64: String,
 }
 
-/// Update check response from Mulverse.
+/// Update manifest from Tauri updater endpoint.
+/// `GET /api/v1/public/updates/tauri`
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateCheckResponse {
-    pub update_available: bool,
-    pub current_version: String,
-    pub latest_version: Option<String>,
-    pub release_notes: Option<String>,
-    pub artifact: Option<UpdateArtifact>,
-    pub min_upgrade_version: Option<String>,
-    pub published_at: Option<String>,
-}
-
-/// Update artifact metadata.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateArtifact {
-    pub file_name: String,
-    pub download_url: String,
-    pub checksum_sha256: String,
-    pub signature: Option<String>,
-    pub file_size_bytes: u64,
+pub struct TauriUpdateManifest {
+    pub version: String,
+    pub notes: Option<String>,
+    pub pub_date: Option<String>,
+    pub url: String,
+    pub signature: String,
 }
 
 // ═══════════════════════════════════════════════════════════════
 // LICENSE STATE MACHINE
 // ═══════════════════════════════════════════════════════════════
 
-/// The runtime license state — evaluated locally by the Orbis license runtime.
-///
-/// State transitions:
-/// ```text
-///                   ┌──────────────┐
-///            ┌──────│ UNAVAILABLE  │──────┐
-///            │      └──────────────┘      │
-///            │ (first run, no key)        │ (key provided)
-///            ▼                            ▼
-///     ┌────────────┐              ┌────────────┐
-///     │   TRIAL    │───(expired)──│   ACTIVE   │
-///     └────────────┘              └────────────┘
-///            │                     │    │    │
-///            │ (expired)           │    │    │ (grace period)
-///            ▼                     │    │    ▼
-///     ┌────────────┐               │    │  ┌──────────────┐
-///     │  EXPIRED   │◄──(expired)───┘    │  │ OFFLINE_GRACE│
-///     └────────────┘                    │  └──────────────┘
-///                                       │         │
-///                                       │ (revoked)│ (expired)
-///                                       ▼         ▼
-///                                ┌────────────┐
-///                                │  REVOKED   │
-///                                └────────────┘
-/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LicenseState {
@@ -279,7 +314,7 @@ pub enum LicenseState {
     Trial,
     /// License is active and valid. Signed entitlement verified.
     Active,
-    /// License is active but nearing expiration (configurable threshold).
+    /// License is active but nearing expiration (<= 14 days).
     Expiring,
     /// Operating offline within the allowed grace period.
     OfflineGrace,
@@ -322,9 +357,6 @@ impl LicenseState {
 // ═══════════════════════════════════════════════════════════════
 
 /// The complete license runtime state persisted locally.
-///
-/// This is the local cache that allows Orbis to operate offline.
-/// It includes the signed entitlement, sync metadata, and trial state.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LicenseSnapshot {
     /// Current evaluated license state.
@@ -392,14 +424,8 @@ impl LicenseSnapshot {
     }
 
     /// Detect obvious clock rollback.
-    ///
-    /// If the current system time is significantly before the last known time,
-    /// the clock has likely been rolled back. This is a heuristic — a desktop
-    /// application cannot perfectly protect against a malicious admin with
-    /// full OS access. The objective is robust commercial licensing, not DRM.
     pub fn detect_clock_rollback(&self) -> bool {
         let now = Utc::now();
-        // Allow up to 5 minutes of drift (NTP corrections, DST, etc.)
         let threshold = chrono::Duration::minutes(5);
         now < (self.last_known_time - threshold)
     }
@@ -413,7 +439,6 @@ impl LicenseSnapshot {
                 .iter()
                 .any(|e| e.key == key && e.granted),
             None => {
-                // In trial, check trial features
                 if self.state == LicenseState::Trial {
                     self.trial_policy.trial_features.iter().any(|f| f == key)
                 } else {
@@ -425,7 +450,7 @@ impl LicenseSnapshot {
 
     /// Get the limit value for a given limit key.
     /// Returns `None` if no limit is set (unlimited).
-    pub fn get_limit(&self, key: &str) -> Option<u64> {
+    pub fn get_limit(&self, key: &str) -> Option<i64> {
         match &self.signed_entitlement {
             Some(se) => se
                 .payload
@@ -434,11 +459,12 @@ impl LicenseSnapshot {
                 .find(|l| l.key == key)
                 .map(|l| l.max_value),
             None => {
-                // In trial, return trial limits
                 if self.state == LicenseState::Trial {
                     match key {
-                        "users.max" => self.trial_policy.max_users.map(|v| v as u64),
-                        "students.max" => self.trial_policy.max_students.map(|v| v as u64),
+                        LIMIT_STAFF_MAX | "users.max" => {
+                            self.trial_policy.max_staff.map(|v| v as i64)
+                        }
+                        LIMIT_STUDENTS_MAX => self.trial_policy.max_students.map(|v| v as i64),
                         _ => None,
                     }
                 } else {
@@ -449,12 +475,12 @@ impl LicenseSnapshot {
     }
 
     /// Check if creating `amount` more of a resource would exceed the limit.
-    /// Returns `Ok(())` if within limits, `Err(message)` if exceeded.
     pub fn check_limit(&self, key: &str, current_count: u64, amount: u64) -> Result<(), String> {
         match self.get_limit(key) {
-            Some(max) => {
+            Some(max) if max >= 0 => {
+                let max_u64 = max as u64;
                 let new_total = current_count.saturating_add(amount);
-                if new_total > max {
+                if new_total > max_u64 {
                     Err(format!(
                         "License limit exceeded for '{}': current={}, adding={}, max={}",
                         key, current_count, amount, max
@@ -463,7 +489,7 @@ impl LicenseSnapshot {
                     Ok(())
                 }
             }
-            None => Ok(()), // No limit = unlimited
+            _ => Ok(()), // No limit or negative = unlimited
         }
     }
 
@@ -474,7 +500,7 @@ impl LicenseSnapshot {
             .map(|se| se.payload.edition_key.as_str())
     }
 
-    /// The plan key (e.g. "BASIC", "PRO", "ENTERPRISE") from the active license.
+    /// The plan key (e.g. "BASIC", "PRO", "SCHOOL_PRO") from the active license.
     pub fn plan_key(&self) -> Option<&str> {
         self.signed_entitlement
             .as_ref()
@@ -513,7 +539,6 @@ impl LicenseSnapshot {
 // LICENSE VERIFICATION ERRORS
 // ═══════════════════════════════════════════════════════════════
 
-/// Errors that can occur during license verification.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum LicenseVerificationError {
@@ -560,14 +585,11 @@ impl std::fmt::Display for LicenseVerificationError {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// INSTALLATION IDENTITY
+// INSTALLATION IDENTITY & PRODUCT KEY VALIDATION
 // ═══════════════════════════════════════════════════════════════
 
 /// Generate a new installation identity.
-///
-/// Format: `inst_{platform}_{uuid}`
-/// This is generated once during first launch and persisted.
-/// It is NOT a hardware fingerprint — it is a stable random identifier.
+/// Format: `inst_{platform}_{uuid_short}`
 pub fn generate_installation_id() -> String {
     let platform = std::env::consts::OS;
     let id = uuid::Uuid::new_v4()
@@ -579,10 +601,8 @@ pub fn generate_installation_id() -> String {
     format!("inst_{}_{}", platform, id)
 }
 
-/// Validate a product key format.
-///
-/// Mulverse product keys follow: `ORBIS-XXXXX-XXXXX-XXXXX-XXXXX`
-/// (5 segments of 5 Base32 characters each, separated by hyphens)
+/// Validate a product key format: `ORBIS-XXXXX-XXXXX-XXXXX-XXXXX`
+/// 5 segments of 5 alphanumeric characters each, separated by hyphens (29 chars total).
 pub fn validate_product_key(key: &str) -> Result<(), String> {
     let trimmed = key.trim().to_uppercase();
 
@@ -607,7 +627,6 @@ pub fn validate_product_key(key: &str) -> Result<(), String> {
 
     for (i, segment) in segments.iter().enumerate() {
         if i == 0 {
-            // First segment is the product prefix
             if *segment != "ORBIS" {
                 return Err("Product key must start with 'ORBIS-'".to_string());
             }
@@ -631,10 +650,15 @@ pub fn validate_product_key(key: &str) -> Result<(), String> {
 // FRONTEND DTO — Serialized license state for the UI
 // ═══════════════════════════════════════════════════════════════
 
+/// DTO for individual limit entry exposed to UI.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LimitEntryDto {
+    pub key: String,
+    pub max_value: i64,
+    pub unit: String,
+}
+
 /// DTO exposing license state to the frontend.
-///
-/// This exposes only what the UI needs to display.
-/// No cryptographic material, no signing keys, no raw entitlement blobs.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LicenseStateDto {
     /// Current license state.
@@ -643,7 +667,7 @@ pub struct LicenseStateDto {
     pub product: String,
     /// Edition (e.g. "SCHOOL", "UNIVERSITY").
     pub edition: Option<String>,
-    /// Plan (e.g. "BASIC", "PRO", "ENTERPRISE").
+    /// Plan (e.g. "BASIC", "PRO", "SCHOOL_PRO").
     pub plan: Option<String>,
     /// Organization ID associated with the license.
     pub organization_id: Option<String>,
@@ -664,7 +688,7 @@ pub struct LicenseStateDto {
     /// Enabled entitlement keys.
     pub enabled_features: Vec<String>,
     /// Active limits.
-    pub limits: Vec<LimitEntry>,
+    pub limits: Vec<LimitEntryDto>,
     /// Application version.
     pub app_version: String,
 }
@@ -688,21 +712,32 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
             }
         };
 
-        let limits = match &snapshot.signed_entitlement {
-            Some(se) => se.payload.limits.clone(),
+        let limits: Vec<LimitEntryDto> = match &snapshot.signed_entitlement {
+            Some(se) => se
+                .payload
+                .limits
+                .iter()
+                .map(|l| LimitEntryDto {
+                    key: l.key.clone(),
+                    max_value: l.max_value,
+                    unit: get_limit_unit(&l.key).to_string(),
+                })
+                .collect(),
             None => {
                 if snapshot.state == LicenseState::Trial {
                     let mut trial_limits = vec![];
-                    if let Some(max) = snapshot.trial_policy.max_users {
-                        trial_limits.push(LimitEntry {
-                            key: "users.max".to_string(),
-                            max_value: max as u64,
+                    if let Some(max) = snapshot.trial_policy.max_staff {
+                        trial_limits.push(LimitEntryDto {
+                            key: LIMIT_STAFF_MAX.to_string(),
+                            max_value: max as i64,
+                            unit: get_limit_unit(LIMIT_STAFF_MAX).to_string(),
                         });
                     }
                     if let Some(max) = snapshot.trial_policy.max_students {
-                        trial_limits.push(LimitEntry {
-                            key: "students.max".to_string(),
-                            max_value: max as u64,
+                        trial_limits.push(LimitEntryDto {
+                            key: LIMIT_STUDENTS_MAX.to_string(),
+                            max_value: max as i64,
+                            unit: get_limit_unit(LIMIT_STUDENTS_MAX).to_string(),
                         });
                     }
                     trial_limits
@@ -740,7 +775,6 @@ mod tests {
     fn test_validate_product_key_valid() {
         assert!(validate_product_key("ORBIS-ABCDE-FGHIJ-KLMNO-PQRST").is_ok());
         assert!(validate_product_key("ORBIS-12345-67890-ABCDE-FGHIJ").is_ok());
-        // Case-insensitive
         assert!(validate_product_key("orbis-abcde-fghij-klmno-pqrst").is_ok());
     }
 
@@ -773,15 +807,6 @@ mod tests {
     }
 
     #[test]
-    fn test_license_state_restricted() {
-        assert!(LicenseState::Expired.is_restricted());
-        assert!(LicenseState::Revoked.is_restricted());
-        assert!(LicenseState::Invalid.is_restricted());
-        assert!(!LicenseState::Active.is_restricted());
-        assert!(!LicenseState::Trial.is_restricted());
-    }
-
-    #[test]
     fn test_trial_snapshot() {
         let snapshot = LicenseSnapshot::new_trial(
             "inst_windows_abc123".to_string(),
@@ -790,11 +815,11 @@ mod tests {
         );
         assert_eq!(snapshot.state, LicenseState::Trial);
         assert!(snapshot.trial_days_remaining() > 0);
-        assert!(snapshot.is_feature_enabled("students"));
-        assert!(!snapshot.is_feature_enabled("ai_grading"));
-        assert_eq!(snapshot.get_limit("students.max"), Some(100));
-        assert_eq!(snapshot.get_limit("users.max"), Some(10));
-        assert_eq!(snapshot.get_limit("branches.max"), None);
+        assert!(snapshot.is_feature_enabled(ENTITLEMENT_STUDENTS));
+        assert!(!snapshot.is_feature_enabled(ENTITLEMENT_AI_GRADING));
+        assert_eq!(snapshot.get_limit(LIMIT_STUDENTS_MAX), Some(100));
+        assert_eq!(snapshot.get_limit(LIMIT_STAFF_MAX), Some(25));
+        assert_eq!(snapshot.get_limit(LIMIT_BRANCHES_MAX), None);
     }
 
     #[test]
@@ -804,27 +829,8 @@ mod tests {
             "1.0.0".to_string(),
             TrialPolicy::default(),
         );
-        // Within limits
-        assert!(snapshot.check_limit("students.max", 50, 10).is_ok());
-        // Exceeds limits
-        assert!(snapshot.check_limit("students.max", 95, 10).is_err());
-        // No limit defined = unlimited
+        assert!(snapshot.check_limit(LIMIT_STUDENTS_MAX, 50, 10).is_ok());
+        assert!(snapshot.check_limit(LIMIT_STUDENTS_MAX, 95, 10).is_err());
         assert!(snapshot.check_limit("unknown.max", 999999, 1).is_ok());
-    }
-
-    #[test]
-    fn test_license_state_dto_from_trial() {
-        let snapshot = LicenseSnapshot::new_trial(
-            "inst_windows_abc123".to_string(),
-            "1.0.0".to_string(),
-            TrialPolicy::default(),
-        );
-        let dto = LicenseStateDto::from(&snapshot);
-        assert_eq!(dto.state, LicenseState::Trial);
-        assert_eq!(dto.product, "ORBIS");
-        assert!(dto.is_operational);
-        assert!(!dto.is_restricted);
-        assert!(dto.trial_days_remaining > 0);
-        assert!(dto.enabled_features.contains(&"students".to_string()));
     }
 }

@@ -8,6 +8,16 @@ export interface ActionWithStatus extends AiProposedAction {
   resultMessage?: string;
 }
 
+export interface UnpaidFeeUiRow {
+  student_name: string;
+  balance_due: string;
+  status: string;
+  due_date: string;
+}
+
+export type AiUiData =
+  | { type: "unpaid_fees"; items: UnpaidFeeUiRow[] };
+
 export interface AiChatMessage {
   id: string;
   role: "user" | "assistant" | "system" | "tool";
@@ -16,6 +26,30 @@ export interface AiChatMessage {
   isError?: boolean;
   executedTools?: AiToolResult[];
   proposedActions?: ActionWithStatus[];
+  uiData?: AiUiData[];
+}
+
+export function parseAiUiData(value: unknown): AiUiData | null {
+  if (!value || typeof value !== "object" || !("type" in value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (candidate.type !== "unpaid_fees" || !Array.isArray(candidate.items)) {
+    return null;
+  }
+  const items = candidate.items.filter(
+    (item): item is UnpaidFeeUiRow =>
+      !!item &&
+      typeof item === "object" &&
+      "student_name" in item &&
+      typeof item.student_name === "string" &&
+      "balance_due" in item &&
+      typeof item.balance_due === "string" &&
+      "status" in item &&
+      typeof item.status === "string" &&
+      "due_date" in item &&
+      typeof item.due_date === "string",
+  );
+  if (items.length !== candidate.items.length) return null;
+  return { type: "unpaid_fees", items };
 }
 
 export interface AiChatSession {

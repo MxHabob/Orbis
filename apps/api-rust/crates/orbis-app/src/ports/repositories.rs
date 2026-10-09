@@ -224,6 +224,14 @@ pub trait PeriodTemplateRepository: Send + Sync {
 #[async_trait]
 pub trait StudentRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Student>, DomainError>;
+    async fn find_by_user_id(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<Student>, DomainError> {
+        let _ = (org_id, user_id);
+        Ok(None)
+    }
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<StudentDetail>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Student>, DomainError>;
     async fn list(

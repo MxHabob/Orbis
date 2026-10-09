@@ -43,6 +43,19 @@ let editingMessageId = $state<string | null>(null);
 let editingText = $state("");
 let showScrollBottom = $state(false);
 
+function feeStatusLabel(status: string) {
+  switch (status) {
+    case "pending":
+      return m.finance_ui_fee_status_unpaid();
+    case "partially_paid":
+      return m.finance_ui_fee_status_partially_paid();
+    case "overdue":
+      return m.finance_ui_fee_status_overdue();
+    default:
+      return status;
+  }
+}
+
 function handleScroll() {
   if (!chatContainer) return;
   const { scrollTop, scrollHeight, clientHeight } = chatContainer;
@@ -274,6 +287,40 @@ function handleContentClick(e: MouseEvent) {
                 </div>
               {/each}
             </div>
+          {/if}
+
+          {#if msg.uiData?.length}
+            {#each msg.uiData as data, uiIndex (`${msg.id}_ui_${uiIndex}`)}
+              {#if data.type === "unpaid_fees"}
+                <section class="w-full overflow-hidden rounded-2xl border border-border/70 bg-card/70 shadow-2xs">
+                  <h3 class="border-b border-border/60 px-4 py-3 text-sm font-semibold">
+                    {m.ai_ui_unpaid_fees_heading()} ({data.items.length})
+                  </h3>
+                  <div class="max-h-72 overflow-auto">
+                    <table class="w-full min-w-[560px] border-collapse text-start text-xs">
+                      <thead class="sticky top-0 bg-muted/90 text-muted-foreground">
+                        <tr>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_student()}</th>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_balance()}</th>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_status()}</th>
+                          <th class="px-3 py-2 font-medium">{m.ai_ui_unpaid_fees_due_date()}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {#each data.items as fee, rowIndex (`${msg.id}_${uiIndex}_${rowIndex}`)}
+                          <tr class="border-t border-border/50">
+                            <td class="px-3 py-2 font-medium">{fee.student_name}</td>
+                            <td class="px-3 py-2 tabular-nums">{fee.balance_due}</td>
+                            <td class="px-3 py-2">{feeStatusLabel(fee.status)}</td>
+                            <td class="px-3 py-2 tabular-nums">{fee.due_date}</td>
+                          </tr>
+                        {/each}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              {/if}
+            {/each}
           {/if}
 
           <!-- Assistant Text Content Card -->

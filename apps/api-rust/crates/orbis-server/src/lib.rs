@@ -281,6 +281,7 @@ use api::{
         // Integration
         api::integration_routes::connect_app,
         api::integration_routes::list_integrations,
+        api::integration_routes::list_notification_integrations,
         api::integration_routes::get_integration_status,
         api::integration_routes::disconnect_app,
         api::integration_routes::toggle_integration,
@@ -302,6 +303,7 @@ use api::{
         api::report_routes::create_template_binding,
         api::report_routes::generate_report,
         api::report_routes::get_report_job_status,
+        api::report_routes::cancel_report_job,
         api::report_routes::download_report_file,
         api::report_routes::batch_print,
         api::report_routes::get_provider_schema,
@@ -504,6 +506,8 @@ use api::{
             api::integration_routes::IntegrationStatusDto,
             api::integration_routes::ConnectAppRequest,
             api::integration_routes::ToggleIntegrationRequest,
+            api::integration_routes::NotificationIntegrationQuery,
+            api::integration_routes::NotificationIntegrationCheckDto,
             // Report & Template
             api::report_routes::TemplateDto,
             api::report_routes::CreateTemplateRequest,
@@ -514,6 +518,7 @@ use api::{
             api::report_routes::GenerateReportRequest,
             api::report_routes::GenerateReportResponse,
             api::report_routes::ReportJobStatusResponse,
+            api::report_routes::CancelReportResponse,
             api::report_routes::BatchPrintRequest,
             api::report_routes::PreviewTemplateRequest,
             api::report_routes::ValidateTemplateRequest,

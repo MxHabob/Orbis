@@ -17,6 +17,7 @@ use orbis_domain::entities::payment::{Payment as DomainPayment, PaymentMethod};
 use orbis_domain::entities::student_fee::{FeeStatus, StudentFee as DomainStudentFee};
 use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
     PaginatorTrait, QueryFilter, Set,
@@ -474,6 +475,39 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
     }
 }
 
+fn build_student_fee_list_query(
+    org_id: Uuid,
+    filter: &orbis_domain::queries::filters::StudentFeeFilter,
+) -> sea_orm::Select<StudentFeeEntity> {
+    let mut query = StudentFeeEntity::find().filter(student_fee::Column::OrgId.eq(org_id));
+    if let Some(student_id) = filter.student_id {
+        query = query.filter(student_fee::Column::StudentId.eq(student_id));
+    }
+    if let Some(period_id) = filter.period_id {
+        query = query.filter(student_fee::Column::PeriodId.eq(Some(period_id)));
+    }
+    if let Some(status) = filter.status.as_deref() {
+        query = query.filter(student_fee::Column::Status.eq(status));
+    }
+    if filter.only_unpaid == Some(true) {
+        query = query
+            .filter(Expr::cust_with_values(
+                "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > ?",
+                [Decimal::ZERO],
+            ))
+            .filter(student_fee::Column::Status.is_in(["pending", "partially_paid", "overdue"]));
+    }
+    if filter.is_overdue == Some(true) {
+        query = query
+            .filter(student_fee::Column::DueDate.lt(chrono::Utc::now().date_naive()))
+            .filter(Expr::cust_with_values(
+                "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > ?",
+                [Decimal::ZERO],
+            ));
+    }
+    query
+}
+
 #[async_trait]
 impl StudentFeeRepository for FinanceRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainStudentFee>, DomainError> {
@@ -543,13 +577,7 @@ impl StudentFeeRepository for FinanceRepoImpl {
         org_id: Uuid,
         filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainStudentFee>, DomainError> {
-        let mut query = StudentFeeEntity::find().filter(student_fee::Column::OrgId.eq(org_id));
-        if let Some(student_id) = filter.student_id {
-            query = query.filter(student_fee::Column::StudentId.eq(student_id));
-        }
-        if let Some(status) = filter.status {
-            query = query.filter(student_fee::Column::Status.eq(status.to_string()));
-        }
+        let query = build_student_fee_list_query(org_id, &filter);
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
         let page_size = pagination.page_size();
@@ -981,5 +1009,33 @@ fn map_payment_model_to_domain(m: payment::Model) -> DomainPayment {
             .map(Into::into)
             .unwrap_or_else(|| m.created_at.into()),
         org_unit_id: m.org_unit_id,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::QueryTrait;
+
+    #[test]
+    fn student_fee_query_applies_organization_period_and_unpaid_filters() {
+        let org_id = Uuid::new_v4();
+        let period_id = Uuid::new_v4();
+        let filter = orbis_domain::queries::filters::StudentFeeFilter {
+            period_id: Some(period_id),
+            only_unpaid: Some(true),
+            ..Default::default()
+        };
+
+        let statement =
+            build_student_fee_list_query(org_id, &filter).build(sea_orm::DatabaseBackend::Postgres);
+        let values = format!("{:?}", statement.values);
+
+        assert!(statement.sql.contains("org_id"));
+        assert!(statement.sql.contains("period_id"));
+        assert!(statement.sql.contains("balance_due"));
+        assert!(values.contains("partially_paid"));
+        assert!(values.contains(&org_id.to_string()));
+        assert!(values.contains(&period_id.to_string()));
     }
 }

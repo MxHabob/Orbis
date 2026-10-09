@@ -16,6 +16,7 @@ interactive tool inspections, and consequential action approvals.
     createNewLocalSession,
     deleteFileSession,
     loadFileSessions,
+    parseAiUiData,
     saveFileContext,
     saveFileSession,
   } from "$lib/features/ai/session-store";
@@ -284,6 +285,11 @@ interactive tool inspections, and consequential action approvals.
         current.messages[targetIdx].isError = false;
         current.messages[targetIdx].executedTools =
           response.executed_tools || [];
+        current.messages[targetIdx].uiData = Array.isArray(response.ui_data)
+          ? response.ui_data
+              .map((item) => parseAiUiData(item))
+              .filter((item): item is NonNullable<typeof item> => item !== null)
+          : [];
         current.messages[targetIdx].proposedActions = (
           response.proposed_actions || []
         ).map((a) => ({

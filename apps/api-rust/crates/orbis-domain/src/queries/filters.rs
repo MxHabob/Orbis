@@ -153,8 +153,10 @@ pub struct StudentFeeFilter {
     pub student_id: Option<Uuid>,
     pub enrollment_id: Option<Uuid>,
     pub fee_template_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
+    pub only_unpaid: Option<bool>,
     pub pagination: Option<PaginationParams>,
 }
 

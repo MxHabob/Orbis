@@ -39,6 +39,21 @@ impl StudentRepository for StudentRepoImpl {
         Ok(model.map(map_student_model_to_domain))
     }
 
+    async fn find_by_user_id(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Option<DomainStudent>, DomainError> {
+        let model = StudentEntity::find()
+            .filter(student::Column::OrgId.eq(org_id))
+            .filter(student::Column::UserId.eq(user_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(model.map(map_student_model_to_domain))
+    }
+
     async fn find_detail_by_id(&self, id: Uuid) -> Result<Option<StudentDetail>, DomainError> {
         let pair = StudentEntity::find_by_id(id)
             .find_also_related(PersonEntity)

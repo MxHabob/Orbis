@@ -36,10 +36,10 @@ async fn chat(
     tag = "AI"
 )]
 async fn list_tools(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AiToolDefinition>>>, ApiError> {
-    let tools = state.ai_service.get_available_tools();
+    let tools = state.ai_service.get_authorized_tools(&ctx).await?;
     Ok(ApiResponse::ok(tools))
 }
 

@@ -79,6 +79,7 @@ pub struct NotificationRequest {
     pub recipient: String,
     pub subject: Option<String>,
     pub body: String,
+    pub integration_id: Option<uuid::Uuid>,
 }
 
 impl NotificationRequest {
@@ -93,7 +94,13 @@ impl NotificationRequest {
             recipient: recipient.into(),
             subject,
             body: body.into(),
+            integration_id: None,
         }
+    }
+
+    pub fn with_integration(mut self, integration_id: uuid::Uuid) -> Self {
+        self.integration_id = Some(integration_id);
+        self
     }
 }
 
