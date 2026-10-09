@@ -17,7 +17,6 @@ import { CheckCircle } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { useDrawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── DrawerFormField ─────────────────────────────────────────────────────────
 // A labeled text input styled for use inside a Drawer form.
@@ -134,19 +133,19 @@ export function DrawerOptionRow({
 
 const formStyles = StyleSheet.create({
   fieldWrapper: {
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.five,
+    gap: 4,
+    paddingHorizontal: 20,
   },
   submitButtonWrapper: {
-    marginHorizontal: Spacing.five,
-    marginBottom: Spacing.two,
+    marginHorizontal: 20,
+    marginBottom: 8,
   },
   optionRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.four,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   optionLeft: {
     flexDirection: "row",
@@ -156,19 +155,19 @@ const formStyles = StyleSheet.create({
   optionIcon: {
     width: 36,
     height: 36,
-    borderRadius: Radii.md,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: Spacing.three,
+    marginRight: 12,
   },
   optionLabels: {
     flex: 1,
     gap: 2,
   },
   optionLabel: {
-    ...Typography.bodyBold,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
   },
   optionSublabel: {
-    ...Typography.small,
+    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
   },
 });

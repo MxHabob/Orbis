@@ -13,7 +13,6 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Shadows } from "@/constants/theme";
 
 export type IconButtonVariant =
   | "default"
@@ -120,7 +119,7 @@ export const IconButton = React.memo<IconButtonProps>(
     };
 
     const vStyles = getVariantStyles();
-    const borderRadius = rounded ? dimensions.size / 2 : Radii.md;
+    const borderRadius = rounded ? dimensions.size / 2 : 6;
 
     // Hit slop expands smaller buttons to minimum 44px touch area
     const hitSlopAmount = Math.max(0, (44 - dimensions.size) / 2);

@@ -13,7 +13,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Shadows, Spacing, Typography } from "@/constants/theme";
 
 export interface SegmentOption<T extends string = string> {
   value: T;
@@ -91,8 +90,8 @@ export function SegmentedControl<T extends string = string>({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    padding: Spacing.half,
-    borderRadius: Radii.lg,
+    padding: 2,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: "center",
   },
@@ -101,13 +100,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Radii.md,
-    gap: Spacing.one,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    gap: 4,
   },
   selectedSegment: {
-    ...Shadows.sm,
+    ...{"shadowColor":"#000000","shadowOffset":{"width":0,"height":1},"shadowOpacity":0.05,"shadowRadius":2,"elevation":1},
     borderWidth: 1,
   },
   iconContainer: {
@@ -115,7 +114,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
-    ...Typography.bodySmall,
+    ...{"fontSize":13,"lineHeight":18,"fontWeight":"400"},
     textAlign: "center",
   },
 });

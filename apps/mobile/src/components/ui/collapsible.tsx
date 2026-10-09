@@ -1,8 +1,7 @@
 import { SymbolView } from "expo-symbols";
 import { PropsWithChildren, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
-import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export function Collapsible({
@@ -15,13 +14,11 @@ export function Collapsible({
   return (
     <View>
       <Pressable
-        style={({ pressed }) => [
-          styles.heading,
-          pressed && styles.pressedHeading,
-        ]}
+        className="flex-row items-center gap-2"
+        style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}
         onPress={() => setIsOpen((value) => !value)}
       >
-        <View style={styles.button}>
+        <View className="h-4 w-4 items-center justify-center rounded-xl">
           <SymbolView
             name={{
               ios: "chevron.right",
@@ -35,41 +32,13 @@ export function Collapsible({
           />
         </View>
 
-        <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+        <Text className="text-sm font-bold text-foreground">{title}</Text>
       </Pressable>
       {isOpen && (
         <Animated.View entering={FadeIn.duration(200)}>
-          <View style={styles.content}>{children}</View>
+          <View className="ml-4 mt-3 rounded-xl p-4">{children}</View>
         </Animated.View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  heading: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
-  pressedHeading: {
-    opacity: 0.7,
-  },
-  button: {
-    width: Spacing.four,
-    height: Spacing.four,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  content: {
-    marginTop: Spacing.three,
-    borderRadius: Spacing.three,
-    marginLeft: Spacing.four,
-    padding: Spacing.four,
-  },
-});

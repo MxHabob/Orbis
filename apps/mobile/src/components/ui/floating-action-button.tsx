@@ -15,7 +15,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Shadows, Spacing, Typography } from "@/constants/theme";
 
 export interface FloatingActionButtonProps {
   icon: React.ReactNode;
@@ -110,25 +109,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1,
     borderBottomWidth: 3,
-    ...Shadows.lg,
+    ...{"shadowColor":"#000000","shadowOffset":{"width":0,"height":4},"shadowOpacity":0.12,"shadowRadius":8,"elevation":6},
   },
   circleContainer: {
     width: 56,
     height: 56,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
   },
   extendedContainer: {
     height: 48,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radii.full,
+    paddingHorizontal: 16,
+    borderRadius: 9999,
   },
   innerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.two,
+    gap: 8,
   },
   label: {
-    ...Typography.bodyBold,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
   },
 });

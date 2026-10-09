@@ -23,7 +23,6 @@ import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
-import { Radii, Spacing, Typography, Fonts } from "@/constants/theme";
 import { XMark, ShieldCheck, KeyframePlus } from "@orbis/icons/native";
 
 export default function MFAChallengeScreen() {
@@ -406,19 +405,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === "ios" ? 54 : 36,
-    paddingBottom: Spacing.eight,
+    paddingBottom: 32,
   },
   topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.four,
+    marginBottom: 16,
   },
   topBarTitle: {
-    ...Typography.captionBold,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -430,12 +428,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   stepperHeader: {
-    marginBottom: Spacing.six,
+    marginBottom: 24,
   },
   stepIndicatorRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
+    gap: 8,
   },
   stepDotDone: {
     width: 20,
@@ -450,56 +448,51 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   stepLabel: {
-    ...Typography.captionBold,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
   },
   mainSection: {
     flex: 1,
     justifyContent: "center",
   },
   heading: {
-    ...Typography.display,
+    ...{"fontSize":32,"lineHeight":38,"fontWeight":"800"},
     fontSize: 28,
     lineHeight: 34,
-    fontFamily: Fonts.sans,
     fontWeight: "800",
     letterSpacing: -0.5,
-    marginBottom: Spacing.two,
+    marginBottom: 8,
   },
   subheading: {
-    ...Typography.bodyMedium,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     lineHeight: 20,
   },
   resendLink: {
-    marginTop: Spacing.two,
-    marginBottom: Spacing.four,
+    marginTop: 8,
+    marginBottom: 16,
   },
   resendText: {
-    ...Typography.captionBold,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
   },
   errorPill: {
-    borderRadius: Radii.lg,
+    borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    marginBottom: Spacing.four,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
   },
   errorPillText: {
-    ...Typography.caption,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"400"},
     fontWeight: "600",
   },
   pinContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginVertical: Spacing.four,
+    marginVertical: 16,
   },
   pinBox: {
     width: 48,
     height: 58,
-    borderRadius: Radii.xl,
+    borderRadius: 12,
     borderWidth: 1.5,
     fontSize: 22,
     fontWeight: "800",
@@ -510,36 +503,34 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   backupContainer: {
-    marginVertical: Spacing.four,
+    marginVertical: 16,
   },
   largePillInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     height: 56,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
     borderWidth: 1,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: 16,
   },
   largePillTextInput: {
     flex: 1,
     fontSize: 16,
-    fontFamily: Fonts.sans,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: 8,
   },
   switchModeLink: {
     alignItems: "center",
-    marginTop: Spacing.three,
+    marginTop: 12,
   },
   switchModeText: {
-    ...Typography.captionBold,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
   },
   footer: {
-    marginTop: Spacing.six,
+    marginTop: 24,
   },
   continuePillBtn: {
     height: 54,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000000",
@@ -549,8 +540,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   continuePillBtnText: {
-    ...Typography.bodyBold,
-    fontFamily: Fonts.sans,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
     fontSize: 16,
     fontWeight: "700",
   },

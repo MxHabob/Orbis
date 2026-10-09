@@ -8,25 +8,43 @@ import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
   type ViewProps,
-  useColorScheme,
 } from "react-native";
-import { Colors, Spacing, Typography } from "@/constants/theme";
+
+type SpacingScale =
+  | "half"
+  | "one"
+  | "two"
+  | "three"
+  | "four"
+  | "five"
+  | "six"
+  | "eight"
+  | "ten"
+  | "twelve"
+  | "sixteen";
+
+const marginBottomClasses: Record<SpacingScale, string> = {
+  half: "mb-half",
+  one: "mb-one",
+  two: "mb-two",
+  three: "mb-three",
+  four: "mb-four",
+  five: "mb-five",
+  six: "mb-six",
+  eight: "mb-eight",
+  ten: "mb-ten",
+  twelve: "mb-twelve",
+  sixteen: "mb-sixteen",
+};
 
 export interface SectionProps extends ViewProps {
   title?: string;
   subtitle?: string;
   action?: React.ReactNode;
-  spacing?: keyof typeof Spacing | number;
-  headerSpacing?: keyof typeof Spacing | number;
+  spacing?: SpacingScale | number;
+  headerSpacing?: SpacingScale | number;
   children?: React.ReactNode;
-}
-
-function resolveSpacing(val?: keyof typeof Spacing | number): number | undefined {
-  if (val === undefined) return undefined;
-  if (typeof val === "number") return val;
-  return Spacing[val];
 }
 
 export function Section({
@@ -39,67 +57,48 @@ export function Section({
   children,
   ...props
 }: SectionProps) {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === "dark" ? "dark" : "light"];
 
   const hasHeader = title || subtitle || action;
+  const sectionSpacingClass =
+    typeof spacing === "string" ? marginBottomClasses[spacing] : undefined;
+  const headerSpacingClass =
+    typeof headerSpacing === "string"
+      ? marginBottomClasses[headerSpacing]
+      : undefined;
 
   return (
     <View
       style={[
-        styles.container,
-        { marginBottom: resolveSpacing(spacing) },
+        { marginBottom: typeof spacing === "number" ? spacing : undefined },
         style,
       ]}
+      className={`w-full ${sectionSpacingClass ?? ""}`}
       {...props}
     >
       {hasHeader && (
         <View
-          style={[
-            styles.header,
-            { marginBottom: resolveSpacing(headerSpacing) },
-          ]}
+          style={{
+            marginBottom:
+              typeof headerSpacing === "number" ? headerSpacing : undefined,
+          }}
+          className={`flex-row items-end justify-between ${headerSpacingClass ?? ""}`}
         >
-          <View style={styles.titleContainer}>
+          <View className="flex-1">
             {title && (
-              <Text style={[styles.title, { color: theme.foreground }]}>
+              <Text className="text-[20px] font-semibold text-foreground">
                 {title}
               </Text>
             )}
             {subtitle && (
-              <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+              <Text className="mt-0.5 text-xs text-muted-foreground">
                 {subtitle}
               </Text>
             )}
           </View>
-          {action && <View style={styles.actionContainer}>{action}</View>}
+          {action && <View className="ml-2">{action}</View>}
         </View>
       )}
       {children}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    ...Typography.h3,
-  },
-  subtitle: {
-    ...Typography.caption,
-    marginTop: Spacing.half,
-  },
-  actionContainer: {
-    marginLeft: Spacing.two,
-  },
-});

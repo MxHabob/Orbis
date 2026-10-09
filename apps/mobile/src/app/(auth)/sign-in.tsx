@@ -9,9 +9,7 @@
 import { Button, Input } from "@/components/ui";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
-import { Fonts, Radii, Spacing, Typography } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import {
@@ -28,7 +26,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Platform,
-  StyleSheet,
   Text,
   View
 } from "react-native";
@@ -42,7 +39,6 @@ const CAPABILITIES = [
 
 export default function SignInScreen() {
   const router = useRouter();
-  const theme = useTheme();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const { t, isArabic } = useI18n();
@@ -110,25 +106,25 @@ export default function SignInScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? "#09090B" : "#F8FAFC" },
-      ]}
+      className="flex-1"
+      style={{ backgroundColor: isDark ? "#09090B" : "#F8FAFC" }}
     >
 
       <KeyboardAwareView
-        style={styles.keyboardContainer}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingTop: Platform.OS === "ios" ? 80 : 50,
+          paddingBottom: 32,
+        }}
       >
-        <View style={styles.upperSection}>
+        <View className="flex-1 items-end justify-center min-h-[220px] gap-2">
             {CAPABILITIES.map((cap, idx) => {
               return (
                     <View>
-                      <Text
-                        style={[
-                          styles.activeCapText,
-                        ]}
-                      >
+                      <Text className="font-sans text-2xl leading-[30px] font-extrabold">
                         {t(cap.labelKey)}
                       </Text>
                     </View>
@@ -137,20 +133,17 @@ export default function SignInScreen() {
 
 
         <View
-          style={[
-            styles.bottomCard,
-          ]}
+          className="px-6 pt-6 pb-5"
         >
           {authMode === "welcome" && (
-            <View style={styles.actionsContainer}>
+            <View className="gap-3">
               <Button
                 onPress={handleGoogleSignIn}
               >
-                <Text              
-                style={[
-                    styles.pillButtonSecondaryText,
-                    { color: isDark ? "#FFFFFF" : "#0F172A" },
-                  ]}>
+                <Text
+                  className="font-sans text-sm leading-5 font-semibold"
+                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
+                >
                   {t("auth_continue_google")}
                 </Text>
               </Button>
@@ -161,10 +154,8 @@ export default function SignInScreen() {
                 variant="secondary"
               >
                 <Text
-                  style={[
-                    styles.pillButtonSecondaryText,
-                    { color: isDark ? "#FFFFFF" : "#0F172A" },
-                  ]}
+                  className="font-sans text-sm leading-5 font-semibold"
+                  style={{ color: isDark ? "#FFFFFF" : "#0F172A" }}
                 >
                   {t("auth_sign_in")}
                 </Text>
@@ -172,9 +163,7 @@ export default function SignInScreen() {
             </View>
           )}
           {authMode === "email" && (
-            <View style={[
-              styles.pillInputContainer
-            ]}>
+            <View className="gap-4">
                 <Input
                   placeholder={t("auth_email_placeholder")}
                   value={email}
@@ -185,7 +174,7 @@ export default function SignInScreen() {
                   onSubmitEditing={handleProceedFromEmail}
                   returnKeyType="next"
                 />
-                <View style={{ gap: Spacing.two }}>
+                <View className="gap-2">
                 <Button onPress={handleProceedFromEmail}>
                   <ArrowIcon size={16} />
                 </Button>
@@ -199,7 +188,7 @@ export default function SignInScreen() {
           )}
 
           {authMode === "password" && (
-            <View style={[ styles.pillInputContainer]}>
+            <View className="gap-4">
                 <Input
                   placeholder="••••••••"
                   placeholderTextColor={
@@ -212,7 +201,7 @@ export default function SignInScreen() {
                   onSubmitEditing={handleSignIn}
                   returnKeyType="go"
                 />
-              <View style={{ gap: Spacing.two }}>
+              <View className="gap-2">
                 <Button
                   onPress={handleSignIn}
                   disabled={isSubmitting}
@@ -235,15 +224,15 @@ export default function SignInScreen() {
           )}
 
           {/* Bottom Link: Create Account */}
-          <View style={styles.cardFooter}>
-            <Text style={[Typography.bodyMedium, { color: theme.foreground }]}>
+          <View className="mt-5 flex-row items-center justify-center">
+            <Text className="font-sans text-sm leading-5 text-foreground">
               {t("auth_no_account")}
             </Text>
             <Button
               onPress={() => router.push("/(auth)/register")}
               variant="link"
             >
-              <Text style={[Typography.bodyMedium, { color: theme.primary }]}>
+              <Text className="font-sans text-sm leading-5 text-primary">
                 {t("auth_register_title")}
               </Text>
             </Button>
@@ -253,58 +242,3 @@ export default function SignInScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
-    paddingTop: Platform.OS === "ios" ? 80 : 50,
-    paddingBottom: Spacing.eight,
-  },
-  upperSection: {
-    flex: 1,
-    alignItems: "flex-end",
-    justifyContent: "center",
-    minHeight: 220,
-    gap: "8"
-  },
-  activeCapText: {
-    ...Typography.h1,
-    fontFamily: Fonts.sans,
-    fontWeight: "800",
-  },
-
-  bottomCard: {
-    paddingHorizontal: Spacing.six,
-    paddingTop: Spacing.six,
-    paddingBottom: Spacing.five,
-  },
-  actionsContainer: {
-    gap: Spacing.three,
-  },
-
-  pillButtonSecondaryText: {
-    ...Typography.bodyBold,
-    fontFamily: Fonts.sans,
-    fontWeight: "600",
-  },
-
-  pillInputContainer: {
-    gap: Spacing.four,
-    width: "auto"
-  },
-  cardFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: Spacing.five,
-  },
-
-});

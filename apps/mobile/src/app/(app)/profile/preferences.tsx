@@ -1,25 +1,9 @@
-import { StyleSheet, Text, View } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
-import { Typography, Fonts } from "@/constants/theme";
+import { Text, View } from "react-native";
 
-export default function PreferencesScreen() {
-  const theme = useTheme();
-
+export default function PreferencesScreen() {
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>Preferences</Text>
+    <View className="flex-1 items-center justify-center bg-background">
+      <Text className="font-sans text-2xl leading-[30px] font-extrabold text-foreground">Preferences</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    ...Typography.h1,
-    fontFamily: Fonts.sans,
-  },
-});

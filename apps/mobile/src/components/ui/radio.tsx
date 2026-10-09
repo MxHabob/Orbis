@@ -13,7 +13,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface RadioProps {
   selected: boolean;
@@ -122,18 +121,18 @@ export function RadioGroup<T extends string = string>({
 
 const styles = StyleSheet.create({
   group: {
-    gap: Spacing.three,
+    gap: 12,
   },
   container: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: Spacing.two,
-    paddingVertical: Spacing.one,
+    gap: 8,
+    paddingVertical: 4,
   },
   outerCircle: {
     width: 22,
     height: 22,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
     borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
@@ -142,17 +141,17 @@ const styles = StyleSheet.create({
   innerDot: {
     width: 10,
     height: 10,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
   },
   textContainer: {
     flex: 1,
   },
   label: {
-    ...Typography.bodyBold,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
   },
   description: {
-    ...Typography.caption,
-    marginTop: Spacing.half,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"400"},
+    marginTop: 2,
   },
   pressed: {
     opacity: 0.75,

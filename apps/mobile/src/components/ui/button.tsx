@@ -13,13 +13,11 @@ import {
   Pressable,
   Text,
   ActivityIndicator,
-  StyleSheet,
   type ViewStyle,
   type TextStyle,
   View,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export type ButtonVariant =
   | "default"
@@ -214,7 +212,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 26,
             paddingHorizontal: 8,
-            borderRadius: Radii.sm,
+            borderRadius: 4,
             fontSize: 11,
             gap: 4,
             isIconOnly: false,
@@ -223,7 +221,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 32,
             paddingHorizontal: 12,
-            borderRadius: Radii.sm,
+            borderRadius: 4,
             fontSize: 12,
             gap: 5,
             isIconOnly: false,
@@ -232,7 +230,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 46,
             paddingHorizontal: 18,
-            borderRadius: Radii.md,
+            borderRadius: 6,
             fontSize: 15,
             gap: 8,
             isIconOnly: false,
@@ -241,7 +239,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 26,
             paddingHorizontal: 0,
-            borderRadius: Radii.sm,
+            borderRadius: 4,
             fontSize: 11,
             gap: 0,
             isIconOnly: true,
@@ -250,7 +248,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 32,
             paddingHorizontal: 0,
-            borderRadius: Radii.sm,
+            borderRadius: 4,
             fontSize: 12,
             gap: 0,
             isIconOnly: true,
@@ -259,7 +257,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 46,
             paddingHorizontal: 0,
-            borderRadius: Radii.md,
+            borderRadius: 6,
             fontSize: 15,
             gap: 0,
             isIconOnly: true,
@@ -268,7 +266,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 38,
             paddingHorizontal: 0,
-            borderRadius: Radii.md,
+            borderRadius: 6,
             fontSize: 14,
             gap: 0,
             isIconOnly: true,
@@ -279,7 +277,7 @@ export const Button = React.memo<ButtonProps>(
           return {
             height: 38,
             paddingHorizontal: 14,
-            borderRadius: Radii.md,
+            borderRadius: 6,
             fontSize: 13.5,
             gap: 6,
             isIconOnly: false,
@@ -295,8 +293,8 @@ export const Button = React.memo<ButtonProps>(
       <Pressable
         onPress={isDisabled ? undefined : onPress}
         disabled={isDisabled}
+        className="flex-row items-center justify-center"
         style={({ pressed }) => [
-          styles.base,
           vStyles.container,
           {
             height: sStyles.height,
@@ -318,14 +316,14 @@ export const Button = React.memo<ButtonProps>(
         ) : children ? (
           children
         ) : (
-          <View style={[styles.contentRow, { gap: sStyles.gap }]}>
+          <View className="flex-row items-center justify-center" style={{ gap: sStyles.gap }}>
             {icon && iconPosition === "left" && (
-              <View style={styles.iconBox}>{icon}</View>
+              <View className="items-center justify-center">{icon}</View>
             )}
             {title && (
               <Text
+                className="text-center"
                 style={[
-                  styles.text,
                   { fontSize: sStyles.fontSize },
                   vStyles.text,
                   textStyle,
@@ -335,7 +333,7 @@ export const Button = React.memo<ButtonProps>(
               </Text>
             )}
             {icon && iconPosition === "right" && (
-              <View style={styles.iconBox}>{icon}</View>
+              <View className="items-center justify-center">{icon}</View>
             )}
           </View>
         )}
@@ -345,23 +343,3 @@ export const Button = React.memo<ButtonProps>(
 );
 
 Button.displayName = "Button";
-
-const styles = StyleSheet.create({
-  base: {
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  contentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    textAlign: "center",
-  },
-  iconBox: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

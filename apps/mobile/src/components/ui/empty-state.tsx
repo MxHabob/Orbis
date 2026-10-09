@@ -8,7 +8,6 @@ import React from "react";
 import { View, Text, StyleSheet, type ViewStyle } from "react-native";
 import { ArchiveBox } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
-import { Spacing, Typography } from "@/constants/theme";
 import { Button } from "./button";
 
 export interface EmptyStateProps {
@@ -71,9 +70,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.six,
-    paddingHorizontal: Spacing.five,
-    gap: Spacing.two,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
+    gap: 8,
   },
   iconWrapper: {
     width: 68,
@@ -81,19 +80,19 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.two,
+    marginBottom: 8,
   },
   title: {
-    ...Typography.h3,
+    ...{"fontSize":16,"lineHeight":22,"fontWeight":"600"},
     textAlign: "center",
   },
   description: {
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     textAlign: "center",
     maxWidth: 320,
     lineHeight: 20,
   },
   actionButton: {
-    marginTop: Spacing.three,
+    marginTop: 12,
   },
 });

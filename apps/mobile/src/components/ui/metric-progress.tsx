@@ -1,6 +1,5 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export type MetricTone =
@@ -162,18 +161,18 @@ function getToneColor(
 }
 
 const styles = StyleSheet.create({
-  container: { width: "100%", gap: Spacing.three },
+  container: { width: "100%", gap: 12 },
   header: {
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: Spacing.two,
+    gap: 8,
   },
   labels: { flex: 1, gap: 2 },
-  title: { ...Typography.bodyBold },
-  subtitle: { ...Typography.small },
-  value: { ...Typography.h2 },
-  progressGroup: { gap: Spacing.two },
+  title: { ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"} },
+  subtitle: { ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"} },
+  value: { ...{"fontSize":18,"lineHeight":24,"fontWeight":"700"} },
+  progressGroup: { gap: 8 },
   progressTrack: {
     height: 8,
     flexDirection: "row",
@@ -182,8 +181,8 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   segment: { height: "100%", minWidth: 2, borderRadius: 9999 },
-  legend: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.three },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: Spacing.one },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   dot: { width: 6, height: 6, borderRadius: 9999 },
-  legendText: { ...Typography.small },
+  legendText: { ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"} },
 });

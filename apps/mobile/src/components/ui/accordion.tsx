@@ -1,8 +1,7 @@
 import { PropsWithChildren, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { ChevronUp, ChevronDown } from "@orbis/icons/native";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
-import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export interface AccordionProps extends PropsWithChildren {
@@ -30,15 +29,16 @@ export function Accordion({
   };
 
   return (
-    <View style={[styles.container, { borderBottomColor: theme.borderSubtle }]}>
+    <View className="border-b" style={{ borderBottomColor: theme.borderSubtle }}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open, disabled }}
         disabled={disabled}
         onPress={toggle}
-        style={({ pressed }) => [styles.trigger, pressed && styles.pressed]}
+        className="min-h-12 flex-row items-center justify-between gap-3 py-3"
+        style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}
       >
-        <Text style={styles.title}>{title}</Text>
+        <Text className="flex-1 text-base font-semibold">{title}</Text>
         {open ? (
           <ChevronUp size={18} color={theme.textSecondary} />
         ) : (
@@ -50,34 +50,9 @@ export function Accordion({
           entering={FadeIn.duration(160)}
           exiting={FadeOut.duration(120)}
         >
-          <View style={styles.content}>{children}</View>
+          <View className="pb-4 pr-2">{children}</View>
         </Animated.View>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    borderBottomWidth: 1,
-  },
-  trigger: {
-    minHeight: 48,
-    paddingVertical: Spacing.three,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.three,
-  },
-  title: {
-    ...Typography.bodyBold,
-    flex: 1,
-  },
-  content: {
-    paddingBottom: Spacing.four,
-    paddingRight: Spacing.two,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});

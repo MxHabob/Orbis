@@ -1,6 +1,5 @@
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { Radii } from "@/constants/theme";
 import { Check, XMark } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -60,14 +59,14 @@ const styles = StyleSheet.create({
   track: {
     width: 44,
     height: 24,
-    borderRadius: Radii.sm,
+    borderRadius: 4,
     borderWidth: 1,
     justifyContent: "flex-start",
   },
   thumb: {
     width: 22,
     height: 22,
-    borderRadius: Radii.md,
+    borderRadius: 6,
     borderWidth: 1,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 1 },

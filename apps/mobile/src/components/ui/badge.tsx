@@ -9,12 +9,10 @@ import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
   type ViewStyle,
   type TextStyle,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export type BadgeVariant =
   | "default"
@@ -105,24 +103,24 @@ export const Badge = React.memo<BadgeProps>(
 
     return (
       <View
+        className="flex-row items-center self-start gap-1 rounded-full"
         style={[
-          styles.container,
           {
             backgroundColor: colors.bg,
             borderColor: colors.border || "transparent",
             borderWidth: colors.border ? 1 : 0,
             paddingVertical: isSm ? 2 : 4,
             paddingHorizontal: isSm ? 8 : 10,
-            borderRadius: Radii.full,
+            borderRadius: 9999,
           },
           style,
         ]}
       >
-        {icon && <View style={styles.iconContainer}>{icon}</View>}
+        {icon && <View className="mr-0.5">{icon}</View>}
         <Text
+          className="text-center"
           style={[
-            styles.text,
-            isSm ? Typography.small : Typography.captionBold,
+            isSm ? {"fontSize":11,"lineHeight":14,"fontWeight":"500"} : {"fontSize":12,"lineHeight":16,"fontWeight":"600"},
             { color: colors.text },
             textStyle,
           ]}
@@ -135,18 +133,3 @@ export const Badge = React.memo<BadgeProps>(
 );
 
 Badge.displayName = "Badge";
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-  },
-  iconContainer: {
-    marginRight: 2,
-  },
-  text: {
-    textAlign: "center",
-  },
-});

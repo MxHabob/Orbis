@@ -8,18 +8,43 @@
 import React from "react";
 import {
   View,
-  StyleSheet,
   type ViewProps,
   type ViewStyle,
   Pressable,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing } from "@/constants/theme";
+
+type SpacingScale =
+  | "half"
+  | "one"
+  | "two"
+  | "three"
+  | "four"
+  | "five"
+  | "six"
+  | "eight"
+  | "ten"
+  | "twelve"
+  | "sixteen";
+
+const paddingClasses: Record<SpacingScale, string> = {
+  half: "p-half",
+  one: "p-one",
+  two: "p-two",
+  three: "p-three",
+  four: "p-four",
+  five: "p-five",
+  six: "p-six",
+  eight: "p-eight",
+  ten: "p-ten",
+  twelve: "p-twelve",
+  sixteen: "p-sixteen",
+};
 
 export interface CardProps extends ViewProps {
   variant?: "default" | "elevated" | "outline" | "flat" | "interactive";
   onPress?: () => void;
-  padding?: keyof typeof Spacing;
+  padding?: SpacingScale;
   children?: React.ReactNode;
 }
 
@@ -64,14 +89,14 @@ export const Card = React.memo<CardProps>(
     };
 
     const containerStyle: ViewStyle = {
-      borderRadius: Radii.lg,
-      padding: Spacing[padding],
       ...getVariantStyle(),
     };
+    const className = `rounded-lg ${paddingClasses[padding]}`;
 
     if (onPress) {
       return (
         <Pressable
+          className={className}
           onPress={onPress}
           style={({ pressed }) => [
             containerStyle,
@@ -86,7 +111,7 @@ export const Card = React.memo<CardProps>(
     }
 
     return (
-      <View style={[containerStyle, style]} {...props}>
+      <View className={className} style={[containerStyle, style]} {...props}>
         {children}
       </View>
     );

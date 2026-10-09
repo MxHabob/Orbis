@@ -23,7 +23,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle, InfoCircle, Sparkles } from "@orbis/icons/native";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -202,17 +201,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     zIndex: 99999,
     elevation: 99999,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: 16,
   },
   toast: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
-    borderRadius: Radii.full,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 9999,
     borderWidth: 1,
     maxWidth: "92%",
-    gap: Spacing.two,
+    gap: 8,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.14,
@@ -220,7 +219,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   message: {
-    ...Typography.bodyBold,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
     fontSize: 13,
     lineHeight: 18,
     flexShrink: 1,

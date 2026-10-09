@@ -8,29 +8,83 @@ import React from "react";
 import {
   ScrollView,
   type ScrollViewProps,
-  StyleSheet,
   type ViewStyle,
   RefreshControl,
   type RefreshControlProps,
 } from "react-native";
 import { Screen, type ScreenProps } from "./screen";
-import { Spacing } from "@/constants/theme";
+
+type SpacingScale =
+  | "half"
+  | "one"
+  | "two"
+  | "three"
+  | "four"
+  | "five"
+  | "six"
+  | "eight"
+  | "ten"
+  | "twelve"
+  | "sixteen";
+
+const contentPaddingClasses: Record<SpacingScale, string> = {
+  half: "p-half",
+  one: "p-one",
+  two: "p-two",
+  three: "p-three",
+  four: "p-four",
+  five: "p-five",
+  six: "p-six",
+  eight: "p-eight",
+  ten: "p-ten",
+  twelve: "p-twelve",
+  sixteen: "p-sixteen",
+};
+
+const horizontalPaddingClasses: Record<SpacingScale, string> = {
+  half: "px-half",
+  one: "px-one",
+  two: "px-two",
+  three: "px-three",
+  four: "px-four",
+  five: "px-five",
+  six: "px-six",
+  eight: "px-eight",
+  ten: "px-ten",
+  twelve: "px-twelve",
+  sixteen: "px-sixteen",
+};
+
+const verticalPaddingClasses: Record<SpacingScale, string> = {
+  half: "py-half",
+  one: "py-one",
+  two: "py-two",
+  three: "py-three",
+  four: "py-four",
+  five: "py-five",
+  six: "py-six",
+  eight: "py-eight",
+  ten: "py-ten",
+  twelve: "py-twelve",
+  sixteen: "py-sixteen",
+};
+
+function resolveClass(
+  value: SpacingScale | number | undefined,
+  classes: Record<SpacingScale, string>,
+) {
+  return typeof value === "string" ? classes[value] : undefined;
+}
 
 export interface ScreenScrollViewProps extends ScreenProps {
   contentContainerStyle?: ViewStyle | ViewStyle[];
-  contentPadding?: keyof typeof Spacing | number;
-  horizontalPadding?: keyof typeof Spacing | number;
-  verticalPadding?: keyof typeof Spacing | number;
+  contentPadding?: SpacingScale | number;
+  horizontalPadding?: SpacingScale | number;
+  verticalPadding?: SpacingScale | number;
   refreshing?: boolean;
   onRefresh?: () => void;
   refreshControlProps?: Omit<RefreshControlProps, "refreshing" | "onRefresh">;
   scrollViewProps?: Omit<ScrollViewProps, "refreshControl" | "contentContainerStyle">;
-}
-
-function resolvePadding(val?: keyof typeof Spacing | number): number | undefined {
-  if (val === undefined) return undefined;
-  if (typeof val === "number") return val;
-  return Spacing[val];
 }
 
 export function ScreenScrollView({
@@ -46,10 +100,29 @@ export function ScreenScrollView({
   ...screenProps
 }: ScreenScrollViewProps) {
   const dynamicPadding: ViewStyle = {
-    padding: resolvePadding(contentPadding),
-    paddingHorizontal: resolvePadding(horizontalPadding),
-    paddingVertical: resolvePadding(verticalPadding),
+    padding: typeof contentPadding === "number" ? contentPadding : undefined,
+    paddingHorizontal:
+      typeof horizontalPadding === "number" ? horizontalPadding : undefined,
+    paddingVertical:
+      typeof verticalPadding === "number" ? verticalPadding : undefined,
   };
+  const contentPaddingClass = resolveClass(contentPadding, contentPaddingClasses);
+  const horizontalPaddingClass = resolveClass(
+    horizontalPadding,
+    horizontalPaddingClasses,
+  );
+  const verticalPaddingClass = resolveClass(
+    verticalPadding,
+    verticalPaddingClasses,
+  );
+  const contentClasses = [
+    "flex-grow",
+    contentPaddingClass,
+    horizontalPaddingClass,
+    verticalPaddingClass,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const refreshControl =
     onRefresh !== undefined ? (
@@ -63,8 +136,9 @@ export function ScreenScrollView({
   return (
     <Screen {...screenProps}>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={[styles.content, dynamicPadding, contentContainerStyle]}
+        className="flex-1"
+        contentContainerClassName={contentClasses}
+        contentContainerStyle={[dynamicPadding, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         refreshControl={refreshControl}
@@ -75,12 +149,3 @@ export function ScreenScrollView({
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    flexGrow: 1,
-  },
-});

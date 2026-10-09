@@ -15,7 +15,6 @@ import {
 import { ChevronRight, ChevronLeft } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface ListItemProps {
   title: string;
@@ -103,7 +102,7 @@ export function ListItem({
           styles.pressable,
           pressed && {
             backgroundColor: theme.backgroundSelected,
-            borderRadius: Radii.md,
+            borderRadius: 6,
           },
         ]}
       >
@@ -124,11 +123,11 @@ const styles = StyleSheet.create({
     minHeight: 52,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
   leftBox: {
-    marginRight: Spacing.three,
+    marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -139,23 +138,23 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
+    gap: 8,
   },
   title: {
-    ...Typography.bodyBold,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
     flexShrink: 1,
   },
   badgeBox: {
     flexShrink: 0,
   },
   subtitle: {
-    ...Typography.caption,
-    marginTop: Spacing.half,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"400"},
+    marginTop: 2,
   },
   rightBox: {
-    marginLeft: Spacing.two,
+    marginLeft: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
+    gap: 8,
   },
 });

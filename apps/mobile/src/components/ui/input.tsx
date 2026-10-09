@@ -24,7 +24,6 @@ import {
 import { Eye, EyeSlash } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -144,38 +143,38 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   label: {
-    ...Typography.captionBold,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
     fontSize: 12.5,
     marginBottom: 2,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: Radii.md,
+    borderRadius: 6,
     paddingHorizontal: 12,
     minHeight: 44,
   },
   iconBox: {
-    marginEnd: Spacing.two,
+    marginEnd: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   input: {
     flex: 1,
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     fontSize: 14,
     paddingVertical: 8,
   },
   eyeButton: {
-    padding: Spacing.one,
+    padding: 4,
   },
   errorText: {
-    ...Typography.small,
+    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
     fontSize: 11,
     marginTop: 2,
   },
   hintText: {
-    ...Typography.small,
+    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
     fontSize: 11,
     marginTop: 2,
   },

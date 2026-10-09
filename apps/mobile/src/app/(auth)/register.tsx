@@ -8,7 +8,6 @@
 
 import{ useState } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   Pressable,
@@ -22,7 +21,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
-import { Radii, Spacing, Typography, Fonts } from "@/constants/theme";
+import { PlatformColor } from "react-native";
 import {
   ArrowLeft,
   ArrowRight,
@@ -108,18 +107,22 @@ export default function RegisterScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? "#09090B" : "#F8FAFC" },
-      ]}
+      className="flex-1"
+      style={{ backgroundColor: isDark ? "#09090B" : "#F8FAFC" }}
     >
 
       <KeyboardAwareView
-        style={styles.keyboardContainer}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingTop: Platform.OS === "ios" ? 54 : 36,
+          paddingBottom: 32,
+        }}
       >
         {/* Minimal Nav Bar */}
-        <View style={styles.navHeader}>
+        <View className="mb-6 flex-row items-center justify-between">
           <Pressable
             onPress={handleBack}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -128,22 +131,20 @@ export default function RegisterScreen() {
           </Pressable>
 
           {/* Minimal Step Dots Indicator */}
-          <View style={styles.stepDots}>
+          <View className="flex-row items-center gap-[6px]">
             {[1, 2, 3].map((s) => (
               <View
                 key={s}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor:
-                      s <= step
-                        ? theme.primary
-                        : isDark
-                          ? "rgba(255, 255, 255, 0.2)"
-                          : "rgba(0, 0, 0, 0.1)",
-                    width: s === step ? 20 : 6,
-                  },
-                ]}
+                className="h-[6px] rounded-[3px]"
+                style={{
+                  backgroundColor:
+                    s <= step
+                      ? theme.primary
+                      : isDark
+                        ? "rgba(255, 255, 255, 0.2)"
+                        : "rgba(0, 0, 0, 0.1)",
+                  width: s === step ? 20 : 6,
+                }}
               />
             ))}
           </View>
@@ -153,10 +154,8 @@ export default function RegisterScreen() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text
-              style={[
-                styles.navLinkText,
-                { color: isDark ? "rgba(255, 255, 255, 0.6)" : "#64748B" },
-              ]}
+              className="font-sans text-xs leading-4 font-semibold"
+              style={{ color: isDark ? "rgba(255, 255, 255, 0.6)" : "#64748B" }}
             >
               {t("auth_sign_in")}
             </Text>
@@ -164,23 +163,19 @@ export default function RegisterScreen() {
         </View>
 
         {/* Dynamic Step Content */}
-        <View style={styles.stepContent}>
+        <View className="flex-1 justify-center">
           {/* STEP 1: NAME */}
           {step === 1 && (
-            <View style={styles.stepInner}>
-              <View style={styles.titleBlock}>
-                <Text
-                  style={[
-                    styles.stepQuestion,
-                  ]}
-                >
+            <View className="w-full items-end">
+              <View className="mb-6">
+                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px]">
                   {t("auth_full_name")}
                 </Text>
               </View>
 
               <View>
                 <TextInput
-                  style={{ borderRadius: Radii.md, borderWidth: 1, width: 370}}
+                  className="w-[370px] rounded-[6px] border"
                   placeholder={t("auth_full_name_ph")}
                   value={fullName}
                   onChangeText={setFullName}
@@ -194,20 +189,16 @@ export default function RegisterScreen() {
 
           {/* STEP 2: CREDENTIALS */}
           {step === 2 && (
-            <View style={styles.stepInner}>
-              <View style={styles.titleBlock}>
-                <Text
-                  style={[
-                    styles.stepQuestion,
-                  ]}
-                >
+            <View className="w-full items-end">
+              <View className="mb-6">
+                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px]">
                   {t("auth_email_label")}
                 </Text>
               </View>
 
-              <View style={{ gap: Spacing.three,}}>
+              <View className="gap-3">
                   <TextInput
-                    style={{ borderRadius: Radii.md, borderWidth: 1, width: 370}}
+                    className="w-[370px] rounded-[6px] border"
                     placeholder={t("auth_email_placeholder")}
                     value={email}
                     onChangeText={setEmail}
@@ -217,7 +208,7 @@ export default function RegisterScreen() {
                     />
    
                   <TextInput
-                    style={{ borderRadius: Radii.md, borderWidth: 1, width: 370}}
+                    className="w-[370px] rounded-[6px] border"
                     placeholder="••••••••"
                     value={password}
                     onChangeText={setPassword}
@@ -232,7 +223,7 @@ export default function RegisterScreen() {
         </View>
 
         {/* Bottom Tactile Pill Button */}
-        <View style={styles.footer}>
+        <View className="mt-6">
           <Button
             onPress={
               step === 1
@@ -242,9 +233,7 @@ export default function RegisterScreen() {
             disabled={isSubmitting}
           >
             <Text
-              style={[
-                styles.continuePillBtnText,
-              ]}
+              className="font-sans text-base leading-5 font-bold"
             >
               {step === 2
                 ? t("auth_create_account_btn")
@@ -256,94 +245,3 @@ export default function RegisterScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
-    paddingTop: Platform.OS === "ios" ? 54 : 36,
-    paddingBottom: Spacing.eight,
-  },
-  navHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.six,
-  },
-  navIconBtn: {
-    width: 40,
-    height: 40,
-
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  stepDots: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  dot: {
-    height: 6,
-    borderRadius: 3,
-  },
-  navLinkText: {
-    ...Typography.captionBold,
-    fontFamily: Fonts.sans,
-  },
-  stepContent: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  stepInner: {
-    width: "100%",
-    alignItems: "flex-end",
-  },
-  titleBlock: {
-    marginBottom: Spacing.six,
-  },
-  stepQuestion: {
-    ...Typography.display,
-    fontSize: 28,
-    lineHeight: 34,
-    fontFamily: Fonts.sans,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  largePillInputContainer: {
-    // flexDirection: "row",
-    width:"auto",
-    height:46,
-    alignItems: "center",
-    borderRadius: Radii.md,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.five,
-  },
-  credentialsInputs: {
-    flex: 1,
-    gap: Spacing.two,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  footer: {
-    marginTop: Spacing.six,
-  },
-  continuePillBtn: {
-    height: 54,
-    borderRadius: Radii.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  continuePillBtnText: {
-    ...Typography.bodyBold,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});

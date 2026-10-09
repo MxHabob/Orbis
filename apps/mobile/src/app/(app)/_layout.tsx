@@ -8,7 +8,7 @@
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
 export default function AppProtectedLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -16,7 +16,9 @@ export default function AppProtectedLayout() {
 
   if (isLoading) {
     return (
-      <View style={[styles.center, { backgroundColor: theme.background }]}>
+      <View
+        className="flex-1 items-center justify-center bg-background"
+      >
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -42,11 +44,3 @@ export default function AppProtectedLayout() {
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

@@ -7,12 +7,12 @@
  */
 
 import React, { useEffect, useMemo } from "react";
+import "../global.css";
 import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { useColorScheme } from "react-native";
 
-import { Colors } from "@/constants/theme";
 import { AuthProvider } from "@/lib/api";
 import { AppQueryProvider } from "@/providers/query-provider";
 import { EffectiveContextProvider } from "@/providers/effective-context";
@@ -28,7 +28,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const currentColors = Colors[isDark ? "dark" : "light"];
+  const currentColors = useTheme();
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -43,7 +43,14 @@ export default function RootLayout() {
         primary: currentColors.primary,
       },
     };
-  }, [isDark, currentColors]);
+  }, [
+    isDark,
+    currentColors.background,
+    currentColors.border,
+    currentColors.card,
+    currentColors.primary,
+    currentColors.text,
+  ]);
 
   useEffect(() => {
     // Hide native splash screen after mount
@@ -56,7 +63,7 @@ export default function RootLayout() {
   }, [currentColors.background]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
         <I18nProvider>
           <AuthProvider>

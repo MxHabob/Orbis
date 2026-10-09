@@ -5,7 +5,7 @@
  * or (auth)/sign-in if unauthenticated.
  */
 
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { Redirect } from "expo-router";
 import { useAuth } from "@/lib/api";
 import { useTheme } from "@/hooks/use-theme";
@@ -16,7 +16,9 @@ export default function IndexGate() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View
+        className="flex-1 items-center justify-center bg-background"
+      >
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -28,11 +30,3 @@ export default function IndexGate() {
 
   return <Redirect href="/(auth)/sign-in" />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

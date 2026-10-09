@@ -9,11 +9,9 @@ import {
   View,
   Text,
   Pressable,
-  StyleSheet,
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface ChipProps {
   label: string;
@@ -42,22 +40,22 @@ export function Chip({
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={disabled ? undefined : onPress}
+      className="flex-row items-center gap-1 rounded-full border px-3 py-1.5"
       style={({ pressed }) => [
-        styles.chip,
         {
           backgroundColor: selected ? theme.accentLight : theme.backgroundElement,
           borderColor: selected ? theme.primary : theme.border,
           opacity: disabled ? 0.5 : 1,
         },
-        pressed && !disabled && styles.pressed,
+        pressed && !disabled && { opacity: 0.8 },
         style,
       ]}
     >
-      {icon && <View style={styles.iconContainer}>{icon}</View>}
+      {icon && <View className="items-center justify-center">{icon}</View>}
 
       <Text
+        className="text-xs"
         style={[
-          styles.label,
           {
             color: selected ? theme.primary : theme.foreground,
             fontWeight: selected ? "600" : "500",
@@ -73,68 +71,19 @@ export function Chip({
           accessibilityLabel={`Remove ${label}`}
           onPress={onDelete}
           hitSlop={6}
-          style={styles.deleteButton}
+          className="ml-0.5 items-center justify-center"
         >
           <View
+            className="relative h-3.5 w-3.5 items-center justify-center rounded-full"
             style={[
-              styles.deleteIcon,
               { backgroundColor: selected ? theme.primary : theme.textMuted },
             ]}
           >
-            <View style={styles.clearBar1} />
-            <View style={styles.clearBar2} />
+            <View className="absolute h-[1.2px] w-2 rotate-45 bg-white" />
+            <View className="absolute h-[1.2px] w-2 -rotate-45 bg-white" />
           </View>
         </Pressable>
       )}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  chip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radii.full,
-    borderWidth: 1,
-    gap: Spacing.one,
-  },
-  iconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    ...Typography.caption,
-  },
-  deleteButton: {
-    marginLeft: 2,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  deleteIcon: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  clearBar1: {
-    position: "absolute",
-    width: 8,
-    height: 1.2,
-    backgroundColor: "#FFFFFF",
-    transform: [{ rotate: "45deg" }],
-  },
-  clearBar2: {
-    position: "absolute",
-    width: 8,
-    height: 1.2,
-    backgroundColor: "#FFFFFF",
-    transform: [{ rotate: "-45deg" }],
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-});

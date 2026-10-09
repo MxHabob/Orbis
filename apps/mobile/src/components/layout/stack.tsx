@@ -10,13 +10,38 @@ import {
   type ViewProps,
   type FlexAlignType,
   type ViewStyle,
-  StyleSheet,
 } from "react-native";
-import { Spacing } from "@/constants/theme";
+
+type SpacingScale =
+  | "half"
+  | "one"
+  | "two"
+  | "three"
+  | "four"
+  | "five"
+  | "six"
+  | "eight"
+  | "ten"
+  | "twelve"
+  | "sixteen";
+
+const gapClasses: Record<SpacingScale, string> = {
+  half: "gap-half",
+  one: "gap-one",
+  two: "gap-two",
+  three: "gap-three",
+  four: "gap-four",
+  five: "gap-five",
+  six: "gap-six",
+  eight: "gap-eight",
+  ten: "gap-ten",
+  twelve: "gap-twelve",
+  sixteen: "gap-sixteen",
+};
 
 export interface StackProps extends ViewProps {
   direction?: "column" | "row" | "column-reverse" | "row-reverse";
-  gap?: keyof typeof Spacing | number;
+  gap?: SpacingScale | number;
   align?: FlexAlignType;
   justify?:
     | "flex-start"
@@ -28,12 +53,6 @@ export interface StackProps extends ViewProps {
   wrap?: "wrap" | "nowrap" | "wrap-reverse";
   fullWidth?: boolean;
   flex?: number;
-}
-
-function resolveGap(gap?: keyof typeof Spacing | number): number | undefined {
-  if (gap === undefined) return undefined;
-  if (typeof gap === "number") return gap;
-  return Spacing[gap];
 }
 
 export function Stack({
@@ -50,16 +69,21 @@ export function Stack({
 }: StackProps) {
   const computedStyle: ViewStyle = {
     flexDirection: direction,
-    gap: resolveGap(gap),
+    gap: typeof gap === "number" ? gap : undefined,
     alignItems: align,
     justifyContent: justify,
     flexWrap: wrap,
     ...(fullWidth ? { width: "100%" } : {}),
     ...(flex !== undefined ? { flex } : {}),
   };
+  const gapClass = typeof gap === "string" ? gapClasses[gap] : undefined;
 
   return (
-    <View style={[computedStyle, style]} {...props}>
+    <View
+      className={`flex ${gapClass ?? ""}`}
+      style={[computedStyle, style]}
+      {...props}
+    >
       {children}
     </View>
   );

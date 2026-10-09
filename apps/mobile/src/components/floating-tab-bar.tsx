@@ -30,7 +30,6 @@ import { Grid, Document, ChartBar } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Colors, Fonts, Radii, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 
@@ -127,7 +126,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
     };
   }, [opacity, translateY]);
 
-  const bottom = Math.max(insets.bottom, Spacing.three) + Spacing.one;
+  const bottom = Math.max(insets.bottom, 12) + 4;
 
   const findRouteIndex = (name: string) =>
     state.routes.findIndex((route) => route.name === name);
@@ -190,7 +189,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
           <Text
             style={[
               styles.newBadgeText,
-              { color: theme.foreground, fontFamily: Fonts.sans },
+              { color: theme.foreground },
             ]}
           >
             {t("badge_new")}
@@ -231,7 +230,7 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
           numberOfLines={1}
           style={[
             styles.digitalIdText,
-            { color: theme.foreground, fontFamily: Fonts.sans },
+            { color: theme.foreground },
           ]}
         >
           {digitalIdLabel}
@@ -299,13 +298,13 @@ const styles = StyleSheet.create({
    */
   navigation: {
     position: "absolute",
-    left: Spacing.four,
-    right: Spacing.four,
+    left: 16,
+    right: 16,
     minHeight: 48,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: Spacing.two,
+    gap: 8,
     zIndex: 100,
   },
 
@@ -326,7 +325,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     flexShrink: 0,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
   },
 
   /** Wrapper only exists so NEW can sit above Apps. */
@@ -346,15 +345,15 @@ const styles = StyleSheet.create({
     left: -2,
     minWidth: 58,
     height: 30,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Radii.full,
+    paddingHorizontal: 8,
+    borderRadius: 9999,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
 
   newBadgeText: {
-    ...Typography.small,
+    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
     fontSize: 12,
     lineHeight: 14,
     fontWeight: "500",
@@ -367,16 +366,16 @@ const styles = StyleSheet.create({
     height: 44,
     minWidth: 120,
     maxWidth: 160,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radii.full,
+    paddingHorizontal: 12,
+    borderRadius: 9999,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.one,
+    gap: 4,
   },
 
   digitalIdText: {
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     fontSize: 14,
     lineHeight: 18,
     fontWeight: "500",

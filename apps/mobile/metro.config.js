@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
+const { withNativewind } = require("nativewind/metro");
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
@@ -39,4 +40,4 @@ config.resolver.extraNodeModules = {
   buffer: require.resolve("buffer/"),
 };
 
-module.exports = config;
+module.exports = withNativewind(config);

@@ -15,7 +15,6 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing } from "@/constants/theme";
 
 export interface SkeletonProps {
   width?: number | `${number}%` | "auto";
@@ -27,7 +26,7 @@ export interface SkeletonProps {
 export function Skeleton({
   width = "100%",
   height = 20,
-  borderRadius = Radii.md,
+  borderRadius = 6,
   style,
 }: SkeletonProps) {
   const theme = useTheme();
@@ -97,18 +96,18 @@ export function SkeletonCard() {
 
 const styles = StyleSheet.create({
   cardContainer: {
-    padding: Spacing.four,
-    borderRadius: Radii.lg,
+    padding: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#E2E8F030",
-    marginBottom: Spacing.three,
+    marginBottom: 12,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
   },
   col: {
-    marginLeft: Spacing.three,
+    marginLeft: 12,
     flex: 1,
   },
 });

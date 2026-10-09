@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { Search, ChevronRight } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface SearchInputProps extends Omit<TextInputProps, "style"> {
   value: string;
@@ -106,25 +105,25 @@ export function SearchInput({
 const styles = StyleSheet.create({
   container: {
     height: 42,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: 12,
   },
   iconBox: {
-    marginRight: Spacing.two,
+    marginRight: 8,
     alignItems: "center",
     justifyContent: "center",
   },
   input: {
     flex: 1,
     height: "100%",
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     paddingVertical: 0,
   },
   rightBox: {
-    marginLeft: Spacing.two,
+    marginLeft: 8,
     alignItems: "center",
     justifyContent: "center",
   },

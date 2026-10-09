@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Typography } from "@/constants/theme";
 
 interface AvatarProps {
   name: string;
@@ -25,8 +24,8 @@ export const Avatar = React.memo<AvatarProps>(
 
     return (
       <View
+        className="items-center justify-center overflow-hidden border"
         style={[
-          styles.container,
           {
             width: size,
             height: size,
@@ -39,14 +38,15 @@ export const Avatar = React.memo<AvatarProps>(
         {showImage ? (
           <Image
             source={{ uri: imageUrl! }}
+            className="rounded-full"
             style={{ width: size, height: size, borderRadius: size / 2 }}
             resizeMode="cover"
             onError={() => setImageError(true)}
           />
         ) : (
           <Text
+            className="text-center font-semibold"
             style={[
-              styles.initials,
               { color: theme.primaryForeground, fontSize: size * 0.3 },
             ]}
           >
@@ -59,16 +59,3 @@ export const Avatar = React.memo<AvatarProps>(
 );
 
 Avatar.displayName = "Avatar";
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  initials: {
-    ...Typography.bodyBold,
-    textAlign: "center",
-  },
-});

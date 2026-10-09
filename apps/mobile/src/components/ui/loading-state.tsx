@@ -13,7 +13,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Spacing, Typography } from "@/constants/theme";
 
 export interface LoadingStateProps {
   message?: string;
@@ -51,10 +50,10 @@ export function LoadingState({
 
 const styles = StyleSheet.create({
   container: {
-    padding: Spacing.six,
+    padding: 24,
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.three,
+    gap: 12,
   },
   fullscreen: {
     ...StyleSheet.absoluteFill,
@@ -62,7 +61,7 @@ const styles = StyleSheet.create({
   },
 
   message: {
-    ...Typography.bodySmall,
+    ...{"fontSize":13,"lineHeight":18,"fontWeight":"400"},
     textAlign: "center",
   },
 });

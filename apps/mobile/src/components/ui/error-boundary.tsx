@@ -9,7 +9,6 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { InfoCircle } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 import { Button } from "./button";
 
 // ─── Error Fallback UI ─────────────────────────────────────────────────────────
@@ -118,16 +117,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.six,
+    padding: 24,
   },
   card: {
     width: "100%",
     maxWidth: 380,
-    padding: Spacing.eight,
-    borderRadius: Radii["2xl"],
+    padding: 32,
+    borderRadius: 16,
     borderWidth: 1,
     alignItems: "center",
-    gap: Spacing.four,
+    gap: 16,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.1,
@@ -137,22 +136,22 @@ const styles = StyleSheet.create({
   iconWrapper: {
     width: 64,
     height: 64,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: Spacing.two,
+    marginBottom: 8,
   },
   title: {
-    ...Typography.h2,
+    ...{"fontSize":18,"lineHeight":24,"fontWeight":"700"},
     textAlign: "center",
   },
   message: {
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     textAlign: "center",
     lineHeight: 20,
   },
   button: {
-    marginTop: Spacing.two,
+    marginTop: 8,
     minWidth: 160,
   },
 });
