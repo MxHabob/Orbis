@@ -254,6 +254,21 @@ pub trait StudentRepository: Send + Sync {
         Ok(None)
     }
     async fn save(&self, student: &Student) -> Result<(), DomainError>;
+    async fn create_with_license_limit(
+        &self,
+        student: &Student,
+        max_students: Option<u64>,
+    ) -> Result<(), DomainError> {
+        if let Some(max_students) = max_students {
+            let current = self.find_by_org(student.org_id).await?.len() as u64;
+            if current.saturating_add(1) > max_students {
+                return Err(DomainError::LicenseRequired(format!(
+                    "The student quota of {max_students} has been reached"
+                )));
+            }
+        }
+        self.save(student).await
+    }
     async fn update_status(&self, id: Uuid, status: &str) -> Result<(), DomainError>;
     async fn update_status_batch(&self, ids: &[Uuid], status: &str) -> Result<usize, DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -904,6 +919,28 @@ pub trait EmployeeRepository: Send + Sync {
         org_id: Uuid,
     ) -> Result<std::collections::HashMap<String, i64>, DomainError>;
     async fn save(&self, employee: &Employee) -> Result<(), DomainError>;
+    async fn create_with_license_limit(
+        &self,
+        employee: &Employee,
+        max_staff: Option<u64>,
+    ) -> Result<(), DomainError> {
+        if let Some(max_staff) = max_staff {
+            let counts = self.count_by_status(employee.org_id).await?;
+            let ended = counts.get("terminated").copied().unwrap_or(0)
+                + counts.get("resigned").copied().unwrap_or(0);
+            let current = counts
+                .get("all")
+                .copied()
+                .unwrap_or(0)
+                .saturating_sub(ended);
+            if (current as u64).saturating_add(1) > max_staff {
+                return Err(DomainError::LicenseRequired(format!(
+                    "The staff quota of {max_staff} has been reached"
+                )));
+            }
+        }
+        self.save(employee).await
+    }
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
 }
 

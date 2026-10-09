@@ -30,6 +30,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     use sea_orm_migration::MigratorTrait;
     Migrator::up(&db, None).await?;
 
+    let license_data_dir = std::env::var_os("ORBIS_LICENSE_DATA_DIR")
+        .map(std::path::PathBuf::from)
+        .unwrap_or(std::env::current_dir()?.join(".orbis-license"));
+    let app_version = env!("CARGO_PKG_VERSION").to_string();
+    let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
+    let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
+        orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
+            &license_data_dir,
+            &app_version,
+            mulverse_url.as_deref(),
+        )?,
+    );
+    license_runtime.initialize().await?;
+    let _license_sync_handle =
+        orbis_infra::adapters::license_runtime::spawn_background_sync(license_runtime.clone(), 30);
+
     let org_repo = Arc::new(OrgRepoImpl { db: db.clone() });
     let org_unit_repo =
         Arc::new(orbis_infra::repositories::org_unit_repo::OrgUnitRepoImpl { db: db.clone() });
@@ -151,20 +167,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     // Build Domain Services
-    let student_service = Arc::new(orbis_app::services::StudentService::new(
-        student_repo.clone(),
-        person_repo.clone(),
-        student_repo.clone(),
-        student_repo.clone(),
-        settings_repo.clone(),
-        sequence_repo.clone(),
-        academic_repo.clone(),
-        finance_repo.clone(),
-        finance_repo.clone(),
-        override_repo.clone(),
-        event_bus.clone(),
-        permission_checker.clone(),
-    ));
+    let student_service = Arc::new(
+        orbis_app::services::StudentService::new(
+            student_repo.clone(),
+            person_repo.clone(),
+            student_repo.clone(),
+            student_repo.clone(),
+            settings_repo.clone(),
+            sequence_repo.clone(),
+            academic_repo.clone(),
+            finance_repo.clone(),
+            finance_repo.clone(),
+            override_repo.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        )
+        .with_license_runtime(license_runtime.clone()),
+    );
 
     let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
         progression_repo.clone(),
@@ -391,14 +410,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             permission_checker.clone(),
         ));
 
-    let employee_service = Arc::new(orbis_app::services::EmployeeService::new(
-        employee_repo.clone(),
-        person_repo.clone(),
-        group_repo.clone(),
-        identity_provisioning_service.clone(),
-        event_bus.clone(),
-        permission_checker.clone(),
-    ));
+    let employee_service = Arc::new(
+        orbis_app::services::EmployeeService::new(
+            employee_repo.clone(),
+            person_repo.clone(),
+            group_repo.clone(),
+            identity_provisioning_service.clone(),
+            event_bus.clone(),
+            permission_checker.clone(),
+        )
+        .with_license_runtime(license_runtime.clone()),
+    );
 
     let group_service = Arc::new(orbis_app::services::GroupService::new(
         group_repo.clone(),
@@ -535,6 +557,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_renderer_registry: renderer_registry,
         report_org_context_resolver: org_context_resolver,
         // ── System Services ────────────────────────────────────
+        license_runtime,
         system_service: Arc::new(orbis_app::services::SystemService::new(Arc::new(
             orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() },
         ))),

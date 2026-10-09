@@ -154,6 +154,7 @@ const statusBadge = $derived.by(() => {
         class: "bg-destructive/10 text-destructive border-destructive/20",
       };
     case "suspended":
+    case "deactivation_pending":
       return {
         label: m.license_status_suspended(),
         class: "bg-destructive/10 text-destructive border-destructive/20",

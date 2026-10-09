@@ -20,6 +20,7 @@ use super::identity_provisioning_service::{IdentityProvisioningService, Provisio
 use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::license::LicenseRuntime;
 use crate::ports::repositories::{
     EmployeeFilter, EmployeeRepository, GroupRepository, PersonRepository,
 };
@@ -155,6 +156,7 @@ pub struct EmployeeService {
     pub identity_provisioning_service: Arc<IdentityProvisioningService>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    license_runtime: Option<Arc<dyn LicenseRuntime>>,
 }
 
 impl EmployeeService {
@@ -173,7 +175,13 @@ impl EmployeeService {
             identity_provisioning_service,
             event_bus,
             permission_checker,
+            license_runtime: None,
         }
+    }
+
+    pub fn with_license_runtime(mut self, runtime: Arc<dyn LicenseRuntime>) -> Self {
+        self.license_runtime = Some(runtime);
+        self
     }
 
     /// Register a new employee with optional unified identity provisioning
@@ -186,6 +194,24 @@ impl EmployeeService {
         self.permission_checker
             .check(ctx, Permission::EmployeeCreate)
             .await?;
+        let max_staff = if let Some(runtime) = self.license_runtime.as_ref() {
+            runtime.authorize(org_id, None)?;
+            let max = runtime.get_limit("staff.max");
+            if max.is_some() {
+                let counts = self.employee_repo.count_by_status(org_id).await?;
+                let ended = counts.get("terminated").copied().unwrap_or(0)
+                    + counts.get("resigned").copied().unwrap_or(0);
+                let current = counts
+                    .get("all")
+                    .copied()
+                    .unwrap_or(0)
+                    .saturating_sub(ended);
+                runtime.check_limit("staff.max", current as u64, 1)?;
+            }
+            max
+        } else {
+            None
+        };
 
         let now = Utc::now();
 
@@ -371,7 +397,9 @@ impl EmployeeService {
             }
         }
 
-        self.employee_repo.save(&employee).await?;
+        self.employee_repo
+            .create_with_license_limit(&employee, max_staff)
+            .await?;
 
         // 5. Publish Domain Event
         let _ = self

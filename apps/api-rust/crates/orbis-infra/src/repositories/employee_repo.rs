@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,
+    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -526,28 +526,7 @@ impl EmployeeRepository for EmployeeRepoImpl {
     }
 
     async fn save(&self, employee: &Employee) -> Result<(), DomainError> {
-        let active_model = employee::ActiveModel {
-            id: Set(employee.id),
-            org_id: Set(employee.org_id),
-            person_id: Set(employee.person_id),
-            user_id: Set(employee.user_id),
-            employee_number: Set(employee.employee_number.clone()),
-            employee_type: Set(employee.employee_type.clone()),
-            job_title: Set(employee.job_title.clone()),
-            department: Set(employee.department.clone()),
-            org_unit_id: Set(employee.org_unit_id),
-            hire_date: Set(employee.hire_date.to_string()),
-            status: Set(employee.status.to_string()),
-            employment_type: Set(employee.employment_type.to_string()),
-            work_shift: Set(employee.work_shift.clone()),
-            notes: Set(employee.notes.clone()),
-            is_deleted: Set(employee.is_deleted),
-            deleted_at: Set(employee.deleted_at),
-            created_by: Set(employee.created_by),
-            updated_by: Set(employee.updated_by),
-            created_at: Set(employee.created_at),
-            updated_at: Set(employee.updated_at),
-        };
+        let active_model = employee_to_active_model(employee);
 
         if EmployeeEntity::find_by_id(employee.id)
             .one(&self.db)
@@ -586,5 +565,72 @@ impl EmployeeRepository for EmployeeRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
+    }
+    async fn create_with_license_limit(
+        &self,
+        employee: &Employee,
+        max_staff: Option<u64>,
+    ) -> Result<(), DomainError> {
+        let Some(max_staff) = max_staff else {
+            return EmployeeRepository::save(self, employee).await;
+        };
+
+        let transaction = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        crate::repositories::license_quota::acquire_organization_quota_lock(
+            &transaction,
+            employee.org_id,
+        )
+        .await?;
+
+        let current = EmployeeEntity::find()
+            .filter(employee::Column::OrgId.eq(employee.org_id))
+            .filter(employee::Column::IsDeleted.eq(false))
+            .filter(employee::Column::Status.is_not_in(["terminated", "resigned"]))
+            .count(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if current.saturating_add(1) > max_staff {
+            return Err(DomainError::LicenseRequired(format!(
+                "The staff quota of {max_staff} has been reached"
+            )));
+        }
+
+        employee_to_active_model(employee)
+            .insert(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
+    }
+}
+
+fn employee_to_active_model(employee: &Employee) -> employee::ActiveModel {
+    employee::ActiveModel {
+        id: Set(employee.id),
+        org_id: Set(employee.org_id),
+        person_id: Set(employee.person_id),
+        user_id: Set(employee.user_id),
+        employee_number: Set(employee.employee_number.clone()),
+        employee_type: Set(employee.employee_type.clone()),
+        job_title: Set(employee.job_title.clone()),
+        department: Set(employee.department.clone()),
+        org_unit_id: Set(employee.org_unit_id),
+        hire_date: Set(employee.hire_date.to_string()),
+        status: Set(employee.status.to_string()),
+        employment_type: Set(employee.employment_type.to_string()),
+        work_shift: Set(employee.work_shift.clone()),
+        notes: Set(employee.notes.clone()),
+        is_deleted: Set(employee.is_deleted),
+        deleted_at: Set(employee.deleted_at),
+        created_by: Set(employee.created_by),
+        updated_by: Set(employee.updated_by),
+        created_at: Set(employee.created_at),
+        updated_at: Set(employee.updated_at),
     }
 }

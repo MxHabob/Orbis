@@ -297,21 +297,42 @@ impl AppState {
             orbis_infra::repositories::document_repos::DocumentRequirementRepoImpl::new(db.clone()),
         );
 
+        let app_version = env!("CARGO_PKG_VERSION").to_string();
+        let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
+        let license_data_dir = std::env::var_os("ORBIS_LICENSE_DATA_DIR")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| app_data_dir.to_path_buf());
+        let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
+            orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
+                &license_data_dir,
+                &app_version,
+                mulverse_url.as_deref(),
+            )
+            .map_err(|e| format!("Failed to create license runtime: {e}"))?,
+        );
+        license_runtime
+            .initialize()
+            .await
+            .map_err(|e| format!("Failed to initialize license runtime: {e}"))?;
+
         // Build Domain Services
-        let student_service = Arc::new(orbis_app::services::StudentService::new(
-            student_repo.clone(),
-            person_repo.clone(),
-            student_repo.clone(),
-            student_repo.clone(),
-            settings_repo.clone(),
-            sequence_repo.clone(),
-            academic_repo.clone(),
-            finance_repo.clone(),
-            finance_repo.clone(),
-            override_repo.clone(),
-            event_bus.clone(),
-            permission_checker.clone(),
-        ));
+        let student_service = Arc::new(
+            orbis_app::services::StudentService::new(
+                student_repo.clone(),
+                person_repo.clone(),
+                student_repo.clone(),
+                student_repo.clone(),
+                settings_repo.clone(),
+                sequence_repo.clone(),
+                academic_repo.clone(),
+                finance_repo.clone(),
+                finance_repo.clone(),
+                override_repo.clone(),
+                event_bus.clone(),
+                permission_checker.clone(),
+            )
+            .with_license_runtime(license_runtime.clone()),
+        );
 
         let progression_service = Arc::new(orbis_app::services::ProgressionService::new(
             progression_repo.clone(),
@@ -491,14 +512,16 @@ impl AppState {
                 finance_repo.clone(),
             ));
 
-        let autopilot_service = Arc::new(orbis_app::services::AutopilotService::new(
-            autopilot_evaluator.clone(),
-            autopilot_engine.clone(),
-            autopilot_task_repo.clone(),
-            policy_repo.clone(),
-            permission_checker.clone(),
-        )
-        .with_notification_port(notification_adapter.clone()));
+        let autopilot_service = Arc::new(
+            orbis_app::services::AutopilotService::new(
+                autopilot_evaluator.clone(),
+                autopilot_engine.clone(),
+                autopilot_task_repo.clone(),
+                policy_repo.clone(),
+                permission_checker.clone(),
+            )
+            .with_notification_port(notification_adapter.clone()),
+        );
 
         let ai_service = Arc::new(
             orbis_app::services::AiOrchestrationService::new(
@@ -521,23 +544,6 @@ impl AppState {
             Arc::new(orbis_infra::repositories::system_repo::SystemRepoImpl { db: db.clone() });
 
         // ── Mulverse License Runtime ────────────────────────────────
-        let app_version = env!("CARGO_PKG_VERSION").to_string();
-        let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
-        let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
-            orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
-                app_data_dir,
-                &app_version,
-                mulverse_url.as_deref(),
-            )
-            .map_err(|e| format!("Failed to create license runtime: {e}"))?,
-        );
-
-        // Initialize the license runtime (loads persisted state, offline-first)
-        license_runtime
-            .initialize()
-            .await
-            .map_err(|e| format!("Failed to initialize license runtime: {e}"))?;
-
         // Bridge: expose LicenseRuntime as EntitlementProvider for existing services
         let entitlement_provider: Arc<dyn EntitlementProvider> = Arc::new(
             orbis_infra::adapters::license_runtime::LicenseEntitlementBridge::new(
@@ -570,14 +576,17 @@ impl AppState {
                 permission_checker.clone(),
             ));
 
-        let employee_service = Arc::new(orbis_app::services::EmployeeService::new(
-            employee_repo.clone(),
-            person_repo.clone(),
-            group_repo.clone(),
-            identity_provisioning_service.clone(),
-            event_bus.clone(),
-            permission_checker.clone(),
-        ));
+        let employee_service = Arc::new(
+            orbis_app::services::EmployeeService::new(
+                employee_repo.clone(),
+                person_repo.clone(),
+                group_repo.clone(),
+                identity_provisioning_service.clone(),
+                event_bus.clone(),
+                permission_checker.clone(),
+            )
+            .with_license_runtime(license_runtime.clone()),
+        );
 
         let group_service = Arc::new(orbis_app::services::GroupService::new(
             group_repo.clone(),
@@ -734,11 +743,10 @@ impl AppState {
         let _scheduler_handle = autopilot_scheduler.spawn(60);
 
         // Spawn background license sync (30s initial delay, then per-entitlement interval)
-        let _license_sync_handle =
-            orbis_infra::adapters::license_runtime::spawn_background_sync(
-                license_runtime.clone(),
-                30,
-            );
+        let _license_sync_handle = orbis_infra::adapters::license_runtime::spawn_background_sync(
+            license_runtime.clone(),
+            30,
+        );
 
         Ok(state)
     }

@@ -3,7 +3,14 @@
 pub mod api;
 pub mod state;
 
-use axum::Router;
+use axum::{
+    Router,
+    body::Body,
+    extract::{FromRequestParts, State},
+    http::Request,
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -624,5 +631,61 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(onboarding_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            enforce_api_license,
+        ))
         .with_state(state)
+}
+
+async fn enforce_api_license(
+    State(state): State<state::AppState>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    let path = request.uri().path();
+    if path.starts_with("/api/v1/auth/")
+        || path.starts_with("/api/v1/bootstrap")
+        || path == "/api/v1/system/readiness"
+        || path == "/api/v1/system/has-organization"
+        || path.starts_with("/swagger-ui")
+        || path.starts_with("/api-docs")
+    {
+        return next.run(request).await;
+    }
+
+    let feature = required_feature_for_path(path);
+    let (mut parts, body) = request.into_parts();
+    let auth = match api::extractors::AuthContext::from_request_parts(&mut parts, &state).await {
+        Ok(auth) => auth,
+        Err(error) => return error.into_response(),
+    };
+
+    if let Err(error) = state.license_runtime.authorize(auth.tenant_id, feature) {
+        return api::ApiError::from(error).into_response();
+    }
+
+    next.run(Request::from_parts(parts, body)).await
+}
+
+fn required_feature_for_path(path: &str) -> Option<&'static str> {
+    if path.starts_with("/api/v1/students") {
+        Some("students")
+    } else if path.starts_with("/api/v1/ai") {
+        Some("ai_grading")
+    } else if path.starts_with("/api/v1/exam") {
+        Some("exam_tools")
+    } else if path.starts_with("/api/v1/org-units") {
+        Some("multi_branch")
+    } else if path.starts_with("/api/v1/reports") || path.starts_with("/api/v1/analytics") {
+        Some("campus_analytics")
+    } else if path.starts_with("/api/v1/parent") {
+        Some("parent_portal")
+    } else if path.starts_with("/api/v1/sso") {
+        Some("sso")
+    } else if path.contains("offline-sync") {
+        Some("offline_sync")
+    } else {
+        None
+    }
 }

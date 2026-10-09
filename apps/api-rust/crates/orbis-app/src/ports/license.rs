@@ -26,6 +26,7 @@ use orbis_domain::entities::license::{
     ActivationResponse, LicenseSnapshot, LicenseStateDto, LicenseVerificationError,
 };
 use orbis_domain::errors::DomainError;
+use uuid::Uuid;
 
 /// Port for the Orbis license runtime.
 ///
@@ -86,6 +87,44 @@ pub trait LicenseRuntime: Send + Sync {
     ///
     /// Reads from the cached license state — no network call.
     fn is_feature_enabled(&self, key: &str) -> bool;
+
+    /// Authorize an operation for a tenant and optional feature entitlement.
+    fn authorize(&self, organization_id: Uuid, feature: Option<&str>) -> Result<(), DomainError> {
+        let snapshot = self.current_snapshot();
+        if !snapshot.state.is_operational() {
+            return Err(DomainError::LicenseRequired(format!(
+                "License state {:?} does not permit this operation",
+                snapshot.state
+            )));
+        }
+
+        self.verify_signature()
+            .map_err(|error| DomainError::LicenseRequired(error.to_string()))?;
+
+        if let Some(entitlement) = snapshot.signed_entitlement.as_ref() {
+            let licensed_organization = Uuid::parse_str(&entitlement.payload.organization_id)
+                .map_err(|_| {
+                    DomainError::LicenseRequired(
+                        "The license is not bound to a valid organization".to_string(),
+                    )
+                })?;
+            if licensed_organization != organization_id {
+                return Err(DomainError::Forbidden(
+                    "The license is not valid for the active organization".to_string(),
+                ));
+            }
+        }
+
+        if let Some(feature) = feature
+            && !self.is_feature_enabled(feature)
+        {
+            return Err(DomainError::LicenseRequired(format!(
+                "The '{feature}' license entitlement is required"
+            )));
+        }
+
+        Ok(())
+    }
 
     /// Get the limit value for a given limit key.
     ///

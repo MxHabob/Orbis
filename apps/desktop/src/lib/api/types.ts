@@ -1328,6 +1328,7 @@ export type LicenseState =
   | "offline_grace"
   | "expired"
   | "suspended"
+  | "deactivation_pending"
   | "revoked"
   | "invalid";
 
@@ -1351,7 +1352,8 @@ export type LimitKey =
 
 export interface LimitEntry {
   key: string;
-  max_value: number;
+  /** `null` means the quota is unlimited. */
+  max_value: number | null;
   unit?: string;
 }
 

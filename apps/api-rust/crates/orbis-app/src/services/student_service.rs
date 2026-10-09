@@ -1,6 +1,7 @@
 use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
+use crate::ports::license::LicenseRuntime;
 use crate::ports::repositories::{
     ClassRepository, EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository,
     PersonRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
@@ -36,6 +37,7 @@ pub struct StudentService {
     pub override_repo: Arc<dyn OverrideRequestRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
+    license_runtime: Option<Arc<dyn LicenseRuntime>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -187,7 +189,13 @@ impl StudentService {
             override_repo,
             event_bus,
             permission_checker,
+            license_runtime: None,
         }
+    }
+
+    pub fn with_license_runtime(mut self, runtime: Arc<dyn LicenseRuntime>) -> Self {
+        self.license_runtime = Some(runtime);
+        self
     }
 
     /// Check for duplicate student/person by national_id, phone, or email
@@ -285,6 +293,17 @@ impl StudentService {
         self.permission_checker
             .check(ctx, Permission::StudentCreate)
             .await?;
+        let max_students = if let Some(runtime) = self.license_runtime.as_ref() {
+            runtime.authorize(org_id, Some("students"))?;
+            let max = runtime.get_limit("students.max");
+            if max.is_some() {
+                let current = self.student_repo.find_by_org(org_id).await?.len() as u64;
+                runtime.check_limit("students.max", current, 1)?;
+            }
+            max
+        } else {
+            None
+        };
 
         let now = Utc::now();
         let org_settings = self
@@ -408,7 +427,9 @@ impl StudentService {
             updated_at: now,
         };
 
-        self.student_repo.save(&student).await?;
+        self.student_repo
+            .create_with_license_limit(&student, max_students)
+            .await?;
 
         // 5. Optionally create initial enrollment & evaluate policy / capacity
         let mut created_enrollment: Option<Enrollment> = None;

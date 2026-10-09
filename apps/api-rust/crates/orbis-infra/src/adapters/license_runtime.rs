@@ -19,6 +19,7 @@ use orbis_domain::entities::license::*;
 use orbis_domain::errors::DomainError;
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
+use tokio::sync::Mutex;
 use tracing::{debug, error, info, warn};
 
 use super::mulverse_client::MulverseClient;
@@ -115,6 +116,7 @@ pub struct MulverseLicenseRuntime {
     trial_policy: TrialPolicy,
     /// Public keys pinned into the application build (kid → base64 public key).
     trusted_keys: Vec<(String, String)>,
+    lifecycle_lock: Mutex<()>,
 }
 
 impl MulverseLicenseRuntime {
@@ -148,6 +150,7 @@ impl MulverseLicenseRuntime {
             mulverse_client,
             trial_policy: TrialPolicy::default(),
             trusted_keys,
+            lifecycle_lock: Mutex::new(()),
         })
     }
 
@@ -388,6 +391,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         &self,
         product_key: &str,
     ) -> Result<ActivationResponse, DomainError> {
+        let _lifecycle_guard = self.lifecycle_lock.lock().await;
         validate_product_key(product_key).map_err(DomainError::Validation)?;
 
         let installation_id = self.installation_id();
@@ -462,6 +466,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     }
 
     async fn start_trial(&self) -> Result<LicenseSnapshot, DomainError> {
+        let _lifecycle_guard = self.lifecycle_lock.lock().await;
         let current = self.current_snapshot();
 
         if current.trial_started_at.is_some() {
@@ -493,7 +498,14 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     }
 
     async fn refresh(&self) -> Result<(), DomainError> {
+        let _lifecycle_guard = self.lifecycle_lock.lock().await;
         let current = self.current_snapshot();
+
+        if current.state == LicenseState::DeactivationPending {
+            return Err(DomainError::Conflict(
+                "License deactivation is pending; retry deactivation before refreshing".to_string(),
+            ));
+        }
 
         let se = match &current.signed_entitlement {
             Some(se) => se.clone(),
@@ -561,6 +573,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     }
 
     async fn deactivate(&self) -> Result<(), DomainError> {
+        let _lifecycle_guard = self.lifecycle_lock.lock().await;
         let current = self.current_snapshot();
 
         if let Some(ref se) = current.signed_entitlement {
@@ -577,21 +590,26 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                     );
                 }
                 Err(e) => {
-                    warn!("Failed to deactivate with Mulverse (clearing local state anyway): {e}");
+                    warn!("Failed to deactivate with Mulverse; preserving state for retry: {e}");
+                    let mut pending = current.clone();
+                    pending.state = LicenseState::DeactivationPending;
+                    self.update_snapshot(pending)?;
+                    return Err(DomainError::Internal(format!(
+                        "License deactivation is pending because Mulverse could not confirm it: {e}"
+                    )));
                 }
             }
         }
 
-        let snapshot = LicenseSnapshot::new_unavailable(
+        let mut snapshot = LicenseSnapshot::new_unavailable(
             current.installation_id.clone(),
             self.app_version.clone(),
         );
+        snapshot.trial_started_at = current.trial_started_at;
+        snapshot.trial_policy = current.trial_policy;
         self.update_snapshot(snapshot)?;
 
-        let path = self.app_data_dir.join(LICENSE_SNAPSHOT_FILE);
-        let _ = std::fs::remove_file(&path);
-
-        info!("License state cleared — installation deactivated");
+        info!("License deactivation confirmed and local state cleared");
         Ok(())
     }
 
@@ -600,7 +618,10 @@ impl LicenseRuntime for MulverseLicenseRuntime {
     }
 
     fn get_limit(&self, key: &str) -> Option<u64> {
-        self.current_snapshot().get_limit(key).map(|v| v as u64)
+        self.current_snapshot()
+            .get_limit(key)
+            .filter(|value| *value >= 0)
+            .map(|value| value as u64)
     }
 
     fn check_limit(&self, key: &str, current_count: u64, amount: u64) -> Result<(), DomainError> {
@@ -661,6 +682,9 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
                 orbis_domain::entities::entitlement::EntitlementStatus::Expired
             }
             LicenseState::Suspended => {
+                orbis_domain::entities::entitlement::EntitlementStatus::Suspended
+            }
+            LicenseState::DeactivationPending => {
                 orbis_domain::entities::entitlement::EntitlementStatus::Suspended
             }
             LicenseState::Unavailable => {
