@@ -14,12 +14,15 @@ import type {
 export type {
   AcademicContextResponse,
   AttendanceDto,
+  BehaviorRecordDto,
   BatchMarkAttendanceRequest,
   BatchRecordGradesRequest,
   ClassDto,
   ClassSubjectDto,
   DashboardCountsDto,
   EnrollmentDto,
+  ExamScheduleDto,
+  ExamSessionDto,
   GradeDto,
   GuardianDto,
   MarkAttendanceRequest,
@@ -33,6 +36,7 @@ export type {
   SubjectDto,
   TimeSlotDto,
   UserDto,
+  UserDeviceDto,
 } from "@orbis/sdk";
 
 export type ValidationResult = ValidationResultDto;

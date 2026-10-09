@@ -124,6 +124,26 @@ export default function StudentIndexScreen() {
                 })
               }
             />
+            <FeatureCard
+              title={t("student_exams")}
+              description={t("student_exams_description")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(app)/student/[id]/exams",
+                  params: { id: student.id },
+                })
+              }
+            />
+            <FeatureCard
+              title={t("student_fees")}
+              description={t("student_fees_description")}
+              onPress={() =>
+                router.push({
+                  pathname: "/(app)/student/[id]/fees",
+                  params: { id: student.id },
+                })
+              }
+            />
           </View>
         </>
       ) : null}

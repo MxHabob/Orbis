@@ -18,13 +18,17 @@ import type {
   EnrollmentDto,
   GradeDto,
   AttendanceDto,
+  BehaviorRecordDto,
   ScheduledLessonDto,
+  ExamScheduleDto,
+  ExamSessionDto,
   StudentFeeDto,
   StudentDto,
   SubjectDto,
   TimeSlotDto,
   GuardianDto,
   UserDto,
+  UserDeviceDto,
   OrganizationSettingsDto,
   MarkAttendanceRequest,
   BatchMarkAttendanceRequest,
@@ -67,6 +71,39 @@ export function useCurrentOrgQuery() {
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
+  });
+}
+
+export function useDevicesQuery() {
+  return useQuery({
+    queryKey: queryKeys.auth.devices(),
+    queryFn: async (): Promise<UserDeviceDto[]> => {
+      const response = await api.listDevices({ throwOnError: true });
+      const devices = extractData<UserDeviceDto[]>(response);
+      if (!Array.isArray(devices)) {
+        throw new Error("The device list response was not a list.");
+      }
+      return devices;
+    },
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
+export function useRevokeDeviceMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (deviceId: string) => {
+      await api.revokeDevice({
+        path: { id: deviceId },
+        throwOnError: true,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.auth.devices(),
+      });
+    },
   });
 }
 
@@ -574,6 +611,147 @@ export function useStudentAttendanceQuery(studentId?: string) {
   });
 }
 
+export function useStudentBehaviorQuery(studentId?: string) {
+  return useQuery({
+    queryKey: queryKeys.student.behavior(studentId ?? ""),
+    queryFn: async (): Promise<BehaviorRecordDto[]> => {
+      if (!studentId) throw new Error("A student ID is required.");
+      const response = await api.listStudentBehavior({
+        path: { id: studentId },
+        throwOnError: true,
+      });
+      const records = extractData<BehaviorRecordDto[]>(response);
+      if (!Array.isArray(records)) {
+        throw new Error("The behavior response was not a list.");
+      }
+      return records;
+    },
+    enabled: Boolean(studentId),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
+export interface StudentExamItem {
+  schedule: ExamScheduleDto;
+  session: ExamSessionDto;
+  subject: SubjectDto | undefined;
+}
+
+export function useStudentExamsQuery(studentId?: string) {
+  return useQuery({
+    queryKey: queryKeys.student.exams(studentId ?? ""),
+    queryFn: async (): Promise<StudentExamItem[]> => {
+      if (!studentId) throw new Error("A student ID is required.");
+      const enrollmentResponse = await api.listEnrollments({
+        query: { student_id: studentId },
+        throwOnError: true,
+      });
+      const enrollments = extractData<EnrollmentDto[]>(enrollmentResponse);
+      if (!Array.isArray(enrollments)) {
+        throw new Error("The enrollments response was not a list.");
+      }
+
+      const activeEnrollments = enrollments.filter(
+        (enrollment) => enrollment.status === "active" && enrollment.class_id,
+      );
+      if (activeEnrollments.length === 0) return [];
+
+      const classSubjectLists = await Promise.all(
+        activeEnrollments.map((enrollment) => {
+          if (!enrollment.class_id) {
+            throw new Error("An active enrollment is missing its class.");
+          }
+          return api.listClassSubjects({
+            query: {
+              class_id: enrollment.class_id,
+              period_id: enrollment.period_id,
+            },
+            throwOnError: true,
+          });
+        }),
+      );
+      const classSubjects = classSubjectLists.flatMap((response) => {
+        const items = extractData<ClassSubjectDto[]>(response);
+        if (!Array.isArray(items)) {
+          throw new Error("The class subjects response was not a list.");
+        }
+        return items.filter((item) => item.is_active);
+      });
+      if (classSubjects.length === 0) return [];
+
+      const periodIds = [...new Set(activeEnrollments.map((item) => item.period_id))];
+      const [sessionResponses, subjectsResponse] = await Promise.all([
+        Promise.all(
+          periodIds.map((periodId) =>
+            api.client.get<{ 200: ExamSessionDto[] }, unknown, true>({
+              url: "/api/v1/exam-sessions",
+              query: { period_id: periodId },
+              throwOnError: true,
+            }),
+          ),
+        ),
+        api.listSubjects({ throwOnError: true }),
+      ]);
+      const sessions = sessionResponses.flatMap((response) => {
+        const items = extractData<ExamSessionDto[]>(response);
+        if (!Array.isArray(items)) {
+          throw new Error("The exam sessions response was not a list.");
+        }
+        return items;
+      });
+      const subjects = extractData<SubjectDto[]>(subjectsResponse);
+      if (!Array.isArray(subjects)) {
+        throw new Error("The subjects response was not a list.");
+      }
+      if (sessions.length === 0) return [];
+
+      const schedulesBySession = await Promise.all(
+        sessions.map((session) =>
+          api.listSchedules({
+            query: { session_id: session.id },
+            throwOnError: true,
+          }),
+        ),
+      );
+      const schedules = schedulesBySession.flatMap((response) => {
+        const items = extractData<ExamScheduleDto[]>(response);
+        if (!Array.isArray(items)) {
+          throw new Error("The exam schedule response was not a list.");
+        }
+        return items;
+      });
+      const sessionById = new Map(sessions.map((session) => [session.id, session]));
+      const classSubjectById = new Map(
+        classSubjects.map((classSubject) => [classSubject.id, classSubject]),
+      );
+      const subjectById = new Map(subjects.map((subject) => [subject.id, subject]));
+
+      return schedules
+        .flatMap((schedule) => {
+          const session = sessionById.get(schedule.exam_session_id);
+          const classSubject = classSubjectById.get(schedule.class_subject_id);
+          if (!session || !classSubject) return [];
+          return [
+            {
+              schedule,
+              session,
+              subject: subjectById.get(classSubject.subject_id),
+            },
+          ];
+        })
+        .sort(
+          (a, b) =>
+            a.schedule.exam_date.localeCompare(b.schedule.exam_date) ||
+            a.schedule.start_time.localeCompare(b.schedule.start_time),
+        );
+    },
+    enabled: Boolean(studentId),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
 export interface StudentScheduleItem {
   lesson: ScheduledLessonDto;
   timeSlot: TimeSlotDto;
@@ -727,16 +905,21 @@ export function useFeesQuery(studentId?: string) {
   return useQuery({
     queryKey: queryKeys.finance.studentFees({ studentId }),
     queryFn: async (): Promise<StudentFeeDto[]> => {
-      if (!studentId) return [];
-      try {
-        const res = await api.listFees({
-          query: { student_id: studentId } as any,
-          throwOnError: true,
-        });
-        return extractData<StudentFeeDto[]>(res) ?? [];
-      } catch {
-        return [];
+      if (!studentId) throw new Error("A student ID is required.");
+      const response = await api.client.get<
+        { 200: StudentFeeDto[] },
+        unknown,
+        true
+      >({
+        url: "/api/v1/student-fees",
+        query: { student_id: studentId },
+        throwOnError: true,
+      });
+      const fees = extractData<StudentFeeDto[]>(response);
+      if (!Array.isArray(fees)) {
+        throw new Error("The student fees response was not a list.");
       }
+      return fees;
     },
     enabled: Boolean(studentId),
     staleTime: STALE_TIME,

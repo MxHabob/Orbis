@@ -62,8 +62,11 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.student.all, "detail", id] as const,
     attendance: (id: string) =>
       [...queryKeys.student.all, "attendance", id] as const,
+    behavior: (id: string) =>
+      [...queryKeys.student.all, "behavior", id] as const,
     schedule: (id: string) =>
       [...queryKeys.student.all, "schedule", id] as const,
+    exams: (id: string) => [...queryKeys.student.all, "exams", id] as const,
     enrollments: (filter?: { classId?: string; studentId?: string }) =>
       [...queryKeys.student.all, "enrollments", filter ?? {}] as const,
     enrollment: (id: string) =>

@@ -1,9 +1,20 @@
-import { Text, View } from "react-native";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
+import { useI18n } from "@/lib/i18n";
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen() {
+  const { t } = useI18n();
+
   return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <Text className="font-sans text-2xl leading-[30px] font-extrabold text-foreground">Notifications</Text>
-    </View>
+    <ScreenScrollView
+      horizontalPadding="five"
+      verticalPadding="six"
+      scrollViewProps={{ contentContainerClassName: "flex-grow justify-center" }}
+    >
+      <EmptyState
+        title={t("notifications_inbox_unavailable_title")}
+        description={t("notifications_inbox_unavailable_description")}
+      />
+    </ScreenScrollView>
   );
 }

@@ -19,6 +19,7 @@ import { AppQueryProvider } from "@/providers/query-provider";
 import { EffectiveContextProvider } from "@/providers/effective-context";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { applyThemePreference, loadThemePreference } from "@/lib/theme-preference";
 import { ToastProvider } from "@/components/ui/toast";
 import { AppErrorBoundary } from "@/components/ui/error-boundary";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -56,6 +57,14 @@ export default function RootLayout() {
   useEffect(() => {
     // Hide native splash screen after mount
     SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadThemePreference()
+      .then(applyThemePreference)
+      .catch((error: unknown) => {
+        console.error("[Orbis Mobile Theme] Failed to load saved theme.", error);
+      });
   }, []);
 
   useEffect(() => {
