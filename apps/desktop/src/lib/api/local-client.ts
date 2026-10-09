@@ -1151,7 +1151,7 @@ export class LocalClient implements OrbisApiClient {
 
   // ── Templates ───────────────────────────────────────────────
   async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
-    return unwrap(await invoke("template_create", { request: req }));
+    return unwrap(await invoke("template_create", { input: req }));
   }
   async getTemplate(id: string): Promise<TemplateDto> {
     return unwrap(await invoke("template_get", { id }));

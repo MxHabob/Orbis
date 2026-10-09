@@ -31,6 +31,7 @@ pub struct UpdateOrgRequest {
     pub primary_color: Option<String>,
     pub logo: Option<String>,
     pub favicon: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -178,6 +179,16 @@ impl OrganizationService {
         }
         if let Some(fav) = req.favicon {
             org.favicon = Some(fav);
+        }
+        if let Some(metadata) = req.metadata {
+            let mut merged = org.metadata.take().unwrap_or_else(|| serde_json::json!({}));
+            if let (Some(existing), Some(incoming)) = (merged.as_object_mut(), metadata.as_object())
+            {
+                existing.extend(incoming.clone());
+            } else {
+                merged = metadata;
+            }
+            org.metadata = Some(merged);
         }
         org.updated_at = Utc::now();
         org.version += 1;

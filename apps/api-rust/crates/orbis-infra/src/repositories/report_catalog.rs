@@ -44,6 +44,46 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             provider_key: "academic.term_result",
         },
         ReportDefEntry {
+            code: "rep.academic.primary-midterm-grade-certificate",
+            name: "Primary School Midterm Grade Certificate",
+            name_ar: "شهادة درجات منتصف الفصل للمرحلة الابتدائية",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for primary-school students, designed for midterm results",
+            description_ar: "شهادة درجات بمقاس A5 لطلاب المرحلة الابتدائية في منتصف الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.primary-final-grade-certificate",
+            name: "Primary School Final Grade Certificate",
+            name_ar: "شهادة درجات نهاية الفصل للمرحلة الابتدائية",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for primary-school students, designed for final results",
+            description_ar: "شهادة درجات بمقاس A5 لطلاب المرحلة الابتدائية في نهاية الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.general-midterm-grade-certificate",
+            name: "General Midterm Grade Certificate",
+            name_ar: "شهادة درجات منتصف الفصل العامة",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for students in any educational stage, designed for midterm results",
+            description_ar: "شهادة درجات عامة بمقاس A5 في منتصف الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.general-final-grade-certificate",
+            name: "General Final Grade Certificate",
+            name_ar: "شهادة درجات نهاية الفصل العامة",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for students in any educational stage, designed for final results",
+            description_ar: "شهادة درجات عامة بمقاس A5 في نهاية الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
             code: "rep.academic.official-transcript",
             name: "Official Multi-Year Academic Transcript",
             name_ar: "السجل الأكاديمي الشامل وكشف العلامات التراكمي",
@@ -831,7 +871,9 @@ pub async fn provision_master_report_definitions<C: ConnectionTrait>(
                 (idx as i32).into(),
                 now.to_string().into(), now.to_string().into()
             ]
-        )).await.ok();
+        )).await.map_err(|error| {
+            DomainError::Internal(format!("Failed to provision report {}: {error}", entry.code))
+        })?;
     }
 
     Ok(())

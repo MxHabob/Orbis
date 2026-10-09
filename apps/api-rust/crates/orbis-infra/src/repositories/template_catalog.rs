@@ -1,3 +1,4 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use orbis_domain::errors::DomainError;
 use sea_orm::{ConnectionTrait, Statement};
 use serde_json::json;
@@ -24,7 +25,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
             "INSERT INTO report_templates (id, org_id, code, name, name_ar, description, description_ar, document_type, entity_type, master_template_id, status, version, published_version, published_at, published_by, page_size, orientation, margins_json, document_json, locale, tags, is_system, is_default, created_by, deleted_at, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, '{\"top\":10,\"bottom\":10,\"left\":10,\"right\":10}', $12, 'ar', '[]', 1, 1, $9, NULL, $8, $8 \
+             SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, '{\"top\":10,\"bottom\":10,\"left\":10,\"right\":10}', $12, 'ar', '[\"templates\"]', 1, 1, $9, NULL, $8, $8 \
              WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND code = $3)",
             vec![
                 tid.into(), org_id.into(), code.into(),
@@ -34,7 +35,9 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
                 page_sz.into(), page_or.into(),
                 doc_str.into(),
             ]
-        )).await.ok();
+        )).await.map_err(|error| {
+            DomainError::Internal(format!("Failed to provision template {code}: {error}"))
+        })?;
     }
 
     Ok(())
@@ -50,7 +53,7 @@ pub fn get_master_template_definitions() -> Vec<(
     &'static str,
     serde_json::Value,
 )> {
-    vec![
+    let mut templates = vec![
         // ── 1. Smart Student ID Card (CR80 / ID_CARD Landscape 85.6mm x 54mm) ─
         (
             "administration.student-id-card",
@@ -340,7 +343,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Text",
                             "id": "ministry-header",
-                            "props": { "content": "المملكة العربية السعودية\nوزارة التعليم\n{{$org.name_ar}}", "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl", "lineHeight": 1.5 },
+                            "props": { "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar}}", "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl", "lineHeight": 1.5 },
                             "position": { "x": 125, "y": 20, "width": 65, "height": 20 }
                         },
                         {
@@ -644,7 +647,7 @@ pub fn get_master_template_definitions() -> Vec<(
                             "type": "Text",
                             "id": "rcpt-body",
                             "props": {
-                                "content": "استلمنا من السيد / السيدة: {{receipt.payerName}}\nعن الطالب / الطالبة: {{receipt.studentName}}\nمبلغاً وقدره: {{receipt.amount}} ريال سعودي\nفقط وقدره: {{receipt.amountWords}}\nوذلك مقابل: {{receipt.description}}",
+                                "content": "استلمنا من السيد / السيدة: {{receipt.payerName}}\nعن الطالب / الطالبة: {{receipt.studentName}}\nمبلغاً وقدره: {{receipt.amount}} {{$org.currency}}\nفقط وقدره: {{receipt.amountWords}}\nوذلك مقابل: {{receipt.description}}",
                                 "fontSize": 10.5,
                                 "fontFamily": "Rubik",
                                 "fontWeight": "normal",
@@ -850,7 +853,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Text",
                             "id": "transcript-header",
-                            "props": { "content": "المملكة العربية السعودية\nوزارة التعليم\n{{$org.name_ar}}\nعمادة القبول والتسجيل", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl", "lineHeight": 1.4 },
+                            "props": { "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar}}\nعمادة القبول والتسجيل", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl", "lineHeight": 1.4 },
                             "position": { "x": 120, "y": 15, "width": 70, "height": 22 }
                         },
                         {
@@ -926,5 +929,329 @@ pub fn get_master_template_definitions() -> Vec<(
                 }]
             }),
         ),
+    ];
+
+    templates.extend(default_grade_certificate_templates());
+    templates.push(default_letterhead_template());
+    templates
+}
+
+fn default_grade_certificate_templates() -> Vec<(
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+)> {
+    let emblem = STANDARD.encode(include_bytes!(
+        "../../../orbis-app/src/defaults/assest/The Public Slogan.png"
+    ));
+    let school_art = STANDARD.encode(include_bytes!(
+        "../../../orbis-app/src/defaults/assest/The smiling face.png"
+    ));
+    let play_blocks = STANDARD.encode(include_bytes!(
+        "../../../orbis-app/src/defaults/assest/cube.png"
+    ));
+    let emblem = format!("data:image/png;base64,{emblem}");
+    let school_art = format!("data:image/png;base64,{school_art}");
+    let play_blocks = format!("data:image/png;base64,{play_blocks}");
+
+    [
+        (
+            "academic.primary-grade-certificate",
+            "Primary School Grade Certificate",
+            "شهادة درجات المرحلة الابتدائية",
+            "student",
+            "REPORT",
+            "A5",
+            "landscape",
+            true,
+        ),
+        (
+            "academic.general-grade-certificate",
+            "General Grade Certificate",
+            "شهادة درجات عامة",
+            "student",
+            "REPORT",
+            "A5",
+            "landscape",
+            false,
+        ),
     ]
+    .into_iter()
+    .map(
+        |(code, name, name_ar, entity, document_type, page_size, orientation, elementary)| {
+            let decorative_nodes = if elementary {
+                vec![
+                    {
+                        json!({
+                            "type": "Image",
+                            "id": "certificate-school-art",
+                            "props": { "src": school_art, "fit": "contain" },
+                            "position": { "x": 180, "y": 7, "width": 25, "height": 30 }
+                        })
+                    },
+                    json!({
+                        "type": "Image",
+                        "id": "certificate-play-blocks",
+                        "props": { "src": play_blocks, "fit": "contain" },
+                        "position": { "x": 5, "y": 108, "width": 32, "height": 36 }
+                    }),
+                ]
+            } else {
+                vec![json!({
+                        "type": "Shape",
+                        "id": "certificate-decoration",
+                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#d6b66a", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "position": { "x": 4, "y": 4, "width": 202, "height": 140 }
+                    })]
+            };
+
+            let mut children = vec![
+                json!({
+                    "type": "Image",
+                    "id": "organization-emblem",
+                    "props": { "src": emblem, "fit": "contain" },
+                    "position": { "x": 96, "y": 8, "width": 18, "height": 16 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "bismillah",
+                    "props": { "content": "بسم الله الرحمن الرحيم", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl" },
+                    "position": { "x": 65, "y": 3, "width": 80, "height": 5 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "institution-header",
+                    "props": { "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl", "lineHeight": 1.25 },
+                    "position": { "x": 145, "y": 5, "width": 60, "height": 26 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "certificate-title",
+                    "props": { "content": "كشف درجات {{report.periodName}}", "fontSize": 13, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl" },
+                    "position": { "x": 30, "y": 34, "width": 150, "height": 10 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "student-details-right",
+                    "props": { "content": "اسم الطالب: {{student.name}}\nالصف: {{student.className}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "start", "direction": "rtl", "lineHeight": 1.7 },
+                    "position": { "x": 110, "y": 45, "width": 90, "height": 15 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "student-details-left",
+                    "props": { "content": "العام الدراسي: {{academicYear.name}}\nالتقرير: {{report.periodName}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "start", "direction": "rtl", "lineHeight": 1.7 },
+                    "position": { "x": 10, "y": 45, "width": 90, "height": 15 }
+                }),
+                json!({
+                    "type": "Table",
+                    "id": "grades-table",
+                    "props": {
+                        "dataSource": "grades",
+                        "columns": [
+                            { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "32%" },
+                            { "header": "أعمال الفصل", "headerAr": "أعمال الفصل", "field": "courseworkScore", "width": "18%" },
+                            { "header": "الاختبار", "headerAr": "الاختبار", "field": "examScore", "width": "18%" },
+                            { "header": "المجموع", "headerAr": "المجموع", "field": "totalScore", "width": "17%" },
+                            { "header": "التقدير", "headerAr": "التقدير", "field": "gradeLetter", "width": "15%" }
+                        ],
+                        "showHeader": true,
+                        "showGrid": true,
+                        "direction": "rtl"
+                    },
+                    "position": { "x": 45, "y": 64, "width": 155, "height": 62 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "notes",
+                    "props": { "content": "ملاحظات\n..........................................\n..........................................", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl", "lineHeight": 1.7 },
+                    "position": { "x": 5, "y": 77, "width": 38, "height": 32 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "teacher-signature",
+                    "props": { "content": "معلم الصف\n........................", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl" },
+                    "position": { "x": 145, "y": 130, "width": 50, "height": 14 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "principal-signature",
+                    "props": { "content": "مدير المدرسة\n........................", "fontSize": 8, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl" },
+                    "position": { "x": 65, "y": 130, "width": 50, "height": 14 }
+                }),
+                json!({
+                    "type": "Text",
+                    "id": "teacher-name",
+                    "props": { "content": "{{teacher.name}}", "fontSize": 7, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#111827", "textAlign": "center", "direction": "rtl" },
+                    "position": { "x": 145, "y": 144, "width": 55, "height": 4 }
+                }),
+            ];
+            children.extend(decorative_nodes);
+
+            (
+                code,
+                name,
+                name_ar,
+                entity,
+                document_type,
+                page_size,
+                orientation,
+                json!({
+                    "version": "2.0",
+                    "meta": {
+                        "name": name,
+                        "nameAr": name_ar,
+                        "documentType": document_type,
+                        "entityType": entity,
+                        "locale": "ar",
+                        "pageSetup": {
+                            "size": page_size,
+                            "orientation": orientation,
+                            "margins": { "top": 3, "bottom": 3, "left": 3, "right": 3 },
+                            "unit": "mm"
+                        }
+                    },
+                    "variables": {
+                        "student.name": { "source": "student.name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
+                        "student.className": { "source": "student.class_name", "type": "string", "label": "Class", "labelAr": "الصف" },
+                        "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
+                        "report.periodName": { "source": "report.period_name", "type": "string", "label": "Report Period", "labelAr": "فترة التقرير" },
+                        "teacher.name": { "source": "teacher.name", "type": "string", "label": "Teacher Name", "labelAr": "اسم المعلم" }
+                    },
+                    "assets": {},
+                    "pages": [{
+                        "type": "Page",
+                        "id": "p1",
+                        "children": children
+                    }]
+                }),
+            )
+        },
+    )
+    .collect()
+}
+
+fn default_letterhead_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "administration.organization-letterhead",
+        "Organization Letterhead",
+        "ترويسة المؤسسة",
+        "organization",
+        "CERTIFICATE",
+        "A4",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Organization Letterhead",
+                "nameAr": "ترويسة المؤسسة",
+                "documentType": "CERTIFICATE",
+                "entityType": "organization",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "portrait",
+                    "margins": { "top": 12, "bottom": 15, "left": 15, "right": 15 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {},
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Image",
+                        "id": "organization-logo",
+                        "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                        "position": { "x": 96, "y": 12, "width": 18, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "organization-identity-header",
+                        "props": { "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar}}", "fontSize": 12, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "center", "direction": "rtl", "lineHeight": 1.5 },
+                        "position": { "x": 35, "y": 32, "width": 140, "height": 30 }
+                    },
+                    {
+                        "type": "Separator",
+                        "id": "header-divider",
+                        "props": { "direction": "horizontal", "color": "#cbd5e1", "thickness": 0.6 },
+                        "position": { "x": 15, "y": 67, "width": 180, "height": 1 }
+                    }
+                ]
+            }]
+        }),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_master_template_definitions;
+
+    #[test]
+    fn provisions_a5_grade_certificates_and_an_organization_letterhead() {
+        let templates = get_master_template_definitions();
+        let primary = templates
+            .iter()
+            .find(|template| template.0 == "academic.primary-grade-certificate")
+            .expect("primary certificate template");
+        let general = templates
+            .iter()
+            .find(|template| template.0 == "academic.general-grade-certificate")
+            .expect("general certificate template");
+        let letterhead = templates
+            .iter()
+            .find(|template| template.0 == "administration.organization-letterhead")
+            .expect("default letterhead template");
+
+        for certificate in [primary, general] {
+            assert_eq!(certificate.5, "A5");
+            assert_eq!(
+                certificate.7["meta"]["pageSetup"]["orientation"],
+                "landscape"
+            );
+            let children = certificate.7["pages"][0]["children"]
+                .as_array()
+                .expect("template nodes");
+            assert!(children.iter().any(|node| {
+                node["type"] == "Image"
+                    && node["props"]["src"]
+                        .as_str()
+                        .is_some_and(|src| src.starts_with("data:image/png;base64,"))
+            }));
+            assert!(children.iter().any(|node| {
+                node["type"] == "Text"
+                    && node["props"]["content"]
+                        .as_str()
+                        .is_some_and(|content| content.contains("{{$org.ministry_name}}"))
+            }));
+        }
+
+        assert_eq!(letterhead.5, "A4");
+        assert_eq!(letterhead.3, "organization");
+    }
+
+    #[test]
+    fn default_catalog_does_not_embed_country_or_ministry_names() {
+        let templates = get_master_template_definitions();
+        for template in templates {
+            let serialized = template.7.to_string();
+            assert!(!serialized.contains("المملكة العربية السعودية"));
+            assert!(!serialized.contains("وزارة التعليم"));
+        }
+    }
 }

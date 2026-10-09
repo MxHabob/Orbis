@@ -46,6 +46,7 @@ pub struct UpdateOrgRequest {
     pub primary_color: Option<String>,
     pub logo: Option<String>,
     pub favicon: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -295,6 +296,7 @@ async fn update_current_org(
                 primary_color: payload.primary_color,
                 logo: payload.logo,
                 favicon: payload.favicon,
+                metadata: payload.metadata,
             },
         )
         .await?;

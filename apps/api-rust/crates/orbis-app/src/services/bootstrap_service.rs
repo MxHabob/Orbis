@@ -57,6 +57,9 @@ pub struct BootstrapRequest {
     pub organization_name_ar: Option<String>,
     pub organization_slug: Option<String>,
     pub organization_code: Option<String>,
+    pub country_name: Option<String>,
+    pub ministry_name: Option<String>,
+    pub region_name: Option<String>,
 
     // ── Enriched Organization Profile ─────────────────────────
     pub educational_track: Option<String>,
@@ -444,6 +447,9 @@ impl BootstrapService {
             "educational_track": req.educational_track,
             "organization_size": req.organization_size,
             "country_code": req.country_code,
+            "country_name": req.country_name,
+            "ministry_name": req.ministry_name,
+            "region_name": req.region_name,
             "city": req.city,
             "phone": req.phone,
             "website": req.website,

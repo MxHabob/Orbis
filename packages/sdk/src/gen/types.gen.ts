@@ -494,6 +494,7 @@ export type BootstrapRequest = {
      * City / Province
      */
     city?: string | null;
+    country_name?: string | null;
     /**
      * ISO Country Code (e.g. SA, YE, AE)
      */
@@ -526,6 +527,7 @@ export type BootstrapRequest = {
      * BCP-47 locale
      */
     locale: string;
+    ministry_name?: string | null;
     /**
      * Mulverse Autonomous Node UUID
      */
@@ -550,6 +552,7 @@ export type BootstrapRequest = {
      * URL-safe slug (optional — auto-generated from name if omitted)
      */
     organization_slug?: string | null;
+    region_name?: string | null;
     /**
      * Contact phone
      */
@@ -2469,6 +2472,7 @@ export type UpdateOrgRequest = {
     is_hijri_enabled?: boolean | null;
     locale?: string | null;
     logo?: string | null;
+    metadata?: unknown;
     name?: string | null;
     name_ar?: string | null;
     primary_color?: string | null;

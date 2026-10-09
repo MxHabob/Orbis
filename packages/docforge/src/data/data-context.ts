@@ -104,6 +104,9 @@ export interface OrgVars {
   name: string;
   name_ar: string;
   code: string;
+  country_name?: string;
+  ministry_name?: string;
+  region_name?: string;
   logo_url?: string;
   timezone?: string;
   locale?: string;
@@ -136,6 +139,9 @@ export function createFullContext(
       name: "",
       name_ar: "",
       code: "",
+      country_name: "",
+      ministry_name: "",
+      region_name: "",
       ...orgVars,
     },
   };

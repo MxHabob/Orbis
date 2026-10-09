@@ -173,6 +173,9 @@ export interface OnboardingFormModel {
   organizationNameAr: string;
   organizationSlug: string;
   organizationCode: string;
+  countryName: string;
+  ministryName: string;
+  regionName: string;
   educationalTrack: string;
   organizationSize: string;
   countryCode: string;
@@ -207,6 +210,9 @@ export const INITIAL_ONBOARDING_VALUES: OnboardingFormModel = {
   organizationNameAr: "",
   organizationSlug: "",
   organizationCode: "",
+  countryName: "",
+  ministryName: "",
+  regionName: "",
   educationalTrack: "national",
   organizationSize: "medium",
   countryCode: "SA",

@@ -18,6 +18,9 @@ pub struct BootstrapRequest {
     pub organization_name_ar: Option<String>,
     pub organization_slug: Option<String>,
     pub organization_code: Option<String>,
+    pub country_name: Option<String>,
+    pub ministry_name: Option<String>,
+    pub region_name: Option<String>,
 
     // Enriched Organization Profile
     pub educational_track: Option<String>,
@@ -681,6 +684,9 @@ pub async fn bootstrap_execute(
         organization_name_ar: request.organization_name_ar,
         organization_slug: request.organization_slug,
         organization_code: request.organization_code,
+        country_name: request.country_name,
+        ministry_name: request.ministry_name,
+        region_name: request.region_name,
         educational_track: request.educational_track,
         organization_size: request.organization_size,
         country_code: request.country_code,

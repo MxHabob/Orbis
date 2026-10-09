@@ -13,6 +13,7 @@ import {
   ORGANIZATION_SIZE_OPTIONS,
 } from "../types";
 import { Label } from "@orbis/ui/label";
+import { Input } from "@orbis/ui/input";
 import {
   Select,
   SelectTrigger,
@@ -60,6 +61,21 @@ let {
         loadingMessage={m.bilingual_entry_loading()}
         failureMessage={m.bilingual_entry_failure()}
       />
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="space-y-1.5">
+          <Label for="org-country-name">{m.onboarding_org_country_name()}</Label>
+          <Input id="org-country-name" bind:value={form.countryName} />
+        </div>
+        <div class="space-y-1.5">
+          <Label for="org-ministry-name">{m.onboarding_org_ministry_name()}</Label>
+          <Input id="org-ministry-name" bind:value={form.ministryName} />
+        </div>
+        <div class="space-y-1.5">
+          <Label for="org-region-name">{m.onboarding_org_region_name()}</Label>
+          <Input id="org-region-name" bind:value={form.regionName} />
+        </div>
+      </div>
 
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div class="space-y-1.5">
