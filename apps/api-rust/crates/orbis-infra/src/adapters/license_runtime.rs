@@ -1084,6 +1084,25 @@ mod tests {
     }
 
     #[test]
+    fn entitlement_timestamp_serialization_matches_mulverse_wire_format() {
+        let timestamp = chrono::DateTime::parse_from_rfc3339("2026-10-10T00:53:49.435+00:00")
+            .expect("timestamp should be valid")
+            .with_timezone(&Utc);
+
+        let serialized_timestamp =
+            serde_json::to_string(&timestamp).expect("DateTime should serialize");
+        let legacy_string_timestamp =
+            serde_json::to_string(&timestamp.to_rfc3339()).expect("String should serialize");
+
+        assert_eq!(serialized_timestamp, r#""2026-10-10T00:53:49.435Z""#);
+        assert_eq!(
+            legacy_string_timestamp,
+            r#""2026-10-10T00:53:49.435+00:00""#
+        );
+        assert_ne!(serialized_timestamp, legacy_string_timestamp);
+    }
+
+    #[test]
     fn entitlement_outside_validity_window_is_pending() {
         let (runtime, app_data_dir) = test_runtime();
         let mut snapshot = runtime.current_snapshot();

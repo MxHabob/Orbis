@@ -26,8 +26,6 @@ import {
 } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 
-type RoleOption = "teacher" | "student" | "parent" | "admin";
-
 export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
@@ -37,7 +35,6 @@ export default function RegisterScreen() {
 
   const [step, setStep] = useState<1 | 2 >(1);
   const [fullName, setFullName] = useState("");
-  const [selectedRole, setSelectedRole] = useState<RoleOption>("teacher");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -70,7 +67,7 @@ export default function RegisterScreen() {
           full_name: fullName.trim(),
           email: trimmedEmail,
           password,
-          role: selectedRole,
+          role: "teacher",
         },
         throwOnError: true,
       });
@@ -226,7 +223,7 @@ export default function RegisterScreen() {
             >
               {step === 2
                 ? t("auth_create_account_btn")
-                : t("admission_next_step")}
+                : t("auth_next_step")}
             </Text>
           </Button>
         </View>

@@ -8,7 +8,6 @@ const VISITOR_FEATURES = [
   ["visitor_academic_title", "visitor_academic_description"],
   ["visitor_family_title", "visitor_family_description"],
   ["visitor_teacher_title", "visitor_teacher_description"],
-  ["visitor_admission_title", "visitor_admission_description"],
 ] as const;
 
 export default function VisitorExploreScreen() {
