@@ -23,7 +23,8 @@ class LicenseStore {
   isTrial = $derived(this.licenseState?.state === "trial");
   isActive = $derived(
     this.licenseState?.state === "active" ||
-      this.licenseState?.state === "expiring",
+      this.licenseState?.state === "expiring" ||
+      this.licenseState?.state === "offline_grace",
   );
   isExpiring = $derived(this.licenseState?.state === "expiring");
   isExpired = $derived(this.licenseState?.state === "expired");

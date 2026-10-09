@@ -917,8 +917,10 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
         let max_users = snapshot
             .get_limit(LIMIT_STAFF_MAX)
             .or_else(|| snapshot.get_limit("users.max"))
-            .map(|v| v as u32);
-        let max_students = snapshot.get_limit(LIMIT_STUDENTS_MAX).map(|v| v as u32);
+            .and_then(finite_entitlement_limit);
+        let max_students = snapshot
+            .get_limit(LIMIT_STUDENTS_MAX)
+            .and_then(finite_entitlement_limit);
 
         let features = match &snapshot.signed_entitlement {
             Some(se) => se
@@ -964,6 +966,10 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
     }
 }
 
+fn finite_entitlement_limit(limit: i64) -> Option<u32> {
+    (limit >= 0).then(|| limit.min(i64::from(u32::MAX)) as u32)
+}
+
 // ═══════════════════════════════════════════════════════════════
 // INSTALLATION IDENTITY HELPERS
 // ═══════════════════════════════════════════════════════════════
@@ -1005,6 +1011,14 @@ pub fn spawn_background_sync(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn negative_entitlement_limits_are_unlimited() {
+        assert_eq!(finite_entitlement_limit(-1), None);
+        assert_eq!(finite_entitlement_limit(0), Some(0));
+        assert_eq!(finite_entitlement_limit(42), Some(42));
+        assert_eq!(finite_entitlement_limit(i64::MAX), Some(u32::MAX));
+    }
 
     fn signed_entitlement(
         installation_id: &str,

@@ -69,7 +69,7 @@ pub const TABULAR_REPORT_HTML: &str = r##"
         <tr>
             {% for col in columns %}
                 {% if col.visible %}
-                    <th>{% if is_rtl %}{{ col.header_ar }}{% else %}{{ col.header }}{% endif %}</th>
+                    <th>{% if is_rtl %}{{ col.headerAr }}{% else %}{{ col.header }}{% endif %}</th>
                 {% endif %}
             {% endfor %}
         </tr>
@@ -495,13 +495,22 @@ mod tests {
 
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
-        ctx.insert("columns", &Vec::<String>::new()); // dummy
-        ctx.insert("rows", &Vec::<String>::new());
+        ctx.insert(
+            "columns",
+            &serde_json::json!([{
+                "key": "student_name",
+                "header": "Student",
+                "headerAr": "الطالب",
+                "visible": true
+            }]),
+        );
+        ctx.insert("rows", &serde_json::json!([{"student_name": "أحمد"}]));
 
         let result = tera
             .render("tabular", &ctx)
             .expect("Failed to render tabular template");
-        assert!(result.contains("<table>"));
+        assert!(result.contains("الطالب"));
+        assert!(result.contains("أحمد"));
     }
 
     #[test]

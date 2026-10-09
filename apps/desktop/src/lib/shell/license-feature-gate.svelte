@@ -67,6 +67,14 @@
       isRefreshingTrial = false;
     }
   }
+
+  function openLicenseAction() {
+    if (licenseStore.isOperational && !requireOperational) {
+      uiStore.setUpgradeDialog(true);
+      return;
+    }
+    uiStore.setActivationDialog(true);
+  }
 </script>
 
 <div
@@ -118,13 +126,17 @@
           </Button>
         {/if}
         <Button
-          onclick={() => uiStore.setActivationDialog(true)}
+          onclick={openLicenseAction}
           variant={licenseStore.state === "unavailable" ? "outline" : "default"}
           disabled={isStartingTrial}
         >
-          {requireOperational
-            ? m.license_setup_activate_product()
-            : m.license_activate_btn()}
+          {#if requireOperational || !licenseStore.isOperational}
+            {requireOperational
+              ? m.license_setup_activate_product()
+              : m.license_activate_btn()}
+          {:else}
+            {m.common_upgrade_btn_now()}
+          {/if}
         </Button>
         {#if canStartTrial}
           <Button onclick={startTrial} disabled={isStartingTrial}>

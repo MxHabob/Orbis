@@ -9,6 +9,8 @@ import { licenseStore, uiStore, confirmStore } from "$lib/stores";
 import { Button, LoadingIndicator, toast } from "@orbis/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Check, Bolt, ArrowPath, Trash, CreditCard } from "@orbis/icons";
+import { formatLicensePlan } from "$lib/utils/license";
+import { formatDate } from "$lib/core/i18n";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -16,6 +18,11 @@ let isRefreshing = $state(false);
 let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
 let copiedId = $state(false);
+const planDisplay = $derived(
+  formatLicensePlan(licenseStore.plan) ??
+    formatLicensePlan(licenseStore.edition) ??
+    m.settings_entitlement_plan_unavailable(),
+);
 
 async function handleRefresh() {
   isRefreshing = true;
@@ -230,7 +237,7 @@ const statusBadge = $derived.by(() => {
           <div class="flex min-w-0 flex-col gap-1">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-base font-semibold text-foreground">
-                {licenseStore.plan ?? licenseStore.edition ?? m.license_status_unavailable()}
+                {planDisplay}
               </span>
               <span class="text-sm text-muted-foreground">{statusBadge.label}</span>
             </div>
@@ -259,9 +266,11 @@ const statusBadge = $derived.by(() => {
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               </svg>
             </a>
-            <Button variant="lime" size="sm" onclick={handleOpenActivation} class="font-semibold">
-              {m.license_activate_btn()}
-            </Button>
+            {#if !licenseStore.isOperational}
+              <Button variant="lime" size="sm" onclick={handleOpenActivation} class="font-semibold">
+                {m.license_activate_btn()}
+              </Button>
+            {/if}
           </div>
         </CardContent>
       </Card>
@@ -276,10 +285,12 @@ const statusBadge = $derived.by(() => {
             </CardTitle>
             <CardDescription class="text-xs">{m.license_billing_details_description()}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onclick={handleOpenActivation} class="shrink-0 text-xs">
-            <Bolt size={14} class="me-1.5" />
-            {m.license_activate_btn()}
-          </Button>
+          {#if !licenseStore.isOperational}
+            <Button variant="outline" size="sm" onclick={handleOpenActivation} class="shrink-0 text-xs">
+              <Bolt size={14} class="me-1.5" />
+              {m.license_activate_btn()}
+            </Button>
+          {/if}
         </CardHeader>
         <CardContent class="grid gap-5 p-5 md:grid-cols-[15rem_minmax(0,1fr)] md:items-center">
           <div
@@ -296,14 +307,14 @@ const statusBadge = $derived.by(() => {
 
             <div class="relative z-10 min-w-0">
               <p class="truncate text-xl font-semibold tracking-wide">
-                {licenseStore.plan ?? m.license_status_unavailable()}
+                {planDisplay}
               </p>
             </div>
             <div class="relative z-10 flex items-end justify-between gap-3">
               <div class="flex min-w-0 flex-col gap-0.5">
                 <span class="text-[9px] uppercase tracking-wider text-white/60">{m.license_valid_until()}</span>
                 <span class="truncate text-xs font-medium tabular-nums">
-                  {licenseStore.validUntil ? new Date(licenseStore.validUntil).toLocaleDateString() : "—"}
+                  {formatDate(licenseStore.validUntil, "date") || "—"}
                 </span>
               </div>
               <span class="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/90">
@@ -358,15 +369,13 @@ const statusBadge = $derived.by(() => {
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_valid_until()}</dt>
               <dd class="text-sm font-medium tabular-nums text-foreground">
-                {licenseStore.validUntil ? new Date(licenseStore.validUntil).toLocaleDateString() : "—"}
+                {formatDate(licenseStore.validUntil, "date") || "—"}
               </dd>
             </div>
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_last_sync()}</dt>
               <dd class="text-sm font-medium tabular-nums text-foreground">
-                {licenseStore.lastSyncAt
-                  ? new Date(licenseStore.lastSyncAt).toLocaleString()
-                  : m.license_never_synced()}
+                {formatDate(licenseStore.lastSyncAt, "datetime") || m.license_never_synced()}
               </dd>
             </div>
           </dl>
@@ -385,9 +394,9 @@ const statusBadge = $derived.by(() => {
             <span class="hidden text-xs text-muted-foreground sm:block">{m.license_plan_label()}</span>
             <span class="text-end text-xs text-muted-foreground">{m.license_valid_until()}</span>
             <span class="font-medium text-foreground">{statusBadge.label}</span>
-            <span class="hidden text-muted-foreground sm:block">{licenseStore.plan ?? m.license_status_unavailable()}</span>
+            <span class="hidden text-muted-foreground sm:block">{planDisplay}</span>
             <span class="text-end tabular-nums text-foreground">
-              {licenseStore.validUntil ? new Date(licenseStore.validUntil).toLocaleDateString() : "—"}
+              {formatDate(licenseStore.validUntil, "date") || "—"}
             </span>
             </div>
         </CardContent>
