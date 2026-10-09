@@ -4218,6 +4218,8 @@
   "template_btn_add_var": "Add Variable",
   "template_btn_preview": "Preview",
   "template_btn_save": "Save",
+  "template_set_as_background": "Set as page background",
+  "template_remove_background": "Remove page background",
   "template_category_basic": "basic\", label: \"Basic",
   "template_category_data": "data\", label: \"Data",
   "template_category_flow": "Flow",

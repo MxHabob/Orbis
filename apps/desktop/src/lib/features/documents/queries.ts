@@ -41,8 +41,7 @@ export async function resolveDocumentUrl(
   if (
     pathOrUrl?.startsWith("http://") ||
     pathOrUrl?.startsWith("https://") ||
-    pathOrUrl?.startsWith("data:") ||
-    pathOrUrl?.startsWith("blob:")
+    pathOrUrl?.startsWith("data:")
   ) {
     return pathOrUrl;
   }
@@ -61,6 +60,7 @@ export async function resolveDocumentUrl(
   }
 
   if (!pathOrUrl) return "";
+  if (pathOrUrl.startsWith("blob:")) return pathOrUrl;
 
   // 1. Direct URLs (web, data, blob, Tauri asset protocol)
   if (

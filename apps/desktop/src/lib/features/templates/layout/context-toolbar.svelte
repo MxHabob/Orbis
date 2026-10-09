@@ -16,6 +16,12 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Input } from "@orbis/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -311,16 +317,29 @@ function handleAlign(
       <!-- ═══ IMAGE TOOLBAR ═══ -->
       <div class="ctx-group">
         <span class="ctx-label">{m.template_prop_fit()}</span>
-        <select
+        <Select
+          type="single"
           value={nodeProps.fit || "contain"}
-          onchange={(e) => updateProp("fit", e.currentTarget.value)}
-          class="ctx-select"
+          onValueChange={(value) => value && updateProp("fit", value)}
         >
-          <option value="contain">{m.shared_ui_fit_contain()}</option>
-          <option value="cover">{m.shared_ui_fit_cover()}</option>
-          <option value="fill">{m.shared_ui_fit_fill()}</option>
-          <option value="none">{m.shared_ui_none()}</option>
-        </select>
+          <SelectTrigger class="h-6 min-w-[76px] rounded px-1.5 text-[10px]">
+            {#if nodeProps.fit === "cover"}
+              {m.shared_ui_fit_cover()}
+            {:else if nodeProps.fit === "fill"}
+              {m.shared_ui_fit_fill()}
+            {:else if nodeProps.fit === "none"}
+              {m.shared_ui_none()}
+            {:else}
+              {m.shared_ui_fit_contain()}
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="contain">{m.shared_ui_fit_contain()}</SelectItem>
+            <SelectItem value="cover">{m.shared_ui_fit_cover()}</SelectItem>
+            <SelectItem value="fill">{m.shared_ui_fit_fill()}</SelectItem>
+            <SelectItem value="none">{m.shared_ui_none()}</SelectItem>
+          </SelectContent>
+        </Select>
         <span class="ctx-label">{m.template_color_opacity()}</span>
         <Input
           type="number"
@@ -344,16 +363,21 @@ function handleAlign(
         />
         {#if nodeType === "Barcode"}
           <span class="ctx-label">{m.template_prop_format()}</span>
-          <select
-            value={nodeProps.format || "Code128"}
-            onchange={(e) => updateProp("format", e.currentTarget.value)}
-            class="ctx-select"
+            <Select
+              type="single"
+              value={nodeProps.format || "Code128"}
+              onValueChange={(value) => value && updateProp("format", value)}
           >
-            <option value="Code128">Code 128</option>
-            <option value="Code39">Code 39</option>
-            <option value="EAN13">EAN-13</option>
-            <option value="EAN8">EAN-8</option>
-          </select>
+              <SelectTrigger class="h-6 min-w-[82px] rounded px-1.5 text-[10px]">
+                {nodeProps.format || "Code128"}
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Code128">Code 128</SelectItem>
+                <SelectItem value="Code39">Code 39</SelectItem>
+                <SelectItem value="EAN13">EAN-13</SelectItem>
+                <SelectItem value="EAN8">EAN-8</SelectItem>
+              </SelectContent>
+            </Select>
         {/if}
       </div>
 
@@ -646,14 +670,4 @@ function handleAlign(
   .ctx-color-swatch::-webkit-color-swatch-wrapper { padding: 1px; }
   .ctx-color-swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
 
-  .ctx-select {
-    height: 24px;
-    font-size: 10px;
-    border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
-    border-radius: 4px;
-    background: var(--color-background);
-    color: var(--color-foreground);
-    padding: 0 6px;
-    cursor: pointer;
-  }
 </style>

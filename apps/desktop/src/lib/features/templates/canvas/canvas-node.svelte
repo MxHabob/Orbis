@@ -249,6 +249,9 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
             height={h}
             preserveAspectRatio={nodeProps.fit === "cover" ? "xMidYMid slice" : nodeProps.fit === "fill" ? "none" : "xMidYMid meet"}
           />
+        {:catch error}
+          {@const _imageError = console.error("Failed to load template image:", error)}
+          <rect width={w} height={h} fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,2" rx="2" />
         {/await}
       {:else}
         <!-- Image placeholder -->

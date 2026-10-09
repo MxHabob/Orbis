@@ -11,6 +11,7 @@ import type {
   TemplateNode,
   PageNode,
   PageSetup,
+  ImageNode,
 } from "@docforge/core";
 import { getPages, getPrimaryPage } from "@docforge/core";
 import { findNode, addNode, removeNode, cloneNode } from "@docforge/core";
@@ -330,6 +331,109 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     });
   }
 
+  function setPageBackground(
+    assetId: string | undefined,
+    src: string,
+    sourceNodeId?: string,
+  ): void {
+    const page = activePage;
+    if (!page || (!assetId && !src)) return;
+
+    const previousChildren = page.children;
+    const previousAssets = document.assets;
+    const width = getEffectivePageWidth(document.meta.pageSetup);
+    const height = getEffectivePageHeight(document.meta.pageSetup);
+    const backgroundNode: ImageNode = {
+      type: "Image",
+      id: generateNodeId("image"),
+      name: m.template_set_as_background(),
+      locked: true,
+      props: {
+        ...(assetId ? { assetRef: assetId } : {}),
+        src,
+        position: { x: 0, y: 0, width, height },
+        width,
+        height,
+        fit: "cover",
+        layer: "background",
+      },
+    };
+    const nextChildren = [
+      backgroundNode,
+      ...page.children.filter(
+        (child) =>
+          child.id !== sourceNodeId &&
+          !(child.type === "Image" && child.props.layer === "background"),
+      ),
+    ];
+
+    executeCommand({
+      type: "set-page-background",
+      description: m.template_set_as_background(),
+      descriptionAr: m.template_set_as_background(),
+      execute: (doc) => ({
+        ...doc,
+        pages: getPages(doc).map((currentPage) =>
+          currentPage.id === page.id
+            ? { ...currentPage, children: nextChildren }
+            : currentPage,
+        ),
+        assets: assetId
+          ? {
+              ...doc.assets,
+              [assetId]: doc.assets[assetId] ?? {
+                assetId,
+                type: "image" as const,
+              },
+            }
+          : doc.assets,
+      }),
+      undo: (doc) => ({
+        ...doc,
+        pages: getPages(doc).map((currentPage) =>
+          currentPage.id === page.id
+            ? { ...currentPage, children: previousChildren }
+            : currentPage,
+        ),
+        assets: previousAssets,
+      }),
+    });
+    selectedIds = [];
+  }
+
+  function clearPageBackground(): void {
+    const page = activePage;
+    if (!page) return;
+    const previousChildren = page.children;
+    const nextChildren = page.children.filter(
+      (child) => !(child.type === "Image" && child.props.layer === "background"),
+    );
+    if (nextChildren.length === previousChildren.length) return;
+
+    executeCommand({
+      type: "clear-page-background",
+      description: m.template_remove_background(),
+      descriptionAr: m.template_remove_background(),
+      execute: (doc) => ({
+        ...doc,
+        pages: getPages(doc).map((currentPage) =>
+          currentPage.id === page.id
+            ? { ...currentPage, children: nextChildren }
+            : currentPage,
+        ),
+      }),
+      undo: (doc) => ({
+        ...doc,
+        pages: getPages(doc).map((currentPage) =>
+          currentPage.id === page.id
+            ? { ...currentPage, children: previousChildren }
+            : currentPage,
+        ),
+      }),
+    });
+    selectedIds = [];
+  }
+
   function moveNodes(updates: { id: string; x: number; y: number }[]): void {
     if (updates.length === 0) return;
     if (updates.length === 1) {
@@ -645,6 +749,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     updateSelectedProps,
     updateNodeProps,
     addAsset,
+    setPageBackground,
+    clearPageBackground,
     moveNodes,
     resizeSelected,
     deleteSelected,

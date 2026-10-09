@@ -11,6 +11,12 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Separator } from "@orbis/ui/separator";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
@@ -282,17 +288,31 @@ function handleDragStart(e: DragEvent, varName: string) {
         class="h-6 text-[10px] font-mono"
       />
       <div class="flex items-center gap-1.5">
-        <select
-          bind:value={newVarType}
-          class="h-6 text-[10px] rounded border border-border bg-background px-1.5 grow"
-        >
-          <option value="string">{m.shared_ui_type_string()}</option>
-          <option value="number">{m.shared_ui_type_number()}</option>
-          <option value="date">{m.shared_ui_type_date()}</option>
-          <option value="boolean">{m.shared_ui_type_boolean()}</option>
-          <option value="image">{m.shared_ui_type_image()}</option>
-          <option value="array">{m.shared_ui_type_array()}</option>
-        </select>
+        <Select type="single" bind:value={newVarType}>
+          <SelectTrigger class="h-6 min-w-0 grow rounded px-1.5 text-[10px]">
+            {#if newVarType === "number"}
+              {m.shared_ui_type_number()}
+            {:else if newVarType === "date"}
+              {m.shared_ui_type_date()}
+            {:else if newVarType === "boolean"}
+              {m.shared_ui_type_boolean()}
+            {:else if newVarType === "image"}
+              {m.shared_ui_type_image()}
+            {:else if newVarType === "array"}
+              {m.shared_ui_type_array()}
+            {:else}
+              {m.shared_ui_type_string()}
+            {/if}
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="string">{m.shared_ui_type_string()}</SelectItem>
+            <SelectItem value="number">{m.shared_ui_type_number()}</SelectItem>
+            <SelectItem value="date">{m.shared_ui_type_date()}</SelectItem>
+            <SelectItem value="boolean">{m.shared_ui_type_boolean()}</SelectItem>
+            <SelectItem value="image">{m.shared_ui_type_image()}</SelectItem>
+            <SelectItem value="array">{m.shared_ui_type_array()}</SelectItem>
+          </SelectContent>
+        </Select>
         <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addVariable}>
           {m.template_btn_add()}
         </Button>

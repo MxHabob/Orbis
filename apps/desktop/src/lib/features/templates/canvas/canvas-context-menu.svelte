@@ -5,7 +5,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { copyNodes, cutNodes, pasteNodes } from "../stores/clipboard-manager";
-import { AdjustmentsHorizontal, BarsArrowUp, Clip, Clipboard, Eye, EyeSlash, Keyframes, Lock, Pencil, Trash } from "@orbis/icons";
+import { AdjustmentsHorizontal, BarsArrowUp, Clip, Clipboard, Eye, EyeSlash, Keyframes, Lock, Photo, Pencil, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -80,6 +80,15 @@ function handleSendToBack() {
   onclose();
 }
 
+function handleSetAsBackground() {
+  if (!selectedNode || selectedNode.type !== "Image") return;
+  const { src, fallbackSrc, assetRef } = selectedNode.props;
+  const source =
+    src && !src.startsWith("{{") ? src : fallbackSrc || src || "";
+  store.setPageBackground(assetRef, source, selectedNode.id);
+  onclose();
+}
+
 function handleSelectAll() {
   store.selectAll();
   onclose();
@@ -128,6 +137,13 @@ function handleSelectAll() {
         <span>{m.template_action_duplicate()}</span>
         <span class="context-menu-shortcut">Ctrl+D</span>
       </button>
+
+      {#if selectedNode?.type === "Image" && (selectedNode.props.assetRef || selectedNode.props.src || selectedNode.props.fallbackSrc)}
+        <button type="button" class="context-menu-item" onclick={handleSetAsBackground}>
+          <Photo size={12} />
+          <span>{m.template_set_as_background()}</span>
+        </button>
+      {/if}
 
       <button type="button" class="context-menu-item text-destructive" onclick={handleDelete}>
         <Trash size={12} />

@@ -4218,6 +4218,8 @@
   "template_btn_add_var": "إضافة متغير",
   "template_btn_preview": "معاينة",
   "template_btn_save": "حفظ",
+  "template_set_as_background": "تعيين كخلفية للصفحة",
+  "template_remove_background": "إزالة خلفية الصفحة",
   "template_category_basic": "basic\", التسمية: \"أساسي",
   "template_category_data": "data\", التسمية: \"بيانات",
   "template_category_flow": "تدفق",

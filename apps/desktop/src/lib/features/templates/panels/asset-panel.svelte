@@ -81,6 +81,11 @@ async function insertAssetAsImage(doc: any) {
   });
 }
 
+async function setAssetAsBackground(doc: any) {
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
+  store.setPageBackground(doc.id, srcUrl);
+}
+
 // ── Remove asset ─────────────────────────────────────────────
 
 async function removeAsset(doc: any) {
@@ -137,6 +142,18 @@ function triggerUpload() {
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{filteredAssets.length}</Badge>
+      {#if store.activePage?.children.some((child) => child.type === "Image" && child.props.layer === "background")}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          class="cursor-pointer h-5 w-5"
+          title={m.template_remove_background()}
+          aria-label={m.template_remove_background()}
+          onclick={() => store.clearPageBackground()}
+        >
+          <Trash size={11} />
+        </Button>
+      {/if}
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={uploadMutation.isPending}>
@@ -220,6 +237,15 @@ function triggerUpload() {
 
             <!-- Hover Actions -->
             <div class="absolute top-1 inset-e-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+              <button
+                type="button"
+                class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer"
+                title={m.template_set_as_background()}
+                aria-label={m.template_set_as_background()}
+                onclick={() => setAssetAsBackground(doc)}
+              >
+                <Photo size={10} class="text-primary" />
+              </button>
               <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(doc)}>
                 <Plus size={10} class="text-primary" />
               </button>
