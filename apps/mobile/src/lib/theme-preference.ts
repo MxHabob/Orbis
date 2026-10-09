@@ -15,7 +15,7 @@ export async function loadThemePreference(): Promise<ThemePreference> {
 }
 
 export function applyThemePreference(preference: ThemePreference) {
-  Appearance.setColorScheme(preference === "system" ? null : preference);
+  Appearance.setColorScheme(preference === "system" ? "unspecified" : preference);
 }
 
 export async function saveThemePreference(
