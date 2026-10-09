@@ -10,7 +10,6 @@ import { Button, LoadingIndicator, toast } from "@orbis/ui";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import { Check, ShieldCheck, Bolt, ArrowPath, Trash, InfoCircle } from "@orbis/icons";
-import { onMount } from "svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -18,10 +17,6 @@ let isRefreshing = $state(false);
 let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
 let copiedId = $state(false);
-
-onMount(() => {
-  licenseStore.loadState();
-});
 
 async function handleRefresh() {
   isRefreshing = true;
@@ -159,6 +154,11 @@ const statusBadge = $derived.by(() => {
         label: m.license_status_expired(),
         class: "bg-destructive/10 text-destructive border-destructive/20",
       };
+    case "suspended":
+      return {
+        label: m.license_status_suspended(),
+        class: "bg-destructive/10 text-destructive border-destructive/20",
+      };
     case "revoked":
       return {
         label: m.license_status_revoked(),
@@ -168,6 +168,11 @@ const statusBadge = $derived.by(() => {
       return {
         label: m.license_status_offline_grace(),
         class: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+      };
+    case "pending":
+      return {
+        label: m.license_status_pending(),
+        class: "bg-muted text-muted-foreground border-border",
       };
     default:
       return {
@@ -187,6 +192,21 @@ const statusBadge = $derived.by(() => {
     </div>
 
     <div class="flex items-center gap-2.5">
+      {#if licenseStore.state === "unavailable"}
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={handleStartTrial}
+          disabled={isStartingTrial}
+          class="text-xs"
+        >
+          {#if isStartingTrial}
+            <LoadingIndicator size="sm" class="me-1.5" />
+          {/if}
+          {m.license_start_trial_btn()}
+        </Button>
+      {/if}
+
       <Button
         variant="outline"
         size="sm"

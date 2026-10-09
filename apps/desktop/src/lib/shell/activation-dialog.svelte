@@ -22,49 +22,45 @@ let isActivating = $state(false);
 let activationError = $state<string | null>(null);
 let activationSuccess = $state(false);
 
-// Format key as user types (ORBIS-XXXXX-XXXXX-XXXXX-XXXXX, 29 chars, Base32)
-function formatKey(value: string): string {
+function normalizeProductKey(value: string): string | null {
   let clean = value.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-  if (!clean || clean === "ORBIS") return "";
-
   if (clean.startsWith("ORBIS")) {
     clean = clean.slice(5);
   }
+  if (clean.length !== 20) return null;
 
-  if (!clean) return "";
-
-  clean = clean.slice(0, 20);
-  const parts = clean.match(/.{1,5}/g) || [];
-  return "ORBIS-" + parts.join("-");
-}
-
-function handleInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  productKey = formatKey(target.value);
+  const segments = clean.match(/.{5}/g);
+  if (!segments || segments.length !== 4) return null;
+  return `ORBIS-${segments.join("-")}`;
 }
 
 async function handleActivate() {
-  if (!productKey || productKey.length < 29) return;
-  
+  const normalizedKey = normalizeProductKey(productKey);
+  if (!normalizedKey) {
+    activationError = m.license_invalid_key_format();
+    return;
+  }
+
   isActivating = true;
   activationError = null;
   activationSuccess = false;
 
-  const result = await licenseStore.activateKey(productKey);
-
-  if (result.success) {
-    activationSuccess = true;
-    toast.success(m.license_activation_success());
-    setTimeout(() => {
-      open = false;
-      activationSuccess = false;
-      productKey = "";
-    }, 1500);
-  } else {
-    activationError = result.message;
+  try {
+    const result = await licenseStore.activateKey(normalizedKey);
+    if (result.success) {
+      activationSuccess = true;
+      toast.success(m.license_activation_success());
+      setTimeout(() => {
+        open = false;
+        activationSuccess = false;
+        productKey = "";
+      }, 1500);
+    } else {
+      activationError = result.message;
+    }
+  } finally {
+    isActivating = false;
   }
-
-  isActivating = false;
 }
 
 function handleClose() {
@@ -94,12 +90,13 @@ function handleClose() {
         <Input
           id="product_key"
           type="text"
-          value={productKey}
-          oninput={handleInput}
+          bind:value={productKey}
           placeholder={m.license_key_placeholder()}
           disabled={isActivating || activationSuccess}
           class="h-11 text-center font-mono text-[14px] tracking-[0.08em] uppercase"
-          maxlength={29}
+          dir="ltr"
+          autocapitalize="characters"
+          autocorrect="off"
           autocomplete="off"
           spellcheck={false}
         />
@@ -134,7 +131,7 @@ function handleClose() {
         </Button>
         <Button
           onclick={handleActivate}
-          disabled={isActivating || productKey.length < 29 || activationSuccess}
+          disabled={isActivating || !normalizeProductKey(productKey) || activationSuccess}
           class="text-[11px] min-w-[7rem]"
         >
           {#if isActivating}

@@ -1321,11 +1321,13 @@ export interface AcademicPolicy {
 
 export type LicenseState =
   | "unavailable"
+  | "pending"
   | "trial"
   | "active"
   | "expiring"
   | "offline_grace"
   | "expired"
+  | "suspended"
   | "revoked"
   | "invalid";
 
@@ -1367,6 +1369,7 @@ export interface LicenseStateDto {
   installation_id: string;
   last_sync_at: string | null;
   enabled_features: string[];
+  trial_features: string[];
   limits: LimitEntry[];
   app_version: string;
 }

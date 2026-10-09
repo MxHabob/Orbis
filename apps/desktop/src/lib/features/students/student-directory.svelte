@@ -167,6 +167,7 @@ function handleExportStudents() {
                 onclick: () => studentsStore.selectedClassId = null
               },
               ...classes.map(c => ({
+                key: String(c.id),
                 label: String(l(c.name_ar, c.name) || c.name || c.id),
                 badge: formatNumber(getCountByClass(String(c.id))),
                 isActive: studentsStore.selectedClassId === c.id,

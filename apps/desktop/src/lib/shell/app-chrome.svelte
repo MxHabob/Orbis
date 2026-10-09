@@ -20,26 +20,52 @@ Follows GitButler's "Chrome Shell" pattern:
 <script lang="ts">
 import AppSidebar from "./app-sidebar.svelte";
 import LicenseBanner from "./license-banner.svelte";
-import { uiStore } from "$lib/stores";
+import { licenseStore, uiStore } from "$lib/stores";
 import type { Snippet } from "svelte";
 import { slide } from "svelte/transition";
 import { page } from "$app/state";
 import AskOrbisSidebar from "$lib/features/ai/views/sidebar.svelte";
 import { useQueryClient } from "@tanstack/svelte-query";
+import LicenseFeatureGate from "./license-feature-gate.svelte";
+import type { EntitlementKey } from "$lib/api/types";
 
 let {
   orgId,
   orgName,
+  licenseReady,
   children,
 }: {
   orgId: string;
   orgName?: string;
+  licenseReady: boolean;
   children: Snippet;
 } = $props();
 
 const queryClient = useQueryClient();
 
+const requiredFeature = $derived.by((): EntitlementKey | null => {
+  const path = page.url.pathname;
+  if (/(^|\/)students(\/|$)/.test(path)) return "students";
+  if (path.includes("/ai-center")) return "ai_grading";
+  if (path.includes("/academics/exams")) return "exam_tools";
+  if (path.includes("/settings/branches") || path.includes("/settings/units")) {
+    return "multi_branch";
+  }
+  if (
+    (path.includes("/reports") && !path.includes("/finance/reports")) ||
+    path.includes("/analytics")
+  ) {
+    return "campus_analytics";
+  }
+  if (path.includes("/parent-portal")) return "parent_portal";
+  if (path.includes("/sso")) return "sso";
+  if (path.includes("/offline-sync")) return "offline_sync";
+  return null;
+});
+
 function handleKeyDown(e: KeyboardEvent) {
+  if (!licenseStore.isOperational) return;
+
   // Ctrl/Cmd + / -> Toggle Ask Orbis AI
   if ((e.ctrlKey || e.metaKey) && e.key === "/") {
     e.preventDefault();
@@ -72,6 +98,7 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <svelte:window onkeydown={handleKeyDown} />
 
+<LicenseFeatureGate requireOperational {licenseReady} className="h-full w-full min-w-0 flex-1 overflow-hidden">
 <div class="flex h-full max-w-full bg-background">
 	{#if !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
@@ -84,16 +111,25 @@ function handleKeyDown(e: KeyboardEvent) {
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>
 			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
-				{@render children()}
+				<LicenseFeatureGate feature={requiredFeature} {licenseReady}>
+					{@render children()}
+				</LicenseFeatureGate>
 			</div>
 		</div>
 		{#if uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
-				<AskOrbisSidebar />
+				<LicenseFeatureGate
+					feature="ai_grading"
+					{licenseReady}
+					className="absolute inset-y-0 end-0 z-50 w-[min(28rem,90vw)]"
+				>
+					<AskOrbisSidebar />
+				</LicenseFeatureGate>
 			{/key}
 		{/if}
 	</div>
 </div>
+</LicenseFeatureGate>
 
 <!-- Lazy-load UpgradeDialog only when shown -->
 {#if uiStore.showUpgradeDialog}

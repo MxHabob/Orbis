@@ -46,7 +46,71 @@ pub(crate) fn make_ctx(state: &crate::state::AppState) -> orbis_app::context::Re
     }
 }
 
-pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
+pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
+    let handler = build_handler();
+
+    move |invoke: tauri::ipc::Invoke| -> bool {
+        let command = invoke.message.command().to_string();
+        if let Some(state) = invoke
+            .message
+            .state_ref()
+            .try_get::<crate::state::AppState>()
+        {
+            let snapshot = state.license_runtime.current_snapshot();
+            if !snapshot.state.is_operational()
+                && !is_allowed_without_operational_license(&command)
+            {
+                invoke.resolver.reject(format!(
+                    "This operation is unavailable while the license state is {:?}. Activate a valid license or start a trial to continue.",
+                    snapshot.state
+                ));
+                return true;
+            }
+
+            if let Some(feature) = required_feature(&command)
+                && !state.license_runtime.is_feature_enabled(feature)
+            {
+                invoke.resolver.reject(format!(
+                    "This operation requires the '{feature}' license entitlement."
+                ));
+                return true;
+            }
+        } else if !is_allowed_before_backend_initialization(&command) {
+            invoke
+                .resolver
+                .reject("The application backend is not initialized.".to_string());
+            return true;
+        }
+
+        handler(invoke)
+    }
+}
+
+fn is_allowed_without_operational_license(command: &str) -> bool {
+    command.starts_with("auth_")
+        || command.starts_with("connection_")
+        || command.starts_with("window_")
+        || matches!(
+            command,
+            "license_get_state"
+                | "license_activate_key"
+                | "license_start_trial"
+                | "license_deactivate"
+                | "license_refresh"
+                | "license_check_feature"
+                | "license_get_installation_id"
+                | "system_health"
+                | "system_has_organization"
+                | "system_get_readiness"
+                | "system_get_entitlement"
+                | "system_get_app_info"
+                | "system_get_changelog"
+                | "system_check_for_updates"
+                | "system_install_update"
+        )
+}
+
+fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     generate_handler![
         // ── Auth & IAM ──────────────────────────────────────────
         iam_cmds::auth_login,
@@ -402,4 +466,112 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool {
         onboarding_cmds::onboarding_get_state,
         onboarding_cmds::onboarding_provision_defaults,
     ]
+}
+
+fn is_allowed_before_backend_initialization(command: &str) -> bool {
+    command.starts_with("connection_")
+        || command.starts_with("database_")
+        || command.starts_with("window_")
+}
+
+fn required_feature(command: &str) -> Option<&'static str> {
+    if command.starts_with("ai_") {
+        Some("ai_grading")
+    } else if matches!(
+        command,
+        "org_create_unit"
+            | "org_update_unit"
+            | "org_delete_unit"
+            | "org_list_units"
+            | "org_get_unit"
+            | "org_select_unit"
+    ) {
+        Some("multi_branch")
+    } else if command.starts_with("exam_") {
+        Some("exam_tools")
+    } else if command.starts_with("student_")
+        || matches!(
+            command,
+            "assessment_list_student_attendance"
+                | "assessment_list_student_behavior_records"
+                | "assessment_get_student_term_results"
+                | "assessment_get_student_annual_results"
+        )
+    {
+        Some("students")
+    } else if command.starts_with("branch_") {
+        Some("multi_branch")
+    } else if command.starts_with("analytics_") {
+        Some("campus_analytics")
+    } else if command.starts_with("report_") || matches!(command, "generate_report" | "batch_print")
+    {
+        Some("campus_analytics")
+    } else if command.starts_with("parent_") {
+        Some("parent_portal")
+    } else if command.starts_with("sso_") {
+        Some("sso")
+    } else if command.contains("offline_sync") {
+        Some("offline_sync")
+    } else {
+        None
+    }
+}
+
+#[cfg(test)]
+mod license_policy_tests {
+    use super::{
+        is_allowed_before_backend_initialization, is_allowed_without_operational_license,
+        required_feature,
+    };
+
+    #[test]
+    fn backend_initialization_only_allows_setup_surfaces() {
+        assert!(is_allowed_before_backend_initialization(
+            "connection_set_config"
+        ));
+        assert!(is_allowed_before_backend_initialization(
+            "database_create_local"
+        ));
+        assert!(!is_allowed_before_backend_initialization(
+            "student_register_student"
+        ));
+    }
+
+    #[test]
+    fn paid_commands_map_to_canonical_entitlements() {
+        assert_eq!(required_feature("ai_chat"), Some("ai_grading"));
+        assert_eq!(required_feature("exam_create_session"), Some("exam_tools"));
+        assert_eq!(
+            required_feature("assessment_list_student_attendance"),
+            Some("students")
+        );
+        assert_eq!(required_feature("finance_list_student_fees"), None);
+        assert_eq!(required_feature("academic_get_class"), None);
+        assert_eq!(required_feature("org_create_unit"), Some("multi_branch"));
+        assert_eq!(required_feature("org_list_units"), Some("multi_branch"));
+        assert_eq!(
+            required_feature("generate_report"),
+            Some("campus_analytics")
+        );
+    }
+
+    #[test]
+    fn commands_without_paid_entitlements_remain_available_on_the_free_plan() {
+        assert_eq!(required_feature("calendar_create_year"), None);
+        assert_eq!(required_feature("employee_register_employee"), None);
+        assert_eq!(required_feature("finance_process_payment"), None);
+        assert_eq!(required_feature("org_update_current"), None);
+    }
+
+    #[test]
+    fn non_operational_license_only_allows_auth_activation_and_support_commands() {
+        assert!(is_allowed_without_operational_license("auth_login"));
+        assert!(is_allowed_without_operational_license("license_get_state"));
+        assert!(is_allowed_without_operational_license("license_activate_key"));
+        assert!(is_allowed_without_operational_license("license_start_trial"));
+        assert!(is_allowed_without_operational_license("system_get_readiness"));
+        assert!(!is_allowed_without_operational_license("finance_list_accounts"));
+        assert!(!is_allowed_without_operational_license("student_list_students"));
+        assert!(!is_allowed_without_operational_license("org_get_current"));
+    }
 }

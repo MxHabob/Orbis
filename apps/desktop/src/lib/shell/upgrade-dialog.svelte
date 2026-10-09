@@ -7,17 +7,18 @@ Triggered by the Bolt icon in the sidebar. Matches Sentry's upgrade layout.
 import * as m from "$lib/paraglide/messages";
 import { Dialog, DialogContent } from "@orbis/ui/dialog";
 import { Button } from "@orbis/ui";
-import { Check } from "@orbis/icons";
+import { Check, XMark } from "@orbis/icons";
 import { licenseStore, uiStore } from "$lib/stores";
 
 let { open = $bindable(false) }: { open: boolean } = $props();
 
 function handleClose() {
   open = false;
+  uiStore.setUpgradeDialog(false);
 }
 
 function handleActivate() {
-  open = false;
+  handleClose();
   uiStore.setActivationDialog(true);
 }
 
@@ -34,9 +35,20 @@ const currentPlanDisplay = $derived.by(() => {
 
 <Dialog bind:open>
   <DialogContent
-    showCloseButton={true}
+    showCloseButton={false}
     class="sm:max-w-[60rem] min-h-[32rem] w-full p-0 gap-0 overflow-hidden grid grid-cols-[3fr_2fr] select-none"
   >
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      class="absolute top-4 inset-e-4 z-20"
+      aria-label={m.common_action_close()}
+      onclick={handleClose}
+    >
+      <XMark />
+    </Button>
+
     <!-- Geometric corner accents follow the inherited text direction. -->
     <div class="absolute top-0 inset-e-0 h-20 w-[26rem] origin-center rtl:-scale-x-100 bg-primary/15 dark:bg-[#d9d1e8] opacity-90 z-0 pointer-events-none [clip-path:polygon(0_0,100%_0,100%_100%,76%_100%,76%_70%,57%_70%,57%_42%,8%_42%)]">
     </div>

@@ -20,7 +20,7 @@ struct Cli {
 
 #[derive(Subcommand, Clone)]
 pub enum Commands {
-    /// Initialize the Orbis system (license, database, organization, admin)
+    /// Initialize the Orbis system (database, organization, admin)
     Init,
     /// Start the Orbis system
     Start,
@@ -28,10 +28,7 @@ pub enum Commands {
     Doctor,
     /// Backup the database securely
     Backup,
-    /// Manage product license and activation
-    License,
 }
-
 
 /// Menu choices as an enum for robust matching.
 #[derive(Debug, Clone, PartialEq)]
@@ -40,7 +37,6 @@ enum MenuChoice {
     Start,
     Doctor,
     Backup,
-    License,
     ResetDatabase,
     Exit,
 }
@@ -64,9 +60,6 @@ async fn handle_command(command: &Commands) -> Result<()> {
         Commands::Backup => {
             commands::backup::execute().await?;
         }
-        Commands::License => {
-            commands::license::execute().await?;
-        }
     }
     Ok(())
 }
@@ -88,19 +81,19 @@ fn build_menu(status: &core::database::SystemStatus) -> Vec<MenuItem> {
         push("Start System (Launch Desktop)", MenuChoice::Start);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
         push("Backup Database Snapshot", MenuChoice::Backup);
-        push("Manage License & Plan", MenuChoice::License);
         push("Workspace Setup / Repair", MenuChoice::Init);
         push("Reset Database Store", MenuChoice::ResetDatabase);
     } else if status.is_initialized() {
         push("Start System (Complete Onboarding)", MenuChoice::Start);
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
-        push("Manage License & Plan", MenuChoice::License);
         push("Workspace Setup / Repair", MenuChoice::Init);
         push("Backup Database Snapshot", MenuChoice::Backup);
         push("Reset Database Store", MenuChoice::ResetDatabase);
     } else {
-        push("Initialize Workspace (Setup Database & Admin)", MenuChoice::Init);
-        push("Manage Product License", MenuChoice::License);
+        push(
+            "Initialize Workspace (Setup Database & Admin)",
+            MenuChoice::Init,
+        );
         push("Run Diagnostics (Doctor)", MenuChoice::Doctor);
         push("Reset Database Store", MenuChoice::ResetDatabase);
     }
@@ -233,13 +226,16 @@ async fn reset_postgres(url: &str) -> Result<()> {
     Ok(())
 }
 
-async fn ensure_authenticated(status: &core::database::SystemStatus) -> Result<Option<core::auth::AuthenticatedAdmin>> {
+async fn ensure_authenticated(
+    status: &core::database::SystemStatus,
+) -> Result<Option<core::auth::AuthenticatedAdmin>> {
     if !status.is_initialized() {
         return Ok(None);
     }
 
     let config = core::config::CliConfig::default();
-    let db = Database::connect(&config.db_url).await
+    let db = Database::connect(&config.db_url)
+        .await
         .map_err(|e| anyhow!("Failed to connect to database for authentication: {e}"))?;
 
     let admin = core::auth::authenticate_admin(&db).await?;
@@ -262,8 +258,10 @@ async fn main() -> Result<()> {
 
     if let Some(cmd) = &cli.command {
         // Run specific command passed via CLI args directly
-        let (db_exists, setup_completed) =
-            (initial_status.is_initialized(), initial_status.is_setup_complete());
+        let (db_exists, setup_completed) = (
+            initial_status.is_initialized(),
+            initial_status.is_setup_complete(),
+        );
         ui::output::print_banner(db_exists, setup_completed);
 
         // Enforce authentication for protected commands when initialized
@@ -279,8 +277,10 @@ async fn main() -> Result<()> {
         handle_command(cmd).await?;
     } else {
         // Interactive Launcher Mode (when double-clicked or run without arguments)
-        let (db_exists, setup_completed) =
-            (initial_status.is_initialized(), initial_status.is_setup_complete());
+        let (db_exists, setup_completed) = (
+            initial_status.is_initialized(),
+            initial_status.is_setup_complete(),
+        );
         ui::output::print_banner(db_exists, setup_completed);
 
         // Enforce authentication gate upon opening CLI if system is initialized
@@ -294,22 +294,69 @@ async fn main() -> Result<()> {
 
             // Show active org & authenticated admin
             if let Some(ref name) = status.org_name {
-                let dot = "•".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2);
+                let dot = "•".truecolor(
+                    ui::output::COLOR_MUTED.0,
+                    ui::output::COLOR_MUTED.1,
+                    ui::output::COLOR_MUTED.2,
+                );
                 if let Some(ref admin) = auth_admin {
-                    println!("  {} {} {}  {}  {} {} ({})\n",
-                        "✦".truecolor(ui::output::COLOR_PURPLE.0, ui::output::COLOR_PURPLE.1, ui::output::COLOR_PURPLE.2),
-                        "Workspace:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
-                        name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold(),
+                    println!(
+                        "  {} {} {}  {}  {} {} ({})\n",
+                        "✦".truecolor(
+                            ui::output::COLOR_PURPLE.0,
+                            ui::output::COLOR_PURPLE.1,
+                            ui::output::COLOR_PURPLE.2
+                        ),
+                        "Workspace:".truecolor(
+                            ui::output::COLOR_MUTED.0,
+                            ui::output::COLOR_MUTED.1,
+                            ui::output::COLOR_MUTED.2
+                        ),
+                        name.truecolor(
+                            ui::output::COLOR_WHITE.0,
+                            ui::output::COLOR_WHITE.1,
+                            ui::output::COLOR_WHITE.2
+                        )
+                        .bold(),
                         dot,
-                        "Admin:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
-                        admin.full_name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold(),
-                        admin.role.truecolor(ui::output::COLOR_EMERALD.0, ui::output::COLOR_EMERALD.1, ui::output::COLOR_EMERALD.2)
+                        "Admin:".truecolor(
+                            ui::output::COLOR_MUTED.0,
+                            ui::output::COLOR_MUTED.1,
+                            ui::output::COLOR_MUTED.2
+                        ),
+                        admin
+                            .full_name
+                            .truecolor(
+                                ui::output::COLOR_WHITE.0,
+                                ui::output::COLOR_WHITE.1,
+                                ui::output::COLOR_WHITE.2
+                            )
+                            .bold(),
+                        admin.role.truecolor(
+                            ui::output::COLOR_EMERALD.0,
+                            ui::output::COLOR_EMERALD.1,
+                            ui::output::COLOR_EMERALD.2
+                        )
                     );
                 } else {
-                    println!("  {} {} {}\n",
-                        "✦".truecolor(ui::output::COLOR_PURPLE.0, ui::output::COLOR_PURPLE.1, ui::output::COLOR_PURPLE.2),
-                        "Workspace:".truecolor(ui::output::COLOR_MUTED.0, ui::output::COLOR_MUTED.1, ui::output::COLOR_MUTED.2),
-                        name.truecolor(ui::output::COLOR_WHITE.0, ui::output::COLOR_WHITE.1, ui::output::COLOR_WHITE.2).bold()
+                    println!(
+                        "  {} {} {}\n",
+                        "✦".truecolor(
+                            ui::output::COLOR_PURPLE.0,
+                            ui::output::COLOR_PURPLE.1,
+                            ui::output::COLOR_PURPLE.2
+                        ),
+                        "Workspace:".truecolor(
+                            ui::output::COLOR_MUTED.0,
+                            ui::output::COLOR_MUTED.1,
+                            ui::output::COLOR_MUTED.2
+                        ),
+                        name.truecolor(
+                            ui::output::COLOR_WHITE.0,
+                            ui::output::COLOR_WHITE.1,
+                            ui::output::COLOR_WHITE.2
+                        )
+                        .bold()
                     );
                 }
             }
@@ -352,11 +399,6 @@ async fn main() -> Result<()> {
                                     ui::output::print_error(&e.to_string());
                                 }
                             }
-                            MenuChoice::License => {
-                                if let Err(e) = handle_command(&Commands::License).await {
-                                    ui::output::print_error(&e.to_string());
-                                }
-                            }
                             MenuChoice::ResetDatabase => {
                                 handle_reset_database().await;
                             }
@@ -377,4 +419,3 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
-

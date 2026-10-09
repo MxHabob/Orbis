@@ -1,8 +1,8 @@
 use anyhow::Result;
 use colored::*;
 use inquire::{
-    ui::{Color, RenderConfig, StyleSheet, Styled},
     Autocomplete, Confirm, CustomUserError, Password, PasswordDisplayMode, Select, Text,
+    ui::{Color, RenderConfig, StyleSheet, Styled},
 };
 
 use crate::core::validator;
@@ -142,7 +142,7 @@ where
             .with_placeholder(placeholder)
             .with_autocomplete(autocompleter.clone())
             .prompt()?;
-        
+
         let final_value = value.trim().to_string();
 
         match validate(&final_value) {
@@ -163,7 +163,9 @@ pub fn prompt_slug(message: &str, default: &str) -> Result<String> {
 }
 
 pub fn prompt_email(message: &str) -> Result<String> {
-    prompt_text_validated_with_placeholder(message, "admin@orbis.edu", |v| validator::validate_email(v))
+    prompt_text_validated_with_placeholder(message, "admin@orbis.edu", |v| {
+        validator::validate_email(v)
+    })
 }
 
 pub fn prompt_email_with_default(message: &str, default: &str) -> Result<String> {
@@ -203,8 +205,4 @@ pub fn prompt_password_confirmed(message: &str) -> Result<String> {
 
         return Ok(password);
     }
-}
-
-pub fn prompt_license_key(message: &str) -> Result<String> {
-    prompt_text_validated(message, |v| validator::validate_license_key(v))
 }

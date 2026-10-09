@@ -5,10 +5,9 @@ use sea_orm::Database;
 use crate::core::config::CliConfig;
 use crate::core::database;
 use crate::core::github;
-use crate::core::license;
 use crate::ui::{output, prompts};
 
-const TOTAL_PHASES: u8 = 6;
+const TOTAL_PHASES: u8 = 5;
 
 pub async fn execute() -> Result<()> {
     let status = database::get_full_status().await;
@@ -31,66 +30,19 @@ pub async fn execute() -> Result<()> {
 
     println!(
         "\n  Welcome to the {}. Let's get you set up.\n",
-        "Orbis Setup Wizard".truecolor(output::COLOR_PURPLE.0, output::COLOR_PURPLE.1, output::COLOR_PURPLE.2).bold()
+        "Orbis Setup Wizard"
+            .truecolor(
+                output::COLOR_PURPLE.0,
+                output::COLOR_PURPLE.1,
+                output::COLOR_PURPLE.2
+            )
+            .bold()
     );
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 1: Product Activation
+    // Phase 1: Infrastructure Setup
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(1, TOTAL_PHASES, "Product Activation");
-
-    let license_info = match license::check_license_status() {
-        license::LicenseStatus::Active => {
-            let info = license::load_license()?;
-            output::print_success(&format!(
-                "License already active: {} (expires in {} days)",
-                info.plan,
-                info.days_remaining()
-            ));
-            info
-        }
-        _ => {
-            let activation_options = vec!["1. Enter License Key", "2. Start Free Trial (30 days)"];
-            let choice =
-                prompts::prompt_select("How would you like to activate?", activation_options)?;
-
-            if choice.contains("Trial") {
-                let info = license::activate_trial()?;
-                output::print_success(&format!(
-                    "Trial activated! Plan: {} | Expires: {} days",
-                    info.plan,
-                    info.days_remaining()
-                ));
-                info
-            } else {
-                loop {
-                    let key =
-                        prompts::prompt_license_key("Enter License Key (ORBIS-XXXXX-XXXXX-XXXXX-XXXXX):")?;
-                    match license::activate_license(&key) {
-                        Ok(info) => {
-                            output::print_success(&format!(
-                                "License activated! Plan: {} | Max Students: {} | Max Staff: {}",
-                                info.plan, info.max_students, info.max_staff
-                            ));
-                            break info;
-                        }
-                        Err(e) => {
-                            output::print_error(&format!("Activation failed: {}", e));
-                            let retry = prompts::prompt_confirm("Try again?", true)?;
-                            if !retry {
-                                return Err(anyhow!("License activation cancelled."));
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    };
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 2: Infrastructure Setup
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(2, TOTAL_PHASES, "Infrastructure Setup");
+    output::print_phase_header(1, TOTAL_PHASES, "Infrastructure Setup");
 
     let db_options = vec![
         "1. SQLite (Recommended for local/offline)",
@@ -135,9 +87,9 @@ pub async fn execute() -> Result<()> {
     let mut admin_username;
     let mut _admin_password;
 
-    // Phase 3: Organization Setup
+    // Phase 2: Organization Setup
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(3, TOTAL_PHASES, "Organization Setup");
+    output::print_phase_header(2, TOTAL_PHASES, "Organization Setup");
 
     org_name = prompts::prompt_org_name("Organization Name (EN):")?;
     org_name_ar = prompts::prompt_org_name("Organization Name (AR):")?;
@@ -190,9 +142,9 @@ pub async fn execute() -> Result<()> {
     )?;
     language = language_input.trim().to_lowercase();
 
-    // Phase 4: Administrator Account
+    // Phase 3: Administrator Account
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(4, TOTAL_PHASES, "Administrator Account");
+    output::print_phase_header(3, TOTAL_PHASES, "Administrator Account");
 
     admin_name = prompts::prompt_full_name("Admin Full Name:")?;
     admin_username = prompts::prompt_email("Admin Email:")?;
@@ -232,13 +184,13 @@ pub async fn execute() -> Result<()> {
         } else if review_choice.contains("Cancel") {
             return Err(anyhow::anyhow!("Setup wizard cancelled by user."));
         } else if review_choice.contains("Edit Administrator Account") {
-            output::print_phase_header(4, TOTAL_PHASES, "Administrator Account (Editing)");
+            output::print_phase_header(3, TOTAL_PHASES, "Administrator Account (Editing)");
             admin_name = prompts::prompt_text_with_default("Admin Full Name:", &admin_name)?;
             admin_username = prompts::prompt_text_with_default("Admin Email:", &admin_username)?;
             println!("  {}", "Re-enter admin password to confirm change:".cyan());
             _admin_password = prompts::prompt_password_confirmed("Admin Password:")?;
         } else if review_choice.contains("Edit Organization Setup") {
-            output::print_phase_header(3, TOTAL_PHASES, "Organization Setup (Editing)");
+            output::print_phase_header(2, TOTAL_PHASES, "Organization Setup (Editing)");
             org_name = prompts::prompt_text_with_default("Organization Name (EN):", &org_name)?;
             org_name_ar =
                 prompts::prompt_text_with_default("Organization Name (AR):", &org_name_ar)?;
@@ -270,14 +222,12 @@ pub async fn execute() -> Result<()> {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 5: Execution
+    // Phase 4: Execution
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(5, TOTAL_PHASES, "Initializing System");
+    output::print_phase_header(4, TOTAL_PHASES, "Initializing System");
 
     // 5a. Database initialized
-    output::print_progress_ok(
-        "Database initialized and schema ready",
-    );
+    output::print_progress_ok("Database initialized and schema ready");
 
     // 5e. Desktop download (production only)
     let env_var = std::env::var("APP_ENV").unwrap_or_else(|_| "development".to_string());
@@ -309,9 +259,9 @@ pub async fn execute() -> Result<()> {
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Phase 6: Summary
+    // Phase 5: Summary
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    output::print_phase_header(6, TOTAL_PHASES, "Summary");
+    output::print_phase_header(5, TOTAL_PHASES, "Summary");
 
     let db_provider = if db_url.starts_with("sqlite") {
         "SQLite"
@@ -328,7 +278,6 @@ pub async fn execute() -> Result<()> {
             ("Admin:", &admin_username),
             ("Database:", db_provider),
             ("Institution:", institution_type_label),
-            ("License:", &license_info.plan.to_string()),
             ("Timezone:", &timezone),
             ("Currency:", &currency),
         ],
