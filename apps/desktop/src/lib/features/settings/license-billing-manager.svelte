@@ -8,7 +8,7 @@ import * as m from "$lib/paraglide/messages";
 import { licenseStore, uiStore, confirmStore } from "$lib/stores";
 import { Button, LoadingIndicator, toast } from "@orbis/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
-import { Check, ShieldCheck, Bolt, ArrowPath, Trash } from "@orbis/icons";
+import { Check, Bolt, ArrowPath, Trash } from "@orbis/icons";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -228,19 +228,21 @@ const statusBadge = $derived.by(() => {
           <div class="flex min-w-0 flex-col gap-1">
             <div class="flex flex-wrap items-center gap-2">
               <span class="text-base font-semibold text-foreground">
-                {licenseStore.plan ?? licenseStore.edition ?? licenseStore.product}
+                {licenseStore.plan ?? licenseStore.edition ?? m.license_status_unavailable()}
               </span>
               <span class="text-sm text-muted-foreground">{statusBadge.label}</span>
             </div>
-            <p class="text-sm text-muted-foreground">
-              {#if licenseStore.isTrial}
+            {#if licenseStore.isTrial}
+              <p class="text-sm text-muted-foreground">
                 {m.license_trial_days_remaining({ count: String(licenseStore.trialDaysRemaining) })}
-              {:else if licenseStore.daysUntilExpiry !== null}
+              </p>
+            {:else if licenseStore.daysUntilExpiry !== null}
+              <p class="text-sm text-muted-foreground">
                 {m.license_days_remaining({ count: String(licenseStore.daysUntilExpiry) })}
-              {:else}
-                {licenseStore.edition ?? licenseStore.product}
-              {/if}
-            </p>
+              </p>
+            {:else if licenseStore.edition && licenseStore.edition !== licenseStore.plan}
+              <p class="text-sm text-muted-foreground">{licenseStore.edition}</p>
+            {/if}
           </div>
           <div class="flex shrink-0 items-center gap-2">
             <a
@@ -265,39 +267,19 @@ const statusBadge = $derived.by(() => {
 
     <section aria-labelledby="license-details-heading" class="flex flex-col gap-2">
       <Card>
-        <CardHeader class="flex flex-wrap items-center justify-between gap-3 normal-case tracking-normal">
+        <CardHeader class="normal-case tracking-normal">
           <div class="flex min-w-0 flex-col">
             <CardTitle id="license-details-heading" class="text-sm font-semibold text-foreground normal-case tracking-normal">
               {m.license_billing_details()}
             </CardTitle>
             <CardDescription class="text-xs">{m.license_billing_details_description()}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onclick={handleOpenActivation} class="shrink-0 text-xs">
-            <Bolt size={14} class="me-1.5" />
-            {m.license_activate_btn()}
-          </Button>
         </CardHeader>
-        <CardContent class="grid gap-5 p-5 md:grid-cols-[minmax(190px,0.7fr)_1.8fr] md:items-center">
-          <div class="flex min-h-36 flex-col justify-between rounded-xl border border-border/70 bg-muted/40 p-5">
-            <div class="flex items-start justify-between gap-3">
-              <span class="text-sm font-medium text-muted-foreground">{licenseStore.product}</span>
-              <ShieldCheck size={20} class="text-primary" />
-            </div>
-            <div>
-              <p class="text-xl font-semibold text-foreground">
-                {licenseStore.plan ?? licenseStore.edition ?? m.license_status_unavailable()}
-              </p>
-              <p class="mt-1 text-xs text-muted-foreground">{m.license_plan_label()}</p>
-            </div>
-          </div>
+        <CardContent class="p-5">
           <dl class="flex min-w-0 flex-col">
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_status_title()}</dt>
               <dd class="text-sm font-medium text-foreground">{statusBadge.label}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
-              <dt class="text-sm text-muted-foreground">{m.license_billing_product()}</dt>
-              <dd class="text-sm font-medium text-foreground">{licenseStore.edition ?? licenseStore.product}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_valid_until()}</dt>
@@ -314,26 +296,6 @@ const statusBadge = $derived.by(() => {
               </dd>
             </div>
           </dl>
-        </CardContent>
-      </Card>
-    </section>
-
-    <section aria-labelledby="license-schedule-heading" class="flex flex-col gap-2">
-      <Card>
-        <CardHeader>
-          <CardTitle id="license-schedule-heading">{m.license_billing_schedule()}</CardTitle>
-        </CardHeader>
-        <CardContent class="p-5">
-          <div class="grid grid-cols-[1fr_auto] gap-x-6 gap-y-3 text-sm sm:grid-cols-[1fr_1fr_auto]">
-            <span class="text-xs text-muted-foreground">{m.license_billing_schedule_item()}</span>
-            <span class="hidden text-xs text-muted-foreground sm:block">{m.license_plan_label()}</span>
-            <span class="text-end text-xs text-muted-foreground">{m.license_valid_until()}</span>
-            <span class="font-medium text-foreground">{m.license_status_title()}</span>
-            <span class="hidden text-muted-foreground sm:block">{licenseStore.plan ?? licenseStore.edition ?? licenseStore.product}</span>
-            <span class="text-end tabular-nums text-foreground">
-              {licenseStore.validUntil ? new Date(licenseStore.validUntil).toLocaleDateString() : "—"}
-            </span>
-          </div>
         </CardContent>
       </Card>
     </section>
