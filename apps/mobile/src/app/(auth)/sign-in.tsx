@@ -18,12 +18,10 @@ import {
   ArrowRight,
   Bolt,
   BuildingLibrary,
-  ChartBar,
-  Eye,
-  EyeSlash
+  ChartBar
 } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Platform,
   Text,
@@ -120,9 +118,9 @@ export default function SignInScreen() {
         }}
       >
         <View className="flex-1 items-end justify-center min-h-[220px] gap-2">
-            {CAPABILITIES.map((cap, idx) => {
+            {CAPABILITIES.map((cap) => {
               return (
-                    <View>
+                    <View key={cap.labelKey}>
                       <Text className="font-sans text-2xl leading-[30px] font-extrabold text-foreground">
                         {t(cap.labelKey)}
                       </Text>
