@@ -1,6 +1,7 @@
 import { FeatureCard } from "@/components/feature-card";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useRouter } from "expo-router";
@@ -10,6 +11,7 @@ export default function ProfileIndexScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { t, isArabic } = useI18n();
+  const toast = useToast();
 
   const displayName = user
     ? isArabic
@@ -24,7 +26,12 @@ export default function ProfileIndexScreen() {
         text: t("profile_sign_out_button"),
         style: "destructive",
         onPress: () => {
-          void logout().then(() => router.replace("/(auth)/sign-in"));
+          void logout()
+            .then(() => router.replace("/(auth)/sign-in"))
+            .catch((error: unknown) => {
+              console.error("[Orbis Mobile Auth] Failed to sign out.", error);
+              toast.error(t("profile_logout_error"));
+            });
         },
       },
     ]);

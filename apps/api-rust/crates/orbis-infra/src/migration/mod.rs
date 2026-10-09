@@ -12,6 +12,7 @@ pub mod m20240109_000001_organization_format_preferences;
 pub mod m20240110_000001_account_name_ar_and_subtype;
 pub mod m20240111_000001_backfill_standard_subject_arabic_names;
 pub mod m20240112_000001_license_quota_locks;
+pub mod m20240113_000001_admission_applications;
 
 pub struct Migrator;
 
@@ -31,6 +32,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20240110_000001_account_name_ar_and_subtype::Migration),
             Box::new(m20240111_000001_backfill_standard_subject_arabic_names::Migration),
             Box::new(m20240112_000001_license_quota_locks::Migration),
+            Box::new(m20240113_000001_admission_applications::Migration),
         ]
     }
 }
