@@ -105,12 +105,12 @@ pub trait LicenseRuntime: Send + Sync {
             let unbound_trial = entitlement.payload.organization_id.is_empty()
                 && entitlement.payload.plan_key.eq_ignore_ascii_case("TRIAL");
             if !unbound_trial {
-                let licensed_organization =
-                    Uuid::parse_str(&entitlement.payload.organization_id).map_err(|_| {
-                        DomainError::LicenseRequired(
-                            "The license is not bound to a valid organization".to_string(),
-                        )
-                    })?;
+                let licensed_organization = Uuid::parse_str(&entitlement.payload.organization_id)
+                    .map_err(|_| {
+                    DomainError::LicenseRequired(
+                        "The license is not bound to a valid organization".to_string(),
+                    )
+                })?;
                 if licensed_organization != organization_id {
                     return Err(DomainError::Forbidden(
                         "The license is not valid for the active organization".to_string(),

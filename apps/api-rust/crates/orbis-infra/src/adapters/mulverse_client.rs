@@ -15,7 +15,7 @@ use orbis_domain::entities::license::{
     ActivationRequest, ActivationResponse, DeactivationRequest, MULVERSE_PRODUCT_KEY,
     PublicKeyInfo, RefreshRequest, SignedEntitlement, TauriUpdateManifest,
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::time::Duration;
 use tracing::{debug, warn};
 

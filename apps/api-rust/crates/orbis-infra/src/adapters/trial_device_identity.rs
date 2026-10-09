@@ -44,7 +44,7 @@ fn load(path: &Path) -> Result<SigningKey, String> {
 fn protect(value: &[u8]) -> Result<Vec<u8>, String> {
     use std::ptr::{null, null_mut};
     use windows_sys::Win32::Security::Cryptography::{
-        CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB, CryptProtectData,
+        CRYPT_INTEGER_BLOB, CRYPTPROTECT_UI_FORBIDDEN, CryptProtectData,
     };
 
     let input = CRYPT_INTEGER_BLOB {
@@ -102,7 +102,7 @@ fn protect(_value: &[u8]) -> Result<Vec<u8>, String> {
 fn unprotect(value: &[u8]) -> Result<Vec<u8>, String> {
     use std::ptr::{null, null_mut};
     use windows_sys::Win32::Security::Cryptography::{
-        CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB, CryptUnprotectData,
+        CRYPT_INTEGER_BLOB, CRYPTPROTECT_UI_FORBIDDEN, CryptUnprotectData,
     };
 
     let input = CRYPT_INTEGER_BLOB {
@@ -142,7 +142,8 @@ fn unprotect(value: &[u8]) -> Result<Vec<u8>, String> {
         }
         return Err("Windows returned an empty trial device key".to_owned());
     }
-    let seed = unsafe { std::slice::from_raw_parts(output.pbData, output.cbData as usize) }.to_vec();
+    let seed =
+        unsafe { std::slice::from_raw_parts(output.pbData, output.cbData as usize) }.to_vec();
     unsafe {
         windows_sys::Win32::Foundation::LocalFree(output.pbData.cast());
     }

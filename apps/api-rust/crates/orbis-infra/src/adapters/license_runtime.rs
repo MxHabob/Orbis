@@ -13,7 +13,7 @@
 use async_trait::async_trait;
 use base64::Engine;
 use chrono::Utc;
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, Verifier, VerifyingKey};
 use orbis_app::ports::license::LicenseRuntime;
 use orbis_domain::entities::license::*;
 use orbis_domain::errors::DomainError;
@@ -356,15 +356,12 @@ impl MulverseLicenseRuntime {
         message.push_str(&challenge.challenge);
         let signature = key.sign(message.as_bytes());
         Ok((
-            base64::engine::general_purpose::STANDARD
-                .encode(key.verifying_key().to_bytes()),
+            base64::engine::general_purpose::STANDARD.encode(key.verifying_key().to_bytes()),
             base64::engine::general_purpose::STANDARD.encode(signature.to_bytes()),
         ))
     }
 
-    async fn register_central_trial(
-        &self,
-    ) -> Result<TrialRegistrationResponse, TrialSyncError> {
+    async fn register_central_trial(&self) -> Result<TrialRegistrationResponse, TrialSyncError> {
         let challenge = self
             .mulverse_client
             .create_trial_challenge()
@@ -378,8 +375,9 @@ impl MulverseLicenseRuntime {
             std::env::consts::OS.to_owned(),
             self.app_version.clone(),
         ];
-        let (device_public_key, device_signature) =
-            self.sign_trial_challenge(&challenge, &fields).map_err(TrialSyncError::Domain)?;
+        let (device_public_key, device_signature) = self
+            .sign_trial_challenge(&challenge, &fields)
+            .map_err(TrialSyncError::Domain)?;
         self.mulverse_client
             .register_trial(&RegisterTrialRequest {
                 device_public_key,
@@ -389,7 +387,9 @@ impl MulverseLicenseRuntime {
                 installation_id,
                 platform: std::env::consts::OS.to_owned(),
                 app_version: self.app_version.clone(),
-                machine_label: hostname::get().ok().and_then(|value| value.into_string().ok()),
+                machine_label: hostname::get()
+                    .ok()
+                    .and_then(|value| value.into_string().ok()),
             })
             .await
             .map_err(TrialSyncError::Api)
@@ -412,8 +412,9 @@ impl MulverseLicenseRuntime {
             installation_id.clone(),
             self.app_version.clone(),
         ];
-        let (device_public_key, device_signature) =
-            self.sign_trial_challenge(&challenge, &fields).map_err(TrialSyncError::Domain)?;
+        let (device_public_key, device_signature) = self
+            .sign_trial_challenge(&challenge, &fields)
+            .map_err(TrialSyncError::Domain)?;
         self.mulverse_client
             .refresh_trial(&RefreshTrialRequest {
                 trial_id: trial_id.to_owned(),
@@ -442,7 +443,8 @@ impl MulverseLicenseRuntime {
         }
         let entitlement = response.signed_entitlement;
         if entitlement.payload.license_id != response.trial.id
-            || entitlement.payload.plan_key != "TRIAL"
+            || !entitlement.payload.plan_key.eq_ignore_ascii_case("TRIAL")
+            || entitlement.payload.product_id != CANONICAL_PRODUCT_ID
             || entitlement.payload.installation_id != current.installation_id
         {
             return Err(DomainError::Internal(
@@ -455,6 +457,15 @@ impl MulverseLicenseRuntime {
                     "Central trial entitlement signature verification failed: {error}"
                 ))
             })?;
+        if entitlement
+            .payload
+            .valid_until
+            .map_or(true, |expires_at| expires_at <= Utc::now())
+        {
+            return Err(DomainError::Forbidden(
+                "Mulverse returned an expired trial entitlement".to_owned(),
+            ));
+        }
 
         let mut snapshot = LicenseSnapshot::new_unavailable(
             current.installation_id.clone(),
@@ -511,8 +522,10 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
         };
         if snapshot.signed_entitlement.is_none() && snapshot.trial_started_at.is_some() {
-            snapshot.trial_policy.duration_days =
-                snapshot.trial_policy.duration_days.min(PROVISIONAL_TRIAL_DAYS);
+            snapshot.trial_policy.duration_days = snapshot
+                .trial_policy
+                .duration_days
+                .min(PROVISIONAL_TRIAL_DAYS);
         }
         snapshot
     }
@@ -553,8 +566,10 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             }
 
             if snapshot.signed_entitlement.is_none() && snapshot.trial_started_at.is_some() {
-                snapshot.trial_policy.duration_days =
-                    snapshot.trial_policy.duration_days.min(PROVISIONAL_TRIAL_DAYS);
+                snapshot.trial_policy.duration_days = snapshot
+                    .trial_policy
+                    .duration_days
+                    .min(PROVISIONAL_TRIAL_DAYS);
             }
 
             if !entitlement_invalid && snapshot.state != LicenseState::Suspended {
@@ -1123,5 +1138,39 @@ mod tests {
             verify_offline_license(&entitlement, "", "inst_test"),
             Err(LicenseVerificationError::InvalidPayload)
         );
+    }
+
+    #[test]
+    fn provisional_offline_trial_expires_after_seven_days() {
+        let (runtime, app_data_dir) = test_runtime();
+        let mut snapshot = runtime.current_snapshot();
+        snapshot.trial_started_at = Some(Utc::now() - chrono::Duration::days(8));
+        snapshot.trial_policy.duration_days = 30;
+        snapshot.state = LicenseState::Trial;
+        runtime
+            .update_snapshot(snapshot)
+            .expect("trial snapshot should persist");
+
+        let current = runtime.current_snapshot();
+        assert_eq!(current.trial_policy.duration_days, PROVISIONAL_TRIAL_DAYS);
+        assert_eq!(current.state, LicenseState::Expired);
+        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+    }
+
+    #[test]
+    fn provisional_offline_trial_is_operational_within_seven_days() {
+        let (runtime, app_data_dir) = test_runtime();
+        let mut snapshot = runtime.current_snapshot();
+        snapshot.trial_started_at = Some(Utc::now() - chrono::Duration::days(6));
+        snapshot.trial_policy.duration_days = 30;
+        snapshot.state = LicenseState::Trial;
+        runtime
+            .update_snapshot(snapshot)
+            .expect("trial snapshot should persist");
+
+        let current = runtime.current_snapshot();
+        assert_eq!(current.trial_policy.duration_days, PROVISIONAL_TRIAL_DAYS);
+        assert_eq!(current.state, LicenseState::Trial);
+        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
     }
 }
