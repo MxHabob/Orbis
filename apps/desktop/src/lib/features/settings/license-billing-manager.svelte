@@ -314,7 +314,7 @@ const statusBadge = $derived.by(() => {
               <div class="flex min-w-0 flex-col gap-0.5">
                 <span class="text-[9px] uppercase tracking-wider text-white/60">{m.license_valid_until()}</span>
                 <span class="truncate text-xs font-medium tabular-nums">
-                  {formatDate(licenseStore.validUntil, "date") || "—"}
+                  {formatDate(licenseStore.validUntil, "datetime") || "—"}
                 </span>
               </div>
               <span class="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/90">
@@ -369,7 +369,7 @@ const statusBadge = $derived.by(() => {
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_valid_until()}</dt>
               <dd class="text-sm font-medium tabular-nums text-foreground">
-                {formatDate(licenseStore.validUntil, "date") || "—"}
+                {formatDate(licenseStore.validUntil, "datetime") || "—"}
               </dd>
             </div>
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
@@ -396,7 +396,7 @@ const statusBadge = $derived.by(() => {
             <span class="font-medium text-foreground">{statusBadge.label}</span>
             <span class="hidden text-muted-foreground sm:block">{planDisplay}</span>
             <span class="text-end tabular-nums text-foreground">
-              {formatDate(licenseStore.validUntil, "date") || "—"}
+              {formatDate(licenseStore.validUntil, "datetime") || "—"}
             </span>
             </div>
         </CardContent>
