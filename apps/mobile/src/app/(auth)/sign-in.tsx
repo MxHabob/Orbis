@@ -232,6 +232,14 @@ export default function SignInScreen() {
               </Text>
             </Button>
           </View>
+          <Button
+            onPress={() => router.push("/(auth)/explore")}
+            variant="link"
+          >
+            <Text className="font-sans text-sm leading-5 text-primary">
+              {t("visitor_explore")}
+            </Text>
+          </Button>
         </View>
       </KeyboardAwareView>
     </View>

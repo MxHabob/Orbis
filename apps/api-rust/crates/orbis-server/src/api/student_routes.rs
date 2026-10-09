@@ -474,6 +474,32 @@ pub async fn list_students(
     Ok(ApiResponse::ok(dtos))
 }
 
+#[utoipa::path(get, path = "/api/v1/students/me",
+    responses((status = 200, body = StudentDto)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn get_my_student(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let user_id = ctx
+        .user_id()
+        .ok_or_else(|| ApiError::unauthorized("No user identity in token"))?;
+    let student = state
+        .student_service
+        .student_repo
+        .find_by_user_id(ctx.tenant_id, user_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Student profile not found"))?;
+    let detail = state
+        .student_service
+        .student_repo
+        .find_detail_by_id(student.id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Student profile not found"))?;
+
+    Ok(ApiResponse::ok(detail.into()))
+}
+
 #[utoipa::path(get, path = "/api/v1/students/{id}",
     params(("id" = Uuid, Path, description = "Student ID")),
     responses((status = 200, body = StudentDto)),
@@ -955,6 +981,7 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/students/bulk-register",
             post(bulk_register_students),
         )
+        .route("/api/v1/students/me", get(get_my_student))
         .route("/api/v1/students/check-duplicate", post(check_duplicate))
         .route(
             "/api/v1/students/:id",

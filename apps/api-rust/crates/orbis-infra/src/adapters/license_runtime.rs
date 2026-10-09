@@ -47,7 +47,6 @@ const EMBEDDED_KEY_ID: &str = match option_env!("MULVERSE_LICENSE_KEY_ID") {
 // ═══════════════════════════════════════════════════════════════
 
 const LICENSE_SNAPSHOT_FILE: &str = "license_snapshot.json";
-const INSTALLATION_ID_FILE: &str = "installation_id";
 
 enum TrialSyncError {
     Api(MulverseApiError),
@@ -136,8 +135,21 @@ impl MulverseLicenseRuntime {
         app_version: &str,
         mulverse_base_url: Option<&str>,
     ) -> Result<Self, String> {
-        let installation_id = load_or_generate_installation_id(app_data_dir)?;
+        let installation_id = trial_device_identity::load_or_create_installation_id(app_data_dir)?;
+        Self::new_with_installation_id(
+            app_data_dir,
+            app_version,
+            mulverse_base_url,
+            installation_id,
+        )
+    }
 
+    fn new_with_installation_id(
+        app_data_dir: &Path,
+        app_version: &str,
+        mulverse_base_url: Option<&str>,
+        installation_id: String,
+    ) -> Result<Self, String> {
         let mulverse_client = match mulverse_base_url {
             Some(url) => MulverseClient::with_base_url(url)?,
             None => MulverseClient::new()?,
@@ -251,13 +263,6 @@ impl MulverseLicenseRuntime {
                     snapshot.state = LicenseState::Expired;
                     return;
                 }
-
-                // Check if expiring soon (within 14 days)
-                let days_remaining = valid_until.signed_duration_since(now).num_days();
-                if days_remaining <= 14 && days_remaining > 0 {
-                    snapshot.state = LicenseState::Expiring;
-                    return;
-                }
             }
 
             if se.payload.plan_key.eq_ignore_ascii_case("TRIAL")
@@ -267,32 +272,40 @@ impl MulverseLicenseRuntime {
                 return;
             }
 
-            // Check offline grace period
-            if let Some(last_sync) = snapshot.last_sync_at {
-                let days_offline = now.signed_duration_since(last_sync).num_days();
-                if days_offline > se.payload.offline_grace_period_days as i64 {
-                    if !se.payload.offline_allowed {
-                        warn!("Offline mode forbidden by license");
-                        snapshot.state = LicenseState::Invalid;
-                    } else {
-                        warn!(
-                            days_offline = days_offline,
-                            grace_days = se.payload.offline_grace_period_days,
-                            "Offline grace period exceeded"
-                        );
-                        snapshot.state = LicenseState::Expired;
-                    }
-                    return;
-                }
+            if now < se.payload.issued_at {
+                snapshot.state = LicenseState::Pending;
+                return;
+            }
 
-                if days_offline > 0 {
-                    snapshot.state = LicenseState::OfflineGrace;
-                    return;
+            // Use the server-signed issuance time, not the editable local sync timestamp.
+            let grace_period_until = se.payload.issued_at
+                + chrono::Duration::days(se.payload.offline_grace_period_days as i64);
+            if now > grace_period_until {
+                if !se.payload.offline_allowed {
+                    warn!("Offline mode forbidden by license");
+                    snapshot.state = LicenseState::Invalid;
+                } else {
+                    warn!(
+                        days_offline = now.signed_duration_since(se.payload.issued_at).num_days(),
+                        grace_days = se.payload.offline_grace_period_days,
+                        "Offline grace period exceeded"
+                    );
+                    snapshot.state = LicenseState::Expired;
                 }
-            } else {
-                // Never synced — if just activated offline, use OfflineGrace
+                return;
+            }
+
+            if now > se.payload.issued_at {
                 snapshot.state = LicenseState::OfflineGrace;
                 return;
+            }
+
+            if let Some(valid_until) = se.payload.valid_until {
+                let days_remaining = valid_until.signed_duration_since(now).num_days();
+                if days_remaining <= 14 && days_remaining > 0 {
+                    snapshot.state = LicenseState::Expiring;
+                    return;
+                }
             }
 
             // All checks passed — license is active
@@ -525,8 +538,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
                 }
             }
 
-            let current_id = load_or_generate_installation_id(&self.app_data_dir)
-                .unwrap_or_else(|_| "unknown".to_string());
+            let current_id = self.installation_id();
 
             if snapshot.installation_id != current_id {
                 warn!(
@@ -545,8 +557,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
 
             info!(state = ?self.current_snapshot().state, "License runtime initialized from persisted state");
         } else {
-            let installation_id = load_or_generate_installation_id(&self.app_data_dir)
-                .unwrap_or_else(|_| generate_installation_id());
+            let installation_id = self.installation_id();
 
             let snapshot =
                 LicenseSnapshot::new_unavailable(installation_id, self.app_version.clone());
@@ -911,11 +922,10 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
             })
             .map(|dt| dt.to_rfc3339());
 
-        let grace_period_until = snapshot.signed_entitlement.as_ref().and_then(|se| {
-            snapshot.last_sync_at.map(|sync| {
-                (sync + chrono::Duration::days(se.payload.offline_grace_period_days as i64))
-                    .to_rfc3339()
-            })
+        let grace_period_until = snapshot.signed_entitlement.as_ref().map(|se| {
+            (se.payload.issued_at
+                + chrono::Duration::days(se.payload.offline_grace_period_days as i64))
+            .to_rfc3339()
         });
 
         Ok(orbis_domain::entities::entitlement::EntitlementResult {
@@ -933,27 +943,6 @@ impl orbis_app::ports::entitlement::EntitlementProvider for LicenseEntitlementBr
 // ═══════════════════════════════════════════════════════════════
 // INSTALLATION IDENTITY HELPERS
 // ═══════════════════════════════════════════════════════════════
-
-fn load_or_generate_installation_id(app_data_dir: &Path) -> Result<String, String> {
-    let path = app_data_dir.join(INSTALLATION_ID_FILE);
-
-    if path.exists() {
-        std::fs::read_to_string(&path)
-            .map(|s| s.trim().to_string())
-            .map_err(|e| format!("Failed to read installation ID: {e}"))
-    } else {
-        let id = generate_installation_id();
-
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .map_err(|e| format!("Failed to create AppData dir: {e}"))?;
-        }
-        std::fs::write(&path, &id).map_err(|e| format!("Failed to write installation ID: {e}"))?;
-
-        info!(installation_id = %id, "Generated new installation identity");
-        Ok(id)
-    }
-}
 
 // ═══════════════════════════════════════════════════════════════
 // BACKGROUND SYNC TASK
@@ -1026,9 +1015,20 @@ mod tests {
             "orbis-license-runtime-test-{}",
             uuid::Uuid::new_v4()
         ));
-        let runtime = MulverseLicenseRuntime::new(&app_data_dir, "test", Some("http://127.0.0.1"))
-            .expect("test runtime should initialize");
+        let runtime = MulverseLicenseRuntime::new_with_installation_id(
+            &app_data_dir,
+            "test",
+            Some("http://127.0.0.1"),
+            generate_installation_id(),
+        )
+        .expect("test runtime should initialize");
         (runtime, app_data_dir)
+    }
+
+    fn cleanup_test_data(app_data_dir: PathBuf) {
+        if app_data_dir.exists() {
+            std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+        }
     }
 
     #[test]
@@ -1045,7 +1045,7 @@ mod tests {
             Err(LicenseVerificationError::NoTrustedKeysConfigured)
         );
 
-        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+        cleanup_test_data(app_data_dir);
     }
 
     #[test]
@@ -1060,7 +1060,7 @@ mod tests {
         runtime.evaluate_state(&mut snapshot);
 
         assert_eq!(snapshot.state, LicenseState::Pending);
-        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+        cleanup_test_data(app_data_dir);
     }
 
     #[test]
@@ -1088,7 +1088,27 @@ mod tests {
         let current = runtime.current_snapshot();
         assert_eq!(current.trial_started_at, None);
         assert_eq!(current.state, LicenseState::Unavailable);
-        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+        cleanup_test_data(app_data_dir);
+    }
+
+    #[test]
+    fn editing_local_sync_time_cannot_extend_signed_offline_grace() {
+        let (runtime, app_data_dir) = test_runtime();
+        let mut snapshot = runtime.current_snapshot();
+        let mut entitlement = signed_entitlement(
+            &snapshot.installation_id,
+            Utc::now() - chrono::Duration::days(40),
+        );
+        entitlement.payload.issued_at = Utc::now() - chrono::Duration::days(31);
+        entitlement.payload.offline_grace_period_days = 30;
+        entitlement.payload.valid_until = Some(Utc::now() + chrono::Duration::days(10));
+        snapshot.signed_entitlement = Some(entitlement);
+        snapshot.last_sync_at = Some(Utc::now());
+
+        runtime.evaluate_state(&mut snapshot);
+
+        assert_eq!(snapshot.state, LicenseState::Expired);
+        cleanup_test_data(app_data_dir);
     }
 
     #[test]
@@ -1109,6 +1129,6 @@ mod tests {
         runtime.evaluate_state(&mut snapshot);
 
         assert_eq!(snapshot.state, LicenseState::Pending);
-        std::fs::remove_dir_all(app_data_dir).expect("test data should be cleaned up");
+        cleanup_test_data(app_data_dir);
     }
 }

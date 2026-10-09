@@ -26,7 +26,7 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { Grid, Document, ChartBar } from "@orbis/icons/native";
+import { ChartBar, Document, Grid } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -310,7 +310,6 @@ const styles = StyleSheet.create({
   control: {
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: StyleSheet.hairlineWidth,
     elevation: 4,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },

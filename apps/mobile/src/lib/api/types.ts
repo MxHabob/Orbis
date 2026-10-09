@@ -15,6 +15,7 @@ export type {
   AcademicContextResponse,
   AttendanceDto,
   ClassDto,
+  ClassSubjectDto,
   DashboardCountsDto,
   EnrollmentDto,
   GradeDto,
@@ -25,6 +26,9 @@ export type {
   RecordGradeRequest,
   ScheduledLessonDto,
   StudentFeeDto,
+  StudentDto,
+  SubjectDto,
+  TimeSlotDto,
   UserDto,
 } from "@orbis/sdk";
 

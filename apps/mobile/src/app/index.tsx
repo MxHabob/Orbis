@@ -1,8 +1,8 @@
 /**
  * @module @orbis/mobile/app/index
  *
- * Entry routing gate. Automatically redirects to (app)/(tabs) if authenticated
- * or (auth)/sign-in if unauthenticated.
+ * Entry routing gate. Restores authenticated sessions into the app and opens
+ * the public visitor experience when signed out.
  */
 
 import { View, ActivityIndicator } from "react-native";
@@ -28,5 +28,5 @@ export default function IndexGate() {
     return <Redirect href="/(app)/(tabs)" />;
   }
 
-  return <Redirect href="/(auth)/sign-in" />;
+  return <Redirect href="/(auth)/explore" />;
 }

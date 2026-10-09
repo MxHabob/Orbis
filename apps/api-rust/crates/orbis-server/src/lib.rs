@@ -119,6 +119,7 @@ use api::{
         api::student_routes::register_student,
         api::student_routes::check_duplicate,
         api::student_routes::list_students,
+        api::student_routes::get_my_student,
         api::student_routes::get_student,
         api::student_routes::update_student_status,
         api::student_routes::update_student_profile,
