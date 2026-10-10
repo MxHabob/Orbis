@@ -17,7 +17,6 @@ import {
   FolderOpen,
   Check,
   XMark,
-  ArchiveBox,
 } from "@orbis/icons";
 import { confirmStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
@@ -52,7 +51,7 @@ let {
 } = $props();
 
 // View and filter states
-let viewMode = $state<"grid" | "table">("table");
+let viewMode = $state<"grid" | "table">("grid");
 let searchQuery = $state("");
 let selectedFilters = $state<string[]>([]);
 let selectedIds = $state<Set<string>>(new Set());
@@ -382,47 +381,10 @@ async function handleBatchPurge() {
 
 <div class="h-full flex flex-col bg-background overflow-hidden">
   <!-- Top Navigation & Actions Bar -->
-  <header class="shrink-0 border-b border-border/40 bg-card/60 backdrop-blur px-6 py-4">
-    <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-      <!-- Breadcrumbs & Heading -->
-      <div>
-        <nav class="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-          <button
-            type="button"
-            class="hover:text-foreground transition-colors flex items-center gap-1"
-            onclick={() => goto(`/${orgId}/settings/archive`)}
-          >
-            <ArchiveBox class="w-3.5 h-3.5" />
-            <span>{m.operations_ui_documents_archive()}</span>
-          </button>
-          <span>/</span>
-          <span class="text-foreground font-medium flex items-center gap-1 text-rose-500">
-            <Trash class="w-3.5 h-3.5" />
-            <span>{m.operations_ui_trash_title()}</span>
-          </span>
-        </nav>
-
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl font-bold text-foreground">{m.operations_ui_trash_title()}</h1>
-          <span class="rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 text-xs font-semibold">
-            {m.operations_ui_trash_file_count({ count: trashedDocs.length })}
-          </span>
-        </div>
-      </div>
-
-      <SplitActionMenu
-        label={m.operations_ui_return_to_archive()}
-        menuLabel={m.operations_ui_actions()}
-        icon={FolderOpen}
-        actions={trashMenuActions}
-        onprimary={() => goto(`/${orgId}/settings/archive`)}
-      />
-    </div>
-
-    <!-- Search & Filter Controls -->
-    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-border/30">
+  <header class="shrink-0 border-b border-border/40 bg-card/60 px-4 py-3 backdrop-blur">
+    <div class="flex flex-wrap items-center gap-2">
       <!-- Search Input -->
-      <div class="relative w-full max-w-xs">
+      <div class="relative min-w-0 flex-1 basis-64 max-w-md">
         <Search class="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           type="search"
@@ -442,7 +404,7 @@ async function handleBatchPurge() {
       </div>
 
       <!-- Filters & View Switcher -->
-      <div class="flex items-center gap-2 flex-wrap text-xs">
+      <div class="flex shrink-0 items-center gap-2 flex-wrap text-xs">
         <SearchableMultiFilter
           groups={trashFilterGroups}
           bind:selectedValues={selectedFilters}
@@ -486,6 +448,14 @@ async function handleBatchPurge() {
           </Button>
         </div>
       </div>
+
+      <SplitActionMenu
+        label={m.operations_ui_return_to_archive()}
+        menuLabel={m.operations_ui_actions()}
+        icon={FolderOpen}
+        actions={trashMenuActions}
+        onprimary={() => goto(`/${orgId}/settings/archive`)}
+      />
     </div>
   </header>
 
