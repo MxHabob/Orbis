@@ -4,6 +4,7 @@ import { orgContext } from "$lib/stores/org-context.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 import { parseRegistrationFieldPolicies, normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 import { splitPersonName } from "$lib/shared/utils/person-name";
+import { createBulkValidationContext, findDuplicateIndex, type BulkValidationContext } from "../engine/duplicate-index";
 import {
   ensureStudentRegistrationArtifacts,
   provisionStudentLoginAccount,
@@ -143,6 +144,7 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
     id: "class_name",
     headerAr: "الصف / الشعبة*",
     headerEn: "Class / Section*",
+    headerAliases: ["المستوى الدراسي / الشعبة"],
     required: true,
     type: "reference",
     referenceSource: "classes",
@@ -311,7 +313,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
 
     const classes = (classesRes || []).map((c: any) => ({
       id: c.id,
-      code: c.code || "",
+      code: c.code || c.id,
       name: c.name || "",
       nameAr: c.name_ar || c.name || "",
       meta: { capacity: c.capacity ?? 30 },
@@ -481,7 +483,13 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     return null;
   },
 
-  validateRow(row: StudentRowData, allRows: StudentRowData[], rowIndex: number, refData: BulkReferenceData): BulkCellIssue[] {
+  validateRow(
+    row: StudentRowData,
+    allRows: StudentRowData[],
+    rowIndex: number,
+    refData: BulkReferenceData,
+    context?: BulkValidationContext,
+  ): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
 
     // Check duplicate national_id across the entire batch (Level 4)
@@ -491,7 +499,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       refData.registrationFields?.national_id?.preventDuplicate !== false
     ) {
       const nid = row.national_id.trim();
-      const duplicateIndex = allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
+      const duplicateIndex = context
+        ? findDuplicateIndex(context, "national_id", nid, rowIndex) ?? -1
+        : allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
       if (duplicateIndex !== -1) {
         issues.push({
           severity: "BLOCKING_ERROR",
@@ -504,7 +514,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     // Check duplicate student_number if specified
     if (row.student_number?.trim()) {
       const sn = row.student_number.trim();
-      const duplicateIndex = allRows.findIndex((r, idx) => idx !== rowIndex && r.student_number?.trim() === sn);
+      const duplicateIndex = context
+        ? findDuplicateIndex(context, "student_number", sn, rowIndex) ?? -1
+        : allRows.findIndex((r, idx) => idx !== rowIndex && r.student_number?.trim() === sn);
       if (duplicateIndex !== -1) {
         issues.push({
           severity: "BLOCKING_ERROR",
@@ -524,6 +536,10 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     let userAccountsToProvision = 0;
     const classPlacements: Record<string, number> = {};
     const parentPhones = new Set<string>();
+    const validationContext = createBulkValidationContext(
+      "students",
+      rows as Record<string, unknown>[],
+    );
 
     const mandatoryTemplates = refData.feeTemplates.filter((t) => (t.meta as any)?.is_mandatory);
     const mandatoryTotalPerStudent = mandatoryTemplates.reduce(
@@ -531,14 +547,14 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       0,
     );
 
-    for (const row of rows) {
+    for (const [rowIndex, row] of rows.entries()) {
       const enabledColumns = studentColumnMetadata.filter((column) =>
         column.id === "full_name_ar" || column.id === "class_name" ||
         refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]?.active !== false,
       );
       const hasErrors = enabledColumns.some((column) =>
         this.validateCell(column.id, row[column.id], row, refData)?.severity === "BLOCKING_ERROR",
-      ) || this.validateRow(row, rows, rows.indexOf(row), refData).some(
+      ) || this.validateRow(row, rows, rowIndex, refData, validationContext).some(
         (issue) => issue.severity === "BLOCKING_ERROR",
       );
       if (hasErrors) {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { OrbisGrid } from "@orbis/svelte-grid";
+  import { OrbisGrid, parseClipboard, type CellEditEvent, type GridRowsChangeEvent } from "@orbis/svelte-grid";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
   import { toast } from "@orbis/ui";
@@ -127,7 +127,7 @@
     const data: Record<string, any> = {
       __idx: rowNumber,
       rowNumber,
-      id: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `row-${crypto.randomUUID()}`,
     };
     for (const col of activeColumnMetadata) {
       data[col.id] = "";
@@ -175,15 +175,14 @@
         return;
       }
 
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length === 0) return;
+      const matrix = parseClipboard(text);
+      if (matrix.length === 0) return;
 
       const newRows: BulkRowState[] = [];
       const startIndex = rawRows.length + 1;
 
-      for (let r = 0; r < lines.length; r++) {
-        const line = lines[r]!;
-        const cells = line.includes("\t") ? line.split("\t") : line.split(",");
+      for (let r = 0; r < matrix.length; r++) {
+        const cells = matrix[r]!;
         const row = createBlankRow(startIndex + r);
 
         for (let c = 0; c < Math.min(cells.length, activeColumnMetadata.length); c++) {
@@ -295,9 +294,13 @@
   }
 
   // Live cell edit handler from OrbisGrid
-  function handleCellEdit(e: any) {
+  function handleCellEdit(e: CellEditEvent) {
     if (!refData) return;
-    const rowIndex = e.rowIndex;
+    const rowId = String(e.row.id ?? "");
+    const rowIndex = rawRows.findIndex(
+      (row) => rowId && String(row.data.id ?? "") === rowId,
+    );
+    if (rowIndex < 0) return;
     const columnId = e.columnId;
     const newValue = e.newValue;
 
@@ -312,6 +315,45 @@
     errorCount = result.errorCount;
     warningCount = result.warningCount;
     validCount = result.validCount;
+  }
+
+  function handleGridRowsChange(event: GridRowsChangeEvent) {
+    if (!refData || event.action === "edit" || event.changedRows.length === 0) return;
+
+    const updatedRows = rawRows.slice();
+    const rowIndexes: Record<string, number> = {};
+    updatedRows.forEach((row, index) => {
+      rowIndexes[String(row.data.id ?? "")] = index;
+    });
+
+    for (const changedData of event.changedRows) {
+      const id = String(changedData.id ?? "");
+      const existingIndex = rowIndexes[id];
+      if (existingIndex !== undefined) {
+        const existing = updatedRows[existingIndex]!;
+        existing.data = { ...existing.data, ...changedData };
+        continue;
+      }
+
+      const rowNumber = updatedRows.length + 1;
+      const data = { ...changedData, __idx: rowNumber, rowNumber };
+      const row: BulkRowState = {
+        rowNumber,
+        data,
+        errors: new Map(),
+        warnings: new Map(),
+        info: new Map(),
+        status: "pending",
+      };
+      rowIndexes[id] = updatedRows.length;
+      updatedRows.push(row);
+    }
+
+    const summary = validateAllRows(updatedRows, currentProfile, refData);
+    rawRows = updatedRows;
+    errorCount = summary.errorCount;
+    warningCount = summary.warningCount;
+    validCount = summary.validCount;
   }
 
   // Jump to next error shortcut (F8)
@@ -648,13 +690,20 @@
     <!-- Central OrbisGrid Workspace -->
     <div class="flex-1 w-full overflow-hidden bg-background relative">
       <OrbisGrid
-        columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields)}
+        columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields).map((column) => ({
+          ...column,
+          ...(!column.readonly ? { type: "text" as const, options: undefined } : {}),
+          sortable: false,
+          sort: false,
+        }))}
         source={gridSource}
         rtl={true}
         height="100%"
         range={true}
         clipboard={true}
+        createEmptyRow={() => createBlankRow(rawRows.length + 1).data}
         oncelledit={handleCellEdit}
+        onrowschange={handleGridRowsChange}
       />
     </div>
 

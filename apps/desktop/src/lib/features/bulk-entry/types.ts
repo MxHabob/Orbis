@@ -1,4 +1,5 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import type { BulkValidationContext } from "./engine/duplicate-index";
 
 export type BulkProfileId = "students" | "employees" | "grades" | "teacher-subjects";
 
@@ -70,6 +71,7 @@ export interface ColumnDefinitionMetadata {
   format?: string;
   descriptionAr?: string;
   descriptionEn?: string;
+  headerAliases?: string[];
   example?: string;
   referenceSource?: keyof BulkReferenceData;
   allowedValues?: string[];
@@ -166,7 +168,13 @@ export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Re
   gridColumns: OrbisColumnDef[];
   buildReferenceData: (orgId: string) => Promise<BulkReferenceData>;
   validateCell: (colId: string, value: unknown, row: TRow, refData: BulkReferenceData) => BulkCellIssue | null;
-  validateRow: (row: TRow, allRows: TRow[], rowIndex: number, refData: BulkReferenceData) => BulkCellIssue[];
+  validateRow: (
+    row: TRow,
+    allRows: TRow[],
+    rowIndex: number,
+    refData: BulkReferenceData,
+    context?: BulkValidationContext,
+  ) => BulkCellIssue[];
   generatePreview: (rows: TRow[], refData: BulkReferenceData) => Promise<BulkPreviewSummary<TSummary>>;
   commitChunk: (rows: TRow[], orgId: string, refData: BulkReferenceData) => Promise<BulkChunkCommitResult>;
 }

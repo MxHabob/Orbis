@@ -20,6 +20,7 @@ export type {
   GridDataSource,
   GridFilter,
   GridRow,
+  GridRowsChangeEvent,
   GroupNode,
   OrbisColumnDef,
   PinSide,

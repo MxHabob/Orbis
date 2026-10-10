@@ -2,6 +2,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
 import * as m from "$lib/paraglide/messages";
 import type { BulkImportProfile, BulkRowState } from "../types";
+import { getBulkEntryColumnHeader } from "../localization";
+import { findSpreadsheetColumn, normalizeSpreadsheetHeader } from "./header-mapping";
 
 export interface ParsedFileResult {
   fileName: string;
@@ -75,13 +77,11 @@ export async function parseSpreadsheetBytes(
     const headerText = rawHeaders[c]!;
     if (!headerText) continue;
 
-    const matchedMeta = profile.columnMetadata.find(
+    const matchedMeta = findSpreadsheetColumn(
+      headerText,
+      profile.columnMetadata,
       (col) =>
-        col.headerAr.toLowerCase() === headerText.toLowerCase() ||
-        col.headerAr.replace(/\*/g, "").trim().toLowerCase() === headerText.replace(/\*/g, "").trim().toLowerCase() ||
-        col.headerEn.toLowerCase() === headerText.toLowerCase() ||
-        col.headerEn.replace(/\*/g, "").trim().toLowerCase() === headerText.replace(/\*/g, "").trim().toLowerCase() ||
-        col.id.toLowerCase() === headerText.toLowerCase(),
+        getBulkEntryColumnHeader(profile.id, col.id, col.headerAr),
     );
 
     if (matchedMeta) {
@@ -90,23 +90,21 @@ export async function parseSpreadsheetBytes(
     }
 
     if (profile.id === "students" || profile.id === "employees") {
-      const normalizedHeader = headerText.replace(/\*/g, "").trim().toLowerCase();
+      const normalizedHeader = normalizeSpreadsheetHeader(headerText);
       const legacyStudentHeaders: Record<string, string> = {
-        "first_name_ar": "legacy_first_name_ar",
-        "الاسم الأول (عربي)": "legacy_first_name_ar",
-        "first name (arabic)": "legacy_first_name_ar",
-        "middle_name_ar": "legacy_middle_name_ar",
-        "اسم الأب (عربي)": "legacy_middle_name_ar",
-        "middle name (arabic)": "legacy_middle_name_ar",
-        "last_name_ar": "legacy_last_name_ar",
-        "اسم العائلة (عربي)": "legacy_last_name_ar",
-        "last name (arabic)": "legacy_last_name_ar",
-        "first_name": "legacy_first_name",
-        "first name (english)": "legacy_first_name",
-        "first name": "legacy_first_name",
-        "last_name": "legacy_last_name",
-        "last name (english)": "legacy_last_name",
-        "last name": "legacy_last_name",
+        firstnamear: "legacy_first_name_ar",
+        الاسمالأولعربي: "legacy_first_name_ar",
+        firstnamearabic: "legacy_first_name_ar",
+        middlenamear: "legacy_middle_name_ar",
+        اسمالأبعربي: "legacy_middle_name_ar",
+        middlenamarabic: "legacy_middle_name_ar",
+        lastnamear: "legacy_last_name_ar",
+        اسمالعائلةعربي: "legacy_last_name_ar",
+        lastnamearabic: "legacy_last_name_ar",
+        firstname: "legacy_first_name",
+        firstnameenglish: "legacy_first_name",
+        lastname: "legacy_last_name",
+        lastnameenglish: "legacy_last_name",
       };
       const legacyColumnId = legacyStudentHeaders[normalizedHeader];
       if (legacyColumnId) columnMap[c] = legacyColumnId;
@@ -124,6 +122,7 @@ export async function parseSpreadsheetBytes(
     const rowData: Record<string, unknown> = {
       __idx: rows.length + 1,
       rowNumber: r + 1,
+      id: `import-row-${r + 1}`,
     };
 
     for (let c = 0; c < line.length; c++) {

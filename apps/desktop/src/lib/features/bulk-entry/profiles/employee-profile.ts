@@ -2,6 +2,7 @@ import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterEmployeeCommandItem } from "$lib/api";
 import { splitPersonName } from "$lib/shared/utils/person-name";
 import * as m from "$lib/paraglide/messages";
+import { findDuplicateIndex, type BulkValidationContext } from "../engine/duplicate-index";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -309,7 +310,13 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     return null;
   },
 
-  validateRow(row: EmployeeRowData, allRows: EmployeeRowData[], rowIndex: number, refData: BulkReferenceData): BulkCellIssue[] {
+  validateRow(
+    row: EmployeeRowData,
+    allRows: EmployeeRowData[],
+    rowIndex: number,
+    refData: BulkReferenceData,
+    context?: BulkValidationContext,
+  ): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
     const groupTokens = splitGroupNames(row.user_group_name);
     const shouldProvision =
@@ -337,7 +344,9 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
 
     if (row.national_id?.trim()) {
       const nid = row.national_id.trim();
-      const duplicateIndex = allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
+      const duplicateIndex = context
+        ? findDuplicateIndex(context, "national_id", nid, rowIndex) ?? -1
+        : allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
       if (duplicateIndex !== -1) {
         issues.push({
           severity: "BLOCKING_ERROR",

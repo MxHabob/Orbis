@@ -7,6 +7,7 @@ import type {
   CellRange,
   GridActionEvent,
   GridRow,
+  GridRowsChangeEvent,
   OrbisColumnDef,
   SelectionSnapshot,
   SortSpec,
@@ -71,6 +72,7 @@ interface Props {
   oncelledit?: (event: CellEditEvent) => void;
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
   onaction?: (event: GridActionEvent) => void;
+  onrowschange?: (event: GridRowsChangeEvent) => void;
   onpasteResult?: (result: BulkResult) => void;
   onselection?: (sel: SelectionSnapshot) => void;
   cellStyle?: (row: GridRow, col: OrbisColumnDef) => string;
@@ -98,6 +100,7 @@ let {
   oncelledit,
   onbeforeedit,
   onaction,
+  onrowschange,
   onpasteResult,
   onselection,
   cellStyle,
@@ -361,8 +364,17 @@ function commitOverlay(
   };
   if (onbeforeedit && onbeforeedit(evt) === false) return;
   row[id] = newValue;
-  source = source;
+  updateRows(source.slice(), "edit", [row]);
   oncelledit?.(evt);
+}
+
+function updateRows(
+  rows: GridRow[],
+  action: GridRowsChangeEvent["action"],
+  changedRows: GridRow[],
+) {
+  source = rows;
+  onrowschange?.({ rows, changedRows, action });
 }
 
 function startEdit(row: number, col: number, seed?: string) {
@@ -420,7 +432,13 @@ function copySelection() {
 function cutSelection() {
   copySelection();
   if (readonly) return;
-  source = clearRange(source, visibleCols, currentRange());
+  const selected = normalizeRange(currentRange());
+  const rows = clearRange(source, visibleCols, selected);
+  updateRows(
+    rows,
+    "cut",
+    rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+  );
 }
 
 function pasteText(text: string) {
@@ -435,7 +453,11 @@ function pasteText(text: string) {
     matrix,
     createEmptyRow,
   });
-  source = rows;
+  updateRows(
+    rows,
+    "paste",
+    rows.slice(start.startRow, Math.min(start.startRow + matrix.length, rows.length)),
+  );
   pasteBanner = result;
   onpasteResult?.(result);
 }
@@ -555,7 +577,15 @@ function handleKeydown(e: KeyboardEvent) {
       menu = null;
       break;
     case "delete":
-      if (!readonly) source = clearRange(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = clearRange(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "delete",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     case "copy":
       copySelection();
@@ -591,10 +621,26 @@ function handleKeydown(e: KeyboardEvent) {
       setActive(active.row + cmd.rowDelta * page, active.col);
       break;
     case "fillDown":
-      if (!readonly) source = fillDown(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = fillDown(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "fill-down",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     case "fillRight":
-      if (!readonly) source = fillRight(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = fillRight(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "fill-right",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     default:
       break;
@@ -619,17 +665,22 @@ function onContext(row: number, col: number, e: MouseEvent) {
     (selection.range &&
       normalizeRange(selection.range).endRow !==
         normalizeRange(selection.range).startRow);
+  const items = contextMenuItems({
+    context: "cell",
+    hasSelection: !!hasSelection,
+    canEdit: !readonly,
+    filtered: shouldRunClientQuery && Boolean(filter),
+  }).filter(
+    (item) =>
+      isColumnSortable(visibleCols[col] ?? {}) ||
+      (item.id !== "sort-asc" && item.id !== "sort-desc"),
+  );
   menu = {
     x: e.clientX,
     y: e.clientY,
     row,
     col,
-    items: contextMenuItems({
-      context: "cell",
-      hasSelection: !!hasSelection,
-      canEdit: !readonly,
-      filtered: shouldRunClientQuery && Boolean(filter),
-    }),
+    items,
   };
 }
 
@@ -666,10 +717,21 @@ function runMenu(id: string) {
       startEdit(active.row, active.col);
       break;
     case "delete":
-      if (!readonly) source = clearRange(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = clearRange(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "delete",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     case "duplicate":
-      if (!readonly) source = duplicateRows(source, [active.row]);
+      if (!readonly) {
+        const rows = duplicateRows(source, [active.row], () => crypto.randomUUID());
+        updateRows(rows, "duplicate", rows.slice(source.length));
+      }
       break;
     case "select-row": {
       const row = displayRows[active.row];
@@ -933,8 +995,11 @@ export function refresh() {
 }
 export function setDataAt(rowIndex: number, colId: string, val: unknown) {
   if (!source[rowIndex]) return;
-  source[rowIndex]![colId] = val;
-  source = source;
+  const row = { ...source[rowIndex]!, [colId]: val };
+  const rows = source.slice();
+  rows[rowIndex] = row;
+  source = rows;
+  onrowschange?.({ rows, changedRows: [row], action: "edit" });
 }
 export function clearFocus() {
   selection = emptySelection();

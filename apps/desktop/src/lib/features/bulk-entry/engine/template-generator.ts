@@ -85,7 +85,7 @@ export async function buildTemplateWorkbook(
     m.bulk_entry_workbook_class(),
     [codeHeader, nameHeader, detailsHeader],
     refData.classes.map((item) => [
-      item.code || "",
+      item.code || item.id,
       item.name || item.nameAr || "",
       String(
         item.meta?.details ??
