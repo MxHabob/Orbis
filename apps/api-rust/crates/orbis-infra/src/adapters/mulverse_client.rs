@@ -44,9 +44,25 @@ pub struct RegisterTrialRequest {
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
+    pub organization_id: String,
+    pub organization_name: String,
+    pub organization_slug: String,
+    pub organization_profile: TrialOrganizationProfile,
     pub platform: String,
     pub app_version: String,
     pub machine_label: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TrialOrganizationProfile {
+    pub name_ar: Option<String>,
+    pub institution_type: String,
+    pub organization_size: Option<String>,
+    pub educational_track: Option<String>,
+    pub country_code: Option<String>,
+    pub country_name: Option<String>,
+    pub region_name: Option<String>,
+    pub city: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -57,6 +73,7 @@ pub struct RefreshTrialRequest {
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
+    pub organization_id: String,
     pub app_version: String,
 }
 
@@ -492,6 +509,17 @@ impl MulverseApiError {
             Self::Forbidden(_) | Self::NotFound(_) | Self::Conflict(_)
         )
     }
+
+    pub fn is_trial_revoked(&self) -> bool {
+        matches!(
+            self,
+            Self::Forbidden(message)
+                if message
+                    .trim()
+                    .to_ascii_lowercase()
+                    .ends_with("this device trial has been revoked")
+        )
+    }
 }
 
 impl From<MulverseApiError> for orbis_domain::errors::DomainError {
@@ -530,7 +558,7 @@ impl From<MulverseApiError> for orbis_domain::errors::DomainError {
 
 #[cfg(test)]
 mod tests {
-    use super::format_api_error_body;
+    use super::{MulverseApiError, format_api_error_body};
 
     #[test]
     fn api_error_envelope_displays_message_instead_of_raw_json() {
@@ -547,6 +575,22 @@ mod tests {
         assert_eq!(
             format_api_error_body("upstream unavailable"),
             "upstream unavailable"
+        );
+    }
+
+    #[test]
+    fn only_explicit_trial_revocation_is_terminal() {
+        assert!(
+            MulverseApiError::Forbidden(
+                "FORBIDDEN: This device trial has been revoked".to_owned()
+            )
+            .is_trial_revoked()
+        );
+        assert!(
+            !MulverseApiError::Forbidden(
+                "This trial device is already bound to another organization".to_owned()
+            )
+            .is_trial_revoked()
         );
     }
 }

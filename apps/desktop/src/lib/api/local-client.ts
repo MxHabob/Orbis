@@ -229,7 +229,6 @@ import type {
   ProvisionDefaultsResultDto,
   LicenseStateDto,
   ActivateKeyRequest,
-  ActivationResultDto,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -1332,8 +1331,8 @@ export class LocalClient implements OrbisApiClient {
   async licenseGetState(): Promise<LicenseStateDto> {
     return invoke<LicenseStateDto>("license_get_state");
   }
-  async licenseActivateKey(req: ActivateKeyRequest): Promise<ActivationResultDto> {
-    return invoke<ActivationResultDto>("license_activate_key", { request: req });
+  async licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto> {
+    return invoke<LicenseStateDto>("license_activate_key", { request: req });
   }
   async licenseStartTrial(): Promise<LicenseStateDto> {
     return invoke<LicenseStateDto>("license_start_trial");

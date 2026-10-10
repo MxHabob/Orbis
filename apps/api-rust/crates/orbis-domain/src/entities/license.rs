@@ -241,6 +241,21 @@ pub struct ActivationRequest {
     pub machine_label: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrialOrganizationProfile {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub slug: String,
+    pub institution_type: String,
+    pub organization_size: Option<String>,
+    pub educational_track: Option<String>,
+    pub country_code: Option<String>,
+    pub country_name: Option<String>,
+    pub region_name: Option<String>,
+    pub city: Option<String>,
+}
+
 /// Response from Mulverse Platform activation endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivationResponse {

@@ -99,7 +99,13 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<LicenseFeatureGate requireOperational {licenseReady} className="h-full w-full min-w-0 flex-1 overflow-hidden">
+<LicenseFeatureGate
+  requireOperational
+  blockOrganizationMismatch={false}
+  {licenseReady}
+  {orgId}
+  className="h-full w-full min-w-0 flex-1 overflow-hidden"
+>
 <div class="flex h-full max-w-full bg-background">
 	{#if !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
@@ -112,7 +118,7 @@ function handleKeyDown(e: KeyboardEvent) {
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>
 			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
-				<LicenseFeatureGate feature={requiredFeature} {licenseReady}>
+				<LicenseFeatureGate feature={requiredFeature} {licenseReady} {orgId}>
 					{@render children()}
 				</LicenseFeatureGate>
 			</div>
@@ -126,6 +132,7 @@ function handleKeyDown(e: KeyboardEvent) {
 					<LicenseFeatureGate
 						feature="ai_grading"
 						{licenseReady}
+						{orgId}
 						className="h-full w-full"
 					>
 						<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />

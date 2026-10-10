@@ -55,7 +55,7 @@ async function handleActivate() {
 
   try {
     const result = await licenseStore.activateKey(normalizedKey);
-    if (result.success) {
+    if (result) {
       activationSuccess = true;
       toast.success(m.license_activation_success());
       setTimeout(() => {
@@ -64,7 +64,7 @@ async function handleActivate() {
         productKey = "";
       }, 1500);
     } else {
-      activationError = result.message;
+      activationError = licenseStore.error ?? m.license_activation_failed();
     }
   } finally {
     isActivating = false;
@@ -90,9 +90,6 @@ async function handleDeactivate() {
     } else if (licenseStore.error) {
       toast.error(licenseStore.error);
     }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : m.license_activation_failed();
-    toast.error(message);
   } finally {
     isDeactivating = false;
   }

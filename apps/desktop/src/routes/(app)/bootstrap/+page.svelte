@@ -8,7 +8,6 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { licenseStore, uiStore } from "$lib/stores";
-import LicenseFeatureGate from "$lib/shell/license-feature-gate.svelte";
 import { LoadingIndicator } from "@orbis/ui";
 import { BootstrapWizard } from "$lib/features/bootstrap";
 
@@ -25,9 +24,7 @@ onMount(async () => {
 </svelte:head>
 
 {#if licenseReady}
-  <LicenseFeatureGate requireOperational {licenseReady} className="h-full w-full">
-    <BootstrapWizard />
-  </LicenseFeatureGate>
+  <BootstrapWizard />
 {:else}
   <div class="flex h-full w-full items-center justify-center bg-background">
     <LoadingIndicator size="lg" label={m.onboarding_state_loading()} />

@@ -138,6 +138,7 @@ export interface BulkCommitResult {
   committedCount: number;
   failedCount: number;
   skippedCount: number;
+  licenseRejected: boolean;
   createdUsersCount?: number;
   assignedFeesCount?: number;
   provisionedCredentials?: Array<{

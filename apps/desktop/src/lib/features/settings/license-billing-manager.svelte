@@ -28,34 +28,24 @@ const planDisplay = $derived(
 
 async function handleRefresh() {
   isRefreshing = true;
-  try {
-    const result = await licenseStore.refresh();
-    if (result) {
-      toast.success(m.license_activation_success());
-    } else if (licenseStore.error) {
-      toast.error(licenseStore.error);
-    }
-  } catch (e: any) {
-    toast.error(e?.message || m.license_activation_failed());
-  } finally {
-    isRefreshing = false;
+  const result = await licenseStore.refresh();
+  if (result) {
+    toast.success(m.license_activation_success());
+  } else if (licenseStore.error) {
+    toast.error(licenseStore.error);
   }
+  isRefreshing = false;
 }
 
 async function handleStartTrial() {
   isStartingTrial = true;
-  try {
-    const res = await licenseStore.startTrial();
-    if (res) {
-      toast.success(m.license_trial_started());
-    } else if (licenseStore.error) {
-      toast.error(licenseStore.error);
-    }
-  } catch (e: any) {
-    toast.error(e?.message || m.license_activation_failed());
-  } finally {
-    isStartingTrial = false;
+  const result = await licenseStore.startTrial();
+  if (result) {
+    toast.success(m.license_trial_started());
+  } else if (licenseStore.error) {
+    toast.error(licenseStore.error);
   }
+  isStartingTrial = false;
 }
 
 async function handleDeactivate() {
@@ -69,18 +59,13 @@ async function handleDeactivate() {
   if (!confirmed) return;
 
   isDeactivating = true;
-  try {
-    const res = await licenseStore.deactivate();
-    if (res) {
-      toast.info(m.license_deactivated());
-    } else if (licenseStore.error) {
-      toast.error(licenseStore.error);
-    }
-  } catch (e: any) {
-    toast.error(e?.message || m.license_activation_failed());
-  } finally {
-    isDeactivating = false;
+  const result = await licenseStore.deactivate();
+  if (result) {
+    toast.info(m.license_deactivated());
+  } else if (licenseStore.error) {
+    toast.error(licenseStore.error);
   }
+  isDeactivating = false;
 }
 
 function handleOpenActivation() {

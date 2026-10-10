@@ -1382,12 +1382,6 @@ export interface ActivateKeyRequest {
   product_key: string;
 }
 
-export interface ActivationResultDto {
-  success: boolean;
-  license_state: LicenseStateDto;
-  message: string;
-}
-
 // ═══════════════════════════════════════════════════════════════
 // UNIFIED CLIENT INTERFACE
 // ═══════════════════════════════════════════════════════════════
@@ -1797,7 +1791,7 @@ export interface OrbisApiClient {
 
   // ── License & Activation ────────────────────────────────
   licenseGetState(): Promise<LicenseStateDto>;
-  licenseActivateKey(req: ActivateKeyRequest): Promise<ActivationResultDto>;
+  licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
   licenseStartTrial(): Promise<LicenseStateDto>;
   licenseDeactivate(): Promise<LicenseStateDto>;
   licenseRefresh(): Promise<LicenseStateDto>;

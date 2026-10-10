@@ -61,6 +61,7 @@ pub trait LicenseRuntime: Send + Sync {
     async fn activate_product_key(
         &self,
         product_key: &str,
+        organization_id: uuid::Uuid,
     ) -> Result<ActivationResponse, DomainError>;
 
     /// Start a trial evaluation period.
@@ -68,14 +69,17 @@ pub trait LicenseRuntime: Send + Sync {
     /// Creates a local trial state with the configured trial policy.
     /// Does NOT contact Mulverse Platform.
     /// Returns an error if a trial has already been used.
-    async fn start_trial(&self) -> Result<LicenseSnapshot, DomainError>;
+    async fn start_trial(
+        &self,
+        organization: orbis_domain::entities::license::TrialOrganizationProfile,
+    ) -> Result<LicenseSnapshot, DomainError>;
 
     /// Refresh the license with Mulverse Platform.
     ///
     /// Called periodically by the background sync task.
     /// Updates the local signed entitlement if Mulverse returns a newer one.
     /// Network failure is NOT a license failure — the existing cached state remains valid.
-    async fn refresh(&self) -> Result<(), DomainError>;
+    async fn refresh(&self, organization_id: Option<uuid::Uuid>) -> Result<(), DomainError>;
 
     /// Deactivate the current installation.
     ///

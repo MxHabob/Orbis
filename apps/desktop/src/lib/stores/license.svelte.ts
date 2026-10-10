@@ -6,7 +6,6 @@ import { api } from "$lib/api/client";
 import type {
   LicenseStateDto,
   LicenseState,
-  ActivationResultDto,
 } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
 
@@ -14,7 +13,9 @@ class LicenseStore {
   // Core license state from the backend
   licenseState = $state<LicenseStateDto | null>(null);
   isLoading = $state(false);
+  hasLoaded = $state(false);
   error = $state<string | null>(null);
+  private pendingActions = 0;
 
   // Derived state
   state = $derived<LicenseState>(this.licenseState?.state ?? "unavailable");
@@ -44,6 +45,7 @@ class LicenseStore {
   daysUntilExpiry = $derived(this.licenseState?.days_until_expiry ?? null);
   validUntil = $derived(this.licenseState?.valid_until ?? null);
   lastSyncAt = $derived(this.licenseState?.last_sync_at ?? null);
+  organizationId = $derived(this.licenseState?.organization_id ?? null);
 
   // Features & limits
   enabledFeatures = $derived(this.licenseState?.enabled_features ?? []);
@@ -54,98 +56,74 @@ class LicenseStore {
   installationId = $derived(this.licenseState?.installation_id ?? "");
   appVersion = $derived(this.licenseState?.app_version ?? "");
 
+  private async runAction<T>(
+    action: () => Promise<T>,
+    onSuccess: (value: T) => void,
+  ): Promise<T | null> {
+    this.error = null;
+    this.pendingActions++;
+    this.isLoading = true;
+    try {
+      const value = await action();
+      onSuccess(value);
+      this.hasLoaded = true;
+      return value;
+    } catch (error) {
+      this.error = extractErrorMessage(error);
+      return null;
+    } finally {
+      this.pendingActions--;
+      this.isLoading = this.pendingActions > 0;
+    }
+  }
+
   /**
    * Load the current license state from the backend.
    * This is the primary initialization method — call during app startup.
    */
   async loadState(): Promise<LicenseStateDto | null> {
-    this.error = null;
-    try {
-      this.licenseState = await api.licenseGetState();
-      return this.licenseState;
-    } catch (e) {
-      console.warn("Failed to load license state:", e);
-      this.error = extractErrorMessage(e);
-      return null;
-    }
+    return this.runAction(api.licenseGetState, (state) => {
+      this.licenseState = state;
+    });
   }
 
   /**
    * Activate a product key with Mulverse Platform.
    */
-  async activateKey(productKey: string): Promise<ActivationResultDto> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      const result = await api.licenseActivateKey({
-        product_key: productKey,
-      });
-      this.licenseState = result.license_state;
-      if (!result.success) {
-        this.error = result.message;
-      }
-      return result;
-    } catch (e) {
-      this.error = extractErrorMessage(e);
-      return {
-        success: false,
-        license_state: this.licenseState!,
-        message: this.error ?? "Activation failed",
-      };
-    } finally {
-      this.isLoading = false;
-    }
+  async activateKey(productKey: string): Promise<LicenseStateDto | null> {
+    return this.runAction(
+      () => api.licenseActivateKey({ product_key: productKey }),
+      (state) => {
+        this.licenseState = state;
+      },
+    );
   }
 
   /**
    * Start a trial evaluation period.
    */
   async startTrial(): Promise<LicenseStateDto | null> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      this.licenseState = await api.licenseStartTrial();
-      return this.licenseState;
-    } catch (e) {
-      this.error = extractErrorMessage(e);
-      return null;
-    } finally {
-      this.isLoading = false;
-    }
+    return this.runAction(api.licenseStartTrial, (state) => {
+      this.licenseState = state;
+    });
   }
 
   /**
    * Deactivate the current license (release device seat).
    */
   async deactivate(): Promise<LicenseStateDto | null> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      this.licenseState = await api.licenseDeactivate();
-      return this.licenseState;
-    } catch (e) {
-      this.error = extractErrorMessage(e);
-      return null;
-    } finally {
-      this.isLoading = false;
-    }
+    return this.runAction(api.licenseDeactivate, (state) => {
+      this.licenseState = state;
+    });
   }
 
   /**
    * Force a license refresh with Mulverse Platform.
    */
   async refresh(): Promise<LicenseStateDto | null> {
-    this.isLoading = true;
-    this.error = null;
-    try {
-      this.licenseState = await api.licenseRefresh();
-      return this.licenseState;
-    } catch (e) {
-      this.error = extractErrorMessage(e);
-      return null;
-    } finally {
-      this.isLoading = false;
-    }
+    return this.runAction(api.licenseRefresh, (state) => {
+      this.licenseState = state;
+    });
   }
 
   /**
@@ -169,6 +147,7 @@ class LicenseStore {
   reset() {
     this.licenseState = null;
     this.isLoading = false;
+    this.hasLoaded = false;
     this.error = null;
   }
 }

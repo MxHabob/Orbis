@@ -16,7 +16,7 @@ import type {
   BootstrapRequest,
   BootstrapResult,
 } from "$lib/api/types";
-import { authStore, systemStore } from "$lib/stores";
+import { authStore, licenseStore, systemStore } from "$lib/stores";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -212,6 +212,14 @@ async function handleLaunchBootstrap() {
       } catch (readinessError) {
         postBootstrapError = extractErrorMessage(readinessError);
         toast.error(postBootstrapError);
+      }
+    }
+    if (!postBootstrapError && !licenseStore.isOperational) {
+      const trial = await licenseStore.startTrial();
+      if (!trial) {
+        toast.error(
+          licenseStore.error ?? m.license_activation_failed(),
+        );
       }
     }
   });
