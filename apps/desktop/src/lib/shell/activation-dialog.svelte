@@ -48,7 +48,6 @@ async function handleActivate() {
     activationError = m.license_invalid_key_format();
     return;
   }
-
   isActivating = true;
   activationError = null;
   activationSuccess = false;

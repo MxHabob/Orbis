@@ -1792,6 +1792,7 @@ export interface OrbisApiClient {
   // ── License & Activation ────────────────────────────────
   licenseGetState(): Promise<LicenseStateDto>;
   licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
+  licenseRedeemKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
   licenseStartTrial(): Promise<LicenseStateDto>;
   licenseDeactivate(): Promise<LicenseStateDto>;
   licenseRefresh(): Promise<LicenseStateDto>;

@@ -5,8 +5,10 @@ product key activation, and device seat deactivation.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { resolve } from "$app/paths";
 import { licenseStore, uiStore, confirmStore } from "$lib/stores";
 import { Button, LoadingIndicator, toast } from "@orbis/ui";
+import { Input } from "@orbis/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Check, Bolt, ArrowPath, Trash } from "@orbis/icons";
 import { formatLicensePlan } from "$lib/utils/license";
@@ -18,6 +20,8 @@ let { orgId }: { orgId: string } = $props();
 let isRefreshing = $state(false);
 let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
+let isRedeeming = $state(false);
+let purchaseKey = $state("");
 let copiedId = $state(false);
 const planDisplay = $derived(
   formatLicensePlan(licenseStore.planName) ??
@@ -53,6 +57,20 @@ async function handleStartTrial() {
     toast.error(licenseStore.error);
   }
   isStartingTrial = false;
+}
+
+async function handleRedeemKey() {
+  const key = purchaseKey.trim();
+  if (!key) return;
+  isRedeeming = true;
+  const result = await licenseStore.redeemKey(key);
+  if (result) {
+    purchaseKey = "";
+    toast.success(m.license_activation_success());
+  } else if (licenseStore.error) {
+    toast.error(licenseStore.error);
+  }
+  isRedeeming = false;
 }
 
 async function handleDeactivate() {
@@ -287,6 +305,44 @@ const statusBadge = $derived.by(() => {
       </Card>
     </section>
 
+    <section aria-labelledby="redeem-key-heading">
+      <Card>
+        <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h2 id="redeem-key-heading" class="text-sm font-medium text-foreground">
+              Redeem a purchase key
+            </h2>
+            <p class="text-xs text-muted-foreground">
+              Claim a reseller key for this organization and activate this device.
+            </p>
+          </div>
+          <form class="flex w-full gap-2 sm:max-w-md" onsubmit={(event) => {
+            event.preventDefault();
+            void handleRedeemKey();
+          }}>
+            <Input
+              bind:value={purchaseKey}
+              aria-label="Purchase key"
+              placeholder={m.license_key_placeholder()}
+              class="h-9 font-mono uppercase"
+              dir="ltr"
+              autocapitalize="characters"
+              autocorrect="off"
+              autocomplete="off"
+              spellcheck={false}
+              disabled={isRedeeming}
+            />
+            <Button type="submit" size="sm" disabled={isRedeeming || !purchaseKey.trim()}>
+              {#if isRedeeming}
+                <LoadingIndicator size="sm" class="me-1.5" />
+              {/if}
+              Redeem
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </section>
+
     <section aria-labelledby="license-details-heading" class="flex flex-col gap-2">
       <Card>
         <CardHeader class="flex flex-wrap items-center justify-between gap-3 normal-case tracking-normal">
@@ -408,13 +464,13 @@ const statusBadge = $derived.by(() => {
           </div>
           <div class="flex shrink-0 flex-wrap gap-2">
             <a
-              href="/{orgId}/finance/fees"
+              href={resolve(`/${orgId}/finance/fees`)}
               class="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               {m.license_billing_manage_fees()}
             </a>
             <a
-              href="/{orgId}/finance/payments"
+              href={resolve(`/${orgId}/finance/payments`)}
               class="inline-flex h-9 items-center rounded-md border border-border px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               {m.license_billing_view_payments()}

@@ -100,6 +100,18 @@ class LicenseStore {
   }
 
   /**
+   * Claim a reseller key for the active organization and activate this device.
+   */
+  async redeemKey(productKey: string): Promise<LicenseStateDto | null> {
+    return this.runAction(
+      () => api.licenseRedeemKey({ product_key: productKey }),
+      (state) => {
+        this.licenseState = state;
+      },
+    );
+  }
+
+  /**
    * Start a trial evaluation period.
    */
   async startTrial(): Promise<LicenseStateDto | null> {

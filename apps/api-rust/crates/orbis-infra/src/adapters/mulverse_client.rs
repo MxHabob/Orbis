@@ -66,6 +66,22 @@ pub struct TrialOrganizationProfile {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ClaimProductKeyRequest {
+    pub product_key: String,
+    pub organization_id: String,
+    pub organization_name: String,
+    pub organization_slug: String,
+    pub organization_profile: TrialOrganizationProfile,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ClaimProductKeyResponse {
+    pub organization_id: String,
+    pub license_id: String,
+    pub valid_until: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct RefreshTrialRequest {
     pub trial_id: String,
     pub device_public_key: String,
@@ -179,6 +195,17 @@ impl MulverseClient {
         } else {
             Err(self.parse_error_response(response).await)
         }
+    }
+
+    pub async fn claim_product_key(
+        &self,
+        request: &ClaimProductKeyRequest,
+    ) -> Result<ClaimProductKeyResponse, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/keys/claim", self.base_url),
+            request,
+        )
+        .await
     }
 
     /// Refresh the license (periodic heartbeat).
@@ -581,10 +608,8 @@ mod tests {
     #[test]
     fn only_explicit_trial_revocation_is_terminal() {
         assert!(
-            MulverseApiError::Forbidden(
-                "FORBIDDEN: This device trial has been revoked".to_owned()
-            )
-            .is_trial_revoked()
+            MulverseApiError::Forbidden("FORBIDDEN: This device trial has been revoked".to_owned())
+                .is_trial_revoked()
         );
         assert!(
             !MulverseApiError::Forbidden(

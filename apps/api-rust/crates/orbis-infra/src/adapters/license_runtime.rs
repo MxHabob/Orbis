@@ -25,8 +25,9 @@ use uuid::Uuid;
 
 use super::mulverse_client::MulverseClient;
 use super::mulverse_client::{
-    MulverseApiError, RefreshTrialRequest, RegisterTrialRequest, TrialChallenge,
-    TrialOrganizationProfile as MulverseTrialOrganizationProfile, TrialRegistrationResponse,
+    ClaimProductKeyRequest, MulverseApiError, RefreshTrialRequest, RegisterTrialRequest,
+    TrialChallenge, TrialOrganizationProfile as MulverseTrialOrganizationProfile,
+    TrialRegistrationResponse,
 };
 use super::trial_device_identity;
 
@@ -701,6 +702,40 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         );
 
         Ok(response)
+    }
+
+    async fn redeem_product_key(
+        &self,
+        product_key: &str,
+        organization: TrialOrganizationProfile,
+    ) -> Result<ActivationResponse, DomainError> {
+        let claim = self
+            .mulverse_client
+            .claim_product_key(&ClaimProductKeyRequest {
+                product_key: product_key.trim().to_uppercase(),
+                organization_id: organization.id.to_string(),
+                organization_name: organization.name.clone(),
+                organization_slug: organization.slug.clone(),
+                organization_profile: MulverseTrialOrganizationProfile {
+                    name_ar: organization.name_ar,
+                    institution_type: organization.institution_type,
+                    organization_size: organization.organization_size,
+                    educational_track: organization.educational_track,
+                    country_code: organization.country_code,
+                    country_name: organization.country_name,
+                    region_name: organization.region_name,
+                    city: organization.city,
+                },
+            })
+            .await
+            .map_err(DomainError::from)?;
+        if claim.organization_id != organization.id.to_string() {
+            return Err(DomainError::Internal(
+                "Mulverse claimed the product key for a different organization".to_owned(),
+            ));
+        }
+        self.activate_product_key(product_key, organization.id)
+            .await
     }
 
     async fn start_trial(

@@ -214,14 +214,6 @@ async function handleLaunchBootstrap() {
         toast.error(postBootstrapError);
       }
     }
-    if (!postBootstrapError && !licenseStore.isOperational) {
-      const trial = await licenseStore.startTrial();
-      if (!trial) {
-        toast.error(
-          licenseStore.error ?? m.license_activation_failed(),
-        );
-      }
-    }
   });
 
   if (submitted) {
@@ -272,6 +264,14 @@ function enterWorkspace() {
     goto(resolve(localizeHref("/login")), { replaceState: true });
   }
 }
+
+async function startTrialFromBootstrap(): Promise<boolean> {
+  return Boolean(await licenseStore.startTrial());
+}
+
+async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
+  return Boolean(await licenseStore.redeemKey(productKey));
+}
 </script>
 
 <SetupWorkspace
@@ -299,10 +299,15 @@ function enterWorkspace() {
       {isSubmitting}
       {isComplete}
       authenticationRequired={Boolean(postBootstrapError && !authStore.isAuthenticated)}
+      licenseError={licenseStore.error}
+      licenseLoading={licenseStore.isLoading}
+      licenseIsOperational={licenseStore.isOperational}
       warnings={bootstrapResult?.warnings ?? []}
       result={bootstrapResult}
       onLaunch={handleLaunchBootstrap}
       onEnterWorkspace={enterWorkspace}
+      onStartTrial={startTrialFromBootstrap}
+      onRedeemKey={redeemKeyFromBootstrap}
     />
   {/if}
 

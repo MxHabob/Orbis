@@ -19,6 +19,7 @@
 | **Signing Algorithm** | `Ed25519` | خوارزمية التوقيع التشفيري للتحقق من التراخيص بدون اتصال (Offline). |
 | **Public Key Endpoint** | `GET /api/v1/public/keys/active` | بيانات تدوير المفاتيح؛ لا تُعتمد كجذر ثقة من دون توقيع بجذر مثبت أو تحديث تطبيق موقّع. |
 | **Activation Endpoint** | `POST /api/v1/public/licenses/activate` | نقطة تفعيل مقعد الجهاز وربطه بالـ `installation_id`. |
+| **Product Key Claim** | `POST /api/v1/public/keys/claim` | ربط رمز الموزع بالمؤسسة بعد إعدادها وإنشاء الترخيص؛ يلي ذلك تفعيل الجهاز منفصلاً. |
 | **Refresh Endpoint** | `POST /api/v1/public/licenses/refresh` | نقطة تجديد وإرسال نبضات التفعيل دورياً (Heartbeat). |
 | **Deactivate Endpoint** | `POST /api/v1/public/licenses/deactivate` | نقطة تحرير المقعد لتمكين تشغيله على جهاز آخر. |
 | **Trial Challenge** | `POST /api/v1/public/trials/challenge` | تحدٍ خادمي عشوائي أحادي الاستخدام صالح لدقيقتين قبل تسجيل/تجديد التجربة. |
@@ -39,6 +40,31 @@
 
 **حد أمني:** DPAPI تخزين محمي لكل مستخدم، وليس مفتاح TPM ولا دليلاً على وجود TPM. هذا يمنع نقل المفتاح المحمي إلى سياق مستخدم/جهاز آخر، لكنه لا يمنع مالك الجهاز من حذف ملف الهوية وإعادة إنشاء مفتاح. يجب عدم تسويق هذا كإثبات عتادي؛ مقاومة هذا النوع من إعادة التسجيل تتطلب مفتاح TPM/Windows CNG موثقاً والتحقق من إثباته مركزياً.
 
+## 1.2 مطالبة مفاتيح الموزعين والبيع بالتجزئة
+
+بعد إنشاء المؤسسة في Orbis، يرسل العميل مفتاح الشراء إلى `POST /api/v1/public/keys/claim` مع UUID المؤسسة المحلي نفسه والاسم والـslug وملف المؤسسة. لا يرسل Orbis بيانات دفع أو ينشئ المؤسسة بمعرّف جديد. ينشئ Mulverse المؤسسة بنفس UUID إن لم تكن موجودة، أو يتحقق من تطابق المؤسسة القائمة، ثم يربط مفتاح الموزع بها وينشئ الترخيص من الخطة/الطبعة المحفوظة في المفتاح.
+
+```json
+{
+  "product_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
+  "organization_id": "00000000-0000-0000-0000-000000000002",
+  "organization_name": "Example Academy",
+  "organization_slug": "example-academy",
+  "organization_profile": {
+    "name_ar": "أكاديمية المثال",
+    "institution_type": "school",
+    "organization_size": "medium",
+    "educational_track": "national",
+    "country_code": "SA",
+    "country_name": "Saudi Arabia",
+    "region_name": "Riyadh",
+    "city": "Riyadh"
+  }
+}
+```
+
+تُحدد مدة الترخيص بالأيام عند إصدار المفتاح التجاري، وتبدأ عند أول مطالبة ناجحة؛ وهي مستقلة عن نافذة صلاحية المطالبة التي تبدأ عند إصدار المفتاح. تكون إعادة إرسال الرمز للمؤسسة نفسها idempotent وتعيد الترخيص نفسه، أما مؤسسة أخرى فتُرفض. لا تُعد المطالبة تفعيلًا لمقعد جهاز: بعد نجاحها يستدعي Orbis `POST /api/v1/public/licenses/activate` بالمفتاح ومعرّف المؤسسة والتثبيت، ويتحقق من استحقاق Ed25519 الموقع ويحفظه محليًا للعمل دون اتصال. فشل التفعيل بعد المطالبة لا يستهلك الرمز لمؤسسة مختلفة، ويمكن إعادة المحاولة للمؤسسة نفسها.
+
 ---
 
 ## 2. التسلسل الإجرائي (Architecture & Lifecycle Flow)
@@ -54,6 +80,14 @@ sequenceDiagram
     Orbis->>Platform: POST /api/v1/public/licenses/activate (product_key, installation_id, machine_label)
     Platform-->>Orbis: 201 Created (Activation Details + SignedEntitlement Token)
     Orbis->>SecStorage: حفظ الـ SignedEntitlement وتاريخ آخر تحقق سليم
+
+    Note over Orbis, Platform: مطالبة رمز موزع بعد إعداد المؤسسة (Retail Claim)
+    Orbis->>Platform: POST /api/v1/public/keys/claim (product_key, organization_id, organization_name, organization_slug, organization_profile)
+    Platform->>Platform: ربط المفتاح بالمؤسسة وإنشاء ترخيص الخطة وبدء مدته
+    Platform-->>Orbis: 200 OK (organization_id, license_id, valid_until)
+    Orbis->>Platform: POST /api/v1/public/licenses/activate (product_key, organization_id, installation_id)
+    Platform-->>Orbis: 201 Created (Activation + SignedEntitlement)
+    Orbis->>SecStorage: التحقق من الاستحقاق الموقع وحفظه محليًا
 
     Note over Orbis, Platform: المرحلة 2: التحقق بدون اتصال (Offline Engine)
     Orbis->>SecStorage: قراءة وثيقة SignedEntitlement

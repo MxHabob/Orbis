@@ -40,10 +40,26 @@ pub async fn license_activate_key(
     }
     state
         .license_runtime
-        .activate_product_key(
-            &request.product_key,
-            ctx.tenant_id,
-        )
+        .activate_product_key(&request.product_key, ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(state.license_runtime.current_state_dto())
+}
+
+/// Claim a reseller key for the active organization and activate this device.
+#[tauri::command]
+pub async fn license_redeem_key(
+    state: State<'_, AppState>,
+    request: ActivateKeyRequest,
+) -> Result<LicenseStateDto, String> {
+    let ctx = crate::commands::make_ctx(&state);
+    if ctx.tenant_id.is_nil() {
+        return Err("An active organization is required to redeem a product key.".to_string());
+    }
+    let organization = trial_organization_profile(&state, ctx.tenant_id).await?;
+    state
+        .license_runtime
+        .redeem_product_key(&request.product_key, organization)
         .await
         .map_err(|error| error.to_string())?;
     Ok(state.license_runtime.current_state_dto())
@@ -51,9 +67,7 @@ pub async fn license_activate_key(
 
 /// Start a trial evaluation period.
 #[tauri::command]
-pub async fn license_start_trial(
-    state: State<'_, AppState>,
-) -> Result<LicenseStateDto, String> {
+pub async fn license_start_trial(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
     let ctx = crate::commands::make_ctx(&state);
     if ctx.tenant_id.is_nil() {
         return Err("An active organization is required to start a license trial.".to_string());

@@ -1334,6 +1334,9 @@ export class LocalClient implements OrbisApiClient {
   async licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto> {
     return invoke<LicenseStateDto>("license_activate_key", { request: req });
   }
+  async licenseRedeemKey(req: ActivateKeyRequest): Promise<LicenseStateDto> {
+    return invoke<LicenseStateDto>("license_redeem_key", { request: req });
+  }
   async licenseStartTrial(): Promise<LicenseStateDto> {
     return invoke<LicenseStateDto>("license_start_trial");
   }

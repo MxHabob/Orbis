@@ -64,6 +64,13 @@ pub trait LicenseRuntime: Send + Sync {
         organization_id: uuid::Uuid,
     ) -> Result<ActivationResponse, DomainError>;
 
+    /// Claim a reseller key for an existing Orbis organization, then activate this installation.
+    async fn redeem_product_key(
+        &self,
+        product_key: &str,
+        organization: orbis_domain::entities::license::TrialOrganizationProfile,
+    ) -> Result<ActivationResponse, DomainError>;
+
     /// Start a trial evaluation period.
     ///
     /// Creates a local trial state with the configured trial policy.
