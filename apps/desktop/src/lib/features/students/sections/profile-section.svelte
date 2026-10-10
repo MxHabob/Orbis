@@ -435,23 +435,26 @@ const studyModes = [
       {/if}
 
       <!-- Special Needs Notes -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="specialNeedsNotes" class="text-xs font-semibold text-foreground">
-            {m.ui_copy_special_needs_accommodations_4763ae09()}
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_special_accommodations_or_accessibility_as_701c987f()}</span>
+      {#if state.activeFields.special_needs_notes}
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+          <div class="flex flex-col gap-1 text-start">
+            <Label for="specialNeedsNotes" class="text-xs font-semibold text-foreground">
+              {m.ui_copy_special_needs_accommodations_4763ae09()}
+              {#if state.requiredFields.special_needs_notes}<span class="text-destructive">*</span>{/if}
+            </Label>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_special_accommodations_or_accessibility_as_701c987f()}</span>
+          </div>
+          <div class="w-full md:w-120 shrink-0">
+            <Input 
+              id="specialNeedsNotes"
+              type="text" 
+              placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()} 
+              class="h-9 w-full bg-background" 
+              bind:value={state.personal.specialNeedsNotes}
+            />
+          </div>
         </div>
-        <div class="w-full md:w-120 shrink-0">
-          <Input 
-            id="specialNeedsNotes"
-            type="text" 
-            placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()} 
-            class="h-9 w-full bg-background" 
-            bind:value={state.personal.specialNeedsNotes}
-          />
-        </div>
-      </div>
+      {/if}
     </div>
   </CardContent>
 </Card>

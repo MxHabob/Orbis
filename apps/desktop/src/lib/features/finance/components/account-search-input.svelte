@@ -140,6 +140,10 @@ function clearPendingSearch() {
 
 function handleInput(event: Event) {
   const target = event.currentTarget as HTMLInputElement;
+  if (value) {
+    value = null;
+    onchange?.(null);
+  }
   searchText = target.value;
   isOpen = Boolean(searchText.trim());
   highlightedIndex = 0;
@@ -148,10 +152,6 @@ function handleInput(event: Event) {
   const query = searchText.trim();
   if (!query) {
     debouncedQuery = "";
-    if (value) {
-      value = null;
-      onchange?.(null);
-    }
     return;
   }
 

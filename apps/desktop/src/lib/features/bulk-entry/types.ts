@@ -47,6 +47,11 @@ export interface BulkReferenceData {
     bloodTypes: string[];
     relationships: Array<{ value: string; labelAr: string; labelEn: string }>;
   };
+  registrationFields?: Record<string, {
+    active: boolean;
+    required: boolean;
+    preventDuplicate: boolean;
+  }>;
 }
 
 export interface ColumnDefinitionMetadata {

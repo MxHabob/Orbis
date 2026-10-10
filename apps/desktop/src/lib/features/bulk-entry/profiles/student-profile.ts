@@ -2,6 +2,7 @@ import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterStudentCommandItem } from "$lib/api";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
+import { parseRegistrationFieldPolicies, normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 import { splitPersonName } from "$lib/shared/utils/person-name";
 import {
   ensureStudentRegistrationArtifacts,
@@ -288,10 +289,11 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
   gridColumns: studentGridColumns,
 
   async buildReferenceData(_orgId: string): Promise<BulkReferenceData> {
-    const [classesRes, feeTemplatesRes, groupsRes] = await Promise.all([
+    const [classesRes, feeTemplatesRes, groupsRes, org] = await Promise.all([
       api.listClasses(),
       api.listFeeTemplates(),
       api.listGroups(),
+      api.getCurrentOrg(),
     ]);
 
     const classes = (classesRes || []).map((c: any) => ({
@@ -342,14 +344,25 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
           { value: "guardian", labelAr: "ولي أمر", labelEn: "Guardian" },
         ],
       },
+      registrationFields: parseRegistrationFieldPolicies(org?.settings),
     };
   },
 
   validateCell(colId: string, value: unknown, row: StudentRowData, refData: BulkReferenceData): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
+    const policy = refData.registrationFields?.[normalizeRegistrationFieldKey(colId)];
+    if (
+      colId !== "full_name_ar" &&
+      colId !== "class_name" &&
+      policy?.active === false
+    ) {
+      return null;
+    }
 
     // Required fields check
-    if (["full_name_ar", "national_id", "gender", "birth_date", "class_name"].includes(colId)) {
+    const required = colId === "full_name_ar" || colId === "class_name" ||
+      (policy?.required ?? ["national_id", "gender", "birth_date"].includes(colId));
+    if (required) {
       if (!strVal) {
         return {
           severity: "BLOCKING_ERROR",
@@ -423,7 +436,11 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     const issues: BulkCellIssue[] = [];
 
     // Check duplicate national_id across the entire batch (Level 4)
-    if (row.national_id?.trim()) {
+    if (
+      row.national_id?.trim() &&
+      refData.registrationFields?.national_id?.active !== false &&
+      refData.registrationFields?.national_id?.preventDuplicate !== false
+    ) {
       const nid = row.national_id.trim();
       const duplicateIndex = allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
       if (duplicateIndex !== -1) {
@@ -466,7 +483,15 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     );
 
     for (const row of rows) {
-      const hasErrors = !row.full_name_ar?.trim() || !row.national_id?.trim() || !row.gender || !row.birth_date || !row.class_name;
+      const enabledColumns = studentColumnMetadata.filter((column) =>
+        column.id === "full_name_ar" || column.id === "class_name" ||
+        refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]?.active !== false,
+      );
+      const hasErrors = enabledColumns.some((column) =>
+        this.validateCell(column.id, row[column.id], row, refData)?.severity === "BLOCKING_ERROR",
+      ) || this.validateRow(row, rows, rows.indexOf(row), refData).some(
+        (issue) => issue.severity === "BLOCKING_ERROR",
+      );
       if (hasErrors) {
         errorCount++;
       } else {
@@ -530,7 +555,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       const namePartsEn = splitPersonName(fullNameEn);
 
       const rawGender = String(row.gender || "").toLowerCase().trim();
-      const genderStr = rawGender === "female" || rawGender === "أنثى" ? "female" : "male";
+      const genderStr = rawGender === "female" || rawGender === "أنثى" ? "female" : rawGender === "male" || rawGender === "ذكر" ? "male" : undefined;
+      const fieldActive = (id: string) =>
+        refData.registrationFields?.[normalizeRegistrationFieldKey(id)]?.active !== false;
 
       items.push({
         row_index: row.rowNumber || i + 1,
@@ -543,18 +570,18 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
           middle_name_ar: namePartsAr.middleName,
           last_name_ar: namePartsAr.lastName,
           display_name: fullNameAr,
-          national_id: row.national_id?.trim() || undefined,
-          passport_number: row.passport_number?.trim() || undefined,
-          gender: genderStr,
-          birth_date: row.birth_date?.trim() || undefined,
-          place_of_birth: row.place_of_birth?.trim() || undefined,
-          nationality: row.nationality?.trim() || undefined,
-          blood_type: row.blood_type?.trim() || undefined,
-          medical_notes: row.medical_notes?.trim() || undefined,
-          special_needs_notes: row.special_needs_notes?.trim() || undefined,
-          address: row.address?.trim() || undefined,
-          phone: row.phone?.trim() || undefined,
-          email: row.email?.trim() || undefined,
+          national_id: fieldActive("national_id") ? row.national_id?.trim() || undefined : undefined,
+          passport_number: fieldActive("passport_number") ? row.passport_number?.trim() || undefined : undefined,
+          gender: fieldActive("gender") ? genderStr : undefined,
+          birth_date: fieldActive("birth_date") ? row.birth_date?.trim() || undefined : undefined,
+          place_of_birth: fieldActive("place_of_birth") ? row.place_of_birth?.trim() || undefined : undefined,
+          nationality: fieldActive("nationality") ? row.nationality?.trim() || undefined : undefined,
+          blood_type: fieldActive("blood_type") ? row.blood_type?.trim() || undefined : undefined,
+          medical_notes: fieldActive("medical_notes") ? row.medical_notes?.trim() || undefined : undefined,
+          special_needs_notes: fieldActive("special_needs_notes") ? row.special_needs_notes?.trim() || undefined : undefined,
+          address: fieldActive("address") ? row.address?.trim() || undefined : undefined,
+          phone: fieldActive("phone") ? row.phone?.trim() || undefined : undefined,
+          email: fieldActive("email") ? row.email?.trim() || undefined : undefined,
           initial_period_id: effectiveContext.currentPeriodId || undefined,
           initial_class_id: matchedClass?.id || undefined,
           study_mode: row.study_mode?.trim() || "regular",

@@ -3,6 +3,7 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import * as m from "$lib/paraglide/messages";
 import { getBulkEntryColumnHeader, getBulkEntryProfileName } from "../localization";
 import type { BulkImportProfile, BulkReferenceData } from "../types";
+import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 
 export interface GenerateTemplateOptions {
   profile: BulkImportProfile<any, any>;
@@ -17,16 +18,29 @@ export async function buildTemplateWorkbook(
   const XLSX = await import("xlsx");
   const { profile, refData, orgName, academicYear } = options;
   const wb = XLSX.utils.book_new();
+  const columns = profile.columnMetadata.filter((column) => {
+    if (profile.id !== "students" || !refData.registrationFields) return true;
+    if (column.id === "full_name_ar" || column.id === "class_name") return true;
+    return refData.registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
+  });
 
   // ── Sheet 1: Data Entry Sheet ──────────────────────────────────
-  const headers = profile.columnMetadata.map((col) => getBulkEntryColumnHeader(profile.id, col.id, col.headerAr));
-  const sampleRow = profile.columnMetadata.map((col) => col.example || "");
+  const headers = columns.map((col) => {
+    const policy = refData.registrationFields?.[normalizeRegistrationFieldKey(col.id)];
+    return getBulkEntryColumnHeader(
+      profile.id,
+      col.id,
+      col.headerAr,
+      profile.id === "students" ? policy?.required ?? col.required : undefined,
+    );
+  });
+  const sampleRow = columns.map((col) => col.example || "");
 
   const dataAoa = [headers, sampleRow];
   const wsData = XLSX.utils.aoa_to_sheet(dataAoa);
 
   // Set column widths based on metadata
-  wsData["!cols"] = profile.columnMetadata.map((col) => ({
+  wsData["!cols"] = columns.map((col) => ({
     wch: Math.max(col.headerAr.length * 2, 16),
   }));
 

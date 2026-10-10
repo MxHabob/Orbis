@@ -28,6 +28,7 @@ import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import { parseRegistrationFieldPolicies } from "./registration-fields";
 
 export class StudentFormState {
   orgId: string;
@@ -55,6 +56,13 @@ export class StudentFormState {
     address: false,
     previous_school: false,
     documents: false,
+    nationality: true,
+    place_of_birth: false,
+    passport_number: false,
+    blood_type: false,
+    emergency_contact: true,
+    medical_notes: false,
+    special_needs_notes: false,
   });
   activeFields = $state<Record<string, boolean>>({
     national_id: true,
@@ -65,6 +73,13 @@ export class StudentFormState {
     address: true,
     previous_school: true,
     documents: true,
+    nationality: true,
+    place_of_birth: true,
+    passport_number: true,
+    blood_type: true,
+    emergency_contact: true,
+    medical_notes: true,
+    special_needs_notes: true,
   });
   preventDuplicates = $state<Record<string, boolean>>({
     national_id: true,
@@ -147,33 +162,17 @@ export class StudentFormState {
         }
 
         // Parse organization registration configuration
-        let settingsObj: Record<string, unknown> = {};
-        try {
-          settingsObj = typeof org.settings === "string" 
-            ? JSON.parse(org.settings) 
-            : (org.settings as Record<string, unknown>) || {};
-        } catch {
-          settingsObj = {};
+        const policies = parseRegistrationFieldPolicies(org.settings);
+        for (const [key, policy] of Object.entries(policies)) {
+          this.activeFields[key] = policy.active;
+          this.requiredFields[key] = policy.active && policy.required;
+          this.preventDuplicates[key] = policy.active && policy.preventDuplicate;
         }
 
-        const reg = (settingsObj.registration || settingsObj.registration_config || {}) as Record<string, unknown>;
-        const formFieldsList = (reg.form_fields_list || reg.formFieldsList) as Array<{ key: string; isActive?: boolean; isRequired?: boolean; preventDuplicate?: boolean }> | undefined;
-        if (formFieldsList && Array.isArray(formFieldsList)) {
-          const activeMap: Record<string, boolean> = {};
-          const requiredMap: Record<string, boolean> = {};
-          const duplicateMap: Record<string, boolean> = {};
-
-          for (const field of formFieldsList) {
-            activeMap[field.key] = field.isActive !== false;
-            requiredMap[field.key] = field.isActive !== false && field.isRequired === true;
-            duplicateMap[field.key] = field.isActive !== false && field.preventDuplicate === true;
-          }
-
-          this.activeFields = { ...this.activeFields, ...activeMap };
-          this.requiredFields = { ...this.requiredFields, ...requiredMap };
-          this.preventDuplicates = { ...this.preventDuplicates, ...duplicateMap };
-        }
-
+        const settingsObj = typeof org.settings === "string"
+          ? JSON.parse(org.settings || "{}")
+          : (org.settings as Record<string, any>) || {};
+        const reg = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
         const reqDocs = (reg.required_documents_list || reg.requiredDocumentsList) as Array<{ nameAr?: string; nameEn?: string; name?: string }> | undefined;
         if (reqDocs && Array.isArray(reqDocs)) {
           this.document.setRequiredDocuments(reqDocs.map((d) => d.nameAr || d.nameEn || d.name || ""));
@@ -382,6 +381,31 @@ export class StudentFormState {
       toast.error(m.common_form_error_class_required());
       return;
     }
+    const requiredValues: Record<string, string> = {
+      national_id: this.personal.nationalId,
+      phone: this.personal.phone,
+      email: this.personal.email,
+      birth_date: this.personal.birthDate,
+      sex: this.personal.sex,
+      nationality: this.personal.nationality,
+      address: this.personal.address,
+      place_of_birth: this.personal.placeOfBirth,
+      passport_number: this.personal.passportNumber,
+      blood_type: this.personal.bloodType,
+      emergency_contact: this.personal.emergencyContact,
+      medical_notes: this.personal.medicalNotes,
+      special_needs_notes: this.personal.specialNeedsNotes,
+      previous_school: this.personal.previousSchool,
+    };
+    requiredValues.sex = this.activeFields.sex ? this.personal.sex : "";
+    if (
+      Object.entries(this.requiredFields).some(
+        ([key, required]) => required && !String(requiredValues[key] ?? "").trim(),
+      )
+    ) {
+      toast.error(m.common_form_error_required_fields());
+      return;
+    }
 
     // Check duplicate blockers
     if (
@@ -414,17 +438,18 @@ export class StudentFormState {
           middle_name_ar: namePartsAr.middleName,
           last_name_ar: namePartsAr.lastName,
           display_name: displayName,
-          national_id: this.personal.nationalId || undefined,
-          passport_number: this.personal.passportNumber || undefined,
-          gender: this.personal.sex || "male",
-          birth_date: this.personal.birthDate || undefined,
-          place_of_birth: this.personal.placeOfBirth || undefined,
-          nationality: this.personal.nationality || undefined,
-          blood_type: this.personal.bloodType || undefined,
-          medical_notes: this.personal.medicalNotes || undefined,
-          phone: this.personal.phone || undefined,
-          email: this.personal.email.trim() || undefined,
-          address: this.personal.address || undefined,
+          national_id: this.activeFields.national_id ? this.personal.nationalId || undefined : undefined,
+          passport_number: this.activeFields.passport_number ? this.personal.passportNumber || undefined : undefined,
+          gender: this.activeFields.sex ? this.personal.sex || undefined : undefined,
+          birth_date: this.activeFields.birth_date ? this.personal.birthDate || undefined : undefined,
+          place_of_birth: this.activeFields.place_of_birth ? this.personal.placeOfBirth || undefined : undefined,
+          nationality: this.activeFields.nationality ? this.personal.nationality || undefined : undefined,
+          blood_type: this.activeFields.blood_type ? this.personal.bloodType || undefined : undefined,
+          medical_notes: this.activeFields.medical_notes ? this.personal.medicalNotes || undefined : undefined,
+          special_needs_notes: this.activeFields.special_needs_notes ? this.personal.specialNeedsNotes || undefined : undefined,
+          phone: this.activeFields.phone ? this.personal.phone || undefined : undefined,
+          email: this.activeFields.email ? this.personal.email.trim() || undefined : undefined,
+          address: this.activeFields.address ? this.personal.address || undefined : undefined,
           initial_period_id: effectiveContext.currentPeriodId || undefined,
           initial_class_id: this.personal.classId || undefined,
           study_mode: this.studyMode,
@@ -495,17 +520,18 @@ export class StudentFormState {
           middle_name_ar: namePartsAr.middleName,
           last_name_ar: namePartsAr.lastName,
           display_name: displayName,
-          national_id: this.personal.nationalId || undefined,
-          passport_number: this.personal.passportNumber || undefined,
-          gender: this.personal.sex || "male",
-          birth_date: this.personal.birthDate || undefined,
-          place_of_birth: this.personal.placeOfBirth || undefined,
-          nationality: this.personal.nationality || undefined,
-          blood_type: this.personal.bloodType || undefined,
-          medical_notes: this.personal.medicalNotes || undefined,
-          phone: this.personal.phone || undefined,
-          email: this.personal.email.trim() || undefined,
-          address: this.personal.address || undefined,
+          national_id: this.activeFields.national_id ? this.personal.nationalId || undefined : undefined,
+          passport_number: this.activeFields.passport_number ? this.personal.passportNumber || undefined : undefined,
+          gender: this.activeFields.sex ? this.personal.sex || undefined : undefined,
+          birth_date: this.activeFields.birth_date ? this.personal.birthDate || undefined : undefined,
+          place_of_birth: this.activeFields.place_of_birth ? this.personal.placeOfBirth || undefined : undefined,
+          nationality: this.activeFields.nationality ? this.personal.nationality || undefined : undefined,
+          blood_type: this.activeFields.blood_type ? this.personal.bloodType || undefined : undefined,
+          medical_notes: this.activeFields.medical_notes ? this.personal.medicalNotes || undefined : undefined,
+          special_needs_notes: this.activeFields.special_needs_notes ? this.personal.specialNeedsNotes || undefined : undefined,
+          phone: this.activeFields.phone ? this.personal.phone || undefined : undefined,
+          email: this.activeFields.email ? this.personal.email.trim() || undefined : undefined,
+          address: this.activeFields.address ? this.personal.address || undefined : undefined,
         });
 
         toast.success(m.common_form_success_update());

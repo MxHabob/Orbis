@@ -1,6 +1,7 @@
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import type { BulkImportProfile, BulkProfileId } from "./types";
+import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 
 const localizedHeader = (ar: string, en: string) => () => (getLocale() === "ar" ? ar : en);
 
@@ -79,16 +80,29 @@ export function getBulkEntryColumnHeader(
   profileId: BulkProfileId,
   columnId: string,
   fallback: string,
+  required?: boolean,
 ): string {
-  return columnHeaders[profileId][columnId]?.() ?? fallback;
+  const header = columnHeaders[profileId][columnId]?.() ?? fallback;
+  if (required === undefined) return header;
+  return `${header.replace(/\*$/, "")}${required ? "*" : ""}`;
 }
 
 export function getBulkEntryGridColumns<T>(
   profile: BulkImportProfile<T, any>,
+  registrationFields?: Record<string, { active: boolean; required: boolean }>,
 ): BulkImportProfile<T, any>["gridColumns"] {
-  return profile.gridColumns.map((column) => {
+  return profile.gridColumns
+    .filter((column) => {
+      if (profile.id !== "students" || !column.id || !registrationFields) return true;
+      if (column.id === "full_name_ar" || column.id === "class_name") return true;
+      return registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
+    })
+    .map((column) => {
+    const policy = column.id ? registrationFields?.[normalizeRegistrationFieldKey(column.id)] : undefined;
     const header =
-      (column.id ? columnHeaders[profile.id]?.[column.id]?.() : undefined) ??
+      (column.id
+        ? getBulkEntryColumnHeader(profile.id, column.id, column.header, policy?.required)
+        : undefined) ??
       (column.id ? gridHeaders[column.id]?.() : undefined) ??
       column.header;
     const options = column.options?.map((option) => ({

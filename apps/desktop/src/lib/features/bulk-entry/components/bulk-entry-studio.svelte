@@ -19,6 +19,7 @@
   import * as m from "$lib/paraglide/messages";
   import { orgContext } from "$lib/stores/org-context.svelte";
   import { getBulkEntryGridColumns, getBulkEntryProfileName } from "../localization";
+  import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
   import type {
     BulkProfileId,
     BulkRowState,
@@ -61,6 +62,13 @@
   const isLoadingRefData = $derived(refDataQuery.isLoading);
   const referenceDataError = $derived(
     refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
+  );
+  const activeColumnMetadata = $derived(
+    currentProfile.columnMetadata.filter((column) => {
+      if (currentProfile.id !== "students" || !refData?.registrationFields) return true;
+      if (column.id === "full_name_ar" || column.id === "class_name") return true;
+      return refData.registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
+    }),
   );
 
   let fileName = $state<string | null>(null);
@@ -120,7 +128,7 @@
       rowNumber,
       id: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     };
-    for (const col of currentProfile.columnMetadata) {
+    for (const col of activeColumnMetadata) {
       data[col.id] = "";
     }
     return {
@@ -177,8 +185,8 @@
         const cells = line.includes("\t") ? line.split("\t") : line.split(",");
         const row = createBlankRow(startIndex + r);
 
-        for (let c = 0; c < Math.min(cells.length, currentProfile.columnMetadata.length); c++) {
-          const col = currentProfile.columnMetadata[c]!;
+        for (let c = 0; c < Math.min(cells.length, activeColumnMetadata.length); c++) {
+          const col = activeColumnMetadata[c]!;
           const cellVal = cells[c]?.trim() || "";
           row.data[col.id] = cellVal;
         }
@@ -203,7 +211,7 @@
     if (!refData || rawRows.length === 0) return;
 
     const cleaned = rawRows.filter((row) => {
-      return currentProfile.columnMetadata.some((col) => {
+      return activeColumnMetadata.some((col) => {
         const val = row.data[col.id];
         return val !== undefined && val !== null && String(val).trim() !== "";
       });
@@ -636,7 +644,7 @@
     <!-- Central OrbisGrid Workspace -->
     <div class="flex-1 w-full overflow-hidden bg-background relative">
       <OrbisGrid
-        columns={getBulkEntryGridColumns(currentProfile)}
+        columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields)}
         source={gridSource}
         rtl={true}
         height="100%"
