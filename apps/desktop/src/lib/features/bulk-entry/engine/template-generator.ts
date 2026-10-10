@@ -54,100 +54,182 @@ export async function buildTemplateWorkbook(
 
   // ── Sheet 2: Reference Data Sheet ──────────────────────────────
   const refAoa: string[][] = [];
-  refAoa.push([
-    m.bulk_entry_workbook_reference_type(),
-    m.bulk_entry_workbook_reference_code(),
-    m.bulk_entry_workbook_reference_name(),
-    m.bulk_entry_workbook_reference_meta(),
+  const referenceMerges: Array<{
+    s: { r: number; c: number };
+    e: { r: number; c: number };
+  }> = [];
+
+  function appendReferenceSection(
+    title: string,
+    headers: string[],
+    rows: string[][],
+  ) {
+    if (rows.length === 0) return;
+    if (refAoa.length > 0) refAoa.push(["", "", "", ""]);
+
+    const titleRow = refAoa.length;
+    refAoa.push([title, "", "", ""]);
+    referenceMerges.push({
+      s: { r: titleRow, c: 0 },
+      e: { r: titleRow, c: 3 },
+    });
+    refAoa.push(headers);
+    refAoa.push(...rows);
+  }
+
+  const codeHeader = m.bulk_entry_workbook_reference_code();
+  const nameHeader = m.bulk_entry_workbook_reference_name();
+  const detailsHeader = m.bulk_entry_workbook_reference_meta();
+
+  appendReferenceSection(
+    m.bulk_entry_workbook_class(),
+    [codeHeader, nameHeader, detailsHeader],
+    refData.classes.map((item) => [
+      item.code || "",
+      item.name || item.nameAr || "",
+      String(
+        item.meta?.details ??
+          m.bulk_entry_workbook_capacity({
+            capacity: Number(item.meta?.capacity) || 30,
+          }),
+      ),
+    ]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_subject(),
+    [codeHeader, nameHeader],
+    refData.subjects.map((item) => [item.code || "", item.name || item.nameAr || ""]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_reference_sections(),
+    [codeHeader, nameHeader],
+    refData.sections.map((item) => [item.code || "", item.name || item.nameAr || ""]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_reference_levels(),
+    [codeHeader, nameHeader],
+    refData.levels.map((item) => [item.code || "", item.name || item.nameAr || ""]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_fee_template(),
+    [nameHeader, detailsHeader],
+    refData.feeTemplates.map((item) => {
+      const meta = item.meta ?? {};
+      return [
+        item.name || item.nameAr || "",
+        m.bulk_entry_workbook_fee_details({
+          amount: Number(meta.default_amount) || 0,
+          requirement: meta.is_mandatory
+            ? m.bulk_entry_workbook_mandatory()
+            : m.bulk_entry_workbook_optional(),
+        }),
+      ];
+    }),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_reference_discount_templates(),
+    [codeHeader, nameHeader],
+    refData.discountTemplates.map((item) => [
+      item.code || "",
+      item.name || item.nameAr || "",
+    ]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_user_group(),
+    [codeHeader, nameHeader],
+    refData.userGroups.map((item) => [
+      item.code || item.id,
+      item.name || item.nameAr || "",
+    ]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_reference_academic_periods(),
+    [codeHeader, nameHeader],
+    refData.academicPeriods.map((item) => [
+      item.code || "",
+      item.name || item.nameAr || "",
+    ]),
+  );
+  appendReferenceSection(
+    m.bulk_entry_workbook_assessment(),
+    [nameHeader, detailsHeader],
+    refData.assessmentSchemes.map((item) => [
+      item.name || item.nameAr || "",
+      m.bulk_entry_workbook_max_score({
+        score: Number(item.meta?.max_score) || 100,
+      }),
+    ]),
+  );
+
+  const enumValuesByField = new Map<
+    string,
+    Array<{ value: string; label: string }>
+  >([
+    [
+      "gender",
+      refData.enums.genders.map((item) => ({
+        value: item.value,
+        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
+      })),
+    ],
+    [
+      "study_mode",
+      refData.enums.studyModes.map((item) => ({
+        value: item.value,
+        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
+      })),
+    ],
+    [
+      "employee_type",
+      refData.enums.employeeTypes.map((item) => ({
+        value: item.value,
+        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
+      })),
+    ],
+    [
+      "employment_type",
+      refData.enums.employmentTypes.map((item) => ({
+        value: item.value,
+        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
+      })),
+    ],
+    [
+      "blood_type",
+      refData.enums.bloodTypes.map((value) => ({ value, label: value })),
+    ],
+    [
+      "guardian_relationship",
+      refData.enums.relationships.map((item) => ({
+        value: item.value,
+        label: getLocale() === "ar" ? item.labelAr : item.labelEn,
+      })),
+    ],
   ]);
 
-  if (refData.classes.length > 0) {
-    for (const c of refData.classes) {
-      refAoa.push([m.bulk_entry_workbook_class(), c.code || "", c.name || c.nameAr || "", m.bulk_entry_workbook_capacity({ capacity: c.meta?.capacity || 30 })]);
+  for (const column of columns.filter((item) => item.type === "enum")) {
+    const labels = new Map(
+      (enumValuesByField.get(column.id) ?? []).map((item) => [
+        item.value,
+        item.label,
+      ]),
+    );
+    for (const option of column.options ?? []) {
+      labels.set(String(option.value), option.label);
     }
-  }
-
-  if (refData.subjects.length > 0) {
-    for (const s of refData.subjects) {
-      refAoa.push([m.bulk_entry_workbook_subject(), s.code || "", s.name || s.nameAr || "", ""]);
+    if (labels.size === 0 && column.allowedValues) {
+      for (const value of column.allowedValues) labels.set(value, value);
     }
-  }
 
-  if (refData.feeTemplates.length > 0) {
-    for (const f of refData.feeTemplates) {
-      refAoa.push([
-        m.bulk_entry_workbook_fee_template(),
-        "",
-        f.name,
-        m.bulk_entry_workbook_fee_details({
-          amount: (f.meta as any)?.default_amount || 0,
-          requirement: (f.meta as any)?.is_mandatory ? m.bulk_entry_workbook_mandatory() : m.bulk_entry_workbook_optional(),
-        }),
-      ]);
-    }
-  }
-
-  if (refData.userGroups.length > 0) {
-    for (const g of refData.userGroups) {
-      refAoa.push([m.bulk_entry_workbook_user_group(), "", g.name, ""]);
-    }
-  }
-
-  if (refData.assessmentSchemes.length > 0) {
-    for (const a of refData.assessmentSchemes) {
-      refAoa.push([m.bulk_entry_workbook_assessment(), "", a.name, m.bulk_entry_workbook_max_score({ score: (a.meta as any)?.max_score || 100 })]);
-    }
-  }
-
-  const enumReferenceGroups = [
-    { fieldId: "gender", values: refData.enums.genders },
-    { fieldId: "study_mode", values: refData.enums.studyModes },
-    { fieldId: "employee_type", values: refData.enums.employeeTypes },
-    { fieldId: "employment_type", values: refData.enums.employmentTypes },
-    {
-      fieldId: "blood_type",
-      values: refData.enums.bloodTypes.map((value) => ({
-        value,
-        labelAr: value,
-        labelEn: value,
-      })),
-    },
-    { fieldId: "guardian_relationship", values: refData.enums.relationships },
-  ];
-
-  for (const { fieldId, values } of enumReferenceGroups) {
-    const column = columns.find((item) => item.id === fieldId);
-    if (!column) continue;
     const fieldLabel = getBulkEntryColumnHeader(
       profile.id,
-      fieldId,
+      column.id,
       column.headerAr,
     );
-    const labelsByValue = new Map(
-      values.map((option) => [
-        option.value,
-        getLocale() === "ar" ? option.labelAr : option.labelEn,
-      ]),
+    appendReferenceSection(
+      fieldLabel,
+      [codeHeader, nameHeader],
+      [...labels].map(([value, label]) => [value, label]),
     );
-    const optionLabels = new Map(
-      (column.options ?? []).map((option) => [
-        String(option.value),
-        option.label,
-      ]),
-    );
-    const allowedValues = new Set([
-      ...values.map((option) => option.value),
-      ...(column.options ?? []).map((option) => String(option.value)),
-    ]);
-
-    for (const value of allowedValues) {
-      refAoa.push([
-        fieldLabel,
-        value,
-        optionLabels.get(value) ?? labelsByValue.get(value) ?? value,
-        m.bulk_entry_workbook_reference_enum_value(),
-      ]);
-    }
   }
 
   for (const column of columns.filter((item) => item.type === "boolean")) {
@@ -156,24 +238,24 @@ export async function buildTemplateWorkbook(
       column.id,
       column.headerAr,
     );
-    refAoa.push(
-      [
-        fieldLabel,
-        "true",
-        m.bulk_entry_workbook_boolean_yes(),
-        m.bulk_entry_workbook_reference_enum_value(),
-      ],
-      [
-        fieldLabel,
-        "false",
-        m.bulk_entry_workbook_boolean_no(),
-        m.bulk_entry_workbook_reference_enum_value(),
-      ],
-    );
+    appendReferenceSection(fieldLabel, [codeHeader, nameHeader], [
+      ["true", m.bulk_entry_workbook_boolean_yes()],
+      ["false", m.bulk_entry_workbook_boolean_no()],
+    ]);
   }
 
+  appendReferenceSection(
+    m.bulk_entry_workbook_teachers(),
+    [codeHeader, nameHeader],
+    refData.teachers.map((item) => [
+      item.code || item.id,
+      item.name || item.nameAr || "",
+    ]),
+  );
+
   const wsRef = XLSX.utils.aoa_to_sheet(refAoa);
-  wsRef["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 30 }, { wch: 25 }];
+  wsRef["!cols"] = [{ wch: 28 }, { wch: 32 }, { wch: 36 }, { wch: 32 }];
+  wsRef["!merges"] = referenceMerges;
   XLSX.utils.book_append_sheet(wb, wsRef, `_${m.bulk_entry_workbook_reference_sheet()}`);
 
   // ── Sheet 3: Instructions ──────────────────────────────────────
@@ -184,6 +266,9 @@ export async function buildTemplateWorkbook(
     [m.bulk_entry_workbook_academic_year(), academicYear || m.bulk_entry_workbook_current_year()],
     [m.bulk_entry_workbook_template_type(), getBulkEntryProfileName(profile.id)],
     [m.bulk_entry_workbook_template_version(), profile.templateVersion],
+    ...(profile.id === "teacher-subjects"
+      ? [[m.bulk_entry_workbook_rule_teacher_subject_assignment()]]
+      : []),
     [""],
     [m.bulk_entry_workbook_general_rules()],
     [m.bulk_entry_workbook_rule_required_fields()],

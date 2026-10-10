@@ -82,6 +82,7 @@ export async function provisionStudentLoginAccount(input: {
   fullNameEn?: string;
   email?: string;
   phone?: string;
+  groupIds?: string[];
   preferredUsername?: string;
 }) {
   const request: ProvisionUserRequest = {
@@ -93,7 +94,7 @@ export async function provisionStudentLoginAccount(input: {
     phone: input.phone?.trim() || undefined,
     preferred_username: input.preferredUsername?.trim() || undefined,
     roles: ["student"],
-    group_ids: [],
+    group_ids: input.groupIds ?? [],
     delivery_channel: input.email?.trim() ? "email" : input.phone?.trim() ? "sms" : "manual",
   };
   return api.provisionUser(request);

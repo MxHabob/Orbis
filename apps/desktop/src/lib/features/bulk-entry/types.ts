@@ -1,6 +1,6 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 
-export type BulkProfileId = "students" | "employees" | "grades";
+export type BulkProfileId = "students" | "employees" | "grades" | "teacher-subjects";
 
 export type ValidationSeverity = "BLOCKING_ERROR" | "WARNING" | "INFO";
 
@@ -31,6 +31,7 @@ export interface ReferenceItem {
 
 export interface BulkReferenceData {
   classes: ReferenceItem[];
+  teachers: ReferenceItem[];
   sections: ReferenceItem[];
   levels: ReferenceItem[];
   subjects: ReferenceItem[];
@@ -51,6 +52,12 @@ export interface BulkReferenceData {
     active: boolean;
     required: boolean;
     preventDuplicate: boolean;
+  }>;
+  existingClassSubjectAssignments: Array<{
+    classId: string;
+    subjectId: string;
+    periodId: string;
+    teacherId: string;
   }>;
 }
 

@@ -9,6 +9,7 @@ const profileNames: Record<BulkProfileId, () => string> = {
   students: m.bulk_entry_profile_students,
   employees: m.bulk_entry_profile_employees,
   grades: m.bulk_entry_profile_grades,
+  "teacher-subjects": m.bulk_entry_profile_teacher_subjects,
 };
 
 const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
@@ -24,6 +25,7 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     medical_notes: localizedHeader("ملاحظات طبية", "Medical Notes"),
     special_needs_notes: localizedHeader("الاحتياجات الخاصة", "Special Needs"),
     create_login_account: m.bulk_entry_employee_header_provision_user,
+    user_group_names: m.bulk_entry_user_groups_header,
     national_id: m.bulk_entry_student_header_national_id,
     gender: m.bulk_entry_header_gender,
     birth_date: m.bulk_entry_student_header_birth_date,
@@ -49,6 +51,19 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     email: m.bulk_entry_header_email,
     provision_user: m.bulk_entry_employee_header_provision_user,
     user_group_name: m.bulk_entry_employee_header_user_group,
+  },
+  "teacher-subjects": {
+    class_code: localizedHeader("رمز الصف أو معرفه", "Class Code or ID"),
+    academic_period_code: localizedHeader(
+      "رمز الفترة الأكاديمية أو معرفها",
+      "Academic Period Code or ID",
+    ),
+    subject_code: localizedHeader("رمز المادة أو معرفها", "Subject Code or ID"),
+    teacher_code: localizedHeader(
+      "الرقم الوظيفي للمعلم أو معرفه",
+      "Teacher Employee Number or ID",
+    ),
+    weekly_hours: localizedHeader("الحصص الأسبوعية", "Weekly Hours"),
   },
   grades: {
     student_number: m.bulk_entry_grade_header_student_number,

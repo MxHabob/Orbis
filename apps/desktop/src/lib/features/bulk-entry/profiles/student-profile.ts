@@ -42,6 +42,7 @@ export interface StudentRowData {
   guardian_relationship?: string;
   guardian_national_id?: string;
   create_login_account?: boolean | string;
+  user_group_names?: string;
   [key: string]: unknown;
 }
 
@@ -206,6 +207,17 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
     example: "لا",
   },
   {
+    id: "user_group_names",
+    headerAr: "مجموعات المستخدمين",
+    headerEn: "User Groups",
+    required: false,
+    type: "reference",
+    referenceSource: "userGroups",
+    descriptionAr: "أدخل رمز المجموعة أو اسمها، وافصل بين المجموعات بالرمز |. يتطلب تفعيل إنشاء حساب الدخول.",
+    descriptionEn: "Enter group codes or names separated by |. Requires login account creation.",
+    example: "",
+  },
+  {
     id: "guardian_name",
     headerAr: "اسم ولي الأمر",
     headerEn: "Guardian Name",
@@ -272,6 +284,7 @@ export const studentGridColumns: OrbisColumnDef[] = [
   { id: "medical_notes", header: "ملاحظات طبية", width: 180 },
   { id: "special_needs_notes", header: "الاحتياجات الخاصة", width: 180 },
   { id: "create_login_account", header: "إنشاء حساب دخول للنظام", width: 170, type: "boolean" },
+  { id: "user_group_names", header: "مجموعات المستخدمين", width: 180 },
 ];
 
 export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPreviewDetails> = {
@@ -284,7 +297,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     ar: "إدخال وقيد سجلات الطلاب، وربط أولياء الأمور، وإسناد الصفوف، والالتزامات المالية آلياً",
     en: "Bulk register student profiles, link guardians, assign classes, and create tuition fee obligations",
   },
-  templateVersion: "ORBIS-TPL-STU-2026.3",
+  templateVersion: "ORBIS-TPL-STU-2026.4",
   columnMetadata: studentColumnMetadata,
   gridColumns: studentGridColumns,
 
@@ -312,11 +325,13 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
 
     const userGroups = (groupsRes || []).map((g: any) => ({
       id: g.id,
+      code: g.id,
       name: g.name || "",
     }));
 
     return {
       classes,
+      teachers: [],
       sections: [],
       levels: [],
       subjects: [],
@@ -350,6 +365,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         ],
       },
       registrationFields: parseRegistrationFieldPolicies(org?.settings),
+      existingClassSubjectAssignments: [],
     };
   },
 
@@ -420,6 +436,34 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
           severity: "BLOCKING_ERROR",
           columnId: colId,
           message: m.bulk_entry_student_validation_class_not_found({ name: strVal }),
+        };
+      }
+    }
+
+    if (colId === "user_group_names" && strVal) {
+      if (
+        !(
+          row.create_login_account === true ||
+          ["true", "1", "نعم", "yes"].includes(
+            String(row.create_login_account ?? "").trim().toLowerCase(),
+          )
+        )
+      ) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_group_requires_login(),
+        };
+      }
+      const tokens = strVal.split(/[|;]/).map((token) => token.trim()).filter(Boolean);
+      const unmatched = tokens.find((token) =>
+        !resolveReferenceItem(refData.userGroups, token),
+      );
+      if (unmatched) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: colId,
+          message: m.bulk_entry_group_not_found({ group: unmatched }),
         };
       }
     }
@@ -652,6 +696,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
                   fullNameEn: row?.full_name_en?.trim(),
                   email: row?.email,
                   phone: row?.phone,
+                  groupIds: resolveGroupIds(row?.user_group_names, refData),
                   preferredUsername: row?.email || row?.phone || row?.student_number || undefined,
                 });
               } catch (error) {
@@ -681,3 +726,26 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     }
   },
 };
+
+function resolveReferenceItem(
+  items: BulkReferenceData["userGroups"],
+  value: string,
+) {
+  const needle = value.trim().toLocaleLowerCase();
+  const matches = items.filter((item) =>
+    [item.id, item.code, item.name, item.nameAr]
+      .filter((candidate): candidate is string => Boolean(candidate))
+      .some((candidate) => candidate.trim().toLocaleLowerCase() === needle),
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}
+
+function resolveGroupIds(value: string | undefined, refData: BulkReferenceData) {
+  if (!value) return [];
+  return [...new Set(
+    value
+      .split(/[|;]/)
+      .map((token) => resolveReferenceItem(refData.userGroups, token)?.id)
+      .filter((id): id is string => Boolean(id)),
+  )];
+}

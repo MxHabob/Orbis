@@ -192,8 +192,8 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
   },
   {
     id: "user_group_name",
-    headerAr: "مجموعة الصلاحيات",
-    headerEn: "User Group",
+    headerAr: "مجموعات المستخدمين (افصل بينها بالرمز |)",
+    headerEn: "User Groups (separate with |)",
     required: false,
     type: "reference",
     referenceSource: "userGroups",
@@ -228,19 +228,21 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     ar: "إدخال بيانات الموظفين والمعلمين، وتعيين المجموعات وتوليد بيانات الدخول الآمنة آلياً",
     en: "Bulk register staff, teachers, assign user groups, and automatically provision CSPRNG credentials",
   },
-  templateVersion: "ORBIS-TPL-EMP-2026.2",
+  templateVersion: "ORBIS-TPL-EMP-2026.3",
   columnMetadata: employeeColumnMetadata,
   gridColumns: employeeGridColumns,
 
   async buildReferenceData(_orgId: string): Promise<BulkReferenceData> {
-    const groupsRes = await api.listGroups().catch(() => []);
+    const groupsRes = await api.listGroups();
     const userGroups = (groupsRes || []).map((g: any) => ({
       id: g.id,
+      code: g.id,
       name: g.name || "",
     }));
 
     return {
       classes: [],
+      teachers: [],
       sections: [],
       levels: [],
       subjects: [],
@@ -249,6 +251,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
       userGroups,
       assessmentSchemes: [],
       academicPeriods: [],
+      existingClassSubjectAssignments: [],
       enums: {
         genders: [
           { value: "male", labelAr: "ذكر", labelEn: "Male" },
@@ -306,8 +309,31 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     return null;
   },
 
-  validateRow(row: EmployeeRowData, allRows: EmployeeRowData[], rowIndex: number, _refData: BulkReferenceData): BulkCellIssue[] {
+  validateRow(row: EmployeeRowData, allRows: EmployeeRowData[], rowIndex: number, refData: BulkReferenceData): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
+    const groupTokens = splitGroupNames(row.user_group_name);
+    const shouldProvision =
+      row.provision_user === true ||
+      ["true", "1", "نعم", "yes"].includes(
+        String(row.provision_user ?? "").trim().toLowerCase(),
+      );
+
+    if (groupTokens.length > 0 && !shouldProvision) {
+      issues.push({
+        severity: "BLOCKING_ERROR",
+        columnId: "user_group_name",
+        message: m.bulk_entry_group_requires_login(),
+      });
+    }
+    for (const token of groupTokens) {
+      if (!resolveUserGroup(token, refData)) {
+        issues.push({
+          severity: "BLOCKING_ERROR",
+          columnId: "user_group_name",
+          message: m.bulk_entry_group_not_found({ group: token }),
+        });
+      }
+    }
 
     if (row.national_id?.trim()) {
       const nid = row.national_id.trim();
@@ -407,11 +433,9 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
           String(row.provision_user ?? "").trim().toLowerCase(),
         );
 
-      let matchedGroupIds: string[] = [];
-      if (row.user_group_name?.trim()) {
-        const g = refData.userGroups.find((grp) => grp.name.toLowerCase() === row.user_group_name?.toLowerCase());
-        if (g?.id) matchedGroupIds.push(g.id);
-      }
+      const matchedGroupIds = splitGroupNames(row.user_group_name)
+        .map((token) => resolveUserGroup(token, refData)?.id)
+        .filter((id): id is string => Boolean(id));
 
       items.push({
         row_index: row.rowNumber || i + 1,
@@ -471,3 +495,17 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
     }
   },
 };
+
+function splitGroupNames(value: string | undefined) {
+  return value?.split(/[|;]/).map((token) => token.trim()).filter(Boolean) ?? [];
+}
+
+function resolveUserGroup(value: string, refData: BulkReferenceData) {
+  const needle = value.trim().toLocaleLowerCase();
+  const matches = refData.userGroups.filter((group) =>
+    [group.id, group.code, group.name, group.nameAr]
+      .filter((candidate): candidate is string => Boolean(candidate))
+      .some((candidate) => candidate.trim().toLocaleLowerCase() === needle),
+  );
+  return matches.length === 1 ? matches[0] : undefined;
+}

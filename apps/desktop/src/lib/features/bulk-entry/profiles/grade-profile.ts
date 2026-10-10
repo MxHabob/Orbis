@@ -146,6 +146,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
 
     return {
       classes: [],
+      teachers: [],
       sections: [],
       levels: [],
       subjects,
@@ -154,6 +155,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       userGroups: [],
       assessmentSchemes,
       academicPeriods: [],
+      existingClassSubjectAssignments: [],
       enums: {
         genders: [],
         studyModes: [],
