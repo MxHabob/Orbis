@@ -13,7 +13,12 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { formatCurrency, formatDate, l, isAr } from "$lib/core/i18n";
-import type { JournalEntryDto, AccountDto, CurrencyDto } from "$lib/api/types";
+import type {
+  JournalEntryDto,
+  AccountDto,
+  CurrencyDto,
+  CreateJournalEntryRequest,
+} from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -32,6 +37,7 @@ import AccountSearchInput from "$lib/features/finance/components/account-search-
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { confirmStore } from "$lib/stores";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
@@ -46,16 +52,27 @@ let showAddForm = $state(false);
 
 // Form Fields
 let referenceNumber = $state("");
-let accountingDate = $state(new Date().toISOString().slice(0, 10));
+let accountingDate = $state(getLocalDateInputValue());
 let amount = $state<number | null>(null);
-let selectedCurrency = $state("YER");
+let selectedCurrency = $state(orgContext.baseCurrency || "");
 let debitAccountId = $state("");
 let creditAccountId = $state("");
 let notes = $state("");
 
 // Filters
 let searchQuery = $state("");
-let filterDate = $state("");
+let filterDate = $state(getLocalDateInputValue());
+
+function getLocalDateInputValue(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
+const journalAccounts = $derived(
+  accounts.filter((account) =>
+    account.is_active &&
+    account.currency.toUpperCase() === selectedCurrency.toUpperCase()
+  ),
+);
 
 // Print
 let printReportOpen = $state(false);
@@ -70,18 +87,17 @@ async function loadData() {
   isLoading = true;
   try {
     const [entriesList, accountsList, currenciesList] = await Promise.all([
-      api.listJournalEntries().catch(() => []),
-      api.listAccounts().catch(() => []),
-      api.listCurrencies().catch(() => []),
+      api.listJournalEntries(),
+      api.listAccounts(),
+      api.listCurrencies(),
     ]);
 
-    journalEntries = entriesList || [];
-    accounts = accountsList || [];
-    currencies = currenciesList || [];
+    journalEntries = entriesList;
+    accounts = accountsList;
+    currencies = currenciesList;
 
-    const base = currenciesList?.find((c) => c.is_base);
-    if (base && !selectedCurrency) {
-      selectedCurrency = base.code;
+    if (!currencies.some((currency) => currency.code === selectedCurrency)) {
+      selectedCurrency = orgContext.baseCurrency || currencies[0]?.code || "";
     }
   } catch (e) {
     console.error("Failed to load journal entries master data:", e);
@@ -93,11 +109,18 @@ async function loadData() {
 
 function clearForm() {
   referenceNumber = "";
-  accountingDate = new Date().toISOString().slice(0, 10);
+  accountingDate = getLocalDateInputValue();
   amount = null;
   debitAccountId = "";
   creditAccountId = "";
   notes = "";
+}
+
+function handleCurrencyChange(currency: string | undefined) {
+  if (!currency || currency === selectedCurrency) return;
+  selectedCurrency = currency;
+  if (!journalAccounts.some((account) => account.id === debitAccountId)) debitAccountId = "";
+  if (!journalAccounts.some((account) => account.id === creditAccountId)) creditAccountId = "";
 }
 
 function getAccountName(id?: string | null): string {
@@ -124,40 +147,50 @@ async function handleSaveNew() {
     toast.error(m.finance_ui_journal_accounts_must_differ());
     return;
   }
+  if (!selectedCurrency) {
+    toast.error(m.finance_ui_currency_select_placeholder());
+    return;
+  }
+  if (
+    !journalAccounts.some((account) => account.id === debitAccountId) ||
+    !journalAccounts.some((account) => account.id === creditAccountId)
+  ) {
+    toast.error(m.finance_ui_journal_accounts_must_differ());
+    return;
+  }
 
   isSubmitting = true;
   try {
-    const payload = {
+    const amountValue = String(amount);
+    const description = notes.trim() || (referenceNumber
+      ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
+      : m.finance_ui_journal_entry_default_description());
+    const payload: CreateJournalEntryRequest = {
       reference_number: referenceNumber.trim() || undefined,
       accounting_date: accountingDate,
-      amount: Number(amount),
-      currency: selectedCurrency,
+      amount: amountValue,
       currency_code: selectedCurrency,
       debit_account_id: debitAccountId,
       credit_account_id: creditAccountId,
-      description: notes.trim() || (referenceNumber
-        ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
-        : m.finance_ui_journal_entry_default_description()),
-      description_ar: notes.trim() || (referenceNumber
-        ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
-        : m.finance_ui_journal_entry_default_description()),
+      description,
+      description_ar: description,
       lines: [
         {
           account_id: debitAccountId,
-          debit: Number(amount),
-          credit: 0,
+          debit_amount: amountValue,
+          credit_amount: "0",
           description: notes.trim() || m.finance_ui_journal_from_account_description(),
         },
         {
           account_id: creditAccountId,
-          debit: 0,
-          credit: Number(amount),
+          debit_amount: "0",
+          credit_amount: amountValue,
           description: notes.trim() || m.finance_ui_journal_to_account_description(),
         },
       ],
     };
 
-    await api.createJournalEntry(payload as any);
+    await api.createJournalEntry(payload);
     toast.success(m.finance_ui_journal_entry_posted_success());
     clearForm();
     showAddForm = false;
@@ -232,7 +265,7 @@ const gridSource = $derived(
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (filterDate && row.accounting_date && !String(row.accounting_date).startsWith(filterDate)) {
+    if (filterDate && (!row.accounting_date || !String(row.accounting_date).startsWith(filterDate))) {
       return false;
     }
     return true;
@@ -383,7 +416,7 @@ function exportCsv() {
                   items={currencies}
                   getItemValue={(c) => c.code}
                   getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
-                  onchange={(val) => { if (val) selectedCurrency = val; }}
+                  onchange={handleCurrencyChange}
                   class="w-full h-8 text-xs bg-background border-border/60"
                 />
               </div>
@@ -394,7 +427,7 @@ function exportCsv() {
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_debit_account()}</Label>
                 <AccountSearchInput
                   bind:value={debitAccountId}
-                  {accounts}
+                  accounts={journalAccounts}
                   placeholder={m.finance_ui_debit_account_select_placeholder()}
                 />
               </div>
@@ -403,7 +436,7 @@ function exportCsv() {
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_credit_account()}</Label>
                 <AccountSearchInput
                   bind:value={creditAccountId}
-                  {accounts}
+                  accounts={journalAccounts}
                   placeholder={m.finance_ui_credit_account_select_placeholder()}
                 />
               </div>

@@ -1697,6 +1697,7 @@ export type PaymentDto = {
     amount: string;
     created_at: string;
     created_by?: string | null;
+    currency_code: string;
     enrollment_id?: string | null;
     fee_id?: string | null;
     id: string;
@@ -1704,6 +1705,7 @@ export type PaymentDto = {
     method: string;
     org_id: string;
     paid_at: string;
+    payer_name?: string | null;
     receipt_number?: string | null;
     reference?: string | null;
     student_id?: string | null;
@@ -1777,6 +1779,7 @@ export type ProcessPaymentRequest = {
     payer_phone?: string | null;
     payment_date?: string | null;
     receipt_number?: string | null;
+    receivable_account_id?: string | null;
     reference?: string | null;
     source?: string | null;
     student_id?: string | null;

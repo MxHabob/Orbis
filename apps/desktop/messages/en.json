@@ -2219,6 +2219,7 @@
   "finance_ui_disbursement_treasury_required": "Select a source cash or bank account.",
   "finance_ui_disbursements_load_failed": "Could not load disbursements.",
   "finance_ui_discount_amount_optional": "Discount amount (optional)",
+  "finance_ui_discount_amount_invalid": "Discount cannot be negative or exceed the fee amount.",
   "finance_ui_draft_status": "Draft",
   "finance_ui_due_amount": "Amount due",
   "finance_ui_due_date": "Due date",

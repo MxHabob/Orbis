@@ -24,6 +24,23 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
 }
 
+fn parse_optional_uuid(value: Option<String>, field: &str) -> Result<Option<Uuid>, String> {
+    value
+        .map(|value| Uuid::parse_str(&value).map_err(|_| format!("Invalid {field}")))
+        .transpose()
+}
+
+fn parse_account_type(value: &str) -> Result<AccountType, String> {
+    match value.to_lowercase().as_str() {
+        "asset" => Ok(AccountType::Asset),
+        "liability" => Ok(AccountType::Liability),
+        "equity" => Ok(AccountType::Equity),
+        "revenue" => Ok(AccountType::Revenue),
+        "expense" => Ok(AccountType::Expense),
+        _ => Err(format!("Invalid account_type: {value}")),
+    }
+}
+
 // ── DTOs ─────────────────────────────────────────────────────────
 
 #[derive(Deserialize, Debug)]
@@ -424,7 +441,6 @@ pub struct CurrencyDto {
     pub decimal_places: u32,
     pub is_base: bool,
     pub is_active: bool,
-    pub exchange_rate: f64,
 }
 
 // ── Request Inputs ───────────────────────────────────────────────
@@ -513,6 +529,7 @@ pub struct ProcessPaymentInput {
     pub student_id: Option<String>,
     pub enrollment_id: Option<String>,
     pub account_id: String,
+    pub receivable_account_id: Option<String>,
     pub amount: Decimal,
     pub method: String,
     pub payer_name: Option<String>,
@@ -564,14 +581,18 @@ pub async fn finance_create_account(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<AccountDto>, String> {
     let ctx = make_ctx(&state);
-    let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
-    let account_type = match request.account_type.to_lowercase().as_str() {
-        "asset" => AccountType::Asset,
-        "liability" => AccountType::Liability,
-        "equity" => AccountType::Equity,
-        "revenue" => AccountType::Revenue,
-        "expense" => AccountType::Expense,
-        _ => AccountType::Asset,
+    let parent_id = parse_optional_uuid(request.parent_id, "parent_id")?;
+    let account_type = parse_account_type(&request.account_type)?;
+    let currency = if let Some(currency) = request.currency {
+        currency
+    } else {
+        state
+            .policy_repo
+            .get_settings(ctx.tenant_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .finance
+            .currency
     };
 
     let a = state
@@ -584,7 +605,7 @@ pub async fn finance_create_account(
             request.name_ar,
             account_type,
             request.sub_type,
-            request.currency.unwrap_or_else(|| "SAR".to_string()),
+            currency,
             parent_id,
         )
         .await
@@ -630,15 +651,14 @@ pub async fn finance_update_account(
 ) -> Result<ApiResponse<AccountDto>, String> {
     let ctx = make_ctx(&state);
     let account_id = Uuid::parse_str(&id).map_err(|_| "Invalid account id")?;
-    let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
-    let account_type = match request.account_type.to_lowercase().as_str() {
-        "asset" => AccountType::Asset,
-        "liability" => AccountType::Liability,
-        "equity" => AccountType::Equity,
-        "revenue" => AccountType::Revenue,
-        "expense" => AccountType::Expense,
-        _ => AccountType::Asset,
-    };
+    let parent_id = parse_optional_uuid(request.parent_id, "parent_id")?;
+    let account_type = parse_account_type(&request.account_type)?;
+    let current = state
+        .finance_service
+        .get_account(ctx.tenant_id, account_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "Account not found".to_string())?;
 
     let account = state
         .finance_service
@@ -652,8 +672,10 @@ pub async fn finance_update_account(
             account_type,
             request.sub_type,
             parent_id,
-            request.currency.unwrap_or_else(|| "SAR".to_string()),
-            request.is_active.unwrap_or(true),
+            request
+                .currency
+                .unwrap_or_else(|| current.currency_code.clone()),
+            request.is_active.unwrap_or(current.is_active),
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -731,6 +753,16 @@ pub async fn finance_create_fee_template(
         .revenue_account_id
         .map(|id| Uuid::parse_str(&id).map_err(|_| "Invalid revenue_account_id"))
         .transpose()?;
+    let currency = match request.currency {
+        Some(currency) if !currency.trim().is_empty() => currency,
+        _ => state
+            .policy_repo
+            .get_settings(ctx.tenant_id)
+            .await
+            .map_err(|e| e.to_string())?
+            .finance
+            .currency,
+    };
     let tmpl = state
         .finance_service
         .create_fee_template(
@@ -741,7 +773,7 @@ pub async fn finance_create_fee_template(
             request.name_ar,
             request.category,
             request.default_amount,
-            request.currency.unwrap_or_else(|| "YER".to_string()),
+            currency,
             receivable_account_id,
             revenue_account_id,
             levels,
@@ -785,17 +817,16 @@ pub async fn finance_update_fee_template(
     }
     tmpl.default_amount = request.default_amount;
     if let Some(cur) = request.currency {
+        if cur.trim().is_empty() {
+            return Err("Currency cannot be empty".to_string());
+        }
         tmpl.currency_code = cur;
     }
-    if let Some(rev) = request
-        .revenue_account_id
-        .and_then(|s| Uuid::parse_str(&s).ok())
-    {
+    if let Some(rev) = parse_optional_uuid(request.revenue_account_id, "revenue_account_id")? {
         tmpl.revenue_account_id = rev;
     }
-    if let Some(rec) = request
-        .receivable_account_id
-        .and_then(|s| Uuid::parse_str(&s).ok())
+    if let Some(rec) =
+        parse_optional_uuid(request.receivable_account_id, "receivable_account_id")?
     {
         tmpl.receivable_account_id = rec;
     }
@@ -804,7 +835,7 @@ pub async fn finance_update_fee_template(
             "once" => FeeFrequency::Once,
             "monthly" => FeeFrequency::Monthly,
             "termly" | "per_term" => FeeFrequency::PerTerm,
-            _ => FeeFrequency::Annual,
+            _ => return Err(format!("Invalid fee frequency: {freq}")),
         };
     }
     if let Some(mand) = request.is_mandatory {
@@ -880,7 +911,7 @@ pub async fn finance_generate_fee(
     let ctx = make_ctx(&state);
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid period_id")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid student_id")?;
-    let enrollment_id = request.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
+    let enrollment_id = parse_optional_uuid(request.enrollment_id, "enrollment_id")?;
     let fee_template_id =
         Uuid::parse_str(&request.fee_template_id).map_err(|_| "Invalid fee_template_id")?;
     let due_date = NaiveDate::parse_from_str(&request.due_date, "%Y-%m-%d")
@@ -912,22 +943,10 @@ pub async fn finance_list_student_fees(
     let ctx = make_ctx(&state);
     let f = filter.unwrap_or_default();
     let query_filter = StudentFeeFilter {
-        student_id: f
-            .student_id
-            .as_deref()
-            .and_then(|s| Uuid::parse_str(s).ok()),
-        enrollment_id: f
-            .enrollment_id
-            .as_deref()
-            .and_then(|s| Uuid::parse_str(s).ok()),
-        fee_template_id: f
-            .fee_template_id
-            .as_deref()
-            .and_then(|s| Uuid::parse_str(s).ok()),
-        period_id: f
-            .period_id
-            .as_deref()
-            .and_then(|s| Uuid::parse_str(s).ok()),
+        student_id: parse_optional_uuid(f.student_id, "student_id")?,
+        enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
+        fee_template_id: parse_optional_uuid(f.fee_template_id, "fee_template_id")?,
+        period_id: parse_optional_uuid(f.period_id, "period_id")?,
         status: f.status,
         is_overdue: f.is_overdue,
         only_unpaid: None,
@@ -958,9 +977,11 @@ pub async fn finance_process_payment(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<PaymentDto>, String> {
     let ctx = make_ctx(&state);
-    let fee_id = request.fee_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let student_id = request.student_id.and_then(|s| Uuid::parse_str(&s).ok());
-    let enrollment_id = request.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
+    let fee_id = parse_optional_uuid(request.fee_id, "fee_id")?;
+    let student_id = parse_optional_uuid(request.student_id, "student_id")?;
+    let enrollment_id = parse_optional_uuid(request.enrollment_id, "enrollment_id")?;
+    let receivable_account_id =
+        parse_optional_uuid(request.receivable_account_id, "receivable_account_id")?;
     let account_id = Uuid::parse_str(&request.account_id).map_err(|_| "Invalid account_id")?;
     let payment_date = request
         .payment_date
@@ -988,6 +1009,7 @@ pub async fn finance_process_payment(
             student_id,
             enrollment_id,
             account_id,
+            receivable_account_id,
             request.amount,
             method,
             request.payer_name,
@@ -1014,35 +1036,34 @@ pub async fn finance_list_payments(
     let from_date = f
         .from_date
         .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
-        .and_then(|nd| nd.and_hms_opt(0, 0, 0))
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid from_date; expected YYYY-MM-DD")?
+        .and_then(|date| date.and_hms_opt(0, 0, 0))
         .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
     let to_date = f
         .to_date
         .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
-        .and_then(|nd| nd.and_hms_opt(23, 59, 59))
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid to_date; expected YYYY-MM-DD")?
+        .and_then(|date| date.and_hms_opt(23, 59, 59))
         .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
     let method = match f.method.as_deref() {
+        None => None,
         Some("cash") => Some(PaymentMethod::Cash),
         Some("bank_transfer") | Some("bank") => Some(PaymentMethod::BankTransfer),
         Some("check") | Some("cheque") => Some(PaymentMethod::Check),
         Some("credit_card") | Some("card") => Some(PaymentMethod::CreditCard),
         Some("mada") => Some(PaymentMethod::Mada),
         Some("apple_pay") => Some(PaymentMethod::ApplePay),
-        _ => None,
+        Some(value) => return Err(format!("Invalid payment method filter: {value}")),
     };
 
     let query_filter = PaymentFilter {
-        student_id: f
-            .student_id
-            .as_deref()
-            .and_then(|s| Uuid::parse_str(s).ok()),
-        enrollment_id: f
-            .enrollment_id
-            .as_deref()
-            .and_then(|s| Uuid::parse_str(s).ok()),
-        fee_id: f.fee_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()),
+        student_id: parse_optional_uuid(f.student_id, "student_id")?,
+        enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
+        fee_id: parse_optional_uuid(f.fee_id, "fee_id")?,
         method,
         from_date,
         to_date,
@@ -1088,7 +1109,6 @@ pub async fn finance_list_currencies(
             decimal_places: c.decimal_places,
             is_base: c.is_base,
             is_active: c.is_active,
-            exchange_rate: if c.is_base { 1.0 } else { 1.0 },
         })
         .collect()))
 }
@@ -1237,73 +1257,58 @@ pub async fn finance_create_journal_entry(
 ) -> Result<ApiResponse<JournalEntryDto>, String> {
     let ctx = make_ctx(&state);
     let now = chrono::Utc::now();
-    let entry_id = Uuid::new_v4();
-
-    let accounting_date = if let Some(ref d) = request.accounting_date {
-        chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").unwrap_or_else(|_| now.date_naive())
-    } else {
-        now.date_naive()
-    };
+    let accounting_date = request
+        .accounting_date
+        .as_deref()
+        .map(|date| chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid accounting_date; expected YYYY-MM-DD")?
+        .unwrap_or_else(|| now.date_naive());
 
     let currency_code = request
         .currency_code
         .or(request.currency)
-        .unwrap_or_else(|| "YER".to_string());
+        .filter(|currency| !currency.trim().is_empty())
+        .ok_or("Journal entry currency is required")?;
 
-    let exchange_rate = request.exchange_rate.unwrap_or(Decimal::ONE);
-
-    let debit_account_id = request
-        .debit_account_id
-        .and_then(|id| Uuid::parse_str(&id).ok())
-        .unwrap_or(Uuid::nil());
-
-    let credit_account_id = request
-        .credit_account_id
-        .and_then(|id| Uuid::parse_str(&id).ok())
-        .unwrap_or(Uuid::nil());
-
-    let description = request.description.unwrap_or_default();
+    let description = request
+        .description
+        .filter(|description| !description.trim().is_empty())
+        .unwrap_or_else(|| "Manual journal entry".to_string());
     let description_ar = request.description_ar;
 
-    let lines: Vec<JournalEntryLine> = if let Some(ls) = request.lines {
-        if !ls.is_empty() {
-            ls.into_iter()
-                .map(|l| JournalEntryLine {
+    let lines: Vec<JournalEntryLine> = match request.lines {
+        Some(lines) if !lines.is_empty() => lines
+            .into_iter()
+            .map(|line| {
+                Ok(JournalEntryLine {
                     id: Uuid::new_v4(),
-                    account_id: Uuid::parse_str(&l.account_id).unwrap_or(Uuid::nil()),
-                    debit_amount: l.debit_amount,
-                    credit_amount: l.credit_amount,
-                    description: l.description,
-                    entity_type: l.entity_type,
-                    entity_id: l.entity_id.and_then(|id| Uuid::parse_str(&id).ok()),
+                    account_id: Uuid::parse_str(&line.account_id)
+                        .map_err(|_| "Invalid account_id in journal line")?,
+                    debit_amount: line.debit_amount,
+                    credit_amount: line.credit_amount,
+                    description: line.description,
+                    entity_type: line.entity_type,
+                    entity_id: parse_optional_uuid(line.entity_id, "entity_id")?,
                 })
-                .collect()
-        } else {
-            let amount = request.amount.unwrap_or(Decimal::ZERO);
+            })
+            .collect::<Result<Vec<_>, String>>()?,
+        _ => {
+            let amount = request
+                .amount
+                .filter(|amount| *amount > Decimal::ZERO)
+                .ok_or("Journal entry amount must be greater than zero")?;
+            let debit_account_id = request
+                .debit_account_id
+                .as_deref()
+                .ok_or("Debit account is required")
+                .and_then(|id| Uuid::parse_str(id).map_err(|_| "Invalid debit_account_id"))?;
+            let credit_account_id = request
+                .credit_account_id
+                .as_deref()
+                .ok_or("Credit account is required")
+                .and_then(|id| Uuid::parse_str(id).map_err(|_| "Invalid credit_account_id"))?;
             vec![
-                JournalEntryLine {
-                    id: Uuid::new_v4(),
-                    account_id: debit_account_id,
-                    debit_amount: amount,
-                    credit_amount: Decimal::ZERO,
-                    description: Some(description.clone()),
-                    entity_type: None,
-                    entity_id: None,
-                },
-                JournalEntryLine {
-                    id: Uuid::new_v4(),
-                    account_id: credit_account_id,
-                    debit_amount: Decimal::ZERO,
-                    credit_amount: amount,
-                    description: Some(description.clone()),
-                    entity_type: None,
-                    entity_id: None,
-                },
-            ]
-        }
-    } else {
-        let amount = request.amount.unwrap_or(Decimal::ZERO);
-        vec![
             JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id: debit_account_id,
@@ -1322,14 +1327,28 @@ pub async fn finance_create_journal_entry(
                 entity_type: None,
                 entity_id: None,
             },
-        ]
+            ]
+        }
     };
 
-    let total_amount = if let Some(amt) = request.amount {
-        amt
-    } else {
-        lines.iter().map(|l| l.debit_amount).sum()
-    };
+    let total_debit: Decimal = lines.iter().map(|line| line.debit_amount).sum();
+    let amount = request.amount.unwrap_or(total_debit);
+    let debit_account_id = parse_optional_uuid(request.debit_account_id, "debit_account_id")?
+        .or_else(|| {
+            lines
+                .iter()
+                .find(|line| line.debit_amount > Decimal::ZERO)
+                .map(|line| line.account_id)
+        })
+        .ok_or("Debit account is required")?;
+    let credit_account_id = parse_optional_uuid(request.credit_account_id, "credit_account_id")?
+        .or_else(|| {
+            lines
+                .iter()
+                .find(|line| line.credit_amount > Decimal::ZERO)
+                .map(|line| line.account_id)
+        })
+        .ok_or("Credit account is required")?;
 
     let reference_number = request
         .reference_number
@@ -1337,14 +1356,14 @@ pub async fn finance_create_journal_entry(
         .unwrap_or_else(|| format!("JV-{}", now.timestamp_millis()));
 
     let entry = JournalEntry {
-        id: entry_id,
+        id: Uuid::new_v4(),
         org_id: ctx.tenant_id,
         reference_number,
         accounting_date,
-        amount: total_amount,
+        amount,
         currency_code,
-        exchange_rate,
-        base_amount: total_amount * exchange_rate,
+        exchange_rate: Decimal::ONE,
+        base_amount: amount,
         debit_account_id,
         credit_account_id,
         description,
@@ -1364,10 +1383,9 @@ pub async fn finance_create_journal_entry(
         version: 1,
     };
 
-    entry.validate_balance().map_err(|e| e)?;
-    state
-        .journal_entry_repo
-        .save(&entry)
+    let entry = state
+        .finance_service
+        .create_manual_journal_entry(&ctx, ctx.tenant_id, entry)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1521,19 +1539,20 @@ pub async fn finance_get_account_statement(
     let start_date = filter
         .start_date
         .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid start_date; expected YYYY-MM-DD")?;
     let end_date = filter
         .end_date
         .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
-    let account_id = filter
-        .account_id
-        .as_deref()
-        .and_then(|id| Uuid::parse_str(id).ok());
-    let entity_id = filter
-        .entity_id
-        .as_deref()
-        .and_then(|id| Uuid::parse_str(id).ok());
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid end_date; expected YYYY-MM-DD")?;
+    if start_date.zip(end_date).is_some_and(|(start, end)| start > end) {
+        return Err("start_date must be on or before end_date".to_string());
+    }
+    let account_id = parse_optional_uuid(filter.account_id, "account_id")?;
+    let entity_id = parse_optional_uuid(filter.entity_id, "entity_id")?;
 
     let domain_filter = StatementFilter {
         account_id,
@@ -1594,13 +1613,13 @@ pub async fn finance_process_disbursement(
         Uuid::parse_str(&request.treasury_account_id).map_err(|_| "Invalid treasury_account_id")?;
     let beneficiary_account_id = Uuid::parse_str(&request.beneficiary_account_id)
         .map_err(|_| "Invalid beneficiary_account_id")?;
-    let beneficiary_id = request
-        .beneficiary_id
-        .and_then(|id| Uuid::parse_str(&id).ok());
+    let beneficiary_id = parse_optional_uuid(request.beneficiary_id, "beneficiary_id")?;
     let voucher_date = request
         .voucher_date
         .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid voucher_date; expected YYYY-MM-DD")?;
 
     let method = match request
         .payment_method
@@ -1646,8 +1665,8 @@ pub async fn finance_create_sub_account(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<AccountDto>, String> {
     let ctx = make_ctx(&state);
-    let parent_id = request.parent_id.and_then(|id| Uuid::parse_str(&id).ok());
-    let entity_id = request.entity_id.and_then(|id| Uuid::parse_str(&id).ok());
+    let parent_id = parse_optional_uuid(request.parent_id, "parent_id")?;
+    let entity_id = parse_optional_uuid(request.entity_id, "entity_id")?;
 
     let input = CreateSubAccountInput {
         parent_id,
@@ -1675,15 +1694,16 @@ pub async fn finance_settle_gateway_payout(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<JournalEntryDto>, String> {
     let ctx = make_ctx(&state);
-    let clearing_account_id = request
-        .clearing_account_id
-        .and_then(|id| Uuid::parse_str(&id).ok());
+    let clearing_account_id =
+        parse_optional_uuid(request.clearing_account_id, "clearing_account_id")?;
     let bank_account_id =
         Uuid::parse_str(&request.bank_account_id).map_err(|_| "Invalid bank_account_id")?;
     let accounting_date = request
         .accounting_date
         .as_deref()
-        .and_then(|d| NaiveDate::parse_from_str(d, "%Y-%m-%d").ok());
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid accounting_date; expected YYYY-MM-DD")?;
 
     let input = SettleGatewayPayoutInput {
         clearing_account_id,

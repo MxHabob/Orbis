@@ -15,6 +15,7 @@ import { onMount } from "svelte";
 import { api, queryClient } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import type { StudentFeeDto, FeeTemplateDto, DiscountTemplateDto, AcademicPeriodDto } from "$lib/api/types";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -77,6 +78,15 @@ let refundNotes = $state("");
 let searchQuery = $state("");
 let statusFilter = $state<"all" | "pending" | "partially_paid" | "paid" | "overdue">("all");
 
+function getFeeCurrency(fee: StudentFeeDto) {
+  const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
+  return template?.currency || (fee as StudentFeeDto & { currency?: string }).currency || orgContext.baseCurrency || "";
+}
+
+function formatFeeAmount(amount: number, currency: string) {
+  return currency ? formatCurrency(amount, currency) : amount.toLocaleString();
+}
+
 onMount(async () => {
   if (orgId) {
     await loadData();
@@ -87,21 +97,22 @@ async function loadData() {
   isLoading = true;
   try {
     const [feesList, templatesList, discountsList, enrollmentsList, periodsList] = await Promise.all([
-      api.listStudentFees().catch(() => []),
-      api.listFeeTemplates().catch(() => []),
-      api.listDiscountTemplates().catch(() => []),
-      api.listEnrollments ? api.listEnrollments().catch(() => []) : Promise.resolve([]),
-      api.listAcademicPeriods ? api.listAcademicPeriods().catch(() => []) : Promise.resolve([]),
+      api.listStudentFees(),
+      api.listFeeTemplates(),
+      api.listDiscountTemplates(),
+      api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
+      api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
     ]);
 
-    fees = feesList || [];
-    feeTemplates = templatesList || [];
-    discountTemplates = discountsList || [];
-    students = (enrollmentsList || []).map((e: any) => ({
+    fees = feesList;
+    feeTemplates = templatesList;
+    discountTemplates = discountsList;
+    students = enrollmentsList.map((e: any) => ({
       id: String(e.id),
+      student_id: String(e.student_id),
       full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
     }));
-    periods = periodsList || [];
+    periods = periodsList;
 
     if (periods.length > 0 && !formPeriodId) {
       formPeriodId = periods[0].id;
@@ -115,21 +126,22 @@ async function loadData() {
 }
 
 // ── KPI Summary Calculations ───────────────────────────────────────────
-const totalFeesAmount = $derived(
-  fees.reduce((sum, f) => sum + Number(f.net_amount ?? f.original_amount ?? 0), 0)
-);
-
-const totalPaidAmount = $derived(
-  fees.reduce((sum, f) => sum + Number(f.paid_amount ?? 0), 0)
-);
-
-const totalBalanceDue = $derived(
-  Math.max(0, totalFeesAmount - totalPaidAmount)
-);
-
-const collectionRate = $derived(
-  totalFeesAmount > 0 ? Math.round((totalPaidAmount / totalFeesAmount) * 100) : 0
-);
+const feeTotals = $derived.by(() => {
+  const totals = new Map<string, { currency: string; due: number; paid: number; balance: number }>();
+  for (const fee of fees) {
+    const currency = getFeeCurrency(fee);
+    const key = currency || "unspecified";
+    const total = totals.get(key) || { currency, due: 0, paid: 0, balance: 0 };
+    total.due += Number(fee.net_amount ?? fee.original_amount ?? 0);
+    total.paid += Number(fee.paid_amount ?? 0);
+    total.balance += Number(fee.balance_due ?? Math.max(0, Number(fee.net_amount ?? fee.original_amount ?? 0) - Number(fee.paid_amount ?? 0)));
+    totals.set(key, total);
+  }
+  return [...totals.values()].map((total) => ({
+    ...total,
+    collectionRate: total.due > 0 ? Math.round((total.paid / total.due) * 100) : 0,
+  }));
+});
 
 // ── Form Actions ───────────────────────────────────────────────────────
 async function handleCreateFee() {
@@ -141,28 +153,38 @@ async function handleCreateFee() {
     toast.error(m.finance_ui_fee_template_required());
     return;
   }
+  if (!formPeriodId) {
+    toast.error(m.finance_ui_period_placeholder());
+    return;
+  }
+
+  const template = feeTemplates.find((item) => item.id === formTemplateId);
+  const enrollment = students.find((student) => student.id === formStudentId);
+  if (!template) {
+    toast.error(m.finance_ui_fee_template_required());
+    return;
+  }
+  if (!enrollment) {
+    toast.error(m.finance_ui_student_required());
+    return;
+  }
+  const origAmt = Number(template.default_amount);
+  const discAmt = Number(formDiscountAmount || 0);
+  if (discAmt < 0 || discAmt > origAmt) {
+    toast.error(m.finance_ui_discount_amount_invalid());
+    return;
+  }
 
   isSubmitting = true;
   try {
-    const template = feeTemplates.find((t) => t.id === formTemplateId);
-    const origAmt = Number(template?.amount || 0);
-    const discAmt = Number(formDiscountAmount || 0);
-    const netAmt = Math.max(0, origAmt - discAmt);
-
-    const payload = {
+    await api.generateStudentFee({
       enrollment_id: formStudentId,
+      student_id: enrollment.student_id,
+      period_id: formPeriodId,
       fee_template_id: formTemplateId,
-      academic_period_id: formPeriodId || undefined,
-      original_amount: origAmt,
-      discount_amount: discAmt,
-      net_amount: netAmt,
-      paid_amount: 0,
-      balance_due: netAmt,
+      discount_amount: discAmt > 0 ? String(discAmt) : undefined,
       due_date: formDueDate,
-      status: "unpaid",
-    };
-
-    await api.createStudentFee(payload as any);
+    });
     toast.success(m.finance_ui_fee_assigned_success());
     activeForm = "none";
     formStudentId = "";
@@ -241,7 +263,7 @@ const gridSource = $derived(
     const net = Number(f.net_amount ?? f.original_amount ?? 0);
     const paid = Number(f.paid_amount ?? 0);
     const balance = Number(f.balance_due ?? Math.max(0, net - paid));
-    const curr = f.currency || "YER";
+    const curr = getFeeCurrency(f);
 
     let statusLabel = m.finance_ui_fee_status_unpaid();
     if (f.status === "paid" || balance <= 0) {
@@ -324,7 +346,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-primary"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-foreground">
-          {formatCurrency(totalFeesAmount, "YER")}
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{formatFeeAmount(totals.due, totals.currency)}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
 
@@ -334,7 +362,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400">
-          {formatCurrency(totalPaidAmount, "YER")}
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{formatFeeAmount(totals.paid, totals.currency)}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
 
@@ -344,7 +378,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-rose-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-rose-600 dark:text-rose-400">
-          {formatCurrency(totalBalanceDue, "YER")}
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{formatFeeAmount(totals.balance, totals.currency)}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
 
@@ -354,7 +394,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
-          {collectionRate}%
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{totals.collectionRate}%{totals.currency ? ` (${totals.currency})` : ""}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
     </div>
@@ -490,7 +536,7 @@ function exportCsv() {
                   placeholder={m.finance_ui_fee_item_select_placeholder()}
                   items={feeTemplates}
                   getItemValue={(t) => t.id}
-                  getItemLabel={(t) => `${t.name_ar || t.name} (${formatCurrency(Number(t.amount || 0), "YER")})`}
+                  getItemLabel={(t) => `${t.name_ar || t.name} (${formatFeeAmount(Number(t.default_amount || 0), t.currency)})`}
                   onchange={(val) => { if (val) formTemplateId = val; }}
                   class="w-full h-8 text-xs bg-background border-border/60"
                 />
@@ -582,7 +628,7 @@ function exportCsv() {
                     return m.finance_ui_installment_fee_option({
                       student: st?.full_name || m.finance_ui_student(),
                       fee: f.fee_type_name || m.finance_ui_fees(),
-                      amount: formatCurrency(Number(f.net_amount || 0), 'YER'),
+                      amount: formatFeeAmount(Number(f.net_amount || 0), getFeeCurrency(f)),
                     });
                   }}
                   onchange={(val) => {
@@ -667,7 +713,7 @@ function exportCsv() {
                     return m.finance_ui_refund_fee_option({
                       student: st?.full_name || m.finance_ui_student(),
                       fee: f.fee_type_name || m.finance_ui_fees(),
-                      amount: formatCurrency(Number(f.paid_amount || 0), 'YER'),
+                      amount: formatFeeAmount(Number(f.paid_amount || 0), getFeeCurrency(f)),
                     });
                   }}
                   onchange={(val) => {

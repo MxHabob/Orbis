@@ -2219,6 +2219,7 @@
   "finance_ui_disbursement_treasury_required": "يرجى اختيار حساب الصندوق أو البنك المُصدِر.",
   "finance_ui_disbursements_load_failed": "تعذر تحميل سندات الصرف.",
   "finance_ui_discount_amount_optional": "مبلغ الخصم (اختياري)",
+  "finance_ui_discount_amount_invalid": "لا يمكن أن يكون الخصم سالبًا أو أكبر من قيمة الرسوم.",
   "finance_ui_draft_status": "مسودة",
   "finance_ui_due_amount": "المبلغ المستحق",
   "finance_ui_due_date": "تاريخ الاستحقاق",

@@ -12,6 +12,8 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
+import type { CurrencyDto } from "$lib/api/types";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -52,8 +54,8 @@ let { orgId }: { orgId: string } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
 let allAccounts = $state<AccountNode[]>([]);
-let currencies = $state<any[]>([]);
-let baseCurrency = $state("YER");
+let currencies = $state<CurrencyDto[]>([]);
+let baseCurrency = $state(orgContext.baseCurrency || "");
 let isLoading = $state(true);
 let isSubmitting = $state(false);
 let viewMode = $state<"tree" | "grid">("tree");
@@ -71,7 +73,7 @@ let formNameEn = $state("");
 let formAccountType = $state("asset"); // asset | liability | equity | revenue | expense
 let formSubType = $state<string>("general"); // general | cash | bank | supplier | customer | employee
 let formAccountLevel = $state<"primary" | "sub">("sub"); // رئيسي أو فرعي
-let formCurrency = $state("YER");
+let formCurrency = $state(orgContext.baseCurrency || "");
 
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
@@ -90,15 +92,16 @@ async function loadData() {
   isLoading = true;
   try {
     const [accs, currs] = await Promise.all([
-      api.listAccounts().catch(() => []),
-      api.listCurrencies().catch(() => []),
+      api.listAccounts(),
+      api.listCurrencies(),
     ]);
 
-    allAccounts = accs || [];
-    currencies = currs || [];
-
-    const base = currs.find((c: any) => c.is_base === 1 || c.is_base === true);
-    if (base) baseCurrency = base.code;
+    allAccounts = accs;
+    currencies = currs;
+    if (orgContext.baseCurrency) {
+      baseCurrency = orgContext.baseCurrency;
+      if (!formCurrency) formCurrency = orgContext.baseCurrency;
+    }
 
     // Auto-select first root account if none selected
     if (!selectedAccount && allAccounts.length > 0) {
@@ -558,7 +561,7 @@ function exportAccountsCsv() {
                     <SearchableSelect
                       value={formCurrency}
                       placeholder={m.finance_ui_currency_placeholder()}
-                      items={currencies.length > 0 ? currencies : [{ code: 'YER', name: m.finance_ui_currency_yer() }]}
+                      items={currencies}
                       getItemValue={(c) => c.code}
                       getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
                       onchange={(val) => { if (val) formCurrency = val; }}

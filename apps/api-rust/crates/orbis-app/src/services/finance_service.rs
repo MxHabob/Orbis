@@ -34,6 +34,13 @@ fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
         ))
 }
 
+fn is_receivable_account(account: &Account, org_id: Uuid, currency_code: &str) -> bool {
+    account.org_id == org_id
+        && account.is_active
+        && !is_cash_or_bank_treasury(account, org_id)
+        && account.currency_code.eq_ignore_ascii_case(currency_code)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AccountPurpose {
@@ -222,6 +229,7 @@ impl FinanceService {
         student_id: Option<Uuid>,
         enrollment_id: Option<Uuid>,
         account_id: Uuid,
+        receivable_account_id: Option<Uuid>,
         amount: Decimal,
         method: PaymentMethod,
         payer_name: Option<String>,
@@ -268,6 +276,38 @@ impl FinanceService {
         }
         let transaction_currency = account.currency_code;
 
+        if receivable_account_id.is_some() && fee_id.is_some() {
+            return Err(DomainError::Validation(
+                "A direct receivable account cannot be combined with a student fee".into(),
+            ));
+        }
+
+        let direct_receivable_account = if let Some(receivable_id) = receivable_account_id {
+            if receivable_id == account_id {
+                return Err(DomainError::Validation(
+                    "Receiving and receivable accounts must be different".into(),
+                ));
+            }
+            let receivable = self
+                .account_repo
+                .find_by_id(receivable_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "Receivable account {} not found",
+                        receivable_id
+                    ))
+                })?;
+            if !is_receivable_account(&receivable, org_id, &transaction_currency) {
+                return Err(DomainError::Validation(
+                    "Receivable account must be an active, non-treasury account in the same organization and currency".into(),
+                ));
+            }
+            Some(receivable.id)
+        } else {
+            None
+        };
+
         let mut exchange_rate_value = Decimal::from(1);
         if transaction_currency != base_currency {
             let rate_opt = self
@@ -306,7 +346,7 @@ impl FinanceService {
         }
 
         // 4. Update StudentFee if fee_id is provided
-        let mut receivable_acct = account_id;
+        let mut receivable_acct = direct_receivable_account.unwrap_or(account_id);
         let mut student_resolved_id = student_id;
         let mut enrollment_resolved_id = enrollment_id;
 
@@ -342,14 +382,26 @@ impl FinanceService {
         let base_amount = amount * exchange_rate_value;
 
         // 5. Construct balanced multi-line double entry voucher
+        let is_account_receipt = direct_receivable_account.is_some();
+        let entity_type = student_resolved_id.map(|_| "student".to_string());
+        let receipt_description = if is_account_receipt {
+            "General account receipt"
+        } else {
+            "Payment Receipt for Student"
+        };
+        let receipt_description_ar = if is_account_receipt {
+            "سند قبض على حساب"
+        } else {
+            "إيصال قبض دفعة رسوم دراسية"
+        };
         let lines = vec![
             JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id, // Debit Cash/Bank
                 debit_amount: amount,
                 credit_amount: Decimal::ZERO,
-                description: Some("Payment received for student fee".into()),
-                entity_type: Some("student".into()),
+                description: Some(receipt_description.into()),
+                entity_type: entity_type.clone(),
                 entity_id: student_resolved_id,
             },
             JournalEntryLine {
@@ -357,8 +409,12 @@ impl FinanceService {
                 account_id: receivable_acct, // Credit Accounts Receivable / Revenue
                 debit_amount: Decimal::ZERO,
                 credit_amount: amount,
-                description: Some("AR settlement".into()),
-                entity_type: Some("student".into()),
+                description: Some(if is_account_receipt {
+                    "General account receipt"
+                } else {
+                    "AR settlement"
+                }.into()),
+                entity_type,
                 entity_id: student_resolved_id,
             },
         ];
@@ -377,9 +433,13 @@ impl FinanceService {
             base_amount,
             debit_account_id: account_id,
             credit_account_id: receivable_acct,
-            description: "Payment Receipt for Student".into(),
-            description_ar: Some("إيصال قبض دفعة رسوم دراسية".into()),
-            source_type: "student_payment".into(),
+            description: receipt_description.into(),
+            description_ar: Some(receipt_description_ar.into()),
+            source_type: if is_account_receipt {
+                "account_receipt".into()
+            } else {
+                "student_payment".into()
+            },
             source_id: Some(payment_id),
             status: JournalPostingStatus::Posted,
             lines,
@@ -1679,6 +1739,101 @@ impl FinanceService {
         })
     }
 
+    pub async fn create_manual_journal_entry(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        mut entry: JournalEntry,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
+
+        if entry.org_id != org_id || entry.lines.is_empty() {
+            return Err(DomainError::Validation(
+                "A manual journal entry must belong to the organization and contain lines".into(),
+            ));
+        }
+
+        let mut total_debit = Decimal::ZERO;
+        let mut total_credit = Decimal::ZERO;
+        for line in &entry.lines {
+            if line.debit_amount < Decimal::ZERO
+                || line.credit_amount < Decimal::ZERO
+                || (line.debit_amount > Decimal::ZERO && line.credit_amount > Decimal::ZERO)
+            {
+                return Err(DomainError::Validation(
+                    "Each journal line must contain one non-negative debit or credit amount".into(),
+                ));
+            }
+
+            let account = self
+                .account_repo
+                .find_by_id(line.account_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "Journal account {} was not found",
+                        line.account_id
+                    ))
+                })?;
+            if account.org_id != org_id
+                || !account.is_active
+                || !account.currency_code.eq_ignore_ascii_case(&entry.currency_code)
+            {
+                return Err(DomainError::Validation(
+                    "Journal accounts must be active, belong to the same organization, and use the entry currency".into(),
+                ));
+            }
+
+            total_debit += line.debit_amount;
+            total_credit += line.credit_amount;
+        }
+
+        if total_debit <= Decimal::ZERO || total_debit != total_credit {
+            return Err(DomainError::Validation(
+                "Journal entry debits and credits must be equal and greater than zero".into(),
+            ));
+        }
+        if entry.amount != total_debit {
+            return Err(DomainError::Validation(
+                "Journal entry amount must equal its total debit".into(),
+            ));
+        }
+        if !entry.lines.iter().any(|line| {
+            line.account_id == entry.debit_account_id && line.debit_amount > Decimal::ZERO
+        }) || !entry.lines.iter().any(|line| {
+            line.account_id == entry.credit_account_id && line.credit_amount > Decimal::ZERO
+        }) {
+            return Err(DomainError::Validation(
+                "Journal debit and credit account ids must match their entry lines".into(),
+            ));
+        }
+
+        let settings = self.policy_repo.get_settings(org_id).await?;
+        let base_currency = settings.finance.currency;
+        if entry.currency_code.eq_ignore_ascii_case(&base_currency) {
+            entry.exchange_rate = Decimal::ONE;
+        } else {
+            let rate = self
+                .currency_repo
+                .get_exchange_rate(org_id, &base_currency, &entry.currency_code)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "Exchange rate not found from {} to {}",
+                        base_currency, entry.currency_code
+                    ))
+                })?;
+            entry.exchange_rate = rate.rate;
+        }
+        entry.base_amount = entry.amount * entry.exchange_rate;
+
+        entry.validate_balance().map_err(DomainError::Validation)?;
+        self.journal_repo.save(&entry).await?;
+        Ok(entry)
+    }
+
     /// Process a disbursement voucher (سند صرف)
     pub async fn process_disbursement(
         &self,
@@ -1732,10 +1887,27 @@ impl FinanceService {
                 "Organization mismatch for accounts".into(),
             ));
         }
+        if !beneficiary.is_active {
+            return Err(DomainError::Validation(
+                "Disbursement beneficiary account must be active".into(),
+            ));
+        }
+        if treasury.id == beneficiary.id {
+            return Err(DomainError::Validation(
+                "Disbursement treasury and beneficiary accounts must be different".into(),
+            ));
+        }
 
         let currency = input
             .currency_code
             .unwrap_or_else(|| treasury.currency_code.clone());
+        if !treasury.currency_code.eq_ignore_ascii_case(&currency)
+            || !beneficiary.currency_code.eq_ignore_ascii_case(&currency)
+        {
+            return Err(DomainError::Validation(
+                "Disbursement accounts and voucher must use the same currency".into(),
+            ));
+        }
 
         // 2. Multi-line balanced entry
         let lines = vec![
@@ -2518,5 +2690,22 @@ mod treasury_account_tests {
         assert!(!is_cash_or_bank_treasury(&account, org_id));
         account.is_active = true;
         assert!(!is_cash_or_bank_treasury(&account, Uuid::new_v4()));
+    }
+
+    #[test]
+    fn accepts_only_active_non_treasury_accounts_with_matching_currency_as_receivables() {
+        let org_id = Uuid::new_v4();
+        let mut account = account(org_id);
+
+        assert!(is_receivable_account(&account, org_id, "yer"));
+        assert!(!is_receivable_account(&account, Uuid::new_v4(), "YER"));
+        assert!(!is_receivable_account(&account, org_id, "SAR"));
+
+        account.is_active = false;
+        assert!(!is_receivable_account(&account, org_id, "YER"));
+
+        account.is_active = true;
+        account.sub_type = Some("cash".into());
+        assert!(!is_receivable_account(&account, org_id, "YER"));
     }
 }

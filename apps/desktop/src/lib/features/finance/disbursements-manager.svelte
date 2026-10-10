@@ -13,6 +13,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
+import type { AccountDto, CurrencyDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -58,24 +59,38 @@ function createDisbursementLine(): DisbursementLine {
 
 // ── State ──────────────────────────────────────────────────────────────
 let disbursements = $state<any[]>([]);
-let accounts = $state<any[]>([]);
-let treasuries = $state<any[]>([]);
-let currencies = $state<{ code: string; name: string }[]>([
-  { code: "YER", name: m.finance_ui_currency_yer() },
-  { code: "USD", name: m.finance_ui_currency_usd() },
-  { code: "SAR", name: m.finance_ui_currency_sar() },
-]);
+let accounts = $state<AccountDto[]>([]);
+let treasuries = $state<AccountDto[]>([]);
+let currencies = $state<CurrencyDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
 let showAddForm = $state(false);
 
 // Form Fields
 let referenceNumber = $state("");
-let voucherDate = $state("");
-let selectedCurrency = $state("YER");
+let voucherDate = $state(getLocalDateInputValue());
 let treasuryAccountId = $state(""); // Credit: Cash/Bank
 let paymentMethod = $state<"Cash" | "Bank" | "Check">("Cash");
 let disbursementLines = $state<DisbursementLine[]>([createDisbursementLine()]);
+function getLocalDateInputValue(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
+const selectedCurrency = $derived(
+  treasuries.find((account) => String(account.id) === String(treasuryAccountId))?.currency || "",
+);
+const availableCurrencies = $derived(
+  currencies.filter((currency) =>
+    treasuries.some((account) => account.currency.toUpperCase() === currency.code.toUpperCase())
+  ),
+);
+const disbursementAccounts = $derived(
+  accounts.filter((account) =>
+    account.is_active &&
+    !isCashOrBankAccount(account) &&
+    account.currency.toUpperCase() === selectedCurrency.toUpperCase()
+  ),
+);
 const calculatedTotal = $derived(
   disbursementLines.reduce((total, line) => total + (Number(line.amount) || 0), 0),
 );
@@ -83,7 +98,7 @@ const calculatedTotal = $derived(
 // Filters
 let searchQuery = $state("");
 let methodFilter = $state("all");
-let filterDate = $state("");
+let filterDate = $state(getLocalDateInputValue());
 
 // Print
 let printDialogOpen = $state(false);
@@ -97,21 +112,23 @@ onMount(async () => {
 async function loadData() {
   isLoading = true;
   try {
-    const [entriesList, accountsList] = await Promise.all([
-      api.listJournalEntries().catch(() => []),
-      api.listAccounts().catch(() => []),
+    const [entriesList, accountsList, currenciesList] = await Promise.all([
+      api.listJournalEntries(),
+      api.listAccounts(),
+      api.listCurrencies(),
     ]);
 
-    accounts = accountsList || [];
-    treasuries = (accountsList || []).filter(isCashOrBankAccount);
+    accounts = accountsList;
+    treasuries = accountsList.filter(isCashOrBankAccount);
+    currencies = currenciesList;
 
-    if (treasuries.length > 0 && !treasuryAccountId) {
-      treasuryAccountId = treasuries[0].id;
+    if (treasuries.length > 0 && !treasuries.some((account) => account.id === treasuryAccountId)) {
+      handleTreasuryChange(treasuries[0].id);
     }
 
     // Identify disbursement vouchers (entries where credit is a treasury/cash account)
     const treasuryIds = new Set(treasuries.map((t) => t.id));
-    disbursements = (entriesList || []).filter((e: any) => {
+    disbursements = entriesList.filter((e: any) => {
       const creditId = e.credit_account_id || e.lines?.[1]?.account_id;
       return creditId && treasuryIds.has(creditId);
     });
@@ -125,10 +142,28 @@ async function loadData() {
 
 function clearForm() {
   referenceNumber = "";
-  voucherDate = "";
-  selectedCurrency = "YER";
+  voucherDate = getLocalDateInputValue();
   paymentMethod = "Cash";
   disbursementLines = [createDisbursementLine()];
+}
+
+function handleTreasuryChange(accountId: string) {
+  treasuryAccountId = accountId;
+  const currency = treasuries.find((account) => account.id === accountId)?.currency;
+  for (const line of disbursementLines) {
+    const account = accounts.find((candidate) => candidate.id === line.beneficiaryAccountId);
+    if (account && currency && account.currency.toUpperCase() !== currency.toUpperCase()) {
+      line.beneficiaryAccountId = "";
+    }
+  }
+}
+
+function handleCurrencyChange(currencyCode: string | undefined) {
+  if (!currencyCode || currencyCode === selectedCurrency) return;
+  const treasury = treasuries.find((account) =>
+    account.currency.toUpperCase() === currencyCode.toUpperCase()
+  );
+  if (treasury) handleTreasuryChange(treasury.id);
 }
 
 function addDisbursementLine() {
@@ -163,6 +198,10 @@ async function handleSaveDisbursement() {
     toast.error(m.finance_ui_disbursement_beneficiary_required());
     return;
   }
+  if (disbursementLines.some((line) => !disbursementAccounts.some((account) => account.id === line.beneficiaryAccountId))) {
+    toast.error(m.finance_ui_disbursement_beneficiary_required());
+    return;
+  }
   if (disbursementLines.some((line) => line.beneficiaryAccountId === treasuryAccountId)) {
     toast.error(m.finance_ui_disbursement_accounts_must_differ());
     return;
@@ -184,7 +223,7 @@ async function handleSaveDisbursement() {
         await api.processDisbursement({
           treasury_account_id: treasuryAccountId,
           beneficiary_account_id: line.beneficiaryAccountId,
-          amount: Number(line.amount),
+          amount: String(line.amount),
           currency_code: selectedCurrency,
           payment_method: paymentMethod.toLowerCase(),
           reference: lineReference,
@@ -250,7 +289,7 @@ const gridSource = $derived(
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (filterDate && row.accounting_date && !String(row.accounting_date).startsWith(filterDate)) {
+    if (filterDate && (!row.accounting_date || !String(row.accounting_date).startsWith(filterDate))) {
       return false;
     }
     return true;
@@ -363,12 +402,7 @@ function exportCsv() {
           </CardHeader>
 
           <CardContent class="flex flex-col gap-5 p-4">
-            <section class="rounded-lg border border-border/50 bg-muted/10 p-3 sm:p-4">
-              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 class="text-xs font-semibold text-foreground">{m.finance_ui_disbursement_create_heading()}</h3>
-                <span class="text-[11px] text-muted-foreground">{m.finance_ui_voucher_number_optional()}</span>
-              </div>
-              <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
                   <Input
@@ -389,7 +423,7 @@ function exportCsv() {
                     value={treasuryAccountId}
                     placeholder={m.finance_ui_treasury_select_placeholder()}
                     accounts={treasuries}
-                    onchange={(value) => (treasuryAccountId = value ?? "")}
+                    onchange={(value) => handleTreasuryChange(value ?? "")}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -417,22 +451,19 @@ function exportCsv() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div class="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_currency()}</Label>
                   <SearchableSelect
                     value={selectedCurrency}
                     placeholder={m.finance_ui_currency_placeholder()}
-                    items={currencies}
+                    items={availableCurrencies}
                     getItemValue={(currency) => currency.code}
                     getItemLabel={(currency) => currency.name}
-                    onchange={(value) => { if (value) selectedCurrency = value; }}
+                    onchange={handleCurrencyChange}
                     disabled={isSubmitting}
                   />
                 </div>
               </div>
-            </section>
 
             <section class="flex flex-col gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
@@ -476,7 +507,7 @@ function exportCsv() {
                       <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</Label>
                       <AccountSearchInput
                         value={line.beneficiaryAccountId}
-                        {accounts}
+                        accounts={disbursementAccounts}
                         placeholder={m.finance_ui_expense_account_select_placeholder()}
                         onchange={(value) => (line.beneficiaryAccountId = value ?? "")}
                         disabled={isSubmitting}
