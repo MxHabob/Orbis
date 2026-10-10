@@ -433,10 +433,14 @@ export type BatchMarkAttendanceResponseDto = {
 };
 
 export type BatchPrintRequest = {
-    batch_config: unknown;
+    batchConfig: unknown;
+    contexts?: Array<unknown> | null;
+    documentJson?: string | null;
     locale?: string | null;
     parameters?: unknown;
-    report_code: string;
+    reportCode?: string | null;
+    templateId?: string | null;
+    title?: string | null;
 };
 
 export type BatchRecordGradesRequest = {
@@ -5925,9 +5929,9 @@ export type BatchPrintData = {
 
 export type BatchPrintResponses = {
     /**
-     * Batch print HTML
+     * Multi-up PDF
      */
-    200: string;
+    200: Blob;
 };
 
 export type BatchPrintResponse = BatchPrintResponses[keyof BatchPrintResponses];

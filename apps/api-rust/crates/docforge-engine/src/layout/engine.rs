@@ -355,14 +355,18 @@ fn layout_absolute_node(
                 line_height: n.props.line_height.unwrap_or(n.props.font_size * 1.2) as f32,
             }))
         }
-        EvaluatedNode::Image(_n) => {
-            let mime = "image/png".to_string();
+        EvaluatedNode::Image(n) => {
+            let (mime, data) = match n.props.src.as_deref() {
+                Some(src) => crate::render::image_loader::decode_data_uri(src)?
+                    .unwrap_or_else(|| ("image/png".to_string(), Vec::new())),
+                None => ("image/png".to_string(), Vec::new()),
+            };
             Ok(PositionedElement::Image(ImageElement {
                 x,
                 y,
                 width: w,
                 height: h,
-                data: Vec::new(),
+                data,
                 mime_type: mime,
             }))
         }

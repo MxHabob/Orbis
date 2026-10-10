@@ -1314,8 +1314,16 @@ export class LocalClient implements OrbisApiClient {
     );
     return new Uint8Array(bytes);
   }
-  async batchPrint(req: BatchPrintParams): Promise<string> {
-    return unwrap(await invoke("batch_print", { ...req }));
+  async batchPrint(req: BatchPrintParams): Promise<Uint8Array> {
+    const bytes: number[] = unwrap(
+      await invoke("batch_print", {
+        documentJson: req.documentJson,
+        contexts: req.contexts,
+        batchConfig: req.batchConfig,
+        title: req.title,
+      }),
+    );
+    return new Uint8Array(bytes);
   }
   async listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]> {
     return unwrap(await invoke("audit_list_logs", { limit, offset }));

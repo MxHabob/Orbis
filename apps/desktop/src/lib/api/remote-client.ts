@@ -1607,8 +1607,11 @@ export class RemoteClient implements OrbisApiClient {
     return res instanceof Uint8Array ? res : new Uint8Array(res as any);
   }
 
-  async batchPrint(req: BatchPrintParams): Promise<string> {
-    return this.call(sdk.batchPrint({ client: this.client, body: req as any }));
+  async batchPrint(req: BatchPrintParams): Promise<Uint8Array> {
+    const response = await this.call(
+      sdk.batchPrint({ client: this.client, body: req as any }),
+    );
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   async listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]> {

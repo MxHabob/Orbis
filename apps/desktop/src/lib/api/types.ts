@@ -422,12 +422,14 @@ export interface ReportJobStatusDto {
 }
 
 export interface BatchPrintParams {
-  reportCode: string;
-  parameters: Record<string, unknown>;
-  gridColumns?: number;
-  gridRows?: number;
-  marginMm?: number;
-  cutMarks?: boolean;
+  templateId?: string;
+  documentJson?: string;
+  contexts?: Record<string, unknown>[];
+  title?: string;
+  reportCode?: string;
+  parameters?: Record<string, unknown>;
+  batchConfig: Record<string, unknown>;
+  locale?: string;
 }
 
 export interface StudentFeeFilterParams {
@@ -1776,7 +1778,7 @@ export interface OrbisApiClient {
   ): Promise<string>;
   getReportJobStatus(jobId: string): Promise<ReportJobStatusDto>;
   downloadReportFile(jobId: string): Promise<Uint8Array>;
-  batchPrint(req: BatchPrintParams): Promise<string>;
+  batchPrint(req: BatchPrintParams): Promise<Uint8Array>;
   listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]>;
   getEntityAudit(
     entityType: string,

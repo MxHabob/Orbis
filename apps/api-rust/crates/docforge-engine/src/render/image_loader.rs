@@ -4,6 +4,8 @@
 // Uses the `image` crate (already in the project for Tauri tray icons).
 // ═══════════════════════════════════════════════════════════════
 
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+
 use crate::error::DocforgeError;
 
 /// Decoded image data ready for PDF embedding
@@ -17,6 +19,32 @@ pub struct DecodedImage {
     /// Original bytes (for direct PDF embedding when possible)
     pub original_bytes: Vec<u8>,
     pub mime_type: String,
+}
+
+/// Decode an embedded base64 PNG/JPEG data URI.
+pub fn decode_data_uri(src: &str) -> Result<Option<(String, Vec<u8>)>, DocforgeError> {
+    if !src.starts_with("data:") {
+        return Ok(None);
+    }
+
+    let (metadata, encoded) = src
+        .split_once(',')
+        .ok_or_else(|| DocforgeError::Render("Malformed image data URI".into()))?;
+    let mime = metadata
+        .strip_prefix("data:")
+        .and_then(|value| value.strip_suffix(";base64"))
+        .ok_or_else(|| DocforgeError::Render("Image data URI must use base64 encoding".into()))?;
+    if !matches!(mime, "image/png" | "image/jpeg") {
+        return Err(DocforgeError::Render(format!(
+            "Unsupported embedded image type: {mime}"
+        )));
+    }
+
+    let bytes = STANDARD
+        .decode(encoded)
+        .map_err(|error| DocforgeError::Render(format!("Invalid image data URI: {error}")))?;
+    decode_image(&bytes)?;
+    Ok(Some((mime.to_string(), bytes)))
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -140,5 +168,18 @@ mod tests {
         let (w, h) = fit_dimensions(200, 100, 100.0, 100.0, "cover");
         assert!((w - 200.0).abs() < 0.01);
         assert!((h - 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_decode_data_uri_rejects_invalid_image_bytes() {
+        let result = decode_data_uri("data:image/png;base64,aW52YWxpZA==");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decode_data_uri_ignores_remote_sources() {
+        assert!(decode_data_uri("https://example.com/avatar.png")
+            .unwrap()
+            .is_none());
     }
 }
