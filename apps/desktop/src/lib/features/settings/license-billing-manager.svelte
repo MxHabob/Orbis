@@ -8,9 +8,10 @@ import * as m from "$lib/paraglide/messages";
 import { licenseStore, uiStore, confirmStore } from "$lib/stores";
 import { Button, LoadingIndicator, toast } from "@orbis/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
-import { Check, Bolt, ArrowPath, Trash, CreditCard } from "@orbis/icons";
+import { Check, Bolt, ArrowPath, Trash } from "@orbis/icons";
 import { formatLicensePlan } from "$lib/utils/license";
 import { formatDate } from "$lib/core/i18n";
+import LicensePlanCard from "./components/license-plan-card.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -284,7 +285,6 @@ const statusBadge = $derived.by(() => {
             <CardTitle id="license-details-heading" class="text-sm font-semibold text-foreground normal-case tracking-normal">
               {m.license_billing_details()}
             </CardTitle>
-            <CardDescription class="text-xs">{m.license_billing_details_description()}</CardDescription>
           </div>
           {#if !licenseStore.isOperational}
             <Button variant="outline" size="sm" onclick={handleOpenActivation} class="shrink-0 text-xs">
@@ -294,74 +294,12 @@ const statusBadge = $derived.by(() => {
           {/if}
         </CardHeader>
         <CardContent class="grid gap-5 p-5 md:grid-cols-[15rem_minmax(0,1fr)] md:items-center">
-          <div
-            class="group relative flex aspect-[1.55] w-full max-w-[15rem] flex-col justify-between overflow-hidden rounded-2xl border border-primary-foreground/15 bg-gradient-to-br from-primary via-primary to-primary/80 p-4 text-primary-foreground sm:p-5"
-          >
-            <div
-              aria-hidden="true"
-              class="license-card-light-ray pointer-events-none absolute inset-y-[-60%] start-[-65%] z-0 w-1/2 -rotate-[22deg] opacity-0"
-            ></div>
-            <div class="relative z-10 flex items-start justify-between gap-3">
-              <span class="text-[10px] font-medium uppercase tracking-widest text-white/70">{m.license_billing_schedule_item()}</span>
-              <CreditCard size={22} class="shrink-0 text-white/80" />
-            </div>
-
-            <div class="relative z-10 min-w-0">
-              <p class="truncate text-xl font-semibold tracking-wide">
-                {planDisplay}
-              </p>
-            </div>
-            <div class="relative z-10 flex items-end justify-between gap-3">
-              <div class="flex min-w-0 flex-col gap-0.5">
-                <span class="text-[9px] uppercase tracking-wider text-white/60">{m.license_valid_until()}</span>
-                <span class="truncate text-xs font-medium tabular-nums">
-                  {formatDate(licenseStore.validUntil, "datetime") || "—"}
-                </span>
-              </div>
-              <span class="shrink-0 rounded-full border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white/90">
-                {statusBadge.label}
-              </span>
-            </div>
-          </div>
-
-          <style>
-            .license-card-light-ray {
-              background: linear-gradient(
-                90deg,
-                transparent,
-                color-mix(in srgb, var(--primary-foreground) 3%, transparent) 30%,
-                color-mix(in srgb, var(--primary-foreground) 10%, transparent) 50%,
-                color-mix(in srgb, var(--primary-foreground) 3%, transparent) 70%,
-                transparent
-              );
-            }
-
-            .group:hover .license-card-light-ray {
-              animation: license-card-light-ray 1.8s ease-in-out infinite;
-            }
-
-            @keyframes license-card-light-ray {
-              0% {
-                opacity: 0;
-                transform: translateX(-15%) rotate(-22deg);
-              }
-              20%,
-              80% {
-                opacity: 1;
-              }
-              100% {
-                opacity: 0;
-                transform: translateX(330%) rotate(-22deg);
-              }
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-              .group:hover .license-card-light-ray {
-                animation: none;
-                opacity: 0;
-              }
-            }
-          </style>
+          <LicensePlanCard
+            planCode={licenseStore.isTrial ? "trial" : licenseStore.plan ?? licenseStore.planName ?? licenseStore.edition ?? ""}
+            planLabel={planDisplay}
+            statusLabel={statusBadge.label}
+            validUntil={licenseStore.validUntil}
+          />
           <dl class="flex min-w-0 flex-col">
             <div class="flex items-center justify-between gap-4 rounded-md px-3 py-2.5 odd:bg-muted/40">
               <dt class="text-sm text-muted-foreground">{m.license_status_title()}</dt>

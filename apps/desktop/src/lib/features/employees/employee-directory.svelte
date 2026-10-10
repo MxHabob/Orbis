@@ -5,6 +5,7 @@
   search, CSV export, slide-over EmployeeSheet, and unified account lifecycle actions.
 -->
 <script lang="ts">
+  import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -575,9 +576,22 @@ function handleGridAction(event: GridActionEvent) {
         <!-- Table View with OrbisGrid -->
         <div class="flex-1 min-h-0 flex flex-col bg-card border border-border rounded-lg overflow-hidden shadow-xs">
           {#if isLoading}
-            <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
-              <LoadingIndicator class="text-primary"  size={24} />
-              <span class="text-xs">{m.ui_copy_loading_employees_3e3b45d1()}</span>
+            <div class="flex h-full min-h-0 flex-col" aria-busy="true">
+              <span class="sr-only">{m.ui_copy_loading_employees_3e3b45d1()}</span>
+              <div class="flex h-11 shrink-0 items-center gap-4 border-b border-border bg-muted/30 px-4">
+                {#each Array.from({ length: 5 }) as _, index (index)}
+                  <Skeleton class="h-4 flex-1" />
+                {/each}
+              </div>
+              <div class="flex-1 divide-y divide-border/60 overflow-hidden">
+                {#each Array.from({ length: 9 }) as _, rowIndex (rowIndex)}
+                  <div class="flex h-11 items-center gap-4 px-4">
+                    {#each Array.from({ length: 5 }) as _, columnIndex (columnIndex)}
+                      <Skeleton class="h-4 flex-1" />
+                    {/each}
+                  </div>
+                {/each}
+              </div>
             </div>
           {:else if error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">

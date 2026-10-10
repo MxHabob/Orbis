@@ -180,7 +180,7 @@ const studyModes = [
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_nid_desc()}</span>
           </div>
           <div class="w-full md:w-120 shrink-0 flex flex-col gap-1.5">
-            <Input 
+            <Input
               id="nationalId"
               type="text" 
               placeholder="1000234900" 
@@ -447,9 +447,9 @@ const studyModes = [
           <div class="w-full md:w-120 shrink-0">
             <Input 
               id="specialNeedsNotes"
-              type="text" 
-              placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()} 
-              class="h-9 w-full bg-background" 
+              type="text"
+              placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()}
+              class="h-9 w-full bg-background"
               bind:value={state.personal.specialNeedsNotes}
             />
           </div>

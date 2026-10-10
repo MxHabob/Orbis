@@ -4,6 +4,7 @@
   annual certificate (100 pts), and rank in class/grade analytics.
 -->
 <script lang="ts">
+  import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import {
@@ -257,9 +258,35 @@ const columns = $derived.by<OrbisColumnDef[]>(() => [
   </div>
 
   {#if isLoading}
-    <div class="py-16 flex flex-col items-center justify-center gap-3">
-      <LoadingIndicator size={24} />
-      <span class="text-xs text-muted-foreground">{m.ui_loading_assessment_data_6e49c7()}</span>
+    <div class="space-y-4" aria-busy="true">
+      <span class="sr-only">{m.ui_loading_assessment_data_6e49c7()}</span>
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 print:grid-cols-4">
+        {#each Array.from({ length: 4 }) as _, index (index)}
+          <div class="flex flex-col gap-3 rounded-lg border border-border/80 bg-card p-4">
+            <Skeleton class="h-3 w-24" />
+            <Skeleton class="h-7 w-20" />
+            <Skeleton class="h-3 w-32 max-w-full" />
+          </div>
+        {/each}
+      </div>
+      <div class="overflow-hidden rounded-lg border border-border/80 bg-card shadow-xs">
+        <div class="flex items-center justify-between border-b border-border/60 p-4">
+          <div class="flex flex-col gap-2">
+            <Skeleton class="h-5 w-40" />
+            <Skeleton class="h-3 w-56 max-w-full" />
+          </div>
+          <Skeleton class="h-8 w-24" />
+        </div>
+        <div class="space-y-3 p-4">
+          {#each Array.from({ length: 8 }) as _, rowIndex (rowIndex)}
+            <div class="flex items-center gap-4">
+              {#each Array.from({ length: 5 }) as _, columnIndex (columnIndex)}
+                <Skeleton class="h-4 flex-1" />
+              {/each}
+            </div>
+          {/each}
+        </div>
+      </div>
     </div>
   {:else if viewMode === "term"}
     <!-- TERM REPORT CARD VIEW -->
