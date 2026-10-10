@@ -434,6 +434,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         user_repo.clone(),
         person_repo.clone(),
         identity_repo.clone(),
+        group_repo.clone(),
         Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(
             db.clone(),
         )),

@@ -1,6 +1,7 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 import {
   downloadBlob,
   openDownloadedPath,
@@ -96,6 +97,79 @@ export async function buildTemplateWorkbook(
     for (const a of refData.assessmentSchemes) {
       refAoa.push([m.bulk_entry_workbook_assessment(), "", a.name, m.bulk_entry_workbook_max_score({ score: (a.meta as any)?.max_score || 100 })]);
     }
+  }
+
+  const enumReferenceGroups = [
+    { fieldId: "gender", values: refData.enums.genders },
+    { fieldId: "study_mode", values: refData.enums.studyModes },
+    { fieldId: "employee_type", values: refData.enums.employeeTypes },
+    { fieldId: "employment_type", values: refData.enums.employmentTypes },
+    {
+      fieldId: "blood_type",
+      values: refData.enums.bloodTypes.map((value) => ({
+        value,
+        labelAr: value,
+        labelEn: value,
+      })),
+    },
+    { fieldId: "guardian_relationship", values: refData.enums.relationships },
+  ];
+
+  for (const { fieldId, values } of enumReferenceGroups) {
+    const column = columns.find((item) => item.id === fieldId);
+    if (!column) continue;
+    const fieldLabel = getBulkEntryColumnHeader(
+      profile.id,
+      fieldId,
+      column.headerAr,
+    );
+    const labelsByValue = new Map(
+      values.map((option) => [
+        option.value,
+        getLocale() === "ar" ? option.labelAr : option.labelEn,
+      ]),
+    );
+    const optionLabels = new Map(
+      (column.options ?? []).map((option) => [
+        String(option.value),
+        option.label,
+      ]),
+    );
+    const allowedValues = new Set([
+      ...values.map((option) => option.value),
+      ...(column.options ?? []).map((option) => String(option.value)),
+    ]);
+
+    for (const value of allowedValues) {
+      refAoa.push([
+        fieldLabel,
+        value,
+        optionLabels.get(value) ?? labelsByValue.get(value) ?? value,
+        m.bulk_entry_workbook_reference_enum_value(),
+      ]);
+    }
+  }
+
+  for (const column of columns.filter((item) => item.type === "boolean")) {
+    const fieldLabel = getBulkEntryColumnHeader(
+      profile.id,
+      column.id,
+      column.headerAr,
+    );
+    refAoa.push(
+      [
+        fieldLabel,
+        "true",
+        m.bulk_entry_workbook_boolean_yes(),
+        m.bulk_entry_workbook_reference_enum_value(),
+      ],
+      [
+        fieldLabel,
+        "false",
+        m.bulk_entry_workbook_boolean_no(),
+        m.bulk_entry_workbook_reference_enum_value(),
+      ],
+    );
   }
 
   const wsRef = XLSX.utils.aoa_to_sheet(refAoa);

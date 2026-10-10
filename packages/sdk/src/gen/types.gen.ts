@@ -1158,6 +1158,7 @@ export type EmployeeDetailDto = {
     job_title?: string | null;
     last_name: string;
     last_name_ar?: string | null;
+    marital_status?: string | null;
     medical_notes?: string | null;
     middle_name?: string | null;
     middle_name_ar?: string | null;
@@ -1947,6 +1948,7 @@ export type RegisterEmployeeRequest = {
     job_title?: string | null;
     last_name: string;
     last_name_ar?: string | null;
+    marital_status?: string | null;
     medical_notes?: string | null;
     middle_name?: string | null;
     middle_name_ar?: string | null;
@@ -2413,6 +2415,7 @@ export type UpdateEmployeeRequest = {
     job_title?: string | null;
     last_name?: string | null;
     last_name_ar?: string | null;
+    marital_status?: string | null;
     medical_notes?: string | null;
     middle_name?: string | null;
     middle_name_ar?: string | null;

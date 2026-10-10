@@ -23,6 +23,7 @@ use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePol
 use orbis_domain::entities::admission::{
     AdmissionPolicy, FormFieldConfig, NumberingSchema, YearFormat,
 };
+use orbis_domain::entities::group::Group;
 use orbis_domain::entities::identity::{IdentityProvider, UserIdentity};
 use orbis_domain::entities::organization::{InstitutionType, Organization};
 use orbis_domain::entities::person::Person;
@@ -37,11 +38,102 @@ use rust_decimal::Decimal;
 use super::coa_loader::CoaBlueprintLoader;
 use crate::ports::event_bus::EventBus;
 use crate::ports::repositories::{
-    AccountRepository, CurrencyRepository, OrganizationRepository, PersonRepository,
-    RoleRepository, SettingsRepository, SystemRepository, UserIdentityRepository, UserRepository,
+    AccountRepository, CurrencyRepository, GroupRepository, OrganizationRepository,
+    PersonRepository, RoleRepository, SettingsRepository, SystemRepository, UserIdentityRepository,
+    UserRepository,
 };
 use crate::ports::security::PasswordHasher;
 use orbis_domain::entities::currency::Currency;
+
+fn all_admin_permission_pairs() -> Vec<(&'static str, &'static str)> {
+    [
+        ("organization", &["read", "write"][..]),
+        (
+            "user",
+            &["read", "write", "delete", "role_write", "password_write"][..],
+        ),
+        (
+            "period",
+            &["read", "write", "activate", "lock", "unlock"][..],
+        ),
+        ("org_unit", &["read", "write", "delete"][..]),
+        ("class", &["read", "write", "delete"][..]),
+        ("subject", &["read", "write", "delete"][..]),
+        ("schedule", &["read", "write", "delete"][..]),
+        ("assessment", &["read", "write", "delete"][..]),
+        (
+            "grade",
+            &["read", "write", "entry_manage", "analytics", "report"][..],
+        ),
+        (
+            "student",
+            &["read", "write", "create", "update", "delete"][..],
+        ),
+        ("guardian", &["read", "write", "delete"][..]),
+        ("enrollment", &["read", "write", "promote", "transfer"][..]),
+        ("workflow", &["read", "write", "approve", "execute"][..]),
+        ("attendance", &["read", "write", "analytics", "report"][..]),
+        ("behavior", &["read", "write", "delete", "ai"][..]),
+        ("document", &["read", "write", "delete"][..]),
+        (
+            "template",
+            &[
+                "read",
+                "write",
+                "publish",
+                "delete",
+                "import",
+                "export",
+                "generate_single",
+                "generate_batch",
+                "generate_download",
+                "asset_upload",
+                "asset_delete",
+                "component_write",
+                "component_delete",
+            ][..],
+        ),
+        ("exam_session", &["read", "write", "activate", "delete"][..]),
+        ("seating_number", &["generate", "read"][..]),
+        ("secret_number", &["generate", "read", "reveal"][..]),
+        ("exam_hall", &["read", "write", "allocate"][..]),
+        ("proctor", &["read", "assign"][..]),
+        ("student_order", &["read", "rebuild", "freeze"][..]),
+        ("exam_schedule", &["read", "write"][..]),
+        ("notification", &["read", "write"][..]),
+        ("dashboard", &["read"][..]),
+        ("audit", &["read"][..]),
+        ("data", &["import", "export"][..]),
+        (
+            "finance",
+            &["read", "write", "payment", "backdate", "future_date"][..],
+        ),
+        ("promotion", &["read", "write", "execute"][..]),
+        (
+            "employee",
+            &["read", "write", "create", "update", "delete"][..],
+        ),
+        ("group", &["read", "write", "delete", "assign"][..]),
+        ("system", &["autopilot"][..]),
+    ]
+    .into_iter()
+    .flat_map(|(resource, actions)| actions.iter().map(move |action| (resource, *action)))
+    .collect()
+}
+
+fn all_admin_permission_strings() -> Vec<String> {
+    all_admin_permission_pairs()
+        .into_iter()
+        .map(|(resource, action)| format!("{resource}:{action}"))
+        .collect()
+}
+
+fn default_org_admin_group_permissions() -> Vec<String> {
+    all_admin_permission_strings()
+        .into_iter()
+        .filter(|permission| permission != "system:autopilot")
+        .collect()
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Bootstrap Request
@@ -145,6 +237,7 @@ pub struct BootstrapService {
     pub user_repo: Arc<dyn UserRepository>,
     pub person_repo: Arc<dyn PersonRepository>,
     pub user_identity_repo: Arc<dyn UserIdentityRepository>,
+    pub group_repo: Arc<dyn GroupRepository>,
     pub role_repo: Arc<dyn RoleRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
     pub system_repo: Arc<dyn SystemRepository>,
@@ -160,6 +253,7 @@ impl BootstrapService {
         user_repo: Arc<dyn UserRepository>,
         person_repo: Arc<dyn PersonRepository>,
         user_identity_repo: Arc<dyn UserIdentityRepository>,
+        group_repo: Arc<dyn GroupRepository>,
         role_repo: Arc<dyn RoleRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
         system_repo: Arc<dyn SystemRepository>,
@@ -173,6 +267,7 @@ impl BootstrapService {
             user_repo,
             person_repo,
             user_identity_repo,
+            group_repo,
             role_repo,
             settings_repo,
             system_repo,
@@ -290,13 +385,16 @@ impl BootstrapService {
         // ── Step 7: Create system roles ───────────────────────
         self.create_system_roles(org_id).await?;
 
-        // ── Step 8: Create initial administrator ──────────────
+        // ── Step 8: Create system user groups ─────────────────
+        self.create_default_user_groups(org_id).await?;
+
+        // ── Step 9: Create initial administrator ──────────────
         let (admin_user, _admin_person) = self.create_administrator(org_id, &req).await?;
 
-        // ── Step 9: Assign admin role ─────────────────────────
+        // ── Step 10: Assign admin role ────────────────────────
         self.assign_admin_role(org_id, admin_user.id).await?;
 
-        // ── Step 10: Verify ───────────────────────────────────
+        // ── Step 11: Verify ───────────────────────────────────
         let verified = self.verify_bootstrap(org_id).await?;
         if !verified {
             warnings.push("Bootstrap verification detected incomplete state".to_string());
@@ -873,6 +971,239 @@ impl BootstrapService {
         Ok(())
     }
 
+    async fn create_default_user_groups(&self, org_id: Uuid) -> Result<(), DomainError> {
+        let now = Utc::now();
+        let groups = [
+            (
+                "Organization Administrators",
+                "مديرو المؤسسة",
+                "org_admin",
+                vec![],
+            ),
+            (
+                "Principals",
+                "المديرون",
+                "principal",
+                vec![
+                    "organization:read",
+                    "period:read",
+                    "period:write",
+                    "period:activate",
+                    "org_unit:read",
+                    "class:read",
+                    "class:write",
+                    "subject:read",
+                    "subject:write",
+                    "schedule:read",
+                    "schedule:write",
+                    "assessment:read",
+                    "assessment:write",
+                    "grade:read",
+                    "grade:write",
+                    "grade:entry_manage",
+                    "grade:analytics",
+                    "grade:report",
+                    "student:read",
+                    "student:create",
+                    "student:update",
+                    "student:write",
+                    "guardian:read",
+                    "guardian:write",
+                    "enrollment:read",
+                    "enrollment:write",
+                    "enrollment:promote",
+                    "enrollment:transfer",
+                    "workflow:read",
+                    "workflow:write",
+                    "workflow:approve",
+                    "attendance:read",
+                    "attendance:write",
+                    "attendance:analytics",
+                    "attendance:report",
+                    "behavior:read",
+                    "behavior:write",
+                    "document:read",
+                    "document:write",
+                    "template:read",
+                    "template:write",
+                    "template:import",
+                    "template:export",
+                    "exam_session:read",
+                    "exam_session:write",
+                    "seating_number:read",
+                    "secret_number:read",
+                    "exam_hall:read",
+                    "exam_hall:write",
+                    "proctor:read",
+                    "proctor:assign",
+                    "student_order:read",
+                    "exam_schedule:read",
+                    "exam_schedule:write",
+                    "notification:read",
+                    "notification:write",
+                    "dashboard:read",
+                    "audit:read",
+                    "data:import",
+                    "data:export",
+                    "promotion:read",
+                    "promotion:write",
+                    "promotion:execute",
+                    "employee:read",
+                    "employee:write",
+                    "employee:create",
+                    "employee:update",
+                    "group:read",
+                ],
+            ),
+            (
+                "Teachers",
+                "المعلمون",
+                "teacher",
+                vec![
+                    "class:read",
+                    "subject:read",
+                    "schedule:read",
+                    "assessment:read",
+                    "grade:read",
+                    "grade:write",
+                    "grade:entry_manage",
+                    "student:read",
+                    "enrollment:read",
+                    "attendance:read",
+                    "attendance:write",
+                    "behavior:read",
+                    "behavior:write",
+                    "document:read",
+                    "exam_session:read",
+                    "seating_number:read",
+                    "secret_number:read",
+                    "exam_hall:read",
+                    "proctor:read",
+                    "exam_schedule:read",
+                    "notification:read",
+                    "dashboard:read",
+                ],
+            ),
+            (
+                "Accountants",
+                "المحاسبون",
+                "accountant",
+                vec![
+                    "finance:read",
+                    "finance:write",
+                    "finance:payment",
+                    "student:read",
+                    "enrollment:read",
+                    "dashboard:read",
+                    "notification:read",
+                ],
+            ),
+            (
+                "Staff",
+                "الموظفون",
+                "staff",
+                vec![
+                    "class:read",
+                    "subject:read",
+                    "schedule:read",
+                    "attendance:read",
+                    "document:read",
+                    "notification:read",
+                    "dashboard:read",
+                ],
+            ),
+            (
+                "Registrars",
+                "موظفو القبول والتسجيل",
+                "registrar",
+                vec![
+                    "period:read",
+                    "class:read",
+                    "subject:read",
+                    "student:read",
+                    "student:create",
+                    "student:update",
+                    "guardian:read",
+                    "guardian:write",
+                    "enrollment:read",
+                    "enrollment:write",
+                    "enrollment:promote",
+                    "enrollment:transfer",
+                    "document:read",
+                    "document:write",
+                    "template:read",
+                    "template:import",
+                    "template:export",
+                    "data:import",
+                    "data:export",
+                    "notification:read",
+                    "dashboard:read",
+                ],
+            ),
+            (
+                "Guardians",
+                "أولياء الأمور",
+                "guardian",
+                vec!["dashboard:read", "notification:read"],
+            ),
+            (
+                "Students",
+                "الطلاب",
+                "student",
+                vec!["dashboard:read", "notification:read"],
+            ),
+        ];
+
+        for (name, name_ar, role_id, configured_permissions) in groups {
+            let existing = self.group_repo.find_by_name(org_id, name).await?;
+            let mut group = if let Some(group) = existing {
+                if !group.is_system {
+                    return Err(DomainError::Conflict(format!(
+                        "A non-system group already uses the reserved default name '{}'",
+                        name
+                    )));
+                }
+                group
+            } else {
+                Group {
+                    id: Uuid::new_v4(),
+                    org_id,
+                    name: name.to_string(),
+                    name_ar: Some(name_ar.to_string()),
+                    description: Some(format!("Default permissions for the {} role", role_id)),
+                    is_system: true,
+                    status: "active".to_string(),
+                    created_by: None,
+                    updated_by: None,
+                    created_at: now,
+                    updated_at: now,
+                }
+            };
+
+            group.name_ar = Some(name_ar.to_string());
+            group.description = Some(format!(
+                "System-managed default permission group for {}",
+                role_id
+            ));
+            group.status = "active".to_string();
+            group.updated_at = now;
+            self.group_repo.save(&group).await?;
+            let permissions: Vec<String> = if role_id == "org_admin" {
+                default_org_admin_group_permissions()
+            } else {
+                configured_permissions
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect()
+            };
+            self.group_repo
+                .set_group_permissions(org_id, group.id, &permissions)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     /// Assign all permissions to an admin role.
     /// Idempotent — replaces existing permissions.
     async fn create_admin_permissions(
@@ -882,91 +1213,17 @@ impl BootstrapService {
     ) -> Result<(), DomainError> {
         let now = Utc::now();
 
-        // All permission strings from the Permission enum
-        let all_permissions = [
-            ("organization", vec!["read", "write"]),
-            (
-                "user",
-                vec!["read", "write", "delete", "role_write", "password_write"],
-            ),
-            (
-                "period",
-                vec!["read", "write", "activate", "lock", "unlock"],
-            ),
-            ("org_unit", vec!["read", "write", "delete"]),
-            ("class", vec!["read", "write", "delete"]),
-            ("subject", vec!["read", "write", "delete"]),
-            ("schedule", vec!["read", "write", "delete"]),
-            ("assessment", vec!["read", "write", "delete"]),
-            (
-                "grade",
-                vec!["read", "write", "entry_manage", "analytics", "report"],
-            ),
-            (
-                "student",
-                vec!["read", "write", "create", "update", "delete"],
-            ),
-            ("guardian", vec!["read", "write", "delete"]),
-            ("enrollment", vec!["read", "write", "promote", "transfer"]),
-            ("workflow", vec!["read", "write", "approve", "execute"]),
-            ("attendance", vec!["read", "write", "analytics", "report"]),
-            ("behavior", vec!["read", "write", "delete", "ai"]),
-            ("document", vec!["read", "write", "delete"]),
-            (
-                "template",
-                vec![
-                    "read",
-                    "write",
-                    "publish",
-                    "delete",
-                    "import",
-                    "export",
-                    "generate_single",
-                    "generate_batch",
-                    "generate_download",
-                    "asset_upload",
-                    "asset_delete",
-                    "component_write",
-                    "component_delete",
-                ],
-            ),
-            ("exam_session", vec!["read", "write", "activate", "delete"]),
-            ("seating_number", vec!["generate", "read"]),
-            ("secret_number", vec!["generate", "read", "reveal"]),
-            ("exam_hall", vec!["read", "write", "allocate"]),
-            ("proctor", vec!["read", "assign"]),
-            ("student_order", vec!["read", "rebuild", "freeze"]),
-            ("exam_schedule", vec!["read", "write"]),
-            ("notification", vec!["read", "write"]),
-            ("dashboard", vec!["read"]),
-            ("audit", vec!["read"]),
-            ("data", vec!["import", "export"]),
-            (
-                "finance",
-                vec!["read", "write", "payment", "backdate", "future_date"],
-            ),
-            ("promotion", vec!["read", "write", "execute"]),
-            (
-                "employee",
-                vec!["read", "write", "create", "update", "delete"],
-            ),
-            ("group", vec!["read", "write", "delete", "assign"]),
-            ("system", vec!["autopilot"]),
-        ];
-
         let mut perms = Vec::new();
-        for (resource, actions) in &all_permissions {
-            for action in actions {
-                perms.push(RolePermission {
-                    id: Uuid::new_v4(),
-                    role_id: role_id.to_string(),
-                    org_id,
-                    resource: resource.to_string(),
-                    action: action.to_string(),
-                    condition: None,
-                    created_at: now,
-                });
-            }
+        for (resource, action) in all_admin_permission_pairs() {
+            perms.push(RolePermission {
+                id: Uuid::new_v4(),
+                role_id: role_id.to_string(),
+                org_id,
+                resource: resource.to_string(),
+                action: action.to_string(),
+                condition: None,
+                created_at: now,
+            });
         }
 
         self.role_repo
@@ -1020,6 +1277,7 @@ impl BootstrapService {
             place_of_birth: None,
             nationality: None,
             blood_type: None,
+            marital_status: None,
             medical_notes: None,
             special_needs_notes: None,
             phone: req.admin_phone.clone(),
@@ -1272,4 +1530,18 @@ pub fn transliterate_arabic(text: &str) -> String {
     }
 
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::default_org_admin_group_permissions;
+
+    #[test]
+    fn default_admin_group_excludes_system_bypass() {
+        let permissions = default_org_admin_group_permissions();
+
+        assert!(permissions.contains(&"group:assign".to_string()));
+        assert!(permissions.contains(&"finance:payment".to_string()));
+        assert!(!permissions.contains(&"system:autopilot".to_string()));
+    }
 }

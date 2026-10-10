@@ -343,10 +343,11 @@ impl GroupRepository for GroupRepoImpl {
         group_id: Uuid,
         permissions: &[String],
     ) -> Result<(), DomainError> {
-        let _ = GroupPermissionEntity::delete_many()
+        GroupPermissionEntity::delete_many()
             .filter(group_permission::Column::GroupId.eq(group_id))
             .exec(&self.db)
-            .await;
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
 
         let now = chrono::Utc::now();
         for perm in permissions {
@@ -357,7 +358,10 @@ impl GroupRepository for GroupRepoImpl {
                 permission: Set(perm.clone()),
                 created_at: Set(now),
             };
-            let _ = active_model.insert(&self.db).await;
+            active_model
+                .insert(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
 
         Ok(())

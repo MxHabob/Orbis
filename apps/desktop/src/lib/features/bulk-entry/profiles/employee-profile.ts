@@ -18,6 +18,7 @@ export interface EmployeeRowData {
   full_name_en?: string;
   national_id?: string;
   gender: "male" | "female";
+  marital_status?: string;
   birth_date?: string;
   phone?: string;
   email?: string;
@@ -72,6 +73,21 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
     example: "male",
   },
   {
+    id: "marital_status",
+    headerAr: "الحالة الاجتماعية",
+    headerEn: "Marital Status",
+    required: false,
+    type: "enum",
+    options: [
+      { value: "single", label: m.employees_marital_status_single() },
+      { value: "married", label: m.employees_marital_status_married() },
+      { value: "divorced", label: m.employees_marital_status_divorced() },
+      { value: "widowed", label: m.employees_marital_status_widowed() },
+      { value: "separated", label: m.employees_marital_status_separated() },
+    ],
+    example: "single",
+  },
+  {
     id: "employee_type",
     headerAr: "النوع الوظيفي*",
     headerEn: "Employee Type*",
@@ -84,19 +100,27 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
       "accountant",
       "receptionist",
       "supervisor",
+      "driver",
+      "staff",
       "worker",
       "معلم",
       "إداري",
       "مدير",
       "محاسب",
+      "موظف استقبال",
       "مشرف",
+      "سائق",
+      "موظف",
     ],
     options: [
       { value: "teacher", label: m.bulk_entry_enum_employee_teacher() },
       { value: "admin", label: m.bulk_entry_enum_employee_admin() },
       { value: "principal", label: m.bulk_entry_enum_employee_principal() },
       { value: "accountant", label: m.bulk_entry_enum_employee_accountant() },
+      { value: "receptionist", label: m.bulk_entry_enum_employee_receptionist() },
       { value: "supervisor", label: m.bulk_entry_enum_employee_supervisor() },
+      { value: "driver", label: m.bulk_entry_enum_employee_driver() },
+      { value: "staff", label: m.bulk_entry_enum_employee_staff() },
       { value: "worker", label: m.bulk_entry_enum_employee_worker() },
     ],
     example: "teacher",
@@ -132,11 +156,13 @@ export const employeeColumnMetadata: ColumnDefinitionMetadata[] = [
     headerEn: "Employment Type",
     required: false,
     type: "enum",
-    allowedValues: ["full_time", "part_time", "contractor", "دوام كامل", "دوام جزئي", "عقد محدد"],
+    allowedValues: ["full_time", "part_time", "contract", "hourly", "volunteer", "دوام كامل", "دوام جزئي", "عقد محدد", "بالساعة", "متطوع"],
     options: [
       { value: "full_time", label: m.bulk_entry_enum_employment_full_time() },
       { value: "part_time", label: m.bulk_entry_enum_employment_part_time() },
-      { value: "contractor", label: m.bulk_entry_enum_employment_contractor() },
+      { value: "contract", label: m.bulk_entry_enum_employment_contract() },
+      { value: "hourly", label: m.bulk_entry_enum_employment_hourly() },
+      { value: "volunteer", label: m.employees_contract_volunteer() },
     ],
     example: "full_time",
   },
@@ -234,13 +260,18 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
           { value: "admin", labelAr: "إداري", labelEn: "Administrator" },
           { value: "principal", labelAr: "مدير", labelEn: "Principal" },
           { value: "accountant", labelAr: "محاسب", labelEn: "Accountant" },
+          { value: "receptionist", labelAr: "موظف استقبال", labelEn: "Receptionist" },
           { value: "supervisor", labelAr: "مشرف", labelEn: "Supervisor" },
+          { value: "driver", labelAr: "سائق", labelEn: "Driver" },
+          { value: "staff", labelAr: "موظف", labelEn: "Staff" },
           { value: "worker", labelAr: "خدمات مساندة", labelEn: "Worker" },
         ],
         employmentTypes: [
           { value: "full_time", labelAr: "دوام كامل", labelEn: "Full-time" },
           { value: "part_time", labelAr: "دوام جزئي", labelEn: "Part-time" },
-          { value: "contractor", labelAr: "عقد محدد", labelEn: "Contractor" },
+          { value: "contract", labelAr: "عقد", labelEn: "Contract" },
+          { value: "hourly", labelAr: "بالساعة", labelEn: "Hourly" },
+          { value: "volunteer", labelAr: "متطوع", labelEn: "Volunteer" },
         ],
         bloodTypes: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
         relationships: [],
@@ -353,8 +384,22 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
       if (rawType.includes("admin") || rawType.includes("إداري")) typeStr = "admin";
       if (rawType.includes("principal") || rawType.includes("مدير")) typeStr = "principal";
       if (rawType.includes("accountant") || rawType.includes("محاسب")) typeStr = "accountant";
+      if (rawType.includes("receptionist") || rawType.includes("استقبال")) typeStr = "receptionist";
       if (rawType.includes("supervisor") || rawType.includes("مشرف")) typeStr = "supervisor";
+      if (rawType.includes("driver") || rawType.includes("سائق")) typeStr = "driver";
+      if (rawType === "staff" || rawType === "موظف") typeStr = "staff";
       if (rawType.includes("worker") || rawType.includes("خدمات")) typeStr = "worker";
+      const rawEmploymentType = String(row.employment_type ?? "").trim().toLowerCase();
+      const employmentType =
+        rawEmploymentType === "volunteer" || rawEmploymentType === "متطوع"
+          ? "volunteer"
+          : rawEmploymentType === "contractor" || rawEmploymentType === "عقد محدد"
+          ? "contract"
+          : rawEmploymentType === "hourly" || rawEmploymentType === "بالساعة"
+            ? "hourly"
+            : rawEmploymentType === "part_time" || rawEmploymentType === "دوام جزئي"
+              ? "part_time"
+              : "full_time";
 
       const isProvision =
         row.provision_user === true ||
@@ -380,13 +425,14 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
           display_name: fullNameAr,
           national_id: row.national_id?.trim() || undefined,
           gender: row.gender || "male",
+          marital_status: row.marital_status || undefined,
           phone: row.phone?.trim() || undefined,
           email: row.email?.trim() || undefined,
           employee_type: typeStr,
           job_title: row.job_title?.trim() || undefined,
           department: row.department?.trim() || undefined,
           hire_date: row.hire_date?.trim() || new Date().toISOString().slice(0, 10),
-          employment_type: (row.employment_type as any) || "full_time",
+          employment_type: employmentType,
           account: isProvision
             ? {
                 enabled: true,

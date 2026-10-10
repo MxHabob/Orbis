@@ -64,6 +64,7 @@ pub struct RegisterEmployeeInput {
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
@@ -102,6 +103,7 @@ pub struct UpdateEmployeeInput {
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
@@ -311,6 +313,7 @@ impl EmployeeService {
                     place_of_birth: input.place_of_birth,
                     nationality: input.nationality,
                     blood_type: input.blood_type,
+                    marital_status: input.marital_status,
                     medical_notes: input.medical_notes,
                     special_needs_notes: input.special_needs_notes,
                     phone: input.phone,
@@ -530,6 +533,9 @@ impl EmployeeService {
         }
         if let Some(v) = input.blood_type {
             person.blood_type = Some(v);
+        }
+        if let Some(v) = input.marital_status {
+            person.marital_status = Some(v);
         }
         if let Some(v) = input.medical_notes {
             person.medical_notes = Some(v);

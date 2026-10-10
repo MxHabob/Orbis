@@ -387,6 +387,7 @@ impl StudentService {
                 place_of_birth: input.place_of_birth,
                 nationality: input.nationality,
                 blood_type: input.blood_type,
+                marital_status: None,
                 medical_notes: input.medical_notes,
                 special_needs_notes: input.special_needs_notes,
                 phone: input.phone,
@@ -1403,6 +1404,7 @@ impl StudentService {
                                     place_of_birth: None,
                                     nationality: None,
                                     blood_type: None,
+                                    marital_status: None,
                                     medical_notes: None,
                                     special_needs_notes: None,
                                     phone: if g_phone.is_empty() {

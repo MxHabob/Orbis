@@ -80,6 +80,7 @@ let createLoginAccount = $state(false);
 let nationalId = $state(initialEmployee?.national_id || "");
 let passportNumber = $state(initialEmployee?.passport_number || "");
 let gender = $state(initialEmployee?.gender || "male");
+let maritalStatus = $state(initialEmployee?.marital_status || "");
 let birthDate = $state(initialEmployee?.birth_date || "");
 let nationality = $state(initialEmployee?.nationality || "Saudi");
 let bloodType = $state(initialEmployee?.blood_type || "");
@@ -178,6 +179,7 @@ async function handleSubmit() {
       national_id: nationalId.trim() || undefined,
       passport_number: passportNumber.trim() || undefined,
       gender: gender || "male",
+      marital_status: maritalStatus || undefined,
       birth_date: birthDate || undefined,
       nationality: nationality.trim() || "Saudi",
       blood_type: bloodType || undefined,
@@ -234,6 +236,7 @@ async function handleSubmit() {
       national_id: nationalId.trim() || undefined,
       passport_number: passportNumber.trim() || undefined,
       gender: gender || undefined,
+      marital_status: maritalStatus || undefined,
       birth_date: birthDate || undefined,
       nationality: nationality.trim() || undefined,
       blood_type: bloodType || undefined,
@@ -376,6 +379,27 @@ function handleCancelClick() {
                 <SelectContent class="text-xs font-sans">
                   <SelectItem value="male">{m.employees_gender_male()}</SelectItem>
                   <SelectItem value="female">{m.employees_gender_female()}</SelectItem>
+                </SelectContent>
+              </Select>
+              {/snippet}
+            </FormField>
+
+            <FormField label={m.employees_marital_status()}>
+              {#snippet children()}
+              <Select type="single" value={maritalStatus} onValueChange={(v) => { if (v) maritalStatus = v; }} disabled={isSaving}>
+                <SelectTrigger class="text-xs h-9">
+                  {maritalStatus === "single" ? m.employees_marital_status_single() :
+                   maritalStatus === "married" ? m.employees_marital_status_married() :
+                   maritalStatus === "divorced" ? m.employees_marital_status_divorced() :
+                   maritalStatus === "widowed" ? m.employees_marital_status_widowed() :
+                   maritalStatus === "separated" ? m.employees_marital_status_separated() : "—"}
+                </SelectTrigger>
+                <SelectContent class="text-xs font-sans">
+                  <SelectItem value="single">{m.employees_marital_status_single()}</SelectItem>
+                  <SelectItem value="married">{m.employees_marital_status_married()}</SelectItem>
+                  <SelectItem value="divorced">{m.employees_marital_status_divorced()}</SelectItem>
+                  <SelectItem value="widowed">{m.employees_marital_status_widowed()}</SelectItem>
+                  <SelectItem value="separated">{m.employees_marital_status_separated()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}
@@ -550,12 +574,16 @@ function handleCancelClick() {
               <Select type="single" value={employmentType} onValueChange={(v) => { if (v) employmentType = v; }} disabled={isSaving}>
                 <SelectTrigger class="text-xs h-9">
                   {employmentType === "full_time" ? (m.employees_contract_fulltime()) :
-                   employmentType === "part_time" ? (m.employees_contract_parttime()) : (m.employees_contract_contract())}
+                   employmentType === "part_time" ? (m.employees_contract_parttime()) :
+                   employmentType === "volunteer" ? (m.employees_contract_volunteer()) :
+                   employmentType === "hourly" ? (m.employees_contract_hourly()) : (m.employees_contract_contract())}
                 </SelectTrigger>
                 <SelectContent class="text-xs font-sans">
                   <SelectItem value="full_time">{m.employees_contract_fulltime()}</SelectItem>
                   <SelectItem value="part_time">{m.employees_contract_parttime()}</SelectItem>
                   <SelectItem value="contract">{m.employees_contract_contract()}</SelectItem>
+                  <SelectItem value="hourly">{m.employees_contract_hourly()}</SelectItem>
+                  <SelectItem value="volunteer">{m.employees_contract_volunteer()}</SelectItem>
                 </SelectContent>
               </Select>
               {/snippet}

@@ -22,6 +22,7 @@ pub struct Model {
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
