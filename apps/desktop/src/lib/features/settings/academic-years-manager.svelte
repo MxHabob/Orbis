@@ -14,6 +14,7 @@ close completed years, archive historical years, and view period structure.
   import { LoadingIndicator, toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
+  import { Card, CardContent } from "@orbis/ui/card";
   import { Input } from "@orbis/ui/input";
   import { Skeleton } from "@orbis/ui/skeleton";
   import {
@@ -301,7 +302,7 @@ close completed years, archive historical years, and view period structure.
       {/if}
     </div>
   {:else}
-    <div class="flex flex-col gap-2.5" in:fade={{ duration: 150 }}>
+    <div class="mx-auto flex w-full max-w-7xl flex-col gap-3" in:fade={{ duration: 150 }}>
       {#each filteredYears as year (year.id)}
         {@const yearPeriods = getPeriodsForYear(year.id)}
         {@const isExpanded = !!expandedYears[year.id]}
@@ -310,21 +311,16 @@ close completed years, archive historical years, and view period structure.
         {@const isArchived = year.status === "archived"}
         {@const isPlanning = year.status === "planning" || !year.status}
 
-        <!-- Refined Academic Year Card -->
-        <div
-          class="overflow-hidden rounded-xl border bg-card transition-colors duration-150 hover:bg-muted/20 {isActive
-            ? 'border-emerald-500/30 ring-1 ring-emerald-500/10'
-            : 'border-border/60'}"
-        >
-          <!-- Card Header Row -->
-          <div class="flex flex-col items-stretch justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center">
-            <!-- Left Info Block -->
-            <div class="flex min-w-0 items-center gap-3">
+        <Card class="overflow-hidden border-border/60 shadow-xs transition-colors hover:border-border">
+          <CardContent class="p-0">
+          <div class="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
               <button
                 type="button"
-                class="p-1 rounded-md hover:bg-muted text-muted-foreground transition-colors cursor-pointer shrink-0"
+                class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/50 bg-background text-muted-foreground transition-colors hover:bg-muted"
                 onclick={() => toggleExpand(year.id)}
                 title={m.academic_years_child_periods_title()}
+                aria-label={m.academic_years_child_periods_title()}
               >
                 {#if isExpanded}
                   <ChevronDown size={16} />
@@ -333,58 +329,53 @@ close completed years, archive historical years, and view period structure.
                 {/if}
               </button>
 
-              <div class="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                <!-- Status Badge -->
-                {#if isActive}
-                  <Badge variant="info" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 gap-1.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                    {m.academic_calendar_active_badge()}
-                  </Badge>
-                {:else if isPlanning}
-                  <Badge variant="secondary" class="text-[9px] px-2 py-0.5 rounded-full font-medium">
-                    {m.academic_years_filter_planning()}
-                  </Badge>
-                {:else if isClosed}
-                  <Badge variant="secondary" class="text-[9px] px-2 py-0.5 rounded-full font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/20">
-                    {m.academic_years_filter_closed()}
-                  </Badge>
-                {:else if isArchived}
-                  <Badge variant="secondary" class="text-[9px] px-2 py-0.5 rounded-full font-medium text-muted-foreground">
-                    {m.academic_years_filter_archived()}
-                  </Badge>
-                {/if}
-
-                <!-- Primary Year Title -->
-                <span class="text-xs font-bold text-foreground">
-                  {year.name_ar || year.name}
-                </span>
-
-                {#if year.name && year.name_ar && year.name !== year.name_ar}
-                  <span class="text-[11px] text-muted-foreground">
-                    ({year.name})
+              <div class="flex min-w-0 flex-1 flex-col gap-2">
+                <div class="flex min-w-0 flex-wrap items-center gap-2">
+                  <span class="text-sm font-semibold text-foreground">
+                    {year.name_ar || year.name}
                   </span>
-                {/if}
+                  {#if year.name && year.name_ar && year.name !== year.name_ar}
+                    <span class="text-xs text-muted-foreground">({year.name})</span>
+                  {/if}
+                  {#if isActive}
+                    <Badge variant="info" class="h-5 gap-1 border-emerald-500/20 bg-emerald-500/10 px-2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                      {m.academic_calendar_active_badge()}
+                    </Badge>
+                  {:else if isPlanning}
+                    <Badge variant="secondary" class="h-5 px-2 text-[10px] font-medium">
+                      {m.academic_years_filter_planning()}
+                    </Badge>
+                  {:else if isClosed}
+                    <Badge variant="secondary" class="h-5 border-amber-500/20 bg-amber-500/10 px-2 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                      {m.academic_years_filter_closed()}
+                    </Badge>
+                  {:else if isArchived}
+                    <Badge variant="secondary" class="h-5 px-2 text-[10px] font-medium text-muted-foreground">
+                      {m.academic_years_filter_archived()}
+                    </Badge>
+                  {/if}
+                </div>
 
-                <!-- Date Range -->
-                <span class="text-[11px] text-muted-foreground font-mono flex items-center gap-1">
-                  <Calendar size={11} class="text-muted-foreground/60" />
-                  {formatDate(year.start_date)} ↔ {formatDate(year.end_date)}
-                </span>
-
-                <!-- Periods Count Tag -->
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/70 text-muted-foreground">
-                  {m.academic_years_count_tag({ count: yearPeriods.length })}
-                </span>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                  <span class="inline-flex items-center gap-1.5 font-mono">
+                    <Calendar size={12} />
+                    {formatDate(year.start_date)} <span aria-hidden="true">↔</span> {formatDate(year.end_date)}
+                  </span>
+                  <span class="inline-flex items-center gap-1.5">
+                    <ClockRotateRight size={12} />
+                    {m.academic_years_count_tag({ count: yearPeriods.length })}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <!-- Right Actions Block -->
-            <div class="flex flex-wrap items-center justify-end gap-1.5 sm:shrink-0">
+            <div class="flex flex-wrap items-center gap-1 border-t border-border/40 pt-2 sm:shrink-0 sm:border-0 sm:pt-0">
               {#if !isActive && !isArchived}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  class="text-[11px] h-7 px-2.5 font-medium text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10 gap-1"
+                  class="h-7 gap-1 px-2 text-[11px] font-medium text-emerald-600 hover:bg-emerald-500/10 dark:text-emerald-400"
                   onclick={() => handleActivate(year)}
                 >
                   <CheckCircle size={12} />
@@ -394,9 +385,9 @@ close completed years, archive historical years, and view period structure.
 
               {#if isActive}
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  class="text-[11px] h-7 px-2.5 font-medium text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/10 gap-1"
+                  class="h-7 gap-1 px-2 text-[11px] font-medium text-amber-600 hover:bg-amber-500/10 dark:text-amber-400"
                   onclick={() => handleClose(year)}
                 >
                   <Lock size={12} />
@@ -430,7 +421,7 @@ close completed years, archive historical years, and view period structure.
 
           <!-- Nested Sub-Periods Breakdown -->
           {#if isExpanded}
-            <div class="border-t border-border/40 bg-muted/15 px-4 py-3">
+            <div class="border-t border-border/50 bg-muted/20 px-4 py-3 sm:ps-14">
               <div class="flex items-center justify-between mb-2">
                 <span class="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
                   <ClockRotateRight size={12} />
@@ -461,7 +452,7 @@ close completed years, archive historical years, and view period structure.
                   {#each yearPeriods as period (period.id)}
                     {@const isPeriodActive = period.status === "active"}
                     {@const isPeriodLocked = period.is_locked === 1}
-                    <div class="p-2.5 rounded-lg border border-border/50 bg-card/80 flex items-center justify-between gap-2 text-xs shadow-2xs">
+                    <div class="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background p-2.5 text-xs">
                       <div class="flex flex-col min-w-0">
                         <span class="font-medium text-foreground truncate text-[11px]">
                           {period.name_ar || period.name}
@@ -485,7 +476,8 @@ close completed years, archive historical years, and view period structure.
               {/if}
             </div>
           {/if}
-        </div>
+          </CardContent>
+        </Card>
       {/each}
     </div>
   {/if}

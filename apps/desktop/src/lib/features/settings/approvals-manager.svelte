@@ -333,6 +333,7 @@ function parseApprovalChain(chain: any): any[] {
     </header>
 
     <main class="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-hide sm:p-6">
+      <div class="mx-auto w-full max-w-7xl">
       <!-- TAB 1 & 2 & 3: Pending / Admission / Overrides Content -->
       {#if activeTab === "pending" || activeTab === "admission" || activeTab === "overrides"}
         <div class="space-y-3">
@@ -343,7 +344,7 @@ function parseApprovalChain(chain: any): any[] {
               {/each}
             </div>
           {:else if filteredPendingItems.length === 0}
-            <Card class="border-border/60 py-16 text-center">
+            <Card class="border-dashed border-border/60 bg-card/50 py-12 text-center">
               <CardContent class="flex flex-col items-center justify-center gap-3">
                 <div class="w-12 h-12 rounded-full bg-muted/40 border border-border/60 flex items-center justify-center text-muted-foreground">
                   <CheckCircle class="w-6 h-6 text-emerald-500/80" />
@@ -362,8 +363,8 @@ function parseApprovalChain(chain: any): any[] {
                 {@const chain = parseApprovalChain(request.approval_chain)}
                 {@const isProcessing = processingId === request.id}
 
-                <Card class="border-border/60 shadow-xs transition-colors hover:border-primary/30">
-                  <CardContent class="flex flex-col gap-3 p-4">
+                <Card class="overflow-hidden border-border/60 bg-card shadow-xs transition-colors hover:border-primary/30">
+                  <CardContent class="flex flex-col gap-3 p-4 sm:p-5">
                     
                     <!-- Header Row: Type Badge, Risk, and Submission Timestamp -->
                     <div class="flex items-start justify-between gap-3 flex-wrap">
@@ -394,27 +395,27 @@ function parseApprovalChain(chain: any): any[] {
 
                     <!-- Request Description & Target Context -->
                     <div class="flex flex-col gap-2 text-start">
-                      <p class="text-sm font-semibold text-foreground leading-snug">
+                      <p class="text-sm font-semibold leading-snug text-foreground">
                         {request.reason}
                       </p>
 
-                      <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                         <span>{m.ui_copy_requested_by_a2679cef()}</span>
                         <strong class="text-foreground font-medium">{request.requested_by_name || request.requested_by || m.settings_ui_system_administrator()}</strong>
                       </div>
 
                       <!-- Changed Field Values Diff Matrix -->
                       {#if request.old_value || request.new_value}
-                        <div class="flex items-center gap-2 mt-1 text-xs bg-muted/30 border border-border/50 rounded-lg p-2.5 font-mono">
+                        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border/50 bg-muted/30 p-3 text-xs font-mono">
                           {#if request.field_name}
-                            <span class="text-muted-foreground font-sans font-medium">{request.field_name}:</span>
+                            <span class="text-muted-foreground font-sans font-medium">{request.field_name}</span>
                           {/if}
                           {#if request.old_value}
-                            <span class="line-through text-muted-foreground">{request.old_value}</span>
-                            <span class="text-muted-foreground">→</span>
+                            <span class="break-all text-muted-foreground line-through">{request.old_value}</span>
+                            <span class="text-muted-foreground" aria-hidden="true">→</span>
                           {/if}
                           {#if request.new_value}
-                            <span class="font-bold text-emerald-600 dark:text-emerald-400">{request.new_value}</span>
+                            <span class="break-all font-semibold text-emerald-600 dark:text-emerald-400">{request.new_value}</span>
                           {/if}
                         </div>
                       {/if}
@@ -515,7 +516,7 @@ function parseApprovalChain(chain: any): any[] {
             {/each}
           </div>
         {:else if myRequests.length === 0}
-          <Card class="border-border/60 py-16 text-center">
+          <Card class="border-dashed border-border/60 bg-card/50 py-12 text-center">
             <CardContent class="flex flex-col items-center justify-center gap-3">
               <User class="w-10 h-10 text-muted-foreground/40" />
               <p class="text-xs text-muted-foreground">{m.ui_copy_you_have_not_submitted_any_approval_reques_005f0b0e()}</p>
@@ -525,7 +526,7 @@ function parseApprovalChain(chain: any): any[] {
           <div class="flex flex-col gap-3">
             {#each myRequests as request (request.id)}
               {@const typeInfo = getOverrideTypeInfo(request.override_type)}
-              <Card class="border-border/80 shadow-xs">
+              <Card class="border-border/60 bg-card shadow-xs">
                 <CardContent class="p-4 flex flex-col gap-2 text-start">
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
@@ -560,7 +561,7 @@ function parseApprovalChain(chain: any): any[] {
             {/each}
           </div>
         {:else if logItems.length === 0}
-          <Card class="border-border/60 py-16 text-center">
+          <Card class="border-dashed border-border/60 bg-card/50 py-12 text-center">
             <CardContent class="flex flex-col items-center justify-center gap-3">
               <ClockRotateRight class="w-10 h-10 text-muted-foreground/40" />
               <p class="text-xs text-muted-foreground">{m.ui_copy_no_approval_history_recorded_cd3090ac()}</p>
@@ -570,7 +571,7 @@ function parseApprovalChain(chain: any): any[] {
           <div class="flex flex-col gap-2">
             {#each logItems as request (request.id)}
               {@const typeInfo = getOverrideTypeInfo(request.override_type)}
-              <div class="flex items-center justify-between gap-3 p-3 rounded-lg border border-border/60 bg-card text-xs text-start">
+              <div class="flex flex-col items-start justify-between gap-2 rounded-lg border border-border/60 bg-card p-3 text-xs text-start sm:flex-row sm:items-center">
                 <div class="flex items-center gap-2 min-w-0">
                   <Badge variant={statusBadgeVariant(request.status)} class="text-[10px] font-bold uppercase shrink-0">
                     {request.status}
@@ -580,7 +581,7 @@ function parseApprovalChain(chain: any): any[] {
                   </Badge>
                   <span class="truncate font-medium text-foreground">{request.reason}</span>
                 </div>
-                <div class="flex items-center gap-3 shrink-0 text-[10px] text-muted-foreground font-mono">
+                <div class="flex items-center gap-3 self-end text-[10px] text-muted-foreground font-mono sm:shrink-0">
                   <span>{request.requested_by_name || m.settings_ui_system()}</span>
                   <span>{formatDate(request.created_at)}</span>
                 </div>
@@ -590,6 +591,7 @@ function parseApprovalChain(chain: any): any[] {
         {/if}
       </TabsContent>
 
+      </div>
     </main>
   </Tabs>
 </div>
