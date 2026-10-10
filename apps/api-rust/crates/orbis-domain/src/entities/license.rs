@@ -866,8 +866,9 @@ mod tests {
                     "product_key": "FREE_TRIAL",
                     "product_id": CANONICAL_PRODUCT_ID,
                     "organization_id": "organization-id",
-                    "edition_key": null,
-                    "plan_key": null,
+                    "edition_key": "SCHOOL",
+                    "plan_key": "SCHOOL_PRO",
+                    "plan_name": "School Professional",
                     "entitlements": [],
                     "limits": [
                         { "key": "students.max", "max_value": null }
@@ -888,8 +889,18 @@ mod tests {
 
         assert_eq!(response.activation.app_version, None);
         assert_eq!(response.activation.last_seen_at, None);
-        assert_eq!(response.signed_entitlement.payload.edition_key, None);
-        assert_eq!(response.signed_entitlement.payload.plan_key, None);
+        assert_eq!(
+            response.signed_entitlement.payload.edition_key.as_deref(),
+            Some("SCHOOL")
+        );
+        assert_eq!(
+            response.signed_entitlement.payload.plan_key.as_deref(),
+            Some("SCHOOL_PRO")
+        );
+        assert_eq!(
+            response.signed_entitlement.payload.plan_name.as_deref(),
+            Some("School Professional")
+        );
         assert_eq!(
             response
                 .signed_entitlement

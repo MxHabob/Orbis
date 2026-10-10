@@ -323,7 +323,7 @@ async function saveProfile() {
         </span>
       {:else}
         <div class="flex flex-wrap gap-2 py-1">
-          {#each userAssignedGroups as grp}
+          {#each userAssignedGroups as grp (grp.id)}
             <Badge variant="secondary" class="text-xs py-1 px-2.5 font-medium flex items-center gap-1.5">
               <UserGroup size={12} />
               <span>{l(grp.name_ar, grp.name) || grp.name}</span>

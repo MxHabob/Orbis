@@ -30,22 +30,21 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import { createUserQuery } from "$lib/features/settings/queries";
-import { useQueryClient } from "@tanstack/svelte-query";
 
 let { children }: { children: Snippet } = $props();
 
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
-if (userId && !(userId in userAvatarDrafts)) {
-  userAvatarDrafts[userId] = null;
-}
+$effect(() => {
+  const id = String(userId || "");
+  if (id && !(id in userAvatarDrafts)) userAvatarDrafts[id] = null;
+});
 
 // Shared user state
 const userQuery = createUserQuery(
   () => String(orgId || ""),
   () => String(userId || ""),
 );
-const queryClient = useQueryClient();
 const user = $derived((userQuery.data as any) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 const fullName = $derived(user?.full_name ?? "");
