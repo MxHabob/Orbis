@@ -61,13 +61,16 @@ describe("bulk commit pipeline", () => {
       }),
       commitChunk: async (chunk) => {
         commitCalls++;
+        expect(chunk).toHaveLength(2);
         return {
           success: true,
-          rowErrors: chunk.map((row) => ({
-            rowNumber: row.rowNumber,
-            reason:
-              "Row 1: Forbidden: The license is not valid for the active organization",
-          })),
+          rowErrors: [
+            {
+              rowNumber: 1,
+              reason:
+                "Row 1: Forbidden: The license is not valid for the active organization",
+            },
+          ],
         };
       },
     };

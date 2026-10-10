@@ -37,6 +37,13 @@ async function handleRefresh() {
   isRefreshing = false;
 }
 
+async function handleLoadState() {
+  const result = await licenseStore.loadState();
+  if (!result && licenseStore.error) {
+    toast.error(licenseStore.error);
+  }
+}
+
 async function handleStartTrial() {
   isStartingTrial = true;
   const result = await licenseStore.startTrial();
@@ -183,9 +190,26 @@ const statusBadge = $derived.by(() => {
     <header class="flex flex-wrap items-end justify-between gap-4">
       <div class="flex flex-col gap-1.5">
         <h1 class="text-2xl font-semibold tracking-tight text-foreground">{m.license_nav_title()}</h1>
+        {#if !licenseStore.hasLoaded && licenseStore.error}
+          <p class="text-sm text-destructive" role="alert">{licenseStore.error}</p>
+        {/if}
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        {#if licenseStore.state === "unavailable"}
+        {#if !licenseStore.hasLoaded && licenseStore.error}
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={handleLoadState}
+            disabled={licenseStore.isLoading}
+            class="text-xs"
+          >
+            {#if licenseStore.isLoading}
+              <LoadingIndicator size="sm" class="me-1.5" />
+            {/if}
+            {m.common_retry()}
+          </Button>
+        {/if}
+        {#if licenseStore.hasLoaded && licenseStore.state === "unavailable"}
           <Button
             variant="outline"
             size="sm"

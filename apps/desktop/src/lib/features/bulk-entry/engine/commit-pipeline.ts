@@ -99,17 +99,21 @@ export async function executeCommitPipeline<T = Record<string, unknown>>(
         }
 
         for (const row of chunkRows) {
-          const rowError = res.rowErrors?.find((error) => error.rowNumber === row.rowNumber);
-          if (rowError) {
+          const rowError = licenseRowError
+            ? undefined
+            : res.rowErrors?.find((error) => error.rowNumber === row.rowNumber);
+          if (licenseRowError || rowError) {
             row.status = "failed";
-            const reason = isOrganizationLicenseError(rowError.reason)
+            const reason = licenseRowError
               ? m.bulk_entry_result_license_invalid()
-              : rowError.reason;
+              : rowError && isOrganizationLicenseError(rowError.reason)
+                ? m.bulk_entry_result_license_invalid()
+                : rowError?.reason ?? m.bulk_entry_commit_transaction_failed();
             row.commitError = reason;
             row.data.status = m.bulk_entry_status_failed({ reason });
             failedCount++;
             failedRowNumbers.push(row.rowNumber);
-            errors.push({ ...rowError, reason });
+            errors.push({ rowNumber: row.rowNumber, reason });
           } else {
             row.status = "committed";
             row.data.status = m.bulk_entry_status_committed();
