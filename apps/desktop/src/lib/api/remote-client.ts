@@ -1267,7 +1267,37 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]> {
-    return this.call(sdk.listFees({ client: this.client, query: filter as any })) ?? [];
+    const firstPage = await this.listStudentFeesPaginated({
+      ...filter,
+      page: 1,
+      page_size: 100,
+    });
+    if (firstPage.total_pages <= 1) return firstPage.items;
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+        this.listStudentFeesPaginated({
+          ...filter,
+          page: index + 2,
+          page_size: 100,
+        }),
+      ),
+    );
+    return firstPage.items.concat(...remainingPages.map((page) => page.items));
+  }
+
+  async listStudentFeesPaginated(
+    filter?: StudentFeeFilterParams,
+  ): Promise<PaginatedList<StudentFeeDto>> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries({
+      ...filter,
+      page_size: Math.min(Math.max(filter?.page_size ?? 50, 1), 100),
+    })) {
+      if (value !== undefined && value !== null) query.set(key, String(value));
+    }
+    return this.fetchApi(
+      `/api/v1/student-fees?${query.toString()}`,
+    );
   }
 
   async deleteStudentFee(id: string): Promise<boolean> {
@@ -1280,7 +1310,35 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
-    return this.call(sdk.listPayments({ client: this.client, query: filter as any })) ?? [];
+    const firstPage = await this.listPaymentsPaginated({
+      ...filter,
+      page: 1,
+      page_size: 100,
+    });
+    if (firstPage.total_pages <= 1) return firstPage.items;
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+        this.listPaymentsPaginated({
+          ...filter,
+          page: index + 2,
+          page_size: 100,
+        }),
+      ),
+    );
+    return firstPage.items.concat(...remainingPages.map((page) => page.items));
+  }
+
+  async listPaymentsPaginated(
+    filter?: PaymentFilterParams,
+  ): Promise<PaginatedList<PaymentDto>> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries({
+      ...filter,
+      page_size: Math.min(Math.max(filter?.page_size ?? 50, 1), 100),
+    })) {
+      if (value !== undefined && value !== null) query.set(key, String(value));
+    }
+    return this.fetchApi(`/api/v1/payments?${query.toString()}`);
   }
 
   async deletePayment(id: string): Promise<boolean> {

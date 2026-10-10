@@ -274,23 +274,6 @@ async function handleAction(event: GridActionEvent) {
       readonly
       onaction={handleAction}
     />
-    {#if usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}
-      <div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          class="text-xs w-full max-w-md cursor-pointer"
-          disabled={usersQuery.isFetchingNextPage}
-          onclick={() => usersQuery.fetchNextPage()}
-        >
-          {#if usersQuery.isFetchingNextPage}
-            {m.common_loading()}
-          {:else}
-            {m.settings_users_load_more()}
-          {/if}
-        </Button>
-      </div>
-    {/if}
   </div>
 
   <!-- Create User Slide-over Sheet -->

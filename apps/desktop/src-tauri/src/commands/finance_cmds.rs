@@ -14,7 +14,9 @@ use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate};
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::entities::payment::{Payment, PaymentMethod};
 use orbis_domain::entities::student_fee::StudentFee;
-use orbis_domain::queries::filters::{PaginationParams, PaymentFilter, StudentFeeFilter};
+use orbis_domain::queries::filters::{
+    PaginatedList, PaginationParams, PaymentFilter, StudentFeeFilter,
+};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -988,7 +990,7 @@ pub async fn finance_list_student_fees(
         only_unpaid: None,
         pagination: Some(PaginationParams {
             page: f.page.or(Some(1)),
-            page_size: f.page_size.or(Some(1000)),
+            page_size: f.page_size.map(|size| size.clamp(1, 100)).or(Some(100)),
             sort_by: f.sort_by,
             sort_dir: f.sort_dir,
         }),
@@ -1005,6 +1007,41 @@ pub async fn finance_list_student_fees(
         .into_iter()
         .map(student_fee_to_dto)
         .collect()))
+}
+
+#[tauri::command]
+pub async fn finance_list_student_fees_paginated(
+    filter: Option<FeeFilterInput>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<PaginatedList<StudentFeeDto>>, String> {
+    let ctx = make_ctx(&state);
+    let f = filter.unwrap_or_default();
+    let query_filter = StudentFeeFilter {
+        student_id: parse_optional_uuid(f.student_id, "student_id")?,
+        enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
+        fee_template_id: parse_optional_uuid(f.fee_template_id, "fee_template_id")?,
+        period_id: parse_optional_uuid(f.period_id, "period_id")?,
+        status: f.status,
+        is_overdue: f.is_overdue,
+        only_unpaid: None,
+        pagination: Some(PaginationParams {
+            page: Some(f.page.unwrap_or(1).max(1)),
+            page_size: Some(f.page_size.unwrap_or(50).clamp(1, 100)),
+            sort_by: f.sort_by,
+            sort_dir: f.sort_dir,
+        }),
+    };
+    let page = state
+        .finance_service
+        .list_student_fees(ctx.tenant_id, query_filter)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(PaginatedList::new(
+        page.items.into_iter().map(student_fee_to_dto).collect(),
+        page.total_count,
+        page.page,
+        page.page_size,
+    )))
 }
 
 #[tauri::command]
@@ -1105,7 +1142,7 @@ pub async fn finance_list_payments(
         to_date,
         pagination: Some(PaginationParams {
             page: f.page.or(Some(1)),
-            page_size: f.page_size.or(Some(1000)),
+            page_size: f.page_size.map(|size| size.clamp(1, 100)).or(Some(100)),
             sort_by: f.sort_by,
             sort_dir: f.sort_dir,
         }),
@@ -1122,6 +1159,66 @@ pub async fn finance_list_payments(
         .into_iter()
         .map(payment_to_dto)
         .collect()))
+}
+
+#[tauri::command]
+pub async fn finance_list_payments_paginated(
+    filter: Option<PaymentFilterInput>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<PaginatedList<PaymentDto>>, String> {
+    let ctx = make_ctx(&state);
+    let f = filter.unwrap_or_default();
+    let from_date = f
+        .from_date
+        .as_deref()
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid from_date; expected YYYY-MM-DD")?
+        .and_then(|date| date.and_hms_opt(0, 0, 0))
+        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+    let to_date = f
+        .to_date
+        .as_deref()
+        .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
+        .transpose()
+        .map_err(|_| "Invalid to_date; expected YYYY-MM-DD")?
+        .and_then(|date| date.and_hms_opt(23, 59, 59))
+        .map(|dt| chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc));
+    let method = match f.method.as_deref() {
+        None => None,
+        Some("cash") => Some(PaymentMethod::Cash),
+        Some("bank_transfer") | Some("bank") => Some(PaymentMethod::BankTransfer),
+        Some("check") | Some("cheque") => Some(PaymentMethod::Check),
+        Some("credit_card") | Some("card") => Some(PaymentMethod::CreditCard),
+        Some("mada") => Some(PaymentMethod::Mada),
+        Some("apple_pay") => Some(PaymentMethod::ApplePay),
+        Some(value) => return Err(format!("Invalid payment method filter: {value}")),
+    };
+    let query_filter = PaymentFilter {
+        student_id: parse_optional_uuid(f.student_id, "student_id")?,
+        enrollment_id: parse_optional_uuid(f.enrollment_id, "enrollment_id")?,
+        fee_id: parse_optional_uuid(f.fee_id, "fee_id")?,
+        method,
+        from_date,
+        to_date,
+        pagination: Some(PaginationParams {
+            page: Some(f.page.unwrap_or(1).max(1)),
+            page_size: Some(f.page_size.unwrap_or(50).clamp(1, 100)),
+            sort_by: f.sort_by,
+            sort_dir: f.sort_dir,
+        }),
+    };
+    let page = state
+        .finance_service
+        .list_payments(ctx.tenant_id, query_filter)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(PaginatedList::new(
+        page.items.into_iter().map(payment_to_dto).collect(),
+        page.total_count,
+        page.page,
+        page.page_size,
+    )))
 }
 
 #[tauri::command]

@@ -1005,8 +1005,30 @@ export class LocalClient implements OrbisApiClient {
   async listStudentFees(
     filter?: StudentFeeFilterParams,
   ): Promise<StudentFeeDto[]> {
+    const firstPage = await this.listStudentFeesPaginated({
+      ...filter,
+      page: 1,
+      page_size: 100,
+    });
+    if (firstPage.total_pages <= 1) return firstPage.items;
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+        this.listStudentFeesPaginated({
+          ...filter,
+          page: index + 2,
+          page_size: 100,
+        }),
+      ),
+    );
+    return firstPage.items.concat(...remainingPages.map((page) => page.items));
+  }
+  async listStudentFeesPaginated(
+    filter?: StudentFeeFilterParams,
+  ): Promise<PaginatedList<StudentFeeDto>> {
     return unwrap(
-      await invoke("finance_list_student_fees", { filter: filter ?? {} }),
+      await invoke("finance_list_student_fees_paginated", {
+        filter: { ...filter, page_size: Math.min(filter?.page_size ?? 50, 100) },
+      }),
     );
   }
   async deleteStudentFee(id: string): Promise<boolean> {
@@ -1018,8 +1040,30 @@ export class LocalClient implements OrbisApiClient {
   async listPayments(
     filter?: PaymentFilterParams,
   ): Promise<PaymentDto[]> {
+    const firstPage = await this.listPaymentsPaginated({
+      ...filter,
+      page: 1,
+      page_size: 100,
+    });
+    if (firstPage.total_pages <= 1) return firstPage.items;
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+        this.listPaymentsPaginated({
+          ...filter,
+          page: index + 2,
+          page_size: 100,
+        }),
+      ),
+    );
+    return firstPage.items.concat(...remainingPages.map((page) => page.items));
+  }
+  async listPaymentsPaginated(
+    filter?: PaymentFilterParams,
+  ): Promise<PaginatedList<PaymentDto>> {
     return unwrap(
-      await invoke("finance_list_payments", { filter: filter ?? {} }),
+      await invoke("finance_list_payments_paginated", {
+        filter: { ...filter, page_size: Math.min(filter?.page_size ?? 50, 100) },
+      }),
     );
   }
   async deletePayment(id: string): Promise<boolean> {

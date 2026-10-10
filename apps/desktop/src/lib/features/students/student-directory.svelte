@@ -10,18 +10,20 @@ import { Input } from "@orbis/ui/input";
 import { ArrowForward, ArrowUpTray, BookOpen, DocumentChartBar, Plus, Printer, Search, XMark } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
-import { studentsStore, createStudentsQuery } from "$lib/features/students";
+import { studentsStore } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import { academicContext } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
+import { api, queryKeys } from "$lib/api";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
@@ -32,45 +34,61 @@ import { exportToCsv } from "$lib/shared/utils/export";
 let { orgId }: { orgId: string } = $props();
 
 // TanStack Queries
-const studentsQuery = createStudentsQuery(() => orgId);
+const studentFilter = $derived({
+  class_id: studentsStore.selectedClassId ?? undefined,
+  status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
+  search: studentsStore.searchQuery.trim() || undefined,
+});
+const studentsQuery = createInfiniteQuery(() => ({
+  queryKey: queryKeys.student.list(orgId, studentFilter as Record<string, unknown>),
+  queryFn: ({ pageParam }) =>
+    api.listStudents({ ...studentFilter, page: pageParam, page_size: 50 }),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage) =>
+    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
 const classesQuery = createClassesQuery(() => orgId);
 
 // Derived data from queries
-const students = $derived<any[]>(
-  Array.isArray(studentsQuery.data)
-    ? studentsQuery.data
-    : (studentsQuery.data as any)?.items ?? [],
+const students = $derived(
+  studentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
 );
 const classes = $derived<any[]>(
   Array.isArray(classesQuery.data)
     ? classesQuery.data
     : (classesQuery.data as any)?.items ?? [],
 );
-const filteredStudents = $derived(studentsStore.filterList(students));
+const filteredStudents = $derived(students);
+
+async function loadMoreStudents() {
+  const result = await studentsQuery.fetchNextPage();
+  if (result.isError) throw result.error;
+}
 
 let showOverrideDialog = $state(false);
 const isLoading = $derived(
   studentsQuery.isLoading || classesQuery.isLoading,
 );
-const error = $derived(studentsQuery.error || classesQuery.error);
-
-// Helper to count students matching a criteria
-function getCountByClass(classId: string): number {
-  return students.filter((s) => s.enrollment?.class_id === classId).length;
-}
-
-function getCountByStatus(status: string): number {
-  if (status === "all") return students.length;
-  return students.filter(
-    (s) => String(s.student?.status || "").toLowerCase() === status,
-  ).length;
-}
+const error = $derived(
+  (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
+    classesQuery.error,
+);
 
 // Local search input with debounce
 let localSearch = $state("");
 const updateSearch = debounce((q: string) => {
   studentsStore.searchQuery = q;
 }, 150);
+
+function setStatusFilter(status: string) {
+  studentsStore.statusFilter = status;
+}
+
+function setClassFilter(classId: string | null) {
+  studentsStore.selectedClassId = classId;
+}
 
 // Clear active filters
 function clearFilters() {
@@ -100,8 +118,6 @@ function handleExportStudents() {
           (s.person?.first_name && s.person?.last_name
             ? `${s.person.first_name} ${s.person.last_name}`
             : "") ||
-          s.person?.name_ar ||
-          s.person?.name_en ||
           s.person?.full_name ||
           m.operations_ui_student_fallback(),
       },
@@ -139,21 +155,18 @@ function handleExportStudents() {
             items: [
               {
                 label: m.common_filter_all(),
-                badge: formatNumber(getCountByStatus('all')),
                 isActive: studentsStore.statusFilter === 'all',
-                onclick: () => studentsStore.statusFilter = 'all'
+                onclick: () => setStatusFilter('all')
               },
               {
                 label: m.common_filter_active(),
-                badge: formatNumber(getCountByStatus('active')),
                 isActive: studentsStore.statusFilter === 'active',
-                onclick: () => studentsStore.statusFilter = 'active'
+                onclick: () => setStatusFilter('active')
               },
               {
                 label: m.common_filter_withdrawn(),
-                badge: formatNumber(getCountByStatus('withdrawn')),
                 isActive: studentsStore.statusFilter === 'withdrawn',
-                onclick: () => studentsStore.statusFilter = 'withdrawn'
+                onclick: () => setStatusFilter('withdrawn')
               }
             ]
           },
@@ -162,16 +175,14 @@ function handleExportStudents() {
             items: [
               {
                 label: m.common_filter_all_classes(),
-                badge: formatNumber(students.length),
                 isActive: studentsStore.selectedClassId === null,
-                onclick: () => studentsStore.selectedClassId = null
+                onclick: () => setClassFilter(null)
               },
               ...classes.map(c => ({
                 key: String(c.id),
                 label: String(l(c.name_ar, c.name) || c.name || c.id),
-                badge: formatNumber(getCountByClass(String(c.id))),
                 isActive: studentsStore.selectedClassId === c.id,
-                onclick: () => studentsStore.selectedClassId = String(c.id)
+                onclick: () => setClassFilter(String(c.id))
               }))
             ]
           }
@@ -258,6 +269,8 @@ function handleExportStudents() {
               classes={classes}
               enableSelection={true}
               bind:selectedIds={selectedStudentIds}
+              hasMore={studentsQuery.hasNextPage ?? false}
+              onloadmore={loadMoreStudents}
               {orgId}
             />
           {/if}

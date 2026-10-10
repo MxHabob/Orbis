@@ -77,6 +77,8 @@ interface Props {
   onselection?: (sel: SelectionSnapshot) => void;
   cellStyle?: (row: GridRow, col: OrbisColumnDef) => string;
   createEmptyRow?: () => GridRow;
+  hasMore?: boolean;
+  onloadmore?: () => void | Promise<unknown>;
 }
 
 let {
@@ -105,6 +107,8 @@ let {
   onselection,
   cellStyle,
   createEmptyRow,
+  hasMore = false,
+  onloadmore,
 }: Props = $props();
 
 const HEADER_H = 36;
@@ -133,6 +137,8 @@ let origin = $state<{ row: number; col: number } | null>(null);
 let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
 let dragging = $state(false);
 let skipBlur = $state(false);
+let isLoadingMore = $state(false);
+let loadMoreError = $state<unknown>(null);
 
 setContext("orbis-grid-onaction", (event: GridActionEvent) => {
   onaction?.(event);
@@ -314,7 +320,46 @@ function onScroll() {
   if (!bodyEl) return;
   scrollTop = bodyEl.scrollTop;
   scrollLeft = bodyEl.scrollLeft;
+  requestMoreIfNeeded();
 }
+
+function requestMoreIfNeeded(force = false) {
+  if (
+    (!bodyEl && !force) ||
+    !hasMore ||
+    !onloadmore ||
+    loading ||
+    isLoadingMore ||
+    loadMoreError
+  ) {
+    return;
+  }
+  if (!force && bodyEl) {
+    const remaining =
+      bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight;
+    if (remaining > rowSize * 8) return;
+  }
+
+  isLoadingMore = true;
+  loadMoreError = null;
+  Promise.resolve()
+    .then(() => onloadmore?.())
+    .catch((error: unknown) => {
+      console.error("OrbisGrid failed to load the next row batch:", error);
+      loadMoreError = error;
+    })
+    .finally(() => {
+      isLoadingMore = false;
+      if (!loadMoreError) requestAnimationFrame(requestMoreIfNeeded);
+    });
+}
+
+$effect(() => {
+  source.length;
+  hasMore;
+  loading;
+  requestAnimationFrame(requestMoreIfNeeded);
+});
 
 function setActive(row: number, col: number, extend = false) {
   const r = clampIndex(row, Math.max(0, displayRows.length - 1));
@@ -1084,12 +1129,24 @@ export function scrollToColumnProp(prop: string) {
       {/each}
     </div>
   {:else if displayRows.length === 0}
-    <div class="orbis-empty-wrap">
-      <div class="orbis-empty-title">{emptyTitle}</div>
-      {#if emptyDescription}
-        <div class="orbis-empty-desc">{emptyDescription}</div>
-      {/if}
-    </div>
+    {#if loadMoreError}
+      <div class="orbis-empty-wrap" role="alert">
+        <div class="orbis-empty-title">{rtl ? "تعذر تحميل السجلات" : "Couldn't load records"}</div>
+        <div class="orbis-empty-desc">
+          {loadMoreError instanceof Error ? loadMoreError.message : String(loadMoreError)}
+        </div>
+        <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
+          {rtl ? "إعادة المحاولة" : "Retry"}
+        </button>
+      </div>
+    {:else}
+      <div class="orbis-empty-wrap">
+        <div class="orbis-empty-title">{emptyTitle}</div>
+        {#if emptyDescription}
+          <div class="orbis-empty-desc">{emptyDescription}</div>
+        {/if}
+      </div>
+    {/if}
   {:else}
     <div
       class="orbis-grid-body"
@@ -1377,6 +1434,21 @@ export function scrollToColumnProp(prop: string) {
             {/if}
           {/each}
         </div>
+        {#if isLoadingMore || loadMoreError}
+          <div class="orbis-load-status" role={loadMoreError ? "alert" : "status"}>
+            {#if loadMoreError}
+              <span>
+                {rtl ? "تعذر تحميل المزيد" : "Couldn't load more"}
+                {loadMoreError instanceof Error ? `: ${loadMoreError.message}` : ""}
+              </span>
+              <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
+                {rtl ? "إعادة المحاولة" : "Retry"}
+              </button>
+            {:else}
+              {rtl ? "جارٍ تحميل المزيد…" : "Loading more…"}
+            {/if}
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
@@ -1512,6 +1584,29 @@ export function scrollToColumnProp(prop: string) {
     overflow: auto;
     position: relative;
     background: var(--card);
+  }
+  .orbis-load-status {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 36px;
+    padding: 0.4rem 0.75rem;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 94%, transparent);
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+  }
+  .orbis-load-retry {
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    background: var(--background);
+    padding: 0.25rem 0.5rem;
+    color: var(--foreground);
+    cursor: pointer;
   }
   .orbis-spacer {
     position: relative;

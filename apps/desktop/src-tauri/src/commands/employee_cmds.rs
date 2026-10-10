@@ -399,8 +399,8 @@ pub async fn employee_list_employees(
     let ctx = make_ctx(&state);
     let org_id = ctx.tenant_id;
     let org_unit_id = filter.org_unit_id.and_then(|id| Uuid::parse_str(&id).ok());
-    let page = filter.page.unwrap_or(1);
-    let page_size = filter.page_size.unwrap_or(20);
+    let page = filter.page.unwrap_or(1).max(1);
+    let page_size = filter.page_size.unwrap_or(20).clamp(1, 100);
     let offset = (page.saturating_sub(1)) * page_size;
 
     let domain_filter = EmployeeFilter {

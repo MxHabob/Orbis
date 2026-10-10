@@ -12,7 +12,8 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, queryClient } from "$lib/api";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
+import { api, queryClient, queryKeys } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import type { StudentFeeDto, FeeTemplateDto, DiscountTemplateDto, AcademicPeriodDto } from "$lib/api/types";
 import { orgContext } from "$lib/stores/org-context.svelte";
@@ -43,7 +44,6 @@ import { fade, slide } from "svelte/transition";
 let { orgId }: { orgId: string } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
-let fees = $state<StudentFeeDto[]>([]);
 let feeTemplates = $state<FeeTemplateDto[]>([]);
 let discountTemplates = $state<DiscountTemplateDto[]>([]);
 let students = $state<any[]>([]);
@@ -78,6 +78,35 @@ let refundNotes = $state("");
 let searchQuery = $state("");
 let statusFilter = $state<"all" | "pending" | "partially_paid" | "paid" | "overdue">("all");
 
+const feePageFilter = $derived({
+  status:
+    statusFilter !== "all" && statusFilter !== "overdue"
+      ? statusFilter
+      : undefined,
+  is_overdue: statusFilter === "overdue" ? true : undefined,
+});
+const feesQuery = createInfiniteQuery(() => ({
+  queryKey: queryKeys.finance.studentFees(orgId, {
+    ...feePageFilter,
+    search: searchQuery.trim() || undefined,
+  }),
+  queryFn: ({ pageParam }) =>
+    api.listStudentFeesPaginated({
+      ...feePageFilter,
+      page: pageParam,
+      page_size: 50,
+    }),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage) =>
+    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
+const fees = $derived(feesQuery.data?.pages.flatMap((page) => page.items) ?? []);
+const gridLoading = $derived(
+  isLoading || (feesQuery.isLoading && !feesQuery.data),
+);
+
 function getFeeCurrency(fee: StudentFeeDto) {
   const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
   return template?.currency || (fee as StudentFeeDto & { currency?: string }).currency || orgContext.baseCurrency || "";
@@ -89,22 +118,20 @@ function formatFeeAmount(amount: number, currency: string) {
 
 onMount(async () => {
   if (orgId) {
-    await loadData();
+    await loadData(false);
   }
 });
 
-async function loadData() {
+async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [feesList, templatesList, discountsList, enrollmentsList, periodsList] = await Promise.all([
-      api.listStudentFees(),
+    const [templatesList, discountsList, enrollmentsList, periodsList] = await Promise.all([
       api.listFeeTemplates(),
       api.listDiscountTemplates(),
       api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
       api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
     ]);
 
-    fees = feesList;
     feeTemplates = templatesList;
     discountTemplates = discountsList;
     students = enrollmentsList.map((e: any) => ({
@@ -116,6 +143,11 @@ async function loadData() {
 
     if (periods.length > 0 && !formPeriodId) {
       formPeriodId = periods[0].id;
+    }
+    if (refreshFees) {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.studentFees(orgId),
+      });
     }
   } catch (e) {
     console.error("Failed to load fees master data:", e);
@@ -734,12 +766,14 @@ function exportCsv() {
       <OrbisGrid
         columns={columns}
         source={filteredSource}
-        loading={isLoading}
+        loading={gridLoading}
         clientQuery
         search={searchQuery}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_student_fees()}
+        hasMore={feesQuery.hasNextPage ?? false}
+        onloadmore={() => feesQuery.fetchNextPage()}
       />
     </div>
   </div>

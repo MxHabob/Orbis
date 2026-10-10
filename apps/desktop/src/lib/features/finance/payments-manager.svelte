@@ -12,7 +12,14 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, extractErrorMessage, type AccountDto } from "$lib/api";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
+import {
+  api,
+  extractErrorMessage,
+  queryClient,
+  queryKeys,
+  type AccountDto,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -76,7 +83,6 @@ const paymentMethodsQuery = createAvailablePaymentMethodsQuery(() => orgId);
 const availablePaymentMethods = $derived(paymentMethodsQuery.data ?? []);
 
 // ── State ──────────────────────────────────────────────────────────────
-let payments = $state<any[]>([]);
 let accounts = $state<AccountDto[]>([]);
 let treasuries = $state<AccountDto[]>([]);
 let students = $state<any[]>([]);
@@ -117,25 +123,52 @@ let searchQuery = $state("");
 let methodFilter = $state("all");
 let filterDate = $state(getLocalDateInputValue());
 
+const paymentPageFilter = $derived({
+  method: methodFilter === "all" ? undefined : methodFilter,
+  from_date: filterDate || undefined,
+  to_date: filterDate || undefined,
+});
+const paymentsQuery = createInfiniteQuery(() => ({
+  queryKey: queryKeys.finance.payments(orgId, {
+    ...paymentPageFilter,
+    search: searchQuery.trim() || undefined,
+  }),
+  queryFn: ({ pageParam }) =>
+    api.listPaymentsPaginated({
+      ...paymentPageFilter,
+      page: pageParam,
+      page_size: 50,
+    }),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage) =>
+    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
+const payments = $derived(
+  paymentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+);
+const gridLoading = $derived(
+  isLoading || (paymentsQuery.isLoading && !paymentsQuery.data),
+);
+
 // Print
 let printDialogOpen = $state(false);
 let printParameters = $state<Record<string, any>>({});
 let printTitle = $state(m.finance_ui_print_receipt());
 
 onMount(async () => {
-  await loadData();
+  await loadData(false);
 });
 
-async function loadData() {
+async function loadData(refreshPayments = true) {
   isLoading = true;
   try {
-    const [paymentsList, accountsList, enrollmentsList] = await Promise.all([
-      api.listPayments().catch(() => []),
+    const [accountsList, enrollmentsList] = await Promise.all([
       api.listAccounts().catch(() => []),
       api.listEnrollments ? api.listEnrollments().catch(() => []) : Promise.resolve([]),
     ]);
 
-    payments = paymentsList || [];
     accounts = accountsList || [];
     treasuries = (accountsList || []).filter(isCashOrBankAccount);
 
@@ -147,6 +180,11 @@ async function loadData() {
 
     if (treasuries.length > 0 && !selectedTreasuryId) {
       selectedTreasuryId = treasuries[0].id;
+    }
+    if (refreshPayments) {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.payments(orgId),
+      });
     }
   } catch (e) {
     console.error("Failed to load payments data:", e);
@@ -643,12 +681,14 @@ function exportCsv() {
       <OrbisGrid
         columns={columns}
         source={filteredSource}
-        loading={isLoading}
+        loading={gridLoading}
         clientQuery
         search={searchQuery}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_receipts()}
+        hasMore={paymentsQuery.hasNextPage ?? false}
+        onloadmore={() => paymentsQuery.fetchNextPage()}
       />
     </div>
   </div>

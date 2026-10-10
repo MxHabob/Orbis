@@ -316,7 +316,10 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       code: c.code || c.id,
       name: c.name || "",
       nameAr: c.name_ar || c.name || "",
-      meta: { capacity: c.capacity ?? 30 },
+      meta: {
+        capacity: c.capacity ?? 30,
+        periodId: c.period_id,
+      },
     }));
 
     const feeTemplates = (feeTemplatesRes || []).map((f: any) => ({
@@ -618,6 +621,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       const namePartsAr = splitPersonName(fullNameAr);
       const fullNameEn = row.full_name_en?.trim() || fullNameAr;
       const namePartsEn = splitPersonName(fullNameEn);
+      const classPeriodId = matchedClass?.meta?.periodId;
 
       const rawGender = String(row.gender || "").toLowerCase().trim();
       const genderStr = rawGender === "female" || rawGender === "أنثى" ? "female" : rawGender === "male" || rawGender === "ذكر" ? "male" : undefined;
@@ -647,7 +651,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
           address: fieldActive("address") ? row.address?.trim() || undefined : undefined,
           phone: fieldActive("phone") ? row.phone?.trim() || undefined : undefined,
           email: fieldActive("email") ? row.email?.trim() || undefined : undefined,
-          initial_period_id: effectiveContext.currentPeriodId || undefined,
+          initial_period_id:
+            effectiveContext.currentPeriodId ||
+            (typeof classPeriodId === "string" ? classPeriodId : undefined),
           initial_class_id: matchedClass?.id || undefined,
           study_mode: row.study_mode?.trim() || "regular",
         },

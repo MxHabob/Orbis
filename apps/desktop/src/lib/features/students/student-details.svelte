@@ -135,7 +135,14 @@ function populateForm(detail: StudentDetailDto) {
   const s = detail.student;
   const e = detail.enrollment;
 
-  nameAr = (p?.first_name && p?.last_name ? `${p.first_name} ${p.last_name}` : "") || p?.first_name_ar || p?.display_name || p?.full_name || "";
+  nameAr =
+    [p?.first_name_ar, p?.middle_name_ar, p?.last_name_ar]
+      .filter((part) => part?.trim())
+      .join(" ") ||
+    p?.full_name_ar ||
+    p?.display_name ||
+    p?.full_name ||
+    "";
   nameEn = p?.full_name || "";
   const rawBirth = p?.birth_date ? String(p.birth_date).slice(0, 10) : "";
   if (rawBirth) {
@@ -169,16 +176,41 @@ onMount(async () => {
     const detail = await api.getStudent(studentId);
     if (detail) {
       populateForm(detail);
+      let enrollment = detail.enrollment;
+
+      if (!enrollment) {
+        try {
+          const enrollments = await api.listEnrollments({
+            student_id: studentId,
+            page_size: 100,
+          });
+          enrollment =
+            enrollments.find(
+              (item) =>
+                item.period_id === academicContext.effectivePeriodId &&
+                (item.status === "active" || item.status === "pending_approval"),
+            ) ??
+            enrollments.find(
+              (item) => item.status === "active" || item.status === "pending_approval",
+            ) ??
+            enrollments[0];
+          classId = String(enrollment?.class_id || "");
+        } catch (error) {
+          console.error("Failed to load student enrollments:", error);
+          toast.error(extractErrorMessage(error));
+        }
+      }
+
+      const periodId =
+        academicContext.effectivePeriodId || enrollment?.period_id || "";
+      if (periodId && studentId) {
+        const gRes = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
+        gradesReport = gRes;
+        attendanceReport = null;
+        behaviorRecords = [];
+      }
     }
 
-    const periodId =
-      academicContext.effectivePeriodId || detail?.enrollment?.period_id || "";
-    if (periodId && studentId) {
-      const gRes = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
-      gradesReport = gRes;
-      attendanceReport = null;
-      behaviorRecords = [];
-    }
   } catch (e) {
     console.error("Failed to load evaluation reports:", e);
   } finally {

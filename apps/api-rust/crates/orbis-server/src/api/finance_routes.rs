@@ -21,6 +21,7 @@ use orbis_app::services::finance_service::{
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::entities::payment::PaymentMethod;
+use orbis_domain::queries::filters::PaginatedList;
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct AccountDto {
@@ -422,12 +423,23 @@ pub struct SettleGatewayPayoutRequest {
 pub struct FeeQuery {
     pub enrollment_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
+    pub status: Option<String>,
+    pub is_overdue: Option<bool>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 #[derive(Deserialize)]
 pub struct PaymentQuery {
     pub fee_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
+    pub enrollment_id: Option<Uuid>,
+    pub method: Option<String>,
+    pub from_date: Option<NaiveDate>,
+    pub to_date: Option<NaiveDate>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 fn map_journal_entry_to_dto(entry: JournalEntry) -> JournalEntryDto {
@@ -814,30 +826,37 @@ pub async fn generate_fee(
 }
 
 #[utoipa::path(get, path = "/api/v1/student-fees",
-    responses((status = 200, body = Vec<StudentFeeDto>)), security(("bearer" = [])), tag = "Finance")]
+    responses((status = 200, body = PaginatedList<StudentFeeDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn list_fees(
     ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<FeeQuery>,
-) -> Result<Json<ApiResponse<Vec<StudentFeeDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<PaginatedList<StudentFeeDto>>>, ApiError> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(50).clamp(1, 100);
     let filter = orbis_domain::queries::filters::StudentFeeFilter {
         student_id: q.student_id,
         enrollment_id: q.enrollment_id,
         fee_template_id: None,
-        period_id: None,
-        status: None,
-        is_overdue: None,
+        period_id: q.period_id,
+        status: q.status,
+        is_overdue: q.is_overdue,
         only_unpaid: None,
-        pagination: None,
+        pagination: Some(orbis_domain::queries::filters::PaginationParams {
+            page: Some(page),
+            page_size: Some(page_size),
+            sort_by: None,
+            sort_dir: None,
+        }),
     };
     let fees = state
         .finance_service
         .list_student_fees(ctx.tenant_id, filter)
-        .await?
-        .items;
-    let dtos = fees
-        .into_iter()
-        .map(|f| StudentFeeDto {
+        .await?;
+    let result = PaginatedList::new(
+        fees.items
+            .into_iter()
+            .map(|f| StudentFeeDto {
             id: f.id,
             org_id: f.org_id,
             period_id: f.period_id,
@@ -854,9 +873,13 @@ pub async fn list_fees(
             created_by: f.created_by,
             created_at: f.created_at,
             updated_at: f.updated_at,
-        })
-        .collect();
-    Ok(ApiResponse::ok(dtos))
+            })
+            .collect(),
+        fees.total_count,
+        fees.page,
+        fees.page_size,
+    );
+    Ok(ApiResponse::ok(result))
 }
 
 #[utoipa::path(post, path = "/api/v1/payments", request_body = ProcessPaymentRequest,
@@ -920,25 +943,43 @@ pub async fn process_payment(
 }
 
 #[utoipa::path(get, path = "/api/v1/payments",
-    responses((status = 200, body = Vec<PaymentDto>)), security(("bearer" = [])), tag = "Finance")]
+    responses((status = 200, body = PaginatedList<PaymentDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn list_payments(
     ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<PaymentQuery>,
-) -> Result<Json<ApiResponse<Vec<PaymentDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<PaginatedList<PaymentDto>>>, ApiError> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(50).clamp(1, 100);
+    let method = q.method.as_deref().map(|method| match method.to_lowercase().as_str() {
+        "bank_transfer" | "bank" => Ok(PaymentMethod::BankTransfer),
+        "check" | "cheque" => Ok(PaymentMethod::Check),
+        "credit_card" | "card" => Ok(PaymentMethod::CreditCard),
+        "mada" => Ok(PaymentMethod::Mada),
+        "apple_pay" | "applepay" => Ok(PaymentMethod::ApplePay),
+        "cash" => Ok(PaymentMethod::Cash),
+        "other" => Ok(PaymentMethod::Other),
+        _ => Err(ApiError::bad_request(format!("Invalid payment method filter: {method}"))),
+    }).transpose()?;
     let filter = orbis_domain::queries::filters::PaymentFilter {
         student_id: q.student_id,
-        enrollment_id: None,
+        enrollment_id: q.enrollment_id,
         fee_id: q.fee_id,
-        method: None,
-        from_date: None,
-        to_date: None,
-        pagination: None,
+        method,
+        from_date: q.from_date.map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
+        to_date: q.to_date.map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc()),
+        pagination: Some(orbis_domain::queries::filters::PaginationParams {
+            page: Some(page),
+            page_size: Some(page_size),
+            sort_by: None,
+            sort_dir: None,
+        }),
     };
-    let payments = state.payment_repo.list(ctx.tenant_id, filter).await?.items;
-    let dtos = payments
-        .into_iter()
-        .map(|p| PaymentDto {
+    let payments = state.payment_repo.list(ctx.tenant_id, filter).await?;
+    let result = PaginatedList::new(
+        payments.items
+            .into_iter()
+            .map(|p| PaymentDto {
             id: p.id,
             org_id: p.org_id,
             fee_id: p.fee_id,
@@ -956,9 +997,13 @@ pub async fn list_payments(
             created_by: p.created_by,
             created_at: p.created_at,
             updated_at: p.updated_at,
-        })
-        .collect();
-    Ok(ApiResponse::ok(dtos))
+            })
+            .collect(),
+        payments.total_count,
+        payments.page,
+        payments.page_size,
+    );
+    Ok(ApiResponse::ok(result))
 }
 
 #[utoipa::path(get, path = "/api/v1/currencies",

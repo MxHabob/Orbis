@@ -33,13 +33,14 @@ import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { exportToCsv } from "$lib/shared/utils/export";
 import type { EmployeeDetailDto } from "$lib/api/types";
 import {
-  createEmployeesQuery,
   createEmployeeStatsQuery,
   createUpdateEmployeeStatusMutation,
   createDeleteEmployeeMutation,
 } from "./queries";
 import EmployeeSheet from "./components/employee-sheet.svelte";
+import { api, queryKeys } from "$lib/api";
 import { confirmStore } from "$lib/stores";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import {
   OrbisGrid,
   type OrbisColumnDef,
@@ -75,11 +76,19 @@ const filterInput = $derived({
   query: searchQuery.trim() || undefined,
   status: statusFilter !== "all" ? statusFilter : undefined,
   employee_type: typeFilter !== "all" ? typeFilter : undefined,
-  limit: 200,
 });
 
 // Queries
-const employeesQuery = createEmployeesQuery(() => orgId, () => filterInput);
+const employeesQuery = createInfiniteQuery(() => ({
+  queryKey: queryKeys.employee.list(orgId, filterInput as Record<string, unknown>),
+  queryFn: ({ pageParam }) =>
+    api.listEmployees({ ...filterInput, page: pageParam, page_size: 50 }),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage) =>
+    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+  enabled: !!orgId,
+  staleTime: 60 * 1000,
+}));
 const statsQuery = createEmployeeStatsQuery(() => orgId);
 
 // Mutations
@@ -87,17 +96,33 @@ const statusMutation = createUpdateEmployeeStatusMutation();
 const deleteMutation = createDeleteEmployeeMutation();
 
 // Derived Data
-const employees = $derived(employeesQuery.data?.items ?? []);
-const totalCount = $derived(employeesQuery.data?.total_count ?? 0);
+const employees = $derived(
+  employeesQuery.data?.pages.flatMap((page) => page.items) ?? [],
+);
+async function loadMoreEmployees() {
+  const result = await employeesQuery.fetchNextPage();
+  if (result.isError) throw result.error;
+}
 const stats = $derived(statsQuery.data ?? { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 });
 const isLoading = $derived(employeesQuery.isLoading || statsQuery.isLoading);
-const error = $derived(employeesQuery.error || statsQuery.error);
+const error = $derived(
+  (employeesQuery.data?.pages.length ? undefined : employeesQuery.error) ||
+    statsQuery.error,
+);
 
 // Search with debounce
 let localSearch = $state("");
 const updateSearch = debounce((q: string) => {
   searchQuery = q;
 }, 150);
+
+function setStatusFilter(status: string) {
+  statusFilter = status;
+}
+
+function setTypeFilter(type: string) {
+  typeFilter = type;
+}
 
 function clearFilters() {
   searchQuery = "";
@@ -431,31 +456,31 @@ function handleGridAction(event: GridActionEvent) {
                 label: m.employees_filter_all(),
                 badge: formatNumber(stats.total),
                 isActive: statusFilter === "all",
-                onclick: () => (statusFilter = "all"),
+                onclick: () => setStatusFilter("all"),
               },
               {
                 label: m.employees_status_active(),
                 badge: formatNumber(stats.active),
                 isActive: statusFilter === "active",
-                onclick: () => (statusFilter = "active"),
+                onclick: () => setStatusFilter("active"),
               },
               {
                 label: m.employees_status_on_leave(),
                 badge: formatNumber(stats.on_leave),
                 isActive: statusFilter === "on_leave",
-                onclick: () => (statusFilter = "on_leave"),
+                onclick: () => setStatusFilter("on_leave"),
               },
               {
                 label: m.employees_status_suspended(),
                 badge: formatNumber(stats.suspended),
                 isActive: statusFilter === "suspended",
-                onclick: () => (statusFilter = "suspended"),
+                onclick: () => setStatusFilter("suspended"),
               },
               {
                 label: m.employees_status_terminated(),
                 badge: formatNumber(stats.terminated),
                 isActive: statusFilter === "terminated",
-                onclick: () => (statusFilter = "terminated"),
+                onclick: () => setStatusFilter("terminated"),
               },
             ],
           },
@@ -466,27 +491,27 @@ function handleGridAction(event: GridActionEvent) {
                 label: m.ui_copy_all_types_f376a2ae(),
                 badge: formatNumber(stats.total),
                 isActive: typeFilter === "all",
-                onclick: () => (typeFilter = "all"),
+                onclick: () => setTypeFilter("all"),
               },
               {
                 label: m.employees_type_teacher(),
                 isActive: typeFilter === "teacher",
-                onclick: () => (typeFilter = "teacher"),
+                onclick: () => setTypeFilter("teacher"),
               },
               {
                 label: m.employees_type_admin(),
                 isActive: typeFilter === "admin",
-                onclick: () => (typeFilter = "admin"),
+                onclick: () => setTypeFilter("admin"),
               },
               {
                 label: m.employees_type_specialist(),
                 isActive: typeFilter === "specialist",
-                onclick: () => (typeFilter = "specialist"),
+                onclick: () => setTypeFilter("specialist"),
               },
               {
                 label: m.employees_type_support(),
                 isActive: typeFilter === "support",
-                onclick: () => (typeFilter = "support"),
+                onclick: () => setTypeFilter("support"),
               },
             ],
           },
@@ -629,6 +654,8 @@ function handleGridAction(event: GridActionEvent) {
                 rtl={getLocale() === "ar"}
                 readonly
                 onaction={handleGridAction}
+                hasMore={employeesQuery.hasNextPage ?? false}
+                onloadmore={loadMoreEmployees}
               />
             </div>
           {/if}

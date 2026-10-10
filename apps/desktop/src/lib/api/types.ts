@@ -1636,9 +1636,15 @@ export interface OrbisApiClient {
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
+  listStudentFeesPaginated(
+    filter?: StudentFeeFilterParams,
+  ): Promise<PaginatedList<StudentFeeDto>>;
   deleteStudentFee(id: string): Promise<boolean>;
   processPayment(req: ProcessPaymentRequest): Promise<PaymentDto>;
   listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]>;
+  listPaymentsPaginated(
+    filter?: PaymentFilterParams,
+  ): Promise<PaginatedList<PaymentDto>>;
   deletePayment(id: string): Promise<boolean>;
   listCurrencies(): Promise<CurrencyDto[]>;
   listJournalEntries(): Promise<JournalEntryDto[]>;
