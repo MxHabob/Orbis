@@ -193,12 +193,14 @@ sequenceDiagram
 ```json
 {
   "product_key": "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST",
+  "organization_id": "33333333-3333-4333-8333-333333333333",
   "installation_id": "inst_win_8b9f71c42de34",
   "platform": "windows",
   "app_version": "1.0.0",
   "machine_label": "School Server 01"
 }
 ```
+* `organization_id` هو معرّف المؤسسة النشطة في Orbis؛ يرسله التطبيق ويجب أن يطابق المؤسسة المسند إليها الترخيص في Mulverse. التفعيل لا ينشئ مؤسسة جديدة ولا يغيّر ربط المنتج بالمؤسسة.
 * **Response `201 Created`:** كائن `activation` مع `signed_entitlement`. حقلا `activation.app_version` و`activation.last_seen_at` اختياريان وقد تكون قيمتهما `null`.
 * **الأخطاء الشائعة:**
   * `400`: بيانات ناقصة أو غير صالحة.

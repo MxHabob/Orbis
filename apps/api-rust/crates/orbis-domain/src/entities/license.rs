@@ -234,6 +234,7 @@ pub type LimitEntry = LimitItem;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivationRequest {
     pub product_key: String,
+    pub organization_id: uuid::Uuid,
     pub installation_id: String,
     pub platform: String,
     pub app_version: String,
