@@ -877,23 +877,17 @@ function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
   return false;
 }
 
-function isAvatarColumn(col: OrbisColumnDef, row?: GridRow): boolean {
+function isAvatarColumn(col: OrbisColumnDef): boolean {
   const id = columnId(col);
   if (col.type === "avatar") return true;
-  if (
+  return (
     id === "student_name" ||
     id === "full_name" ||
     id === "user" ||
     id === "user_name" ||
     id === "student" ||
     id === "teacher"
-  ) {
-    return true;
-  }
-  if (row && (row.avatar_url || row.avatar || row.photo_url || row.image)) {
-    return true;
-  }
-  return false;
+  );
 }
 
 function isActionColumn(col: OrbisColumnDef): boolean {
@@ -1225,13 +1219,23 @@ export function scrollToColumnProp(prop: string) {
                           </svg>
                         {/if}
                       </button>
-                    {:else if isAvatarColumn(col, row)}
+                    {:else if isAvatarColumn(col)}
                       {@const val = String(getCellValue(row, col) ?? "")}
                       {@const src = getAvatarSrc(row)}
                       <div class="orbis-avatar-cell">
                         <div class="orbis-avatar-circle">
                           {#if src}
-                            <img src={src} alt={val} class="orbis-avatar-img" />
+                            <img
+                              src={src}
+                              alt={val}
+                              class="orbis-avatar-img"
+                              onerror={(event) => {
+                                event.currentTarget.hidden = true;
+                                const fallback = event.currentTarget.nextElementSibling;
+                                if (fallback instanceof HTMLElement) fallback.hidden = false;
+                              }}
+                            />
+                            <span class="orbis-avatar-fallback" hidden>{getInitials(val)}</span>
                           {:else}
                             <span class="orbis-avatar-fallback">{getInitials(val)}</span>
                           {/if}

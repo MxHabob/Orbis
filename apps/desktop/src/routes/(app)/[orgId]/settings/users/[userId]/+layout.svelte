@@ -131,7 +131,7 @@ const basePath = $derived(`/${orgId}/settings/users/${userId}`);
 
 const menuItems = $derived([
   {
-    path: "profile",
+    path: "",
     label: m.settings_user_detail_tab_profile(),
   },
   {

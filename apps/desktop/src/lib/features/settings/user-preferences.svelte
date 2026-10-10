@@ -12,6 +12,7 @@ import {
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { GlobeAlt, Grid } from "@orbis/icons";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
