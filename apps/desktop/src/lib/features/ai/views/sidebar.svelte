@@ -485,6 +485,7 @@ interactive tool inspections, and consequential action approvals.
       viewport={sidebarDiv}
       edge="start"
       inside
+      collapsible={false}
       {minWidth}
       {maxWidth}
       defaultValue={pxToRem(400)}
