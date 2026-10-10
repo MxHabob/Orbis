@@ -20,6 +20,7 @@ import {
   DocumentPage,
   GlobeAlt,
   Keyframes,
+  Lock,
   Pin,
   ReceiptPercent,
   Scale,
@@ -51,6 +52,11 @@ const navGroups = $derived([
         path: "notifications",
         label: m.common_nav_notifications(),
         icon: AppNotification,
+      },
+      {
+        path: "login-rules",
+        label: m.settings_nav_login_rules(),
+        icon: Lock,
       },
     ],
   },
@@ -114,7 +120,7 @@ const navGroups = $derived([
       },
       {
         path: "registration",
-        label: m.settings_nav_registration(),
+        label: m.settings_nav_admission(),
         icon: DocumentPage,
       },
       {

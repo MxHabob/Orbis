@@ -19,11 +19,7 @@ import {
 import { useQueryClient } from "@tanstack/svelte-query";
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
-  CardAction,
 } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -263,42 +259,27 @@ function parseApprovalChain(chain: any): any[] {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-24">
-  <div class="max-w-7xl mx-auto p-6 flex flex-col gap-6">
-    
-    <!-- Top Hero Banner -->
-    <Card class="border-border/80 shadow-xs">
-      <CardHeader class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3 text-start">
-          <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            <CheckSquare class="w-5 h-5" />
-          </div>
-          <div class="flex flex-col">
-            <CardTitle class="text-base font-bold text-foreground">
-              {m.ui_copy_academic_approvals_override_center_1742df64()}
-            </CardTitle>
-            <CardDescription class="text-xs text-muted-foreground">
-              {m.ui_copy_unified_governance_inbox_for_admission_aut_2567f279()}
-            </CardDescription>
-          </div>
-        </div>
-
-        <div class="flex items-center gap-2 flex-wrap">
-          <Badge variant={admissionCount > 0 ? "lime" : "outline"} class="px-2.5 py-1 text-xs font-mono font-bold">
+<div class="flex h-full w-full flex-col overflow-hidden bg-background text-start">
+  <Tabs
+    value={activeTab}
+    onValueChange={(v) => (activeTab = v as typeof activeTab)}
+    class="flex min-h-0 flex-1 flex-col overflow-hidden"
+  >
+    <header class="shrink-0 border-b border-border/50 bg-card/40 px-4 py-3 backdrop-blur-sm">
+      <div class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <Badge variant={admissionCount > 0 ? "lime" : "outline"} class="px-2 py-0.5 text-[10px] font-mono font-semibold">
             {admissionCount} {m.ui_copy_pending_admissions_7b6cea59()}
           </Badge>
-          <Badge variant={overrideCount > 0 ? "warning" : "outline"} class="px-2.5 py-1 text-xs font-mono font-bold">
+          <Badge variant={overrideCount > 0 ? "warning" : "outline"} class="px-2 py-0.5 text-[10px] font-mono font-semibold">
             {overrideCount} {m.ui_copy_policy_overrides_e552bc54()}
           </Badge>
         </div>
-      </CardHeader>
-    </Card>
 
-    <!-- Main Tabs Navigation -->
-    <Tabs value={activeTab} onValueChange={(v) => (activeTab = v as any)}>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-3">
-        <TabsList class="h-9 p-1 bg-muted/40 rounded-lg border border-border/40">
-          <TabsTrigger value="pending" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
+        <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0 overflow-x-auto scrollbar-hide">
+            <TabsList class="h-9 min-w-max justify-start gap-1 rounded-lg border border-border/60 bg-muted/40 p-1">
+          <TabsTrigger value="pending" class="h-7 gap-1.5 px-3 text-xs font-semibold">
             <ClockRotateRight class="w-3.5 h-3.5" />
             <span>{m.ui_copy_all_pending_a89e9229()}</span>
             {#if pendingItems.length > 0}
@@ -308,7 +289,7 @@ function parseApprovalChain(chain: any): any[] {
             {/if}
           </TabsTrigger>
 
-          <TabsTrigger value="admission" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
+          <TabsTrigger value="admission" class="h-7 gap-1.5 px-3 text-xs font-semibold">
             <UserBadgeCheck class="w-3.5 h-3.5" />
             <span>{m.ui_copy_admissions_6dbbec27()}</span>
             {#if admissionCount > 0}
@@ -318,7 +299,7 @@ function parseApprovalChain(chain: any): any[] {
             {/if}
           </TabsTrigger>
 
-          <TabsTrigger value="overrides" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
+          <TabsTrigger value="overrides" class="h-7 gap-1.5 px-3 text-xs font-semibold">
             <AdjustmentsHorizontal class="w-3.5 h-3.5" />
             <span>{m.ui_copy_policy_overrides_9ec38c4a()}</span>
             {#if overrideCount > 0}
@@ -328,30 +309,33 @@ function parseApprovalChain(chain: any): any[] {
             {/if}
           </TabsTrigger>
 
-          <TabsTrigger value="mine" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
+          <TabsTrigger value="mine" class="h-7 gap-1.5 px-3 text-xs font-semibold">
             <User class="w-3.5 h-3.5" />
             <span>{m.ui_copy_my_requests_4a1dba46()}</span>
           </TabsTrigger>
 
-          <TabsTrigger value="log" class="text-xs font-semibold gap-1.5 px-3.5 h-7">
+          <TabsTrigger value="log" class="h-7 gap-1.5 px-3 text-xs font-semibold">
             <CheckCircle class="w-3.5 h-3.5" />
             <span>{m.ui_copy_audit_log_97a36552()}</span>
           </TabsTrigger>
-        </TabsList>
+            </TabsList>
+          </div>
 
-        <!-- Search Bar -->
-        <div class="w-full sm:w-64">
-          <Input
-            placeholder={m.ui_copy_search_requests_a2e9521f()}
-            bind:value={searchQuery}
-            class="h-8 text-xs bg-background"
-          />
+          <div class="w-full sm:w-64 sm:shrink-0">
+            <Input
+              placeholder={m.ui_copy_search_requests_a2e9521f()}
+              bind:value={searchQuery}
+              class="h-8 border-border/60 bg-background text-xs"
+            />
+          </div>
         </div>
       </div>
+    </header>
 
+    <main class="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-hide sm:p-6">
       <!-- TAB 1 & 2 & 3: Pending / Admission / Overrides Content -->
       {#if activeTab === "pending" || activeTab === "admission" || activeTab === "overrides"}
-        <div class="space-y-4 pt-4">
+        <div class="space-y-3">
           {#if pendingQuery.isLoading}
             <div class="flex flex-col gap-3">
               {#each Array(3) as _}
@@ -365,24 +349,21 @@ function parseApprovalChain(chain: any): any[] {
                   <CheckCircle class="w-6 h-6 text-emerald-500/80" />
                 </div>
                 <div class="flex flex-col gap-1 max-w-sm">
-                  <span class="text-sm font-bold text-foreground">
+                  <span class="text-xs font-bold text-foreground">
                     {m.ui_copy_no_pending_approvals_eee02c96()}
-                  </span>
-                  <span class="text-xs text-muted-foreground leading-relaxed">
-                    {m.ui_copy_all_admission_applications_and_override_re_c6a99722()}
                   </span>
                 </div>
               </CardContent>
             </Card>
           {:else}
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-3">
               {#each filteredPendingItems as request (request.id)}
                 {@const typeInfo = getOverrideTypeInfo(request.override_type)}
                 {@const chain = parseApprovalChain(request.approval_chain)}
                 {@const isProcessing = processingId === request.id}
 
-                <Card class="border-border/80 shadow-xs hover:border-primary/40 transition-all duration-150">
-                  <CardContent class="p-5 flex flex-col gap-4">
+                <Card class="border-border/60 shadow-xs transition-colors hover:border-primary/30">
+                  <CardContent class="flex flex-col gap-3 p-4">
                     
                     <!-- Header Row: Type Badge, Risk, and Submission Timestamp -->
                     <div class="flex items-start justify-between gap-3 flex-wrap">
@@ -463,7 +444,7 @@ function parseApprovalChain(chain: any): any[] {
                     <Separator class="my-0.5" />
 
                     <!-- Action Inputs & Decision Buttons -->
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                    <div class="flex flex-col items-stretch justify-between gap-3 pt-1 sm:flex-row sm:items-center">
                       <div class="flex-1">
                         <Input
                           placeholder={m.ui_copy_approval_notes_or_decision_reason_optional_a41d972b()}
@@ -473,7 +454,7 @@ function parseApprovalChain(chain: any): any[] {
                         />
                       </div>
 
-                      <div class="flex items-center gap-2 shrink-0">
+                      <div class="flex flex-wrap items-center gap-2 sm:shrink-0">
                         <!-- Approve Button -->
                         <Button
                           variant="lime"
@@ -526,7 +507,7 @@ function parseApprovalChain(chain: any): any[] {
       {/if}
 
       <!-- TAB 4: My Requests -->
-      <TabsContent value="mine" class="space-y-4 pt-4">
+      <TabsContent value="mine" class="space-y-3 pt-3">
         {#if allRequestsQuery.isLoading}
           <div class="flex flex-col gap-3">
             {#each Array(3) as _}
@@ -571,7 +552,7 @@ function parseApprovalChain(chain: any): any[] {
       </TabsContent>
 
       <!-- TAB 5: Audit Log -->
-      <TabsContent value="log" class="space-y-4 pt-4">
+      <TabsContent value="log" class="space-y-3 pt-3">
         {#if allRequestsQuery.isLoading}
           <div class="flex flex-col gap-3">
             {#each Array(3) as _}
@@ -609,7 +590,6 @@ function parseApprovalChain(chain: any): any[] {
         {/if}
       </TabsContent>
 
-    </Tabs>
-
-  </div>
+    </main>
+  </Tabs>
 </div>

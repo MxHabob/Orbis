@@ -226,50 +226,56 @@ close completed years, archive historical years, and view period structure.
   ]);
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide font-sans">
-  <!-- Top Minimal Toolbar -->
-  <div class="flex items-center justify-between gap-3 flex-nowrap shrink-0">
-    <div class="relative flex-1 max-w-xs">
-      <Search
-        size={14}
-        class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-      />
-      <Input
-        type="text"
-        placeholder={m.academic_years_search_placeholder()}
-        bind:value={searchQuery}
-        class="h-8 ps-8 text-xs bg-card border-border/60"
-      />
-    </div>
+<div class="flex h-full w-full flex-col overflow-hidden bg-background font-sans text-start">
+  <header class="shrink-0 border-b border-border/50 bg-card/40 px-4 py-3 backdrop-blur-sm">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative min-w-0 flex-1 basis-56 max-w-md">
+        <Search
+          size={14}
+          class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          type="text"
+          placeholder={m.academic_years_search_placeholder()}
+          bind:value={searchQuery}
+          class="h-8 ps-8 text-xs bg-card border-border/60"
+        />
+      </div>
 
-    <div class="flex items-center gap-2">
-      <SearchableMultiFilter
-        groups={filterGroups}
-        bind:selectedValues={selectedFilters}
-        placeholder={m.academic_years_filter_placeholder()}
-        searchPlaceholder={m.academic_years_filter_search()}
-        emptyText={m.academic_years_no_matching_filters()}
-      />
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onclick={handleRefresh}
-        class="text-muted-foreground"
-        disabled={isRefreshing}
-      >
-        {#if isRefreshing}
-          <LoadingIndicator size={14} />
-        {:else}
-          <Refresh size={14} />
-        {/if}
-      </Button>
-      <Button variant="lime" class="text-xs h-8 px-3 font-semibold shrink-0" onclick={openCreateSheet}>
-        <Plus size={14} class="me-1.5" />
-        {m.academic_years_add_btn()}
-      </Button>
+      <div class="ms-auto flex items-center gap-2">
+        <SearchableMultiFilter
+          groups={filterGroups}
+          bind:selectedValues={selectedFilters}
+          placeholder={m.academic_years_filter_placeholder()}
+          searchPlaceholder={m.academic_years_filter_search()}
+          emptyText={m.academic_years_no_matching_filters()}
+        />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onclick={handleRefresh}
+          class="text-muted-foreground"
+          disabled={isRefreshing}
+        >
+          {#if isRefreshing}
+            <LoadingIndicator size={14} />
+          {:else}
+            <Refresh size={14} />
+          {/if}
+        </Button>
+        <Button
+          variant="lime"
+          class="h-8 shrink-0 px-3 text-xs font-semibold"
+          onclick={openCreateSheet}
+        >
+          <Plus size={14} class="me-1.5" />
+          {m.academic_years_add_btn()}
+        </Button>
+      </div>
     </div>
-  </div>
+  </header>
 
+  <main class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scrollbar-hide sm:p-6">
   <!-- Content List / Year Cards -->
   {#if isLoading}
     <div class="flex flex-col gap-2.5">
@@ -287,20 +293,15 @@ close completed years, archive historical years, and view period structure.
           ? m.academic_years_empty_search()
           : m.academic_years_empty_title()}
       </h3>
-      <p class="text-[11px] text-muted-foreground max-w-sm mb-4">
-        {searchQuery || selectedFilters.length > 0
-          ? m.academic_years_empty_search_desc()
-          : m.academic_years_empty_desc()}
-      </p>
       {#if !searchQuery && selectedFilters.length === 0}
-        <Button size="sm" class="text-xs h-8 px-3 font-semibold gap-1.5" onclick={openCreateSheet}>
+        <Button size="sm" class="h-8 gap-1.5 px-3 text-xs font-semibold" onclick={openCreateSheet}>
           <Plus size={13} />
           {m.academic_years_add_btn()}
         </Button>
       {/if}
     </div>
   {:else}
-    <div class="flex flex-col gap-3" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col gap-2.5" in:fade={{ duration: 150 }}>
       {#each filteredYears as year (year.id)}
         {@const yearPeriods = getPeriodsForYear(year.id)}
         {@const isExpanded = !!expandedYears[year.id]}
@@ -311,14 +312,14 @@ close completed years, archive historical years, and view period structure.
 
         <!-- Refined Academic Year Card -->
         <div
-          class="rounded-xl border transition-all duration-150 bg-card/50 hover:bg-card/80 overflow-hidden shadow-2xs {isActive
-            ? 'border-emerald-500/40 ring-1 ring-emerald-500/10 bg-emerald-500/[0.02]'
+          class="overflow-hidden rounded-xl border bg-card transition-colors duration-150 hover:bg-muted/20 {isActive
+            ? 'border-emerald-500/30 ring-1 ring-emerald-500/10'
             : 'border-border/60'}"
         >
           <!-- Card Header Row -->
-          <div class="px-4 py-3.5 flex items-center justify-between gap-3">
+          <div class="flex flex-col items-stretch justify-between gap-3 px-4 py-3 sm:flex-row sm:items-center">
             <!-- Left Info Block -->
-            <div class="flex items-center gap-3 min-w-0">
+            <div class="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 class="p-1 rounded-md hover:bg-muted text-muted-foreground transition-colors cursor-pointer shrink-0"
@@ -332,7 +333,7 @@ close completed years, archive historical years, and view period structure.
                 {/if}
               </button>
 
-              <div class="flex items-center gap-2.5 min-w-0 flex-wrap">
+              <div class="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
                 <!-- Status Badge -->
                 {#if isActive}
                   <Badge variant="info" class="text-[9px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 gap-1.5">
@@ -378,7 +379,7 @@ close completed years, archive historical years, and view period structure.
             </div>
 
             <!-- Right Actions Block -->
-            <div class="flex items-center gap-1.5 shrink-0">
+            <div class="flex flex-wrap items-center justify-end gap-1.5 sm:shrink-0">
               {#if !isActive && !isArchived}
                 <Button
                   variant="outline"
@@ -494,6 +495,7 @@ close completed years, archive historical years, and view period structure.
     title={m.ui_copy_related_support_bf36e16f()}
     groups={relatedActionGroups}
   />
+  </main>
 </div>
 
 <!-- Year Create / Edit Sheet -->

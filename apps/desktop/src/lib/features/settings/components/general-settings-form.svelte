@@ -6,7 +6,6 @@ import RegionalSettingsCard from "./regional-settings-card.svelte";
 import AvatarSettingsCard from "./avatar-settings-card.svelte";
 import DangerZoneSettingsCard from "./danger-zone-settings-card.svelte";
 import BranchSettingsCard from "./branch-settings-card.svelte";
-import AuthenticationSettingsCard from "./authentication-settings-card.svelte";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
@@ -246,8 +245,6 @@ function handleSaveAvatar(e: Event) {
         {isSaving}
         onLanguageChange={handleLanguageChange}
       />
-
-      <AuthenticationSettingsCard {org} {isSaving} />
 
       <Card>
         <CardHeader class="flex flex-row items-center justify-between">

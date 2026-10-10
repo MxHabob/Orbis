@@ -37,14 +37,18 @@ async function handleSave(registrationConfig: any) {
 }
 </script>
 
-{#if isLoading}
-  <SettingsFormSkeleton />
-{:else if orgQuery.data}
-  {#key orgQuery.data}
-    <RegistrationSettingsForm
-      org={orgQuery.data}
-      {isSaving}
-      onsave={handleSave}
-    />
-  {/key}
-{/if}
+<div class="h-full w-full flex flex-col overflow-hidden bg-background">
+  <main class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide">
+    {#if isLoading}
+      <SettingsFormSkeleton />
+    {:else if orgQuery.data}
+      {#key orgQuery.data}
+        <RegistrationSettingsForm
+          org={orgQuery.data}
+          {isSaving}
+          onsave={handleSave}
+        />
+      {/key}
+    {/if}
+  </main>
+</div>
