@@ -24,6 +24,7 @@ import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
 import { api, queryKeys } from "$lib/api";
+import type { StudentDetailDto } from "$lib/api/types";
 
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
@@ -106,37 +107,61 @@ const hasActiveFilters = $derived(
 let printDialogOpen = $state(false);
 let selectedStudentIds = $state<Set<string>>(new Set());
 
-function handleExportStudents() {
-  exportToCsv(
-    `Students_Roster_${orgId}`,
-    filteredStudents,
-    [
-      { header: m.operations_ui_student_number(), accessor: (s) => s.student?.student_number || "—" },
-      {
-        header: m.operations_ui_student_name(),
-        accessor: (s) =>
-          (s.person?.first_name && s.person?.last_name
-            ? `${s.person.first_name} ${s.person.last_name}`
-            : "") ||
-          s.person?.full_name ||
-          m.operations_ui_student_fallback(),
-      },
-      {
-        header: m.operations_ui_class(),
-        accessor: (s) =>
-          classes.find((c) => c.id === s.enrollment?.class_id)?.name ||
-          s.enrollment?.class_id ||
-          "—",
-      },
-      { header: m.operations_ui_status(), accessor: (s) => s.student?.status || "active" },
-      {
-        header: m.operations_ui_admission_date(),
-        accessor: (s) =>
-          s.student?.admitted_at ? formatDate(s.student.admitted_at, "date") : "—",
-      },
-    ],
-  );
-  toast.success(m.operations_ui_student_export_success());
+async function handleExportStudents() {
+  try {
+    let dataset: StudentDetailDto[];
+    if (selectedStudentIds.size > 0) {
+      dataset = await Promise.all(
+        [...selectedStudentIds].map((id) => api.getStudent(id)),
+      );
+    } else {
+      const filter = {
+        class_id: studentsStore.selectedClassId ?? undefined,
+        status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
+        search: studentsStore.searchQuery.trim() || undefined,
+        page_size: 100,
+      };
+      const firstPage = await api.listStudents({ ...filter, page: 1 });
+      dataset = [...firstPage.items];
+      for (let page = 2; page <= firstPage.total_pages; page += 1) {
+        const nextPage = await api.listStudents({ ...filter, page });
+        dataset.push(...nextPage.items);
+      }
+    }
+
+    exportToCsv(
+      `Students_Roster_${orgId}`,
+      dataset,
+      [
+        { header: m.operations_ui_student_number(), accessor: (s) => s.student?.student_number || "—" },
+        {
+          header: m.operations_ui_student_name(),
+          accessor: (s) =>
+            (s.person?.first_name && s.person?.last_name
+              ? `${s.person.first_name} ${s.person.last_name}`
+              : "") ||
+            s.person?.full_name ||
+            m.operations_ui_student_fallback(),
+        },
+        {
+          header: m.operations_ui_class(),
+          accessor: (s) =>
+            classes.find((c) => c.id === s.enrollment?.class_id)?.name ||
+            s.enrollment?.class_id ||
+            "—",
+        },
+        { header: m.operations_ui_status(), accessor: (s) => s.student?.status || "active" },
+        {
+          header: m.operations_ui_admission_date(),
+          accessor: (s) =>
+            s.student?.admitted_at ? formatDate(s.student.admitted_at, "date") : "—",
+        },
+      ],
+    );
+    toast.success(m.operations_ui_student_export_success());
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
 }
 </script>
 
@@ -299,7 +324,7 @@ function handleExportStudents() {
               {@const singleStudent = students.find(s => selectedStudentIds.has(s.student?.id || s.person?.id))}
               {#if singleStudent}
                 <span class="truncate text-[11px] text-muted-foreground">
-                  {(singleStudent.person?.first_name && singleStudent.person?.last_name ? `${singleStudent.person.first_name} ${singleStudent.person.last_name}` : '') || singleStudent.person?.name_ar || singleStudent.person?.name_en || ''}
+                  {(singleStudent.person?.first_name && singleStudent.person?.last_name ? `${singleStudent.person.first_name} ${singleStudent.person.last_name}` : '') || ''}
                 </span>
               {/if}
             {/if}

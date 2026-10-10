@@ -198,31 +198,51 @@ async function promptDelete(emp: EmployeeDetailDto) {
 
 
 // Export CSV Handler
-function handleExport() {
-  const dataset = selectedIds.size > 0
-    ? employees.filter((e) => selectedIds.has(e.id))
-    : employees;
+async function handleExport() {
+  try {
+    let dataset: EmployeeDetailDto[];
+    if (selectedIds.size > 0) {
+      dataset = await Promise.all(
+        [...selectedIds].map((id) => api.getEmployee(id)),
+      );
+    } else {
+      const filter = {
+        query: searchQuery.trim() || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        employee_type: typeFilter === "all" ? undefined : typeFilter,
+        page_size: 100,
+      };
+      const firstPage = await api.listEmployees({ ...filter, page: 1 });
+      dataset = [...firstPage.items];
+      for (let page = 2; page <= firstPage.total_pages; page += 1) {
+        const nextPage = await api.listEmployees({ ...filter, page });
+        dataset.push(...nextPage.items);
+      }
+    }
 
-  const openFile = exportToCsv(
-    `Employees_Roster_${orgId}`,
-    dataset,
-    [
-      { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
-      { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
-      { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
-      { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
-      { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
-      { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
-      { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
-      { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
-      { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
-      { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
-      { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
-    ]
-  );
-  toast.success(m.operations_ui_employee_export_success(), {
-    action: openFile ? createShowInFolderToastAction(openFile) : undefined,
-  });
+    const openFile = exportToCsv(
+      `Employees_Roster_${orgId}`,
+      dataset,
+      [
+        { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
+        { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
+        { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
+        { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
+        { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
+        { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
+        { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
+        { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
+        { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
+        { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
+        { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
+      ]
+    );
+    toast.success(m.operations_ui_employee_export_success(), {
+      action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+    });
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
 }
 
 function getStatusLabel(s: string): string {

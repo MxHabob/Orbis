@@ -5,6 +5,7 @@ import type {
   BulkResult,
   CellEditEvent,
   CellRange,
+  DataQuery,
   GridActionEvent,
   GridRow,
   GridRowsChangeEvent,
@@ -50,6 +51,7 @@ import {
   rowFromOffset,
   type ContextMenuItem,
 } from "./engine";
+import { DEFAULT_PAGE_SIZE } from "./data-source";
 
 interface Props {
   columns: OrbisColumnDef[];
@@ -67,8 +69,10 @@ interface Props {
   autoSize?: boolean;
   autoFit?: boolean;
   clientQuery?: boolean;
+  serverQuery?: boolean;
   search?: string;
   filter?: import("./types").GridFilter | null;
+  onquerychange?: (query: DataQuery) => void;
   oncelledit?: (event: CellEditEvent) => void;
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
   onaction?: (event: GridActionEvent) => void;
@@ -97,8 +101,10 @@ let {
   autoSize = false,
   autoFit = true,
   clientQuery = false,
+  serverQuery = false,
   search = "",
   filter = null,
+  onquerychange,
   oncelledit,
   onbeforeedit,
   onaction,
@@ -145,7 +151,8 @@ setContext("orbis-grid-onaction", (event: GridActionEvent) => {
 });
 
 const shouldRunClientQuery = $derived(
-  clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0,
+  !serverQuery &&
+    (clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0),
 );
 
 const visibleCols = $derived(columns.filter((c) => !c.hidden));
@@ -154,6 +161,22 @@ const displayRows = $derived(
     ? queryClient(source, visibleCols, { filter, search, sorts })
     : source,
 );
+
+let lastServerQueryKey = "";
+$effect(() => {
+  if (!serverQuery || !onquerychange) return;
+  const query: DataQuery = {
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    filter: filter ?? undefined,
+    search: search || undefined,
+    sorts,
+  };
+  const queryKey = JSON.stringify(query);
+  if (queryKey === lastServerQueryKey) return;
+  lastServerQueryKey = queryKey;
+  onquerychange(query);
+});
 
 const rowWindow = $derived(
   visibleWindow(
@@ -714,7 +737,7 @@ function onContext(row: number, col: number, e: MouseEvent) {
     context: "cell",
     hasSelection: !!hasSelection,
     canEdit: !readonly,
-    filtered: shouldRunClientQuery && Boolean(filter),
+    filtered: (shouldRunClientQuery || serverQuery) && Boolean(filter),
   }).filter(
     (item) =>
       isColumnSortable(visibleCols[col] ?? {}) ||

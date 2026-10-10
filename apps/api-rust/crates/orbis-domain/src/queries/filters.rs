@@ -145,6 +145,7 @@ pub struct PaymentFilter {
     pub method: Option<PaymentMethod>,
     pub from_date: Option<chrono::DateTime<chrono::Utc>>,
     pub to_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
 }
 
@@ -157,6 +158,7 @@ pub struct StudentFeeFilter {
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
     pub only_unpaid: Option<bool>,
+    pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
 }
 

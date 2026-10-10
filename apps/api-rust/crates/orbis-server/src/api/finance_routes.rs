@@ -426,6 +426,9 @@ pub struct FeeQuery {
     pub period_id: Option<Uuid>,
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
+    pub search: Option<String>,
+    pub sort_by: Option<String>,
+    pub sort_dir: Option<String>,
     pub page: Option<u64>,
     pub page_size: Option<u64>,
 }
@@ -438,6 +441,9 @@ pub struct PaymentQuery {
     pub method: Option<String>,
     pub from_date: Option<NaiveDate>,
     pub to_date: Option<NaiveDate>,
+    pub search: Option<String>,
+    pub sort_by: Option<String>,
+    pub sort_dir: Option<String>,
     pub page: Option<u64>,
     pub page_size: Option<u64>,
 }
@@ -842,11 +848,12 @@ pub async fn list_fees(
         status: q.status,
         is_overdue: q.is_overdue,
         only_unpaid: None,
+        search: q.search,
         pagination: Some(orbis_domain::queries::filters::PaginationParams {
             page: Some(page),
             page_size: Some(page_size),
-            sort_by: None,
-            sort_dir: None,
+            sort_by: q.sort_by,
+            sort_dir: q.sort_dir,
         }),
     };
     let fees = state
@@ -857,22 +864,22 @@ pub async fn list_fees(
         fees.items
             .into_iter()
             .map(|f| StudentFeeDto {
-            id: f.id,
-            org_id: f.org_id,
-            period_id: f.period_id,
-            student_id: f.student_id,
-            enrollment_id: f.enrollment_id,
-            fee_template_id: f.fee_template_id,
-            original_amount: f.original_amount,
-            discount_amount: f.discount_amount,
-            net_amount: f.net_amount,
-            paid_amount: f.paid_amount,
-            balance_due: f.balance_due,
-            status: f.status.to_string(),
-            due_date: f.due_date,
-            created_by: f.created_by,
-            created_at: f.created_at,
-            updated_at: f.updated_at,
+                id: f.id,
+                org_id: f.org_id,
+                period_id: f.period_id,
+                student_id: f.student_id,
+                enrollment_id: f.enrollment_id,
+                fee_template_id: f.fee_template_id,
+                original_amount: f.original_amount,
+                discount_amount: f.discount_amount,
+                net_amount: f.net_amount,
+                paid_amount: f.paid_amount,
+                balance_due: f.balance_due,
+                status: f.status.to_string(),
+                due_date: f.due_date,
+                created_by: f.created_by,
+                created_at: f.created_at,
+                updated_at: f.updated_at,
             })
             .collect(),
         fees.total_count,
@@ -951,52 +958,64 @@ pub async fn list_payments(
 ) -> Result<Json<ApiResponse<PaginatedList<PaymentDto>>>, ApiError> {
     let page = q.page.unwrap_or(1).max(1);
     let page_size = q.page_size.unwrap_or(50).clamp(1, 100);
-    let method = q.method.as_deref().map(|method| match method.to_lowercase().as_str() {
-        "bank_transfer" | "bank" => Ok(PaymentMethod::BankTransfer),
-        "check" | "cheque" => Ok(PaymentMethod::Check),
-        "credit_card" | "card" => Ok(PaymentMethod::CreditCard),
-        "mada" => Ok(PaymentMethod::Mada),
-        "apple_pay" | "applepay" => Ok(PaymentMethod::ApplePay),
-        "cash" => Ok(PaymentMethod::Cash),
-        "other" => Ok(PaymentMethod::Other),
-        _ => Err(ApiError::bad_request(format!("Invalid payment method filter: {method}"))),
-    }).transpose()?;
+    let method = q
+        .method
+        .as_deref()
+        .map(|method| match method.to_lowercase().as_str() {
+            "bank_transfer" | "bank" => Ok(PaymentMethod::BankTransfer),
+            "check" | "cheque" => Ok(PaymentMethod::Check),
+            "credit_card" | "card" => Ok(PaymentMethod::CreditCard),
+            "mada" => Ok(PaymentMethod::Mada),
+            "apple_pay" | "applepay" => Ok(PaymentMethod::ApplePay),
+            "cash" => Ok(PaymentMethod::Cash),
+            "other" => Ok(PaymentMethod::Other),
+            _ => Err(ApiError::bad_request(format!(
+                "Invalid payment method filter: {method}"
+            ))),
+        })
+        .transpose()?;
     let filter = orbis_domain::queries::filters::PaymentFilter {
         student_id: q.student_id,
         enrollment_id: q.enrollment_id,
         fee_id: q.fee_id,
         method,
-        from_date: q.from_date.map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-        to_date: q.to_date.map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc()),
+        from_date: q
+            .from_date
+            .map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
+        to_date: q
+            .to_date
+            .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc()),
+        search: q.search,
         pagination: Some(orbis_domain::queries::filters::PaginationParams {
             page: Some(page),
             page_size: Some(page_size),
-            sort_by: None,
-            sort_dir: None,
+            sort_by: q.sort_by,
+            sort_dir: q.sort_dir,
         }),
     };
     let payments = state.payment_repo.list(ctx.tenant_id, filter).await?;
     let result = PaginatedList::new(
-        payments.items
+        payments
+            .items
             .into_iter()
             .map(|p| PaymentDto {
-            id: p.id,
-            org_id: p.org_id,
-            fee_id: p.fee_id,
-            enrollment_id: p.enrollment_id,
-            student_id: p.student_id,
-            account_id: p.account_id,
-            amount: p.amount,
-            currency_code: p.currency_code,
-            payer_name: p.payer_name,
-            method: p.method.to_string(),
-            reference: p.reference,
-            receipt_number: p.receipt_number,
-            journal_entry_id: p.journal_entry_id,
-            paid_at: p.paid_at,
-            created_by: p.created_by,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
+                id: p.id,
+                org_id: p.org_id,
+                fee_id: p.fee_id,
+                enrollment_id: p.enrollment_id,
+                student_id: p.student_id,
+                account_id: p.account_id,
+                amount: p.amount,
+                currency_code: p.currency_code,
+                payer_name: p.payer_name,
+                method: p.method.to_string(),
+                reference: p.reference,
+                receipt_number: p.receipt_number,
+                journal_entry_id: p.journal_entry_id,
+                paid_at: p.paid_at,
+                created_by: p.created_by,
+                created_at: p.created_at,
+                updated_at: p.updated_at,
             })
             .collect(),
         payments.total_count,

@@ -525,6 +525,7 @@ pub struct FeeFilterInput {
     pub fee_template_id: Option<String>,
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
+    pub search: Option<String>,
     pub page: Option<u64>,
     pub page_size: Option<u64>,
     pub sort_by: Option<String>,
@@ -557,6 +558,7 @@ pub struct PaymentFilterInput {
     pub method: Option<String>,
     pub from_date: Option<String>,
     pub to_date: Option<String>,
+    pub search: Option<String>,
     pub page: Option<u64>,
     pub page_size: Option<u64>,
     pub sort_by: Option<String>,
@@ -988,6 +990,7 @@ pub async fn finance_list_student_fees(
         status: f.status,
         is_overdue: f.is_overdue,
         only_unpaid: None,
+        search: f.search,
         pagination: Some(PaginationParams {
             page: f.page.or(Some(1)),
             page_size: f.page_size.map(|size| size.clamp(1, 100)).or(Some(100)),
@@ -1024,6 +1027,7 @@ pub async fn finance_list_student_fees_paginated(
         status: f.status,
         is_overdue: f.is_overdue,
         only_unpaid: None,
+        search: f.search,
         pagination: Some(PaginationParams {
             page: Some(f.page.unwrap_or(1).max(1)),
             page_size: Some(f.page_size.unwrap_or(50).clamp(1, 100)),
@@ -1140,6 +1144,7 @@ pub async fn finance_list_payments(
         method,
         from_date,
         to_date,
+        search: f.search,
         pagination: Some(PaginationParams {
             page: f.page.or(Some(1)),
             page_size: f.page_size.map(|size| size.clamp(1, 100)).or(Some(100)),
@@ -1201,6 +1206,7 @@ pub async fn finance_list_payments_paginated(
         method,
         from_date,
         to_date,
+        search: f.search,
         pagination: Some(PaginationParams {
             page: Some(f.page.unwrap_or(1).max(1)),
             page_size: Some(f.page_size.unwrap_or(50).clamp(1, 100)),

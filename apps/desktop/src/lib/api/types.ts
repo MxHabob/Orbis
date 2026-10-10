@@ -437,6 +437,7 @@ export interface StudentFeeFilterParams {
   feeTemplate_id?: string;
   status?: string;
   is_overdue?: boolean;
+  search?: string;
   page?: number;
   page_size?: number;
   sort_by?: string;
@@ -450,6 +451,7 @@ export interface PaymentFilterParams {
   method?: string;
   from_date?: string;
   to_date?: string;
+  search?: string;
   page?: number;
   page_size?: number;
   sort_by?: string;

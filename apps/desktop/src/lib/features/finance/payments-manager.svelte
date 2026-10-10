@@ -13,12 +13,14 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
+import { debounce } from "$lib/shared/utils/debounce";
 import {
   api,
   extractErrorMessage,
   queryClient,
   queryKeys,
   type AccountDto,
+  type PaymentDto,
 } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -39,7 +41,12 @@ import {
   Printer,
   CheckCircle,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type DataQuery,
+  type OrbisColumnDef,
+  type SortSpec,
+} from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
@@ -120,8 +127,28 @@ const selectedPaymentMethodObj = $derived(
 
 // Filters
 let searchQuery = $state("");
+let searchInput = $state("");
 let methodFilter = $state("all");
 let filterDate = $state(getLocalDateInputValue());
+let gridSort = $state<SortSpec[]>([]);
+const updatePaymentSearch = debounce((value: string) => {
+  searchQuery = value;
+}, 250);
+const paymentPageSort = $derived.by(() => {
+  const sort = gridSort[0];
+  const fieldByColumn: Record<string, string> = {
+    receipt_display: "receipt_number",
+    date_display: "paid_at",
+    amount_formatted: "amount",
+    currency_display: "currency_code",
+    method_display: "method",
+  };
+  const sortBy = sort ? fieldByColumn[sort.id] : undefined;
+  return sortBy ? { sort_by: sortBy, sort_dir: sort!.dir } : {};
+});
+function handlePaymentGridQuery(query: DataQuery) {
+  gridSort = query.sorts;
+}
 
 const paymentPageFilter = $derived({
   method: methodFilter === "all" ? undefined : methodFilter,
@@ -132,10 +159,13 @@ const paymentsQuery = createInfiniteQuery(() => ({
   queryKey: queryKeys.finance.payments(orgId, {
     ...paymentPageFilter,
     search: searchQuery.trim() || undefined,
+    ...paymentPageSort,
   }),
   queryFn: ({ pageParam }) =>
     api.listPaymentsPaginated({
       ...paymentPageFilter,
+      search: searchQuery.trim() || undefined,
+      ...paymentPageSort,
       page: pageParam,
       page_size: 50,
     }),
@@ -151,6 +181,10 @@ const payments = $derived(
 const gridLoading = $derived(
   isLoading || (paymentsQuery.isLoading && !paymentsQuery.data),
 );
+async function loadMorePayments() {
+  const result = await paymentsQuery.fetchNextPage();
+  if (result.isError) throw result.error;
+}
 
 // Print
 let printDialogOpen = $state(false);
@@ -336,8 +370,7 @@ function handlePrint(p: any) {
 }
 
 // ── Grid Data ─────────────────────────────────────────────────────────
-const gridSource = $derived(
-  payments.map((p, idx) => {
+function toPaymentGridRow(p: PaymentDto, idx: number) {
     const student = students.find((s) => String(s.id) === String(p.enrollment_id));
     const accountName = p.payer_name || p.student_name || student?.full_name || "—";
     const treasury = treasuries.find((t) => String(t.id) === String(p.account_id || p.cash_account_id));
@@ -363,59 +396,57 @@ const gridSource = $derived(
       notes_display: p.notes || "—",
       status_display: m.finance_ui_receipt_status(),
     };
-  })
-);
+}
 
-const filteredSource = $derived(
-  gridSource.filter((row) => {
-    if (methodFilter !== "all" && row.payment_method?.toLowerCase() !== methodFilter.toLowerCase()) {
-      return false;
-    }
-    const paymentDate = row.paid_at || row.payment_date || row.created_at;
-    if (filterDate && (!paymentDate || !String(paymentDate).startsWith(filterDate))) {
-      return false;
-    }
-    return true;
-  })
-);
+const gridSource = $derived(payments.map(toPaymentGridRow));
+
+const filteredSource = $derived(gridSource);
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "receipt_display", prop: "receipt_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "receipt_display", prop: "receipt_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, sortable: true, cellClass: "font-mono font-bold" },
+  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, sortable: true, align: "center" },
   { id: "counter_account_display", prop: "counter_account_display", header: m.finance_ui_credit_account(), name: m.finance_ui_credit_account(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
   { id: "treasury_display", prop: "treasury_display", header: m.finance_ui_receiving_account(), name: m.finance_ui_receiving_account(), width: 180, size: 180, readonly: true },
-  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_received_amount(), name: m.finance_ui_received_amount(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
-  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
-  { id: "method_display", prop: "method_display", header: m.finance_ui_payment_method(), name: m.finance_ui_payment_method(), width: 110, size: 110, readonly: true, align: "center" },
+  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_received_amount(), name: m.finance_ui_received_amount(), width: 140, size: 140, readonly: true, sortable: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
+  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, sortable: true, align: "center" },
+  { id: "method_display", prop: "method_display", header: m.finance_ui_payment_method(), name: m.finance_ui_payment_method(), width: 110, size: 110, readonly: true, sortable: true, align: "center" },
   { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 220, size: 220, readonly: true },
-  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true, sortable: false },
 ];
 
-function exportCsv() {
-  const rows = filteredSource.map((p) => [
-    p.receipt_display,
-    p.date_display,
-    p.counter_account_display,
-    p.treasury_display,
-    p.amount_formatted,
-    p.currency_display,
-    p.method_display,
-    p.notes_display,
-    p.status_display,
-  ]);
-  const csv = [
-    [m.finance_ui_receipt(), m.finance_ui_date(), m.finance_ui_credit_account(), m.finance_ui_treasury(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_payment_method(), m.finance_ui_notes(), m.finance_ui_status()],
-    ...rows,
-  ]
-    .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `payments-${orgId}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+async function exportCsv() {
+  try {
+    const allPayments = await api.listPayments({
+      ...paymentPageFilter,
+      search: searchQuery.trim() || undefined,
+    });
+    const rows = allPayments.map(toPaymentGridRow).map((payment) => [
+      payment.receipt_display,
+      payment.date_display,
+      payment.counter_account_display,
+      payment.treasury_display,
+      payment.amount_formatted,
+      payment.currency_display,
+      payment.method_display,
+      payment.notes_display,
+      payment.status_display,
+    ]);
+    const csv = [
+      [m.finance_ui_receipt(), m.finance_ui_date(), m.finance_ui_credit_account(), m.finance_ui_treasury(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_payment_method(), m.finance_ui_notes(), m.finance_ui_status()],
+      ...rows,
+    ]
+      .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `payments-${orgId}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
 }
 </script>
 
@@ -447,7 +478,8 @@ function exportCsv() {
           <Input
             type="text"
             placeholder={m.finance_ui_receipt_search_placeholder()}
-            bind:value={searchQuery}
+            bind:value={searchInput}
+            oninput={() => updatePaymentSearch(searchInput)}
             class="h-8 ps-8 text-xs bg-card border-border/60"
           />
         </div>
@@ -682,13 +714,14 @@ function exportCsv() {
         columns={columns}
         source={filteredSource}
         loading={gridLoading}
-        clientQuery
-        search={searchQuery}
+        serverQuery
         rtl={isAr()}
+        search={searchQuery}
+        onquerychange={handlePaymentGridQuery}
         readonly
         emptyTitle={m.finance_ui_no_receipts()}
         hasMore={paymentsQuery.hasNextPage ?? false}
-        onloadmore={() => paymentsQuery.fetchNextPage()}
+        onloadmore={loadMorePayments}
       />
     </div>
   </div>
