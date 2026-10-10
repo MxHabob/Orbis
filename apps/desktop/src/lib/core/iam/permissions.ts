@@ -193,6 +193,8 @@ export const Permissions = {
   FinanceRead: "finance:read",
   FinanceWrite: "finance:write",
   ProcessPayment: "finance:payment",
+  FinanceBackdate: "finance:backdate",
+  FinanceFutureDate: "finance:future_date",
 
   // --- Promotions ---
   PromotionRead: "promotion:read",
@@ -523,6 +525,8 @@ export const IAM_DOMAINS: IamDomainDef[] = [
           { key: "read", labelKey: "iam_action_finance_read_label" },
           { key: "write", labelKey: "iam_action_finance_write_label" },
           { key: "payment", labelKey: "iam_action_finance_payment_label" },
+          { key: "backdate", labelKey: "iam_action_finance_backdate_label" },
+          { key: "future_date", labelKey: "iam_action_finance_future_date_label" },
         ],
       },
     ],
@@ -674,7 +678,7 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
       proctor: ["read", "assign"],
       student_order: ["read", "rebuild", "freeze"],
       exam_schedule: ["read", "write"],
-      finance: ["read", "write", "payment"],
+      finance: ["read", "write", "payment", "backdate", "future_date"],
       document: ["read", "write", "delete"],
       template: ["read", "write", "publish", "delete", "import", "export", "generate_single", "generate_batch", "generate_download", "asset_upload", "asset_delete", "component_write", "component_delete"],
       workflow: ["read", "write", "approve", "execute"],

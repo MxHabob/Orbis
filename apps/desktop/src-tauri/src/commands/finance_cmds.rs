@@ -161,10 +161,13 @@ pub struct AccountDto {
     pub parent_id: Option<String>,
     pub currency: String,
     pub is_active: bool,
+    pub is_control_account: bool,
+    pub is_system_account: bool,
+    pub is_finance_default: bool,
     pub balances: serde_json::Value,
 }
 
-pub fn account_to_dto(a: Account) -> AccountDto {
+pub fn account_to_dto(a: Account, is_finance_default: bool) -> AccountDto {
     AccountDto {
         id: a.id.to_string(),
         org_id: a.org_id.to_string(),
@@ -176,6 +179,9 @@ pub fn account_to_dto(a: Account) -> AccountDto {
         parent_id: a.parent_id.map(|p| p.to_string()),
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
     }
 }
@@ -611,7 +617,13 @@ pub async fn finance_create_account(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(account_to_dto(a)))
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .contains(&a.id);
+    Ok(ok(account_to_dto(a, is_finance_default)))
 }
 
 #[tauri::command]
@@ -624,7 +636,18 @@ pub async fn finance_list_accounts(
         .list_accounts(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(items.into_iter().map(account_to_dto).collect()))
+    let fixed_account_ids = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(items
+        .into_iter()
+        .map(|account| {
+            let is_finance_default = fixed_account_ids.contains(&account.id);
+            account_to_dto(account, is_finance_default)
+        })
+        .collect()))
 }
 
 #[tauri::command]
@@ -640,7 +663,13 @@ pub async fn finance_get_account(
         .await
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "Account not found".to_string())?;
-    Ok(ok(account_to_dto(account)))
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .contains(&account.id);
+    Ok(ok(account_to_dto(account, is_finance_default)))
 }
 
 #[tauri::command]
@@ -680,7 +709,13 @@ pub async fn finance_update_account(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(account_to_dto(account)))
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .contains(&account.id);
+    Ok(ok(account_to_dto(account, is_finance_default)))
 }
 
 #[tauri::command]
@@ -755,13 +790,15 @@ pub async fn finance_create_fee_template(
         .transpose()?;
     let currency = match request.currency {
         Some(currency) if !currency.trim().is_empty() => currency,
-        _ => state
-            .policy_repo
-            .get_settings(ctx.tenant_id)
-            .await
-            .map_err(|e| e.to_string())?
-            .finance
-            .currency,
+        _ => {
+            state
+                .policy_repo
+                .get_settings(ctx.tenant_id)
+                .await
+                .map_err(|e| e.to_string())?
+                .finance
+                .currency
+        }
     };
     let tmpl = state
         .finance_service
@@ -825,8 +862,7 @@ pub async fn finance_update_fee_template(
     if let Some(rev) = parse_optional_uuid(request.revenue_account_id, "revenue_account_id")? {
         tmpl.revenue_account_id = rev;
     }
-    if let Some(rec) =
-        parse_optional_uuid(request.receivable_account_id, "receivable_account_id")?
+    if let Some(rec) = parse_optional_uuid(request.receivable_account_id, "receivable_account_id")?
     {
         tmpl.receivable_account_id = rec;
     }
@@ -1257,13 +1293,15 @@ pub async fn finance_create_journal_entry(
 ) -> Result<ApiResponse<JournalEntryDto>, String> {
     let ctx = make_ctx(&state);
     let now = chrono::Utc::now();
-    let accounting_date = request
-        .accounting_date
-        .as_deref()
-        .map(|date| chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d"))
-        .transpose()
-        .map_err(|_| "Invalid accounting_date; expected YYYY-MM-DD")?
-        .unwrap_or_else(|| now.date_naive());
+    let accounting_date = match request.accounting_date.as_deref() {
+        Some(date) => chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d")
+            .map_err(|_| "Invalid accounting_date; expected YYYY-MM-DD")?,
+        None => state
+            .finance_service
+            .current_financial_date(ctx.tenant_id)
+            .await
+            .map_err(|error| error.to_string())?,
+    };
 
     let currency_code = request
         .currency_code
@@ -1309,24 +1347,24 @@ pub async fn finance_create_journal_entry(
                 .ok_or("Credit account is required")
                 .and_then(|id| Uuid::parse_str(id).map_err(|_| "Invalid credit_account_id"))?;
             vec![
-            JournalEntryLine {
-                id: Uuid::new_v4(),
-                account_id: debit_account_id,
-                debit_amount: amount,
-                credit_amount: Decimal::ZERO,
-                description: Some(description.clone()),
-                entity_type: None,
-                entity_id: None,
-            },
-            JournalEntryLine {
-                id: Uuid::new_v4(),
-                account_id: credit_account_id,
-                debit_amount: Decimal::ZERO,
-                credit_amount: amount,
-                description: Some(description.clone()),
-                entity_type: None,
-                entity_id: None,
-            },
+                JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: debit_account_id,
+                    debit_amount: amount,
+                    credit_amount: Decimal::ZERO,
+                    description: Some(description.clone()),
+                    entity_type: None,
+                    entity_id: None,
+                },
+                JournalEntryLine {
+                    id: Uuid::new_v4(),
+                    account_id: credit_account_id,
+                    debit_amount: Decimal::ZERO,
+                    credit_amount: amount,
+                    description: Some(description.clone()),
+                    entity_type: None,
+                    entity_id: None,
+                },
             ]
         }
     };
@@ -1548,7 +1586,10 @@ pub async fn finance_get_account_statement(
         .map(|date| NaiveDate::parse_from_str(date, "%Y-%m-%d"))
         .transpose()
         .map_err(|_| "Invalid end_date; expected YYYY-MM-DD")?;
-    if start_date.zip(end_date).is_some_and(|(start, end)| start > end) {
+    if start_date
+        .zip(end_date)
+        .is_some_and(|(start, end)| start > end)
+    {
         return Err("start_date must be on or before end_date".to_string());
     }
     let account_id = parse_optional_uuid(filter.account_id, "account_id")?;
@@ -1685,7 +1726,13 @@ pub async fn finance_create_sub_account(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(account_to_dto(account)))
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .contains(&account.id);
+    Ok(ok(account_to_dto(account, is_finance_default)))
 }
 
 #[tauri::command]

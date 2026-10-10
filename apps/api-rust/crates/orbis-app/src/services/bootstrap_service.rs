@@ -941,7 +941,10 @@ impl BootstrapService {
             ("dashboard", vec!["read"]),
             ("audit", vec!["read"]),
             ("data", vec!["import", "export"]),
-            ("finance", vec!["read", "write", "payment"]),
+            (
+                "finance",
+                vec!["read", "write", "payment", "backdate", "future_date"],
+            ),
             ("promotion", vec!["read", "write", "execute"]),
             (
                 "employee",

@@ -16,7 +16,6 @@ import { api, extractErrorMessage, type AccountDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import {
   Select,
   SelectContent,
@@ -35,6 +34,8 @@ import {
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
@@ -177,7 +178,24 @@ function handleTreasuryChange(accountId: string) {
 }
 
 function addReceiptLine() {
-  receiptLines = [...receiptLines, createReceiptLine()];
+  const line = createReceiptLine();
+  receiptLines = [...receiptLines, line];
+  return line.id;
+}
+
+function addReceiptLineAndFocus() {
+  const lineId = addReceiptLine();
+  requestAnimationFrame(() => {
+    const accountInput = document.getElementById(`receipt-line-account-${lineId}`);
+    if (accountInput instanceof HTMLInputElement) accountInput.focus();
+  });
+}
+
+function handleQuickAddReceiptLine(event: KeyboardEvent) {
+  if (event.key !== "Enter" || !event.shiftKey || isSubmitting) return;
+  event.preventDefault();
+  event.stopPropagation();
+  addReceiptLineAndFocus();
 }
 
 function removeReceiptLine(lineId: number) {
@@ -432,18 +450,13 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="flex flex-col gap-4 border-b border-border/40 px-4 py-3">
-            <div class="flex items-center justify-between">
-              <CardTitle class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground">
-                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                {m.finance_ui_receipt_create_heading()}
-              </CardTitle>
-              <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_receipt_create_heading()}
+          accent="emerald"
+          contentClass="gap-5"
+          onclose={() => (showAddForm = false)}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <div class="min-w-0">
                 <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
@@ -496,22 +509,15 @@ function exportCsv() {
                 </Select>
               </div>
               <div class="min-w-0">
-                <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_currency()}</Label>
-                <Select
-                  type="single"
-                  value={selectedCurrency}
-                  onValueChange={handleCurrencyChange}
+                <CurrencySelector
+                  compact
+                  title={m.finance_ui_currency()}
+                  description=""
+                  currentCurrency={selectedCurrency}
+                  currencyOptions={availableCurrencies}
+                  onchange={handleCurrencyChange}
                   disabled={isSubmitting || availableCurrencies.length < 2}
-                >
-                  <SelectTrigger class="h-9 w-full bg-background text-xs">
-                    {selectedCurrency}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {#each availableCurrencies as currency (currency)}
-                      <SelectItem value={currency}>{currency}</SelectItem>
-                    {/each}
-                  </SelectContent>
-                </Select>
+                />
               </div>
             </div>
             {#if selectedPaymentMethodObj?.requires_source_token}
@@ -526,21 +532,17 @@ function exportCsv() {
                 />
               </div>
             {/if}
-          </CardHeader>
-
-          <CardContent class="flex flex-col gap-5 p-4">
             <section class="flex flex-col gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 class="text-sm font-semibold text-foreground">{m.finance_ui_allocate_student_fees()}</h3>
-                  <p class="mt-0.5 text-[11px] text-muted-foreground">{receiptLines.length} · {m.finance_ui_receipt()}</p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   class="h-8 gap-1.5 text-xs"
-                  onclick={addReceiptLine}
+                  onclick={addReceiptLineAndFocus}
                   disabled={isSubmitting}
                 >
                   <Plus size={14} />
@@ -552,7 +554,7 @@ function exportCsv() {
                 <div class="min-w-0 rounded-lg border border-border/60 bg-background p-3 sm:p-4">
                   <div class="mb-3 flex items-center justify-between gap-2">
                     <span class="text-xs font-semibold text-foreground">
-                      {m.finance_ui_receipt()} #{line.sequence}
+                      #{line.sequence}
                     </span>
                     <Button
                       type="button"
@@ -571,10 +573,12 @@ function exportCsv() {
                       <div class="min-w-0">
                         <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_credit_account()}</Label>
                         <AccountSearchInput
+                          id={`receipt-line-account-${line.id}`}
                           value={line.accountId}
                           placeholder={m.finance_ui_credit_account_select_placeholder()}
                           accounts={receivableAccounts}
                           onchange={(value) => (line.accountId = value ?? "")}
+                          onkeydown={handleQuickAddReceiptLine}
                           disabled={isSubmitting}
                           class="h-9 w-full text-xs"
                         />
@@ -586,6 +590,7 @@ function exportCsv() {
                         min="0.01"
                         step="any"
                         bind:value={line.amount}
+                        onkeydown={handleQuickAddReceiptLine}
                         placeholder="0.00"
                         class="h-9 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400"
                         disabled={isSubmitting}
@@ -597,6 +602,7 @@ function exportCsv() {
                     <Input
                       type="text"
                       bind:value={line.notes}
+                      onkeydown={handleQuickAddReceiptLine}
                       placeholder={m.finance_ui_receipt_notes_placeholder()}
                       class="h-9 text-xs"
                       disabled={isSubmitting}
@@ -628,8 +634,7 @@ function exportCsv() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 

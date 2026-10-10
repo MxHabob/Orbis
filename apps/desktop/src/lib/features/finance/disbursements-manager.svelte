@@ -17,7 +17,6 @@ import type { AccountDto, CurrencyDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import {
   Select,
   SelectContent,
@@ -35,7 +34,8 @@ import {
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
@@ -167,7 +167,24 @@ function handleCurrencyChange(currencyCode: string | undefined) {
 }
 
 function addDisbursementLine() {
-  disbursementLines = [...disbursementLines, createDisbursementLine()];
+  const line = createDisbursementLine();
+  disbursementLines = [...disbursementLines, line];
+  return line.id;
+}
+
+function addDisbursementLineAndFocus() {
+  const lineId = addDisbursementLine();
+  requestAnimationFrame(() => {
+    const accountInput = document.getElementById(`disbursement-line-account-${lineId}`);
+    if (accountInput instanceof HTMLInputElement) accountInput.focus();
+  });
+}
+
+function handleQuickAddDisbursementLine(event: KeyboardEvent) {
+  if (event.key !== "Enter" || !event.shiftKey || isSubmitting) return;
+  event.preventDefault();
+  event.stopPropagation();
+  addDisbursementLineAndFocus();
 }
 
 function removeDisbursementLine(lineId: number) {
@@ -385,23 +402,13 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_disbursement_create_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="flex flex-col gap-5 p-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_disbursement_create_heading()}
+          accent="rose"
+          contentClass="gap-5"
+          onclose={() => (showAddForm = false)}
+        >
               <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
@@ -452,15 +459,14 @@ function exportCsv() {
                   </Select>
                 </div>
                 <div class="min-w-0">
-                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_currency()}</Label>
-                  <SearchableSelect
-                    value={selectedCurrency}
-                    placeholder={m.finance_ui_currency_placeholder()}
-                    items={availableCurrencies}
-                    getItemValue={(currency) => currency.code}
-                    getItemLabel={(currency) => currency.name}
+                  <CurrencySelector
+                    compact
+                    title={m.finance_ui_currency()}
+                    description=""
+                    currentCurrency={selectedCurrency}
+                    currencyOptions={availableCurrencies}
                     onchange={handleCurrencyChange}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isLoading || availableCurrencies.length < 2}
                   />
                 </div>
               </div>
@@ -469,14 +475,13 @@ function exportCsv() {
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 class="text-sm font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</h3>
-                  <p class="mt-0.5 text-[11px] text-muted-foreground">{disbursementLines.length} · {m.finance_ui_disbursement_save()}</p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   class="h-8 gap-1.5 text-xs"
-                  onclick={addDisbursementLine}
+                  onclick={addDisbursementLineAndFocus}
                   disabled={isSubmitting}
                 >
                   <Plus size={14} />
@@ -488,7 +493,7 @@ function exportCsv() {
                 <div class="min-w-0 rounded-lg border border-border/60 bg-background p-3 sm:p-4">
                   <div class="mb-3 flex items-center justify-between gap-2">
                     <span class="text-xs font-semibold text-foreground">
-                      {m.finance_ui_disbursement_save()} #{line.sequence}
+                      #{line.sequence}
                     </span>
                     <Button
                       type="button"
@@ -506,10 +511,12 @@ function exportCsv() {
                     <div class="min-w-0">
                       <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</Label>
                       <AccountSearchInput
+                        id={`disbursement-line-account-${line.id}`}
                         value={line.beneficiaryAccountId}
                         accounts={disbursementAccounts}
                         placeholder={m.finance_ui_expense_account_select_placeholder()}
                         onchange={(value) => (line.beneficiaryAccountId = value ?? "")}
+                        onkeydown={handleQuickAddDisbursementLine}
                         disabled={isSubmitting}
                       />
                     </div>
@@ -520,6 +527,7 @@ function exportCsv() {
                         min="0.01"
                         step="any"
                         bind:value={line.amount}
+                        onkeydown={handleQuickAddDisbursementLine}
                         placeholder="0.00"
                         class="h-9 text-xs font-mono font-bold text-rose-600 dark:text-rose-400"
                         disabled={isSubmitting}
@@ -531,6 +539,7 @@ function exportCsv() {
                     <Input
                       type="text"
                       bind:value={line.notes}
+                      onkeydown={handleQuickAddDisbursementLine}
                       placeholder={m.finance_ui_disbursement_notes_placeholder()}
                       class="h-9 text-xs"
                       disabled={isSubmitting}
@@ -560,8 +569,7 @@ function exportCsv() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 

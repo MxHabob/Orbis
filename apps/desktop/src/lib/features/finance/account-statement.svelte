@@ -13,20 +13,15 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
-import type { AccountDto, CurrencyDto, JournalEntryDto } from "$lib/api/types";
+import type { AccountDto, CurrencyDto, JournalEntryDto, PaymentDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
+import { Card } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
-import {
-  Refresh,
-  Search,
-  Download,
-  BuildingLibrary,
-} from "@orbis/icons";
+import { Refresh, Download } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
@@ -35,15 +30,38 @@ let { orgId }: { orgId: string } = $props();
 let accounts = $state<AccountDto[]>([]);
 let currencies = $state<CurrencyDto[]>([]);
 let journalEntries = $state<JournalEntryDto[]>([]);
-let payments = $state<any[]>([]);
+let payments = $state<PaymentDto[]>([]);
 let isLoading = $state(true);
 
 // Filters
 let selectedAccountId = $state("");
-let selectedCurrency = $state("all");
-let startDate = $state("");
-let endDate = $state("");
-let searchQuery = $state("");
+let currencyPreference = $state("");
+let startDate = $state(getLocalDateInputValue());
+let endDate = $state(getLocalDateInputValue());
+
+function getLocalDateInputValue(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
+type StatementMovement = {
+  id: string;
+  date: string;
+  date_raw: string;
+  ref: string;
+  desc: string;
+  debit: number;
+  credit: number;
+  currency: string;
+};
+
+type DisplayStatementMovement = StatementMovement & {
+  __idx: number;
+  date_display: string;
+  debit_formatted: string;
+  credit_formatted: string;
+  balance_formatted: string;
+  running_balance: number;
+};
 
 onMount(async () => {
   if (orgId) {
@@ -55,10 +73,10 @@ async function loadData() {
   isLoading = true;
   try {
     const [accountsList, currenciesList, entriesList, paymentsList] = await Promise.all([
-      api.listAccounts().catch(() => []),
-      api.listCurrencies().catch(() => []),
-      api.listJournalEntries().catch(() => []),
-      api.listPayments().catch(() => []),
+      api.listAccounts(),
+      api.listCurrencies(),
+      api.listJournalEntries(),
+      api.listPayments(),
     ]);
 
     accounts = accountsList || [];
@@ -67,9 +85,13 @@ async function loadData() {
     payments = paymentsList || [];
 
     if (!selectedAccountId && accounts.length > 0) {
-      // Pick first child or cash account
-      const firstChild = accounts.find((a) => !accounts.some((cand) => cand.parent_id === a.id));
-      selectedAccountId = firstChild ? firstChild.id : accounts[0].id;
+      const parentAccountIds = new Set(
+        accounts.flatMap((account) => account.parent_id ? [account.parent_id] : [])
+      );
+      const postingAccount = accounts.find(
+        (account) => account.is_active && !parentAccountIds.has(account.id)
+      );
+      selectedAccountId = postingAccount?.id || "";
     }
   } catch (e) {
     console.error("Failed to load account statement data:", e);
@@ -84,27 +106,44 @@ const selectedAccount = $derived(
 );
 
 // ── Ledger Rows & Running Balance Computation ──────────────────────────
-const statementRows = $derived.by(() => {
+const rawStatementRows = $derived.by((): StatementMovement[] => {
   if (!selectedAccountId) return [];
 
-  const rows: any[] = [];
+  const rows: StatementMovement[] = [];
   const targetAcc = selectedAccount;
-  const isCashAccount = targetAcc?.sub_type === "cash" || targetAcc?.sub_type === "bank" || targetAcc?.type === "asset";
+  const isCashAccount = targetAcc?.sub_type === "cash"
+    || targetAcc?.sub_type === "bank"
+    || targetAcc?.account_type === "asset";
+  const journalEntryIds = new Set(journalEntries.map((entry) => entry.id));
 
-  // 1. Process Journal Entries
   for (const entry of journalEntries) {
     const entryDate = entry.accounting_date ? String(entry.accounting_date).slice(0, 10) : "";
-    if (startDate && entryDate < startDate) continue;
-    if (endDate && entryDate > endDate) continue;
-
-    const curr = entry.currency_code || entry.currency || "YER";
-    if (selectedCurrency !== "all" && curr !== selectedCurrency) continue;
-
+    const curr = entry.currency_code || "YER";
     const ref = entry.reference_number || entry.id.slice(0, 8);
-    const desc = entry.description_ar || entry.description || m.finance_ui_journal_entry_fallback();
+    const desc = isAr()
+      ? entry.description_ar || entry.description || m.finance_ui_journal_entry_fallback()
+      : entry.description || entry.description_ar || m.finance_ui_journal_entry_fallback();
 
-    // Direct 2-legged entry
-    if (entry.debit_account_id === selectedAccountId) {
+    if (entry.lines?.length) {
+      for (const line of entry.lines) {
+        if (line.account_id === selectedAccountId) {
+          const deb = Number(line.debit_amount || 0);
+          const crd = Number(line.credit_amount || 0);
+          if (deb > 0 || crd > 0) {
+            rows.push({
+              id: `je-line-${line.id || entry.id}`,
+              date: entryDate,
+              date_raw: entry.accounting_date || entry.created_at,
+              ref,
+              desc: line.description || desc,
+              debit: deb,
+              credit: crd,
+              currency: curr,
+            });
+          }
+        }
+      }
+    } else if (entry.debit_account_id === selectedAccountId) {
       rows.push({
         id: `je-deb-${entry.id}`,
         date: entryDate,
@@ -127,48 +166,25 @@ const statementRows = $derived.by(() => {
         currency: curr,
       });
     }
-
-    // Multi-line entries
-    if (entry.lines && entry.lines.length > 0) {
-      for (const line of entry.lines) {
-        if (line.account_id === selectedAccountId) {
-          const deb = Number(line.debit || 0);
-          const crd = Number(line.credit || 0);
-          if (deb > 0 || crd > 0) {
-            rows.push({
-              id: `je-line-${line.id || entry.id}`,
-              date: entryDate,
-              date_raw: entry.accounting_date || entry.created_at,
-              ref,
-              desc: line.description || desc,
-              debit: deb,
-              credit: crd,
-              currency: curr,
-            });
-          }
-        }
-      }
-    }
   }
 
-  // 2. Process Payments if Cash Account
   if (isCashAccount) {
     for (const p of payments) {
-      if (String(p.cash_account_id) === selectedAccountId) {
-        const pDate = p.payment_date ? String(p.payment_date).slice(0, 10) : (p.created_at ? String(p.created_at).slice(0, 10) : "");
-        if (startDate && pDate < startDate) continue;
-        if (endDate && pDate > endDate) continue;
-
-        const curr = p.currency || "YER";
-        if (selectedCurrency !== "all" && curr !== selectedCurrency) continue;
+      if (
+        String(p.account_id) === selectedAccountId
+        && !(p.journal_entry_id && journalEntryIds.has(p.journal_entry_id))
+      ) {
+        const paymentDate = p.paid_at || p.created_at;
+        const pDate = paymentDate ? String(paymentDate).slice(0, 10) : "";
+        const curr = p.currency_code || "YER";
 
         rows.push({
           id: `pay-${p.id}`,
           date: pDate,
-          date_raw: p.payment_date || p.created_at,
+          date_raw: paymentDate,
           ref: p.receipt_number || p.id.slice(0, 8),
-          desc: p.notes || m.finance_ui_receipt_student_description({ student: p.student_name || m.finance_ui_student() }),
-          debit: Number(p.amount || 0), // Cash in = Debit Asset
+          desc: p.payer_name || m.finance_ui_receipt_student_description({ student: m.finance_ui_student() }),
+          debit: Number(p.amount || 0),
           credit: 0,
           currency: curr,
         });
@@ -176,37 +192,73 @@ const statementRows = $derived.by(() => {
     }
   }
 
-  // Sort chronologically ascending
   rows.sort((a, b) => new Date(a.date_raw).getTime() - new Date(b.date_raw).getTime());
-
-  // Compute running balance
-  let running = 0;
-  return rows.map((r, idx) => {
-    running += (r.debit - r.credit);
-    return {
-      ...r,
-      __idx: idx + 1,
-      date_display: r.date ? formatDate(r.date) : "—",
-      debit_formatted: r.debit > 0 ? formatCurrency(r.debit, r.currency) : "—",
-      credit_formatted: r.credit > 0 ? formatCurrency(r.credit, r.currency) : "—",
-      balance_formatted: formatCurrency(running, r.currency),
-      running_balance: running,
-    };
-  });
+  return rows;
 });
 
-// ── Summary Totals ─────────────────────────────────────────────────────
-const totalDebit = $derived(
-  statementRows.reduce((sum, r) => sum + r.debit, 0)
+const movementCurrencies = $derived(
+  [...new Set(rawStatementRows.map((row) => row.currency))].sort()
 );
 
-const totalCredit = $derived(
-  statementRows.reduce((sum, r) => sum + r.credit, 0)
+const selectedCurrency = $derived.by(() => {
+  if (movementCurrencies.includes(currencyPreference)) return currencyPreference;
+  if (selectedAccount?.currency && movementCurrencies.includes(selectedAccount.currency)) {
+    return selectedAccount.currency;
+  }
+  return movementCurrencies[0] || "";
+});
+const movementCurrencyOptions = $derived(
+  movementCurrencies.map((code) => currencies.find((currency) => currency.code === code) ?? {
+    code,
+    name: code,
+    symbol: code,
+  })
 );
 
-const netBalance = $derived(
-  totalDebit - totalCredit
-);
+function handleAccountSelect() {
+  currencyPreference = "";
+}
+
+const statementSummary = $derived.by(() => {
+  if (!selectedCurrency) {
+    return { rows: [], totalDebit: 0, totalCredit: 0, closingBalance: 0 };
+  }
+
+  const rows = rawStatementRows.filter((row) => row.currency === selectedCurrency);
+  let running = 0;
+  let totalDebit = 0;
+  let totalCredit = 0;
+  const visibleRows: DisplayStatementMovement[] = [];
+
+  for (const row of rows) {
+    if (endDate && row.date > endDate) continue;
+    running += row.debit - row.credit;
+    if (startDate && row.date < startDate) continue;
+    totalDebit += row.debit;
+    totalCredit += row.credit;
+    visibleRows.push({
+      ...row,
+      __idx: visibleRows.length + 1,
+      date_display: row.date ? formatDate(row.date) : "—",
+      debit_formatted: row.debit > 0 ? formatCurrency(row.debit, row.currency) : "—",
+      credit_formatted: row.credit > 0 ? formatCurrency(row.credit, row.currency) : "—",
+      balance_formatted: formatCurrency(running, row.currency),
+      running_balance: running,
+    });
+  }
+
+  return {
+    rows: visibleRows,
+    totalDebit,
+    totalCredit,
+    closingBalance: running,
+  };
+});
+
+const statementRows = $derived(statementSummary.rows);
+const totalDebit = $derived(statementSummary.totalDebit);
+const totalCredit = $derived(statementSummary.totalCredit);
+const netBalance = $derived(statementSummary.closingBalance);
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
@@ -253,6 +305,7 @@ function exportCsv() {
         <AccountSearchInput
           bind:value={selectedAccountId}
           {accounts}
+          onselect={handleAccountSelect}
           placeholder={m.finance_ui_account_statement_account_placeholder()}
         />
       </div>
@@ -269,6 +322,17 @@ function exportCsv() {
           bind:value={endDate}
           class="h-8 w-36 text-xs bg-card border-border/60 font-mono"
         />
+
+        {#if movementCurrencies.length > 0}
+          <CurrencySelector
+            title={m.finance_ui_currency()}
+            description=""
+            currentCurrency={selectedCurrency}
+            currencyOptions={movementCurrencyOptions}
+            compact
+            onchange={(currency) => (currencyPreference = currency)}
+          />
+        {/if}
 
         <Button variant="ghost" size="icon-sm" onclick={loadData} class="text-muted-foreground">
           {#if isLoading}<LoadingIndicator  size={14} />{:else}<Refresh size={14}   />{/if}
@@ -288,7 +352,7 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400">
-          {formatCurrency(totalDebit, selectedAccount?.currency || "YER")}
+          {formatCurrency(totalDebit, selectedCurrency || "YER")}
         </div>
       </Card>
 
@@ -298,7 +362,7 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-rose-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-rose-600 dark:text-rose-400">
-          {formatCurrency(totalCredit, selectedAccount?.currency || "YER")}
+          {formatCurrency(totalCredit, selectedCurrency || "YER")}
         </div>
       </Card>
 
@@ -308,7 +372,7 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-primary"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-foreground">
-          {formatCurrency(netBalance, selectedAccount?.currency || "YER")}
+          {formatCurrency(netBalance, selectedCurrency || "YER")}
         </div>
       </Card>
     </div>
@@ -320,7 +384,6 @@ function exportCsv() {
         source={statementRows}
         loading={isLoading}
         clientQuery
-        search={searchQuery}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_account_movements()}

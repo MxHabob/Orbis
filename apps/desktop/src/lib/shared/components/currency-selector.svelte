@@ -7,15 +7,23 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { l } from "$lib/core/i18n";
+import type { CurrencyDto } from "$lib/api/types";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import { api } from "$lib/api";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import { Label } from "@orbis/ui/label";
 
+type CurrencyOption = string | (CurrencyDto & {
+  name_ar?: string;
+  exchange_rate?: number;
+  is_base?: boolean;
+});
+
 let {
   title = m.finance_ledger_currency(),
   description = m.settings_general_currency_desc(),
   currentCurrency = $bindable("SAR"),
+  currencyOptions = undefined,
   includeAll = false,
   allLabel = m.common_filter_all(),
   compact = false,
@@ -26,6 +34,7 @@ let {
   title?: string;
   description?: string;
   currentCurrency?: string;
+  currencyOptions?: CurrencyOption[];
   includeAll?: boolean;
   allLabel?: string;
   compact?: boolean;
@@ -34,10 +43,16 @@ let {
   onchange?: (currency: string) => void;
 } = $props();
 
-let dbCurrencies = $state<any[]>([]);
+let dbCurrencies = $state<CurrencyDto[]>([]);
 let isLoading = $state(true);
+const availableCurrencies = $derived(currencyOptions ?? dbCurrencies);
 
 onMount(async () => {
+  if (currencyOptions !== undefined) {
+    isLoading = false;
+    return;
+  }
+
   try {
     const list = await api.listCurrencies();
     if (Array.isArray(list)) {
@@ -50,28 +65,30 @@ onMount(async () => {
   }
 });
 
-function getCurrencyValue(c: any): string {
+function getCurrencyValue(c: CurrencyOption | null | undefined): string {
   if (!c) return "";
-  return String(c.code || c.id || c || "").toUpperCase();
+  return (typeof c === "string" ? c : c.code).toUpperCase();
 }
 
-function getCurrencyLabel(c: any): string {
+function getCurrencyLabel(c: CurrencyOption | null | undefined): string {
   if (!c) return "";
   if (typeof c === "string") return c;
-  const codeUpper = (c.code || "").toUpperCase();
-  const nameStr = l(c.name_ar, c.name) || c.name || "";
+  const codeUpper = c.code.toUpperCase();
+  const nameStr = l(c.name_ar, c.name) || c.name;
   const symbolStr = c.symbol ? ` (${c.symbol})` : "";
   return nameStr ? `${codeUpper} - ${nameStr}${symbolStr}` : `${codeUpper}${symbolStr}`;
 }
 
-function getCurrencySubtitle(c: any): string | undefined {
+function getCurrencySubtitle(c: CurrencyOption | null | undefined): string | undefined {
+  if (!c || typeof c === "string") return undefined;
   if (c?.exchange_rate && Number(c.exchange_rate) !== 1) {
     return m.shared_ui_exchange_rate({ rate: c.exchange_rate });
   }
   return undefined;
 }
 
-function getCurrencyBadge(c: any): string | undefined {
+function getCurrencyBadge(c: CurrencyOption | null | undefined): string | undefined {
+  if (!c || typeof c === "string") return undefined;
   if (c?.is_base) return m.shared_ui_base_currency();
   return undefined;
 }
@@ -94,7 +111,7 @@ function handleChange(val: string | null) {
     <div class="w-full">
       <SearchableSelect
         bind:value={currentCurrency}
-        items={dbCurrencies}
+        items={availableCurrencies}
         placeholder={isLoading ? m.shared_ui_loading_currencies() : (m.finance_ledger_currency())}
         searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
         emptyText={m.shared_ui_no_matching_currencies()}
@@ -115,7 +132,7 @@ function handleChange(val: string | null) {
     {#snippet children()}
       <SearchableSelect
         bind:value={currentCurrency}
-        items={dbCurrencies}
+        items={availableCurrencies}
         placeholder={isLoading ? m.shared_ui_loading_currencies() : (m.finance_ledger_currency())}
         searchPlaceholder={m.shared_ui_search_currencies_placeholder()}
         emptyText={m.shared_ui_no_matching_currencies()}

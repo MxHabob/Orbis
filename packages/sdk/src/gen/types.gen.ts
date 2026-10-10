@@ -88,6 +88,9 @@ export type AccountDto = {
     currency: string;
     id: string;
     is_active: boolean;
+    is_control_account: boolean;
+    is_system_account: boolean;
+    is_finance_default: boolean;
     name: string;
     name_ar?: string | null;
     org_id: string;

@@ -12,5 +12,6 @@ serde_json.workspace = true
 uuid.workspace = true
 tokio.workspace = true
 chrono.workspace = true
+chrono-tz.workspace = true
 rust_decimal.workspace = true
 tracing.workspace = true

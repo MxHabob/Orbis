@@ -40,7 +40,7 @@ import { formatCurrency, formatDate, isAr, l } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountTree, { type AccountNode } from "$lib/features/finance/components/account-tree.svelte";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import {
   Select,
@@ -83,6 +83,9 @@ let activeFilter = $state<UniversalFilter>({
 } as any);
 
 const rtl = $derived(getLocale() === "ar");
+const parentAccountIds = $derived(
+  new Set(allAccounts.flatMap((account) => account.parent_id ? [account.parent_id] : []))
+);
 
 onMount(async () => {
   if (orgId) await loadData();
@@ -166,7 +169,7 @@ function handleSelectAccount(account: AccountNode) {
   formSubType = account.sub_type || "general";
   formCurrency = account.currency || baseCurrency;
 
-  const hasChildren = allAccounts.some((a) => a.parent_id === account.id);
+  const hasChildren = parentAccountIds.has(account.id);
   formAccountLevel = hasChildren ? "primary" : "sub";
 }
 
@@ -186,6 +189,18 @@ function startAddSubAccount(parentAccount: AccountNode | null = selectedAccount)
 
 const parentAccountNode = $derived(
   allAccounts.find((a) => a.id === formParentId)
+);
+const selectedAccountHasChildren = $derived(
+  !!selectedAccount && parentAccountIds.has(selectedAccount.id)
+);
+const isFinancePurposeAccount = $derived(
+  !!selectedAccount
+    && (selectedAccount.is_finance_default
+      || selectedAccount.is_system_account
+      || selectedAccount.is_control_account)
+);
+const isAccountStructureLocked = $derived(
+  isFinancePurposeAccount || selectedAccountHasChildren
 );
 
 // Determine Closing Statement based on Account Type
@@ -269,9 +284,7 @@ async function handleDeleteAccount() {
 }
 
 // ── Grid Data for Table View ───────────────────────────────────────────
-const leafAccounts = $derived(
-  allAccounts.filter((a) => !allAccounts.some((cand) => cand.parent_id === a.id))
-);
+const leafAccounts = $derived(allAccounts.filter((account) => !parentAccountIds.has(account.id)));
 
 const treasurySource = $derived(
   leafAccounts.map((account, i) => {
@@ -410,6 +423,12 @@ function exportAccountsCsv() {
               </CardHeader>
 
               <CardContent class="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
+                {#if isFinancePurposeAccount}
+                  <div class="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                    {m.finance_ui_fixed_finance_account_notice()}
+                  </div>
+                {/if}
+
                 <!-- Row 1: الحساب الأب (Parent Account) -->
                 <div class="flex flex-col gap-1">
                   <Label class="text-xs font-semibold text-foreground">{m.finance_ui_parent_account()}</Label>
@@ -427,6 +446,7 @@ function exportAccountsCsv() {
                       variant="ghost"
                       size="sm"
                       class="h-6 text-[11px] px-2"
+                      disabled={isAccountStructureLocked}
                       onclick={() => { formParentId = null; formCode = suggestNextChildCode(null); }}
                     >
                       {m.finance_ui_set_root_account()}
@@ -466,6 +486,7 @@ function exportAccountsCsv() {
                       bind:value={formCode}
                       placeholder="1101"
                       class="h-8 text-xs font-mono font-bold bg-background border-border/60"
+                      disabled={isAccountStructureLocked}
                     />
                   </div>
 
@@ -474,6 +495,7 @@ function exportAccountsCsv() {
                     <Select
                       type="single"
                       value={formAccountLevel}
+                      disabled={isAccountStructureLocked}
                       onValueChange={(value) => {
                         if (value === "primary" || value === "sub") formAccountLevel = value;
                       }}
@@ -498,6 +520,7 @@ function exportAccountsCsv() {
                     <Select
                       type="single"
                       value={formAccountType}
+                      disabled={isAccountStructureLocked}
                       onValueChange={(value) => {
                         if (value === "asset" || value === "liability" || value === "equity" || value === "revenue" || value === "expense") formAccountType = value;
                       }}
@@ -528,6 +551,7 @@ function exportAccountsCsv() {
                     <Select
                       type="single"
                       value={formSubType}
+                      disabled={isAccountStructureLocked}
                       onValueChange={(value) => {
                         if (value === "general" || value === "cash" || value === "bank" || value === "customer" || value === "supplier" || value === "employee") formSubType = value;
                       }}
@@ -557,15 +581,13 @@ function exportAccountsCsv() {
                   </div>
 
                   <div>
-                    <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_account_currency()}</Label>
-                    <SearchableSelect
-                      value={formCurrency}
-                      placeholder={m.finance_ui_currency_placeholder()}
-                      items={currencies}
-                      getItemValue={(c) => c.code}
-                      getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
-                      onchange={(val) => { if (val) formCurrency = val; }}
-                      class="w-full h-8 text-xs bg-background border-border/60"
+                    <CurrencySelector
+                      compact
+                      title={m.finance_ui_account_currency()}
+                      description=""
+                      bind:currentCurrency={formCurrency}
+                      currencyOptions={currencies}
+                      disabled={isAccountStructureLocked || isLoading || currencies.length === 0}
                     />
                   </div>
                 </div>
@@ -608,7 +630,7 @@ function exportAccountsCsv() {
                       variant="destructive"
                       size="sm"
                       class="h-8 text-xs font-semibold gap-1.5"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || isFinancePurposeAccount || selectedAccountHasChildren}
                       onclick={handleDeleteAccount}
                     >
                       <Trash size={13} />

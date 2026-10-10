@@ -19,7 +19,6 @@ import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import {
   Select,
   SelectContent,
@@ -38,6 +37,7 @@ import {
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
@@ -498,23 +498,11 @@ function exportCsv() {
 
     <!-- In-Page Creation Form Card -->
     {#if activeForm === "create"}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-primary"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_assign_fee_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_assign_fee_heading()}
+          onclose={() => (activeForm = "none")}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
@@ -591,30 +579,18 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_saving() : m.finance_ui_assign_fee_save()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
     <!-- In-Page Installment Split Form Card -->
     {#if activeForm === "split"}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-indigo-500/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_installment_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_installment_heading()}
+          accent="indigo"
+          onclose={() => (activeForm = "none")}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_unpaid_fee()}</Label>
@@ -676,30 +652,18 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_processing() : m.finance_ui_apply_installment_plan()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
     <!-- In-Page Refund Form Card -->
     {#if activeForm === "refund"}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-rose-500/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_refund_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_refund_heading()}
+          accent="rose"
+          onclose={() => (activeForm = "none")}
+        >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_paid_fee()}</Label>
@@ -761,8 +725,7 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_processing() : m.finance_ui_confirm_refund()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 

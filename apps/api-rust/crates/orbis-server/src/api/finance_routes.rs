@@ -34,6 +34,9 @@ pub struct AccountDto {
     pub parent_id: Option<Uuid>,
     pub currency: String,
     pub is_active: bool,
+    pub is_control_account: bool,
+    pub is_system_account: bool,
+    pub is_finance_default: bool,
     pub balances: serde_json::Value,
     pub created_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,
@@ -500,6 +503,11 @@ pub async fn create_account(
             p.parent_id,
         )
         .await?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
 
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
@@ -512,6 +520,9 @@ pub async fn create_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,
@@ -534,6 +545,11 @@ pub async fn get_account(
         .get_account(ctx.tenant_id, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Account {} not found", id)))?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
 
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
@@ -546,6 +562,9 @@ pub async fn get_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,
@@ -589,6 +608,11 @@ pub async fn update_account(
             p.is_active.unwrap_or(true),
         )
         .await?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
 
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
@@ -601,6 +625,9 @@ pub async fn update_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,
@@ -632,6 +659,10 @@ pub async fn list_accounts(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AccountDto>>>, ApiError> {
     let accounts = state.finance_service.list_accounts(ctx.tenant_id).await?;
+    let fixed_account_ids = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?;
     let dtos = accounts
         .into_iter()
         .map(|a| AccountDto {
@@ -645,6 +676,9 @@ pub async fn list_accounts(
             parent_id: a.parent_id,
             currency: a.currency_code,
             is_active: a.is_active,
+            is_control_account: a.is_control_account,
+            is_system_account: a.is_system_account,
+            is_finance_default: fixed_account_ids.contains(&a.id),
             balances: a.balances,
             created_by: a.created_by,
             updated_by: a.updated_by,
@@ -1028,7 +1062,15 @@ pub async fn create_journal_entry(
         reference_number: p
             .reference_number
             .unwrap_or_else(|| format!("JV-{}", Utc::now().timestamp_millis())),
-        accounting_date: p.accounting_date.unwrap_or_else(|| now.date_naive()),
+        accounting_date: match p.accounting_date {
+            Some(date) => date,
+            None => {
+                state
+                    .finance_service
+                    .current_financial_date(ctx.tenant_id)
+                    .await?
+            }
+        },
         amount: p.amount,
         currency_code: p.currency_code.unwrap_or_else(|| "SAR".into()),
         exchange_rate: p.exchange_rate.unwrap_or(Decimal::ONE),
@@ -1052,8 +1094,10 @@ pub async fn create_journal_entry(
         version: 1,
     };
 
-    entry.validate_balance().map_err(ApiError::bad_request)?;
-    state.journal_entry_repo.save(&entry).await?;
+    let entry = state
+        .finance_service
+        .create_manual_journal_entry(&ctx, ctx.tenant_id, entry)
+        .await?;
 
     Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
 }
@@ -1536,6 +1580,11 @@ pub async fn create_sub_account(
         .finance_service
         .create_sub_account(&ctx, ctx.tenant_id, input)
         .await?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
         org_id: a.org_id,
@@ -1547,6 +1596,9 @@ pub async fn create_sub_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,

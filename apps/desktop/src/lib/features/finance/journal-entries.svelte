@@ -22,7 +22,6 @@ import type {
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
 import {
   Plus,
@@ -34,7 +33,8 @@ import {
 } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { confirmStore } from "$lib/stores";
 import { orgContext } from "$lib/stores/org-context.svelte";
@@ -361,23 +361,11 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-primary"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_journal_entry_create_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_journal_entry_create_heading()}
+          onclose={() => (showAddForm = false)}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
@@ -409,15 +397,14 @@ function exportCsv() {
               </div>
 
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
-                <SearchableSelect
-                  value={selectedCurrency}
-                  placeholder={m.finance_ui_currency_select_placeholder()}
-                  items={currencies}
-                  getItemValue={(c) => c.code}
-                  getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
+                <CurrencySelector
+                  compact
+                  title={m.finance_ui_currency()}
+                  description=""
+                  bind:currentCurrency={selectedCurrency}
+                  currencyOptions={currencies}
                   onchange={handleCurrencyChange}
-                  class="w-full h-8 text-xs bg-background border-border/60"
+                  disabled={isLoading || isSubmitting || currencies.length < 2}
                 />
               </div>
             </div>
@@ -466,8 +453,7 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_saving() : m.finance_ui_journal_entry_save()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
