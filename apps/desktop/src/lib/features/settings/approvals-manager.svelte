@@ -338,7 +338,7 @@ function parseApprovalChain(chain: any): any[] {
         <div class="space-y-3">
           {#if pendingQuery.isLoading}
             <div class="flex flex-col gap-3">
-              {#each Array(3) as _}
+              {#each Array(3) as _, index (index)}
                 <Skeleton class="h-36 w-full rounded-lg" />
               {/each}
             </div>
@@ -423,7 +423,7 @@ function parseApprovalChain(chain: any): any[] {
                     <!-- Approval Chain Progress Stepper -->
                     {#if chain.length > 0}
                       <div class="flex items-center gap-2 text-[11px] pt-1">
-                        {#each chain as step, idx}
+                        {#each chain as step, idx (idx)}
                           <div class="flex items-center gap-1">
                             {#if step.status === "approved"}
                               <CheckCircle class="w-3.5 h-3.5 text-emerald-500" />
@@ -510,7 +510,7 @@ function parseApprovalChain(chain: any): any[] {
       <TabsContent value="mine" class="space-y-3 pt-3">
         {#if allRequestsQuery.isLoading}
           <div class="flex flex-col gap-3">
-            {#each Array(3) as _}
+            {#each Array(3) as _, index (index)}
               <Skeleton class="h-28 w-full rounded-lg" />
             {/each}
           </div>
@@ -555,7 +555,7 @@ function parseApprovalChain(chain: any): any[] {
       <TabsContent value="log" class="space-y-3 pt-3">
         {#if allRequestsQuery.isLoading}
           <div class="flex flex-col gap-3">
-            {#each Array(3) as _}
+            {#each Array(3) as _, index (index)}
               <Skeleton class="h-20 w-full rounded-lg" />
             {/each}
           </div>
