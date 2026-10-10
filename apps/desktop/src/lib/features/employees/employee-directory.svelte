@@ -29,7 +29,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
 import { debounce } from "$lib/shared/utils/debounce";
-import { createOpenDownloadToastAction } from "$lib/shared/utils/download";
+import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { exportToCsv } from "$lib/shared/utils/export";
 import type { EmployeeDetailDto } from "$lib/api/types";
 import {
@@ -196,7 +196,7 @@ function handleExport() {
     ]
   );
   toast.success(m.operations_ui_employee_export_success(), {
-    action: openFile ? createOpenDownloadToastAction(openFile) : undefined,
+    action: openFile ? createShowInFolderToastAction(openFile) : undefined,
   });
 }
 

@@ -491,6 +491,7 @@ pub async fn iam_provision_user(
             gender: None,
             nationality: None,
             blood_type: None,
+            marital_status: None,
             medical_notes: None,
             special_needs_notes: None,
             email,

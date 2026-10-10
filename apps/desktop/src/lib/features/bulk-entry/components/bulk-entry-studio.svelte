@@ -35,7 +35,7 @@
   import { revalidateCellChange } from "../engine/revalidator";
   import { executeCommitPipeline } from "../engine/commit-pipeline";
   import { exportCorrectedDataset } from "../engine/exporter";
-  import { createOpenDownloadToastAction } from "$lib/shared/utils/download";
+  import { createShowInFolderToastAction } from "$lib/shared/utils/download";
   import ImpactPreviewModal from "./impact-preview-modal.svelte";
   import CommitProgressModal from "./commit-progress-modal.svelte";
   import ImportResultSummary from "./import-result-summary.svelte";
@@ -245,7 +245,7 @@
       });
       toast.success(m.bulk_entry_toast_template_downloaded(), {
         action: openFile
-          ? createOpenDownloadToastAction(openFile)
+          ? createShowInFolderToastAction(openFile)
           : undefined,
       });
     } catch (err: any) {
@@ -334,11 +334,9 @@
         filenamePrefix: `Orbis_${selectedProfileId}_Data`,
       });
 
-      if (openFile) {
-        toast.success(m.bulk_entry_toast_data_exported(), {
-          action: createOpenDownloadToastAction(openFile),
-        });
-      }
+      toast.success(m.bulk_entry_toast_data_exported(), {
+        action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+      });
     } catch (err: any) {
       toast.error(m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }));
     }

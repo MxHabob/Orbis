@@ -13,7 +13,7 @@ import { ArrowPath, DocumentChartBar, Download } from "@orbis/icons";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
 import {
-  createOpenDownloadToastAction,
+  createShowInFolderToastAction,
   downloadBlob,
 } from "$lib/shared/utils/download";
 
@@ -56,7 +56,7 @@ async function handleExport() {
       `report_${definitionId}_${new Date().toISOString()}.${selectedFormat}`,
     );
     toast.success(m.ui_copy_report_exported_successfully_566e1620(), {
-      action: createOpenDownloadToastAction(openFile),
+      action: openFile ? createShowInFolderToastAction(openFile) : undefined,
     });
     onOpenChange(false);
   } catch (e: any) {

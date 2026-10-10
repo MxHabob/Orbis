@@ -3,8 +3,8 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import * as m from "$lib/paraglide/messages";
 import {
   downloadBlob,
-  openDownloadedPath,
-  type OpenDownloadedFile,
+  revealDownloadedPath,
+  type RevealDownloadedLocation,
 } from "$lib/shared/utils/download";
 import { getBulkEntryColumnHeader } from "../localization";
 import type { BulkImportProfile, BulkRowState } from "../types";
@@ -18,7 +18,7 @@ export interface ExportDatasetOptions {
 
 export async function exportCorrectedDataset(
   options: ExportDatasetOptions,
-): Promise<OpenDownloadedFile | null> {
+): Promise<RevealDownloadedLocation | null> {
   const XLSX = await import("xlsx");
   const { profile, rows, filenamePrefix = "Orbis_Corrected_Data", format = "xlsx" } = options;
 
@@ -64,7 +64,7 @@ export async function exportCorrectedDataset(
 
     if (savePath) {
       await writeFile(savePath, new Uint8Array(rawBytes));
-      return openDownloadedPath(savePath);
+      return revealDownloadedPath(savePath);
     }
   } catch (err) {
     console.warn("Native save dialog fallback:", err);

@@ -1,14 +1,14 @@
-import { openPath } from "@tauri-apps/plugin-opener";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 
-export type OpenDownloadedFile = () => void | Promise<void>;
+export type RevealDownloadedLocation = () => void | Promise<void>;
 
 export function downloadBlob(
   blob: Blob,
   filename: string,
-): OpenDownloadedFile {
+): null {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -18,31 +18,29 @@ export function downloadBlob(
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 
-  return () => {
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
+  return null;
 }
 
-export function openDownloadedPath(path: string): OpenDownloadedFile {
-  return () => openPath(path);
+export function revealDownloadedPath(path: string): RevealDownloadedLocation {
+  return () => revealItemInDir(path);
 }
 
-export function createOpenDownloadToastAction(
-  openFile: OpenDownloadedFile,
+export function createShowInFolderToastAction(
+  revealLocation: RevealDownloadedLocation,
 ) {
-  function reportOpenError(error: unknown) {
-    console.error("Failed to open downloaded file:", error);
+  function reportRevealError(error: unknown) {
+    console.error("Failed to reveal downloaded file location:", error);
     toast.error(extractErrorMessage(error));
   }
 
   return {
-    label: m.common_docs_action_open_file(),
+    label: m.common_docs_action_show_in_folder(),
     onClick: () => {
       try {
-        const result = openFile();
-        if (result) void result.catch(reportOpenError);
+        const result = revealLocation();
+        if (result) void result.catch(reportRevealError);
       } catch (error) {
-        reportOpenError(error);
+        reportRevealError(error);
       }
     },
   };

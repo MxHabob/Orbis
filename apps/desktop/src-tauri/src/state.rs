@@ -600,6 +600,7 @@ impl AppState {
             user_repo.clone(),
             person_repo.clone(),
             identity_repo.clone(),
+            group_repo.clone(),
             Arc::new(orbis_infra::repositories::role_repo::RoleRepoImpl::new(
                 db.clone(),
             )),

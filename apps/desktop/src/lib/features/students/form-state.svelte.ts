@@ -16,7 +16,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import {
-  createOpenDownloadToastAction,
+  createShowInFolderToastAction,
   downloadBlob,
 } from "$lib/shared/utils/download";
 
@@ -728,7 +728,11 @@ export class StudentFormState {
         );
         toast.success(
           m.ui_copy_document_generated_and_downloaded_successf_456c90b7(),
-          { action: createOpenDownloadToastAction(openFile) },
+          {
+            action: openFile
+              ? createShowInFolderToastAction(openFile)
+              : undefined,
+          },
         );
       } else {
         toast.error(m.ui_copy_failed_to_generate_pdf_document_b7b11e81());

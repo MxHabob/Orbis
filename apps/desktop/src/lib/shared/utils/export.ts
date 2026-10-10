@@ -1,4 +1,4 @@
-import { downloadBlob, type OpenDownloadedFile } from "./download";
+import { downloadBlob, type RevealDownloadedLocation } from "./download";
 
 /**
  * Data export utilities for tables and reports.
@@ -21,7 +21,7 @@ export function exportToCsv<T>(
   filename: string,
   data: T[],
   columns: ExportColumn<T>[],
-): OpenDownloadedFile | null {
+): RevealDownloadedLocation | null {
   if (!data || data.length === 0) return null;
 
   const escapeCell = (val: string | number | null | undefined): string => {
@@ -50,7 +50,7 @@ export function exportToCsv<T>(
 export function exportToJson<T>(
   filename: string,
   data: T[],
-): OpenDownloadedFile | null {
+): RevealDownloadedLocation | null {
   if (!data || data.length === 0) return null;
 
   const jsonContent = JSON.stringify(data, null, 2);

@@ -4,8 +4,8 @@ import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import {
   downloadBlob,
-  openDownloadedPath,
-  type OpenDownloadedFile,
+  revealDownloadedPath,
+  type RevealDownloadedLocation,
 } from "$lib/shared/utils/download";
 import { getBulkEntryColumnHeader, getBulkEntryProfileName } from "../localization";
 import type { BulkImportProfile, BulkReferenceData } from "../types";
@@ -202,7 +202,7 @@ export async function buildTemplateWorkbook(
 
 export async function downloadExcelTemplate(
   options: GenerateTemplateOptions,
-): Promise<OpenDownloadedFile | null> {
+): Promise<RevealDownloadedLocation | null> {
   const XLSX = await import("xlsx");
   const wb = await buildTemplateWorkbook(options);
   const rawBytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -217,7 +217,7 @@ export async function downloadExcelTemplate(
 
     if (savePath) {
       await writeFile(savePath, new Uint8Array(rawBytes));
-      return openDownloadedPath(savePath);
+      return revealDownloadedPath(savePath);
     }
   } catch (err) {
     console.warn("Native Tauri save dialog not available, falling back to browser download:", err);
