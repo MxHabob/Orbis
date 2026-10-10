@@ -26,6 +26,7 @@ let {
   maxWidth,
   defaultValue,
   persistId,
+  inside = false,
   onWidth,
   collapseThreshold = minWidth * 0.75,
   collapsedWidth = 3,
@@ -36,6 +37,7 @@ let {
   maxWidth: number;
   defaultValue: number;
   persistId?: string;
+  inside?: boolean;
   onWidth?: (widthRem: number) => void;
   collapseThreshold?: number;
   collapsedWidth?: number;
@@ -144,6 +146,7 @@ function onDoubleClick() {
 	class="resizer"
   class:start={edge === 'start'}
   class:end={edge === 'end'}
+  class:inside
 	class:dragging={isDragging}
 	class:cursor-col-resize={isDragging}
 	onpointerdown={onPointerDown}
@@ -174,6 +177,14 @@ function onDoubleClick() {
   .resizer.start {
 		inset-inline-start: -5px;
 	}
+
+  .resizer.start.inside {
+    inset-inline-start: 0;
+  }
+
+  .resizer.end.inside {
+    inset-inline-end: 0;
+  }
 
 	.resizer-line {
 		position: absolute;

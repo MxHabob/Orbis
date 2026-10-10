@@ -66,7 +66,7 @@ let {
 } = $props();
 
 // View and State Management
-let viewMode = $state<"grid" | "table">("table");
+let viewMode = $state<"grid" | "table">("grid");
 let searchQuery = $state("");
 let selectedFilters = $state<string[]>([]);
 let selectedIds = $state<Set<string>>(new Set());

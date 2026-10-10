@@ -42,6 +42,7 @@ let {
 } = $props();
 
 const queryClient = useQueryClient();
+let askOrbisWidth = $state(25);
 
 const requiredFeature = $derived.by((): EntitlementKey | null => {
   const path = page.url.pathname;
@@ -118,13 +119,16 @@ function handleKeyDown(e: KeyboardEvent) {
 		</div>
 		{#if uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
-				<div class="absolute inset-y-0 end-0 z-50 w-[min(28rem,90vw)]">
+				<div
+					class="absolute inset-y-0 inset-e-0 z-50"
+					style:width="{askOrbisWidth + 0.875}rem"
+				>
 					<LicenseFeatureGate
 						feature="ai_grading"
 						{licenseReady}
 						className="h-full w-full"
 					>
-						<AskOrbisSidebar />
+						<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />
 					</LicenseFeatureGate>
 				</div>
 			{/key}

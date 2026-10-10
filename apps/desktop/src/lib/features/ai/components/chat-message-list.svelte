@@ -139,7 +139,7 @@ function handleContentClick(e: MouseEvent) {
   <div 
     bind:this={chatContainer}
     onscroll={handleScroll}
-    class="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto scrollbar-thin select-text space-y-4"
+    class="flex-1 flex flex-col p-3.5 sm:p-4 overflow-y-auto scrollbar-hide select-text space-y-4"
   >
   <div class="flex flex-col gap-4 w-full">
     {#each messages as msg (msg.id)}

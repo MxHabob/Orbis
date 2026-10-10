@@ -15,6 +15,10 @@ import { formatDate, formatCurrency } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { studentRegistrationSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import {
+  createOpenDownloadToastAction,
+  downloadBlob,
+} from "$lib/shared/utils/download";
 
 import { PersonalInfoState } from "./state/personal-info.svelte";
 import { GuardianState } from "./state/guardian-info.svelte";
@@ -718,17 +722,14 @@ export class StudentFormState {
         const blob = new Blob([pdfBytes as unknown as BlobPart], {
           type: "application/pdf",
         });
-        const pdfUrl = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = pdfUrl;
-        link.download = `${m.operations_ui_student_form_filename()}_${this.personal.nameAr || m.operations_ui_student_fallback()}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(pdfUrl);
-
-        toast.success(m.ui_copy_document_generated_and_downloaded_successf_456c90b7());
+        const openFile = downloadBlob(
+          blob,
+          `${m.operations_ui_student_form_filename()}_${this.personal.nameAr || m.operations_ui_student_fallback()}.pdf`,
+        );
+        toast.success(
+          m.ui_copy_document_generated_and_downloaded_successf_456c90b7(),
+          { action: createOpenDownloadToastAction(openFile) },
+        );
       } else {
         toast.error(m.ui_copy_failed_to_generate_pdf_document_b7b11e81());
       }

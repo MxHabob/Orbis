@@ -1,6 +1,11 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import * as m from "$lib/paraglide/messages";
+import {
+  downloadBlob,
+  openDownloadedPath,
+  type OpenDownloadedFile,
+} from "$lib/shared/utils/download";
 import { getBulkEntryColumnHeader, getBulkEntryProfileName } from "../localization";
 import type { BulkImportProfile, BulkReferenceData } from "../types";
 import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
@@ -121,7 +126,9 @@ export async function buildTemplateWorkbook(
   return wb;
 }
 
-export async function downloadExcelTemplate(options: GenerateTemplateOptions): Promise<void> {
+export async function downloadExcelTemplate(
+  options: GenerateTemplateOptions,
+): Promise<OpenDownloadedFile | null> {
   const XLSX = await import("xlsx");
   const wb = await buildTemplateWorkbook(options);
   const rawBytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
@@ -136,7 +143,7 @@ export async function downloadExcelTemplate(options: GenerateTemplateOptions): P
 
     if (savePath) {
       await writeFile(savePath, new Uint8Array(rawBytes));
-      return;
+      return openDownloadedPath(savePath);
     }
   } catch (err) {
     console.warn("Native Tauri save dialog not available, falling back to browser download:", err);
@@ -146,14 +153,5 @@ export async function downloadExcelTemplate(options: GenerateTemplateOptions): P
   const blob = new Blob([rawBytes], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-    link.remove();
-  }, 100);
+  return downloadBlob(blob, filename);
 }

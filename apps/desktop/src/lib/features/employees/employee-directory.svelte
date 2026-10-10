@@ -29,6 +29,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
 import { debounce } from "$lib/shared/utils/debounce";
+import { createOpenDownloadToastAction } from "$lib/shared/utils/download";
 import { exportToCsv } from "$lib/shared/utils/export";
 import type { EmployeeDetailDto } from "$lib/api/types";
 import {
@@ -177,7 +178,7 @@ function handleExport() {
     ? employees.filter((e) => selectedIds.has(e.id))
     : employees;
 
-  exportToCsv(
+  const openFile = exportToCsv(
     `Employees_Roster_${orgId}`,
     dataset,
     [
@@ -194,7 +195,9 @@ function handleExport() {
       { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
     ]
   );
-  toast.success(m.operations_ui_employee_export_success());
+  toast.success(m.operations_ui_employee_export_success(), {
+    action: openFile ? createOpenDownloadToastAction(openFile) : undefined,
+  });
 }
 
 function getStatusLabel(s: string): string {

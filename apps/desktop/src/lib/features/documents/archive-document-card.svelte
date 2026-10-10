@@ -72,7 +72,7 @@ function formatSize(bytes?: number | null) {
     <!-- Multi-select checkbox -->
     {#if ontoggle}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div class="absolute inset-s-2 top-2 z-10 rounded-md bg-background/85 p-1 shadow-sm opacity-80 group-hover:opacity-100 transition-opacity" onclick={stopPropagation}>
+      <div class="archive-select-control absolute inset-s-2 top-2 z-10 rounded-md bg-background/85 p-1 shadow-sm opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity {selected ? 'opacity-100' : ''}" onclick={stopPropagation}>
         <Checkbox checked={selected} onCheckedChange={(value) => ontoggle?.(document.id, value === true)} aria-label={m.operations_ui_document_select({ name: document.name })} />
       </div>
     {/if}
@@ -184,5 +184,11 @@ function formatSize(bytes?: number | null) {
 
   .archive-media {
     aspect-ratio: 4 / 3;
+  }
+
+  @media (hover: none) {
+    .archive-select-control {
+      opacity: 1;
+    }
   }
 </style>

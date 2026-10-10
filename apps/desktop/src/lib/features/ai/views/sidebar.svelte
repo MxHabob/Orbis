@@ -33,7 +33,13 @@ interactive tool inspections, and consequential action approvals.
   import ChatInput from "../components/chat-input.svelte";
   import ChatMessageList from "../components/chat-message-list.svelte";
 
-  let { isStandalone = false }: { isStandalone?: boolean } = $props();
+  let {
+    isStandalone = false,
+    preferredWidth = $bindable(25),
+  }: {
+    isStandalone?: boolean;
+    preferredWidth?: number;
+  } = $props();
 
   const currentOrgId = $derived(
     page.params.orgId || authStore.orgId || "default",
@@ -58,7 +64,6 @@ interactive tool inspections, and consequential action approvals.
     return px / base;
   }
 
-  let preferredWidth = $state(pxToRem(400));
   const minWidth = $derived(pxToRem(320));
   const maxWidth = $derived(pxToRem(1470));
 
@@ -479,6 +484,7 @@ interactive tool inspections, and consequential action approvals.
     <Resizer
       viewport={sidebarDiv}
       edge="start"
+      inside
       {minWidth}
       {maxWidth}
       defaultValue={pxToRem(400)}

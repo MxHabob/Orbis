@@ -16,7 +16,7 @@ import {
 
 let {
   avatarUrl = $bindable(null),
-  file = $bindable<File | null>(null),
+  file = $bindable<File | null>(),
   size = 64,
   isLoading = false,
   fallbackText = "",

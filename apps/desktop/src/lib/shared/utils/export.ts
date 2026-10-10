@@ -1,3 +1,5 @@
+import { downloadBlob, type OpenDownloadedFile } from "./download";
+
 /**
  * Data export utilities for tables and reports.
  * Supports CSV export with UTF-8 BOM (for Excel Arabic support) and JSON export.
@@ -19,8 +21,8 @@ export function exportToCsv<T>(
   filename: string,
   data: T[],
   columns: ExportColumn<T>[],
-): void {
-  if (!data || data.length === 0) return;
+): OpenDownloadedFile | null {
+  if (!data || data.length === 0) return null;
 
   const escapeCell = (val: string | number | null | undefined): string => {
     if (val === null || val === undefined) return '""';
@@ -36,38 +38,25 @@ export function exportToCsv<T>(
   // Prepend UTF-8 BOM (\uFEFF) to ensure Excel opens Arabic characters correctly
   const csvContent = "\uFEFF" + [headerRow, ...dataRows].join("\r\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute(
-    "download",
+  return downloadBlob(
+    blob,
     `${filename}_${new Date().toISOString().slice(0, 10)}.csv`,
   );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }
 
 /**
  * Exports data array to a JSON file and triggers a download.
  */
-export function exportToJson<T>(filename: string, data: T[]): void {
-  if (!data || data.length === 0) return;
+export function exportToJson<T>(
+  filename: string,
+  data: T[],
+): OpenDownloadedFile | null {
+  if (!data || data.length === 0) return null;
 
   const jsonContent = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonContent], { type: "application/json;charset=utf-8;" });
-
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute(
-    "download",
+  return downloadBlob(
+    blob,
     `${filename}_${new Date().toISOString().slice(0, 10)}.json`,
   );
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

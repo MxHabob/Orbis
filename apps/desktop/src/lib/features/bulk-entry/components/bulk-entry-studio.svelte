@@ -34,7 +34,8 @@
   import { validateAllRows } from "../engine/validator";
   import { revalidateCellChange } from "../engine/revalidator";
   import { executeCommitPipeline } from "../engine/commit-pipeline";
-  import { exportCorrectedDataset, openExportedFile } from "../engine/exporter";
+  import { exportCorrectedDataset } from "../engine/exporter";
+  import { createOpenDownloadToastAction } from "$lib/shared/utils/download";
   import ImpactPreviewModal from "./impact-preview-modal.svelte";
   import CommitProgressModal from "./commit-progress-modal.svelte";
   import ImportResultSummary from "./import-result-summary.svelte";
@@ -237,12 +238,16 @@
       return;
     }
     try {
-      await downloadExcelTemplate({
+      const openFile = await downloadExcelTemplate({
         profile: currentProfile,
         refData,
         orgName: orgContext.displayName,
       });
-      toast.success(m.bulk_entry_toast_template_downloaded());
+      toast.success(m.bulk_entry_toast_template_downloaded(), {
+        action: openFile
+          ? createOpenDownloadToastAction(openFile)
+          : undefined,
+      });
     } catch (err: any) {
       toast.error(m.bulk_entry_toast_template_download_failed({ reason: err.message || String(err) }));
     }
@@ -323,15 +328,16 @@
   async function handleExportCorrected() {
     if (rawRows.length === 0) return;
     try {
-      const savedPath = await exportCorrectedDataset({
+      const openFile = await exportCorrectedDataset({
         profile: currentProfile,
         rows: rawRows,
         filenamePrefix: `Orbis_${selectedProfileId}_Data`,
       });
 
-      if (savedPath) {
-        toast.success(m.bulk_entry_toast_data_exported());
-        await openExportedFile(savedPath);
+      if (openFile) {
+        toast.success(m.bulk_entry_toast_data_exported(), {
+          action: createOpenDownloadToastAction(openFile),
+        });
       }
     } catch (err: any) {
       toast.error(m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }));

@@ -1,7 +1,11 @@
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
-import { openPath } from "@tauri-apps/plugin-opener";
 import * as m from "$lib/paraglide/messages";
+import {
+  downloadBlob,
+  openDownloadedPath,
+  type OpenDownloadedFile,
+} from "$lib/shared/utils/download";
 import { getBulkEntryColumnHeader } from "../localization";
 import type { BulkImportProfile, BulkRowState } from "../types";
 
@@ -12,7 +16,9 @@ export interface ExportDatasetOptions {
   format?: "xlsx" | "csv";
 }
 
-export async function exportCorrectedDataset(options: ExportDatasetOptions): Promise<string | null> {
+export async function exportCorrectedDataset(
+  options: ExportDatasetOptions,
+): Promise<OpenDownloadedFile | null> {
   const XLSX = await import("xlsx");
   const { profile, rows, filenamePrefix = "Orbis_Corrected_Data", format = "xlsx" } = options;
 
@@ -58,7 +64,7 @@ export async function exportCorrectedDataset(options: ExportDatasetOptions): Pro
 
     if (savePath) {
       await writeFile(savePath, new Uint8Array(rawBytes));
-      return savePath;
+      return openDownloadedPath(savePath);
     }
   } catch (err) {
     console.warn("Native save dialog fallback:", err);
@@ -71,24 +77,5 @@ export async function exportCorrectedDataset(options: ExportDatasetOptions): Pro
       : "text/csv;charset=utf-8";
 
   const blob = new Blob([rawBytes], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = defaultFilename;
-  document.body.appendChild(link);
-  link.click();
-  setTimeout(() => {
-    URL.revokeObjectURL(url);
-    link.remove();
-  }, 100);
-
-  return null;
-}
-
-export async function openExportedFile(filePath: string): Promise<void> {
-  try {
-    await openPath(filePath);
-  } catch (err) {
-    console.warn("Could not open exported file via native opener:", err);
-  }
+  return downloadBlob(blob, defaultFilename);
 }
