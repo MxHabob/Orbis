@@ -2572,6 +2572,7 @@ export type UpdateTimeSlotRequest = {
 
 export type UpdateUserRequest = {
     address?: string | null;
+    avatar_url?: string | null;
     birth_date?: string | null;
     full_name?: string | null;
     full_name_ar?: string | null;

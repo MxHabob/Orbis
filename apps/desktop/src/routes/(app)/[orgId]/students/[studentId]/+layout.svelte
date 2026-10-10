@@ -541,7 +541,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
               {#if enrollmentHistory.length > 0}
                 <div class="flex flex-col gap-1.5">
-                  {#each enrollmentHistory as enr}
+                  {#each enrollmentHistory as enr (enr.id)}
                     <div
                       class="flex flex-col gap-1 p-2 rounded-lg border text-start transition-colors {String(enr.id) === String(studentId)
                         ? 'border-primary/40 bg-primary/5'
@@ -643,7 +643,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         bind:value={transferTargetClassId}
       >
         <option value="">{m.shared_ui_select_new_class()}</option>
-        {#each (classesQuery.data ?? []) as cls}
+        {#each (classesQuery.data ?? []) as cls (cls.id)}
           <option value={String(cls.id)}>{cls.name}</option>
         {/each}
       </select>

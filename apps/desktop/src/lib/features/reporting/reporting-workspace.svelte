@@ -1,13 +1,10 @@
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { api, extractErrorMessage } from "$lib/api";
 import { academicContext } from "$lib/stores";
-import { l, isAr } from "$lib/core/i18n";
+import { isAr } from "$lib/core/i18n";
 import type { ReportDefinitionDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import { Card } from "@orbis/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@orbis/ui/tabs";
@@ -17,14 +14,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@orbis/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +39,7 @@ import {
 } from "@orbis/icons";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { fade } from "svelte/transition";
+import ReportParameterSheet from "./components/report-parameter-sheet.svelte";
 
 import MetricsView from "$lib/features/metrics/metrics-view.svelte";
 import { createReportDefinitionsQuery, createGenerateReportMutation } from "./queries";
@@ -402,137 +392,20 @@ function handleDownloadCurrent() {
 
 <!-- Parameter Drawer Sheet -->
 {#if selectedDefinition}
-  <Sheet bind:open={isSheetOpen}>
-    <SheetContent side="end" class="w-full sm:max-w-md flex flex-col justify-between p-6 text-start">
-      <div class="space-y-6 overflow-y-auto pr-1">
-        <SheetHeader class="space-y-1">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-              <DocumentChartBar class="w-4 h-4" />
-            </div>
-            <div>
-              <SheetTitle class="text-base font-bold text-foreground">
-                {m.operations_ui_generate_report_named({ name: selectedDefinition.name_ar || selectedDefinition.name })}
-              </SheetTitle>
-              <SheetDescription class="text-xs text-muted-foreground">
-                {m.operations_ui_report_filter_format_hint()}
-              </SheetDescription>
-            </div>
-          </div>
-        </SheetHeader>
-
-        <!-- Form Fields -->
-        <div class="space-y-4">
-          <!-- Academic Period -->
-          <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">{m.operations_ui_academic_term()}</Label>
-            <Select value={selectedPeriodId} onValueChange={(v) => (selectedPeriodId = v)}>
-              <SelectTrigger class="h-9 text-xs">
-                <span>
-                  {periods.find((p) => p.id === selectedPeriodId)
-                    ? l(periods.find((p) => p.id === selectedPeriodId)?.name_ar, periods.find((p) => p.id === selectedPeriodId)?.name)
-                    : m.operations_ui_select_academic_term()}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                {#each periods as p}
-                  <SelectItem value={p.id}>
-                    {l(p.name_ar, p.name) || p.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <!-- Class Selection (Optional) -->
-          <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">{m.operations_ui_filter_by_class_optional()}</Label>
-            <Select value={selectedClassId} onValueChange={(v) => (selectedClassId = v)}>
-              <SelectTrigger class="h-9 text-xs">
-                <span>
-                  {classes.find((c) => String(c.id) === selectedClassId)
-                    ? l(classes.find((c) => String(c.id) === selectedClassId)?.name_ar, classes.find((c) => String(c.id) === selectedClassId)?.name)
-                    : m.operations_ui_all_classes_sections()}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">{m.operations_ui_all_classes_sections()}</SelectItem>
-                {#each classes as c}
-                  <SelectItem value={String(c.id)}>
-                    {l(c.name_ar, c.name) || c.name}
-                  </SelectItem>
-                {/each}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <!-- Date Range (Optional) -->
-          <div class="grid grid-cols-2 gap-3">
-            <div class="space-y-1.5">
-              <Label class="text-xs font-semibold">{m.operations_ui_date_from()}</Label>
-              <Input type="date" bind:value={dateFrom} class="h-9 text-xs" />
-            </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-semibold">{m.operations_ui_date_to()}</Label>
-              <Input type="date" bind:value={dateTo} class="h-9 text-xs" />
-            </div>
-          </div>
-
-          <!-- Output Format -->
-          <div class="space-y-1.5">
-            <Label class="text-xs font-semibold">{m.operations_ui_file_format()}</Label>
-            <div class="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onclick={() => (selectedFormat = "PDF")}
-                class="p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer {selectedFormat === 'PDF' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'}"
-              >
-                <DocumentPage class="w-4 h-4" />
-                {m.operations_ui_print_ready_pdf()}
-              </button>
-              <button
-                type="button"
-                onclick={() => (selectedFormat = "HTML")}
-                class="p-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer {selectedFormat === 'HTML' ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'}"
-              >
-                <Eye class="w-4 h-4" />
-                {m.operations_ui_interactive_html()}
-              </button>
-            </div>
-          </div>
-
-          {#if isGenerating}
-            <div class="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-3">
-              <LoadingIndicator class="w-5 h-5 text-primary"  size={20} />
-              <div class="text-xs text-primary font-semibold">{jobStatus}</div>
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <SheetFooter class="pt-4 border-t border-border mt-4 flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => (isSheetOpen = false)}
-          disabled={isGenerating}
-          class="h-9 text-xs font-semibold"
-        >
-          {m.common_action_cancel()}
-        </Button>
-        <Button
-          variant="default"
-          size="sm"
-          onclick={handleExecuteReport}
-          disabled={isGenerating}
-          class="h-9 text-xs font-bold gap-1.5 shadow-sm cursor-pointer"
-        >
-          <Play class="w-3.5 h-3.5" />
-          {isGenerating ? m.operations_ui_report_generating() : m.operations_ui_start_generate_preview()}
-        </Button>
-      </SheetFooter>
-    </SheetContent>
-  </Sheet>
+  <ReportParameterSheet
+    bind:open={isSheetOpen}
+    {selectedDefinition}
+    {periods}
+    {classes}
+    bind:selectedFormat
+    bind:selectedPeriodId
+    bind:selectedClassId
+    bind:dateFrom
+    bind:dateTo
+    {isGenerating}
+    {jobStatus}
+    onExecute={handleExecuteReport}
+  />
 {/if}
 
 <!-- PDF / Document Preview Dialog -->

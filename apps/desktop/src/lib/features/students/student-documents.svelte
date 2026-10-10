@@ -64,7 +64,6 @@ let newDocDescription = $state("");
 let newDocUrl = $state("");
 
 let uploadFile = $state<File | null>(null);
-let uploadFileInput: HTMLInputElement | undefined;
 let isUploadingFile = $state(false);
 
 async function handleAddDocument() {
@@ -133,7 +132,6 @@ async function handleDelete(docId: string) {
 function openUploadModal(doc: DocumentDto) {
   selectedDoc = doc;
   uploadFile = null;
-  if (uploadFileInput) uploadFileInput.value = "";
   showUploadModal = true;
 }
 
@@ -459,7 +457,6 @@ async function handleUploadFile() {
         <div class="flex flex-col gap-1.5">
           <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_upload_dialog_title()} *</Label>
           <Input 
-            bind:this={uploadFileInput}
             type="file"
             accept=".pdf,image/*,.doc,.docx"
             class="text-xs"

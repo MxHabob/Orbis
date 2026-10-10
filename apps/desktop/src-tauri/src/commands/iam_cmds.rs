@@ -720,6 +720,14 @@ pub async fn iam_update_user(
             };
             changed = true;
         }
+        if let Some(avatar_url) = request.get("avatar_url").and_then(|v| v.as_str()) {
+            person.avatar_url = if avatar_url.is_empty() {
+                None
+            } else {
+                Some(avatar_url.to_string())
+            };
+            changed = true;
+        }
         if changed {
             let _ = state.person_repo.save(&person).await;
         }

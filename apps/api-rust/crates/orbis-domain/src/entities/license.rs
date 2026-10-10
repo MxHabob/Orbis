@@ -218,8 +218,8 @@ pub type EntitlementEntry = EntitlementItem;
 pub struct LimitItem {
     /// Canonical limit key (e.g. "students.max", "staff.max", "devices.max").
     pub key: String,
-    /// Maximum allowed value; a negative value means unlimited.
-    pub max_value: i64,
+    /// `None` means unlimited. Negative values remain accepted from legacy payloads.
+    pub max_value: Option<i64>,
 }
 
 /// Alias for backwards compatibility.
@@ -488,7 +488,7 @@ impl LicenseSnapshot {
                 .limits
                 .iter()
                 .find(|l| l.key == key)
-                .map(|l| l.max_value),
+                .and_then(|l| l.max_value),
             None => {
                 if self.state == LicenseState::Trial {
                     match key {
@@ -783,7 +783,7 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
                 .iter()
                 .map(|l| LimitEntryDto {
                     key: l.key.clone(),
-                    max_value: (l.max_value >= 0).then_some(l.max_value),
+                    max_value: l.max_value.filter(|value| *value >= 0),
                     unit: get_limit_unit(&l.key).to_string(),
                 })
                 .collect(),
@@ -869,7 +869,9 @@ mod tests {
                     "edition_key": null,
                     "plan_key": null,
                     "entitlements": [],
-                    "limits": [],
+                    "limits": [
+                        { "key": "students.max", "max_value": null }
+                    ],
                     "activation_id": "activation-id",
                     "installation_id": "installation-id",
                     "issued_at": "2026-10-09T12:00:00Z",
@@ -893,6 +895,10 @@ mod tests {
                 .signed_entitlement
                 .payload
                 .offline_grace_period_days,
+            None
+        );
+        assert_eq!(
+            response.signed_entitlement.payload.limits[0].max_value,
             None
         );
     }

@@ -44,24 +44,35 @@ let {
   onchange?: (file: File) => void;
 } = $props();
 
-import { onMount } from "svelte";
-
 const uploadMutation = useUploadFile();
 let fileInputRef: HTMLInputElement | undefined = $state();
 let localPreviewUrl: string | null = $state(null);
 
 let resolvedAvatarUrl: string | null = $state(null);
 
-onMount(() => {
-  if (avatarUrl && !localPreviewUrl) {
-    resolveEntityDocumentUrl(avatarUrl, entityType, entityId)
-      .then((url) => {
-        resolvedAvatarUrl = url;
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to load avatar:", error);
-      });
+$effect(() => {
+  const currentFile = file;
+  const currentAvatarUrl = avatarUrl;
+  if (currentFile) return;
+
+  localPreviewUrl = null;
+  if (!currentAvatarUrl) {
+    resolvedAvatarUrl = null;
+    return;
   }
+
+  let active = true;
+  resolveEntityDocumentUrl(currentAvatarUrl, entityType, entityId)
+    .then((url) => {
+      if (active) resolvedAvatarUrl = url;
+    })
+    .catch((error: unknown) => {
+      if (active) console.error("Failed to load avatar:", error);
+    });
+
+  return () => {
+    active = false;
+  };
 });
 
 let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl);

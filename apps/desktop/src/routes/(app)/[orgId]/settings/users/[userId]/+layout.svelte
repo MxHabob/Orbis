@@ -19,6 +19,7 @@ import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import { userAvatarDrafts } from "$lib/features/settings/user-avatar-draft.svelte";
 import RelatedActions, {
   type ActionGroup,
   type FooterAction,
@@ -35,6 +36,9 @@ let { children }: { children: Snippet } = $props();
 
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
+if (userId && !(userId in userAvatarDrafts)) {
+  userAvatarDrafts[userId] = null;
+}
 
 // Shared user state
 const userQuery = createUserQuery(
@@ -51,12 +55,6 @@ const isActiveState = $derived(
   user?.is_active !== undefined ? Boolean(user.is_active) : true,
 );
 const avatarUrl = $derived(user?.avatar_url ?? null);
-
-function handleAvatarUpload(url: string) {
-  queryClient.setQueryData(["user", orgId, userId], (current: any) =>
-    current ? { ...current, avatar_url: url } : current,
-  );
-}
 
 // CSPRNG Temporary Password Generation
 let credentialModalOpen = $state(false);
@@ -277,12 +275,13 @@ const relatedFooterActions = $derived<FooterAction[]>(user ? [
           <div class="w-full flex justify-start">
             <AvatarUpload
               {avatarUrl}
+              bind:file={userAvatarDrafts[userId]}
+              deferred
               entityType="user"
               entityId={String(userId)}
               size={220}
               fallbackText={fullName}
               class="rounded-xl border border-border"
-              onupload={handleAvatarUpload}
             />
           </div>
 
