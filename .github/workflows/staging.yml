@@ -1,22 +1,15 @@
 name: Staging Builds
 
 on:
-  workflow_dispatch:
-    inputs:
-      platform:
-        description: Which staging installer to build
-        required: true
-        type: choice
-        options:
-          - windows
-          - macos
-          - both
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 concurrency:
-  group: staging-${{ inputs.platform }}
+  group: staging-main
   cancel-in-progress: false
 
 jobs:
@@ -24,14 +17,6 @@ jobs:
     name: Validate staging request
     runs-on: ubuntu-latest
     steps:
-      - name: Require main branch
-        env:
-          REF: ${{ github.ref }}
-        run: |
-          if [[ "$REF" != "refs/heads/main" ]]; then
-            echo "::error::Staging builds must be dispatched from main."
-            exit 1
-          fi
       - name: Require pinned license verification key
         env:
           MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
@@ -45,7 +30,6 @@ jobs:
   build:
     name: Build Staging (${{ matrix.name }})
     needs: validate
-    if: inputs.platform == 'both' || inputs.platform == matrix.name
     strategy:
       fail-fast: false
       matrix:

@@ -52,7 +52,11 @@ let {
 
 <Sheet bind:open>
   {#if selectedDefinition}
-    <SheetContent side="end" class="flex h-full w-full flex-col gap-0 overflow-hidden p-0 text-start sm:max-w-md">
+    <SheetContent
+      side="end"
+      contentClass="data-[side=end]:w-[min(32rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100vw-1rem))]"
+      class="flex h-full flex-col gap-0 overflow-hidden p-0 text-start"
+    >
       <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 text-start">
         <SheetTitle class="text-base font-bold leading-snug text-foreground">
           {m.operations_ui_generate_report_named({ name: selectedDefinition.name_ar || selectedDefinition.name })}
