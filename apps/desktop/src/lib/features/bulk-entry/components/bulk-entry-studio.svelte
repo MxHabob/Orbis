@@ -12,8 +12,6 @@
     ArrowUpTray,
     ArrowDownTray,
     CheckCircle,
-    Users,
-    BookOpen,
     FolderOpen,
   } from "@orbis/icons";
   import * as m from "$lib/paraglide/messages";
@@ -476,24 +474,14 @@
     <!-- Actions Toolbar -->
     <div class="flex items-center gap-1.5 flex-wrap">
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         disabled={isLoadingRefData}
         onclick={() => handleAddBlankRows(1)}
-        class="h-8 gap-1 text-xs"
+        class="h-8 gap-1.5 px-3 text-xs"
       >
         <Plus size={14} />
         <span>{m.bulk_entry_add_row()}</span>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isLoadingRefData}
-        onclick={() => handleAddBlankRows(5)}
-        class="h-8 gap-1 text-xs"
-      >
-        <span>+ 5</span>
       </Button>
 
       <Button
@@ -575,14 +563,14 @@
 
         <div class="flex items-center gap-2 flex-wrap justify-center">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            onclick={() => handleAddBlankRows(5)}
+            onclick={() => handleAddBlankRows(1)}
             disabled={isLoadingRefData}
-            class="h-8 gap-1 text-xs"
+            class="h-8 gap-1.5 px-3 text-xs font-semibold shadow-sm"
           >
             <Plus size={14} />
-            <span>{m.bulk_entry_add_five_rows()}</span>
+            <span>{m.bulk_entry_add_row()}</span>
           </Button>
 
           <Button
@@ -711,15 +699,6 @@
     <div class="px-4 py-2 border-t border-border bg-card/50 flex items-center justify-between gap-3">
       <div class="flex items-center gap-1.5">
         <Button
-          variant="ghost"
-          size="sm"
-          onclick={handleReset}
-          class="h-8 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {m.common_action_clear()}
-        </Button>
-
-        <Button
           variant="outline"
           size="sm"
           onclick={handleExportCorrected}
@@ -738,7 +717,7 @@
         {/if}
 
         <Button
-          variant="primary"
+          variant="default"
           size="sm"
           disabled={validCount === 0}
           onclick={handleReviewImpact}
@@ -755,7 +734,6 @@
 <!-- Impact Preview Modal -->
 <ImpactPreviewModal
   open={isPreviewModalOpen}
-  profileId={selectedProfileId}
   summary={previewSummary}
   onclose={() => (isPreviewModalOpen = false)}
   onconfirm={handleConfirmCommit}
