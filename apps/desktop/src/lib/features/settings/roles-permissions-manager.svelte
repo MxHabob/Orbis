@@ -273,7 +273,7 @@ async function handleRoleSaved() {
   <div class="flex-1 min-h-0 w-full overflow-hidden rounded-xl border border-border/70 bg-card shadow-xs">
     {#if isLoading}
       <div class="p-6 flex flex-col gap-3">
-        {#each Array(6) as _}
+        {#each Array(6) as _, i (i)}
           <Skeleton class="h-10 w-full rounded-md" />
         {/each}
       </div>
