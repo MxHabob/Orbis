@@ -36,15 +36,17 @@ import {
 let {
   open = $bindable(false),
   editingRole = null,
+  isDuplicate = false,
   onsave,
 }: {
   open: boolean;
   editingRole: RoleDto | null;
+  isDuplicate?: boolean;
   onsave?: (role: RoleDto) => Promise<void> | void;
 } = $props();
 
 const queryClient = useQueryClient();
-const isEditMode = $derived(Boolean(editingRole));
+const isEditMode = $derived(Boolean(editingRole) && !isDuplicate);
 
 // Form values
 let roleId = $state("");

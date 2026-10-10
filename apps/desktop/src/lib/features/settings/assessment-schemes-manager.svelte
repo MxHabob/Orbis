@@ -53,15 +53,33 @@ Manages assessment schemes (weighted grade composition structures).
   const schemeComponents = $derived.by<SchemeComponent[]>(() => {
     if (!selectedScheme) return [];
     const formula = selectedScheme.formula as any;
+    let components: unknown[] = [];
     if (formula) {
       if (Array.isArray(formula.components)) {
-        return formula.components;
-      }
-      if (Array.isArray(formula)) {
-        return formula;
+        components = formula.components;
+      } else if (Array.isArray(formula)) {
+        components = formula;
       }
     }
-    return [];
+
+    const usedIds: string[] = [];
+    return components.map((component, index) => {
+      const value =
+        typeof component === "object" && component !== null
+          ? (component as Record<string, unknown>)
+          : {};
+      const baseId =
+        (typeof value.id === "string" && value.id) ||
+        (typeof value.code === "string" && value.code) ||
+        `${selectedScheme.id}-component-${index}`;
+      let id = baseId;
+      let duplicateIndex = 1;
+      while (usedIds.includes(id)) {
+        id = `${baseId}-${duplicateIndex++}`;
+      }
+      usedIds.push(id);
+      return { ...value, id } as SchemeComponent;
+    });
   });
 
   // ── Weight summary ───────────────────────────────────────────
@@ -374,7 +392,7 @@ Manages assessment schemes (weighted grade composition structures).
               <!-- Weight visual bar -->
               {#if schemeComponents.length > 0}
                 <div class="flex rounded-md overflow-hidden h-2.5 bg-muted/40">
-                  {#each schemeComponents as comp, i}
+                  {#each schemeComponents as comp, i (comp.id)}
                     {@const colors = [
                       "bg-blue-500",
                       "bg-emerald-500",

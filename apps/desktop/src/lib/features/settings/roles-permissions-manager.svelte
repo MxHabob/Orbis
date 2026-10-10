@@ -10,7 +10,7 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { confirmStore } from "$lib/stores";
-import { Clipboard, Pencil, Plus, Refresh, Search, Trash, UserBadgeCheck } from "@orbis/icons";
+import { Plus, Refresh, Search, UserBadgeCheck } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -40,6 +40,7 @@ let filterType = $state<"all" | "system" | "custom">("all");
 // Sheet State
 let isSheetOpen = $state(false);
 let editingRole = $state<RoleDto | null>(null);
+let isDuplicate = $state(false);
 
 async function loadRoles() {
   isLoading = true;
@@ -97,7 +98,13 @@ const gridSource = $derived(
 const roleActions: ActionItem[] = [
   { id: "edit", label: m.ui_copy_edit_permissions_bc90fdaf(), icon: "Pencil" },
   { id: "duplicate", label: m.ui_copy_duplicate_role_82f6bf4c(), icon: "Clipboard" },
-  { id: "delete", label: m.ui_copy_delete_role_981a0e24(), icon: "Trash2", variant: "destructive" },
+  {
+    id: "delete",
+    label: m.ui_copy_delete_role_981a0e24(),
+    icon: "Trash2",
+    variant: "destructive",
+    visible: (row) => !row.is_system,
+  },
 ];
 
 // Columns Definition
@@ -115,43 +122,54 @@ const columns: OrbisColumnDef[] = [
     name: m.ui_copy_actions_c48127a5(),
     width: 90,
     size: 90,
-    type: "actions",
+    type: "action",
     align: "center",
     pin: "right",
-    actions: roleActions,
+    readonly: true,
+    meta: { items: roleActions },
   },
 ];
 
 function handleGridAction(event: GridActionEvent) {
-  const { action, row } = event;
-  const original = roles.find((r) => r.id === row.id) || row;
-  if (action === "edit") {
-    openEditRole(original as RoleDto);
-  } else if (action === "duplicate") {
-    openDuplicateRole(original as RoleDto);
-  } else if (action === "delete") {
-    handleDeleteRole(original as RoleDto);
+  const role = roles.find((candidate) => candidate.id === String(event.row.id));
+  if (!role) return;
+
+  if (event.actionId === "edit" || event.actionId === "dblclick") {
+    openEditRole(role);
+  } else if (event.actionId === "duplicate") {
+    openDuplicateRole(role);
+  } else if (event.actionId === "delete") {
+    handleDeleteRole(role);
   }
 }
 
 function openCreateRole() {
   editingRole = null;
+  isDuplicate = false;
   isSheetOpen = true;
 }
 
 function openEditRole(role: RoleDto) {
   editingRole = role;
+  isDuplicate = false;
   isSheetOpen = true;
 }
 
 function openDuplicateRole(role: RoleDto) {
+  let duplicateId = `${role.id}_copy`;
+  let suffix = 2;
+  while (roles.some((candidate) => candidate.id === duplicateId)) {
+    duplicateId = `${role.id}_copy_${suffix++}`;
+  }
+
   editingRole = {
     ...role,
-    id: `${role.id}_copy`,
-    name: `${role.name} (Clipboard)`,
+    id: duplicateId,
+    name: `${role.name} (${m.settings_ui_copy_suffix()})`,
     name_ar: role.name_ar ? `${role.name_ar} (${m.settings_ui_copy_suffix()})` : undefined,
     is_system: false,
   };
+  isDuplicate = true;
   isSheetOpen = true;
 }
 
@@ -290,5 +308,6 @@ async function handleRoleSaved() {
 <RoleCreationSheet
   bind:open={isSheetOpen}
   {editingRole}
+  {isDuplicate}
   onsave={handleRoleSaved}
 />
