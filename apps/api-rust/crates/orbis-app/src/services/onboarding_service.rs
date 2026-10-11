@@ -1454,11 +1454,9 @@ impl OnboardingService {
                     .into(),
             ));
         }
-        if req.provision_hijri_school_calendar.unwrap_or(false)
-            || req.provision_time_slots.unwrap_or(false)
-        {
+        if req.provision_time_slots.unwrap_or(false) {
             return Err(DomainError::Validation(
-                "Preset calendars and timetables are not provisioned. Configure academic periods and time slots explicitly."
+                "Preset timetables are not provisioned. Configure time slots explicitly."
                     .into(),
             ));
         }

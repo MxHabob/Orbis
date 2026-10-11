@@ -4,7 +4,7 @@ import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
-import { systemStore } from "$lib/stores";
+import { orgContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -46,6 +46,62 @@ let periodParentId = $state("");
 
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const selectedYear = $derived(years.find((year) => String(year.id) === selectedYearId));
+
+function getHijriCalendarDefaults(startDate: string) {
+  const formatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  if (formatter.resolvedOptions().calendar !== "islamic-umalqura") {
+    throw new Error(m.onboarding_step3_default_periods_calendar_error());
+  }
+
+  let cursorTime = Date.parse(`${startDate.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(cursorTime)) {
+    throw new Error(m.onboarding_step3_default_periods_calendar_error());
+  }
+
+  const getParts = (date: Date) => {
+    const values = Object.fromEntries(
+      formatter.formatToParts(date).map(({ type, value }) => [type, value]),
+    );
+    return {
+      year: Number(values.year),
+      month: Number(values.month),
+      day: Number(values.day),
+    };
+  };
+
+  const start = getParts(new Date(cursorTime));
+  if (start.month !== 1 || start.day !== 1) {
+    throw new Error(m.onboarding_step3_default_periods_start_error());
+  }
+
+  const monthLengths: number[] = [];
+  for (let index = 0; index < 8; index += 1) {
+    const targetYear = start.year + Math.floor(index / 12);
+    const targetMonth = (index % 12) + 1;
+    let days = 0;
+    while (true) {
+      const current = getParts(new Date(cursorTime));
+      if (current.year !== targetYear || current.month !== targetMonth) break;
+      days += 1;
+      if (days > 30) {
+        throw new Error(m.onboarding_step3_default_periods_calendar_error());
+      }
+      cursorTime += 24 * 60 * 60 * 1000;
+    }
+    if (days < 29 || days > 30) {
+      throw new Error(m.onboarding_step3_default_periods_calendar_error());
+    }
+    monthLengths.push(days);
+  }
+
+  return { hijriStartYear: start.year, monthLengths };
+}
 
 function validateDateRange(start: string, end: string, message: string) {
   if (!start || !end || end <= start) {
@@ -151,6 +207,44 @@ async function handleCreatePeriod() {
     successMessage = m.onboarding_step3_periods_generated_success();
   } catch (err: unknown) {
     console.error("Failed to create academic period:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isSubmittingPeriod = false;
+  }
+}
+
+async function handleGenerateDefaultPeriods() {
+  if (!orgContext.isSchool) return;
+  if (!selectedYear) {
+    toast.error(m.onboarding_step3_period_err_year());
+    return;
+  }
+
+  let calendarDefaults: ReturnType<typeof getHijriCalendarDefaults>;
+  try {
+    calendarDefaults = getHijriCalendarDefaults(selectedYear.start_date);
+  } catch (err: unknown) {
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+    return;
+  }
+
+  isSubmittingPeriod = true;
+  successMessage = null;
+  try {
+    await api.onboardingProvisionDefaults(
+      {
+        academic_year_id: String(selectedYear.id),
+        provision_hijri_school_calendar: true,
+        hijri_start_year: calendarDefaults.hijriStartYear,
+        hijri_month_lengths: calendarDefaults.monthLengths,
+      },
+      orgId,
+    );
+    periods = await api.listAcademicPeriods();
+    await refreshOnboardingState(orgId, m.common_action_failed());
+    successMessage = m.onboarding_step3_periods_generated_success();
+  } catch (err: unknown) {
+    console.error("Failed to generate default school periods:", err);
     toast.error(err instanceof Error ? err.message : m.common_action_failed());
   } finally {
     isSubmittingPeriod = false;
@@ -294,6 +388,26 @@ async function deletePeriod(period: AcademicPeriodDto) {
       isComplete={periods.length > 0}
     >
       <div class="space-y-4">
+        {#if orgContext.isSchool}
+          <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+            <p class="text-xs text-muted-foreground">
+              {m.onboarding_step3_default_periods_desc()}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isSubmittingPeriod || !selectedYearId}
+              onclick={handleGenerateDefaultPeriods}
+              class="text-xs font-semibold"
+            >
+              {isSubmittingPeriod
+                ? m.onboarding_step3_creating_btn()
+                : m.onboarding_step3_default_periods_btn()}
+            </Button>
+          </div>
+        {/if}
+
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="sm:col-span-2">
