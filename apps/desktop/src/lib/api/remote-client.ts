@@ -508,6 +508,14 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.archiveYear({ client: this.client, path: { id } }));
   }
 
+  async deleteAcademicYear(id: string): Promise<boolean> {
+    return this.call<boolean>(
+      this.client.delete<boolean>({
+        url: `/api/v1/academic-years/${encodeURIComponent(id)}`,
+      }),
+    );
+  }
+
   async createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto> {
     return this.call(sdk.createPeriod({ client: this.client, body: req }));
   }

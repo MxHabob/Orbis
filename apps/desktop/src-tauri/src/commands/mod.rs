@@ -156,6 +156,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         calendar_cmds::calendar_activate_year,
         calendar_cmds::calendar_close_year,
         calendar_cmds::calendar_archive_year,
+        calendar_cmds::calendar_delete_year,
         calendar_cmds::calendar_list_years,
         calendar_cmds::calendar_get_context,
         calendar_cmds::calendar_get_year,

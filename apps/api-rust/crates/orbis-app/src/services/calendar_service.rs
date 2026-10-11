@@ -120,6 +120,34 @@ impl CalendarService {
         self.year_repo.find_by_id(id).await
     }
 
+    /// Delete an academic year only when it has no academic periods.
+    pub async fn delete_year(
+        &self,
+        ctx: &RequestContext,
+        year_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+        let year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .filter(|year| year.org_id == ctx.tenant_id)
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Academic year {} not found", year_id))
+            })?;
+
+        if !self.period_repo.find_by_year(year.id).await?.is_empty() {
+            return Err(DomainError::Validation(
+                "Cannot delete an academic year that has periods. Delete its periods first."
+                    .into(),
+            ));
+        }
+
+        self.year_repo.delete(year_id).await
+    }
+
     /// Create an academic period within a year
     pub async fn create_period(
         &self,

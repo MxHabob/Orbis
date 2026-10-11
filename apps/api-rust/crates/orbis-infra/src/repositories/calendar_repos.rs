@@ -152,6 +152,14 @@ impl AcademicYearRepository for CalendarRepoImpl {
         }
         Ok(())
     }
+
+    async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
+        YearEntity::delete_by_id(id)
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(())
+    }
 }
 
 use orbis_domain::entities::academic_period::{AcademicPeriodState, PeriodKind, PeriodType};

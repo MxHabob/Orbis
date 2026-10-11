@@ -1561,6 +1561,7 @@ export interface OrbisApiClient {
   activateAcademicYear(id: string): Promise<AcademicYearDto>;
   closeAcademicYear(id: string): Promise<AcademicYearDto>;
   archiveAcademicYear(id: string): Promise<AcademicYearDto>;
+  deleteAcademicYear(id: string): Promise<boolean>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
   deleteAcademicPeriod(id: string): Promise<boolean>;

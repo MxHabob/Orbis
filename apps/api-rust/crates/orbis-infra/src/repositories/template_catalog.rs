@@ -18,7 +18,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
 
     let templates = get_master_template_definitions();
 
-    for (code, name_en, name_ar, entity, r_type, page_sz, page_or, doc_json) in templates {
+    for (code, name_en, name_ar, entity, r_type, page_sz, page_or, doc_json) in &templates {
         let tid = Uuid::new_v4();
         let doc_str = doc_json.to_string();
 
@@ -30,17 +30,63 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
              $9, NULL, $8, $8 \
              WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND code = $3)",
             vec![
-                tid.into(), org_id.into(), code.into(),
-                name_en.into(), name_ar.into(),
-                r_type.into(), entity.into(),
+                tid.into(), org_id.into(), (*code).into(),
+                (*name_en).into(), (*name_ar).into(),
+                (*r_type).into(), (*entity).into(),
                 now.to_string().into(), admin_id.into(),
-                page_sz.into(), page_or.into(),
-                doc_str.into(),
+                (*page_sz).into(), (*page_or).into(),
+                doc_str.clone().into(),
             ]
         )).await.map_err(|error| {
             DomainError::Internal(format!("Failed to provision template {code}: {error}"))
         })?;
+
+        // Synchronize system template AST definitions and metadata
+        db.execute(Statement::from_sql_and_values(
+            db.get_database_backend(),
+            "UPDATE report_templates \
+             SET document_json = $1, name = $2, name_ar = $3, page_size = $4, orientation = $5, document_type = $6, entity_type = $7, updated_at = $8 \
+             WHERE org_id = $9 AND code = $10 AND is_system = 1",
+            vec![
+                doc_str.into(), (*name_en).into(), (*name_ar).into(),
+                (*page_sz).into(), (*page_or).into(), (*r_type).into(), (*entity).into(),
+                now.to_string().into(), org_id.into(), (*code).into(),
+            ]
+        )).await.map_err(|error| {
+            DomainError::Internal(format!("Failed to update system template {code}: {error}"))
+        })?;
     }
+
+    // Authoritatively reconcile default templates across all system entities and document types
+    db.execute(Statement::from_sql_and_values(
+        db.get_database_backend(),
+        "UPDATE report_templates \
+         SET is_default = CASE \
+             WHEN code IN ( \
+                 'academic.student-certificate-yemeni', \
+                 'academic.official-transcript', \
+                 'academic.student-term-report-card', \
+                 'administration.enrollment-certificate', \
+                 'administration.student-id-card', \
+                 'administration.staff-id-card', \
+                 'administration.user-id-card', \
+                 'examinations.hall-seating-card', \
+                 'examinations.hall-register', \
+                 'examinations.student-exam-card', \
+                 'finance.payment-receipt', \
+                 'finance.disbursement-voucher', \
+                 'finance.journal-voucher', \
+                 'administration.organization-letterhead' \
+             ) THEN 1 \
+             ELSE 0 \
+         END \
+         WHERE org_id = $1 AND deleted_at IS NULL",
+        vec![org_id.into()],
+    ))
+    .await
+    .map_err(|error| {
+        DomainError::Internal(format!("Failed to reconcile default templates: {error}"))
+    })?;
 
     Ok(())
 }
@@ -431,7 +477,7 @@ pub fn get_master_template_definitions() -> Vec<(
             "Student Term Report Card",
             "كشف درجات الطالب للفصل الدراسي",
             "student",
-            "REPORT",
+            "TERM_CERTIFICATE",
             "A4",
             "portrait",
             json!({
@@ -439,7 +485,7 @@ pub fn get_master_template_definitions() -> Vec<(
                 "meta": {
                     "name": "Student Term Report Card",
                     "nameAr": "كشف درجات الطالب للفصل الدراسي",
-                    "documentType": "REPORT",
+                    "documentType": "TERM_CERTIFICATE",
                     "entityType": "student",
                     "locale": "ar",
                     "pageSetup": { "size": "A4", "orientation": "portrait", "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 }, "unit": "mm" }
@@ -991,8 +1037,10 @@ pub fn get_master_template_definitions() -> Vec<(
         ),
     ];
 
-    templates.extend(default_grade_certificate_templates());
     templates.push(default_yemeni_academic_certificate_template());
+    templates.push(default_exam_hall_seating_card_template());
+    templates.push(default_exam_hall_register_template());
+    templates.push(default_user_id_card_template());
     templates.push(default_letterhead_template());
     templates.push(default_finance_voucher_template(
         "finance.disbursement-voucher",
@@ -1014,6 +1062,7 @@ pub fn get_master_template_definitions() -> Vec<(
         "من الحساب",
         "إلى الحساب",
     ));
+    templates.extend(default_grade_certificate_templates());
     templates
 }
 
@@ -1755,6 +1804,475 @@ fn default_yemeni_academic_certificate_template() -> (
     )
 }
 
+fn default_exam_hall_register_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "examinations.hall-register",
+        "Exam Hall Attendance & Proctor Register",
+        "كشف مناداة وسجل حضور لجان الاختبارات",
+        "exam",
+        "EXAM_REGISTER",
+        "A4",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Exam Hall Attendance & Proctor Register",
+                "nameAr": "كشف مناداة وسجل حضور لجان الاختبارات",
+                "documentType": "EXAM_REGISTER",
+                "entityType": "exam",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "portrait",
+                    "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "exam.sessionName": { "source": "exam.session_name", "type": "string", "label": "Session Name", "labelAr": "الدورة الاختبارية" },
+                "exam.hallName": { "source": "exam.hall_name", "type": "string", "label": "Exam Hall", "labelAr": "قاعة الاختبار" },
+                "exam.subjectName": { "source": "exam.subject_name", "type": "string", "label": "Subject", "labelAr": "المادة الدراسية" },
+                "exam.examDate": { "source": "exam.exam_date", "type": "string", "label": "Date & Time", "labelAr": "التاريخ والفترة" },
+                "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
+                "report.periodName": { "source": "report.period_name", "type": "string", "label": "Academic Period", "labelAr": "الفصل الدراسي" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "reg-outer-border",
+                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.2, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "reg-inner-border",
+                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 0.5, "borderRadius": 1 },
+                        "position": { "x": 10, "y": 10, "width": 190, "height": 277 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-org-header",
+                        "props": {
+                            "content": "{{$org.country_name}}\n{{$org.ministry_name}}\n{{$org.region_name}}\n{{$org.name_ar}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.4
+                        },
+                        "position": { "x": 118, "y": 13, "width": 78, "height": 20 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-committee-header",
+                        "props": {
+                            "content": "لجنة الكنترول والامتحانات العامة\nالعام الدراسي: {{academicYear.name}}\nالفترة: {{report.periodName}}\nتاريخ الاختبار: {{exam.examDate}}",
+                            "fontSize": 8.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#334155",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.4
+                        },
+                        "position": { "x": 14, "y": 13, "width": 78, "height": 20 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "reg-title-bg",
+                        "props": { "shape": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2 },
+                        "position": { "x": 14, "y": 35, "width": 182, "height": 8.5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-title-text",
+                        "props": {
+                            "content": "كشف مناداة وسجل حضور وتوقيع لجان الاختبارات | EXAM ATTENDANCE & PROCTOR SHEET",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#ffffff",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 16, "y": 36.5, "width": 178, "height": 5.5 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "reg-meta-box",
+                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.6, "borderRadius": 2 },
+                        "position": { "x": 14, "y": 46, "width": 182, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-meta-col1",
+                        "props": {
+                            "content": "الدورة الاختبارية: {{exam.sessionName}}\nقاعة الاختبار: {{exam.hallName}}",
+                            "fontSize": 8.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.5
+                        },
+                        "position": { "x": 105, "y": 47.5, "width": 88, "height": 10 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-meta-col2",
+                        "props": {
+                            "content": "المادة الدراسية: {{exam.subjectName}}\nالفترة / التوقيت: {{exam.examDate}}",
+                            "fontSize": 8.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.5
+                        },
+                        "position": { "x": 16, "y": 47.5, "width": 88, "height": 10 }
+                    },
+                    {
+                        "type": "Table",
+                        "id": "reg-attendance-table",
+                        "props": {
+                            "dataSource": "seatingList",
+                            "columns": [
+                                { "field": "seq", "header": "No", "headerAr": "م", "width": "6%", "alignment": "center" },
+                                { "field": "seating_number", "header": "Seat No", "headerAr": "رقم الجلوس", "width": "15%", "alignment": "center" },
+                                { "field": "student_name", "header": "Student Full Name", "headerAr": "اسم الطالب الرباعي", "width": "35%", "alignment": "right" },
+                                { "field": "class_name", "header": "Class", "headerAr": "الصف / الشعبة", "width": "16%", "alignment": "right" },
+                                { "field": "desk_number", "header": "Desk", "headerAr": "المقعد", "width": "10%", "alignment": "center" },
+                                { "field": "signature", "header": "Signature", "headerAr": "توقيع الطالب", "width": "18%", "alignment": "center" }
+                            ],
+                            "showHeader": true,
+                            "showGrid": true,
+                            "showBorder": true,
+                            "direction": "rtl",
+                            "style": {
+                                "headerBgColor": "#0f172a",
+                                "headerTextColor": "#ffffff",
+                                "alternateRowBgColor": "#f8fafc",
+                                "borderColor": "#cbd5e1",
+                                "borderWidth": 0.75,
+                                "headerFontSize": 7.5,
+                                "fontSize": 7.5,
+                                "rowHeight": 17.0
+                            }
+                        },
+                        "position": { "x": 14, "y": 62, "width": 182, "height": 188 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "reg-footer-box",
+                        "props": { "shape": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.6, "borderRadius": 2 },
+                        "position": { "x": 14, "y": 253, "width": 182, "height": 28 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-footer-summary",
+                        "props": {
+                            "content": "إجمالي المقيدين باللجنة: (      )  |  عدد الحاضرين: (      )  |  عدد الغائبين: (      )",
+                            "fontSize": 8.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 18, "y": 255, "width": 174, "height": 5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-sig-proctor1",
+                        "props": { "content": "المراقب الأول:\n___________________", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.4 },
+                        "position": { "x": 136, "y": 262, "width": 56, "height": 16 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-sig-proctor2",
+                        "props": { "content": "المراقب الثاني:\n___________________", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.4 },
+                        "position": { "x": 76, "y": 262, "width": 56, "height": 16 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "reg-sig-control",
+                        "props": { "content": "رئيس الكنترول:\n___________________", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.4 },
+                        "position": { "x": 16, "y": 262, "width": 56, "height": 16 }
+                    }
+                ]
+            }]
+        })
+    )
+}
+
+fn default_exam_hall_seating_card_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "examinations.hall-seating-card",
+        "Exam Hall Seating Card",
+        "بطاقة رقم الجلوس ودخول قاعات الاختبار",
+        "exam",
+        "EXAM_CARD",
+        "A5",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Exam Hall Seating Card",
+                "nameAr": "بطاقة رقم الجلوس ودخول قاعات الاختبار",
+                "documentType": "EXAM_CARD",
+                "entityType": "exam",
+                "locale": "ar",
+                "pageSetup": { "size": "A5", "orientation": "portrait", "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 }, "unit": "mm" }
+            },
+            "variables": {
+                "student.name": { "source": "student.name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
+                "exam.seatingNumber": { "source": "exam.seating_number", "type": "string", "label": "Seating Number", "labelAr": "رقم الجلوس" },
+                "exam.hallName": { "source": "exam.hall_name", "type": "string", "label": "Exam Hall", "labelAr": "قاعة الاختبار" },
+                "exam.deskNumber": { "source": "exam.desk_number", "type": "string", "label": "Desk Number", "labelAr": "رقم المقعد" },
+                "exam.sessionName": { "source": "exam.session_name", "type": "string", "label": "Session Name", "labelAr": "الدورة الاختبارية" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "exam-card-bg",
+                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1.0, "borderRadius": 3 },
+                        "position": { "x": 6, "y": 6, "width": 136, "height": 198 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "exam-header",
+                        "props": { "content": "{{$org.name_ar}}\nلجنة الكنترول والامتحانات العامة", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl", "lineHeight": 1.4 },
+                        "position": { "x": 20, "y": 10, "width": 108, "height": 10 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "exam-sub",
+                        "props": { "content": "بطاقة دخول لجان الاختبارات ورقم الجلوس المعتمد", "fontSize": 10.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#dc2626", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 10, "y": 22, "width": 128, "height": 6 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "seat-box",
+                        "props": { "shape": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
+                        "position": { "x": 12, "y": 30, "width": 124, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "seat-title",
+                        "props": { "content": "رقم الجلوس الرسمي", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#991b1b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 15, "y": 32, "width": 118, "height": 4 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "seat-val",
+                        "props": { "content": "{{exam.seatingNumber}}", "fontSize": 16.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#991b1b", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 15, "y": 37, "width": 118, "height": 9 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "exam-student-name",
+                        "props": { "content": "اسم الطالب: {{student.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 12, "y": 52, "width": 124, "height": 5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "exam-hall-info",
+                        "props": { "content": "مقر اللجنة / القاعة: {{exam.hallName}} | المقعد: {{exam.deskNumber}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 12, "y": 58, "width": 124, "height": 5 }
+                    },
+                    {
+                        "type": "Table",
+                        "id": "exam-schedule-table",
+                        "props": {
+                            "dataSource": "examSchedules",
+                            "columns": [
+                                { "header": "اليوم والتاريخ", "headerAr": "اليوم والتاريخ", "field": "examDate", "width": "35%" },
+                                { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "40%" },
+                                { "header": "الفترة", "headerAr": "الفترة", "field": "timeSlot", "width": "25%" }
+                            ],
+                            "showHeader": true,
+                            "showGrid": true,
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 12, "y": 66, "width": 124, "height": 85 }
+                    },
+                    {
+                        "type": "Barcode",
+                        "id": "exam-barcode",
+                        "props": { "data": "{{exam.seatingNumber}}", "format": "CODE128" },
+                        "position": { "x": 25, "y": 155, "width": 98, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "exam-rules",
+                        "props": { "content": "تنبيه: يُمنع اصطحاب الهواتف الذكية أو المذكرات داخل لجان الامتحانات، ويجب إبراز هذه البطاقة عند الدخول.", "fontSize": 7.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#b91c1c", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 12, "y": 174, "width": 124, "height": 10 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sig-control",
+                        "props": { "content": "رئيس لجنة الكنترول\n_______________", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 40, "y": 186, "width": 68, "height": 12 }
+                    }
+                ]
+            }]
+        })
+    )
+}
+
+fn default_user_id_card_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "administration.user-id-card",
+        "Employee & User ID Badge",
+        "بطاقة العمل والتعريف للكادر الوظيفي والمستخدمين",
+        "user",
+        "ID_CARD",
+        "ID_CARD",
+        "landscape",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Employee & User ID Badge",
+                "nameAr": "بطاقة العمل والتعريف للكادر الوظيفي والمستخدمين",
+                "documentType": "ID_CARD",
+                "entityType": "user",
+                "locale": "ar",
+                "pageSetup": { "size": "ID_CARD", "orientation": "landscape", "margins": { "top": 0, "bottom": 0, "left": 0, "right": 0 }, "unit": "mm" }
+            },
+            "variables": {
+                "user.name": { "source": "user.name", "type": "string", "label": "User Name", "labelAr": "اسم المستخدم" },
+                "user.jobTitle": { "source": "user.job_title", "type": "string", "label": "Role / Title", "labelAr": "المسمى الوظيفي" },
+                "user.employeeNumber": { "source": "user.employee_number", "type": "string", "label": "Employee ID", "labelAr": "الرقم الوظيفي" },
+                "user.department": { "source": "user.department", "type": "string", "label": "Department", "labelAr": "القسم / الإدارة" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "bg-card",
+                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
+                        "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "header-bg",
+                        "props": { "shape": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
+                        "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "org-title",
+                        "props": { "content": "{{$org.name_ar}}", "fontSize": 9.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 15, "y": 2.5, "width": 55, "height": 4.5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "badge-subtitle",
+                        "props": { "content": "بطاقة تعريف كادر تعليمي وإداري | FACULTY & STAFF BADGE", "fontSize": 5.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#c7d2fe", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 10, "y": 7.5, "width": 65, "height": 3.5 }
+                    },
+                    {
+                        "type": "Image",
+                        "id": "user-photo",
+                        "props": { "src": "{{user.avatarUrl}}", "fit": "cover" },
+                        "position": { "x": 4, "y": 14, "width": 22, "height": 26 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "user-name",
+                        "props": { "content": "{{user.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 28, "y": 14, "width": 42, "height": 5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "user-title",
+                        "props": { "content": "المسمى: {{user.jobTitle}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#4338ca", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 28, "y": 19.5, "width": 42, "height": 4 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "user-dept",
+                        "props": { "content": "القسم: {{user.department}}", "fontSize": 7.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 28, "y": 24, "width": 42, "height": 4 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "user-no",
+                        "props": { "content": "الرقم الوظيفي: {{user.employeeNumber}}", "fontSize": 7.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "start", "direction": "rtl" },
+                        "position": { "x": 28, "y": 28.5, "width": 42, "height": 4 }
+                    },
+                    {
+                        "type": "QRCode",
+                        "id": "user-qr",
+                        "props": { "data": "{{user.employeeNumber}}", "size": 11 },
+                        "position": { "x": 71, "y": 14, "width": 11, "height": 11 }
+                    },
+                    {
+                        "type": "Barcode",
+                        "id": "user-barcode",
+                        "props": { "data": "{{user.employeeNumber}}", "format": "CODE128" },
+                        "position": { "x": 28, "y": 34, "width": 53, "height": 10 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "footer-strip",
+                        "props": { "shape": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
+                        "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "footer-lbl",
+                        "props": { "content": "بطاقة رسمية معتمدة | OFFICIAL AUTHORIZED BADGE", "fontSize": 5.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 5, "y": 49.5, "width": 75, "height": 3 }
+                    }
+                ]
+            }]
+        })
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::get_master_template_definitions;
@@ -1884,5 +2402,57 @@ mod tests {
                     .as_str()
                     .is_some_and(|c| c.contains("{{$org.ministry_name}}"))
         }));
+    }
+
+    #[test]
+    fn provisions_exam_templates_with_distinct_entities_and_document_types() {
+        let templates = get_master_template_definitions();
+        let register = templates
+            .iter()
+            .find(|t| t.0 == "examinations.hall-register")
+            .expect("exam hall register template");
+        assert_eq!(register.3, "exam");
+        assert_eq!(register.4, "EXAM_REGISTER");
+        assert_eq!(register.5, "A4");
+        assert_eq!(register.6, "portrait");
+
+        let reg_children = register.7["pages"][0]["children"]
+            .as_array()
+            .expect("register nodes");
+        let reg_table = reg_children
+            .iter()
+            .find(|n| n["type"] == "Table")
+            .expect("attendance table in register");
+        assert_eq!(reg_table["props"]["dataSource"], "seatingList");
+
+        let seating_card = templates
+            .iter()
+            .find(|t| t.0 == "examinations.hall-seating-card")
+            .expect("exam hall seating card template");
+        assert_eq!(seating_card.3, "exam");
+        assert_eq!(seating_card.4, "EXAM_CARD");
+        assert_eq!(seating_card.5, "A5");
+
+        let user_card = templates
+            .iter()
+            .find(|t| t.0 == "administration.user-id-card")
+            .expect("user id card template");
+        assert_eq!(user_card.3, "user");
+        assert_eq!(user_card.4, "ID_CARD");
+        assert_eq!(user_card.5, "ID_CARD");
+    }
+
+    #[test]
+    fn yemeni_certificate_is_authoritative_first_report_template() {
+        let templates = get_master_template_definitions();
+        let first_report = templates
+            .iter()
+            .find(|t| t.3 == "student" && t.4 == "REPORT")
+            .expect("first student REPORT template");
+        assert_eq!(
+            first_report.0,
+            "academic.student-certificate-yemeni",
+            "Official Yemeni academic certificate must be the first (REPORT, student) template to receive is_default = 1"
+        );
     }
 }

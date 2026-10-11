@@ -390,6 +390,9 @@ export class LocalClient implements OrbisApiClient {
   async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
     return unwrap(await invoke("calendar_archive_year", { id }));
   }
+  async deleteAcademicYear(id: string): Promise<boolean> {
+    return unwrap(await invoke("calendar_delete_year", { id }));
+  }
   async createAcademicPeriod(
     req: CreatePeriodRequest,
   ): Promise<AcademicPeriodDto> {

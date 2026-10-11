@@ -230,6 +230,19 @@ async fn get_year(
     Ok(ApiResponse::ok(year_to_dto(y)))
 }
 
+#[utoipa::path(delete, path = "/api/v1/academic-years/{id}",
+    params(("id" = Uuid, Path, description = "Academic Year ID")),
+    responses((status = 200, body = bool)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn delete_year(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<ApiResponse<bool>>, ApiError> {
+    state.calendar_service.delete_year(&ctx, id).await?;
+    Ok(ApiResponse::ok(true))
+}
+
 #[utoipa::path(put, path = "/api/v1/academic-years/{id}",
     params(("id" = Uuid, Path, description = "Academic Year ID")),
     request_body = UpdateYearRequest,
@@ -464,7 +477,10 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/academic-years", post(create_year).get(list_years))
         .route("/api/v1/academic-years/current", get(get_current_context))
-        .route("/api/v1/academic-years/:id", get(get_year).put(update_year))
+        .route(
+            "/api/v1/academic-years/:id",
+            get(get_year).put(update_year).delete(delete_year),
+        )
         .route("/api/v1/academic-years/:id/activate", post(activate_year))
         .route("/api/v1/academic-years/:id/close", post(close_year_handler))
         .route(

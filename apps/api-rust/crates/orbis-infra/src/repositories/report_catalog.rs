@@ -24,16 +24,6 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
         // 1. ACADEMIC & GRADING REPORTS (38 Reports)
         // ═══════════════════════════════════════════════════════════════════════
         ReportDefEntry {
-            code: "rep.academic.student-certificate",
-            name: "Official Academic Student Certificate",
-            name_ar: "شهادة درجات الطالب المعتمدة (النموذج الرسمي)",
-            domain: "academic",
-            category: "certificates",
-            description: "Official dynamic academic certificate with bilingual headings, subject coursework & exam scores, totals, percentages, signatures, stamp, and verification QR code",
-            description_ar: "شهادة درجات رسمية ديناميكية ثنائية اللغة تشمل تفاصيل المواد، المحصلة، الاختبارات، المجموع والنسبة، التوقيعات، والختم ورمز التحقق QR",
-            provider_key: "academic.certificate",
-        },
-        ReportDefEntry {
             code: "rep.academic.student-grades-summary",
             name: "Student Grades Comprehensive Summary",
             name_ar: "كشف درجات الطلاب الإجمالي والمعدلات",

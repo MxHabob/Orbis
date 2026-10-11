@@ -272,6 +272,21 @@ pub async fn calendar_archive_year(
 }
 
 #[tauri::command]
+pub async fn calendar_delete_year(
+    id: String,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<bool>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
+    state
+        .calendar_service
+        .delete_year(&ctx, uid)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ok(true))
+}
+
+#[tauri::command]
 pub async fn calendar_list_years(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<AcademicYearDto>>, String> {

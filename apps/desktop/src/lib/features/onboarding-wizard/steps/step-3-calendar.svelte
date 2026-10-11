@@ -47,6 +47,120 @@ let periodParentId = $state("");
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
 const selectedYear = $derived(years.find((year) => String(year.id) === selectedYearId));
+const organizationToday = $derived(getOrganizationDate(new Date()));
+const yearStartIsPast = $derived(!!yearStartDate && yearStartDate < organizationToday);
+
+function getDateParts(date: Date, timeZone: string, calendar = "gregory") {
+  const formatter = new Intl.DateTimeFormat(`en-US-u-ca-${calendar}`, {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    timeZone,
+  });
+  const values = Object.fromEntries(
+    formatter.formatToParts(date).map(({ type, value }) => [type, value]),
+  );
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+}
+
+function dateString({ year, month, day }: { year: number; month: number; day: number }) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getOrganizationDate(date: Date) {
+  return dateString(getDateParts(date, orgContext.timezone));
+}
+
+function shiftDate(date: string, days: number) {
+  const timestamp = Date.parse(`${date}T12:00:00.000Z`) + days * 24 * 60 * 60 * 1000;
+  return dateString(getDateParts(new Date(timestamp), "UTC"));
+}
+
+function findHijriDate(year: number, month: number, day: number, aroundDate: string) {
+  const hijriFormatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+  if (hijriFormatter.resolvedOptions().calendar !== "islamic-umalqura") {
+    throw new Error(m.onboarding_step3_default_periods_calendar_error());
+  }
+
+  const target = `${year}-${month}-${day}`;
+  for (let offset = -400; offset <= 400; offset += 1) {
+    const date = shiftDate(aroundDate, offset);
+    const timestamp = Date.parse(`${date}T12:00:00.000Z`);
+    const parts = Object.fromEntries(
+      hijriFormatter.formatToParts(new Date(timestamp)).map(({ type, value }) => [type, value]),
+    );
+    if (`${Number(parts.year)}-${Number(parts.month)}-${Number(parts.day)}` === target) {
+      return date;
+    }
+  }
+  throw new Error(m.onboarding_step3_default_periods_calendar_error());
+}
+
+function formatGregorianYear(date: string) {
+  return String(getDateParts(new Date(`${date}T12:00:00.000Z`), "UTC").year);
+}
+
+function suggestAcademicYear() {
+  const now = new Date();
+  const today = getOrganizationDate(now);
+  let startDate: string;
+  let endDate: string;
+  let name: string;
+  let nameAr: string;
+
+  if (orgContext.isSchool) {
+    const hijriToday = getDateParts(
+      new Date(`${today}T12:00:00.000Z`),
+      "UTC",
+      "islamic-umalqura",
+    );
+    const hijriYear = hijriToday.year + (hijriToday.month > 8 ? 1 : 0);
+    startDate = findHijriDate(hijriYear, 1, 1, today);
+    endDate = shiftDate(findHijriDate(hijriYear, 9, 1, today), -1);
+    const startGregorianYear = formatGregorianYear(startDate);
+    const endGregorianYear = formatGregorianYear(endDate);
+    name = `${hijriYear}-${hijriYear + 1} AH / ${startGregorianYear}-${endGregorianYear}`;
+    nameAr = `${hijriYear}-${hijriYear + 1} هـ / ${startGregorianYear}-${endGregorianYear} م`;
+  } else if (orgContext.isUniversity) {
+    const currentYear = getDateParts(now, orgContext.timezone).year;
+    const currentMonth = getDateParts(now, orgContext.timezone).month;
+    const startYear = currentMonth >= 9 ? currentYear : currentYear - 1;
+    const endYear = startYear + 1;
+    startDate = `${startYear}-09-01`;
+    endDate = `${endYear}-08-31`;
+    name = `${startYear}/${endYear}`;
+    nameAr = `${startYear}/${endYear} م`;
+  } else {
+    const gregorianYear = getDateParts(now, orgContext.timezone).year;
+    startDate = today;
+    const [year, month, day] = today.split("-").map(Number);
+    const nextYear = year + 1;
+    const lastDayOfTargetMonth = new Date(Date.UTC(nextYear, month, 0)).getUTCDate();
+    const sameDateNextYear = dateString({
+      year: nextYear,
+      month,
+      day: Math.min(day, lastDayOfTargetMonth),
+    });
+    endDate = shiftDate(sameDateNextYear, -1);
+    name = `Training Cycle ${gregorianYear}`;
+    nameAr = `الدورة التدريبية ${gregorianYear}`;
+  }
+
+  yearName = name;
+  yearNameAr = nameAr;
+  yearStartDate = startDate;
+  yearEndDate = endDate;
+  successMessage = null;
+}
 
 function getHijriCalendarDefaults(startDate: string) {
   const formatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
@@ -258,6 +372,17 @@ async function deletePeriod(period: AcademicPeriodDto) {
   await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
+async function deleteYear(year: AcademicYearDto) {
+  const deleted = await api.deleteAcademicYear(String(year.id));
+  if (!deleted) throw new Error(m.common_action_failed());
+  years = years.filter((item) => item.id !== year.id);
+  if (selectedYearId === String(year.id)) {
+    selectedYearId = years[0] ? String(years[0].id) : "";
+  }
+  await refreshOnboardingState(orgId, m.common_action_failed());
+  successMessage = m.onboarding_step3_year_deleted_success();
+}
+
 </script>
 
 <div class="space-y-6">
@@ -334,7 +459,30 @@ async function deletePeriod(period: AcademicPeriodDto) {
             </div>
           </div>
 
-          <div class="flex flex-wrap justify-end gap-2">
+          <p class="text-xs text-muted-foreground">
+            {m.onboarding_step3_suggest_year_desc()}
+          </p>
+
+          {#if yearStartIsPast}
+            <div
+              role="alert"
+              class="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200"
+            >
+              {m.onboarding_step3_year_start_past_notice({ startDate: yearStartDate })}
+            </div>
+          {/if}
+
+          <div class="flex flex-wrap justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isSubmittingYear}
+              onclick={suggestAcademicYear}
+              class="text-xs"
+            >
+              {m.onboarding_step3_suggest_year_btn()}
+            </Button>
             <Button
               variant="default"
               size="sm"
@@ -369,9 +517,15 @@ async function deletePeriod(period: AcademicPeriodDto) {
                       </div>
                     </div>
                   </div>
-                  <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                    {m.onboarding_active_badge()}
-                  </Badge>
+                  <div class="flex items-center gap-2">
+                    <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
+                      {m.onboarding_active_badge()}
+                    </Badge>
+                    <DeleteRecordButton
+                      label={yr.name_ar || yr.name}
+                      onDelete={() => deleteYear(yr)}
+                    />
+                  </div>
                 </div>
               {/each}
             </div>

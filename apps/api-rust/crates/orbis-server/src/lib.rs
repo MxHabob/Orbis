@@ -94,6 +94,7 @@ use api::{
         api::calendar_routes::list_years,
         api::calendar_routes::get_current_context,
         api::calendar_routes::get_year,
+        api::calendar_routes::delete_year,
         api::calendar_routes::update_year,
         api::calendar_routes::activate_year,
         api::calendar_routes::close_year_handler,
