@@ -107,6 +107,10 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_get_changelog"
                 | "system_check_for_updates"
                 | "system_install_update"
+                | "bootstrap_detect_environment"
+                | "bootstrap_generate_slug"
+                | "bootstrap_get_status"
+                | "bootstrap_execute"
         )
 }
 
@@ -570,7 +574,7 @@ mod license_policy_tests {
     }
 
     #[test]
-    fn non_operational_license_only_allows_auth_activation_and_support_commands() {
+    fn non_operational_license_allows_activation_and_initial_bootstrap() {
         assert!(is_allowed_without_operational_license("auth_login"));
         assert!(is_allowed_without_operational_license("license_get_state"));
         assert!(is_allowed_without_operational_license(
@@ -582,6 +586,16 @@ mod license_policy_tests {
         assert!(is_allowed_without_operational_license(
             "system_get_readiness"
         ));
+        assert!(is_allowed_without_operational_license(
+            "bootstrap_detect_environment"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "bootstrap_generate_slug"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "bootstrap_get_status"
+        ));
+        assert!(is_allowed_without_operational_license("bootstrap_execute"));
         assert!(!is_allowed_without_operational_license(
             "finance_list_accounts"
         ));
@@ -589,5 +603,8 @@ mod license_policy_tests {
             "student_list_students"
         ));
         assert!(!is_allowed_without_operational_license("org_get_current"));
+        assert!(!is_allowed_without_operational_license(
+            "onboarding_provision_defaults"
+        ));
     }
 }
