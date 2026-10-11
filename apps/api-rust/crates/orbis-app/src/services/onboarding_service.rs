@@ -723,12 +723,10 @@ impl OnboardingService {
             .class_subject_repo
             .list(org_id, ClassSubjectFilter::default())
             .await?;
-        let schemes = self.assessment_scheme_repo.find_by_org(org_id).await?;
         let settings = self
             .settings_repo
             .get_settings(org_id)
-            .await
-            .unwrap_or_default();
+            .await?;
         let accounts = self.account_repo.find_by_org(org_id).await?;
         let fee_templates = self.fee_template_repo.find_by_org(org_id).await?;
         let discount_templates = self.discount_template_repo.find_by_org(org_id).await?;
@@ -736,8 +734,7 @@ impl OnboardingService {
         let templates = self
             .template_repo
             .list_by_org(org_id, None, None, None)
-            .await
-            .unwrap_or_default();
+            .await?;
         let integrations = self.integration_repo.find_configs_by_org(org_id).await?;
 
         // ── 2. Raw Task Completion & Progress Checks ───────────
@@ -824,7 +821,7 @@ impl OnboardingService {
             "العام الدراسي والتواريخ",
             "Define the active academic year, opening and closing dates, and official calendar status.",
             "تحديد العام الدراسي الفعال، تواريخ البداية والنهاية، وحالة التقويم الرسمي.",
-            true,
+            false,
             vec!["org_units".into()],
             if has_academic_year { 100 } else { 0 },
             has_academic_year,
@@ -836,8 +833,8 @@ impl OnboardingService {
             Some(("Requires branch setup before opening academic year.", "يتطلب إعداد الفروع أولاً.")),
         ));
 
-        // Task 5: Academic periods are institution-agnostic. Any configured teaching cycle
-        // can represent semesters, modules, trimesters, cohorts, or custom calendar blocks.
+        // Academic calendars and their periods are optional; organizations may run
+        // rolling, cohort-based, or otherwise non-calendar academic models.
         let has_periods = !periods.is_empty()
             && periods
                 .iter()
@@ -856,12 +853,12 @@ impl OnboardingService {
         raw_tasks.push((
             "academic_periods",
             OnboardingTaskCategory::Calendar,
-            "Terms & Evaluation Periods",
-            "الفصول والفترات التقويمية",
+            "Academic Cycles & Evaluation Windows",
+            "الدورات الأكاديمية ونوافذ التقييم",
             period_desc_en,
             period_desc_ar,
-            true,
-            vec!["academic_year".into()],
+            false,
+            vec![],
             period_progress,
             has_periods,
             "/settings/periods",
@@ -909,12 +906,12 @@ impl OnboardingService {
             "Configure classroom sections, homeroom divisions, grade level associations, and capacity limits.",
             "إنشاء الشعب الدراسية والفصول، وتحديد المرحلة والصف والطاقة الاستيعابية.",
             true,
-            vec!["academic_periods".into(), "academic_subjects".into()],
+            vec!["academic_subjects".into()],
             if has_classes { 100 } else { 0 },
             has_classes,
             "/academics/classes",
             "navigate",
-            vec!["school".into(), "university".into(), "institute".into()],
+            vec!["school".into()],
             vec!["class:write".into()],
             "At least one class or section created for the active period.",
             Some(("Requires academic periods and subjects to be created first.", "يتطلب إعداد الفصول الدراسية والمواد أولاً.")),
@@ -935,7 +932,7 @@ impl OnboardingService {
             has_teaching,
             "/academics/classes",
             "navigate",
-            vec!["school".into(), "university".into(), "institute".into()],
+            vec!["school".into()],
             vec!["class:write".into()],
             "Class-subject teacher assignments configured.",
             Some((
@@ -945,35 +942,22 @@ impl OnboardingService {
         ));
 
         // Task 9: Weekly Schedule
-        let teaching_months: Vec<_> = periods
+        let teaching_periods: Vec<_> = periods
             .iter()
-            .filter(|period| {
-                period.parent_id.is_some()
-                    && period.period_type == PeriodType::Month
-                    && period.period_kind == PeriodKind::Teaching
-            })
+            .filter(|period| period.period_kind == PeriodKind::Teaching)
             .collect();
-        let mut configured_months = 0;
-        for period in &teaching_months {
+        let mut configured_periods = 0;
+        for period in &teaching_periods {
             let slots = self.time_slot_repo.find_by_period(period.id).await?;
-            let complete_week = (1..=5).all(|day| {
-                (1..=9).all(|slot_index| {
-                    slots
-                        .iter()
-                        .any(|slot| slot.day_of_week == day && slot.slot_index == slot_index)
-                })
-            });
-            if complete_week {
-                configured_months += 1;
+            if !slots.is_empty() {
+                configured_periods += 1;
             }
         }
-        let has_timetable = teaching_months.len() == 8 && configured_months == 8;
-        let timetable_progress = if has_timetable {
-            100
-        } else if configured_months > 0 {
-            ((configured_months * 100) / 8) as u8
-        } else {
+        let has_timetable = configured_periods > 0;
+        let timetable_progress = if teaching_periods.is_empty() {
             0
+        } else {
+            ((configured_periods * 100) / teaching_periods.len()) as u8
         };
         raw_tasks.push((
             "scheduling_setup",
@@ -982,7 +966,7 @@ impl OnboardingService {
             "الجدول الأسبوعي والحصص",
             "Set up a weekly timetable with lesson times, breaks, and applicable school days.",
             "تهيئة جدول أسبوعي يتضمن أوقات الحصص والاستراحات وأيام الدراسة.",
-            true,
+            false,
             vec!["academic_periods".into()],
             timetable_progress,
             has_timetable,
@@ -990,60 +974,34 @@ impl OnboardingService {
             "navigate",
             vec!["school".into()],
             vec!["schedule:write".into()],
-            "Time slots are configured for a teaching period.",
+            "At least one teaching period has a configured timetable.",
             Some((
                 "Requires an academic calendar with teaching periods.",
                 "يتطلب إنشاء تقويم دراسي وفترات تعليمية أولاً.",
             )),
         ));
 
-        // Task 10: Assessment Scheme & Grading Policy
-        let has_schemes = !schemes.is_empty();
-        let scheme_desc_en =
-            "Configure a grading and assessment scheme with weighted components, pass thresholds, and reporting rules suited to the institution model.";
-        let scheme_desc_ar =
-            "تهيئة خطة تقييم ودرجات بتوزيع أوزان ومعايير اجتياز وقواعد تقارير مناسبة لنموذج المؤسسة.";
+        // The calculation plan is the single calculation authority. Legacy assessment
+        // schemes may still be readable, but they do not configure the academic engine.
+        let has_academic_policy = settings.academic.calculation_plan.is_some()
+            && settings.academic.outcome_policy.is_some();
         raw_tasks.push((
-            "assessment_schemes",
+            "calculation_policy",
             OnboardingTaskCategory::Assessment,
-            "Assessment & Grading Schemes",
-            "خطط التقييم وتوزيع الدرجات",
-            scheme_desc_en,
-            scheme_desc_ar,
+            "Calculation Engine & Outcomes",
+            "محرك الحساب وسياسات النتائج",
+            "Review the typed calculation plan, outcome thresholds, rounding, and ranking policy for this institution.",
+            "مراجعة خطة الحساب المحددة الأنواع، وحدود النتائج، والتقريب، وسياسة الترتيب الخاصة بالمؤسسة.",
             true,
-            vec!["academic_subjects".into()],
-            if has_schemes { 100 } else { 0 },
-            has_schemes,
-            "/settings/assessment-schemes",
-            "navigate",
-            vec!["school".into(), "university".into(), "institute".into()],
-            vec!["assessment:write".into()],
-            "At least one assessment scheme created with component weights.",
-            Some((
-                "Requires subjects to be created first.",
-                "يتطلب إنشاء المواد الدراسية أولاً.",
-            )),
-        ));
-
-        // Task 10: Academic Policy & Pass/Fail Criteria
-        let has_academic_policy = !settings.academic.default_grading_system.trim().is_empty();
-        raw_tasks.push((
-            "academic_policy",
-            OnboardingTaskCategory::Assessment,
-            "Pass/Fail & Academic Policies",
-            "سياسات النجاح والرسوب والتفوق",
-            "Set minimum passing percentage, honors thresholds, ranking scope, and rounding precision.",
-            "تحديد نسبة النجاح الدنيا، شروط مرتبة الشرف، نطاق الترتيب، ودقة التقريب الرياضي.",
-            true,
-            vec!["assessment_schemes".into()],
+            vec![],
             if has_academic_policy { 100 } else { 0 },
             has_academic_policy,
             "/settings/academic-policy",
             "navigate",
             vec!["school".into(), "university".into(), "institute".into()],
             vec!["organization:write".into()],
-            "Academic policy thresholds configured.",
-            Some(("Requires assessment schemes to be configured.", "يتطلب إعداد خطط التقييم أولاً.")),
+            "A calculation plan and outcome policy are configured.",
+            None,
         ));
 
         // Task 11: Chart of Accounts & Ledger
@@ -1083,8 +1041,8 @@ impl OnboardingService {
             "قوالب الرسوم الدراسية والخدمات",
             "Configure tuition, transportation, and service fee templates with grade-level targeting and installment rules.",
             "إنشاء قوالب الرسوم (تعليم، نقل، خدمات) مع تحديد الصفوف المستهدفة وسياسات الأقساط.",
-            true,
-            vec!["chart_of_accounts".into(), "academic_year".into()],
+            false,
+            vec!["chart_of_accounts".into()],
             if has_fees { 100 } else { 0 },
             has_fees,
             "/settings/fee-templates",
@@ -1236,26 +1194,35 @@ impl OnboardingService {
         ) in raw_tasks
         {
             let id_str = id.to_string();
+            let is_applicable = inst_types.iter().any(|kind| kind == institution_type_str);
 
             // A raw completion predicate is only effective after its prerequisites pass.
             let dependencies_met = deps
                 .iter()
                 .all(|dependency| completed_task_ids.contains(dependency));
+            let dependencies_met = dependencies_met || !is_applicable;
             let is_completed = raw_is_completed && dependencies_met;
-            let status = resolve_task_status(
-                raw_is_completed,
-                dependencies_met,
-                raw_progress,
-                is_required,
-            );
+            let status = if is_applicable {
+                resolve_task_status(
+                    raw_is_completed,
+                    dependencies_met,
+                    raw_progress,
+                    is_required,
+                )
+            } else {
+                OnboardingTaskStatus::NotApplicable
+            };
             if is_completed {
+                completed_task_ids.insert(id_str.clone());
+            }
+            if !is_applicable {
                 completed_task_ids.insert(id_str.clone());
             }
 
             let mut blocking_reason = None;
             let mut blocking_reason_ar = None;
 
-            if !dependencies_met {
+            if is_applicable && !dependencies_met {
                 for dep in &deps {
                     if !completed_task_ids.contains(dep) {
                         if let Some((hint_en, hint_ar)) = blocking_hint {
@@ -1274,7 +1241,7 @@ impl OnboardingService {
                 blocked_count += 1;
             }
 
-            let effective_progress = if is_completed {
+            let effective_progress = if !is_applicable || is_completed {
                 100
             } else if dependencies_met {
                 raw_progress
@@ -1282,21 +1249,23 @@ impl OnboardingService {
                 0
             };
 
-            if is_required {
+            if is_applicable && is_required {
                 required_count += 1;
                 if is_completed {
                     required_completed += 1;
                 }
 
                 required_progress_sum += effective_progress as u32;
-            } else {
+            } else if is_applicable {
                 optional_count += 1;
                 if is_completed {
                     optional_completed += 1;
                 }
             }
 
-            total_progress_sum += effective_progress as u32;
+            if is_applicable {
+                total_progress_sum += effective_progress as u32;
+            }
 
             tasks.push(SetupTask {
                 id: id_str,
@@ -1305,7 +1274,7 @@ impl OnboardingService {
                 title_ar: title_ar.to_string(),
                 description: desc.to_string(),
                 description_ar: desc_ar.to_string(),
-                is_required,
+                is_required: is_applicable && is_required,
                 status,
                 dependencies: deps,
                 progress: effective_progress,
@@ -1334,7 +1303,12 @@ impl OnboardingService {
 
         let mut categories = Vec::new();
         for cat in all_categories {
-            let cat_tasks: Vec<_> = tasks.iter().filter(|t| t.category == cat).collect();
+            let cat_tasks: Vec<_> = tasks
+                .iter()
+                .filter(|t| {
+                    t.category == cat && t.status != OnboardingTaskStatus::NotApplicable
+                })
+                .collect();
             let total = cat_tasks.len();
             let completed = cat_tasks
                 .iter()
@@ -1358,7 +1332,10 @@ impl OnboardingService {
         }
 
         // ── 5. Global Aggregations & Next Recommended Action ───
-        let total_tasks = tasks.len();
+        let total_tasks = tasks
+            .iter()
+            .filter(|task| task.status != OnboardingTaskStatus::NotApplicable)
+            .count();
         let completed_tasks = required_completed + optional_completed;
         let progress_percentage = if total_tasks == 0 {
             100
@@ -1465,6 +1442,37 @@ impl OnboardingService {
             .check(ctx, Permission::OrganizationWrite)
             .await?;
 
+        if req.provision_default_academic_periods.unwrap_or(false) {
+            return Err(DomainError::Validation(
+                "Fixed academic-period presets are no longer provisioned automatically. Configure period types and dates explicitly."
+                    .into(),
+            ));
+        }
+        if req.provision_assessment_scheme.unwrap_or(false) {
+            return Err(DomainError::Validation(
+                "Assessment schemes must be configured with the institution's calculation policy; fixed onboarding schemes are not supported."
+                    .into(),
+            ));
+        }
+        if req.provision_hijri_school_calendar.unwrap_or(false)
+            || req.provision_time_slots.unwrap_or(false)
+        {
+            return Err(DomainError::Validation(
+                "Preset calendars and timetables are not provisioned. Configure academic periods and time slots explicitly."
+                    .into(),
+            ));
+        }
+        if req.provision_stages_and_grades.unwrap_or(false)
+            || req.provision_subjects.unwrap_or(false)
+            || req.provision_tuition_fee_template.unwrap_or(false)
+            || req.provision_discount_templates.unwrap_or(false)
+        {
+            return Err(DomainError::Validation(
+                "Onboarding does not create sample academic or financial records. Configure institution-specific records explicitly."
+                    .into(),
+            ));
+        }
+
         let org =
             self.org_repo.find_by_id(org_id).await?.ok_or_else(|| {
                 DomainError::NotFound(format!("Organization {} not found", org_id))
@@ -1541,36 +1549,42 @@ impl OnboardingService {
                     "The selected academic year does not exist for this organization.".into(),
                 ));
             }
-            let year_id = Uuid::new_v4();
-            let current_year_num = chrono::Datelike::year(&now);
-            let next_year_num = current_year_num + 1;
             let year_name = req
                 .academic_year_name
-                .unwrap_or_else(|| format!("{}-{}", current_year_num, next_year_num));
-            let year_name_ar = req
-                .academic_year_name_ar
-                .unwrap_or_else(|| format!("{}-{}", current_year_num, next_year_num));
-
-            let start_date = req.start_date.unwrap_or_else(|| {
-                chrono::NaiveDate::from_ymd_opt(current_year_num, 9, 1)
-                    .unwrap()
-                    .and_hms_opt(0, 0, 0)
-                    .unwrap()
-                    .and_utc()
-            });
-            let end_date = req.end_date.unwrap_or_else(|| {
-                chrono::NaiveDate::from_ymd_opt(next_year_num, 6, 30)
-                    .unwrap()
-                    .and_hms_opt(23, 59, 59)
-                    .unwrap()
-                    .and_utc()
-            });
+                .filter(|name| !name.trim().is_empty())
+                .ok_or_else(|| {
+                    DomainError::Validation(
+                        "An academic year name is required when creating an academic year."
+                            .into(),
+                    )
+                })?;
+            let start_date = req.start_date.ok_or_else(|| {
+                DomainError::Validation(
+                    "An academic year start date is required when creating an academic year."
+                        .into(),
+                )
+            })?;
+            let end_date = req.end_date.ok_or_else(|| {
+                DomainError::Validation(
+                    "An academic year end date is required when creating an academic year."
+                        .into(),
+                )
+            })?;
+            if end_date <= start_date {
+                return Err(DomainError::Validation(
+                    "Academic year end date must be after its start date.".into(),
+                ));
+            }
+            let year_id = Uuid::new_v4();
+            let current_year_num = chrono::Datelike::year(&now);
 
             let year = AcademicYear {
                 id: year_id,
                 org_id,
                 name: year_name,
-                name_ar: Some(year_name_ar),
+                name_ar: req
+                    .academic_year_name_ar
+                    .filter(|name| !name.trim().is_empty()),
                 start_date,
                 end_date,
                 hijri_start: None,

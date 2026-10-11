@@ -45,8 +45,7 @@ describe("Onboarding step mapping", () => {
       "academic_classes",
       "teaching_assignments",
       "scheduling_setup",
-      "assessment_schemes",
-      "academic_policy",
+      "calculation_policy",
       "chart_of_accounts",
       "fee_templates",
       "discount_templates",
@@ -84,7 +83,7 @@ describe("Onboarding step mapping", () => {
         category: "integrations",
         is_required: false,
       }),
-      task("assessment_schemes", "not_applicable", {
+      task("calculation_policy", "not_applicable", {
         category: "assessment",
       }),
     ], () => true);

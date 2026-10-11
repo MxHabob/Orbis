@@ -9,13 +9,11 @@ import { page } from "$app/state";
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
-import { api } from "$lib/api";
 import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
 import { effectiveContext, systemStore } from "$lib/stores";
 import type {
   OnboardingTaskCategory,
   OnboardingTaskStatus,
-  ProvisionDefaultsReqDto,
   SetupTaskDto,
 } from "$lib/api/types";
 import {
@@ -31,24 +29,12 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@orbis/ui/badge";
 import { Progress } from "@orbis/ui/progress";
 import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
-import { Checkbox } from "@orbis/ui/checkbox";
-import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
-import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import {
   Select,
   SelectTrigger,
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@orbis/ui/dialog";
 
 const orgId = $derived(page.params.orgId);
 const isArabic = $derived(getLocale().startsWith("ar"));
@@ -57,19 +43,8 @@ const isArabic = $derived(getLocale().startsWith("ar"));
 let searchQuery = $state("");
 let selectedCategory = $state<string>("all");
 let selectedStatus = $state<string>("all");
-let isProvisionModalOpen = $state(false);
-let isProvisioning = $state(false);
-let provisioningError = $state<string | null>(null);
 let isLoadingOnboarding = $state(false);
 let onboardingLoadFailed = $state(false);
-
-// Provision Form Defaults
-let provYearName = $state("");
-let provYearNameAr = $state("");
-let provStagesAndGrades = $state(false);
-let provSubjects = $state(false);
-let provAssessmentScheme = $state(false);
-let provTuitionFee = $state(false);
 
 async function loadState() {
   isLoadingOnboarding = true;
@@ -192,30 +167,6 @@ async function startGuidedSetup() {
   await goto(resolve(localizeHref(`/${orgId}/onboarding/${target.route}`)));
 }
 
-async function handleProvisionDefaults() {
-  isProvisioning = true;
-  provisioningError = null;
-  try {
-    const request: ProvisionDefaultsReqDto = {
-      academic_year_name: provYearName || undefined,
-      academic_year_name_ar: provYearNameAr || undefined,
-      provision_academic_year: Boolean(provYearName.trim() || provYearNameAr.trim()),
-      provision_stages_and_grades: provStagesAndGrades,
-      provision_subjects: provSubjects,
-      provision_assessment_scheme: provAssessmentScheme,
-      provision_tuition_fee_template: provTuitionFee,
-    };
-    await systemStore.provisionBlueprintDefaults(
-      request,
-      orgId,
-    );
-    isProvisionModalOpen = false;
-  } catch (e: any) {
-    provisioningError = e?.message || (m.ui_onboarding_progress_failed_to_provision_defaults());
-  } finally {
-    isProvisioning = false;
-  }
-}
 </script>
 
 <svelte:head>
@@ -262,14 +213,6 @@ async function handleProvisionDefaults() {
         <span>{m.onboarding_hub_launch_wizard()}</span>
       </Button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={() => (isProvisionModalOpen = true)}
-        class="h-9 text-xs"
-      >
-        <span>{m.ui_onboarding_progress_auto_scaffold_blueprint()}</span>
-      </Button>
 
       <Button
         variant="outline"
@@ -517,100 +460,3 @@ async function handleProvisionDefaults() {
   </div>
 </div>
 {/if}
-
-<!-- Auto-Scaffolding Blueprint Dialog -->
-<Dialog bind:open={isProvisionModalOpen}>
-  <DialogContent class="sm:max-w-md">
-    <DialogHeader>
-      <DialogTitle class="text-base font-semibold">
-        {m.ui_onboarding_progress_auto_scaffold_blueprint_defaults()}
-      </DialogTitle>
-      <DialogDescription class="text-xs">
-        {m.shared_ui_provision_defaults_description()}
-      </DialogDescription>
-    </DialogHeader>
-
-    {#if provisioningError}
-      <div class="p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-xs">
-        {provisioningError}
-      </div>
-    {/if}
-
-    <div class="space-y-3.5 py-2 text-xs">
-      <BilingualNameFields
-        arId="prov-year-name-ar"
-        enId="prov-year-name"
-        arLabel={m.ui_onboarding_progress_year_name_ar()}
-        enLabel={m.ui_onboarding_progress_year_name_en()}
-        bind:arValue={provYearNameAr}
-        bind:enValue={provYearName}
-        arPlaceholder={m.shared_ui_example_academic_year()}
-        enPlaceholder={m.shared_ui_example_academic_year()}
-        kind="label"
-        requestSuggestion={suggestLocalTranslation}
-        replaceUneditedInitialValues
-        disabled={isProvisioning}
-        loadingMessage={m.bilingual_entry_loading()}
-        failureMessage={m.bilingual_entry_failure()}
-      />
-
-      <div class="space-y-2 pt-2 border-t border-border/40">
-        <span class="text-xs font-medium text-foreground block">
-          {m.ui_onboarding_progress_components_to_generate()}
-        </span>
-
-        <div class="flex items-center gap-2.5 py-1">
-          <Checkbox bind:checked={provStagesAndGrades} id="prov-stages" />
-          <Label for="prov-stages" class="text-xs font-normal text-foreground cursor-pointer">
-            {m.ui_onboarding_progress_classroom_sections_grades_1_3()}
-          </Label>
-        </div>
-
-        <div class="flex items-center gap-2.5 py-1">
-          <Checkbox bind:checked={provSubjects} id="prov-subjects" />
-          <Label for="prov-subjects" class="text-xs font-normal text-foreground cursor-pointer">
-            {m.ui_onboarding_progress_core_curriculum_subjects()}
-          </Label>
-        </div>
-
-        <div class="flex items-center gap-2.5 py-1">
-          <Checkbox bind:checked={provAssessmentScheme} id="prov-assessment" />
-          <Label for="prov-assessment" class="text-xs font-normal text-foreground cursor-pointer">
-            {m.ui_onboarding_progress_standard_100_point_assessment_scheme()}
-          </Label>
-        </div>
-
-        <div class="flex items-center gap-2.5 py-1">
-          <Checkbox bind:checked={provTuitionFee} id="prov-fee" />
-          <Label for="prov-fee" class="text-xs font-normal text-foreground cursor-pointer">
-            {m.ui_onboarding_progress_standard_annual_tuition_template()}
-          </Label>
-        </div>
-      </div>
-    </div>
-
-    <DialogFooter class="gap-2 sm:gap-0">
-      <Button
-        variant="outline"
-        size="sm"
-        onclick={() => (isProvisionModalOpen = false)}
-        disabled={isProvisioning}
-        class="text-xs"
-      >
-        {m.common_action_cancel()}
-      </Button>
-
-      <Button
-        variant="default"
-        size="sm"
-        onclick={handleProvisionDefaults}
-        disabled={isProvisioning}
-        class="text-xs"
-      >
-        {isProvisioning
-          ? (m.ui_onboarding_progress_scaffolding())
-          : (m.ui_onboarding_progress_scaffold_now())}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>

@@ -114,6 +114,11 @@ const navGroups = $derived([
         icon: Scale,
       },
       {
+        path: "calculation-engine",
+        label: m.settings_nav_calculation_engine(),
+        icon: Bolt,
+      },
+      {
         path: "assessment-schemes",
         label: m.settings_sidebar_assessment_schemes(),
         icon: Keyframes,

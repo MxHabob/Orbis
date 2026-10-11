@@ -46,17 +46,22 @@ export type AcademicPeriodState = 'planning' | 'enrollment_open' | 'active_teach
 
 export type AcademicSettingsDto = {
     default_grading_system: string;
+    default_passing_score?: number;
+    default_max_score?: number;
     passing_threshold_percentage?: number;
     honors_threshold_percentage?: number;
-    minimum_final_exam_score?: number;
+    minimum_final_exam_score?: number | null;
     max_failed_subjects_for_conditional_pass?: number;
     min_attendance_rate?: number;
     ranking_enabled?: boolean;
-    max_displayed_rank?: number;
+    max_displayed_rank?: number | null;
     ranking_scope?: string;
     tie_policy?: string;
     rounding_mode?: string;
     decimal_places?: number;
+    enrollment_auto_close?: boolean;
+    allow_late_enrollment?: boolean;
+    late_enrollment_approval?: boolean;
     grade_entry_auto_close?: boolean;
     allow_grade_edit_after_close?: boolean;
     grade_edit_approval?: boolean;

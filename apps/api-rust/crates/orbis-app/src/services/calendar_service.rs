@@ -54,6 +54,17 @@ impl CalendarService {
             .check(ctx, Permission::PeriodWrite)
             .await?;
 
+        if name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Academic year name cannot be empty.".into(),
+            ));
+        }
+        if end_date <= start_date {
+            return Err(DomainError::Validation(
+                "Academic year end date must be after its start date.".into(),
+            ));
+        }
+
         let now = Utc::now();
         let year_id = Uuid::new_v4();
 
@@ -129,6 +140,46 @@ impl CalendarService {
             .await?;
 
         use orbis_domain::entities::academic_period::{PeriodKind, PeriodType};
+
+        if name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Academic period name cannot be empty.".into(),
+            ));
+        }
+        if end_date <= start_date {
+            return Err(DomainError::Validation(
+                "Academic period end date must be after its start date.".into(),
+            ));
+        }
+
+        let year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .filter(|year| year.org_id == org_id)
+            .ok_or_else(|| DomainError::NotFound("Academic year not found.".into()))?;
+        if start_date < year.start_date || end_date > year.end_date {
+            return Err(DomainError::Validation(
+                "Academic period dates must fall within its academic year.".into(),
+            ));
+        }
+
+        if let Some(parent_id) = parent_id {
+            let parent = self
+                .period_repo
+                .find_by_id(parent_id)
+                .await?
+                .filter(|parent| parent.org_id == org_id && parent.year_id == year_id)
+                .ok_or_else(|| DomainError::Validation(
+                    "Academic period parent must belong to the same organization and year."
+                        .into(),
+                ))?;
+            if start_date < parent.start_date || end_date > parent.end_date {
+                return Err(DomainError::Validation(
+                    "Academic period dates must fall within its parent period.".into(),
+                ));
+            }
+        }
 
         let now = Utc::now();
         let period_id = Uuid::new_v4();

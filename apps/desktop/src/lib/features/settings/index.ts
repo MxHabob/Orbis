@@ -18,7 +18,8 @@ export { default as CreateUserSheet } from "./components/create-user-sheet.svelt
 // Feature Components
 export { default as SettingsOverview } from "./settings-overview.svelte";
 export { default as RegistrationSettings } from "./registration-settings.svelte";
-export { default as AcademicPolicyManager } from "./academic-policy-manager.svelte";
+export { default as CalculationEngineManager } from "./academic-policy-manager.svelte";
+export { default as AcademicOutcomePolicyManager } from "./academic-outcome-policy-manager.svelte";
 export { default as ApprovalsManager } from "./approvals-manager.svelte";
 export { default as ArchiveManager } from "./archive-manager.svelte";
 export { default as TrashManager } from "../documents/trash-manager.svelte";

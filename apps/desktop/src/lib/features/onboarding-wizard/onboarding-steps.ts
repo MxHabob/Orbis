@@ -103,7 +103,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     id: "assessment",
     route: "assessment",
-    taskIds: ["assessment_schemes", "academic_policy"],
+    taskIds: ["calculation_policy"],
     getLabel: () => m.onboarding_step6_label(),
     getDescription: () => m.onboarding_step6_desc(),
     order: 7,

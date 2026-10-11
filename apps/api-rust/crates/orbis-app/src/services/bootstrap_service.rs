@@ -15,6 +15,10 @@
 //! - Return strongly-typed bootstrap result
 
 use chrono::Utc;
+use orbis_domain::entities::academic_calculation::{
+    AstNode, CalculationInput, CalculationOutput, CalculationPlan, CalculationUnit, GradeBand,
+    OutcomePolicy, RoundingRule, WeightedItem,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
@@ -24,6 +28,7 @@ use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePol
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstitutionBlueprintConfig {
     pub grading_system: String,
+    pub calculation_inputs: Vec<(String, Decimal)>,
     pub passing_threshold_percentage: Decimal,
     pub honors_threshold_percentage: Decimal,
     pub minimum_final_exam_score: Option<Decimal>,
@@ -43,6 +48,11 @@ impl InstitutionBlueprintConfig {
         match institution_type {
             InstitutionType::School => Self {
                 grading_system: "percentage".to_string(),
+                calculation_inputs: vec![
+                    ("coursework".to_string(), Decimal::new(4, 1)),
+                    ("examination".to_string(), Decimal::new(5, 1)),
+                    ("participation".to_string(), Decimal::new(1, 1)),
+                ],
                 passing_threshold_percentage: Decimal::from(50),
                 honors_threshold_percentage: Decimal::from(85),
                 minimum_final_exam_score: Some(Decimal::from(10)),
@@ -58,6 +68,10 @@ impl InstitutionBlueprintConfig {
             },
             InstitutionType::University => Self {
                 grading_system: "gpa".to_string(),
+                calculation_inputs: vec![
+                    ("continuous_assessment".to_string(), Decimal::new(4, 1)),
+                    ("final_assessment".to_string(), Decimal::new(6, 1)),
+                ],
                 passing_threshold_percentage: Decimal::from(60),
                 honors_threshold_percentage: Decimal::from(90),
                 minimum_final_exam_score: Some(Decimal::from(15)),
@@ -73,6 +87,11 @@ impl InstitutionBlueprintConfig {
             },
             InstitutionType::Institute => Self {
                 grading_system: "percentage".to_string(),
+                calculation_inputs: vec![
+                    ("theory".to_string(), Decimal::new(3, 1)),
+                    ("practical".to_string(), Decimal::new(5, 1)),
+                    ("competency".to_string(), Decimal::new(2, 1)),
+                ],
                 passing_threshold_percentage: Decimal::from(50),
                 honors_threshold_percentage: Decimal::from(85),
                 minimum_final_exam_score: Some(Decimal::from(10)),
@@ -103,10 +122,87 @@ impl InstitutionBlueprintConfig {
         settings.academic.tie_policy = self.tie_policy;
         settings.academic.rounding_mode = self.rounding_mode;
         settings.academic.decimal_places = self.decimal_places;
+        settings.academic.calculation_plan = Some(self.calculation_plan());
+        settings.academic.outcome_policy = Some(OutcomePolicy {
+            unit: CalculationUnit::Score {
+                scale: "percentage".to_string(),
+            },
+            pass_at_or_above: Some(self.passing_threshold_percentage),
+            honors_at_or_above: Some(self.honors_threshold_percentage),
+            grade_bands: vec![
+                GradeBand {
+                    code: "A".to_string(),
+                    label: "Excellent".to_string(),
+                    minimum_score: Decimal::from(90),
+                },
+                GradeBand {
+                    code: "B".to_string(),
+                    label: "Very good".to_string(),
+                    minimum_score: Decimal::from(80),
+                },
+                GradeBand {
+                    code: "C".to_string(),
+                    label: "Good".to_string(),
+                    minimum_score: Decimal::from(70),
+                },
+                GradeBand {
+                    code: "D".to_string(),
+                    label: "Pass".to_string(),
+                    minimum_score: self.passing_threshold_percentage,
+                },
+                GradeBand {
+                    code: "F".to_string(),
+                    label: "Not passed".to_string(),
+                    minimum_score: Decimal::ZERO,
+                },
+            ],
+        });
         settings.academic.ranking_enabled = true;
         settings.academic.max_displayed_rank = None;
         settings.enrollment.max_class_size_default = self.max_class_size_default;
         settings.enrollment.allow_late_enrollment = self.allow_late_enrollment;
+    }
+
+    fn calculation_plan(&self) -> CalculationPlan {
+        let unit = CalculationUnit::Score {
+            scale: "percentage".to_string(),
+        };
+
+        CalculationPlan {
+            version: 1,
+            inputs: self
+                .calculation_inputs
+                .iter()
+                .map(|(name, _)| CalculationInput {
+                    name: name.clone(),
+                    unit: unit.clone(),
+                    minimum: Some(Decimal::ZERO),
+                    maximum: Some(Decimal::from(100)),
+                    is_required: true,
+                })
+                .collect(),
+            outputs: vec![CalculationOutput {
+                name: "course_result".to_string(),
+                unit,
+                expression: AstNode::WeightedSum {
+                    items: self
+                        .calculation_inputs
+                        .iter()
+                        .map(|(name, weight)| WeightedItem {
+                            node: AstNode::Variable {
+                                name: name.clone(),
+                            },
+                            weight: *weight,
+                        })
+                        .collect(),
+                    normalize: true,
+                },
+                rounding: Some(RoundingRule {
+                    mode: self.rounding_mode,
+                    decimal_places: self.decimal_places,
+                }),
+            }],
+        }
     }
 }
 use orbis_domain::entities::admission::{
@@ -1569,7 +1665,12 @@ pub fn transliterate_arabic(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::default_org_admin_group_permissions;
+    use super::{default_org_admin_group_permissions, InstitutionBlueprintConfig};
+    use crate::services::calculation_engine::AcademicCalculationEngine;
+    use orbis_domain::entities::organization::InstitutionType;
+    use orbis_domain::entities::settings::OrganizationSettings;
+    use rust_decimal::Decimal;
+    use std::collections::HashMap;
 
     #[test]
     fn default_admin_group_excludes_system_bypass() {
@@ -1578,5 +1679,31 @@ mod tests {
         assert!(permissions.contains(&"group:assign".to_string()));
         assert!(permissions.contains(&"finance:payment".to_string()));
         assert!(!permissions.contains(&"system:autopilot".to_string()));
+    }
+
+    #[test]
+    fn bootstrap_blueprints_create_valid_customizable_calculation_plans() {
+        for institution_type in [
+            InstitutionType::School,
+            InstitutionType::University,
+            InstitutionType::Institute,
+        ] {
+            let mut settings = OrganizationSettings::default();
+            InstitutionBlueprintConfig::from_institution_type(&institution_type)
+                .apply_to_settings(&mut settings);
+
+            let plan = settings.academic.calculation_plan.as_ref().unwrap();
+            AcademicCalculationEngine::validate_plan(plan).unwrap();
+            assert_eq!(plan.outputs[0].name, "course_result");
+            assert!(settings.academic.outcome_policy.is_some());
+
+            let inputs = plan
+                .inputs
+                .iter()
+                .map(|input| (input.name.clone(), Decimal::from(80)))
+                .collect::<HashMap<_, _>>();
+            let result = AcademicCalculationEngine::calculate_plan(plan, &inputs).unwrap();
+            assert_eq!(result.outputs[0].value, Decimal::from(80));
+        }
     }
 }

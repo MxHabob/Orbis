@@ -4,10 +4,6 @@ import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
-import {
-  getHijriSchoolMonthLengths,
-  getNextHijriSchoolCalendar,
-} from "$lib/core/i18n/hijri";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -15,7 +11,6 @@ import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
-import OnboardingPresetBar from "../components/onboarding-preset-bar.svelte";
 import { getTasksForStep } from "../onboarding-steps";
 import { refreshOnboardingState } from "../refresh-onboarding-state";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
@@ -33,13 +28,6 @@ let successMessage = $state<string | null>(null);
 let years = $state<AcademicYearDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 
-function dateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 // Academic Year Form
 let yearName = $state("");
 let yearNameAr = $state("");
@@ -48,22 +36,23 @@ let yearEndDate = $state("");
 
 // Selected Year for Period Creation
 let selectedYearId = $state<string>("");
+let periodName = $state("");
+let periodNameAr = $state("");
+let periodStartDate = $state("");
+let periodEndDate = $state("");
+let periodType = $state("custom");
+let periodKind = $state("teaching");
+let periodParentId = $state("");
 
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
-const isSchool = $derived(systemStore.onboardingState?.institution_type === "school");
 
-function applyRecommendedYear() {
-  const calendar = getNextHijriSchoolCalendar();
-  if (!calendar) {
-    toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
-    return;
+function validateDateRange(start: string, end: string, message: string) {
+  if (!start || !end || end <= start) {
+    toast.error(message);
+    return false;
   }
-
-  yearName = `${calendar.hijriYear}/${calendar.hijriYear + 1}`;
-  yearNameAr = `العام الدراسي ${calendar.hijriYear}-${calendar.hijriYear + 1}هـ`;
-  yearStartDate = dateInputValue(calendar.startDate);
-  yearEndDate = dateInputValue(calendar.endDate);
+  return true;
 }
 
 onMount(async () => {
@@ -95,8 +84,7 @@ async function handleCreateYear() {
     toast.error(m.onboarding_step3_year_err_name());
     return;
   }
-  if (!yearStartDate || !yearEndDate) {
-    toast.error(m.onboarding_step3_year_err_dates());
+  if (!validateDateRange(yearStartDate, yearEndDate, m.onboarding_step3_year_err_dates())) {
     return;
   }
 
@@ -107,8 +95,8 @@ async function handleCreateYear() {
     const newYear = await api.createAcademicYear({
       name: yearName.trim() || yearNameAr.trim(),
       name_ar: yearNameAr.trim() || undefined,
-      start_date: new Date(yearStartDate).toISOString(),
-      end_date: new Date(yearEndDate).toISOString(),
+      start_date: new Date(`${yearStartDate}T00:00:00Z`).toISOString(),
+      end_date: new Date(`${yearEndDate}T23:59:59Z`).toISOString(),
     });
 
     years = [...years, newYear];
@@ -127,83 +115,43 @@ async function handleCreateYear() {
   }
 }
 
-async function handleGenerateSemesters(scheme: "2_semesters" | "3_trimesters" | "4_quarters") {
+async function handleCreatePeriod() {
   if (!selectedYearId) {
     toast.error(m.onboarding_step3_period_err_year());
+    return;
+  }
+  if (!periodName.trim() && !periodNameAr.trim()) {
+    toast.error(m.onboarding_step3_year_err_name());
+    return;
+  }
+  if (!validateDateRange(periodStartDate, periodEndDate, m.onboarding_step3_year_err_dates())) {
     return;
   }
 
   isSubmittingPeriod = true;
   successMessage = null;
-
   try {
-    const currentYear = years.find((year) => String(year.id) === String(selectedYearId));
-    if (scheme === "2_semesters" && isSchool) {
-      const calendar = getHijriSchoolMonthLengths(
-        currentYear?.start_date ?? `${yearStartDate}T00:00:00Z`,
-      );
-      if (!calendar) {
-        toast.error(m.onboarding_step_scheduling_invalid_hijri_start());
-        return;
-      }
-      await api.onboardingProvisionDefaults(
-        {
-          academic_year_id: selectedYearId,
-          academic_year_name: currentYear?.name ?? yearName,
-          academic_year_name_ar: currentYear?.name_ar ?? yearNameAr,
-          start_date: currentYear?.start_date ?? new Date(yearStartDate).toISOString(),
-          end_date: currentYear?.end_date ?? new Date(yearEndDate).toISOString(),
-          provision_hijri_school_calendar: true,
-          hijri_start_year: calendar.hijriYear,
-          hijri_month_lengths: calendar.monthLengths,
-          provision_stages_and_grades: false,
-          provision_subjects: false,
-          provision_assessment_scheme: false,
-          provision_tuition_fee_template: false,
-          enable_period_autopilot: false,
-        },
-        orgId,
-      );
-      periods = await api.listAcademicPeriods();
-      await refreshOnboardingState(orgId, m.common_action_failed());
-      successMessage = m.onboarding_step3_periods_generated_success();
-      return;
-    }
-
-    const startYear = currentYear ? new Date(currentYear.start_date).getFullYear() : 2026;
-    const endYear = currentYear ? new Date(currentYear.end_date).getFullYear() : 2027;
-
-    const templates = scheme === "2_semesters" ? [
-      { name: "First Semester", nameAr: "الفصل الدراسي الأول", type: "semester", start: `${startYear}-09-01`, end: `${startYear + 1}-01-20` },
-      { name: "Second Semester", nameAr: "الفصل الدراسي الثاني", type: "semester", start: `${startYear + 1}-02-01`, end: `${endYear}-06-25` },
-    ] : scheme === "3_trimesters" ? [
-      { name: "First Trimester", nameAr: "الفصل الدراسي الأول", type: "trimester", start: `${startYear}-09-01`, end: `${startYear}-11-30` },
-      { name: "Second Trimester", nameAr: "الفصل الدراسي الثاني", type: "trimester", start: `${startYear}-12-05`, end: `${startYear + 1}-03-05` },
-      { name: "Third Trimester", nameAr: "الفصل الدراسي الثالث", type: "trimester", start: `${startYear + 1}-03-15`, end: `${endYear}-06-25` },
-    ] : [
-      { name: "Quarter 1", nameAr: "الربع الأول", type: "quarter", start: `${startYear}-09-01`, end: `${startYear}-11-10` },
-      { name: "Quarter 2", nameAr: "الربع الثاني", type: "quarter", start: `${startYear}-11-15`, end: `${startYear + 1}-01-20` },
-      { name: "Quarter 3", nameAr: "الربع الثالث", type: "quarter", start: `${startYear + 1}-02-01`, end: `${startYear + 1}-04-10` },
-      { name: "Quarter 4", nameAr: "الربع الرابع", type: "quarter", start: `${startYear + 1}-04-15`, end: `${endYear}-06-25` },
-    ];
-
-    for (const t of templates) {
-      const created = await api.createAcademicPeriod({
-        year_id: selectedYearId,
-        name: t.name,
-        name_ar: t.nameAr,
-        period_type: t.type,
-        start_date: new Date(t.start).toISOString(),
-        end_date: new Date(t.end).toISOString(),
-      });
-      periods = [...periods, created];
-    }
-
+    const created = await api.createAcademicPeriod({
+      year_id: selectedYearId,
+      parent_id: periodParentId || undefined,
+      name: periodName.trim() || periodNameAr.trim(),
+      name_ar: periodNameAr.trim() || undefined,
+      period_type: periodType,
+      period_kind: periodKind,
+      start_date: new Date(`${periodStartDate}T00:00:00Z`).toISOString(),
+      end_date: new Date(`${periodEndDate}T23:59:59Z`).toISOString(),
+    });
+    periods = [...periods, created];
+    periodName = "";
+    periodNameAr = "";
+    periodStartDate = "";
+    periodEndDate = "";
+    periodParentId = "";
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step3_periods_generated_success();
-  } catch (err: any) {
-    console.error("Failed to generate periods:", err);
-    toast.error(err?.message || m.common_action_failed());
+  } catch (err: unknown) {
+    console.error("Failed to create academic period:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
   } finally {
     isSubmittingPeriod = false;
   }
@@ -249,20 +197,6 @@ async function deletePeriod(period: AcademicPeriodDto) {
       isComplete={years.length > 0}
     >
       <div class="space-y-4">
-        {#if isSchool}
-          <OnboardingPresetBar title={m.ui_copy_recommended_4917dbf2()}>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingYear}
-              onclick={applyRecommendedYear}
-              class="text-xs"
-            >
-              {m.onboarding_step3_hijri_school_calendar()}
-            </Button>
-          </OnboardingPresetBar>
-        {/if}
-
         <!-- Year Form -->
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
           <div class="grid gap-3 sm:grid-cols-2">
@@ -285,26 +219,28 @@ async function deletePeriod(period: AcademicPeriodDto) {
               />
             </div>
             <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
+              <Label for="onboarding-year-start" class="text-xs font-medium">
                 {m.onboarding_step3_start_date()}
               </Label>
               <Input
+                id="onboarding-year-start"
                 type="date"
                 bind:value={yearStartDate}
               />
             </div>
             <div class="space-y-1.5">
-              <Label class="text-xs font-medium">
+              <Label for="onboarding-year-end" class="text-xs font-medium">
                 {m.onboarding_step3_end_date()}
               </Label>
               <Input
+                id="onboarding-year-end"
                 type="date"
                 bind:value={yearEndDate}
               />
             </div>
           </div>
 
-          <div class="flex justify-end">
+          <div class="flex flex-wrap justify-end gap-2">
             <Button
               variant="default"
               size="sm"
@@ -358,43 +294,105 @@ async function deletePeriod(period: AcademicPeriodDto) {
       isComplete={periods.length > 0}
     >
       <div class="space-y-4">
-        <!-- Quick Preset Generator Buttons -->
-        <OnboardingPresetBar
-          title={m.onboarding_step3_quick_schemes()}
-          description={m.onboarding_step3_quick_schemes_desc()}
-        >
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || years.length === 0}
-              onclick={() => handleGenerateSemesters("2_semesters")}
-              class="text-xs"
-            >
-              {isSchool
-                ? m.onboarding_step3_hijri_school_calendar()
-                : m.onboarding_step3_2_semesters()}
-            </Button>
-            {#if !isSchool}
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isSubmittingPeriod || years.length === 0}
-                onclick={() => handleGenerateSemesters("3_trimesters")}
-                class="text-xs"
+        <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <BilingualNameFields
+                arId="onboarding-period-name-ar"
+                enId="onboarding-period-name-en"
+                arLabel={m.onboarding_step3_year_name_ar()}
+                enLabel={m.onboarding_step3_year_name_en()}
+                bind:arValue={periodNameAr}
+                bind:enValue={periodName}
+                arPlaceholder={m.onboarding_step3_year_name_ar_placeholder()}
+                enPlaceholder="Period name"
+                kind="label"
+                requestSuggestion={suggestLocalTranslation}
+                replaceUneditedInitialValues
+                disabled={isSubmittingPeriod}
+                loadingMessage={m.bilingual_entry_loading()}
+                failureMessage={m.bilingual_entry_failure()}
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="onboarding-period-type" class="text-xs font-medium">
+                Period type
+              </Label>
+              <select
+                id="onboarding-period-type"
+                class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                bind:value={periodType}
+                disabled={isSubmittingPeriod}
               >
-                {m.onboarding_step3_3_trimesters()}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={isSubmittingPeriod || years.length === 0}
-                onclick={() => handleGenerateSemesters("4_quarters")}
-                class="text-xs"
+                <option value="custom">Custom</option>
+                <option value="semester">Semester</option>
+                <option value="trimester">Trimester</option>
+                <option value="quarter">Quarter</option>
+                <option value="month">Month</option>
+                <option value="module">Module</option>
+                <option value="block">Block</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="onboarding-period-kind" class="text-xs font-medium">
+                Period role
+              </Label>
+              <select
+                id="onboarding-period-kind"
+                class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                bind:value={periodKind}
+                disabled={isSubmittingPeriod}
               >
-                {m.onboarding_step3_4_quarters()}
-              </Button>
+                <option value="teaching">Teaching</option>
+                <option value="examination">Examination</option>
+                <option value="break">Break</option>
+                <option value="registration">Registration</option>
+                <option value="preparatory">Preparatory</option>
+              </select>
+            </div>
+            <div class="space-y-1.5">
+              <Label for="onboarding-period-start" class="text-xs font-medium">
+                {m.onboarding_step3_start_date()}
+              </Label>
+              <Input id="onboarding-period-start" type="date" bind:value={periodStartDate} />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="onboarding-period-end" class="text-xs font-medium">
+                {m.onboarding_step3_end_date()}
+              </Label>
+              <Input id="onboarding-period-end" type="date" bind:value={periodEndDate} />
+            </div>
+            {#if periods.some((period) => period.year_id === selectedYearId)}
+              <div class="space-y-1.5 sm:col-span-2">
+                <Label for="onboarding-period-parent" class="text-xs font-medium">
+                  Parent period (optional)
+                </Label>
+                <select
+                  id="onboarding-period-parent"
+                  class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  bind:value={periodParentId}
+                  disabled={isSubmittingPeriod}
+                >
+                  <option value="">No parent</option>
+                  {#each periods.filter((period) => period.year_id === selectedYearId) as period (period.id)}
+                    <option value={String(period.id)}>{period.name_ar || period.name}</option>
+                  {/each}
+                </select>
+              </div>
             {/if}
-        </OnboardingPresetBar>
+          </div>
+          <div class="flex justify-end">
+            <Button
+              variant="default"
+              size="sm"
+              disabled={isSubmittingPeriod || !selectedYearId}
+              onclick={handleCreatePeriod}
+              class="text-xs font-semibold"
+            >
+              Add period
+            </Button>
+          </div>
+        </div>
 
         <!-- Existing Periods List -->
         {#if periods.length > 0}

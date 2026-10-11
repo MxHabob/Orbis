@@ -61,7 +61,10 @@
     maxDisplayedRank: string;
   }
 
-  let { orgId }: { orgId: string } = $props();
+  let {
+    orgId,
+    onSaved,
+  }: { orgId: string; onSaved?: () => void | Promise<void> } = $props();
   const policyQuery = createOrgAcademicPolicyQuery(() => orgId);
   const updateMutation = useUpdateAcademicPolicy();
 
@@ -307,6 +310,7 @@
       hydrateFromSettings(saved);
       previewResult = null;
       toast.success("Calculation policy saved.");
+      await onSaved?.();
     } catch (error: unknown) {
       toast.error(extractErrorMessage(error));
     } finally {
@@ -375,7 +379,7 @@
       <header class="flex items-center gap-3 border-b border-border pb-3">
         <Calculator size={18} class="text-primary" />
         <div>
-          <h1 class="text-sm font-semibold text-foreground">Calculation engine</h1>
+          <h1 class="text-sm font-semibold text-foreground">{m.settings_nav_calculation_engine()}</h1>
           <p class="mt-1 text-xs text-muted-foreground">
             Configure this organization’s typed measure, aggregation, rounding, and outcome rules.
           </p>
