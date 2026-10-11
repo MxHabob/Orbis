@@ -25,7 +25,9 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
         db.execute(Statement::from_sql_and_values(
             db.get_database_backend(),
             "INSERT INTO report_templates (id, org_id, code, name, name_ar, description, description_ar, document_type, entity_type, master_template_id, status, version, published_version, published_at, published_by, page_size, orientation, margins_json, document_json, locale, tags, is_system, is_default, created_by, deleted_at, created_at, updated_at) \
-             SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, '{\"top\":10,\"bottom\":10,\"left\":10,\"right\":10}', $12, 'ar', '[\"templates\"]', 1, 1, $9, NULL, $8, $8 \
+             SELECT $1, $2, $3, $4, $5, $4, $5, $6, $7, NULL, 'published', 1, 1, $8, $9, $10, $11, '{\"top\":10,\"bottom\":10,\"left\":10,\"right\":10}', $12, 'ar', '[\"templates\"]', 1, \
+             CASE WHEN NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND document_type = $6 AND entity_type = $7 AND is_default = 1 AND deleted_at IS NULL) THEN 1 ELSE 0 END, \
+             $9, NULL, $8, $8 \
              WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE org_id = $2 AND code = $3)",
             vec![
                 tid.into(), org_id.into(), code.into(),
@@ -940,15 +942,27 @@ pub fn get_master_template_definitions() -> Vec<(
                             "props": {
                                 "dataSource": "transcriptCourses",
                                 "columns": [
-                                    { "header": "رمز المقرر", "headerAr": "رمز المقرر", "field": "courseCode", "width": "15%" },
-                                    { "header": "اسم المقرر الدراسي", "headerAr": "اسم المقرر الدراسي", "field": "courseName", "width": "40%" },
-                                    { "header": "الساعات", "headerAr": "الساعات", "field": "creditHours", "width": "15%" },
-                                    { "header": "الدرجة", "headerAr": "الدرجة", "field": "gradeScore", "width": "15%" },
-                                    { "header": "الرمز", "headerAr": "الرمز", "field": "gradeLetter", "width": "15%" }
+                                    { "header": "Course Code", "headerAr": "رمز المقرر", "field": "courseCode", "width": "15%", "alignment": "center" },
+                                    { "header": "Course Title", "headerAr": "اسم المقرر الدراسي", "field": "courseName", "width": "40%", "alignment": "right", "total": "label", "totalLabel": "إجمالي الساعات المعتمدة" },
+                                    { "header": "Credits", "headerAr": "الساعات", "field": "creditHours", "width": "15%", "alignment": "center", "total": "sum" },
+                                    { "header": "Grade", "headerAr": "الدرجة", "field": "gradeScore", "width": "15%", "alignment": "center" },
+                                    { "header": "Letter", "headerAr": "الرمز", "field": "gradeLetter", "width": "15%", "alignment": "center" }
                                 ],
                                 "showHeader": true,
+                                "showTotals": true,
                                 "showGrid": true,
-                                "direction": "rtl"
+                                "showBorder": true,
+                                "direction": "rtl",
+                                "style": {
+                                    "headerBgColor": "#0f172a",
+                                    "headerTextColor": "#ffffff",
+                                    "alternateRowBgColor": "#f8fafc",
+                                    "borderColor": "#cbd5e1",
+                                    "borderWidth": 0.75,
+                                    "headerFontSize": 8.0,
+                                    "fontSize": 8.0,
+                                    "rowHeight": 18.0
+                                }
                             },
                             "position": { "x": 12, "y": 60, "width": 186, "height": 175 }
                         },
@@ -978,8 +992,157 @@ pub fn get_master_template_definitions() -> Vec<(
     ];
 
     templates.extend(default_grade_certificate_templates());
+    templates.push(default_yemeni_academic_certificate_template());
     templates.push(default_letterhead_template());
+    templates.push(default_finance_voucher_template(
+        "finance.disbursement-voucher",
+        "Disbursement Voucher",
+        "سند صرف",
+        "finance_disbursement",
+        "سند صرف مالي | DISBURSEMENT VOUCHER",
+        "#be123c",
+        "المستفيد",
+        "حساب الخزينة",
+    ));
+    templates.push(default_finance_voucher_template(
+        "finance.journal-voucher",
+        "Journal Voucher",
+        "سند قيد يومية",
+        "finance_journal",
+        "سند قيد يومية | JOURNAL VOUCHER",
+        "#1d4ed8",
+        "من الحساب",
+        "إلى الحساب",
+    ));
     templates
+}
+
+fn default_finance_voucher_template(
+    code: &'static str,
+    name: &'static str,
+    name_ar: &'static str,
+    entity: &'static str,
+    heading: &'static str,
+    accent: &'static str,
+    primary_label: &'static str,
+    secondary_label: &'static str,
+) -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        code,
+        name,
+        name_ar,
+        entity,
+        "VOUCHER",
+        "A4",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": name,
+                "nameAr": name_ar,
+                "documentType": "VOUCHER",
+                "entityType": entity,
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "portrait",
+                    "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "voucher.number": { "source": "voucher.number", "type": "string", "label": "Voucher No.", "labelAr": "رقم السند" },
+                "voucher.date": { "source": "voucher.date", "type": "string", "label": "Date", "labelAr": "التاريخ" },
+                "voucher.primaryName": { "source": "voucher.primary_name", "type": "string", "label": "Primary Account", "labelAr": primary_label },
+                "voucher.secondaryName": { "source": "voucher.secondary_name", "type": "string", "label": "Secondary Account", "labelAr": secondary_label },
+                "voucher.amount": { "source": "voucher.amount", "type": "number", "label": "Amount", "labelAr": "المبلغ" },
+                "voucher.currency": { "source": "voucher.currency", "type": "string", "label": "Currency", "labelAr": "العملة" },
+                "voucher.description": { "source": "voucher.description", "type": "string", "label": "Description", "labelAr": "البيان" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "voucher-frame",
+                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.7, "borderRadius": 3 },
+                        "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "voucher-header",
+                        "props": { "shape": "rectangle", "fillColor": accent, "strokeColor": accent, "strokeWidth": 0, "borderRadius": 3 },
+                        "position": { "x": 8, "y": 8, "width": 194, "height": 42 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-org",
+                        "props": { "content": "{{$org.name_ar}}", "fontSize": 11, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 18, "y": 13, "width": 174, "height": 8 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-title",
+                        "props": { "content": heading, "fontSize": 13, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 18, "y": 28, "width": 174, "height": 10 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-reference",
+                        "props": { "content": "رقم السند: {{voucher.number}}     التاريخ: {{voucher.date}}", "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "end", "direction": "rtl" },
+                        "position": { "x": 20, "y": 64, "width": 170, "height": 12 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-primary",
+                        "props": { "content": format!("{primary_label}: {{{{voucher.primaryName}}}}"), "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#334155", "textAlign": "end", "direction": "rtl" },
+                        "position": { "x": 20, "y": 90, "width": 170, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-secondary",
+                        "props": { "content": format!("{secondary_label}: {{{{voucher.secondaryName}}}}"), "fontSize": 10, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#334155", "textAlign": "end", "direction": "rtl" },
+                        "position": { "x": 20, "y": 112, "width": 170, "height": 14 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "voucher-amount-bg",
+                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 3 },
+                        "position": { "x": 20, "y": 145, "width": 170, "height": 32 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-amount",
+                        "props": { "content": "المبلغ: {{voucher.amount}} {{voucher.currency}}", "fontSize": 16, "fontFamily": "Rubik", "fontWeight": "bold", "color": accent, "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 24, "y": 154, "width": 162, "height": 12 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-description",
+                        "props": { "content": "البيان: {{voucher.description}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#334155", "textAlign": "end", "direction": "rtl", "lineHeight": 1.6 },
+                        "position": { "x": 20, "y": 190, "width": 170, "height": 26 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "voucher-signatures",
+                        "props": { "content": "المستلم\n\n____________________                         المحاسب\n\n____________________", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#334155", "textAlign": "center", "direction": "rtl", "lineHeight": 1.5 },
+                        "position": { "x": 20, "y": 245, "width": 170, "height": 28 }
+                    }
+                ]
+            }]
+        }),
+    )
 }
 
 fn default_grade_certificate_templates() -> Vec<(
@@ -1099,15 +1262,27 @@ fn default_grade_certificate_templates() -> Vec<(
                     "props": {
                         "dataSource": "grades",
                         "columns": [
-                            { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "32%" },
-                            { "header": "أعمال الفصل", "headerAr": "أعمال الفصل", "field": "courseworkScore", "width": "18%" },
-                            { "header": "الاختبار", "headerAr": "الاختبار", "field": "examScore", "width": "18%" },
-                            { "header": "المجموع", "headerAr": "المجموع", "field": "totalScore", "width": "17%" },
-                            { "header": "التقدير", "headerAr": "التقدير", "field": "gradeLetter", "width": "15%" }
+                            { "header": "المادة", "headerAr": "المادة", "field": "subjectName", "width": "30%", "alignment": "right", "total": "label", "totalLabel": "المجموع الكلي" },
+                            { "header": "أعمال الفصل", "headerAr": "أعمال الفصل", "field": "courseworkScore", "width": "17%", "alignment": "center", "total": "sum" },
+                            { "header": "الاختبار", "headerAr": "الاختبار", "field": "examScore", "width": "17%", "alignment": "center", "total": "sum" },
+                            { "header": "المجموع", "headerAr": "المجموع", "field": "totalScore", "width": "18%", "alignment": "center", "total": "sum" },
+                            { "header": "التقدير", "headerAr": "التقدير", "field": "gradeLetter", "width": "18%", "alignment": "center" }
                         ],
                         "showHeader": true,
+                        "showTotals": true,
                         "showGrid": true,
-                        "direction": "rtl"
+                        "showBorder": true,
+                        "direction": "rtl",
+                        "style": {
+                            "headerBgColor": "#0f172a",
+                            "headerTextColor": "#ffffff",
+                            "alternateRowBgColor": "#f8fafc",
+                            "borderColor": "#cbd5e1",
+                            "borderWidth": 0.75,
+                            "headerFontSize": 8.0,
+                            "fontSize": 8.0,
+                            "rowHeight": 18.0
+                        }
                     },
                     "position": { "x": 45, "y": 64, "width": 155, "height": 62 }
                 }),
@@ -1244,6 +1419,342 @@ fn default_letterhead_template() -> (
     )
 }
 
+fn default_yemeni_academic_certificate_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "academic.student-certificate-yemeni",
+        "Official Academic Student Certificate",
+        "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل)",
+        "student",
+        "REPORT",
+        "A4",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Official Academic Student Certificate",
+                "nameAr": "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل)",
+                "documentType": "REPORT",
+                "entityType": "student",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "portrait",
+                    "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "student.name": { "source": "student.name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
+                "student.className": { "source": "student.class_name", "type": "string", "label": "Class & Section", "labelAr": "الصف والشعبة" },
+                "student.studentNumber": { "source": "student.student_number", "type": "string", "label": "Academic ID", "labelAr": "الرقم الأكاديمي" },
+                "student.seatNumber": { "source": "student.seat_number", "type": "string", "label": "Seat Number", "labelAr": "رقم الجلوس" },
+                "student.nationalId": { "source": "student.national_id", "type": "string", "label": "National ID", "labelAr": "رقم الهوية" },
+                "student.nationality": { "source": "student.nationality", "type": "string", "label": "Nationality", "labelAr": "الجنسية" },
+                "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
+                "report.periodName": { "source": "report.period_name", "type": "string", "label": "Term / Period", "labelAr": "فترة التقرير" },
+                "summary.totalScore": { "source": "summary.total_score", "type": "number", "label": "Total Score", "labelAr": "المجموع الكلي" },
+                "summary.percentage": { "source": "summary.percentage", "type": "string", "label": "Percentage", "labelAr": "النسبة المئوية" },
+                "summary.appreciation": { "source": "summary.appreciation", "type": "string", "label": "Appreciation", "labelAr": "التقدير العام" },
+                "summary.status": { "source": "summary.status", "type": "string", "label": "Academic Decision", "labelAr": "القرار والنتيجة" },
+                "summary.rankInClass": { "source": "summary.rank_in_class", "type": "string", "label": "Rank in Class", "labelAr": "الترتيب على الصف" },
+                "report.verificationUrl": { "source": "report.verification_url", "type": "string", "label": "Verification QR URL", "labelAr": "رابط التحقق الرقمي" },
+                "report.issuedDate": { "source": "report.issued_date", "type": "string", "label": "Issued Date", "labelAr": "تاريخ التحرير والاعتماد" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    // Ornate Dual Border Frame
+                    {
+                        "type": "Shape",
+                        "id": "cert-outer-border",
+                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.5, "borderRadius": 4 },
+                        "position": { "x": 6, "y": 6, "width": 198, "height": 285 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "cert-inner-border",
+                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
+                    },
+                    // Institutional Header (Right: Arabic, Center: Logo/Emblem, Left: English)
+                    {
+                        "type": "Text",
+                        "id": "cert-header-right",
+                        "props": {
+                            "content": "{{$org.country_name}}\n{{$org.ministry_name}}\nمكتب التربية والتعليم: {{$org.region_name}}\n{{$org.name_ar}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl",
+                            "lineHeight": 1.3
+                        },
+                        "position": { "x": 128, "y": 12, "width": 68, "height": 24 }
+                    },
+                    {
+                        "type": "Image",
+                        "id": "cert-institution-logo",
+                        "props": { "src": "{{$org.logo_url}}", "fit": "contain" },
+                        "position": { "x": 93, "y": 11, "width": 24, "height": 20 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-bismillah",
+                        "props": {
+                            "content": "بسم الله الرحمن الرحيم",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 65, "y": 32, "width": 80, "height": 5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-header-left",
+                        "props": {
+                            "content": "{{$org.name}}\nDepartment of Evaluation & Exams\nAcademic Achievement Certificate",
+                            "fontSize": 8.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "normal",
+                            "color": "#334155",
+                            "textAlign": "center",
+                            "direction": "ltr",
+                            "lineHeight": 1.3
+                        },
+                        "position": { "x": 14, "y": 12, "width": 68, "height": 24 }
+                    },
+                    // Certificate Title Banner
+                    {
+                        "type": "Shape",
+                        "id": "cert-title-banner",
+                        "props": { "shape": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 3 },
+                        "position": { "x": 42, "y": 39, "width": 126, "height": 9 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-title-text",
+                        "props": {
+                            "content": "شهادة درجات ونجاح الطالب (نقل عام)",
+                            "fontSize": 12.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#ffffff",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 42, "y": 40.5, "width": 126, "height": 6.5 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-academic-period-text",
+                        "props": {
+                            "content": "للعام الدراسي: {{academicYear.name}} — {{report.periodName}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 35, "y": 50, "width": 140, "height": 5.5 }
+                    },
+                    // Student Identity Card Container Box
+                    {
+                        "type": "Shape",
+                        "id": "cert-student-box",
+                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.8, "borderRadius": 2 },
+                        "position": { "x": 14, "y": 57, "width": 182, "height": 22 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-student-info-col1",
+                        "props": {
+                            "content": "اسم الطالب: {{student.name}}\nالصف والشعبة: {{student.className}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.6
+                        },
+                        "position": { "x": 120, "y": 59, "width": 72, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-student-info-col2",
+                        "props": {
+                            "content": "رقم الجلوس: {{student.seatNumber}}\nالرقم الأكاديمي: {{student.studentNumber}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.6
+                        },
+                        "position": { "x": 68, "y": 59, "width": 50, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-student-info-col3",
+                        "props": {
+                            "content": "الجنسية: {{student.nationality}}\nالهوية: {{student.nationalId}}",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.6
+                        },
+                        "position": { "x": 16, "y": 59, "width": 50, "height": 18 }
+                    },
+                    // Dynamic Subject Grades Table
+                    {
+                        "type": "Table",
+                        "id": "cert-subjects-table",
+                        "props": {
+                            "dataSource": "subjects",
+                            "columns": [
+                                { "field": "seq", "header": "No", "headerAr": "م", "width": "5%", "alignment": "center" },
+                                { "field": "subject_name", "header": "Subject", "headerAr": "المادة الدراسية", "width": "23%", "alignment": "right", "total": "label", "totalLabel": "المجموع العام / Total" },
+                                { "field": "max_score", "header": "Max", "headerAr": "الكبرى", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "min_score", "header": "Min", "headerAr": "الصغرى", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "t1_coursework", "header": "S1 CW", "headerAr": "محصلة ف1", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "t1_exam", "header": "S1 Ex", "headerAr": "اختبار ف1", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "t2_coursework", "header": "S2 CW", "headerAr": "محصلة ف2", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "t2_exam", "header": "S2 Ex", "headerAr": "اختبار ف2", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "annual_total", "header": "Total", "headerAr": "المجموع", "width": "9%", "alignment": "center", "total": "sum" },
+                                { "field": "appreciation", "header": "Grade", "headerAr": "التقدير", "width": "9%", "alignment": "center" }
+                            ],
+                            "showHeader": true,
+                            "showTotals": true,
+                            "showGrid": true,
+                            "showBorder": true,
+                            "direction": "rtl",
+                            "style": {
+                                "headerBgColor": "#0f172a",
+                                "headerTextColor": "#ffffff",
+                                "alternateRowBgColor": "#f8fafc",
+                                "borderColor": "#334155",
+                                "borderWidth": 0.75,
+                                "headerFontSize": 7.5,
+                                "fontSize": 7.5,
+                                "rowHeight": 18.0
+                            }
+                        },
+                        "position": { "x": 14, "y": 82, "width": 182, "height": 120 }
+                    },
+                    // Result Summary & Academic Decision Banner
+                    {
+                        "type": "Shape",
+                        "id": "cert-summary-box",
+                        "props": { "shape": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#94a3b8", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "position": { "x": 14, "y": 206, "width": 182, "height": 22 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-summary-stats",
+                        "props": {
+                            "content": "المجموع العام: {{summary.totalScore}}   |   المعدل المئوي: {{summary.percentage}}   |   التقدير العام: {{summary.appreciation}}",
+                            "fontSize": 9.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 16, "y": 208, "width": 178, "height": 6 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-summary-decision",
+                        "props": {
+                            "content": "القرار الرسمي: تعتبر النتيجة أعلاه معتمدة وقد تقرر أن الطالب [ {{summary.status}} ] والترتيب على الصف: ( {{summary.rankInClass}} )",
+                            "fontSize": 8.5,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "bold",
+                            "color": "#0f172a",
+                            "textAlign": "center",
+                            "direction": "rtl"
+                        },
+                        "position": { "x": 16, "y": 216, "width": 178, "height": 8 }
+                    },
+                    // Official Stamp & Signatures
+                    {
+                        "type": "Text",
+                        "id": "cert-committee-sig",
+                        "props": { "content": "لجنة الكنترول والرصد\n........................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 146, "y": 234, "width": 46, "height": 16 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-teacher-sig",
+                        "props": { "content": "مربّي الصف\n........................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 98, "y": 234, "width": 46, "height": 16 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-principal-sig",
+                        "props": { "content": "مدير المدرسة\n........................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 50, "y": 234, "width": 46, "height": 16 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "cert-stamp-circle",
+                        "props": { "shape": "circle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 1.0 },
+                        "position": { "x": 16, "y": 232, "width": 24, "height": 24 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-stamp-text",
+                        "props": { "content": "ختم المنشأة\nالرسمي", "fontSize": 6.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#94a3b8", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 16, "y": 240, "width": 24, "height": 8 }
+                    },
+                    // QR Code & Issuance Footer
+                    {
+                        "type": "QRCode",
+                        "id": "cert-verification-qr",
+                        "props": { "data": "{{report.verificationUrl}}" },
+                        "position": { "x": 14, "y": 262, "width": 18, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "cert-footer-text",
+                        "props": {
+                            "content": "وثيقة رسمية صادرة عبر منظومة Orbis التعليمية — رمز التحقق الرقمي المعتمد\nتاريخ التحرير والاعتماد: {{report.issuedDate}}",
+                            "fontSize": 7.0,
+                            "fontFamily": "Rubik",
+                            "fontWeight": "normal",
+                            "color": "#64748b",
+                            "textAlign": "start",
+                            "direction": "rtl",
+                            "lineHeight": 1.4
+                        },
+                        "position": { "x": 36, "y": 265, "width": 160, "height": 14 }
+                    }
+                ]
+            }]
+        })
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::get_master_template_definitions;
@@ -1315,5 +1826,63 @@ mod tests {
         assert!(!serialized.contains("SAR"));
         assert!(serialized.contains("rcpt-amount-bg"));
         assert!(serialized.contains("rcpt-header-bg"));
+    }
+
+    #[test]
+    fn finance_voucher_defaults_are_distinct_and_use_matching_entities() {
+        let templates = get_master_template_definitions();
+        for (code, entity_type) in [
+            ("finance.disbursement-voucher", "finance_disbursement"),
+            ("finance.journal-voucher", "finance_journal"),
+        ] {
+            let template = templates
+                .iter()
+                .find(|template| template.0 == code)
+                .expect("default finance voucher template");
+            assert_eq!(template.3, entity_type);
+            assert_eq!(template.4, "VOUCHER");
+            assert_eq!(template.5, "A4");
+            assert_eq!(template.7["meta"]["entityType"], entity_type);
+            assert_eq!(template.7["meta"]["documentType"], "VOUCHER");
+            assert!(template.7["variables"]["voucher.number"].is_object());
+            assert!(template.7["variables"]["voucher.primaryName"].is_object());
+        }
+    }
+
+    #[test]
+    fn provisions_yemeni_academic_certificate_master_template() {
+        let templates = get_master_template_definitions();
+        let cert = templates
+            .iter()
+            .find(|template| template.0 == "academic.student-certificate-yemeni")
+            .expect("yemeni certificate master template");
+
+        assert_eq!(cert.3, "student");
+        assert_eq!(cert.4, "REPORT");
+        assert_eq!(cert.5, "A4");
+        assert_eq!(cert.6, "portrait");
+
+        let children = cert.7["pages"][0]["children"]
+            .as_array()
+            .expect("template nodes");
+
+        // Asserts presence of Table node bound to subjects with totals
+        let table_node = children
+            .iter()
+            .find(|n| n["type"] == "Table")
+            .expect("Table node in certificate");
+        assert_eq!(table_node["props"]["dataSource"], "subjects");
+        assert_eq!(table_node["props"]["showTotals"], true);
+
+        // Asserts presence of QR code for digital verification
+        assert!(children.iter().any(|n| n["type"] == "QRCode"));
+
+        // Asserts dynamic multi-tenant org expression
+        assert!(children.iter().any(|n| {
+            n["type"] == "Text"
+                && n["props"]["content"]
+                    .as_str()
+                    .is_some_and(|c| c.contains("{{$org.ministry_name}}"))
+        }));
     }
 }

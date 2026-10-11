@@ -24,6 +24,16 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
         // 1. ACADEMIC & GRADING REPORTS (38 Reports)
         // ═══════════════════════════════════════════════════════════════════════
         ReportDefEntry {
+            code: "rep.academic.student-certificate",
+            name: "Official Academic Student Certificate",
+            name_ar: "شهادة درجات الطالب المعتمدة (النموذج الرسمي)",
+            domain: "academic",
+            category: "certificates",
+            description: "Official dynamic academic certificate with bilingual headings, subject coursework & exam scores, totals, percentages, signatures, stamp, and verification QR code",
+            description_ar: "شهادة درجات رسمية ديناميكية ثنائية اللغة تشمل تفاصيل المواد، المحصلة، الاختبارات، المجموع والنسبة، التوقيعات، والختم ورمز التحقق QR",
+            provider_key: "academic.certificate",
+        },
+        ReportDefEntry {
             code: "rep.academic.student-grades-summary",
             name: "Student Grades Comprehensive Summary",
             name_ar: "كشف درجات الطلاب الإجمالي والمعدلات",
@@ -42,6 +52,16 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             description: "Official student term report card with subject components, exam marks, and teacher notes",
             description_ar: "شهادة درجات الطالب الفصلية المعتمدة موضحاً بها محصلة الأعمال واختبار الفصل",
             provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.student-certificate",
+            name: "Official Academic Student Certificate",
+            name_ar: "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل)",
+            domain: "academic",
+            category: "certificates",
+            description: "Official comprehensive annual academic certificate with subject breakdown, semester coursework, exam marks, percentages, appreciation, and verification QR code",
+            description_ar: "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل) متضمنة المحصلات والاختبارات والمجموع والنسبة المئوية والتقدير ورمز التحقق الرقمي",
+            provider_key: "academic.certificate",
         },
         ReportDefEntry {
             code: "rep.academic.primary-midterm-grade-certificate",

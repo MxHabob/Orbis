@@ -22,6 +22,7 @@ interface Props {
   onpublish: (id: string) => void;
   onarchive: (id: string) => void;
   onrestore: (id: string) => void;
+  onSetDefault: (id: string) => void;
   oncreatenew: () => void;
 }
 
@@ -33,6 +34,7 @@ let {
   onpublish,
   onarchive,
   onrestore,
+  onSetDefault,
   oncreatenew,
 }: Props = $props();
 </script>
@@ -97,6 +99,11 @@ let {
               {template.status === 'published' ? m.common_phase_active() : (template.status === 'archived' ? m.common_year_status_archived() : m.common_status_draft())}
             </Badge>
           </div>
+          {#if template.status === "published" && template.is_default}
+            <Badge variant="outline" class="w-fit h-5 px-1.5 text-[10px] leading-none">
+              {m.settings_templates_default_badge()}
+            </Badge>
+          {/if}
         </CardHeader>
         
         <CardContent class="grow px-4 pb-4 flex flex-col gap-3">
@@ -135,6 +142,17 @@ let {
             </Button>
 
             {#if template.status === 'published'}
+              {#if !template.is_default}
+                <Button
+                  variant="outline"
+                  size="xs"
+                  class="h-7 px-2 rounded-md cursor-pointer"
+                  onclick={() => onSetDefault(template.id)}
+                  title={m.settings_templates_action_set_default()}
+                >
+                  {m.settings_templates_action_set_default()}
+                </Button>
+              {/if}
               <Button
                 variant="outline"
                 size="icon-xs"

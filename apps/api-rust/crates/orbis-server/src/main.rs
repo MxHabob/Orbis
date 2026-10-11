@@ -156,6 +156,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
+    provider_registry.register_provider(Box::new(AcademicCertificateDataProvider { db: db.clone() }));
     let provider_registry = Arc::new(provider_registry);
 
     // Build renderer registry — register all available renderers

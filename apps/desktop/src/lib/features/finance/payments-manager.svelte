@@ -45,14 +45,17 @@ import {
   OrbisGrid,
   type DataQuery,
   type OrbisColumnDef,
+  type SelectionSnapshot,
   type SortSpec,
+  selectionColumn,
 } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
+import { orgContext } from "$lib/stores/org-context.svelte";
 
 import {
   createAvailablePaymentMethodsQuery,
@@ -188,8 +191,12 @@ async function loadMorePayments() {
 
 // Print
 let printDialogOpen = $state(false);
-let printParameters = $state<Record<string, any>>({});
-let printTitle = $state(m.finance_ui_print_receipt());
+let paymentSelection = $state<SelectionSnapshot>({
+  mode: "explicit",
+  ids: new Set(),
+  range: null,
+  active: null,
+});
 
 onMount(async () => {
   await loadData(false);
@@ -359,16 +366,6 @@ async function handleSavePayment() {
   }
 }
 
-function handlePrint(p: any) {
-  printParameters = {
-    payment_id: p.id,
-    receipt_number: p.receipt_number || p.id.slice(0, 8),
-    org_id: orgId,
-  };
-  printTitle = m.finance_ui_receipt_print_title({ number: p.receipt_number || p.id.slice(0, 8) });
-  printDialogOpen = true;
-}
-
 // ── Grid Data ─────────────────────────────────────────────────────────
 function toPaymentGridRow(p: PaymentDto, idx: number) {
     const student = students.find((s) => String(s.id) === String(p.enrollment_id));
@@ -401,6 +398,48 @@ function toPaymentGridRow(p: PaymentDto, idx: number) {
 const gridSource = $derived(payments.map(toPaymentGridRow));
 
 const filteredSource = $derived(gridSource);
+const selectedPayments = $derived(
+  filteredSource.filter((payment) =>
+    paymentSelection.mode === "allMatching"
+      ? !paymentSelection.ids.has(payment.id)
+      : paymentSelection.ids.has(payment.id),
+  ),
+);
+const paymentPrintContexts = $derived(
+  selectedPayments.map((payment) => {
+    const record = payment as PaymentDto & {
+      student_name?: string;
+      fee_name?: string;
+      payment_method?: string;
+      payment_date?: string;
+    };
+    return {
+      receipt: {
+        number: record.receipt_number || record.id.slice(0, 8),
+        date: record.paid_at || record.payment_date || record.created_at,
+        payerName: record.payer_name || record.student_name || "",
+        studentName: record.student_name || "",
+        amount: Number(record.amount),
+        amountWords: "",
+        description: record.fee_name || record.notes || "",
+        paymentMethod: record.payment_method || record.method || "",
+        referenceNumber: record.reference || "",
+        cashierName: "",
+      },
+      $org: {
+        name: orgContext.name,
+        name_ar: orgContext.nameAr,
+        currency: record.currency_code || orgContext.baseCurrency,
+        logo_url: orgContext.logo,
+        primary_color: orgContext.primaryColor,
+      },
+    };
+  }),
+);
+
+function handlePaymentSelection(selection: SelectionSnapshot) {
+  paymentSelection = selection;
+}
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
@@ -469,6 +508,16 @@ async function exportCsv() {
             <Plus size={14} />
             <span>{m.finance_ui_new_receipt()}</span>
           {/if}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
+          disabled={selectedPayments.length === 0}
+          onclick={() => (printDialogOpen = true)}
+        >
+          <Printer size={14} />
+          <span>{m.finance_ui_print_receipt()}{selectedPayments.length ? ` (${selectedPayments.length})` : ""}</span>
         </Button>
       </div>
 
@@ -711,13 +760,14 @@ async function exportCsv() {
     <!-- Grid Container -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <OrbisGrid
-        columns={columns}
+        columns={[selectionColumn(), ...columns]}
         source={filteredSource}
         loading={gridLoading}
         serverQuery
         rtl={isAr()}
         search={searchQuery}
         onquerychange={handlePaymentGridQuery}
+        onselection={handlePaymentSelection}
         readonly
         emptyTitle={m.finance_ui_no_receipts()}
         hasMore={paymentsQuery.hasNextPage ?? false}
@@ -727,9 +777,11 @@ async function exportCsv() {
   </div>
 </div>
 
-<PdfReportViewer
+<PrintDialog
   bind:open={printDialogOpen}
-  templateId="payment-receipt"
-  parameters={printParameters}
-  reportTitle={printTitle}
+  entityType="finance"
+  documentType="RECEIPT"
+  entityIds={selectedPayments.map((payment) => payment.id)}
+  entityLabels={selectedPayments.map((payment) => payment.receipt_display)}
+  contexts={paymentPrintContexts}
 />

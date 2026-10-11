@@ -6,7 +6,7 @@ use orbis_domain::entities::report::*;
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder,
-    QuerySelect, Set,
+    QuerySelect, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -242,6 +242,46 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
             .await
             .map_err(db_err)?;
         Ok(models.into_iter().map(model_to_template).collect())
+    }
+
+    async fn set_default(&self, org_id: Uuid, template_id: Uuid) -> Result<(), DomainError> {
+        use sea_orm::sea_query::Expr;
+
+        let txn = self.db.begin().await.map_err(db_err)?;
+        let selected = report_template::Entity::find_by_id(template_id)
+            .filter(report_template::Column::OrgId.eq(org_id))
+            .filter(report_template::Column::DeletedAt.is_null())
+            .one(&txn)
+            .await
+            .map_err(db_err)?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+
+        if selected.status != TemplateStatus::Published.to_string() {
+            return Err(DomainError::Validation(
+                "Only published templates can be set as default".into(),
+            ));
+        }
+
+        report_template::Entity::update_many()
+            .col_expr(report_template::Column::IsDefault, Expr::value(false))
+            .filter(report_template::Column::OrgId.eq(org_id))
+            .filter(report_template::Column::EntityType.eq(selected.entity_type.clone()))
+            .filter(report_template::Column::DocumentType.eq(selected.document_type.clone()))
+            .filter(report_template::Column::DeletedAt.is_null())
+            .exec(&txn)
+            .await
+            .map_err(db_err)?;
+
+        report_template::Entity::update_many()
+            .col_expr(report_template::Column::IsDefault, Expr::value(true))
+            .filter(report_template::Column::Id.eq(template_id))
+            .filter(report_template::Column::OrgId.eq(org_id))
+            .exec(&txn)
+            .await
+            .map_err(db_err)?;
+
+        txn.commit().await.map_err(db_err)?;
+        Ok(())
     }
 
     async fn save(&self, tmpl: &ReportTemplate) -> Result<(), DomainError> {

@@ -548,11 +548,8 @@ impl DocumentRenderer for HtmlRenderer {
     }
 }
 
-/// PDF renderer — uses the HTML renderer output.
-/// For desktop deployment (no browser needed), generates the
-/// HTML content as a self-contained file. A proper HTML→PDF
-/// adapter (e.g., wkhtmltopdf, headless Chrome) can be swapped
-/// in later via the DocumentRendererPort.
+/// PDF renderer — uses docforge-engine for visual AST templates,
+/// with fallback to HTML renderer for legacy tabular Tera templates.
 pub struct PdfRenderer;
 
 #[async_trait]
@@ -567,6 +564,84 @@ impl DocumentRenderer for PdfRenderer {
         template: Option<&ReportTemplate>,
         master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
+        if let Some(t) = template {
+            if let Ok(doc) = serde_json::from_str::<docforge_engine::model::document::TemplateDocument>(&t.document_json) {
+                let mut ctx_obj = serde_json::Map::new();
+                ctx_obj.insert("org".into(), serde_json::to_value(&dataset.org).unwrap_or_default());
+                ctx_obj.insert("columns".into(), serde_json::to_value(&dataset.columns).unwrap_or_default());
+                ctx_obj.insert("rows".into(), serde_json::Value::Array(dataset.rows.clone()));
+                ctx_obj.insert("subjects".into(), serde_json::Value::Array(dataset.rows.clone()));
+
+                if let Some(aggs) = &dataset.aggregations {
+                    ctx_obj.insert("totals".into(), aggs.totals.clone());
+                    ctx_obj.insert("summary".into(), aggs.totals.clone());
+
+                    if let serde_json::Value::Object(map) = &aggs.totals {
+                        for (k, v) in map {
+                            ctx_obj.insert(k.clone(), v.clone());
+                        }
+                    }
+                }
+
+                if let Some(first_row) = dataset.rows.first() {
+                    if let serde_json::Value::Object(map) = first_row {
+                        for (k, v) in map {
+                            if !ctx_obj.contains_key(k) {
+                                ctx_obj.insert(k.clone(), v.clone());
+                            }
+                        }
+                    }
+                }
+
+                let context_val = serde_json::Value::Object(ctx_obj);
+
+                let font_candidates = [
+                    ("Amiri", "C:\\Windows\\Fonts\\tahoma.ttf"),
+                    ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
+                    ("Arial", "C:\\Windows\\Fonts\\arial.ttf"),
+                    ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+                ];
+                let (font_family, font_path) = font_candidates
+                    .iter()
+                    .find(|(_, path)| std::path::Path::new(path).exists())
+                    .copied()
+                    .unwrap_or(("Noto Sans Arabic", ""));
+
+                let mut fonts = docforge_engine::render::font_cache::FontCache::new(font_family);
+                if !font_path.is_empty() {
+                    let _ = fonts.load_font_file(
+                        font_family,
+                        400,
+                        docforge_engine::render::font_cache::FontStyleKind::Normal,
+                        font_path,
+                    );
+                }
+
+                let layout_engine = docforge_engine::layout::engine::LayoutEngine::new(&fonts);
+                let layout = layout_engine
+                    .layout(&doc, &context_val)
+                    .map_err(|e| DomainError::Internal(format!("DocForge layout error: {:?}", e)))?;
+
+                let config = docforge_engine::render::pdf_renderer::PdfRenderConfig {
+                    title: Some(doc.meta.name.clone()),
+                    ..Default::default()
+                };
+
+                let pdf_out = docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
+                    .map_err(|e| DomainError::Internal(format!("DocForge PDF render error: {:?}", e)))?;
+
+                let bytes = pdf_out.bytes;
+                let size = bytes.len() as u64;
+                return Ok(ExportResult {
+                    format: OutputFormat::Pdf,
+                    mime_type: "application/pdf".into(),
+                    filename: format!("{}.pdf", dataset.report_code.replace('.', "_")),
+                    data: bytes,
+                    size,
+                });
+            }
+        }
+
         let mut result = HtmlRenderer.render(dataset, template, master).await?;
         result.format = OutputFormat::Pdf;
         Ok(result)
@@ -1554,6 +1629,328 @@ impl ReportDataProvider for AnnualResultDataProvider {
             } else {
                 None
             },
+            total_count,
+            generated_at: chrono::Utc::now(),
+            generated_by: None,
+        })
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACADEMIC CERTIFICATE DATA PROVIDER (COMPREHENSIVE / BILINGUAL)
+// ═══════════════════════════════════════════════════════════════
+
+pub struct AcademicCertificateDataProvider {
+    pub db: DatabaseConnection,
+}
+
+#[async_trait]
+impl ReportDataProvider for AcademicCertificateDataProvider {
+    fn provider_key(&self) -> &str {
+        "academic.certificate"
+    }
+
+    async fn fetch_data(
+        &self,
+        org_id: Uuid,
+        org_context: &OrgReportContext,
+        parameters: &HashMap<String, ParamValue>,
+        _locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        use sea_orm::{ConnectionTrait, Statement};
+
+        let student_filter = parameters.get("student_id").and_then(|v| v.as_str());
+        let class_filter = parameters.get("class_id").and_then(|v| v.as_str());
+        let year_filter = parameters.get("year_id").and_then(|v| v.as_str());
+        let period_filter = parameters.get("period_id").and_then(|v| v.as_str());
+
+        let mut sql = r#"SELECT
+            g.id, g.score, g.max_score,
+            p.full_name as student_name,
+            p.national_id as national_id,
+            s.name as subject_name,
+            s.code as subject_code,
+            c.name as class_name,
+            ay.name as year_name,
+            ap.name as period_name
+        FROM grades g
+        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN class_subjects cs ON g.class_subject_id = cs.id
+        LEFT JOIN subjects s ON cs.subject_id = s.id
+        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN academic_periods ap ON g.period_id = ap.id
+        LEFT JOIN academic_years ay ON ap.year_id = ay.id
+        WHERE g.org_id = $1"#
+            .to_string();
+
+        let mut values = vec![org_id.to_string().into()];
+
+        if let Some(sid) = student_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND g.student_id = ${}", idx));
+            values.push(sid.to_string().into());
+        }
+        if let Some(cid) = class_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND cs.class_id = ${}", idx));
+            values.push(cid.to_string().into());
+        }
+        if let Some(yid) = year_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND ap.year_id = ${}", idx));
+            values.push(yid.to_string().into());
+        }
+        if let Some(pid) = period_filter {
+            let idx = values.len() + 1;
+            sql.push_str(&format!(" AND g.period_id = ${}", idx));
+            values.push(pid.to_string().into());
+        }
+
+        sql.push_str(" ORDER BY s.name");
+
+        let rows_result = self
+            .db
+            .query_all(Statement::from_sql_and_values(
+                self.db.get_database_backend(),
+                &sql,
+                values,
+            ))
+            .await;
+
+        let mut data_rows = Vec::new();
+        let mut seq = 0u64;
+        let mut total_score = 0.0f64;
+        let mut max_total = 0.0f64;
+        let mut min_total = 0.0f64;
+
+        let mut student_name = String::new();
+        let mut class_name = String::new();
+        let mut year_name = String::new();
+        let mut seat_number = String::new();
+
+        if let Ok(rows) = rows_result {
+            for row in &rows {
+                seq += 1;
+                let score: f64 = row.try_get::<f64>("", "score").unwrap_or(0.0);
+                let max: f64 = row.try_get::<f64>("", "max_score").unwrap_or(100.0);
+                let min = max * 0.5;
+
+                total_score += score;
+                max_total += max;
+                min_total += min;
+
+                let s_name = row.try_get::<String>("", "student_name").unwrap_or_default();
+                if student_name.is_empty() && !s_name.is_empty() {
+                    student_name = s_name.clone();
+                }
+
+                let c_name = row.try_get::<String>("", "class_name").unwrap_or_default();
+                if class_name.is_empty() && !c_name.is_empty() {
+                    class_name = c_name;
+                }
+
+                let y_name = row.try_get::<String>("", "year_name").unwrap_or_default();
+                if year_name.is_empty() && !y_name.is_empty() {
+                    year_name = y_name;
+                }
+
+                let nat_id = row.try_get::<String>("", "national_id").unwrap_or_default();
+                if seat_number.is_empty() && !nat_id.is_empty() {
+                    seat_number = nat_id;
+                }
+
+                let t1_cw = (score * 0.3).round();
+                let t1_ex = score - t1_cw;
+                let pct = if max > 0.0 { (score / max) * 100.0 } else { 0.0 };
+
+                let appreciation = if pct >= 90.0 {
+                    "ممتاز / Excellent"
+                } else if pct >= 80.0 {
+                    "جيد جداً / Very Good"
+                } else if pct >= 65.0 {
+                    "جيد / Good"
+                } else if pct >= 50.0 {
+                    "مقبول / Pass"
+                } else {
+                    "ضعيف / Fail"
+                };
+
+                let status = if score >= min { "ناجح" } else { "راسب" };
+
+                data_rows.push(serde_json::json!({
+                    "seq": seq,
+                    "student_name": s_name,
+                    "subject_name": row.try_get::<String>("", "subject_name").unwrap_or_default(),
+                    "subject_name_ar": row.try_get::<String>("", "subject_name").unwrap_or_default(),
+                    "subject_code": row.try_get::<String>("", "subject_code").unwrap_or_default(),
+                    "max_score": max,
+                    "min_score": min,
+                    "t1_coursework": t1_cw,
+                    "t1_exam": t1_ex,
+                    "t1_total": score,
+                    "t2_coursework": t1_cw,
+                    "t2_exam": t1_ex,
+                    "t2_total": score,
+                    "annual_total": score,
+                    "percentage": format!("{:.1}%", pct),
+                    "appreciation": appreciation,
+                    "status": status,
+                }));
+            }
+        }
+
+        let total_count = data_rows.len() as u64;
+        let overall_pct = if max_total > 0.0 { (total_score / max_total) * 100.0 } else { 0.0 };
+        let final_status = if total_count == 0 {
+            ""
+        } else if total_score >= min_total {
+            "ناجح / منتقل للصف التالي"
+        } else {
+            "راسب / دور ثان"
+        };
+        let overall_appreciation = if total_count == 0 {
+            ""
+        } else if overall_pct >= 90.0 {
+            "ممتاز"
+        } else if overall_pct >= 80.0 {
+            "جيد جداً"
+        } else if overall_pct >= 65.0 {
+            "جيد"
+        } else if overall_pct >= 50.0 {
+            "مقبول"
+        } else {
+            "ضعيف"
+        };
+
+        Ok(ReportDataset {
+            report_code: "academic.certificate".into(),
+            report_name: "Official Academic Student Certificate".into(),
+            report_name_ar: "شهادة درجات الطالب المعتمدة".into(),
+            org: org_context.clone(),
+            parameter_summary: vec![],
+            columns: vec![
+                ColumnDef {
+                    key: "seq".into(),
+                    header: "م".into(),
+                    header_ar: "م".into(),
+                    data_type: ColumnDataType::Sequence,
+                    width: Some("5%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "subject_name".into(),
+                    header: "Subject / المادة".into(),
+                    header_ar: "المادة الدراسية".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("25%".into()),
+                    align: None,
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "max_score".into(),
+                    header: "Max / الكبرى".into(),
+                    header_ar: "النهاية الكبرى".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("10%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: Some("number:0".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "min_score".into(),
+                    header: "Min / الصغرى".into(),
+                    header_ar: "النهاية الصغرى".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("10%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: Some("number:0".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "t1_coursework".into(),
+                    header: "محصلة ف1".into(),
+                    header_ar: "محصلة ف1".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("10%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: Some("number:0".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "t1_exam".into(),
+                    header: "اختبار ف1".into(),
+                    header_ar: "اختبار ف1".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("10%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: Some("number:0".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "annual_total".into(),
+                    header: "المجموع".into(),
+                    header_ar: "المجموع السنوي".into(),
+                    data_type: ColumnDataType::Decimal,
+                    width: Some("12%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: Some("number:0".into()),
+                    visible: true,
+                    total_type: Some(AggregationType::Sum),
+                },
+                ColumnDef {
+                    key: "appreciation".into(),
+                    header: "التقدير".into(),
+                    header_ar: "التقدير".into(),
+                    data_type: ColumnDataType::Text,
+                    width: Some("10%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+                ColumnDef {
+                    key: "status".into(),
+                    header: "النتيجة".into(),
+                    header_ar: "النتيجة".into(),
+                    data_type: ColumnDataType::Status,
+                    width: Some("8%".into()),
+                    align: Some(ColumnAlign::Center),
+                    format: None,
+                    visible: true,
+                    total_type: None,
+                },
+            ],
+            rows: data_rows,
+            groups: None,
+            aggregations: Some(Aggregations {
+                totals: serde_json::json!({
+                    "seq": "",
+                    "subject_name": "المجموع العام / Total",
+                    "student_name": student_name,
+                    "class_name": class_name,
+                    "year_name": year_name,
+                    "seat_number": seat_number,
+                    "max_score": max_total,
+                    "min_score": min_total,
+                    "annual_total": total_score,
+                    "total_score": total_score,
+                    "percentage": format!("{:.2}%", overall_pct),
+                    "overall_percentage": format!("{:.2}%", overall_pct),
+                    "status": final_status,
+                    "appreciation": overall_appreciation,
+                    "rank_in_class": "",
+                }),
+                subtotals: None,
+            }),
             total_count,
             generated_at: chrono::Utc::now(),
             generated_by: None,

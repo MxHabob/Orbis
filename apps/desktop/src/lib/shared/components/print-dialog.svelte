@@ -48,12 +48,14 @@ import PrintConfigPanel from "./print-config-panel.svelte";
 let {
   open = $bindable(false),
   entityType,
+  documentType,
   entityIds = [],
   entityLabels = [],
   contexts: suppliedContexts,
 }: {
   open: boolean;
   entityType: string;
+  documentType?: string;
   entityIds: string[];
   entityLabels?: string[];
   contexts?: Record<string, unknown>[];
@@ -108,18 +110,42 @@ async function loadTemplates() {
   try {
     const list = await api.listTemplates({
       entityType: entityType,
+      documentType,
       status: "published",
     });
     templates = Array.isArray(list) ? list : [];
     if (templates.length > 0) {
-      selectedTemplateId = templates[0].id;
-      updateConfigFromTemplate(templates[0]);
+      const defaultTemplate = templates.find((template) => template.is_default);
+      const initialTemplate = defaultTemplate ?? templates[0];
+      selectedTemplateId = initialTemplate.id;
+      updateConfigFromTemplate(initialTemplate);
+    } else {
+      selectedTemplateId = "";
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || m.shared_ui_print_templates_load_failed();
     console.error(msg);
   } finally {
     loadingTemplates = false;
+  }
+}
+
+async function setSelectedTemplateDefault() {
+  const selected = templates.find((template) => template.id === selectedTemplateId);
+  if (!selected || selected.is_default) return;
+
+  try {
+    const updated = await api.updateTemplate(selected.id, { is_default: true });
+    templates = templates.map((template) => ({
+      ...template,
+      is_default: template.id === updated.id,
+    }));
+    toast.success(m.settings_templates_set_default_success());
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+    console.error("Failed to set print template as default:", error);
+    toast.error(message);
   }
 }
 
@@ -441,11 +467,21 @@ function applySuggestion(suggestion: MultiUpLayout) {
                 <SelectContent>
                   {#each templates as t (t.id)}
                     <SelectItem value={t.id}>
-                      {isRtl && t.name_ar ? t.name_ar : t.name}
+                      {(isRtl && t.name_ar ? t.name_ar : t.name)}{t.is_default ? ` — ${m.settings_templates_default_badge()}` : ""}
                     </SelectItem>
                   {/each}
                 </SelectContent>
               </Select>
+              {#if templates.some((template) => template.id === selectedTemplateId && !template.is_default)}
+                <Button
+                  variant="outline"
+                  size="xs"
+                  class="mt-1 w-full"
+                  onclick={setSelectedTemplateDefault}
+                >
+                  {m.settings_templates_action_set_default()}
+                </Button>
+              {/if}
             {/if}
           </div>
 

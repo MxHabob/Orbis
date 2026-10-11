@@ -84,8 +84,19 @@ function flattenSchema(
 }
 
 const entityType = $derived(store.document.meta?.entityType || "");
-const systemSchema = $derived(store.systemSchemas?.[entityType] || {});
-const systemVariables = $derived(flattenSchema(systemSchema));
+const systemVariables = $derived.by(() => {
+  let vars: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
+  const schemas = store.systemSchemas || {};
+  if (entityType && schemas[entityType]) {
+    vars = { ...vars, ...flattenSchema(schemas[entityType], entityType) };
+  }
+  for (const [key, schema] of Object.entries(schemas)) {
+    if (key !== entityType) {
+      vars = { ...vars, ...flattenSchema(schema, key) };
+    }
+  }
+  return vars;
+});
 
 const variables = $derived({ ...systemVariables, ...store.document.variables });
 

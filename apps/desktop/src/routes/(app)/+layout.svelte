@@ -30,6 +30,8 @@ let { children } = $props();
 <PrintDialog
 	bind:open={printState.isOpen}
 	entityType={printState.entityType}
+	documentType={printState.documentType}
 	entityIds={printState.entityIds}
 	entityLabels={printState.entityLabels}
+	contexts={printState.contexts}
 />

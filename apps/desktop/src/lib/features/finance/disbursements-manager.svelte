@@ -32,13 +32,19 @@ import {
   XMark,
   Printer,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type SelectionSnapshot,
+  selectionColumn,
+} from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { isCashOrBankAccount } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
@@ -102,8 +108,12 @@ let filterDate = $state(getLocalDateInputValue());
 
 // Print
 let printDialogOpen = $state(false);
-let printParameters = $state<Record<string, any>>({});
-let printTitle = $state(m.finance_ui_print_disbursement());
+let disbursementSelection = $state<SelectionSnapshot>({
+  mode: "explicit",
+  ids: new Set(),
+  range: null,
+  active: null,
+});
 
 onMount(async () => {
   await loadData();
@@ -271,16 +281,6 @@ async function handleSaveDisbursement() {
   }
 }
 
-function handlePrint(d: any) {
-  printParameters = {
-    voucher_id: d.id,
-    reference_number: d.reference_number || d.id.slice(0, 8),
-    org_id: orgId,
-  };
-  printTitle = m.finance_ui_disbursement_print_title({ number: d.reference_number || d.id.slice(0, 8) });
-  printDialogOpen = true;
-}
-
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   disbursements.map((d, idx) => {
@@ -312,6 +312,37 @@ const filteredSource = $derived(
     return true;
   })
 );
+const selectedDisbursements = $derived(
+  filteredSource.filter((disbursement) =>
+    disbursementSelection.mode === "allMatching"
+      ? !disbursementSelection.ids.has(disbursement.id)
+      : disbursementSelection.ids.has(disbursement.id),
+  ),
+);
+const disbursementPrintContexts = $derived(
+  selectedDisbursements.map((disbursement) => ({
+    voucher: {
+      number: disbursement.reference_number || disbursement.id.slice(0, 8),
+      date: disbursement.accounting_date || "",
+      primaryName: disbursement.beneficiary_display,
+      secondaryName: disbursement.treasury_display,
+      amount: Number(disbursement.amount || disbursement.lines?.[0]?.debit || 0),
+      currency: disbursement.currency_code || disbursement.currency || orgContext.baseCurrency,
+      description: disbursement.description_ar || disbursement.description || "",
+    },
+    $org: {
+      name: orgContext.name,
+      name_ar: orgContext.nameAr,
+      currency: disbursement.currency_code || orgContext.baseCurrency,
+      logo_url: orgContext.logo,
+      primary_color: orgContext.primaryColor,
+    },
+  })),
+);
+
+function handleDisbursementSelection(selection: SelectionSnapshot) {
+  disbursementSelection = selection;
+}
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
@@ -370,6 +401,16 @@ function exportCsv() {
             <Plus size={14} />
             <span>{m.finance_ui_new_disbursement()}</span>
           {/if}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
+          disabled={selectedDisbursements.length === 0}
+          onclick={() => (printDialogOpen = true)}
+        >
+          <Printer size={14} />
+          <span>{m.finance_ui_print_disbursement()}{selectedDisbursements.length ? ` (${selectedDisbursements.length})` : ""}</span>
         </Button>
       </div>
 
@@ -576,11 +617,12 @@ function exportCsv() {
     <!-- Grid Container -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <OrbisGrid
-        columns={columns}
+        columns={[selectionColumn(), ...columns]}
         source={filteredSource}
         loading={isLoading}
         clientQuery
         search={searchQuery}
+        onselection={handleDisbursementSelection}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_disbursements()}
@@ -589,9 +631,11 @@ function exportCsv() {
   </div>
 </div>
 
-<PdfReportViewer
+<PrintDialog
   bind:open={printDialogOpen}
-  reportTemplateId="disbursement-voucher"
-  parameters={printParameters}
-  title={printTitle}
+  entityType="finance_disbursement"
+  documentType="VOUCHER"
+  entityIds={selectedDisbursements.map((disbursement) => disbursement.id)}
+  entityLabels={selectedDisbursements.map((disbursement) => disbursement.receipt_display)}
+  contexts={disbursementPrintContexts}
 />

@@ -28,7 +28,7 @@ import {
   createArchiveTemplateMutation,
 } from "./queries";
 import { confirmStore } from "$lib/stores";
-import { extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -37,6 +37,7 @@ let isCreateDialogOpen = $state(false);
 let newTemplateName = $state("");
 let newTemplateNameAr = $state("");
 let newTemplateDocType = $state("CERTIFICATE");
+let newTemplateEntityType = $state("enrollment");
 let searchQuery = $state("");
 let filterEntityType = $state("all");
 let filterDocType = $state("all");
@@ -57,6 +58,21 @@ const archiveMutation = createArchiveTemplateMutation();
 
 const rawTemplates = $derived(templatesQuery.data ?? []);
 const loading = $derived(templatesQuery.isLoading);
+const entityTypes = $derived(
+  [...new Set(rawTemplates.map((template) => template.entity_type).filter(Boolean))].sort(),
+);
+const documentTypes = $derived(
+  [...new Set(rawTemplates.map((template) => template.document_type).filter(Boolean))].sort(),
+);
+
+function displayType(value: string): string {
+  return value
+    .toLowerCase()
+    .split(/[_\-.]+/)
+    .filter(Boolean)
+    .map((part) => part[0]!.toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 const filteredTemplates = $derived.by(() => {
   if (!searchQuery.trim()) return rawTemplates;
@@ -70,14 +86,6 @@ const filteredTemplates = $derived.by(() => {
 });
 
 // Handle Template Creation
-function entityForDocument(type: string): string {
-  if (type === "RECEIPT") return "payment";
-  if (type === "EXAM_CARD") return "exam";
-  if (type === "ID_CARD") return "user";
-  if (type === "REPORT" || type === "TRANSCRIPT") return "period_score";
-  return "enrollment";
-}
-
 function getDefaultPageSetup(): Pick<PageSetup, "size" | "orientation"> {
   if (newTemplateDocType === "ID_CARD")
     return { size: "ID_CARD", orientation: "landscape" };
@@ -92,10 +100,9 @@ function getDefaultPageSetup(): Pick<PageSetup, "size" | "orientation"> {
 }
 
 function buildInitialDocument() {
-  const entityType = entityForDocument(newTemplateDocType);
   const document = createDocument(
     newTemplateDocType,
-    entityType,
+    newTemplateEntityType,
     isAr() ? "ar" : "en",
   );
   document.meta.name = newTemplateName;
@@ -149,7 +156,7 @@ async function handleCreateTemplate() {
       name_ar: newTemplateNameAr || null,
       description: null,
       document_type: newTemplateDocType,
-      entity_type: entityForDocument(newTemplateDocType),
+      entity_type: newTemplateEntityType,
       page_size: pageSetup.size,
       orientation: pageSetup.orientation,
       document_json: defaultDocJson,
@@ -225,6 +232,17 @@ async function restoreTemplate(id: string) {
     toast.error(msg);
   }
 }
+
+async function setDefaultTemplate(id: string) {
+  try {
+    await api.updateTemplate(id, { is_default: true });
+    await templatesQuery.refetch();
+    toast.success(m.settings_templates_set_default_success());
+  } catch (e: unknown) {
+    console.error("Failed to set default template:", e);
+    toast.error(extractErrorMessage(e) || m.shared_ui_template_save_failed());
+  }
+}
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
@@ -241,29 +259,25 @@ async function restoreTemplate(id: string) {
 
         <Select type="single" bind:value={filterEntityType}>
           <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-            {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as Record<string, string>)[filterEntityType] || m.common_print_multi_up_entity_type()}
+            {filterEntityType === "all" ? m.settings_templates_filter_entity_all() : displayType(filterEntityType)}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
-            <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
-            <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
-            <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
-            <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
-            <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
+            {#each entityTypes as entityType (entityType)}
+              <SelectItem value={entityType}>{displayType(entityType)}</SelectItem>
+            {/each}
           </SelectContent>
         </Select>
 
         <Select type="single" bind:value={filterDocType}>
           <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-            {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as Record<string, string>)[filterDocType] || m.settings_permissions_col_doc_type()}
+            {filterDocType === "all" ? m.settings_templates_filter_doc_all() : displayType(filterDocType)}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
-            <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
-            <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
-            <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
-            <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
-            <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
+            {#each documentTypes as documentType (documentType)}
+              <SelectItem value={documentType}>{displayType(documentType)}</SelectItem>
+            {/each}
           </SelectContent>
         </Select>
       </div>
@@ -286,6 +300,7 @@ async function restoreTemplate(id: string) {
       onpublish={publishTemplate}
       onarchive={archiveTemplate}
       onrestore={restoreTemplate}
+      onSetDefault={setDefaultTemplate}
       oncreatenew={() => (isCreateDialogOpen = true)}
     />
   </div>
@@ -297,5 +312,6 @@ async function restoreTemplate(id: string) {
   bind:name={newTemplateName}
   bind:nameAr={newTemplateNameAr}
   bind:docType={newTemplateDocType}
+  bind:entityType={newTemplateEntityType}
   onsubmit={handleCreateTemplate}
 />

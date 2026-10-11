@@ -31,11 +31,16 @@ import {
   XMark,
   Printer,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type SelectionSnapshot,
+  selectionColumn,
+} from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { confirmStore } from "$lib/stores";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { fade, slide } from "svelte/transition";
@@ -76,8 +81,12 @@ const journalAccounts = $derived(
 
 // Print
 let printReportOpen = $state(false);
-let printParameters = $state<Record<string, any>>({});
-let printTitle = $state(m.finance_ui_print_journal_entry());
+let journalSelection = $state<SelectionSnapshot>({
+  mode: "explicit",
+  ids: new Set(),
+  range: null,
+  active: null,
+});
 
 onMount(async () => {
   await loadData();
@@ -224,16 +233,6 @@ async function handleReverse(entry: JournalEntryDto) {
   }
 }
 
-function handlePrint(entry: JournalEntryDto) {
-  printParameters = {
-    voucher_id: entry.id,
-    reference_number: entry.reference_number,
-    org_id: orgId,
-  };
-  printTitle = m.finance_ui_journal_entry_print_title({ number: entry.reference_number || entry.id.slice(0, 8) });
-  printReportOpen = true;
-}
-
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   journalEntries.map((e, idx) => {
@@ -271,6 +270,38 @@ const filteredSource = $derived(
     return true;
   })
 );
+const selectedJournalEntries = $derived(
+  filteredSource.filter((entry) =>
+    journalSelection.mode === "allMatching"
+      ? !journalSelection.ids.has(entry.id)
+      : journalSelection.ids.has(entry.id),
+  ),
+);
+const journalPrintContexts = $derived(
+  selectedJournalEntries.map((entry) => ({
+    voucher: {
+      number: entry.ref_display,
+      date: entry.accounting_date,
+      primaryName: entry.debit_account_display,
+      secondaryName: entry.credit_account_display,
+      amount: Number(entry.amount),
+      currency: entry.currency_code,
+      description: entry.description_ar || entry.description || "",
+      status: entry.status,
+    },
+    $org: {
+      name: orgContext.name,
+      name_ar: orgContext.nameAr,
+      currency: entry.currency_code || orgContext.baseCurrency,
+      logo_url: orgContext.logo,
+      primary_color: orgContext.primaryColor,
+    },
+  })),
+);
+
+function handleJournalSelection(selection: SelectionSnapshot) {
+  journalSelection = selection;
+}
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
@@ -329,6 +360,16 @@ function exportCsv() {
             <Plus size={14} />
             <span>{m.finance_ui_new_journal_entry()}</span>
           {/if}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
+          disabled={selectedJournalEntries.length === 0}
+          onclick={() => (printReportOpen = true)}
+        >
+          <Printer size={14} />
+          <span>{m.finance_ui_print_journal_entry()}{selectedJournalEntries.length ? ` (${selectedJournalEntries.length})` : ""}</span>
         </Button>
       </div>
 
@@ -460,11 +501,12 @@ function exportCsv() {
     <!-- Grid Container -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <OrbisGrid
-        columns={columns}
+        columns={[selectionColumn(), ...columns]}
         source={filteredSource}
         loading={isLoading}
         clientQuery
         search={searchQuery}
+        onselection={handleJournalSelection}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_journal_entries()}
@@ -473,9 +515,11 @@ function exportCsv() {
   </div>
 </div>
 
-<PdfReportViewer
+<PrintDialog
   bind:open={printReportOpen}
-  reportTemplateId="journal-voucher"
-  parameters={printParameters}
-  title={printTitle}
+  entityType="finance_journal"
+  documentType="VOUCHER"
+  entityIds={selectedJournalEntries.map((entry) => entry.id)}
+  entityLabels={selectedJournalEntries.map((entry) => entry.ref_display)}
+  contexts={journalPrintContexts}
 />

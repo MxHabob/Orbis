@@ -114,6 +114,7 @@ pub struct UpdateTemplateInput {
     pub orientation: Option<String>,
     pub margins_json: Option<String>,
     pub document_json: Option<String>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Serialize)]

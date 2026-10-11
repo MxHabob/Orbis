@@ -8,6 +8,7 @@ sea-orm.workspace = true
 sea-orm-migration = { version = "1.1.0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls"] }
 orbis-domain.workspace = true
 orbis-app.workspace = true
+docforge-engine.workspace = true
 async-trait.workspace = true
 uuid.workspace = true
 tokio.workspace = true

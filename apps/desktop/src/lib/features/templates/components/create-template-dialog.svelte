@@ -2,6 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { FormField } from "@orbis/ui";
+import { Input } from "@orbis/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ interface Props {
   name: string;
   nameAr: string;
   docType: string;
+  entityType: string;
   onsubmit: () => void;
 }
 
@@ -33,15 +35,23 @@ let {
   name = $bindable(),
   nameAr = $bindable(),
   docType = $bindable(),
+  entityType = $bindable(),
   onsubmit,
 }: Props = $props();
 
 function entityForDocument(type: string): string {
-  if (type === "RECEIPT") return "payment";
+  if (type === "RECEIPT") return "finance";
+  if (type === "VOUCHER") return "finance_journal";
   if (type === "EXAM_CARD") return "exam";
   if (type === "ID_CARD") return "user";
   if (type === "REPORT" || type === "TRANSCRIPT") return "period_score";
   return "enrollment";
+}
+
+function handleDocumentTypeChange(type: string | undefined) {
+  if (!type) return;
+  docType = type;
+  entityType = entityForDocument(type);
 }
 
 function presetForDocument(type: string): string {
@@ -70,7 +80,7 @@ async function handleSubmit() {
     name,
     name_ar: nameAr,
     description: "",
-    entity_type: entityForDocument(docType),
+    entity_type: entityType,
     document_type: docType,
     preset: presetForDocument(docType),
   };
@@ -86,6 +96,7 @@ const documentTypes = [
   "ID_CARD",
   "EXAM_CARD",
   "RECEIPT",
+  "VOUCHER",
 ];
 
 function documentLabel(type: string) {
@@ -131,7 +142,7 @@ function documentLabel(type: string) {
       />
 
       <FormField label={m.template_label_doc_type()} error={form.errors.document_type?.[0]} required>
-        <Select type="single" bind:value={docType}>
+        <Select type="single" value={docType} onValueChange={handleDocumentTypeChange}>
           <SelectTrigger>{documentLabel(docType)}</SelectTrigger>
           <SelectContent>
             {#each documentTypes as value (value)}
@@ -139,6 +150,10 @@ function documentLabel(type: string) {
             {/each}
           </SelectContent>
         </Select>
+      </FormField>
+
+      <FormField label={m.template_label_entity()} error={form.errors.entity_type?.[0]} required>
+        <Input bind:value={entityType} placeholder="finance_journal" />
       </FormField>
 
       <p class="text-xs text-muted-foreground">

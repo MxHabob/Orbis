@@ -110,6 +110,7 @@ pub struct UpdateTemplateRequest {
     pub orientation: Option<String>,
     pub margins_json: Option<String>,
     pub document_json: Option<String>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -416,6 +417,14 @@ pub async fn update_template(
         .save_template(&template)
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
+
+    if req.is_default == Some(true) {
+        template = state
+            .report_service
+            .set_default_template(&ctx, id)
+            .await
+            .map_err(|e| ApiError::bad_request(e.to_string()))?;
+    }
 
     Ok(ApiResponse::ok_with_id(
         to_template_dto(template),

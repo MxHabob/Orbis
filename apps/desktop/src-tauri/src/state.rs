@@ -236,6 +236,8 @@ impl AppState {
             .register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
         provider_registry
             .register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
+        provider_registry
+            .register_provider(Box::new(AcademicCertificateDataProvider { db: db.clone() }));
         let report_provider_registry = Arc::new(provider_registry);
 
         let mut renderer_registry = InMemoryRendererRegistry::new();

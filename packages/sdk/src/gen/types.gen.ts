@@ -2572,6 +2572,7 @@ export type UpdateTemplateRequest = {
     description?: string | null;
     description_ar?: string | null;
     document_json?: string | null;
+    is_default?: boolean | null;
     margins_json?: string | null;
     name?: string | null;
     name_ar?: string | null;
