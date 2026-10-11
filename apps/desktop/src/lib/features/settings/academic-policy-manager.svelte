@@ -1,5 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
+  import * as m from "$lib/paraglide/messages";
   import { toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
