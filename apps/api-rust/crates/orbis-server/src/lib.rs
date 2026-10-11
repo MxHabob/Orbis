@@ -15,10 +15,11 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
-    academic_routes, ai_routes, assessment_routes, autopilot_routes, bootstrap_routes,
-    calendar_routes, document_routes, employee_routes, exam_routes, finance_routes, folder_routes,
-    group_routes, iam_routes, integration_routes, onboarding_routes, org_routes, override_routes,
-    progression_routes, report_routes, scheduling_routes, storage_routes, student_routes,
+    academic_framework_routes, academic_routes, ai_routes, assessment_routes, autopilot_routes,
+    bootstrap_routes, calendar_routes, document_routes, employee_routes, exam_routes,
+    finance_routes, folder_routes, group_routes, iam_routes, integration_routes,
+    onboarding_routes, org_routes, override_routes, progression_routes, report_routes,
+    scheduling_routes, storage_routes, student_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -106,6 +107,19 @@ use api::{
         api::calendar_routes::unlock_period,
         api::calendar_routes::close_period,
         api::calendar_routes::list_period_templates,
+        // Configurable Academic Framework
+        api::academic_framework_routes::list_calendars,
+        api::academic_framework_routes::create_calendar,
+        api::academic_framework_routes::list_period_types,
+        api::academic_framework_routes::create_period_type,
+        api::academic_framework_routes::list_calendar_periods,
+        api::academic_framework_routes::create_calendar_period,
+        api::academic_framework_routes::list_courses,
+        api::academic_framework_routes::create_course,
+        api::academic_framework_routes::list_course_offerings,
+        api::academic_framework_routes::create_course_offering,
+        api::academic_framework_routes::list_course_enrollments,
+        api::academic_framework_routes::enroll_student,
         // Academic
         api::academic_routes::create_subject,
         api::academic_routes::list_subjects,
@@ -190,6 +204,8 @@ use api::{
         api::assessment_routes::get_scheme,
         api::assessment_routes::update_scheme,
         api::assessment_routes::delete_scheme,
+        api::assessment_routes::get_current_academic_policy,
+        api::assessment_routes::preview_academic_result,
         api::assessment_routes::record_grade,
         api::assessment_routes::batch_record_grades,
         api::assessment_routes::delete_grade,
@@ -388,6 +404,18 @@ use api::{
             api::calendar_routes::CreatePeriodRequest,
             api::calendar_routes::UpdatePeriodRequest,
             api::calendar_routes::PeriodTemplateDto,
+            api::academic_framework_routes::AcademicCalendarDto,
+            api::academic_framework_routes::AcademicPeriodTypeDto,
+            api::academic_framework_routes::AcademicCalendarPeriodDto,
+            api::academic_framework_routes::CourseDto,
+            api::academic_framework_routes::CourseOfferingDto,
+            api::academic_framework_routes::CourseEnrollmentDto,
+            api::academic_framework_routes::CreateAcademicCalendarRequest,
+            api::academic_framework_routes::CreateAcademicPeriodTypeRequest,
+            api::academic_framework_routes::CreateAcademicCalendarPeriodRequest,
+            api::academic_framework_routes::CreateCourseRequest,
+            api::academic_framework_routes::CreateCourseOfferingRequest,
+            api::academic_framework_routes::CreateCourseEnrollmentRequest,
             // Academic
             api::academic_routes::SubjectDto,
             api::academic_routes::CreateSubjectRequest,
@@ -435,6 +463,9 @@ use api::{
             orbis_domain::entities::assessment_scheme::AssessmentLevel,
             orbis_domain::entities::assessment_scheme::AssessmentComponent,
             orbis_domain::entities::assessment_scheme::InstitutionScope,
+            api::assessment_routes::AcademicPolicyDto,
+            api::assessment_routes::AcademicResultViewDto,
+            api::assessment_routes::AcademicResultPreviewRequest,
             api::assessment_routes::CreateSchemeRequest,
             api::assessment_routes::UpdateSchemeRequest,
             api::assessment_routes::GradeDto,
@@ -611,6 +642,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(iam_routes::routes())
         .merge(org_routes::routes())
         .merge(calendar_routes::routes())
+        .merge(academic_framework_routes::routes())
         .merge(academic_routes::routes())
         .merge(student_routes::routes())
         .merge(employee_routes::routes())

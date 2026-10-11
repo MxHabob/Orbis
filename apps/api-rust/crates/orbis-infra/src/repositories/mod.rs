@@ -1,3 +1,4 @@
+pub mod academic_framework_repos;
 pub mod academic_repos;
 pub mod assessment_repos;
 pub mod calendar_repos;

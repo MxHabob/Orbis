@@ -1177,6 +1177,8 @@ export interface ProvisionDefaultsReqDto {
   academic_year_name_ar?: string;
   start_date?: string;
   end_date?: string;
+  provision_academic_year?: boolean;
+  provision_default_academic_periods?: boolean;
   provision_stages_and_grades?: boolean;
   provision_subjects?: boolean;
   provision_assessment_scheme?: boolean;
@@ -1318,6 +1320,123 @@ export interface AcademicPolicy {
   tie_policy: TiePolicy;
   ranking_enabled: boolean;
   max_displayed_rank?: number | null;
+}
+
+export type DecimalValue = number | string;
+
+export type CalculationUnit =
+  | { type: "dimensionless" }
+  | { type: "score"; scale: string }
+  | { type: "credit" }
+  | { type: "count" }
+  | { type: "custom"; scale: string };
+
+export interface CalculationWeightedItem {
+  node: CalculationExpression;
+  weight: DecimalValue;
+}
+
+export type CalculationExpression =
+  | { type: "literal"; value: DecimalValue }
+  | { type: "measure_literal"; value: DecimalValue; unit: CalculationUnit }
+  | { type: "variable"; name: string }
+  | {
+      type: "add" | "multiply";
+      operands: CalculationExpression[];
+      left?: CalculationExpression | null;
+      right?: CalculationExpression | null;
+    }
+  | { type: "subtract" | "divide"; left: CalculationExpression; right: CalculationExpression }
+  | { type: "max" | "min" | "average"; operands: CalculationExpression[] }
+  | {
+      type: "weighted_sum";
+      items: CalculationWeightedItem[];
+      normalize: boolean;
+    }
+  | {
+      type: "convert";
+      value: CalculationExpression;
+      from: CalculationUnit;
+      to: CalculationUnit;
+      factor: DecimalValue;
+      offset: DecimalValue;
+    };
+
+export type CalculationRoundingMode =
+  | "round_half_up"
+  | "round_up"
+  | "round_down"
+  | "truncate";
+
+export interface CalculationRoundingRule {
+  mode: CalculationRoundingMode;
+  decimal_places: number;
+}
+
+export interface CalculationInput {
+  name: string;
+  unit: CalculationUnit;
+  minimum?: DecimalValue | null;
+  maximum?: DecimalValue | null;
+  is_required: boolean;
+}
+
+export interface CalculationOutput {
+  name: string;
+  unit: CalculationUnit;
+  expression: CalculationExpression;
+  rounding?: CalculationRoundingRule | null;
+}
+
+export interface CalculationGradeBand {
+  code: string;
+  label: string;
+  minimum_score: DecimalValue;
+}
+
+export interface CalculationOutcomePolicy {
+  unit: CalculationUnit;
+  pass_at_or_above?: DecimalValue | null;
+  honors_at_or_above?: DecimalValue | null;
+  grade_bands: CalculationGradeBand[];
+}
+
+export interface CalculationPlan {
+  version: number;
+  inputs: CalculationInput[];
+  outputs: CalculationOutput[];
+}
+
+export interface CalculationEngineSettings {
+  calculation_plan: CalculationPlan | null;
+  outcome_policy: CalculationOutcomePolicy | null;
+  ranking_enabled: boolean;
+  ranking_scope: RankingScope;
+  tie_policy: TiePolicy;
+  max_displayed_rank: number | null;
+}
+
+export interface CalculationResult {
+  policy_version: number;
+  outputs: Array<{
+    name: string;
+    unit: CalculationUnit;
+    value: DecimalValue;
+  }>;
+}
+
+export interface CalculationOutcome {
+  is_passed?: boolean | null;
+  is_honors?: boolean | null;
+  grade_code?: string | null;
+}
+
+export interface CalculationPreview {
+  result: CalculationResult;
+  outcomes: Array<{
+    output_name: string;
+    outcome: CalculationOutcome;
+  }>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1563,6 +1682,11 @@ export interface OrbisApiClient {
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto>;
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
+  getCalculationEngineSettings(): Promise<CalculationEngineSettings>;
+  updateCalculationEngineSettings(
+    settings: CalculationEngineSettings,
+  ): Promise<CalculationEngineSettings>;
+  previewCalculation(values: Record<string, DecimalValue>): Promise<CalculationPreview>;
   getStudentTermResults(
     studentId: string,
     periodId: string,

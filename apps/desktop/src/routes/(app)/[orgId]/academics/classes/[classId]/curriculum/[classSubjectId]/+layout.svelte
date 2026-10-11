@@ -1,8 +1,8 @@
 <!--
   @component ClassSubjectLayout
   SvelteKit Layout for specific Subject Offering under a Class.
-  Provides tab navigation between Coursework Gradebook and Term Results,
-  along with assessments scheme configuration and PDF print triggers.
+  Provides tab navigation between the coursework gradebook and assessment records,
+  along with assessment scheme configuration.
 -->
 <script lang="ts">
 import { page } from "$app/state";
@@ -14,7 +14,6 @@ import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
 import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
 
@@ -27,7 +26,6 @@ const classSubjectId = $derived(
 );
 
 let showConfigSheet = $state(false);
-let showPrintDialog = $state(false);
 
 export interface ClassSubjectWithCatalog extends ClassSubjectDto {
   catalog?: SubjectDto;
@@ -86,8 +84,8 @@ const menuItems = $derived([
     label: m.common_coursework_gradebook(),
   },
   {
-    path: "term-results",
-    label: m.common_term_results(),
+    path: "assessments",
+    label: "Assessment records",
   },
 ]);
 </script>
@@ -119,14 +117,6 @@ const menuItems = $derived([
         <span>{m.common_assessment_scheme()}</span>
       </Button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        class="h-8 gap-1.5 text-xs font-semibold"
-        onclick={() => showPrintDialog = true}
-      >
-        <span class="hidden sm:inline">{m.common_action_print()}</span>
-      </Button>
     </div>
   </div>
 
@@ -139,10 +129,3 @@ const menuItems = $derived([
 {#if showConfigSheet}
   <AssessmentSchemeSheet bind:open={showConfigSheet} {classSubjectId} periodId={academicContext.effectivePeriodId || ""} />
 {/if}
-
-<PdfReportViewer
-  bind:open={showPrintDialog}
-  templateId="33333333-3333-3333-3333-333333333333"
-  parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
-  reportTitle={m.common_print_gradebook()}
-/>

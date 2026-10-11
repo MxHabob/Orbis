@@ -59,6 +59,9 @@ import type {
   BehaviorRecordDto,
   CumulativeGpaRecordDto,
   CalculationResultDto,
+  CalculationEngineSettings,
+  CalculationPreview,
+  DecimalValue,
   CreateSchemeRequest,
   UpdateSchemeRequest,
   RecordGradeRequest,
@@ -727,7 +730,12 @@ export class LocalClient implements OrbisApiClient {
     classSubjectId?: string;
   }): Promise<GradeDto[]> {
     return unwrap(
-      await invoke("assessment_list_grades", { filter: filter ?? {} }),
+      await invoke("assessment_list_grades", {
+        filter: {
+          student_id: filter?.studentId,
+          class_subject_id: filter?.classSubjectId,
+        },
+      }),
     );
   }
   async calculateGrades(
@@ -749,6 +757,29 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<RankingItemDto[]> {
     return unwrap(
       await invoke("assessment_calculate_rankings", { request: req }),
+    );
+  }
+  async getCalculationEngineSettings(): Promise<CalculationEngineSettings> {
+    return unwrap(
+      await invoke("assessment_get_calculation_engine_settings"),
+    );
+  }
+  async updateCalculationEngineSettings(
+    settings: CalculationEngineSettings,
+  ): Promise<CalculationEngineSettings> {
+    return unwrap(
+      await invoke("assessment_update_calculation_engine_settings", {
+        request: settings,
+      }),
+    );
+  }
+  async previewCalculation(
+    values: Record<string, DecimalValue>,
+  ): Promise<CalculationPreview> {
+    return unwrap(
+      await invoke("assessment_preview_calculation", {
+        request: { values },
+      }),
     );
   }
   async getStudentTermResults(

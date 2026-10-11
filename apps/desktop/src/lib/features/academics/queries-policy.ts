@@ -7,14 +7,12 @@ import {
   useQueryClient,
 } from "@tanstack/svelte-query";
 import { api, queryKeys } from "$lib/api";
+import type { CalculationEngineSettings } from "$lib/api";
 
 export function createOrgAcademicPolicyQuery(orgId: () => string) {
   return createQuery(() => ({
-    queryKey: queryKeys.org.settings(),
-    queryFn: async () => {
-      const settings = await api.getSettings();
-      return settings.academic;
-    },
+    queryKey: [...queryKeys.org.settings(), "calculation-engine"],
+    queryFn: () => api.getCalculationEngineSettings(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -35,25 +33,11 @@ export function createPromotionPolicyQuery(orgId: () => string) {
 export function useUpdateAcademicPolicy() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: async (vars: {
-      orgId: string;
-      payload?: Record<string, any>;
-      policy?: Record<string, any>;
-    }) => {
-      const current = await api.getSettings();
-      const policyData = vars.payload ?? vars.policy ?? {};
-      return api.updateSettings({
-        ...current,
-        academic: {
-          default_grading_system:
-            current.academic?.default_grading_system || "percentage",
-          ...policyData,
-        },
-      });
-    },
+    mutationFn: (settings: CalculationEngineSettings) =>
+      api.updateCalculationEngineSettings(settings),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.org.settings(),
+        queryKey: [...queryKeys.org.settings(), "calculation-engine"],
       });
     },
   }));

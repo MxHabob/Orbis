@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::academic_calculation::{CalculationPlan, OutcomePolicy};
 use super::academic_policy::{AcademicPolicy, RankingScope, RoundingMode, TiePolicy};
 use super::admission::AdmissionConfiguration;
 use rust_decimal::Decimal;
@@ -39,6 +40,10 @@ pub struct AcademicSettings {
     pub tie_policy: TiePolicy,
     pub rounding_mode: RoundingMode,
     pub decimal_places: u32,
+    #[serde(default)]
+    pub calculation_plan: Option<CalculationPlan>,
+    #[serde(default)]
+    pub outcome_policy: Option<OutcomePolicy>,
     pub enrollment_auto_close: bool,
     pub allow_late_enrollment: bool,
     pub late_enrollment_approval: bool,
@@ -66,6 +71,8 @@ impl Default for AcademicSettings {
             tie_policy: TiePolicy::StandardCompetition,
             rounding_mode: RoundingMode::RoundHalfUp,
             decimal_places: 2,
+            calculation_plan: None,
+            outcome_policy: None,
             enrollment_auto_close: true,
             allow_late_enrollment: false,
             late_enrollment_approval: true,

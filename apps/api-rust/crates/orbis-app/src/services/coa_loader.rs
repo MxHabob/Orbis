@@ -200,6 +200,17 @@ mod tests {
     }
 
     #[test]
+    fn test_default_coa_blueprints_are_institution_neutral() {
+        for blueprint in [COA_SCHOOL, COA_UNIVERSITY, COA_INSTITUTE, COA_VOCATIONAL] {
+            let lower = blueprint.to_ascii_lowercase();
+            assert!(!lower.contains("middle school"));
+            assert!(!lower.contains("high school"));
+            assert!(!lower.contains("kindergarten"));
+            assert!(!lower.contains("primary"));
+        }
+    }
+
+    #[test]
     fn test_university_coa_parses_successfully() {
         let org_id = Uuid::new_v4();
         let accounts = CoaBlueprintLoader::parse_accounts(org_id, "USD", "university")

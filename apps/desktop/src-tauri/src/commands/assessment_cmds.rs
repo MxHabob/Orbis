@@ -4,12 +4,19 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use chrono::NaiveDate;
+use orbis_app::services::calculation_engine::AcademicCalculationEngine;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_domain::entities::academic_calculation::{
+    CalculationPlan, CalculationPreview, OutcomePolicy,
+};
+use orbis_domain::entities::academic_policy::{RankingScope, TiePolicy};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
+use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use tauri::State;
 use uuid::Uuid;
 
@@ -188,6 +195,31 @@ pub struct CalculationResultDto {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CalculationEngineSettingsDto {
+    pub calculation_plan: Option<CalculationPlan>,
+    pub outcome_policy: Option<OutcomePolicy>,
+    pub ranking_enabled: bool,
+    pub ranking_scope: RankingScope,
+    pub tie_policy: TiePolicy,
+    pub max_displayed_rank: Option<u32>,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateCalculationEngineSettingsInput {
+    pub calculation_plan: Option<CalculationPlan>,
+    pub outcome_policy: Option<OutcomePolicy>,
+    pub ranking_enabled: bool,
+    pub ranking_scope: RankingScope,
+    pub tie_policy: TiePolicy,
+    pub max_displayed_rank: Option<u32>,
+}
+
+#[derive(Deserialize)]
+pub struct PreviewCalculationInput {
+    pub values: HashMap<String, Decimal>,
+}
+
 #[derive(Deserialize, Default)]
 pub struct GradeFilter {
     pub student_id: Option<String>,
@@ -233,7 +265,7 @@ pub struct CalculateRankingsInput {
 #[derive(Serialize)]
 pub struct RankingItemDto {
     pub id: String,
-    pub rank: u32,
+    pub rank: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -578,6 +610,96 @@ pub async fn assessment_calculate_grades(
 }
 
 #[tauri::command]
+pub async fn assessment_get_calculation_engine_settings(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CalculationEngineSettingsDto>, String> {
+    let ctx = make_ctx(&state);
+    let settings = state
+        .organization_service
+        .get_settings(ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(ok(CalculationEngineSettingsDto {
+        calculation_plan: settings.academic.calculation_plan,
+        outcome_policy: settings.academic.outcome_policy,
+        ranking_enabled: settings.academic.ranking_enabled,
+        ranking_scope: settings.academic.ranking_scope,
+        tie_policy: settings.academic.tie_policy,
+        max_displayed_rank: settings.academic.max_displayed_rank,
+    }))
+}
+
+#[tauri::command]
+pub async fn assessment_update_calculation_engine_settings(
+    request: UpdateCalculationEngineSettingsInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CalculationEngineSettingsDto>, String> {
+    let ctx = make_ctx(&state);
+    let mut settings = state
+        .organization_service
+        .get_settings(ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?;
+    settings.academic.calculation_plan = request.calculation_plan;
+    settings.academic.outcome_policy = request.outcome_policy;
+    settings.academic.ranking_enabled = request.ranking_enabled;
+    settings.academic.ranking_scope = request.ranking_scope;
+    settings.academic.tie_policy = request.tie_policy;
+    settings.academic.max_displayed_rank = request.max_displayed_rank;
+    let settings = state
+        .organization_service
+        .update_settings(&ctx, ctx.tenant_id, settings)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(ok(CalculationEngineSettingsDto {
+        calculation_plan: settings.academic.calculation_plan,
+        outcome_policy: settings.academic.outcome_policy,
+        ranking_enabled: settings.academic.ranking_enabled,
+        ranking_scope: settings.academic.ranking_scope,
+        tie_policy: settings.academic.tie_policy,
+        max_displayed_rank: settings.academic.max_displayed_rank,
+    }))
+}
+
+#[tauri::command]
+pub async fn assessment_preview_calculation(
+    request: PreviewCalculationInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CalculationPreview>, String> {
+    let ctx = make_ctx(&state);
+    let settings = state
+        .organization_service
+        .get_settings(ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?;
+    let plan = settings
+        .academic
+        .calculation_plan
+        .as_ref()
+        .ok_or_else(|| "The organization has not configured a calculation plan".to_string())?;
+    let result = AcademicCalculationEngine::calculate_plan(plan, &request.values)
+        .map_err(|error| error.to_string())?;
+    let mut outcomes = Vec::new();
+    if let Some(policy) = settings.academic.outcome_policy.as_ref() {
+        for output in &result.outputs {
+            if output.unit == policy.unit {
+                outcomes.push(orbis_domain::entities::academic_calculation::CalculationOutputOutcome {
+                    output_name: output.name.clone(),
+                    outcome: AcademicCalculationEngine::evaluate_outcome(
+                        output.value,
+                        &output.unit,
+                        policy,
+                    )
+                    .map_err(|error| error.to_string())?,
+                });
+            }
+        }
+    }
+
+    Ok(ok(CalculationPreview { result, outcomes }))
+}
+
+#[tauri::command]
 pub async fn assessment_calculate_gpa(
     request: CalculateGpaInput,
     state: State<'_, AppState>,
@@ -613,15 +735,17 @@ pub async fn assessment_calculate_gpa(
 #[tauri::command]
 pub async fn assessment_calculate_rankings(
     request: CalculateRankingsInput,
+    state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<RankingItemDto>>, String> {
-    use orbis_app::services::calculation_engine::AcademicCalculationEngine;
-    use orbis_domain::entities::academic_policy::TiePolicy;
-
-    let tie_policy = match request.tie_policy.as_deref() {
-        Some("dense") => TiePolicy::Dense,
-        Some("fractional") => TiePolicy::Fractional,
-        _ => TiePolicy::StandardCompetition,
-    };
+    let ctx = make_ctx(&state);
+    let settings = state
+        .organization_service
+        .get_settings(ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?;
+    if !settings.academic.ranking_enabled {
+        return Err("Student ranking is disabled by this organization's academic policy".into());
+    }
 
     let mut scores = Vec::new();
     for item in request.items {
@@ -629,14 +753,21 @@ pub async fn assessment_calculate_rankings(
         scores.push((uid, item.score));
     }
 
-    let ranked = AcademicCalculationEngine::compute_rankings(&scores, tie_policy);
+    let ranked = AcademicCalculationEngine::compute_rankings(
+        &scores,
+        settings.academic.tie_policy,
+    );
     let dtos = ranked
         .into_iter()
-        .map(|(id, rank)| RankingItemDto {
-            id: id.to_string(),
-            rank: rank as u32,
+        .map(|(id, rank)| {
+            rank.to_f64()
+                .map(|rank| RankingItemDto {
+                    id: id.to_string(),
+                    rank,
+                })
+                .ok_or_else(|| "Rank value cannot be represented by the Desktop contract".to_string())
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
 
     Ok(ok(dtos))
 }

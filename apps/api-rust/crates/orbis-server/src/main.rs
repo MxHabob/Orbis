@@ -56,6 +56,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(orbis_infra::repositories::calendar_repos::CalendarRepoImpl { db: db.clone() });
     let academic_repo =
         Arc::new(orbis_infra::repositories::academic_repos::AcademicRepoImpl { db: db.clone() });
+    let academic_framework_repo = Arc::new(
+        orbis_infra::repositories::academic_framework_repos::AcademicFrameworkRepoImpl {
+            db: db.clone(),
+        },
+    );
     let student_repo =
         Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
     let scheduling_repo = Arc::new(
@@ -112,6 +117,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ),
     );
     let permission_checker = Arc::new(DbPermissionChecker::new(db.clone()));
+    let academic_framework_service = Arc::new(orbis_app::services::AcademicFrameworkService::new(
+        academic_framework_repo.clone(),
+        student_repo.clone(),
+        org_unit_repo.clone(),
+        permission_checker.clone(),
+    ));
 
     let identity_repo =
         Arc::new(orbis_infra::repositories::identity_repo::UserIdentityRepoImpl { db: db.clone() });
@@ -479,6 +490,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         year_repo: calendar_repo.clone(),
         period_repo: calendar_repo.clone(),
         period_template_repo: calendar_repo,
+        academic_framework_repo,
         subject_repo: academic_repo.clone(),
         class_repo: academic_repo.clone(),
         class_subject_repo: academic_repo.clone(),
@@ -533,6 +545,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         student_service,
         progression_service,
         academic_service,
+        academic_framework_service,
         finance_service,
         assessment_service,
         auth_service,

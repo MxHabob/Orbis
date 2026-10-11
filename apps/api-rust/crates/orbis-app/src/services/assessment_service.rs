@@ -1152,7 +1152,7 @@ impl AssessmentService {
                 monthly_results,
                 term_final_exam,
                 &policy,
-            );
+            )?;
             subject_results.push(res);
         }
 
@@ -1325,7 +1325,7 @@ impl AssessmentService {
 
             let annual_res = AcademicCalculationEngine::calculate_subject_annual_result(
                 subject_id, code, name, name_ar, credit, t1_res, t2_res, &policy,
-            );
+            )?;
             annual_subjects.push(annual_res);
         }
 
@@ -1411,7 +1411,8 @@ impl AssessmentService {
                 .iter()
                 .map(|c| (c.student_id, c.overall_percentage))
                 .collect();
-            let rankings = AcademicCalculationEngine::compute_rankings(&scores, policy.tie_policy);
+            let rankings =
+                AcademicCalculationEngine::compute_rankings_legacy(&scores, policy.tie_policy)?;
             let rank_map: std::collections::HashMap<Uuid, u32> = rankings.into_iter().collect();
 
             for c in &mut cards {
@@ -1473,7 +1474,8 @@ impl AssessmentService {
                 .iter()
                 .map(|c| (c.student_id, c.overall_percentage))
                 .collect();
-            let rankings = AcademicCalculationEngine::compute_rankings(&scores, policy.tie_policy);
+            let rankings =
+                AcademicCalculationEngine::compute_rankings_legacy(&scores, policy.tie_policy)?;
             let rank_map: std::collections::HashMap<Uuid, u32> = rankings.into_iter().collect();
 
             for c in &mut cards {

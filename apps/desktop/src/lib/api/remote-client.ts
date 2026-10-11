@@ -67,6 +67,13 @@ import type {
   BehaviorRecordDto,
   CumulativeGpaRecordDto,
   CalculationResultDto,
+  CalculationEngineSettings,
+  CalculationPreview,
+  CalculationPlan,
+  CalculationOutcomePolicy,
+  DecimalValue,
+  RankingScope,
+  TiePolicy,
   CreateSchemeRequest,
   UpdateSchemeRequest,
   RecordGradeRequest,
@@ -994,6 +1001,91 @@ export class RemoteClient implements OrbisApiClient {
 
   async calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]> {
     return this.call(sdk.calculateRankings({ client: this.client, body: req })) ?? [];
+  }
+
+  async getCalculationEngineSettings(): Promise<CalculationEngineSettings> {
+    const settings = await this.getSettings();
+    const academic = settings.academic as
+      | (NonNullable<OrganizationSettingsDto["academic"]> & {
+          calculation_plan?: CalculationPlan | null;
+          outcome_policy?: CalculationOutcomePolicy | null;
+        })
+      | undefined;
+    return {
+      calculation_plan: academic?.calculation_plan ?? null,
+      outcome_policy: academic?.outcome_policy ?? null,
+      ranking_enabled: academic?.ranking_enabled ?? true,
+      ranking_scope: (academic?.ranking_scope as RankingScope) ?? "class",
+      tie_policy:
+        (academic?.tie_policy as TiePolicy) ?? "standard_competition",
+      max_displayed_rank: academic?.max_displayed_rank ?? null,
+    };
+  }
+
+  async updateCalculationEngineSettings(
+    engineSettings: CalculationEngineSettings,
+  ): Promise<CalculationEngineSettings> {
+    const current = await this.getSettings();
+    const academic = current.academic ?? {
+      default_grading_system: "percentage",
+    };
+    const academicWithEngine: NonNullable<
+      OrganizationSettingsDto["academic"]
+    > & {
+      calculation_plan: CalculationPlan | null;
+      outcome_policy: CalculationOutcomePolicy | null;
+    } = {
+      ...academic,
+      calculation_plan: engineSettings.calculation_plan,
+      outcome_policy: engineSettings.outcome_policy,
+      ranking_enabled: engineSettings.ranking_enabled,
+      ranking_scope: engineSettings.ranking_scope,
+      tie_policy: engineSettings.tie_policy,
+      max_displayed_rank: engineSettings.max_displayed_rank,
+    };
+    const updated = await this.updateSettings({
+      ...current,
+      academic: academicWithEngine,
+    });
+    const updatedAcademic = updated.academic as
+      | (NonNullable<OrganizationSettingsDto["academic"]> & {
+          calculation_plan?: CalculationPlan | null;
+          outcome_policy?: CalculationOutcomePolicy | null;
+        })
+      | undefined;
+    return {
+      calculation_plan: updatedAcademic?.calculation_plan ?? null,
+      outcome_policy: updatedAcademic?.outcome_policy ?? null,
+      ranking_enabled: updatedAcademic?.ranking_enabled ?? true,
+      ranking_scope: (updatedAcademic?.ranking_scope as RankingScope) ?? "class",
+      tie_policy:
+        (updatedAcademic?.tie_policy as TiePolicy) ?? "standard_competition",
+      max_displayed_rank: updatedAcademic?.max_displayed_rank ?? null,
+    };
+  }
+
+  async previewCalculation(
+    values: Record<string, DecimalValue>,
+  ): Promise<CalculationPreview> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/academic-calculations/preview`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.token ? { Authorization: "Bearer " + this.token } : {}),
+        },
+        body: JSON.stringify({ values }),
+      },
+    );
+    if (!response.ok) {
+      throw new ApiRequestError(
+        response.status,
+        await response.json().catch(() => ({ message: response.statusText })),
+      );
+    }
+    const envelope = (await response.json()) as { data: CalculationPreview };
+    return envelope.data;
   }
 
   async getStudentTermResults(

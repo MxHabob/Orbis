@@ -1,4 +1,7 @@
+pub mod academic_calendar;
+pub mod academic_calendar_period;
 pub mod academic_period;
+pub mod academic_period_type;
 pub mod academic_year;
 pub mod account;
 pub mod assessment_scheme;
@@ -6,6 +9,9 @@ pub mod attendance;
 pub mod behavior_record;
 pub mod class;
 pub mod class_subject;
+pub mod course;
+pub mod course_enrollment;
+pub mod course_offering;
 pub mod course_prerequisite;
 pub mod discount_template;
 pub mod document;

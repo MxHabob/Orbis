@@ -187,12 +187,16 @@ pub struct ProvisionDefaultsRequest {
     pub academic_year_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
+    /// Whether to create the optional legacy academic-year record.
+    pub provision_academic_year: Option<bool>,
+    /// Whether to add an optional starter period structure to a newly created year.
+    pub provision_default_academic_periods: Option<bool>,
     /// Whether to create sample classes. Defaults to **false** (opt-in demo data).
     pub provision_stages_and_grades: Option<bool>,
     /// Whether to create sample subjects. Defaults to **false** (opt-in demo data).
     pub provision_subjects: Option<bool>,
     pub provision_assessment_scheme: Option<bool>,
-    /// Whether to create a tuition fee template. Defaults to true.
+    /// Whether to create a tuition fee template. Defaults to false.
     pub provision_tuition_fee_template: Option<bool>,
     /// Whether to create discount templates. Defaults to **false** (opt-in demo data).
     pub provision_discount_templates: Option<bool>,
@@ -697,7 +701,7 @@ impl OnboardingService {
             .and_then(|m| m.get("institution_type"))
             .and_then(|v| v.as_str())
             .unwrap_or("school");
-        let inst_type = InstitutionType::from_str_loose(institution_type_str);
+        let _inst_type = InstitutionType::from_str_loose(institution_type_str);
 
         // ── 1. Gather Real Backend Metrics ─────────────────────
         let units = self.org_unit_repo.find_by_org(org_id).await?;
@@ -832,28 +836,12 @@ impl OnboardingService {
             Some(("Requires branch setup before opening academic year.", "يتطلب إعداد الفروع أولاً.")),
         ));
 
-        // Task 5: Academic Periods / Terms & Monthly Periods
-        // For schools, validate the full hierarchy: at least 2 terms, each with monthly children
-        let has_periods = match inst_type {
-            InstitutionType::School => {
-                let terms: Vec<_> = periods
-                    .iter()
-                    .filter(|p| p.parent_id.is_none() && p.period_type == PeriodType::Semester)
-                    .collect();
-                let has_children = terms
-                    .iter()
-                    .all(|t| periods.iter().any(|p| p.parent_id == Some(t.id)));
-                terms.len() >= 2 && has_children
-            }
-            InstitutionType::University => {
-                periods
-                    .iter()
-                    .filter(|p| p.parent_id.is_none() && p.period_type == PeriodType::Semester)
-                    .count()
-                    >= 2
-            }
-            InstitutionType::Institute => !periods.is_empty(),
-        };
+        // Task 5: Academic periods are institution-agnostic. Any configured teaching cycle
+        // can represent semesters, modules, trimesters, cohorts, or custom calendar blocks.
+        let has_periods = !periods.is_empty()
+            && periods
+                .iter()
+                .any(|p| p.period_kind == PeriodKind::Teaching || p.period_type == PeriodType::Semester);
         let period_progress = if has_periods {
             100
         } else if !periods.is_empty() {
@@ -861,26 +849,10 @@ impl OnboardingService {
         } else {
             0
         };
-        let period_desc_en = match inst_type {
-            InstitutionType::School => {
-                "Configure Term 1 & Term 2, with monthly evaluation periods and exam sessions."
-            }
-            InstitutionType::University => {
-                "Configure Semester 1 (Fall), Semester 2 (Spring), and enrollment windows."
-            }
-            InstitutionType::Institute => {
-                "Configure modular training cycles and cohort evaluation periods."
-            }
-        };
-        let period_desc_ar = match inst_type {
-            InstitutionType::School => {
-                "تهيئة الفصول الدراسية (الأول والثاني) مع الفترات التقويمية الشهرية وجلسات الاختبارات."
-            }
-            InstitutionType::University => {
-                "تهيئة الفصول الجامعية (الخريف والربيع) وفترات التسجيل والحذف والإضافة."
-            }
-            InstitutionType::Institute => "تهيئة الدورات التدريبية والدفعات وفترات التقييم المهني.",
-        };
+        let period_desc_en =
+            "Configure one or more academic cycle periods and evaluation windows aligned with your institution calendar.";
+        let period_desc_ar =
+            "تهيئة فترات دورة أكاديمية واحدة أو أكثر وفترات تقييم مناسبة للتقويم المؤسسي الخاص بك.";
         raw_tasks.push((
             "academic_periods",
             OnboardingTaskCategory::Calendar,
@@ -1027,26 +999,10 @@ impl OnboardingService {
 
         // Task 10: Assessment Scheme & Grading Policy
         let has_schemes = !schemes.is_empty();
-        let scheme_desc_en = match inst_type {
-            InstitutionType::School => {
-                "Configure 100-point monthly scheme (Homework, Oral, Attendance, Written Exam) and term weighting."
-            }
-            InstitutionType::University => {
-                "Configure course assessment breakdown (Midterm, Projects, Final Exam) and GPA grading scale."
-            }
-            InstitutionType::Institute => {
-                "Configure competency-based practical assessment and pass/fail thresholds."
-            }
-        };
-        let scheme_desc_ar = match inst_type {
-            InstitutionType::School => {
-                "تهيئة كشف المحصلة الشهرية من 100 (واجبات، شفوي، مواظبة، اختبار تحريري) ووزن الفصل."
-            }
-            InstitutionType::University => {
-                "تهيئة توزيع درجات المقرر (نصفي، مشاريع، نهائي) وسلم المعدل التراكمي GPA."
-            }
-            InstitutionType::Institute => "تهيئة كفايات التقييم العملي والمهني ومعايير الاجتياز.",
-        };
+        let scheme_desc_en =
+            "Configure a grading and assessment scheme with weighted components, pass thresholds, and reporting rules suited to the institution model.";
+        let scheme_desc_ar =
+            "تهيئة خطة تقييم ودرجات بتوزيع أوزان ومعايير اجتياز وقواعد تقارير مناسبة لنموذج المؤسسة.";
         raw_tasks.push((
             "assessment_schemes",
             OnboardingTaskCategory::Assessment,
@@ -1469,6 +1425,34 @@ impl OnboardingService {
     // Optional Helper: Provision Blueprint Defaults Scaffolding
     // ─────────────────────────────────────────────────────────
 
+    fn generic_subject_templates() -> Vec<(&'static str, &'static str, Option<&'static str>, bool, i32)> {
+        vec![
+            ("SUBJ-01", "Core Learning Subject", Some("موضوع تعليمي أساسي"), true, 3),
+            (
+                "SUBJ-02",
+                "Applied Learning Subject",
+                Some("موضوع تعليمي تطبيقي"),
+                false,
+                2,
+            ),
+            (
+                "SUBJ-03",
+                "Specialized Learning Subject",
+                Some("موضوع تعليمي متخصص"),
+                true,
+                4,
+            ),
+        ]
+    }
+
+    fn generic_class_templates() -> Vec<(&'static str, Option<&'static str>, &'static str, &'static str)> {
+        vec![
+            ("Learning Group 01", Some("مجموعة تعليمية 01"), "Study Track", "A"),
+            ("Learning Group 02", Some("مجموعة تعليمية 02"), "Study Track", "B"),
+            ("Learning Group 03", Some("مجموعة تعليمية 03"), "Study Track", "C"),
+        ]
+    }
+
     /// Idempotently provisions standard blueprint defaults (Year, Terms, Stages, Classes, Schemes, Fees)
     /// for administrators who request accelerated setup.
     pub async fn provision_blueprint_defaults(
@@ -1536,9 +1520,22 @@ impl OnboardingService {
             None
         };
 
-        // 2. Provision Academic Year & Blueprint Periods if missing
+        // Academic years and starter periods are opt-in; an organization may use another
+        // calendar model or intentionally operate without a single year container.
         let existing_years = self.year_repo.find_by_org(org_id).await?;
-        let active_year_id = if existing_years.is_empty() {
+        let should_create_year = req.provision_academic_year.unwrap_or(false)
+            || req.provision_default_academic_periods.unwrap_or(false)
+            || req.academic_year_name.is_some()
+            || req.academic_year_name_ar.is_some()
+            || req.start_date.is_some()
+            || req.end_date.is_some()
+            || req.provision_hijri_school_calendar.unwrap_or(false);
+        if existing_years.is_empty() && req.academic_year_id.is_some() && !should_create_year {
+            return Err(DomainError::Validation(
+                "The selected academic year does not exist for this organization.".into(),
+            ));
+        }
+        let active_year_id = if existing_years.is_empty() && should_create_year {
             if req.academic_year_id.is_some() {
                 return Err(DomainError::Validation(
                     "The selected academic year does not exist for this organization.".into(),
@@ -1593,7 +1590,8 @@ impl OnboardingService {
             self.year_repo.save(&year).await?;
             created_items.push("Active Academic Year".to_string());
 
-            // Non-school blueprints retain their legacy calendar defaults.
+            // Starter period templates remain available only when explicitly requested.
+            if req.provision_default_academic_periods.unwrap_or(false) {
             match inst_type {
                 InstitutionType::School => {
                     if !req.provision_hijri_school_calendar.unwrap_or(false) {
@@ -1999,9 +1997,9 @@ impl OnboardingService {
                         org_id,
                         year_id,
                         parent_id: None,
-                        name: "Cohort 1".to_string(),
-                        name_ar: Some("الدفعة التدريبية الأولى".to_string()),
-                        code: Some("C1".to_string()),
+                        name: "Learning Cohort 01".to_string(),
+                        name_ar: Some("دفعة تعليمية 01".to_string()),
+                        code: Some("LC01".to_string()),
                         period_type: PeriodType::Module,
                         period_kind: PeriodKind::Teaching,
                         state: AcademicPeriodState::ActiveTeaching,
@@ -2029,9 +2027,10 @@ impl OnboardingService {
                     created_items.push("Training Cohort Cycle".to_string());
                 }
             }
-            year_id
-        } else {
-            if let Some(requested_year_id) = req.academic_year_id {
+            }
+            Some(year_id)
+        } else if !existing_years.is_empty() {
+            Some(if let Some(requested_year_id) = req.academic_year_id {
                 existing_years
                     .iter()
                     .find(|year| year.id == requested_year_id)
@@ -2053,7 +2052,9 @@ impl OnboardingService {
                             "No academic year is available for default provisioning.".into(),
                         )
                     })?
-            }
+            })
+        } else {
+            None
         };
 
         let mut school_periods = Vec::new();
@@ -2067,6 +2068,12 @@ impl OnboardingService {
             let hijri_start_year = req
                 .hijri_start_year
                 .ok_or_else(|| DomainError::Validation("A Hijri start year is required.".into()))?;
+            let active_year_id = active_year_id.ok_or_else(|| {
+                DomainError::Validation(
+                    "Create or select an academic year before provisioning calendar periods."
+                        .into(),
+                )
+            })?;
             school_periods = self
                 .provision_hijri_school_calendar(
                     org_id,
@@ -2083,6 +2090,12 @@ impl OnboardingService {
         }
 
         if req.provision_time_slots.unwrap_or(false) {
+            let active_year_id = active_year_id.ok_or_else(|| {
+                DomainError::Validation(
+                    "Create or select an academic year before provisioning timetable slots."
+                        .into(),
+                )
+            })?;
             if school_periods.is_empty() {
                 school_periods = self.period_repo.find_by_year(active_year_id).await?;
             }
@@ -2131,78 +2144,10 @@ impl OnboardingService {
             )
             .await?;
         if req.provision_subjects.unwrap_or(false) {
-            let sample_subjects = match inst_type {
-                InstitutionType::School => vec![
-                    ("MATH", "Mathematics", Some("الرياضيات"), true, 5),
-                    ("ARAB", "Arabic Language", Some("اللغة العربية"), true, 5),
-                    ("ENG", "English Language", Some("اللغة الإنجليزية"), true, 4),
-                    ("SCI", "General Science", Some("العلوم العامة"), true, 4),
-                    ("ISLAM", "Islamic Studies", Some("التربية الإسلامية"), true, 3),
-                    (
-                        "SOC",
-                        "Social Studies",
-                        Some("الدراسات الاجتماعية"),
-                        false,
-                        2,
-                    ),
-                    (
-                        "CS",
-                        "Computer & Digital Skills",
-                        Some("الحاسب والمهارات الرقمية"),
-                        false,
-                        2,
-                    ),
-                ],
-                InstitutionType::University => vec![
-                    (
-                        "CS101",
-                        "Introduction to Computer Science",
-                        Some("مقدمة في علوم الحاسب"),
-                        true,
-                        3,
-                    ),
-                    (
-                        "ENG101",
-                        "Academic Writing & Research",
-                        Some("الكتابة الأكاديمية والبحث"),
-                        true,
-                        3,
-                    ),
-                    (
-                        "MATH101",
-                        "Calculus I",
-                        Some("حساب التفاضل والتكامل 1"),
-                        true,
-                        4,
-                    ),
-                    (
-                        "PHYS101",
-                        "General Physics",
-                        Some("الفيزياء العامة"),
-                        true,
-                        4,
-                    ),
-                ],
-                InstitutionType::Institute => vec![
-                    (
-                        "TECH101",
-                        "Applied Technical Foundations",
-                        Some("الأسس التقنية التطبيقية"),
-                        true,
-                        4,
-                    ),
-                    (
-                        "COMM101",
-                        "Professional Communication",
-                        Some("مهارات الاتصال المهني"),
-                        true,
-                        2,
-                    ),
-                ],
-            };
+            let subject_templates = Self::generic_subject_templates();
 
             let mut created_subjects = 0;
-            for (code, name, name_ar, is_core, hours) in sample_subjects {
+            for (code, name, name_ar, is_core, hours) in subject_templates {
                 if existing_subjects
                     .items
                     .iter()
@@ -2257,189 +2202,81 @@ impl OnboardingService {
                 },
             )
             .await?;
-        if (existing_classes.total_count == 0 || inst_type == InstitutionType::School)
-            && req.provision_stages_and_grades.unwrap_or(false)
-        {
+        if existing_classes.total_count == 0 && req.provision_stages_and_grades.unwrap_or(false) {
+            let active_year_id = active_year_id.ok_or_else(|| {
+                DomainError::Validation(
+                    "Create or select an academic year before provisioning learning groups."
+                        .into(),
+                )
+            })?;
             let active_period = self
                 .period_repo
                 .find_by_year(active_year_id)
                 .await?
                 .into_iter()
-                .find(|period| {
-                    period.period_type == PeriodType::Month
-                        && period.period_kind == PeriodKind::Teaching
-                });
-            if let Some(period) = active_period {
-                let sample_classes = match inst_type {
-                    InstitutionType::School => vec![
-                        (
-                            "Kindergarten 1 - Section A",
-                            Some("روضة أولى - شعبة أ"),
-                            "Kindergarten 1",
-                            "A",
-                        ),
-                        (
-                            "Kindergarten 2 - Section A",
-                            Some("روضة ثانية - شعبة أ"),
-                            "Kindergarten 2",
-                            "A",
-                        ),
-                        (
-                            "Kindergarten 3 - Section A",
-                            Some("روضة ثالثة - شعبة أ"),
-                            "Kindergarten 3",
-                            "A",
-                        ),
-                        (
-                            "Grade 1 - Section A",
-                            Some("الصف الأول الابتدائي - شعبة أ"),
-                            "Grade 1",
-                            "A",
-                        ),
-                        (
-                            "Grade 2 - Section A",
-                            Some("الصف الثاني الابتدائي - شعبة أ"),
-                            "Grade 2",
-                            "A",
-                        ),
-                        (
-                            "Grade 3 - Section A",
-                            Some("الصف الثالث الابتدائي - شعبة أ"),
-                            "Grade 3",
-                            "A",
-                        ),
-                        (
-                            "Grade 4 - Section A",
-                            Some("الصف الرابع الابتدائي - شعبة أ"),
-                            "Grade 4",
-                            "A",
-                        ),
-                        (
-                            "Grade 5 - Section A",
-                            Some("الصف الخامس الابتدائي - شعبة أ"),
-                            "Grade 5",
-                            "A",
-                        ),
-                        (
-                            "Grade 6 - Section A",
-                            Some("الصف السادس الابتدائي - شعبة أ"),
-                            "Grade 6",
-                            "A",
-                        ),
-                        (
-                            "Intermediate Grade 1 - Section A",
-                            Some("الصف الأول المتوسط - شعبة أ"),
-                            "Intermediate Grade 1",
-                            "A",
-                        ),
-                        (
-                            "Intermediate Grade 2 - Section A",
-                            Some("الصف الثاني المتوسط - شعبة أ"),
-                            "Intermediate Grade 2",
-                            "A",
-                        ),
-                        (
-                            "Intermediate Grade 3 - Section A",
-                            Some("الصف الثالث المتوسط - شعبة أ"),
-                            "Intermediate Grade 3",
-                            "A",
-                        ),
-                        (
-                            "Secondary Grade 1 - Section A",
-                            Some("الصف الأول الثانوي - شعبة أ"),
-                            "Secondary Grade 1",
-                            "A",
-                        ),
-                        (
-                            "Secondary Grade 2 - Section A",
-                            Some("الصف الثاني الثانوي - شعبة أ"),
-                            "Secondary Grade 2",
-                            "A",
-                        ),
-                        (
-                            "Secondary Grade 3 - Section A",
-                            Some("الصف الثالث الثانوي - شعبة أ"),
-                            "Secondary Grade 3",
-                            "A",
-                        ),
-                    ],
-                    InstitutionType::University => vec![
-                        (
-                            "CS101 - Section 01",
-                            Some("مقدمة علوم الحاسب - شعبة 01"),
-                            "Year 1",
-                            "01",
-                        ),
-                        (
-                            "MATH101 - Section 01",
-                            Some("تفاضل 1 - شعبة 01"),
-                            "Year 1",
-                            "01",
-                        ),
-                    ],
-                    InstitutionType::Institute => vec![(
-                        "Cohort 1 - Morning Track",
-                        Some("الدفعة 1 - المسار الصباحي"),
-                        "Level 1",
-                        "A",
-                    )],
-                };
+                .find(|period| period.period_kind == PeriodKind::Teaching)
+                .ok_or_else(|| {
+                    DomainError::Validation(
+                        "Create a teaching period before provisioning learning groups.".into(),
+                    )
+                })?;
+            let generic_class_templates = Self::generic_class_templates();
 
-                for (name, name_ar, level, div) in sample_classes {
-                    if inst_type == InstitutionType::School
-                        && existing_classes
-                            .items
-                            .iter()
-                            .any(|class| class.level == level)
-                    {
-                        continue;
-                    }
-                    let Some(main_unit_id) = main_unit_id else {
-                        return Err(DomainError::Validation(
-                            "Create an organizational unit before provisioning classes.".into(),
-                        ));
-                    };
-                    let cls = Class {
-                        id: Uuid::new_v4(),
-                        org_id,
-                        unit_id: main_unit_id,
-                        period_id: period.id,
-                        name: name.to_string(),
-                        name_ar: name_ar.map(|s| s.to_string()),
-                        level: level.to_string(),
-                        division: Some(div.to_string()),
-                        homeroom_teacher_id: None,
-                        capacity: Some(30),
-                        current_students: Some(0),
-                        room_id: None,
-                        color: None,
-                        is_active: true,
-                        is_deleted: false,
-                        deleted_at: None,
-                        created_at: now,
-                        updated_at: now,
-                    };
-                    self.class_repo.save(&cls).await?;
+            for (name, name_ar, level, div) in generic_class_templates {
+                if existing_classes
+                    .items
+                    .iter()
+                    .any(|class| class.level == level)
+                {
+                    continue;
                 }
-                created_items.push("Starter Classrooms & Sections".to_string());
+                let Some(main_unit_id) = main_unit_id else {
+                    return Err(DomainError::Validation(
+                        "Create an organizational unit before provisioning classes.".into(),
+                    ));
+                };
+                let cls = Class {
+                    id: Uuid::new_v4(),
+                    org_id,
+                    unit_id: main_unit_id,
+                    period_id: active_period.id,
+                    name: name.to_string(),
+                    name_ar: name_ar.map(|s| s.to_string()),
+                    level: level.to_string(),
+                    division: Some(div.to_string()),
+                    homeroom_teacher_id: None,
+                    capacity: Some(30),
+                    current_students: Some(0),
+                    room_id: None,
+                    color: None,
+                    is_active: true,
+                    is_deleted: false,
+                    deleted_at: None,
+                    created_at: now,
+                    updated_at: now,
+                };
+                self.class_repo.save(&cls).await?;
             }
+            created_items.push("Starter Learning Groups".to_string());
         }
 
         // 5. Provision Assessment Schemes if requested & empty
         let existing_schemes = self.assessment_scheme_repo.find_by_org(org_id).await?;
-        if existing_schemes.is_empty() && req.provision_assessment_scheme.unwrap_or(true) {
+        if existing_schemes.is_empty() && req.provision_assessment_scheme.unwrap_or(false) {
             let scheme = match inst_type {
                 InstitutionType::School => {
                     // Also provision the term exam scheme (30 points)
-                    let term_exam_scheme = AssessmentScheme::default_school_term_exam(org_id);
+                    let term_exam_scheme = AssessmentScheme::default_periodic_term_exam(org_id);
                     self.assessment_scheme_repo.save(&term_exam_scheme).await?;
 
                     AssessmentScheme {
                         id: Uuid::new_v4(),
                         org_id,
-                        name: "K-12 Monthly 100-Point Evaluation Scheme".to_string(),
-                        name_ar: Some("لائحة التقييم الشهري المدرسي من 100 درجة".to_string()),
-                        description: Some("Standard school scheme: 20 homework, 20 oral, 20 attendance, 40 written test".to_string()),
+                        name: "Monthly 100-Point Evaluation Scheme".to_string(),
+                        name_ar: Some("لائحة التقييم الشهري من 100 درجة".to_string()),
+                        description: Some(
+                            "Customizable monthly evaluation scheme with coursework, participation, attendance, and written assessment.".to_string(),
+                        ),
                         max_score: Decimal::from(100),
                         formula: None,
                         level: AssessmentLevel::MonthlyPeriod,
@@ -2447,8 +2284,8 @@ impl OnboardingService {
                         components: vec![
                             AssessmentComponent {
                                 code: "HW".to_string(),
-                                name: "Homework & Assignments".to_string(),
-                                name_ar: Some("الواجبات والتكليفات".to_string()),
+                                name: "Coursework & Assignments".to_string(),
+                                name_ar: Some("الأعمال والواجبات".to_string()),
                                 max_score: Decimal::from(20),
                                 weight: Decimal::from(20),
                                 sort_order: 1,
@@ -2456,8 +2293,8 @@ impl OnboardingService {
                             },
                             AssessmentComponent {
                                 code: "ORAL".to_string(),
-                                name: "Oral & Interaction".to_string(),
-                                name_ar: Some("الشفهي والمشاركة".to_string()),
+                                name: "Participation & Interaction".to_string(),
+                                name_ar: Some("المشاركة والتفاعل".to_string()),
                                 max_score: Decimal::from(20),
                                 weight: Decimal::from(20),
                                 sort_order: 2,
@@ -2474,8 +2311,8 @@ impl OnboardingService {
                             },
                             AssessmentComponent {
                                 code: "EXAM_M".to_string(),
-                                name: "Written Assessment".to_string(),
-                                name_ar: Some("الاختبار التحريري الشهري".to_string()),
+                                name: "Written Evaluation".to_string(),
+                                name_ar: Some("التقييم التحريري".to_string()),
                                 max_score: Decimal::from(40),
                                 weight: Decimal::from(40),
                                 sort_order: 4,
@@ -2530,7 +2367,7 @@ impl OnboardingService {
 
         // 6. Provision Tuition Fee Template if requested & empty
         let existing_fees = self.fee_template_repo.find_by_org(org_id).await?;
-        if existing_fees.is_empty() && req.provision_tuition_fee_template.unwrap_or(true) {
+        if existing_fees.is_empty() && req.provision_tuition_fee_template.unwrap_or(false) {
             let accounts = self.account_repo.find_by_org(org_id).await?;
             let rev_acct = accounts
                 .iter()
@@ -2664,7 +2501,7 @@ impl OnboardingService {
 
 #[cfg(test)]
 mod tests {
-    use super::{OnboardingTaskStatus, resolve_task_status};
+    use super::{OnboardingTaskStatus, resolve_task_status, OnboardingService};
 
     #[test]
     fn task_with_default_data_is_blocked_until_its_dependencies_are_complete() {
@@ -2680,5 +2517,18 @@ mod tests {
             resolve_task_status(true, true, 100, true),
             OnboardingTaskStatus::Completed
         );
+    }
+
+    #[test]
+    fn generic_blueprint_templates_are_institution_neutral() {
+        let subjects = OnboardingService::generic_subject_templates();
+        let classes = OnboardingService::generic_class_templates();
+
+        assert!(subjects.iter().all(|(_, name, _, _, _)| !name.to_lowercase().contains("kindergarten")));
+        assert!(subjects.iter().all(|(_, name, _, _, _)| !name.to_lowercase().contains("grade ")));
+        assert!(classes.iter().all(|(name, _, _, _)| !name.to_lowercase().contains("kindergarten")));
+        assert!(classes.iter().all(|(name, _, _, _)| !name.to_lowercase().contains("grade ")));
+        assert_eq!(subjects.len(), 3);
+        assert_eq!(classes.len(), 3);
     }
 }

@@ -20,6 +20,95 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstitutionBlueprintConfig {
+    pub grading_system: String,
+    pub passing_threshold_percentage: Decimal,
+    pub honors_threshold_percentage: Decimal,
+    pub minimum_final_exam_score: Option<Decimal>,
+    pub max_failed_subjects_for_conditional_pass: usize,
+    pub min_attendance_rate: Decimal,
+    pub ranking_scope: RankingScope,
+    pub tie_policy: TiePolicy,
+    pub rounding_mode: RoundingMode,
+    pub decimal_places: u32,
+    pub max_class_size_default: i32,
+    pub allow_late_enrollment: bool,
+    pub number_prefix: String,
+}
+
+impl InstitutionBlueprintConfig {
+    pub fn from_institution_type(institution_type: &InstitutionType) -> Self {
+        match institution_type {
+            InstitutionType::School => Self {
+                grading_system: "percentage".to_string(),
+                passing_threshold_percentage: Decimal::from(50),
+                honors_threshold_percentage: Decimal::from(85),
+                minimum_final_exam_score: Some(Decimal::from(10)),
+                max_failed_subjects_for_conditional_pass: 2,
+                min_attendance_rate: Decimal::from(75),
+                ranking_scope: RankingScope::Class,
+                tie_policy: TiePolicy::StandardCompetition,
+                rounding_mode: RoundingMode::RoundHalfUp,
+                decimal_places: 2,
+                max_class_size_default: 30,
+                allow_late_enrollment: false,
+                number_prefix: "STD".to_string(),
+            },
+            InstitutionType::University => Self {
+                grading_system: "gpa".to_string(),
+                passing_threshold_percentage: Decimal::from(60),
+                honors_threshold_percentage: Decimal::from(90),
+                minimum_final_exam_score: Some(Decimal::from(15)),
+                max_failed_subjects_for_conditional_pass: 1,
+                min_attendance_rate: Decimal::from(75),
+                ranking_scope: RankingScope::Cohort,
+                tie_policy: TiePolicy::StandardCompetition,
+                rounding_mode: RoundingMode::RoundHalfUp,
+                decimal_places: 2,
+                max_class_size_default: 50,
+                allow_late_enrollment: true,
+                number_prefix: "UNI".to_string(),
+            },
+            InstitutionType::Institute => Self {
+                grading_system: "percentage".to_string(),
+                passing_threshold_percentage: Decimal::from(50),
+                honors_threshold_percentage: Decimal::from(85),
+                minimum_final_exam_score: Some(Decimal::from(10)),
+                max_failed_subjects_for_conditional_pass: 2,
+                min_attendance_rate: Decimal::from(80),
+                ranking_scope: RankingScope::Class,
+                tie_policy: TiePolicy::StandardCompetition,
+                rounding_mode: RoundingMode::RoundHalfUp,
+                decimal_places: 2,
+                max_class_size_default: 25,
+                allow_late_enrollment: false,
+                number_prefix: "INS".to_string(),
+            },
+        }
+    }
+
+    pub fn apply_to_settings(&self, settings: &mut OrganizationSettings) {
+        settings.academic.default_grading_system = self.grading_system.clone();
+        settings.academic.default_passing_score = self.passing_threshold_percentage;
+        settings.academic.default_max_score = Decimal::from(100);
+        settings.academic.passing_threshold_percentage = self.passing_threshold_percentage;
+        settings.academic.honors_threshold_percentage = self.honors_threshold_percentage;
+        settings.academic.minimum_final_exam_score = self.minimum_final_exam_score;
+        settings.academic.max_failed_subjects_for_conditional_pass =
+            self.max_failed_subjects_for_conditional_pass;
+        settings.academic.min_attendance_rate = self.min_attendance_rate;
+        settings.academic.ranking_scope = self.ranking_scope;
+        settings.academic.tie_policy = self.tie_policy;
+        settings.academic.rounding_mode = self.rounding_mode;
+        settings.academic.decimal_places = self.decimal_places;
+        settings.academic.ranking_enabled = true;
+        settings.academic.max_displayed_rank = None;
+        settings.enrollment.max_class_size_default = self.max_class_size_default;
+        settings.enrollment.allow_late_enrollment = self.allow_late_enrollment;
+    }
+}
 use orbis_domain::entities::admission::{
     AdmissionPolicy, FormFieldConfig, NumberingSchema, YearFormat,
 };
@@ -577,64 +666,10 @@ impl BootstrapService {
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let mut settings = OrganizationSettings::default();
+        let blueprint = InstitutionBlueprintConfig::from_institution_type(institution_type);
+        blueprint.apply_to_settings(&mut settings);
 
         // 1. Academic Policies & Evaluation Defaults
-        match institution_type {
-            InstitutionType::School => {
-                settings.academic.default_grading_system = "percentage".to_string();
-                settings.academic.default_passing_score = Decimal::from(50);
-                settings.academic.default_max_score = Decimal::from(100);
-                settings.academic.passing_threshold_percentage = Decimal::from(50);
-                settings.academic.honors_threshold_percentage = Decimal::from(85);
-                settings.academic.minimum_final_exam_score = Some(Decimal::from(10));
-                settings.academic.max_failed_subjects_for_conditional_pass = 2;
-                settings.academic.min_attendance_rate = Decimal::from(75);
-                settings.academic.ranking_enabled = true;
-                settings.academic.max_displayed_rank = None;
-                settings.academic.ranking_scope = RankingScope::Class;
-                settings.academic.tie_policy = TiePolicy::StandardCompetition;
-                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
-                settings.academic.decimal_places = 2;
-                settings.enrollment.max_class_size_default = 30;
-                settings.enrollment.allow_late_enrollment = false;
-            }
-            InstitutionType::University => {
-                settings.academic.default_grading_system = "gpa".to_string();
-                settings.academic.default_passing_score = Decimal::from(60);
-                settings.academic.default_max_score = Decimal::from(100);
-                settings.academic.passing_threshold_percentage = Decimal::from(60);
-                settings.academic.honors_threshold_percentage = Decimal::from(90);
-                settings.academic.minimum_final_exam_score = Some(Decimal::from(15));
-                settings.academic.max_failed_subjects_for_conditional_pass = 1;
-                settings.academic.min_attendance_rate = Decimal::from(75);
-                settings.academic.ranking_enabled = true;
-                settings.academic.max_displayed_rank = None;
-                settings.academic.ranking_scope = RankingScope::Cohort;
-                settings.academic.tie_policy = TiePolicy::StandardCompetition;
-                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
-                settings.academic.decimal_places = 2;
-                settings.enrollment.max_class_size_default = 50;
-                settings.enrollment.allow_late_enrollment = true;
-            }
-            InstitutionType::Institute => {
-                settings.academic.default_grading_system = "percentage".to_string();
-                settings.academic.default_passing_score = Decimal::from(50);
-                settings.academic.default_max_score = Decimal::from(100);
-                settings.academic.passing_threshold_percentage = Decimal::from(50);
-                settings.academic.honors_threshold_percentage = Decimal::from(85);
-                settings.academic.minimum_final_exam_score = Some(Decimal::from(10));
-                settings.academic.max_failed_subjects_for_conditional_pass = 2;
-                settings.academic.min_attendance_rate = Decimal::from(80);
-                settings.academic.ranking_enabled = true;
-                settings.academic.max_displayed_rank = None;
-                settings.academic.ranking_scope = RankingScope::Class;
-                settings.academic.tie_policy = TiePolicy::StandardCompetition;
-                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
-                settings.academic.decimal_places = 2;
-                settings.enrollment.max_class_size_default = 25;
-                settings.enrollment.allow_late_enrollment = false;
-            }
-        }
         settings.academic.enrollment_auto_close = true;
         settings.academic.late_enrollment_approval = true;
         settings.academic.grade_entry_auto_close = true;

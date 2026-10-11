@@ -1,6 +1,6 @@
 <!--
 @component PeriodsManager
-Allows administrators to manage academic periods, terms, semesters, and locking states.
+Allows administrators to manage configured academic periods and locking states.
 Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hierarchical trees.
 -->
 <script lang="ts">
@@ -89,9 +89,15 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
       id: "type",
       label: m.common_filter(),
       options: [
-        { value: "type:term", label: m.common_period_form_type_term() },
-        { value: "type:semester", label: m.common_cycle_form_type_year() },
-      ],
+        ...new Set(
+          periods
+            .map((period) => period.period_type)
+            .filter((periodType): periodType is string => Boolean(periodType)),
+        ),
+      ].map((periodType) => ({
+        value: `type:${periodType}`,
+        label: periodType,
+      })),
     },
   ]);
 

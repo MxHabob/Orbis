@@ -217,6 +217,111 @@ pub trait PeriodTemplateRepository: Send + Sync {
     async fn save(&self, template: &PeriodTemplate) -> Result<(), DomainError>;
 }
 
+#[async_trait]
+pub trait AcademicFrameworkRepository: Send + Sync {
+    async fn list_calendars(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::academic_calendar::AcademicCalendar>, DomainError>;
+    async fn find_calendar(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::academic_calendar::AcademicCalendar>, DomainError>;
+    async fn find_calendar_by_code(
+        &self,
+        org_id: Uuid,
+        code: &str,
+    ) -> Result<Option<orbis_domain::entities::academic_calendar::AcademicCalendar>, DomainError>;
+    async fn save_calendar(
+        &self,
+        calendar: &orbis_domain::entities::academic_calendar::AcademicCalendar,
+    ) -> Result<(), DomainError>;
+    async fn list_period_types(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::academic_calendar::AcademicPeriodType>, DomainError>;
+    async fn find_period_type(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::academic_calendar::AcademicPeriodType>, DomainError>;
+    async fn find_period_type_by_code(
+        &self,
+        org_id: Uuid,
+        code: &str,
+    ) -> Result<Option<orbis_domain::entities::academic_calendar::AcademicPeriodType>, DomainError>;
+    async fn save_period_type(
+        &self,
+        period_type: &orbis_domain::entities::academic_calendar::AcademicPeriodType,
+    ) -> Result<(), DomainError>;
+    async fn list_calendar_periods(
+        &self,
+        org_id: Uuid,
+        calendar_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::academic_calendar::AcademicCalendarPeriod>, DomainError>;
+    async fn find_calendar_period(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<
+        Option<orbis_domain::entities::academic_calendar::AcademicCalendarPeriod>,
+        DomainError,
+    >;
+    async fn save_calendar_period(
+        &self,
+        period: &orbis_domain::entities::academic_calendar::AcademicCalendarPeriod,
+    ) -> Result<(), DomainError>;
+    async fn find_course(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::course::Course>, DomainError>;
+    async fn list_courses(
+        &self,
+        org_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::course::Course>, DomainError>;
+    async fn find_course_by_code(
+        &self,
+        org_id: Uuid,
+        code: &str,
+    ) -> Result<Option<orbis_domain::entities::course::Course>, DomainError>;
+    async fn save_course(
+        &self,
+        course: &orbis_domain::entities::course::Course,
+    ) -> Result<(), DomainError>;
+    async fn find_course_offering(
+        &self,
+        org_id: Uuid,
+        id: Uuid,
+    ) -> Result<Option<orbis_domain::entities::course_offering::CourseOffering>, DomainError>;
+    async fn list_course_offerings(
+        &self,
+        org_id: Uuid,
+        course_id: Option<Uuid>,
+    ) -> Result<Vec<orbis_domain::entities::course_offering::CourseOffering>, DomainError>;
+    async fn save_course_offering(
+        &self,
+        offering: &orbis_domain::entities::course_offering::CourseOffering,
+    ) -> Result<(), DomainError>;
+    async fn find_course_enrollment_attempt(
+        &self,
+        org_id: Uuid,
+        offering_id: Uuid,
+        student_id: Uuid,
+        attempt_number: u32,
+    ) -> Result<Option<orbis_domain::entities::course_enrollment::CourseEnrollment>, DomainError>;
+    async fn list_course_enrollments(
+        &self,
+        org_id: Uuid,
+        offering_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::course_enrollment::CourseEnrollment>, DomainError>;
+    async fn save_course_enrollment(
+        &self,
+        enrollment: &orbis_domain::entities::course_enrollment::CourseEnrollment,
+    ) -> Result<(), DomainError>;
+}
+
 // =========================================================================
 // Student & Enrollment
 // =========================================================================

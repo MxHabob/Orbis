@@ -2157,8 +2157,8 @@ impl AiOrchestrationService {
 mod tests {
     use super::{
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
-        required_tool_permission, take_private_ui_result,
-        teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
+        required_tool_permission, take_private_ui_result, teacher_assigned_to_class,
+        tool_supports_unit_scoping, unit_in_scope,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;

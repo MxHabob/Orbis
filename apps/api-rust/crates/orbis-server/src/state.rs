@@ -5,16 +5,16 @@ use orbis_app::ports::reporting::{
     ReportJobRepository, ReportTemplateRepository,
 };
 use orbis_app::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
-    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, ClassRepository,
-    ClassSubjectRepository, CurrencyRepository, DashboardRepository, DocumentRepository,
-    EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository,
-    FeeTemplateRepository, GradeRepository, IntegrationRepository, JournalEntryRepository,
-    OrgUnitRepository, OrganizationRepository, PaymentRepository, PeriodTemplateRepository,
-    PersonRepository, PolicyRepository, RoomRepository, ScheduledLessonRepository,
-    SeatingNumberRepository, SecretNumberRepository, SessionRepository, SettingsRepository,
-    StudentFeeRepository, StudentGuardianRepository, SubjectRepository, TimeSlotRepository,
-    UserRepository, WorkflowRepository,
+    AcademicFrameworkRepository, AcademicPeriodRepository, AcademicYearRepository,
+    AccountRepository, AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
+    ClassRepository, ClassSubjectRepository, CurrencyRepository, DashboardRepository,
+    DocumentRepository, EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository,
+    ExamSessionRepository, FeeTemplateRepository, GradeRepository, IntegrationRepository,
+    JournalEntryRepository, OrgUnitRepository, OrganizationRepository, PaymentRepository,
+    PeriodTemplateRepository, PersonRepository, PolicyRepository, RoomRepository,
+    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, SessionRepository,
+    SettingsRepository, StudentFeeRepository, StudentGuardianRepository, SubjectRepository,
+    TimeSlotRepository, UserRepository, WorkflowRepository,
 };
 use orbis_app::ports::security::{PasswordHasher, TokenService};
 use orbis_app::services::OrgContextResolver;
@@ -33,6 +33,7 @@ pub struct AppState {
     pub year_repo: Arc<dyn AcademicYearRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub period_template_repo: Arc<dyn PeriodTemplateRepository>,
+    pub academic_framework_repo: Arc<dyn AcademicFrameworkRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub class_repo: Arc<dyn ClassRepository>,
     pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
@@ -88,6 +89,7 @@ pub struct AppState {
     pub student_service: Arc<orbis_app::services::StudentService>,
     pub progression_service: Arc<orbis_app::services::ProgressionService>,
     pub academic_service: Arc<orbis_app::services::AcademicService>,
+    pub academic_framework_service: Arc<orbis_app::services::AcademicFrameworkService>,
     pub finance_service: Arc<orbis_app::services::FinanceService>,
     pub assessment_service: Arc<orbis_app::services::AssessmentService>,
     pub auth_service: Arc<orbis_app::services::AuthService>,

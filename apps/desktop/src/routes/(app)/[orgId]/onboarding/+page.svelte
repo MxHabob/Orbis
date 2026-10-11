@@ -11,10 +11,6 @@ import { resolve } from "$app/paths";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { api } from "$lib/api";
 import { fetchLatestOnboardingState } from "$lib/features/onboarding-wizard/onboarding-queries";
-import {
-  getHijriSchoolMonthLengths,
-  getNextHijriSchoolCalendar,
-} from "$lib/core/i18n/hijri";
 import { effectiveContext, systemStore } from "$lib/stores";
 import type {
   OnboardingTaskCategory,
@@ -70,10 +66,10 @@ let onboardingLoadFailed = $state(false);
 // Provision Form Defaults
 let provYearName = $state("");
 let provYearNameAr = $state("");
-let provStagesAndGrades = $state(true);
-let provSubjects = $state(true);
-let provAssessmentScheme = $state(true);
-let provTuitionFee = $state(true);
+let provStagesAndGrades = $state(false);
+let provSubjects = $state(false);
+let provAssessmentScheme = $state(false);
+let provTuitionFee = $state(false);
 
 async function loadState() {
   isLoadingOnboarding = true;
@@ -203,54 +199,12 @@ async function handleProvisionDefaults() {
     const request: ProvisionDefaultsReqDto = {
       academic_year_name: provYearName || undefined,
       academic_year_name_ar: provYearNameAr || undefined,
+      provision_academic_year: Boolean(provYearName.trim() || provYearNameAr.trim()),
       provision_stages_and_grades: provStagesAndGrades,
       provision_subjects: provSubjects,
       provision_assessment_scheme: provAssessmentScheme,
       provision_tuition_fee_template: provTuitionFee,
     };
-    if (state?.institution_type === "school") {
-      const years = await api.listAcademicYears();
-      const academicYear =
-        years.find((year) => year.status === "active") ?? years[0];
-      const calendar = academicYear
-        ? getHijriSchoolMonthLengths(academicYear.start_date)
-        : getNextHijriSchoolCalendar();
-      if (!calendar) {
-        throw new Error(m.onboarding_step_scheduling_invalid_hijri_start());
-      }
-      const toDateValue = (date: Date) =>
-        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const startDate = toDateValue(
-        academicYear?.start_date
-          ? new Date(academicYear.start_date)
-          : calendar.startDate,
-      );
-      const endDate = toDateValue(
-        academicYear?.end_date
-          ? new Date(academicYear.end_date)
-          : calendar.endDate,
-      );
-      Object.assign(request, {
-        academic_year_id: academicYear ? String(academicYear.id) : undefined,
-        academic_year_name:
-          academicYear?.name ||
-          provYearName ||
-          `${calendar.hijriYear}/${calendar.hijriYear + 1}`,
-        academic_year_name_ar:
-          academicYear?.name_ar ||
-          provYearNameAr ||
-          `العام الدراسي ${calendar.hijriYear}-${calendar.hijriYear + 1}هـ`,
-        start_date: academicYear?.start_date || new Date(startDate).toISOString(),
-        end_date:
-          academicYear?.end_date ||
-          new Date(`${endDate}T23:59:59.000Z`).toISOString(),
-        provision_hijri_school_calendar: true,
-        hijri_start_year: calendar.hijriYear,
-        hijri_month_lengths: calendar.monthLengths,
-        provision_time_slots: true,
-        enable_period_autopilot: true,
-      });
-    }
     await systemStore.provisionBlueprintDefaults(
       request,
       orgId,
