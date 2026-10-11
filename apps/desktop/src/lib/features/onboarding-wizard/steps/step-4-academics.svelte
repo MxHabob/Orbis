@@ -458,7 +458,7 @@ async function handleBatchImportClasses() {
           title={m.onboarding_step4_quick_classes()}
           description={m.onboarding_step4_quick_classes_desc()}
         >
-          {#each STANDARD_CLASSES as classPreset (classPreset.code)}
+          {#each STANDARD_CLASSES as classPreset (classPreset.name)}
             <Button
               variant="outline"
               size="sm"
