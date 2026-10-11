@@ -1855,7 +1855,9 @@ export type ProvisionDefaultsReqDto = {
     end_date?: string | null;
     hijri_month_lengths?: Array<number> | null;
     hijri_start_year?: number | null;
+    provision_academic_year?: boolean | null;
     provision_assessment_scheme?: boolean | null;
+    provision_default_academic_periods?: boolean | null;
     provision_discount_templates?: boolean | null;
     provision_hijri_school_calendar?: boolean | null;
     provision_stages_and_grades?: boolean | null;
