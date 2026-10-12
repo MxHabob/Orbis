@@ -921,7 +921,7 @@ impl ReportDataProvider for StudentListDataProvider {
                     c.name as class_name
                 FROM enrollments e
                 LEFT JOIN persons p ON e.student_id = p.id
-                LEFT JOIN classes c ON e.class_id = c.id
+                LEFT JOIN classes c ON e.section_id = c.id
                 WHERE e.org_id = $1
                 ORDER BY c.name, p.full_name"#,
                 vec![org_id.to_string().into()],
@@ -1044,7 +1044,7 @@ impl ReportDataProvider for TermResultDataProvider {
         LEFT JOIN persons p ON g.student_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN classes c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
         WHERE g.org_id = $1"#
             .to_string();
@@ -1496,7 +1496,7 @@ impl ReportDataProvider for AnnualResultDataProvider {
         LEFT JOIN persons p ON g.student_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN classes c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
         LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
         WHERE g.org_id = $1"#
@@ -1677,7 +1677,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         LEFT JOIN persons p ON g.student_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN classes c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
         LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
         WHERE g.org_id = $1"#
@@ -1692,7 +1692,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         }
         if let Some(cid) = class_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND cs.class_id = ${}", idx));
+            sql.push_str(&format!(" AND cs.section_id = ${}", idx));
             values.push(cid.to_string().into());
         }
         if let Some(yid) = year_filter {

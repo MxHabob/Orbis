@@ -433,7 +433,7 @@ impl EnrollmentRepository for StudentRepoImpl {
             query = query.filter(enrollment::Column::PeriodId.eq(period_id));
         }
 
-        if let Some(class_id) = filter.class_id {
+        if let Some(class_id) = filter.section_id {
             query = query.filter(enrollment::Column::ClassId.eq(class_id));
         }
 
@@ -487,7 +487,7 @@ impl EnrollmentRepository for StudentRepoImpl {
             .collect())
     }
 
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
         let models = EnrollmentEntity::find()
             .filter(enrollment::Column::ClassId.eq(class_id))
             .all(&self.db)
@@ -517,7 +517,7 @@ impl EnrollmentRepository for StudentRepoImpl {
             org_id: Set(e.org_id),
             period_id: Set(e.period_id),
             student_id: Set(e.student_id),
-            class_id: Set(e.class_id),
+            section_id: Set(e.section_id),
             student_number: Set(e.student_number.clone()),
             status: Set(e.status.to_string()),
             study_mode: Set(Some(e.study_mode.to_string())),
@@ -582,7 +582,7 @@ fn map_enrollment_model_to_domain(m: enrollment::Model) -> DomainEnrollment {
         org_id: m.org_id,
         period_id: m.period_id,
         student_id: m.student_id,
-        class_id: m.class_id,
+        section_id: m.section_id,
         student_number: m.student_number,
         study_mode: match m.study_mode.as_deref().unwrap_or("regular") {
             "homeschooled" => StudyMode::Homeschooled,

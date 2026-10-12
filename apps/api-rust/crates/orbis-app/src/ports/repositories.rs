@@ -389,7 +389,7 @@ pub trait EnrollmentRepository: Send + Sync {
         filter: EnrollmentFilter,
     ) -> Result<PaginatedList<Enrollment>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
+    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn save(&self, enrollment: &Enrollment) -> Result<(), DomainError>;
     async fn save_batch(&self, enrollments: &[Enrollment]) -> Result<(), DomainError>;
@@ -462,10 +462,10 @@ pub trait ClassRepository: Send + Sync {
 #[async_trait]
 pub trait SectionSubjectRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<SectionSubject>, DomainError>;
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<SectionSubject>, DomainError>;
+    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<SectionSubject>, DomainError>;
     async fn find_by_class_and_period(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
         period_id: Uuid,
     ) -> Result<Vec<SectionSubject>, DomainError>;
     async fn find_by_teacher(
@@ -538,7 +538,7 @@ pub trait AttendanceRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Attendance>, DomainError>;
     async fn find_by_class_and_date(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
         date: NaiveDate,
     ) -> Result<Vec<Attendance>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Attendance>, DomainError>;
@@ -586,7 +586,7 @@ pub trait TimeSlotRepository: Send + Sync {
 #[async_trait]
 pub trait ScheduledLessonRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ScheduledLesson>, DomainError>;
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
+    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_teacher(&self, teacher_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_section_subject(
         &self,

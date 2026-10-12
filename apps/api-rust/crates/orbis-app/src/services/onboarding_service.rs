@@ -2181,7 +2181,7 @@ impl OnboardingService {
                     theory_hours: Some(Decimal::from(hours)),
                     practical_hours: None,
                     is_lab_required: false,
-                    max_students_per_class: Some(30),
+                    max_students_per_section: Some(30),
                     color: None,
                     icon: None,
                     sort_order: None,

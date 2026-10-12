@@ -112,7 +112,7 @@ fn map_course(m: course::Model) -> Course {
     Course {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.unit_id,
+        unit_id: m.org_unit_id,
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
@@ -398,7 +398,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         let active = course::ActiveModel {
             id: Set(course.id),
             org_id: Set(course.org_id),
-            unit_id: Set(course.unit_id),
+            unit_id: Set(course.org_unit_id),
             code: Set(course.code.clone()),
             name: Set(course.name.clone()),
             name_ar: Set(course.name_ar.clone()),

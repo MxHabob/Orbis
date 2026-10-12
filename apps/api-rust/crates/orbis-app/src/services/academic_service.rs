@@ -108,14 +108,16 @@ impl AcademicService {
             description: None,
             is_core,
             is_elective: !is_core,
-            credit_hours,
+            credit_units: credit_units,
+            workload_units: None,
             theory_hours: None,
             practical_hours: None,
             is_lab_required: false,
-            max_students_per_class: None,
+            max_students_per_section: None,
             color: None,
             icon: None,
             sort_order: None,
+            subject_type: "subject".to_string(),
             is_active: true,
             created_at: now,
             updated_at: now,
@@ -186,13 +188,12 @@ impl AcademicService {
             .find_by_org(org_id)
             .await?
             .iter()
-            .any(|Section| {
-                Section.unit_id == unit_id
-                    && Section.period_id == period_id
-                    && Section.level.trim().to_lowercase() == normalized_level
-                    && (Section.name.trim().to_lowercase() == normalized_name
+            .any(|s| {
+                s.org_unit_id == Some(unit_id)
+                    && s.level.as_deref().map(|l| l.trim().to_lowercase()) == Some(normalized_level.clone())
+                    && (s.name.trim().to_lowercase() == normalized_name
                         || (!normalized_name_ar.is_empty()
-                            && Section
+                            && s
                                 .name_ar
                                 .as_deref()
                                 .unwrap_or_default()
@@ -210,19 +211,17 @@ impl AcademicService {
         let now = Utc::now();
         let class_id = Uuid::new_v4();
 
-        let Section = Section {
-            id: class_id,
+        let section = Section {
+            id: section_id,
             org_id,
-            unit_id,
-            period_id,
+            org_unit_id: Some(unit_id),
+            section_type: "class".to_string(),
+            code: name.trim().to_string(),
             name: name.trim().to_string(),
             name_ar,
-            level: level.trim().to_string(),
-            division: None,
-            homeroom_teacher_id: None,
+            level: Some(level.trim().to_string()),
+            track: None,
             capacity: Some(capacity.unwrap_or(30)),
-            current_students: Some(0),
-            room_id: None,
             color: None,
             is_active: true,
             is_deleted: false,
@@ -231,14 +230,14 @@ impl AcademicService {
             updated_at: now,
         };
 
-        self.class_repo.save(&Section).await?;
+        self.class_repo.save(&section).await?;
 
         let _ = self
             .event_bus
             .publish(
                 ctx,
                 &DomainEvent::ClassCreated {
-                    class_id,
+                    section_id,
                     org_id,
                     period_id,
                     timestamp: now,
@@ -246,7 +245,7 @@ impl AcademicService {
             )
             .await;
 
-        Ok(Section)
+        Ok(section)
     }
 
     /// List classes
@@ -267,10 +266,10 @@ impl AcademicService {
     pub async fn assign_section_subject(
         &self,
         ctx: &RequestContext,
-        class_id: Uuid,
+        section_id: Uuid,
         subject_id: Uuid,
         period_id: Uuid,
-        primary_teacher_id: Uuid,
+        instructor_id: Uuid,
         weekly_hours: Option<i32>,
     ) -> Result<SectionSubject, DomainError> {
         self.permission_checker
@@ -282,21 +281,16 @@ impl AcademicService {
 
         let cs = SectionSubject {
             id: cs_id,
-            class_id,
+            org_id: Uuid::nil(), // TODO: pass org_id through
+            section_id: section_id,
             subject_id,
             period_id,
-            primary_teacher_id,
-            assistant_teacher_id: None,
-            substitute_teacher_id: None,
-            grade_groups: None,
-            weekly_hours,
-            theory_hours: None,
-            practical_hours: None,
-            assessment_config: None,
+            instructor_id: Some(primary_teacher_id),
+            assistant_instructor_id: None,
             scheme_id: None,
+            weekly_hours,
+            status: "active".to_string(),
             is_active: true,
-            created_at: now,
-            updated_at: now,
         };
 
         self.section_subject_repo.save(&cs).await?;
@@ -307,7 +301,7 @@ impl AcademicService {
                 ctx,
                 &DomainEvent::SectionSubjectAssigned {
                     section_subject_id: cs_id,
-                    class_id,
+                    section_id,
                     subject_id,
                     timestamp: now,
                 },
@@ -372,17 +366,21 @@ impl AcademicService {
                         (true, Some(g.score), None)
                     }
                 }
-                None => match prereq.requirement_type {
-                    PrerequisiteType::Enforce => (
-                        false,
-                        None,
-                        Some("Prerequisite course has not been taken".into()),
-                    ),
-                    PrerequisiteType::Recommended => {
+                None => {
+                    let rt = prereq.requirement_type.as_str();
+                    if rt == "mandatory" || rt == "enforce" {
+                        (
+                            false,
+                            None,
+                            Some("Prerequisite course has not been taken".into()),
+                        )
+                    } else if rt == "recommended" {
                         (true, None, Some("Recommended course not completed".into()))
+                    } else {
+                        // corequisite or unknown
+                        (true, None, None)
                     }
-                    PrerequisiteType::Corequisite => (true, None, None),
-                },
+                }
             };
 
             results.push(PrerequisiteCheckResult {

@@ -73,7 +73,7 @@ impl<T: Serialize> PaginatedList<T> {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct StudentFilter {
     pub period_id: Option<Uuid>,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub status: Option<StudentStatus>,
     pub standing: Option<AcademicStanding>,
     pub search: Option<String>,
@@ -83,7 +83,7 @@ pub struct StudentFilter {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct EnrollmentFilter {
     pub period_id: Option<Uuid>,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
     pub study_mode: Option<StudyMode>,
     pub status: Option<EnrollmentStatus>,
@@ -110,7 +110,7 @@ pub struct ClassFilter {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct SectionSubjectFilter {
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
     pub teacher_id: Option<Uuid>,
@@ -129,7 +129,7 @@ pub struct GradeFilter {
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct AttendanceFilter {
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
     pub section_subject_id: Option<Uuid>,
     pub date: Option<chrono::NaiveDate>,

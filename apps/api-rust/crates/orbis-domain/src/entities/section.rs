@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -14,5 +15,13 @@ pub struct Section {
     pub level: Option<String>,
     pub track: Option<String>,
     pub capacity: Option<i32>,
+    pub color: Option<String>,
     pub is_active: bool,
+    pub is_deleted: bool,
+    pub deleted_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
+
+/// Type alias for backward compat
+pub type Class = Section;

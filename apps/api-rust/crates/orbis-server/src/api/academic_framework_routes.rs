@@ -227,7 +227,7 @@ fn course_dto(item: Course) -> CourseDto {
     CourseDto {
         id: item.id,
         org_id: item.org_id,
-        unit_id: item.unit_id,
+        unit_id: item.org_unit_id,
         code: item.code,
         name: item.name,
         name_ar: item.name_ar,
@@ -414,7 +414,7 @@ pub async fn create_course(
         .create_course(
             &ctx,
             ctx.tenant_id,
-            request.unit_id,
+            request.org_unit_id,
             request.code,
             request.name,
             request.name_ar,

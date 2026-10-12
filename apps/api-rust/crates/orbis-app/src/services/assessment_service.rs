@@ -387,7 +387,7 @@ impl AssessmentService {
                 .await?
             {
                 if let Some(subj) = self.subject_repo.find_by_id(cs.subject_id).await? {
-                    subj.credit_hours.unwrap_or(Decimal::from(3))
+                    subj.credit_units.unwrap_or(Decimal::from(3))
                 } else {
                     Decimal::from(3)
                 }
@@ -483,7 +483,7 @@ impl AssessmentService {
         _org_id: Uuid,
         _period_id: Uuid,
         student_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         section_subject_id: Option<Uuid>,
         date: NaiveDate,
         status: String,
@@ -499,7 +499,7 @@ impl AssessmentService {
         let attendance = Attendance {
             id: att_id,
             student_id,
-            class_id,
+            section_id,
             section_subject_id,
             scheduled_lesson_id: None,
             attendance_date: date,
@@ -519,7 +519,7 @@ impl AssessmentService {
                 &DomainEvent::AttendanceMarked {
                     attendance_id: att_id,
                     student_id,
-                    class_id,
+                    section_id,
                     section_subject_id,
                     scheduled_lesson_id: None,
                     status,
@@ -536,7 +536,7 @@ impl AssessmentService {
         &self,
         ctx: &RequestContext,
         _org_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         date: NaiveDate,
         items: Vec<BatchAttendanceItem>,
     ) -> Result<Vec<Attendance>, DomainError> {
@@ -552,7 +552,7 @@ impl AssessmentService {
             attendances.push(Attendance {
                 id: att_id,
                 student_id: item.student_id,
-                class_id: Some(class_id),
+                section_id: Some(class_id),
                 section_subject_id: item.section_subject_id,
                 scheduled_lesson_id: item.scheduled_lesson_id,
                 attendance_date: date,
@@ -574,7 +574,7 @@ impl AssessmentService {
                     &DomainEvent::AttendanceMarked {
                         attendance_id: a.id,
                         student_id: a.student_id,
-                        class_id: a.class_id,
+                        section_id: a.section_id,
                         section_subject_id: a.section_subject_id,
                         scheduled_lesson_id: a.scheduled_lesson_id,
                         status: a.status.clone(),
@@ -941,7 +941,7 @@ impl AssessmentService {
         org_id: Uuid,
         student_id: Uuid,
         period_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         policy: Option<AcademicPolicy>,
     ) -> Result<StudentTermReportCard, DomainError> {
         self.permission_checker
@@ -993,7 +993,7 @@ impl AssessmentService {
             enrollments
                 .into_iter()
                 .find(|e| e.period_id == period_id || e.status == EnrollmentStatus::Active)
-                .and_then(|e| e.class_id)
+                .and_then(|e| e.section_id)
                 .unwrap_or_else(Uuid::nil)
         } else {
             Uuid::nil()
@@ -1013,7 +1013,7 @@ impl AssessmentService {
         let section_subjects = if resolved_class_id != Uuid::nil() {
             let cs_list = self
                 .section_subject_repo
-                .find_by_class_and_period(resolved_class_id, period_id)
+                .find_by_class_and_period(resolved_section_id, period_id)
                 .await?;
             if cs_list.is_empty() {
                 self.section_subject_repo
@@ -1036,7 +1036,7 @@ impl AssessmentService {
                     s.code.clone(),
                     s.name.clone(),
                     s.name_ar.clone(),
-                    s.credit_hours.unwrap_or(Decimal::ONE),
+                    s.credit_units.unwrap_or(Decimal::ONE),
                 ),
                 None => (
                     "SUBJ".to_string(),
@@ -1148,7 +1148,7 @@ impl AssessmentService {
                 subject_code,
                 subject_name,
                 subject_name_ar,
-                credit_hours,
+                credit_units,
                 monthly_results,
                 term_final_exam,
                 &policy,
@@ -1179,7 +1179,7 @@ impl AssessmentService {
             student_id,
             student_name,
             student_number,
-            class_id: resolved_class_id,
+            section_id: resolved_section_id,
             class_name,
             period_id,
             period_name,
@@ -1204,7 +1204,7 @@ impl AssessmentService {
         org_id: Uuid,
         student_id: Uuid,
         calendar_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         policy: Option<AcademicPolicy>,
     ) -> Result<StudentAnnualReportCard, DomainError> {
         self.permission_checker
@@ -1241,7 +1241,7 @@ impl AssessmentService {
                     org_id,
                     student_id,
                     t1.id,
-                    class_id,
+                    section_id,
                     Some(policy.clone()),
                 )
                 .await?,
@@ -1258,7 +1258,7 @@ impl AssessmentService {
                     org_id,
                     student_id,
                     t2.id,
-                    class_id,
+                    section_id,
                     Some(policy.clone()),
                 )
                 .await?,
@@ -1281,8 +1281,8 @@ impl AssessmentService {
         let resolved_class_id = class_id.unwrap_or_else(|| {
             term_1_card
                 .as_ref()
-                .map(|c| c.class_id)
-                .or_else(|| term_2_card.as_ref().map(|c| c.class_id))
+                .map(|c| c.section_id)
+                .or_else(|| term_2_card.as_ref().map(|c| c.section_id))
                 .unwrap_or_else(Uuid::nil)
         });
 
@@ -1317,7 +1317,7 @@ impl AssessmentService {
                     r.subject_code.clone(),
                     r.subject_name.clone(),
                     r.subject_name_ar.clone(),
-                    r.credit_hours,
+                    r.credit_units,
                 )
             } else {
                 ("SUBJ".into(), "Subject".into(), None, Decimal::ONE)
@@ -1351,7 +1351,7 @@ impl AssessmentService {
             student_id,
             student_name,
             student_number,
-            class_id: resolved_class_id,
+            section_id: resolved_section_id,
             class_name,
             calendar_id,
             academic_calendar_name: year_name,
@@ -1374,7 +1374,7 @@ impl AssessmentService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         period_id: Uuid,
         policy: Option<AcademicPolicy>,
     ) -> Result<Vec<StudentTermReportCard>, DomainError> {
@@ -1437,7 +1437,7 @@ impl AssessmentService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         calendar_id: Uuid,
         policy: Option<AcademicPolicy>,
     ) -> Result<Vec<StudentAnnualReportCard>, DomainError> {

@@ -510,7 +510,7 @@ impl SchedulingService {
 
     pub async fn list_lessons_by_class(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
     ) -> Result<Vec<ScheduledLesson>, DomainError> {
         self.lesson_repo.find_by_class(class_id).await
     }

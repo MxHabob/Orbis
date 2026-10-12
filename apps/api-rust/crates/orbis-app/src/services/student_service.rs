@@ -66,7 +66,7 @@ pub struct RegisterStudentInput {
     pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub initial_period_id: Option<Uuid>,
-    pub initial_class_id: Option<Uuid>,
+    pub initial_section_id: Option<Uuid>,
     pub study_mode: Option<StudyMode>,
     pub bypass_capacity_check: Option<bool>,
 }
@@ -484,7 +484,7 @@ impl StudentService {
                         resolution_notes: None,
                         expires_at: None,
                         metadata: serde_json::json!({
-                            "class_id": class_id,
+                            "class_id": section_id,
                             "active_count": active_count,
                             "max_capacity": max_cap
                         }),
@@ -537,7 +537,7 @@ impl StudentService {
                 org_id,
                 period_id,
                 student_id,
-                input.initial_class_id,
+                input.initial_section_id,
                 student_number.clone(),
                 mode,
             );
@@ -585,7 +585,7 @@ impl StudentService {
                     &DomainEvent::StudentEnrolled {
                         enrollment_id: enrollment.id,
                         student_id,
-                        class_id: input.initial_class_id,
+                        section_id: input.initial_section_id,
                         org_id,
                         study_mode: mode.to_string(),
                         timestamp: now,
@@ -625,7 +625,7 @@ impl StudentService {
         org_id: Uuid,
         period_id: Uuid,
         student_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         student_number: String,
         study_mode: StudyMode,
     ) -> Result<Enrollment, DomainError> {
@@ -661,7 +661,7 @@ impl StudentService {
             org_id,
             period_id,
             student_id,
-            class_id,
+            section_id,
             student_number,
             study_mode,
         );
@@ -675,7 +675,7 @@ impl StudentService {
                 &DomainEvent::StudentEnrolled {
                     enrollment_id: enrollment.id,
                     student_id,
-                    class_id,
+                    section_id,
                     org_id,
                     study_mode: study_mode.to_string(),
                     timestamp: now,
@@ -786,7 +786,7 @@ impl StudentService {
         &self,
         ctx: &RequestContext,
         enrollment_id: Uuid,
-        target_class_id: Uuid,
+        target_section_id: Uuid,
         _reason: Option<String>,
     ) -> Result<Enrollment, DomainError> {
         self.permission_checker
@@ -801,7 +801,7 @@ impl StudentService {
                 DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
             })?;
 
-        enrollment.class_id = Some(target_class_id);
+        enrollment.section_id = Some(target_class_id);
         enrollment.updated_at = Utc::now();
 
         self.enrollment_repo.save(&enrollment).await?;
@@ -1246,7 +1246,7 @@ impl StudentService {
                     } else {
                         admission_policy.max_class_capacity
                     };
-                    class_capacity_cache.insert(class_id, (active, max_c));
+                    class_capacity_cache.insert(section_id, (active, max_c));
                     (active, max_c)
                 };
 

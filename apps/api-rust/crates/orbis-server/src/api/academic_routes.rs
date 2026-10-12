@@ -79,10 +79,10 @@ pub struct CreateClassRequest {
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct SectionSubjectDto {
     pub id: Uuid,
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub subject_id: Uuid,
     pub period_id: Uuid,
-    pub primary_teacher_id: Uuid,
+    pub instructor_id: Uuid,
     pub weekly_hours: Option<i32>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
@@ -91,10 +91,10 @@ pub struct SectionSubjectDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct AssignSectionSubjectRequest {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub subject_id: Uuid,
     pub period_id: Uuid,
-    pub primary_teacher_id: Uuid,
+    pub instructor_id: Uuid,
     pub weekly_hours: Option<i32>,
 }
 
@@ -104,12 +104,12 @@ fn subject_to_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
     SubjectDto {
         id: s.id,
         org_id: s.org_id,
-        unit_id: s.unit_id,
+        unit_id: s.org_unit_id,
         code: s.code,
         name: s.name,
         name_ar: s.name_ar,
         description: s.description,
-        credit_hours: s.credit_hours,
+        credit_hours: s.credit_units,
         is_core: s.is_core,
         is_elective: s.is_elective,
         is_active: s.is_active,
@@ -122,13 +122,13 @@ fn section_to_dto(c: orbis_domain::entities::section::Section) -> ClassDto {
     ClassDto {
         id: c.id,
         org_id: c.org_id,
-        unit_id: c.unit_id,
+        unit_id: c.org_unit_id,
         period_id: c.period_id,
         name: c.name,
         name_ar: c.name_ar,
         level: c.level,
         division: c.division,
-        homeroom_teacher_id: c.homeroom_teacher_id,
+        homeroom_teacher_id: c.homeroom_instructor_id,
         capacity: c.capacity,
         current_students: c.current_students,
         room_id: c.room_id,
@@ -154,11 +154,11 @@ async fn create_subject(
         .create_subject(
             &ctx,
             ctx.tenant_id,
-            p.unit_id,
+            p.org_unit_id,
             p.code,
             p.name,
             p.name_ar,
-            p.credit_hours,
+            p.credit_units,
             p.is_core.unwrap_or(true),
         )
         .await?;
@@ -210,7 +210,7 @@ async fn create_class(
         .create_class(
             &ctx,
             ctx.tenant_id,
-            p.unit_id,
+            p.org_unit_id,
             p.period_id,
             p.name,
             p.name_ar,
@@ -265,19 +265,19 @@ async fn assign_section_subject(
         .academic_service
         .assign_section_subject(
             &ctx,
-            p.class_id,
+            p.section_id,
             p.subject_id,
             p.period_id,
-            p.primary_teacher_id,
+            p.instructor_id,
             p.weekly_hours,
         )
         .await?;
     Ok(ApiResponse::ok(SectionSubjectDto {
         id: cs.id,
-        class_id: cs.class_id,
+        section_id: cs.section_id,
         subject_id: cs.subject_id,
         period_id: cs.period_id,
-        primary_teacher_id: cs.primary_teacher_id,
+        instructor_id: cs.instructor_id,
         weekly_hours: cs.weekly_hours,
         is_active: cs.is_active,
         created_at: cs.created_at,
@@ -295,7 +295,7 @@ async fn list_section_subjects(
     axum::extract::Query(params): axum::extract::Query<SectionSubjectQuery>,
 ) -> Result<Json<ApiResponse<Vec<SectionSubjectDto>>>, ApiError> {
     let filter = SectionSubjectFilter {
-        class_id: Some(params.class_id),
+        section_id: Some(params.section_id),
         period_id: Some(params.period_id),
         ..Default::default()
     };
@@ -308,10 +308,10 @@ async fn list_section_subjects(
         .into_iter()
         .map(|cs| SectionSubjectDto {
             id: cs.id,
-            class_id: cs.class_id,
+            section_id: cs.section_id,
             subject_id: cs.subject_id,
             period_id: cs.period_id,
-            primary_teacher_id: cs.primary_teacher_id,
+            instructor_id: cs.instructor_id,
             weekly_hours: cs.weekly_hours,
             is_active: cs.is_active,
             created_at: cs.created_at,
@@ -323,7 +323,7 @@ async fn list_section_subjects(
 
 #[derive(Deserialize)]
 pub struct SectionSubjectQuery {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub period_id: Uuid,
 }
 

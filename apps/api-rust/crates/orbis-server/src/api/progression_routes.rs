@@ -39,8 +39,8 @@ pub struct ProgressionJobDto {
 pub struct StudentProgressionItemInput {
     pub student_id: Uuid,
     pub enrollment_id: Uuid,
-    pub source_class_id: Option<Uuid>,
-    pub target_class_id: Option<Uuid>,
+    pub source_section_id: Option<Uuid>,
+    pub target_section_id: Option<Uuid>,
     pub decision: String,
     #[serde(default)]
     pub reason: String,
@@ -113,8 +113,8 @@ pub async fn evaluate_cohort(
         .map(|i| StudentProgressionItemInput {
             student_id: i.student_id,
             enrollment_id: i.enrollment_id,
-            source_class_id: i.source_class_id,
-            target_class_id: i.target_class_id,
+            source_section_id: i.source_section_id,
+            target_section_id: i.target_section_id,
             decision: i.decision.to_string(),
             reason: i.reason,
         })
@@ -135,8 +135,8 @@ pub async fn promote_cohort(
         .map(|i| StudentProgressionItem {
             student_id: i.student_id,
             enrollment_id: i.enrollment_id,
-            source_class_id: i.source_class_id,
-            target_class_id: i.target_class_id,
+            source_section_id: i.source_section_id,
+            target_section_id: i.target_section_id,
             decision: parse_decision(&i.decision),
             reason: i.reason,
         })

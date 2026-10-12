@@ -86,18 +86,18 @@ impl SubjectRepository for AcademicRepoImpl {
         let active = subject::ActiveModel {
             id: Set(subject.id),
             org_id: Set(subject.org_id),
-            unit_id: Set(subject.unit_id),
+            unit_id: Set(subject.org_unit_id),
             code: Set(subject.code.clone()),
             name: Set(subject.name.clone()),
             name_ar: Set(subject.name_ar.clone()),
             description: Set(subject.description.clone()),
             is_core: Set(subject.is_core),
             is_elective: Set(subject.is_elective),
-            credit_hours: Set(subject.credit_hours),
+            credit_hours: Set(subject.credit_units),
             theory_hours: Set(subject.theory_hours),
             practical_hours: Set(subject.practical_hours),
             is_lab_required: Set(subject.is_lab_required),
-            max_students_per_class: Set(subject.max_students_per_class.map(|v| v as i32)),
+            max_students_per_section: Set(subject.max_students_per_section.map(|v| v as i32)),
             color: Set(subject.color.clone()),
             icon: Set(subject.icon.clone()),
             sort_order: Set(subject.sort_order),
@@ -194,13 +194,13 @@ impl ClassRepository for AcademicRepoImpl {
         let active = class::ActiveModel {
             id: Set(class.id),
             org_id: Set(class.org_id),
-            unit_id: Set(class.unit_id),
+            unit_id: Set(class.org_unit_id),
             period_id: Set(class.period_id),
             name: Set(class.name.clone()),
             name_ar: Set(class.name_ar.clone()),
             level: Set(class.level.clone()),
             division: Set(class.division.clone()),
-            homeroom_teacher_id: Set(class.homeroom_teacher_id),
+            homeroom_teacher_id: Set(class.homeroom_instructor_id),
             capacity: Set(class.capacity),
             current_students: Set(class.current_students),
             room_id: Set(class.room_id),
@@ -242,7 +242,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         Ok(model.map(map_section_subject_model_to_domain))
     }
 
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<DomainSectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
             .filter(section_subject::Column::ClassId.eq(class_id))
             .all(&self.db)
@@ -256,7 +256,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
 
     async fn find_by_class_and_period(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
         period_id: Uuid,
     ) -> Result<Vec<DomainSectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
@@ -300,7 +300,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSectionSubject>, DomainError>
     {
         let mut query = SectionSubjectEntity::find();
-        if let Some(class_id) = filter.class_id {
+        if let Some(class_id) = filter.section_id {
             query = query.filter(section_subject::Column::ClassId.eq(class_id));
         }
         if let Some(subject_id) = filter.subject_id {
@@ -344,12 +344,12 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     async fn save(&self, section_subject: &DomainSectionSubject) -> Result<(), DomainError> {
         let active = section_subject::ActiveModel {
             id: Set(section_subject.id),
-            class_id: Set(section_subject.class_id),
+            section_id: Set(section_subject.section_id),
             subject_id: Set(section_subject.subject_id),
             period_id: Set(section_subject.period_id),
-            primary_teacher_id: Set(section_subject.primary_teacher_id),
-            assistant_teacher_id: Set(section_subject.assistant_teacher_id),
-            substitute_teacher_id: Set(section_subject.substitute_teacher_id),
+            instructor_id: Set(section_subject.instructor_id),
+            assistant_instructor_id: Set(section_subject.assistant_instructor_id),
+            substitute_instructor_id: Set(section_subject.substitute_instructor_id),
             grade_groups: Set(section_subject.grade_groups.clone()),
             weekly_hours: Set(section_subject.weekly_hours),
             theory_hours: Set(section_subject.theory_hours),
@@ -385,18 +385,18 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
     DomainSubject {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.unit_id,
+        unit_id: m.org_unit_id,
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
         description: m.description,
         is_core: m.is_core,
         is_elective: m.is_elective,
-        credit_hours: m.credit_hours,
+        credit_hours: m.credit_units,
         theory_hours: m.theory_hours,
         practical_hours: m.practical_hours,
         is_lab_required: m.is_lab_required,
-        max_students_per_class: m.max_students_per_class.map(|v| v as u32),
+        max_students_per_section: m.max_students_per_section.map(|v| v as u32),
         color: m.color,
         icon: m.icon,
         sort_order: m.sort_order,
@@ -410,13 +410,13 @@ fn map_class_model_to_domain(m: class::Model) -> DomainSection {
     DomainSection {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.unit_id,
+        unit_id: m.org_unit_id,
         period_id: m.period_id,
         name: m.name,
         name_ar: m.name_ar,
         level: m.level,
         division: m.division,
-        homeroom_teacher_id: m.homeroom_teacher_id,
+        homeroom_teacher_id: m.homeroom_instructor_id,
         capacity: m.capacity,
         current_students: m.current_students,
         room_id: m.room_id,
@@ -432,12 +432,12 @@ fn map_class_model_to_domain(m: class::Model) -> DomainSection {
 fn map_section_subject_model_to_domain(m: section_subject::Model) -> DomainSectionSubject {
     DomainSectionSubject {
         id: m.id,
-        class_id: m.class_id,
+        section_id: m.section_id,
         subject_id: m.subject_id,
         period_id: m.period_id,
-        primary_teacher_id: m.primary_teacher_id,
-        assistant_teacher_id: m.assistant_teacher_id,
-        substitute_teacher_id: m.substitute_teacher_id,
+        instructor_id: m.instructor_id,
+        assistant_instructor_id: m.assistant_instructor_id,
+        substitute_instructor_id: m.substitute_instructor_id,
         grade_groups: m.grade_groups,
         weekly_hours: m.weekly_hours,
         theory_hours: m.theory_hours,

@@ -138,7 +138,7 @@ pub struct BatchRecordGradesResponseDto {
 pub struct AttendanceDto {
     pub id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
     pub date: NaiveDate,
@@ -152,7 +152,7 @@ pub struct AttendanceDto {
 #[derive(Deserialize, ToSchema)]
 pub struct MarkAttendanceRequest {
     pub student_id: Uuid,
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub date: NaiveDate,
     pub status: String,
     pub notes: Option<String>,
@@ -169,7 +169,7 @@ pub struct MarkAttendanceItemRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct BatchMarkAttendanceRequest {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub date: NaiveDate,
     pub items: Vec<MarkAttendanceItemRequest>,
 }
@@ -314,7 +314,7 @@ pub struct GradeQuery {
 
 #[derive(Deserialize)]
 pub struct AttendanceQuery {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub date: NaiveDate,
 }
 
@@ -347,7 +347,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
     AttendanceDto {
         id: a.id,
         student_id: a.student_id,
-        class_id: a.class_id,
+        section_id: a.section_id,
         section_subject_id: a.section_subject_id,
         scheduled_lesson_id: a.scheduled_lesson_id,
         date: a.attendance_date,
@@ -768,7 +768,7 @@ pub async fn mark_attendance(
             ctx.tenant_id,
             Uuid::nil(),
             p.student_id,
-            Some(p.class_id),
+            Some(p.section_id),
             None,
             p.date,
             p.status,
@@ -799,7 +799,7 @@ pub async fn batch_mark_attendance(
 
     let list = state
         .assessment_service
-        .batch_mark_attendance(&ctx, ctx.tenant_id, p.class_id, p.date, items)
+        .batch_mark_attendance(&ctx, ctx.tenant_id, p.section_id, p.date, items)
         .await?;
     let dtos: Vec<AttendanceDto> = list.into_iter().map(attendance_to_dto).collect();
     let count = dtos.len();
@@ -834,7 +834,7 @@ pub async fn list_attendance(
 ) -> Result<Json<ApiResponse<Vec<AttendanceDto>>>, ApiError> {
     let list = state
         .attendance_repo
-        .find_by_class_and_date(q.class_id, q.date)
+        .find_by_class_and_date(q.section_id, q.date)
         .await?;
     let dtos = list.into_iter().map(attendance_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
@@ -961,13 +961,13 @@ pub async fn list_student_behavior(
 #[derive(Deserialize, ToSchema)]
 pub struct StudentTermResultQuery {
     pub period_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct StudentAnnualResultQuery {
     pub year_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -1000,7 +1000,7 @@ pub async fn get_student_term_results(
             ctx.tenant_id,
             student_id,
             q.period_id,
-            q.class_id,
+            q.section_id,
             None,
         )
         .await?;
@@ -1027,7 +1027,7 @@ pub async fn get_student_annual_results(
             ctx.tenant_id,
             student_id,
             q.year_id,
-            q.class_id,
+            q.section_id,
             None,
         )
         .await?;
@@ -1048,7 +1048,7 @@ pub async fn get_class_term_results(
 ) -> Result<Json<ApiResponse<Vec<StudentTermReportCard>>>, ApiError> {
     let reports = state
         .assessment_service
-        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, class_id, q.period_id, None)
+        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, section_id, q.period_id, None)
         .await?;
     Ok(ApiResponse::ok(reports))
 }
@@ -1067,7 +1067,7 @@ pub async fn get_class_annual_results(
 ) -> Result<Json<ApiResponse<Vec<StudentAnnualReportCard>>>, ApiError> {
     let reports = state
         .assessment_service
-        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, class_id, q.year_id, None)
+        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, section_id, q.year_id, None)
         .await?;
     Ok(ApiResponse::ok(reports))
 }

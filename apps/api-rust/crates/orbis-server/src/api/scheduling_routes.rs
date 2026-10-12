@@ -141,7 +141,7 @@ pub struct TimeSlotQuery {
 pub struct LessonQuery {
     pub section_subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub teacher_id: Option<Uuid>,
 }
 
@@ -545,7 +545,7 @@ async fn list_lessons(
             .scheduling_service
             .list_lessons_by_section_subject(csid)
             .await?
-    } else if let Some(cid) = q.class_id {
+    } else if let Some(cid) = q.section_id {
         state.scheduling_service.list_lessons_by_class(cid).await?
     } else if let Some(tid) = q.teacher_id {
         state

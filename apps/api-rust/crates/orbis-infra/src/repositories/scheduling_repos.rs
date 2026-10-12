@@ -256,7 +256,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
 
     async fn find_by_class(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
     ) -> Result<Vec<DomainScheduledLesson>, DomainError> {
         let section_subjects = crate::models::section_subject::Entity::find()
             .filter(crate::models::section_subject::Column::ClassId.eq(class_id))

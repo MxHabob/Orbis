@@ -26,8 +26,8 @@ pub struct ProgressionService {
 pub struct StudentProgressionItem {
     pub student_id: Uuid,
     pub enrollment_id: Uuid,
-    pub source_class_id: Option<Uuid>,
-    pub target_class_id: Option<Uuid>,
+    pub source_section_id: Option<Uuid>,
+    pub target_section_id: Option<Uuid>,
     pub decision: PromotionDecision,
     pub reason: String,
 }
@@ -86,7 +86,7 @@ impl ProgressionService {
                             org_id,
                             target_period_id,
                             item.student_id,
-                            item.target_class_id,
+                            item.target_section_id,
                             old_enrollment.student_number.clone(),
                             old_enrollment.study_mode,
                         );
@@ -103,7 +103,7 @@ impl ProgressionService {
                             org_id,
                             target_period_id,
                             item.student_id,
-                            item.source_class_id,
+                            item.source_section_id,
                             old_enrollment.student_number.clone(),
                             old_enrollment.study_mode,
                         );
@@ -132,8 +132,8 @@ impl ProgressionService {
                 job_id,
                 student_id: item.student_id,
                 enrollment_id: item.enrollment_id,
-                source_class_id: item.source_class_id,
-                target_class_id: item.target_class_id,
+                source_section_id: item.source_section_id,
+                target_section_id: item.target_section_id,
                 decision: item.decision,
                 reason: item.reason,
                 manual_override: false,
@@ -275,8 +275,8 @@ impl ProgressionService {
             items.push(StudentProgressionItem {
                 student_id: enr.student_id,
                 enrollment_id: enr.id,
-                source_class_id: enr.class_id,
-                target_class_id: None,
+                source_section_id: enr.section_id,
+                target_section_id: None,
                 decision,
                 reason,
             });

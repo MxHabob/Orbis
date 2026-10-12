@@ -61,7 +61,7 @@ pub struct RoomDto {
 pub struct LessonAssignmentDto {
     pub id: String,
     pub section_subject_id: String,
-    pub class_id: String,
+    pub section_id: String,
     pub subject_id: String,
     pub teacher_id: String,
     pub hour_index: i32,
@@ -76,7 +76,7 @@ pub struct LessonAssignmentDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PinnedLessonDto {
     pub id: String,
-    pub class_id: String,
+    pub section_id: String,
     pub teacher_id: String,
     pub subject_id: String,
     pub section_subject_id: String,
@@ -113,7 +113,7 @@ pub struct ExamAssignmentDto {
     pub id: String,
     pub exam_subject_id: String,
     pub subject_id: String,
-    pub class_id: String,
+    pub section_id: String,
     pub conflict_group_id: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slot_id: Option<String>,

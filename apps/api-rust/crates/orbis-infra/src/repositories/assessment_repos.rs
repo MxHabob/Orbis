@@ -363,7 +363,7 @@ fn map_attendance_model_to_domain(m: attendance::Model) -> DomainAttendance {
     DomainAttendance {
         id: m.id,
         student_id: m.student_id,
-        class_id: m.class_id,
+        section_id: m.section_id,
         section_subject_id: m.section_subject_id,
         scheduled_lesson_id: m.scheduled_lesson_id,
         attendance_date: m.attendance_date,
@@ -387,7 +387,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
 
     async fn find_by_class_and_date(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
         date: chrono::NaiveDate,
     ) -> Result<Vec<DomainAttendance>, DomainError> {
         let models = AttendanceEntity::find()
@@ -426,7 +426,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
         if let Some(student_id) = filter.student_id {
             query = query.filter(attendance::Column::StudentId.eq(student_id));
         }
-        if let Some(class_id) = filter.class_id {
+        if let Some(class_id) = filter.section_id {
             query = query.filter(attendance::Column::ClassId.eq(class_id));
         }
         if let Some(date) = filter.date {
@@ -460,7 +460,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
         let active = attendance::ActiveModel {
             id: Set(attendance.id),
             student_id: Set(attendance.student_id),
-            class_id: Set(attendance.class_id),
+            section_id: Set(attendance.section_id),
             section_subject_id: Set(attendance.section_subject_id),
             scheduled_lesson_id: Set(attendance.scheduled_lesson_id),
             attendance_date: Set(attendance.attendance_date),

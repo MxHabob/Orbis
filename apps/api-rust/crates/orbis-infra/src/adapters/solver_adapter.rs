@@ -216,7 +216,7 @@ mod tests {
             assignments: vec![LessonAssignmentDto {
                 id: "lesson-1".to_string(),
                 section_subject_id: "cs-1".to_string(),
-                class_id: "class-1".to_string(),
+                section_id: "class-1".to_string(),
                 subject_id: "sub-math".to_string(),
                 teacher_id: "teacher-1".to_string(),
                 hour_index: 0,

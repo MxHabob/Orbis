@@ -347,8 +347,18 @@ impl AcademicFrameworkService {
             name: name.trim().to_string(),
             name_ar: normalize_optional_name(name_ar),
             description: normalize_optional_name(description),
+            subject_type: "course".to_string(),
+            is_core: false,
+            is_elective: false,
             credit_units,
             workload_units,
+            theory_hours: None,
+            practical_hours: None,
+            is_lab_required: false,
+            max_students_per_section: None,
+            color: None,
+            icon: None,
+            sort_order: None,
             is_active: true,
             created_at: now,
             updated_at: now,
@@ -407,16 +417,15 @@ impl AcademicFrameworkService {
         let offering = SectionSubject {
             id: Uuid::new_v4(),
             org_id,
-            course_id,
-            period_id,
-            section_code: normalize_optional_code(section_code, "Offering section")?,
-            name: normalize_optional_name(name),
-            status: SectionSubjectstatus::Draft,
-            capacity,
-            starts_at,
-            ends_at,
-            created_at: now,
-            updated_at: now,
+            section_id: Uuid::new_v4(),
+            subject_id: course_id,
+            period_id: period_id.unwrap_or_else(Uuid::nil),
+            instructor_id: None,
+            assistant_instructor_id: None,
+            scheme_id: None,
+            weekly_hours: None,
+            status: "draft".to_string(),
+            is_active: true,
         };
         self.framework_repo.save_section_subject(&offering).await?;
         Ok(offering)
@@ -452,7 +461,7 @@ impl AcademicFrameworkService {
             .find_section_subject(org_id, offering_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Course offering not found".into()))?;
-        if offering.status != SectionSubjectstatus::Open {
+        if offering.status != "open" {
             return Err(DomainError::BusinessRule(
                 "Course offering is not open for enrollment".into(),
             ));
@@ -472,13 +481,19 @@ impl AcademicFrameworkService {
         let enrollment = Enrollment {
             id: Uuid::new_v4(),
             org_id,
-            offering_id,
+            period_id: Uuid::nil(),
             student_id,
-            attempt_number,
-            status: Enrollmentstatus::Active,
+            section_id: Some(offering_id),
+            attempt_number: attempt_number as i32,
+            student_number: String::new(),
+            study_mode: orbis_domain::entities::enrollment::StudyMode::Regular,
+            status: orbis_domain::entities::enrollment::EnrollmentStatus::Active,
+            is_attendance_exempt: false,
+            is_grade_exempt: false,
             enrolled_at: now,
             withdrawn_at: None,
             withdrawal_reason: None,
+            meta: serde_json::json!({}),
             created_by: ctx.actor.id(),
             updated_by: None,
             created_at: now,

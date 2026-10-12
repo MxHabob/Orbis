@@ -77,14 +77,14 @@ pub enum DomainEvent {
         timestamp: DateTime<Utc>,
     },
     ClassCreated {
-        class_id: Uuid,
+        section_id: Uuid,
         org_id: Uuid,
         period_id: Uuid,
         timestamp: DateTime<Utc>,
     },
     SectionSubjectAssigned {
         section_subject_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         subject_id: Uuid,
         timestamp: DateTime<Utc>,
     },
@@ -98,7 +98,7 @@ pub enum DomainEvent {
     StudentEnrolled {
         enrollment_id: Uuid,
         student_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         org_id: Uuid,
         study_mode: String,
         timestamp: DateTime<Utc>,
@@ -123,8 +123,8 @@ pub enum DomainEvent {
     StudentClassTransferred {
         student_id: Uuid,
         enrollment_id: Uuid,
-        old_class_id: Option<Uuid>,
-        new_class_id: Uuid,
+        old_section_id: Option<Uuid>,
+        new_section_id: Uuid,
         reason: String,
         timestamp: DateTime<Utc>,
     },
@@ -231,7 +231,7 @@ pub enum DomainEvent {
     AttendanceMarked {
         attendance_id: Uuid,
         student_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         section_subject_id: Option<Uuid>,
         scheduled_lesson_id: Option<Uuid>,
         status: String,
@@ -656,8 +656,8 @@ impl DomainEvent {
             DomainEvent::SubjectCreated { subject_id, .. } => {
                 Some(("subject.created", "subject", *subject_id))
             }
-            DomainEvent::ClassCreated { class_id, .. } => {
-                Some(("class.created", "class", *class_id))
+            DomainEvent::ClassCreated { section_id, .. } => {
+                Some(("section.created", "section", *section_id))
             }
             DomainEvent::SectionSubjectAssigned {
                 section_subject_id, ..
