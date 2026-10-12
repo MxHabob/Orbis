@@ -436,10 +436,18 @@ impl AcademicFrameworkService {
             period_id: period_id.unwrap_or_else(Uuid::nil),
             instructor_id: None,
             assistant_instructor_id: None,
+            substitute_instructor_id: None,
             scheme_id: None,
             weekly_hours: None,
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            grade_groups: None,
+            capacity: None,
             status: "draft".to_string(),
             is_active: true,
+            created_at: Some(now),
+            updated_at: Some(now),
         };
         self.framework_repo.save_section_subject(&offering).await?;
         Ok(offering)

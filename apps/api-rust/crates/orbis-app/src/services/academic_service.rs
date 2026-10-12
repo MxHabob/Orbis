@@ -281,16 +281,24 @@ impl AcademicService {
 
         let cs = SectionSubject {
             id: cs_id,
-            org_id: Uuid::nil(), // TODO: pass org_id through
+            org_id: ctx.tenant_id,
             section_id,
             subject_id,
             period_id,
             instructor_id: Some(instructor_id),
             assistant_instructor_id: None,
+            substitute_instructor_id: None,
             scheme_id: None,
             weekly_hours,
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            grade_groups: None,
+            capacity: None,
             status: "active".to_string(),
             is_active: true,
+            created_at: Some(now),
+            updated_at: Some(now),
         };
 
         self.section_subject_repo.save(&cs).await?;

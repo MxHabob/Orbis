@@ -6,6 +6,8 @@ pub mod section;
 pub mod section_subject;
 pub mod subject;
 pub mod prerequisite;
+pub use section as class;
+pub use subject as course;
 
 // === Organization & IAM ===
 pub mod organization;

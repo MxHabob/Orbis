@@ -16,7 +16,7 @@ use crate::models::{
     academic_calendar::{self, Entity as CalendarEntity},
     academic_period::{self, Entity as CalendarPeriodEntity},
     period_type::{self, Entity as PeriodTypeEntity},
-    course::{self, Entity as SubjectEntity},
+    subject::{self, Entity as SubjectEntity},
     enrollment::{self, Entity as EnrollmentEntity},
     section_subject::{self, Entity as SectionSubjectEntity},
 };
@@ -120,17 +120,27 @@ fn map_calendar_period(m: academic_period::Model) -> AcademicPeriod {
     }
 }
 
-fn map_course(m: course::Model) -> Course {
+fn map_course(m: subject::Model) -> Course {
     Course {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.org_unit_id,
+        unit_id: m.unit_id,
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
         description: m.description,
+        subject_type: m.subject_type,
+        is_core: m.is_core,
+        is_elective: m.is_elective,
         credit_units: m.credit_units,
         workload_units: m.workload_units,
+        theory_hours: m.theory_hours,
+        practical_hours: m.practical_hours,
+        is_lab_required: m.is_lab_required,
+        max_students_per_section: m.max_students_per_section.map(|v| v as u32),
+        color: m.color,
+        icon: m.icon,
+        sort_order: m.sort_order,
         is_active: m.is_active,
         created_at: m.created_at,
         updated_at: m.updated_at,
@@ -386,7 +396,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
 
     async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Course>, DomainError> {
         let model = SubjectEntity::find_by_id(id)
-            .filter(course::Column::OrgId.eq(org_id))
+            .filter(subject::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
@@ -395,8 +405,8 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
 
     async fn list_courses(&self, org_id: Uuid) -> Result<Vec<Course>, DomainError> {
         SubjectEntity::find()
-            .filter(course::Column::OrgId.eq(org_id))
-            .order_by_asc(course::Column::Code)
+            .filter(subject::Column::OrgId.eq(org_id))
+            .order_by_asc(subject::Column::Code)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))
@@ -409,8 +419,8 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         code: &str,
     ) -> Result<Option<Course>, DomainError> {
         let model = SubjectEntity::find()
-            .filter(course::Column::OrgId.eq(org_id))
-            .filter(course::Column::Code.eq(code))
+            .filter(subject::Column::OrgId.eq(org_id))
+            .filter(subject::Column::Code.eq(code))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
@@ -418,16 +428,26 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     }
 
     async fn save_course(&self, course: &Course) -> Result<(), DomainError> {
-        let active = course::ActiveModel {
+        let active = subject::ActiveModel {
             id: Set(course.id),
             org_id: Set(course.org_id),
-            unit_id: Set(course.org_unit_id),
+            unit_id: Set(course.unit_id),
             code: Set(course.code.clone()),
             name: Set(course.name.clone()),
             name_ar: Set(course.name_ar.clone()),
             description: Set(course.description.clone()),
+            subject_type: Set(course.subject_type.clone()),
+            is_core: Set(course.is_core),
+            is_elective: Set(course.is_elective),
             credit_units: Set(course.credit_units),
             workload_units: Set(course.workload_units),
+            theory_hours: Set(course.theory_hours),
+            practical_hours: Set(course.practical_hours),
+            is_lab_required: Set(course.is_lab_required),
+            max_students_per_section: Set(course.max_students_per_section.map(|v| v as i32)),
+            color: Set(course.color.clone()),
+            icon: Set(course.icon.clone()),
+            sort_order: Set(course.sort_order),
             is_active: Set(course.is_active),
             created_at: Set(course.created_at),
             updated_at: Set(course.updated_at),

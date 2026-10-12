@@ -11,7 +11,7 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::models::{
-    class::{self, Entity as SectionEntity},
+    section::{self, Entity as SectionEntity},
     section_subject::{self, Entity as SectionSubjectEntity},
     subject::{self, Entity as SubjectEntity},
 };
@@ -86,14 +86,16 @@ impl SubjectRepository for AcademicRepoImpl {
         let active = subject::ActiveModel {
             id: Set(subject.id),
             org_id: Set(subject.org_id),
-            unit_id: Set(subject.org_unit_id),
+            unit_id: Set(subject.unit_id),
             code: Set(subject.code.clone()),
             name: Set(subject.name.clone()),
             name_ar: Set(subject.name_ar.clone()),
             description: Set(subject.description.clone()),
+            subject_type: Set(subject.subject_type.clone()),
             is_core: Set(subject.is_core),
             is_elective: Set(subject.is_elective),
-            credit_hours: Set(subject.credit_units),
+            credit_units: Set(subject.credit_units),
+            workload_units: Set(subject.workload_units),
             theory_hours: Set(subject.theory_hours),
             practical_hours: Set(subject.practical_hours),
             is_lab_required: Set(subject.is_lab_required),
@@ -137,8 +139,15 @@ impl ClassRepository for AcademicRepoImpl {
     }
 
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
+        let section_subjects = SectionSubjectEntity::find()
+            .filter(section_subject::Column::PeriodId.eq(period_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        let section_ids: Vec<Uuid> = section_subjects.into_iter().map(|s| s.section_id).collect();
         let models = SectionEntity::find()
-            .filter(class::Column::PeriodId.eq(period_id))
+            .filter(section::Column::Id.is_in(section_ids))
+            .filter(section::Column::IsDeleted.eq(false))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -147,8 +156,8 @@ impl ClassRepository for AcademicRepoImpl {
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
         let models = SectionEntity::find()
-            .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::IsDeleted.eq(false))
+            .filter(section::Column::OrgId.eq(org_id))
+            .filter(section::Column::IsDeleted.eq(false))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -161,13 +170,19 @@ impl ClassRepository for AcademicRepoImpl {
         filter: orbis_domain::queries::filters::ClassFilter,
     ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSection>, DomainError> {
         let mut query = SectionEntity::find()
-            .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::IsDeleted.eq(false));
+            .filter(section::Column::OrgId.eq(org_id))
+            .filter(section::Column::IsDeleted.eq(false));
         if let Some(period_id) = filter.period_id {
-            query = query.filter(class::Column::PeriodId.eq(period_id));
+            let section_subjects = SectionSubjectEntity::find()
+                .filter(section_subject::Column::PeriodId.eq(period_id))
+                .all(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
+            let section_ids: Vec<Uuid> = section_subjects.into_iter().map(|s| s.section_id).collect();
+            query = query.filter(section::Column::Id.is_in(section_ids));
         }
         if let Some(ref lvl) = filter.level {
-            query = query.filter(class::Column::Level.eq(lvl.clone()));
+            query = query.filter(section::Column::Level.eq(lvl.clone()));
         }
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
@@ -191,19 +206,17 @@ impl ClassRepository for AcademicRepoImpl {
     }
 
     async fn save(&self, class: &DomainSection) -> Result<(), DomainError> {
-        let active = class::ActiveModel {
+        let active = section::ActiveModel {
             id: Set(class.id),
             org_id: Set(class.org_id),
-            unit_id: Set(class.org_unit_id),
-            period_id: Set(class.period_id),
+            org_unit_id: Set(class.org_unit_id),
+            section_type: Set(class.section_type.clone()),
+            code: Set(class.code.clone()),
             name: Set(class.name.clone()),
             name_ar: Set(class.name_ar.clone()),
             level: Set(class.level.clone()),
-            division: Set(class.division.clone()),
-            homeroom_teacher_id: Set(class.homeroom_instructor_id),
+            track: Set(class.track.clone()),
             capacity: Set(class.capacity),
-            current_students: Set(class.current_students),
-            room_id: Set(class.room_id),
             color: Set(class.color.clone()),
             is_active: Set(class.is_active),
             is_deleted: Set(class.is_deleted),
@@ -301,7 +314,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     {
         let mut query = SectionSubjectEntity::find();
         if let Some(class_id) = filter.section_id {
-            query = query.filter(section_subject::Column::ClassId.eq(class_id));
+            query = query.filter(section_subject::Column::SectionId.eq(class_id));
         }
         if let Some(subject_id) = filter.subject_id {
             query = query.filter(section_subject::Column::SubjectId.eq(subject_id));
@@ -311,10 +324,10 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         }
         if let Some(teacher_id) = filter.teacher_id {
             query = query.filter(
-                section_subject::Column::PrimaryTeacherId
+                section_subject::Column::InstructorId
                     .eq(teacher_id)
-                    .or(section_subject::Column::AssistantTeacherId.eq(teacher_id))
-                    .or(section_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+                    .or(section_subject::Column::AssistantInstructorId.eq(teacher_id))
+                    .or(section_subject::Column::SubstituteInstructorId.eq(teacher_id)),
             );
         }
         let pagination = filter.pagination.unwrap_or_default();
@@ -342,23 +355,27 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     }
 
     async fn save(&self, section_subject: &DomainSectionSubject) -> Result<(), DomainError> {
+        let now = chrono::Utc::now();
         let active = section_subject::ActiveModel {
             id: Set(section_subject.id),
+            org_id: Set(section_subject.org_id),
             section_id: Set(section_subject.section_id),
             subject_id: Set(section_subject.subject_id),
             period_id: Set(section_subject.period_id),
             instructor_id: Set(section_subject.instructor_id),
             assistant_instructor_id: Set(section_subject.assistant_instructor_id),
             substitute_instructor_id: Set(section_subject.substitute_instructor_id),
-            grade_groups: Set(section_subject.grade_groups.clone()),
+            scheme_id: Set(section_subject.scheme_id),
             weekly_hours: Set(section_subject.weekly_hours),
             theory_hours: Set(section_subject.theory_hours),
             practical_hours: Set(section_subject.practical_hours),
             assessment_config: Set(section_subject.assessment_config.clone()),
-            scheme_id: Set(section_subject.scheme_id),
+            grade_groups: Set(section_subject.grade_groups.clone()),
+            capacity: Set(section_subject.capacity),
+            status: Set(section_subject.status.clone()),
             is_active: Set(section_subject.is_active),
-            created_at: Set(section_subject.created_at),
-            updated_at: Set(section_subject.updated_at),
+            created_at: Set(section_subject.created_at.unwrap_or(now)),
+            updated_at: Set(section_subject.updated_at.unwrap_or(now)),
         };
 
         if SectionSubjectEntity::find_by_id(section_subject.id)
@@ -385,14 +402,16 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
     DomainSubject {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.org_unit_id,
+        unit_id: m.unit_id,
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
         description: m.description,
+        subject_type: m.subject_type,
         is_core: m.is_core,
         is_elective: m.is_elective,
-        credit_hours: m.credit_units,
+        credit_units: m.credit_units,
+        workload_units: m.workload_units,
         theory_hours: m.theory_hours,
         practical_hours: m.practical_hours,
         is_lab_required: m.is_lab_required,
@@ -406,20 +425,18 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
     }
 }
 
-fn map_class_model_to_domain(m: class::Model) -> DomainSection {
+fn map_class_model_to_domain(m: section::Model) -> DomainSection {
     DomainSection {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.org_unit_id,
-        period_id: m.period_id,
+        org_unit_id: m.org_unit_id,
+        section_type: m.section_type,
+        code: m.code,
         name: m.name,
         name_ar: m.name_ar,
         level: m.level,
-        division: m.division,
-        homeroom_teacher_id: m.homeroom_instructor_id,
+        track: m.track,
         capacity: m.capacity,
-        current_students: m.current_students,
-        room_id: m.room_id,
         color: m.color,
         is_active: m.is_active,
         is_deleted: m.is_deleted,
@@ -432,21 +449,24 @@ fn map_class_model_to_domain(m: class::Model) -> DomainSection {
 fn map_section_subject_model_to_domain(m: section_subject::Model) -> DomainSectionSubject {
     DomainSectionSubject {
         id: m.id,
+        org_id: m.org_id,
         section_id: m.section_id,
         subject_id: m.subject_id,
         period_id: m.period_id,
         instructor_id: m.instructor_id,
         assistant_instructor_id: m.assistant_instructor_id,
         substitute_instructor_id: m.substitute_instructor_id,
-        grade_groups: m.grade_groups,
+        scheme_id: m.scheme_id,
         weekly_hours: m.weekly_hours,
         theory_hours: m.theory_hours,
         practical_hours: m.practical_hours,
         assessment_config: m.assessment_config,
-        scheme_id: m.scheme_id,
+        grade_groups: m.grade_groups,
+        capacity: m.capacity,
+        status: m.status,
         is_active: m.is_active,
-        created_at: m.created_at,
-        updated_at: m.updated_at,
+        created_at: Some(m.created_at),
+        updated_at: Some(m.updated_at),
     }
 }
 
