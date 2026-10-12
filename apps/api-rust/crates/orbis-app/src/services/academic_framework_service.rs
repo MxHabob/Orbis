@@ -3,8 +3,8 @@ use orbis_domain::entities::academic_calendar::{
     AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
 };
 use orbis_domain::entities::subject::Course;
-use orbis_domain::entities::enrollment::{Enrollment, Enrollmentstatus};
-use orbis_domain::entities::section_subject::{SectionSubject, SectionSubjectstatus};
+use orbis_domain::entities::enrollment::Enrollment;
+use orbis_domain::entities::section_subject::SectionSubject;
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use std::sync::Arc;
@@ -158,15 +158,29 @@ impl AcademicFrameworkService {
         }
 
         let now = Utc::now();
+        let s_date = starts_at.unwrap_or(now);
+        let e_date = ends_at.unwrap_or_else(|| now + chrono::Duration::days(365));
         let calendar = AcademicCalendar {
             id: Uuid::new_v4(),
             org_id,
             code: normalized_code,
             name: name.trim().to_string(),
             name_ar: normalize_optional_name(name_ar),
+            start_date: s_date,
+            end_date: e_date,
             starts_at,
             ends_at,
+            hijri_start: None,
+            hijri_end: None,
             status: AcademicCalendarStatus::Planning,
+            is_locked: false,
+            locked_at: None,
+            locked_by: None,
+            lock_reason: None,
+            current_period_id: None,
+            archived_at: None,
+            archived_by: None,
+            notes: None,
             created_at: now,
             updated_at: now,
         };

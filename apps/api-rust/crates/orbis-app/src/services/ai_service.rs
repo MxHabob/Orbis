@@ -76,9 +76,8 @@ fn teacher_assigned_to_class(
     homeroom_teacher_id == Some(teacher_id)
         || assignments.iter().any(|assignment| {
             assignment.section_id == section_id
-                && (assignment.instructor_id == teacher_id
-                    || assignment.assistant_instructor_id == Some(teacher_id)
-                    || assignment.substitute_instructor_id == Some(teacher_id))
+                && (assignment.instructor_id == Some(teacher_id)
+                    || assignment.assistant_instructor_id == Some(teacher_id))
         })
 }
 
@@ -266,7 +265,7 @@ impl AiOrchestrationService {
         let class = self
             .academic_service
             .class_repo
-            .find_by_id(class_id)
+            .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
         ensure_tenant_matches(class.org_id, ctx.tenant_id)?;
@@ -323,7 +322,7 @@ impl AiOrchestrationService {
         section_id: Uuid,
         period_id: Option<Uuid>,
     ) -> Result<(), DomainError> {
-        self.ensure_class_tenant(ctx, class_id).await?;
+        self.ensure_class_tenant(ctx, section_id).await?;
         let Some(employee) = self.teacher_employee(ctx).await? else {
             return Ok(());
         };
@@ -334,26 +333,25 @@ impl AiOrchestrationService {
         } else {
             self.academic_service
                 .section_subject_repo
-                .find_by_class(class_id)
+                .find_by_class(section_id)
                 .await?
                 .into_iter()
                 .filter(|assignment| {
-                    assignment.instructor_id == employee.id
+                    assignment.instructor_id == Some(employee.id)
                         || assignment.assistant_instructor_id == Some(employee.id)
-                        || assignment.substitute_instructor_id == Some(employee.id)
                 })
                 .collect()
         };
         let class = self
             .academic_service
             .class_repo
-            .find_by_id(class_id)
+            .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
         if teacher_assigned_to_class(
             employee.id,
             section_id,
-            class.homeroom_instructor_id,
+            None,
             &assignments,
         ) {
             Ok(())
@@ -1133,7 +1131,7 @@ impl AiOrchestrationService {
                     .and_then(|s| Uuid::parse_str(s).ok());
 
                 if let Some(class_id) = class_id {
-                    self.ensure_class_access(ctx, section_id, period_id).await?;
+                    self.ensure_class_access(ctx, class_id, period_id).await?;
                 } else if self.teacher_employee(ctx).await?.is_some()
                     || self.user_org_unit_allowlist(ctx).await?.is_some()
                 {
@@ -1225,7 +1223,7 @@ impl AiOrchestrationService {
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
                 if let Some(class_id) = class_id {
-                    self.ensure_class_access(ctx, section_id, None).await?;
+                    self.ensure_class_access(ctx, class_id, None).await?;
                 }
                 let status = arguments
                     .get("status")
@@ -1498,7 +1496,7 @@ impl AiOrchestrationService {
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
                 if let Some(class_id) = class_id {
-                    self.ensure_class_access(ctx, section_id, period_id).await?;
+                    self.ensure_class_access(ctx, class_id, period_id).await?;
                 } else if self.teacher_employee(ctx).await?.is_some()
                     || self.user_org_unit_allowlist(ctx).await?.is_some()
                 {
@@ -1803,7 +1801,7 @@ impl AiOrchestrationService {
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
                 if let Some(class_id) = class_id {
-                    self.ensure_class_access(ctx, section_id, period_id).await?;
+                    self.ensure_class_access(ctx, class_id, period_id).await?;
                 }
                 if let Some(section_subject_id) = section_subject_id {
                     let section_subject = self
@@ -1874,7 +1872,7 @@ impl AiOrchestrationService {
 
                 Ok(json!({
                     "evaluated_grades_count": count,
-                    "class_id": section_id,
+                    "class_id": class_id,
                     "section_subject_id": section_subject_id,
                     "period_id": period_id,
                     "average_score_pct": format!("{}%", avg_pct),

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use orbis_domain::entities::academic_period::{AcademicPeriod, AcademicPeriodState};
-use orbis_domain::entities::academic_calendar::AcademicCalendar;
+use orbis_domain::entities::academic_calendar::{AcademicCalendar, AcademicCalendarStatus};
 use orbis_domain::entities::period_type::PeriodType;
 use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
@@ -71,13 +71,16 @@ impl CalendarService {
         let year = AcademicCalendar {
             id: year_id,
             org_id,
+            code: None,
             name,
             name_ar,
             start_date,
             end_date,
+            starts_at: Some(start_date),
+            ends_at: Some(end_date),
             hijri_start: None,
             hijri_end: None,
-            status: "active".to_string(),
+            status: AcademicCalendarStatus::Active,
             is_locked: false,
             locked_at: None,
             locked_by: None,
@@ -311,7 +314,7 @@ impl CalendarService {
                 DomainError::NotFound(format!("Academic year {} not found", year_id))
             })?;
 
-        year.status = "active".to_string();
+        year.status = AcademicCalendarStatus::Active;
         year.updated_at = Utc::now();
         self.year_repo.save(&year).await?;
         Ok(year)
@@ -331,7 +334,7 @@ impl CalendarService {
                 DomainError::NotFound(format!("Academic year {} not found", year_id))
             })?;
 
-        year.status = "closing".to_string();
+        year.status = AcademicCalendarStatus::Closing;
         year.updated_at = Utc::now();
         self.year_repo.save(&year).await?;
         Ok(year)
@@ -351,7 +354,7 @@ impl CalendarService {
                 DomainError::NotFound(format!("Academic year {} not found", year_id))
             })?;
 
-        year.status = "closed".to_string();
+        year.status = AcademicCalendarStatus::Closed;
         year.is_locked = true;
         year.locked_at = Some(Utc::now());
         year.updated_at = Utc::now();
@@ -655,7 +658,7 @@ impl CalendarService {
             })?;
 
         let now = Utc::now();
-        year.status = "archived".to_string();
+        year.status = AcademicCalendarStatus::Archived;
         year.archived_at = Some(now);
         year.archived_by = ctx.actor.id();
         year.is_locked = true;

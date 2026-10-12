@@ -443,7 +443,7 @@ impl StudentService {
             let mut enrollment_status = EnrollmentStatus::Active;
 
             // Check capacity invariant
-            if let Some(class_id) = input.initial_class_id {
+            if let Some(class_id) = input.initial_section_id {
                 let current_enrollments = self.enrollment_repo.find_by_class(class_id).await?;
                 let active_count = current_enrollments
                     .iter()
@@ -484,7 +484,7 @@ impl StudentService {
                         resolution_notes: None,
                         expires_at: None,
                         metadata: serde_json::json!({
-                            "class_id": section_id,
+                            "class_id": class_id,
                             "active_count": active_count,
                             "max_capacity": max_cap
                         }),
@@ -524,7 +524,7 @@ impl StudentService {
                     expires_at: None,
                     metadata: serde_json::json!({
                         "period_id": period_id,
-                        "class_id": input.initial_class_id
+                        "class_id": input.initial_section_id
                     }),
                     created_at: now,
                     updated_at: now,
@@ -801,7 +801,7 @@ impl StudentService {
                 DomainError::NotFound(format!("Enrollment {} not found", enrollment_id))
             })?;
 
-        enrollment.section_id = Some(target_class_id);
+        enrollment.section_id = Some(target_section_id);
         enrollment.updated_at = Utc::now();
 
         self.enrollment_repo.save(&enrollment).await?;
@@ -1225,7 +1225,7 @@ impl StudentService {
             }
 
             // 6. Cumulative Class Capacity & Multi-Enrollment Simulation
-            if let Some(class_id) = item.registration.initial_class_id {
+            if let Some(class_id) = item.registration.initial_section_id {
                 let (current_active, max_cap) = if let Some(cached) =
                     class_capacity_cache.get(&class_id)
                 {
@@ -1246,7 +1246,7 @@ impl StudentService {
                     } else {
                         admission_policy.max_class_capacity
                     };
-                    class_capacity_cache.insert(section_id, (active, max_c));
+                    class_capacity_cache.insert(class_id, (active, max_c));
                     (active, max_c)
                 };
 

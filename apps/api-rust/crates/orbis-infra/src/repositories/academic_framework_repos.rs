@@ -69,9 +69,21 @@ fn map_calendar(m: academic_calendar::Model) -> Result<AcademicCalendar, DomainE
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
-        starts_at: m.starts_at,
-        ends_at: m.ends_at,
+        start_date: m.start_date,
+        end_date: m.end_date,
+        starts_at: Some(m.start_date),
+        ends_at: Some(m.end_date),
+        hijri_start: m.hijri_start,
+        hijri_end: m.hijri_end,
         status,
+        is_locked: m.is_locked,
+        locked_at: m.locked_at,
+        locked_by: m.locked_by,
+        lock_reason: m.lock_reason,
+        current_period_id: m.current_period_id,
+        archived_at: m.archived_at,
+        archived_by: m.archived_by,
+        notes: m.notes,
         created_at: m.created_at,
         updated_at: m.updated_at,
     })
@@ -199,7 +211,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     async fn list_calendars(&self, org_id: Uuid) -> Result<Vec<AcademicCalendar>, DomainError> {
         CalendarEntity::find()
             .filter(academic_calendar::Column::OrgId.eq(org_id))
-            .order_by_asc(academic_calendar::Column::StartsAt)
+            .order_by_asc(academic_calendar::Column::StartDate)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?
@@ -242,9 +254,20 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             code: Set(calendar.code.clone()),
             name: Set(calendar.name.clone()),
             name_ar: Set(calendar.name_ar.clone()),
-            starts_at: Set(calendar.starts_at),
-            ends_at: Set(calendar.ends_at),
+            start_date: Set(calendar.start_date),
+            end_date: Set(calendar.end_date),
+            hijri_start: Set(calendar.hijri_start.clone()),
+            hijri_end: Set(calendar.hijri_end.clone()),
             status: Set(calendar.status.to_string()),
+            is_locked: Set(calendar.is_locked),
+            locked_at: Set(calendar.locked_at),
+            locked_by: Set(calendar.locked_by),
+            lock_reason: Set(calendar.lock_reason.clone()),
+            current_period_id: Set(calendar.current_period_id),
+            archived_at: Set(calendar.archived_at),
+            archived_by: Set(calendar.archived_by),
+            notes: Set(calendar.notes.clone()),
+            metadata: Set(None),
             created_at: Set(calendar.created_at),
             updated_at: Set(calendar.updated_at),
         };

@@ -552,7 +552,7 @@ impl AssessmentService {
             attendances.push(Attendance {
                 id: att_id,
                 student_id: item.student_id,
-                section_id: Some(class_id),
+                section_id: Some(section_id),
                 section_subject_id: item.section_subject_id,
                 scheduled_lesson_id: item.scheduled_lesson_id,
                 attendance_date: date,
@@ -986,7 +986,7 @@ impl AssessmentService {
         };
 
         // 3. Resolve class
-        let resolved_class_id = if let Some(cid) = class_id {
+        let resolved_section_id = if let Some(cid) = section_id {
             cid
         } else if let Some(er) = &self.enrollment_repo {
             let enrollments = er.find_by_student(student_id).await?;
@@ -1000,7 +1000,7 @@ impl AssessmentService {
         };
 
         let class_name = if let Some(cr) = &self.class_repo {
-            if let Some(cls) = cr.find_by_id(resolved_class_id).await? {
+            if let Some(cls) = cr.find_by_id(resolved_section_id).await? {
                 cls.name
             } else {
                 "Class".to_string()
@@ -1010,14 +1010,14 @@ impl AssessmentService {
         };
 
         // 4. Resolve class subjects
-        let section_subjects = if resolved_class_id != Uuid::nil() {
+        let section_subjects = if resolved_section_id != Uuid::nil() {
             let cs_list = self
                 .section_subject_repo
                 .find_by_class_and_period(resolved_section_id, period_id)
                 .await?;
             if cs_list.is_empty() {
                 self.section_subject_repo
-                    .find_by_class(resolved_class_id)
+                    .find_by_class(resolved_section_id)
                     .await?
             } else {
                 cs_list
@@ -1031,7 +1031,7 @@ impl AssessmentService {
 
         for cs in &section_subjects {
             let subject = self.subject_repo.find_by_id(cs.subject_id).await?;
-            let (subject_code, subject_name, subject_name_ar, credit_hours) = match &subject {
+            let (subject_code, subject_name, subject_name_ar, credit_units) = match &subject {
                 Some(s) => (
                     s.code.clone(),
                     s.name.clone(),
@@ -1278,7 +1278,7 @@ impl AssessmentService {
             .and_then(|c| c.student_number.clone())
             .or_else(|| term_2_card.as_ref().and_then(|c| c.student_number.clone()));
 
-        let resolved_class_id = class_id.unwrap_or_else(|| {
+        let resolved_section_id = section_id.unwrap_or_else(|| {
             term_1_card
                 .as_ref()
                 .map(|c| c.section_id)
@@ -1317,7 +1317,7 @@ impl AssessmentService {
                     r.subject_code.clone(),
                     r.subject_name.clone(),
                     r.subject_name_ar.clone(),
-                    r.credit_units,
+                    r.credit_hours,
                 )
             } else {
                 ("SUBJ".into(), "Subject".into(), None, Decimal::ONE)
@@ -1385,7 +1385,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_class(class_id).await?
+            er.find_by_class(section_id).await?
         } else {
             vec![]
         };
@@ -1398,7 +1398,7 @@ impl AssessmentService {
                     org_id,
                     en.student_id,
                     period_id,
-                    Some(class_id),
+                    Some(section_id),
                     Some(policy.clone()),
                 )
                 .await?;
@@ -1448,7 +1448,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_class(class_id).await?
+            er.find_by_class(section_id).await?
         } else {
             vec![]
         };
@@ -1461,7 +1461,7 @@ impl AssessmentService {
                     org_id,
                     en.student_id,
                     calendar_id,
-                    Some(class_id),
+                    Some(section_id),
                     Some(policy.clone()),
                 )
                 .await?;

@@ -128,7 +128,7 @@ export default function SignInScreen() {
             className="flex-1 px-5"
             style={{
               paddingTop: insets.top + 8,
-              paddingBottom: Math.max(insets.bottom, 16) + 8,
+              paddingBottom: Math.max(insets.bottom, 12) + 4,
             }}
           >
             <View className="h-11 flex-row items-center justify-center">
@@ -163,7 +163,7 @@ export default function SignInScreen() {
               </Text>
             </View>
 
-            <View className="gap-3 rounded-2xl bg-card px-5 py-5 shadow-xl">
+            <View className="gap-2 bg-card px-4 py-3 shadow-xl">
               <Text className="text-xl font-semibold tracking-tight text-foreground">
                 {t("auth_sign_in")}
               </Text>
@@ -177,7 +177,7 @@ export default function SignInScreen() {
                 autoComplete="email"
                 textContentType="username"
                 returnKeyType="next"
-                style={{ minHeight: 52, fontSize: 16 }}
+                style={{ minHeight: 32, fontSize: 12 }}
               />
 
               <View>
@@ -205,7 +205,7 @@ export default function SignInScreen() {
                   textContentType="password"
                   returnKeyType="go"
                   onSubmitEditing={() => void handleSignIn()}
-                  style={{ minHeight: 52, fontSize: 16 }}
+                  style={{ minHeight: 32, fontSize: 12 }}
                 />
               </View>
 
@@ -215,7 +215,7 @@ export default function SignInScreen() {
                 disabled={isSubmitting}
                 loading={isSubmitting}
                 fullWidth
-                size="lg"
+                size="md"
               />
 
               <View className="flex-row items-center gap-3">
@@ -230,9 +230,10 @@ export default function SignInScreen() {
                 title={t("auth_continue_google")}
                 onPress={() => void handleGoogleSignIn()}
                 disabled={isSubmitting}
+                loading={isSubmitting}
                 variant="outline"
                 fullWidth
-                size="lg"
+                size="md"
               />
 
               <View className="items-center gap-1 pt-1">

@@ -24,7 +24,7 @@ use uuid::Uuid;
 use orbis_domain::entities::academic_period::{
     AcademicPeriod, AcademicPeriodState, PeriodKind, PeriodType,
 };
-use orbis_domain::entities::academic_calendar::AcademicCalendar;
+use orbis_domain::entities::academic_calendar::{AcademicCalendar, AcademicCalendarStatus};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
@@ -707,7 +707,7 @@ impl OnboardingService {
         let units = self.org_unit_repo.find_by_org(org_id).await?;
         let rooms = self.room_repo.find_by_org(org_id).await?;
         let years = self.year_repo.find_by_org(org_id).await?;
-        let active_year = years.iter().find(|y| y.status == "active" || !y.is_locked);
+        let active_year = years.iter().find(|y| y.status == AcademicCalendarStatus::Active || !y.is_locked);
         let periods = if let Some(ay) = active_year {
             self.period_repo.find_by_year(ay.id).await?
         } else {
@@ -1579,15 +1579,18 @@ impl OnboardingService {
             let year = AcademicCalendar {
                 id: year_id,
                 org_id,
+                code: None,
                 name: year_name,
                 name_ar: req
                     .academic_calendar_name_ar
                     .filter(|name| !name.trim().is_empty()),
                 start_date,
                 end_date,
+                starts_at: Some(start_date),
+                ends_at: Some(end_date),
                 hijri_start: None,
                 hijri_end: None,
-                status: "active".to_string(),
+                status: AcademicCalendarStatus::Active,
                 is_locked: false,
                 locked_at: None,
                 locked_by: None,
@@ -2175,9 +2178,11 @@ impl OnboardingService {
                     name: name.to_string(),
                     name_ar: name_ar.map(|s| s.to_string()),
                     description: None,
+                    subject_type: "subject".to_string(),
                     is_core,
                     is_elective: !is_core,
-                    credit_hours: Some(Decimal::from(hours)),
+                    credit_units: Some(Decimal::from(hours)),
+                    workload_units: None,
                     theory_hours: Some(Decimal::from(hours)),
                     practical_hours: None,
                     is_lab_required: false,
@@ -2238,7 +2243,7 @@ impl OnboardingService {
                 if existing_classes
                     .items
                     .iter()
-                    .any(|Section| Section.level == level)
+                    .any(|section| section.level.as_deref() == Some(level))
                 {
                     continue;
                 }
@@ -2250,16 +2255,14 @@ impl OnboardingService {
                 let cls = Section {
                     id: Uuid::new_v4(),
                     org_id,
-                    unit_id: main_unit_id,
-                    period_id: active_period.id,
+                    org_unit_id: Some(main_unit_id),
+                    section_type: "section".to_string(),
+                    code: format!("{}-{}", level, div),
                     name: name.to_string(),
                     name_ar: name_ar.map(|s| s.to_string()),
-                    level: level.to_string(),
-                    division: Some(div.to_string()),
-                    homeroom_teacher_id: None,
+                    level: Some(level.to_string()),
+                    track: Some(div.to_string()),
                     capacity: Some(30),
-                    current_students: Some(0),
-                    room_id: None,
                     color: None,
                     is_active: true,
                     is_deleted: false,

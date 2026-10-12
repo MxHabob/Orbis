@@ -46,7 +46,16 @@
       "expo-secure-store",
       "expo-font",
       "expo-image",
-      "expo-localization",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": ["ar", "en"],
+            "android": ["ar", "en"]
+          },
+          "supportsRTL": true
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {
