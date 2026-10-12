@@ -411,6 +411,21 @@ export const ar = {
   academic_average_label: "المعدل العام",
   assessments_count: "التقييمات",
   schedule_day_off_hint: "لا توجد حصص دراسية في هذا اليوم.",
+  nav_classes: "فصول",
+  tab_digital_id_hint: "بطاقة الدخول ورمز QR",
+  teacher_students_count_short: "{count} طالب",
+  filter_all: "الكل",
+  domain_academic: "الشؤون الأكاديمية",
+  notifications_empty_title: "لا توجد إشعارات جديدة",
+  settings_preferences: "التفضيلات والمظهر",
+  security_account_status: "حالة الحساب",
+  security_protected_active: "الحساب محمي ونشط",
+  security_active_sessions: "الجلسات والأجهزة النشطة",
+  security_current_device: "هذا الجهاز (الحالي)",
+  attendance_rate_label: "نسبة الحضور الإجمالية",
+  upcoming_exams_label: "الاختبارات القادمة",
+  auth_sign_in_subtitle: "منصة إدارة المدارس والتعلم الذكي",
+  auth_username_or_email: "اسم المستخدم أو البريد الإلكتروني",
 } as const;
 
 export type TranslationKey = keyof typeof ar;

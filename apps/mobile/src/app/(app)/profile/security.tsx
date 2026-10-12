@@ -25,10 +25,10 @@ import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import {
   ShieldCheck,
-  DevicePhoneMobile,
-  ComputerDesktop,
+  Phone,
+  Computer,
   Trash,
-  Key,
+  LockClosed,
 } from "@orbis/icons/native";
 
 export default function SecurityScreen() {
@@ -139,7 +139,7 @@ export default function SecurityScreen() {
           ) : (
             <View className="gap-two">
               {devices.map((device) => {
-                const isCurrent = device.is_current;
+                const isPhone = device.device_type?.toLowerCase().includes("mobile") || device.device_type?.toLowerCase().includes("phone");
                 const isRevoking = revokingId === device.id;
 
                 return (
@@ -149,23 +149,27 @@ export default function SecurityScreen() {
                   >
                     <View className="flex-row items-center gap-three flex-1">
                       <View className="h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                        <DevicePhoneMobile size={20} color={theme.foreground} />
+                        {isPhone ? (
+                          <Phone size={20} color={theme.foreground} />
+                        ) : (
+                          <Computer size={20} color={theme.foreground} />
+                        )}
                       </View>
                       <View className="flex-1 gap-half">
                         <View className="flex-row items-center gap-two">
                           <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
-                            {device.device_name || "Mobile Device"}
+                            {device.device_name || "Device"}
                           </Text>
-                          {isCurrent ? (
+                          {device.is_trusted ? (
                             <Badge variant="default" className="bg-primary/20 px-two py-half">
                               <Text className="text-[10px] font-bold text-primary">
-                                {t("security_current_device") || "This Device"}
+                                {t("security_current_device") || "Trusted"}
                               </Text>
                             </Badge>
                           ) : null}
                         </View>
                         <Text className="text-xs text-muted-foreground">
-                          {device.ip_address || "IP Protected"} · {formatDate(device.last_seen_at || device.created_at)}
+                          {device.os || device.browser || "Active"} · {formatDate(device.last_active_at)}
                         </Text>
                       </View>
                     </View>

@@ -6,8 +6,8 @@
  * (Light / Dark / System), and alert preferences.
  */
 
-import React, { useEffect, useState } from "react";
-import { View, Text, Pressable, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, Text, Pressable, Appearance } from "react-native";
 import { useRouter } from "expo-router";
 import { Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
@@ -16,8 +16,6 @@ import { useToast } from "@/components/ui/toast";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import {
-  applyThemePreference,
-  loadThemePreference,
   saveThemePreference,
   type ThemePreference,
 } from "@/lib/theme-preference";
@@ -28,7 +26,7 @@ import {
   Check,
   Sun,
   Moon,
-  ComputerDesktop,
+  Computer,
 } from "@orbis/icons/native";
 
 const themeOptions: ThemePreference[] = ["system", "light", "dark"];
@@ -38,24 +36,10 @@ export default function PreferencesScreen() {
   const theme = useTheme();
   const toast = useToast();
   const { t, locale, setLocale } = useI18n();
-  const [themePreference, setThemePreference] = useState<ThemePreference>("system");
-
-  useEffect(() => {
-    let isMounted = true;
-    loadThemePreference()
-      .then((preference) => {
-        if (isMounted) {
-          setThemePreference(preference);
-          applyThemePreference(preference);
-        }
-      })
-      .catch((error: unknown) => {
-        console.error("[Orbis Mobile Theme] Failed to load saved theme.", error);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
+    const current = Appearance.getColorScheme();
+    return current ? (current as ThemePreference) : "system";
+  });
 
   const handleLocaleChange = async (nextLocale: "ar" | "en") => {
     try {

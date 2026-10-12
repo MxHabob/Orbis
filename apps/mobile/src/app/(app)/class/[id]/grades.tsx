@@ -12,7 +12,7 @@ import { useEffectiveContext } from "@/providers/effective-context";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 export default function ClassGradesScreen() {
@@ -44,14 +44,6 @@ export default function ClassGradesScreen() {
     [gradesQuery.data, classQuery.data?.classItem.period_id],
   );
 
-  useEffect(() => {
-    if (
-      selectedSubjectId &&
-      !classSubjects.some((item) => item.id === selectedSubjectId)
-    ) {
-      setSelectedSubjectId("");
-    }
-  }, [classSubjects, selectedSubjectId]);
 
   const isPending =
     classQuery.isPending ||
