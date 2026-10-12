@@ -10,7 +10,7 @@ pub struct Grade {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Decimal,

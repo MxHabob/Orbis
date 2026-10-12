@@ -13,7 +13,7 @@ pub struct Folder {
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
     pub org_unit_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub is_system: bool,
     pub metadata: Option<serde_json::Value>,

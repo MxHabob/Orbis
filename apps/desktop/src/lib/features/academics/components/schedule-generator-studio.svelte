@@ -4,7 +4,7 @@ import { page } from "$app/state";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage, type ClassSubjectDto, type ScheduledLessonDto } from "$lib/api";
+import { api, extractErrorMessage, type SectionSubjectDto, type ScheduledLessonDto } from "$lib/api";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
@@ -145,14 +145,14 @@ const solveJobsQuery = createQuery(() => ({
 
 const solveJobs = $derived(solveJobsQuery.data ?? []);
 
-// ClassSubjects Query for active period
-const allClassSubjectsQuery = createQuery(() => ({
+// SectionSubjects Query for active period
+const allSectionSubjectsQuery = createQuery(() => ({
   queryKey: ["all-class-subjects-matrix", orgId, activePeriodId],
   queryFn: async () => {
     if (!activePeriodId || classes.length === 0) return [];
     const results = await Promise.all(
       classes.map((cls) =>
-        api.listClassSubjects(String(cls.id), activePeriodId),
+        api.listSectionSubjects(String(cls.id), activePeriodId),
       ),
     );
     return results.flat();
@@ -161,7 +161,7 @@ const allClassSubjectsQuery = createQuery(() => ({
   staleTime: 30 * 1000,
 }));
 
-const allClassSubjects = $derived((allClassSubjectsQuery.data ?? []) as ClassSubjectDto[]);
+const allSectionSubjects = $derived((allSectionSubjectsQuery.data ?? []) as SectionSubjectDto[]);
 
 const effectiveActivePeriodId = $derived(
   activePeriodId ||
@@ -267,7 +267,7 @@ const weekdays = $derived.by(() => {
 
 // Metrics
 const totalWeeklyQuota = $derived.by(() => {
-  return allClassSubjects.reduce(
+  return allSectionSubjects.reduce(
     (sum: number, cs: any) => sum + (Number(cs.weekly_hours) || 0),
     0,
   );
@@ -281,7 +281,7 @@ const totalWeeklyCapacity = $derived.by(() => {
 // Teacher Workload Map
 const teacherWorkloads = $derived.by(() => {
   const map = new Map<string, { totalHours: number; subjectsCount: number }>();
-  for (const cs of allClassSubjects) {
+  for (const cs of allSectionSubjects) {
     if (!cs.primary_teacher_id) continue;
     const tId = String(cs.primary_teacher_id);
     const existing = map.get(tId) || { totalHours: 0, subjectsCount: 0 };
@@ -292,10 +292,10 @@ const teacherWorkloads = $derived.by(() => {
   return map;
 });
 
-// Filtered ClassSubjects for the Quota tab
-const filteredClassSubjects = $derived.by(() => {
-  if (selectedQuotaClassFilter === "all") return allClassSubjects;
-  return allClassSubjects.filter(
+// Filtered SectionSubjects for the Quota tab
+const filteredSectionSubjects = $derived.by(() => {
+  if (selectedQuotaClassFilter === "all") return allSectionSubjects;
+  return allSectionSubjects.filter(
     (cs: any) => String(cs.class_id) === selectedQuotaClassFilter,
   );
 });
@@ -319,11 +319,11 @@ async function handleApplySolution() {
   isApplying = false;
 }
 
-async function handleUpdateClassSubjectHours(csId: string, hours: number) {
+async function handleUpdateSectionSubjectHours(csId: string, hours: number) {
   try {
-    const targetCs = allClassSubjects.find((cs) => cs.id === csId);
+    const targetCs = allSectionSubjects.find((cs) => cs.id === csId);
     if (!targetCs) return;
-    await api.assignClassSubject({
+    await api.assignSectionSubject({
       class_id: targetCs.class_id,
       subject_id: targetCs.subject_id,
       period_id: targetCs.period_id,
@@ -339,14 +339,14 @@ async function handleUpdateClassSubjectHours(csId: string, hours: number) {
   }
 }
 
-async function handleUpdateClassSubjectTeacher(
+async function handleUpdateSectionSubjectTeacher(
   csId: string,
   teacherId: string,
 ) {
   try {
-    const targetCs = allClassSubjects.find((cs) => cs.id === csId);
+    const targetCs = allSectionSubjects.find((cs) => cs.id === csId);
     if (!targetCs) return;
-    await api.assignClassSubject({
+    await api.assignSectionSubject({
       class_id: targetCs.class_id,
       subject_id: targetCs.subject_id,
       period_id: targetCs.period_id,
@@ -650,7 +650,7 @@ function getSubjectColor(subjectId: string): string {
             </div>
 
             <div class="text-[11px] text-muted-foreground">
-              {m.academics_studio_assigned_subjects({ count: filteredClassSubjects.length })}
+              {m.academics_studio_assigned_subjects({ count: filteredSectionSubjects.length })}
             </div>
           </div>
 
@@ -665,7 +665,7 @@ function getSubjectColor(subjectId: string): string {
                 </tr>
               </thead>
               <tbody>
-                {#each filteredClassSubjects as cs (cs.id)}
+                {#each filteredSectionSubjects as cs (cs.id)}
                   <tr class="border-b border-border/40 hover:bg-muted/10 transition-colors">
                     <td class="p-2.5 font-semibold text-foreground">{getClassName(cs.class_id)}</td>
                     <td class="p-2.5">
@@ -678,7 +678,7 @@ function getSubjectColor(subjectId: string): string {
                       <Select
                         type="single"
                         value={cs.primary_teacher_id ? String(cs.primary_teacher_id) : ""}
-                        onValueChange={(val) => handleUpdateClassSubjectTeacher(cs.id, val ?? "")}
+                        onValueChange={(val) => handleUpdateSectionSubjectTeacher(cs.id, val ?? "")}
                       >
                         <SelectTrigger class="h-7 w-48 bg-card text-xs">
                           <span class="truncate">{getTeacherName(cs.primary_teacher_id) || m.academics_studio_unassigned()}</span>
@@ -698,7 +698,7 @@ function getSubjectColor(subjectId: string): string {
                           variant="outline"
                           size="icon"
                           class="h-6 w-6 text-xs"
-                          onclick={() => handleUpdateClassSubjectHours(cs.id, Math.max(1, (Number(cs.weekly_hours) || 1) - 1))}
+                          onclick={() => handleUpdateSectionSubjectHours(cs.id, Math.max(1, (Number(cs.weekly_hours) || 1) - 1))}
                         >
                           -
                         </Button>
@@ -708,7 +708,7 @@ function getSubjectColor(subjectId: string): string {
                           variant="outline"
                           size="icon"
                           class="h-6 w-6 text-xs"
-                          onclick={() => handleUpdateClassSubjectHours(cs.id, (Number(cs.weekly_hours) || 0) + 1)}
+                          onclick={() => handleUpdateSectionSubjectHours(cs.id, (Number(cs.weekly_hours) || 0) + 1)}
                         >
                           +
                         </Button>

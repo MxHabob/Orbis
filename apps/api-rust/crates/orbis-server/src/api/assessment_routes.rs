@@ -78,7 +78,7 @@ pub struct GradeDto {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Decimal,
@@ -100,7 +100,7 @@ pub struct RecordGradeRequest {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -114,7 +114,7 @@ pub struct RecordGradeItemRequest {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -139,7 +139,7 @@ pub struct AttendanceDto {
     pub id: Uuid,
     pub student_id: Uuid,
     pub class_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
     pub date: NaiveDate,
     pub status: String,
@@ -163,7 +163,7 @@ pub struct MarkAttendanceItemRequest {
     pub student_id: Uuid,
     pub status: String,
     pub notes: Option<String>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
 }
 
@@ -223,7 +223,7 @@ pub struct AcademicResultViewDto {
     pub learner_id: Uuid,
     pub subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub result_type: String,
     pub result_key: String,
     pub policy_version: u32,
@@ -242,7 +242,7 @@ pub struct AcademicResultPreviewRequest {
     pub result_key: String,
     pub subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub payload: serde_json::Value,
 }
 
@@ -255,7 +255,7 @@ pub struct CalculationPreviewRequest {
 pub struct CalculateGradesRequest {
     pub scheme_id: Uuid,
     pub student_id: Uuid,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -309,7 +309,7 @@ pub struct RankingItemDto {
 #[derive(Deserialize)]
 pub struct GradeQuery {
     pub student_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
 }
 
 #[derive(Deserialize)]
@@ -325,7 +325,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         period_id: g.period_id,
         student_id: g.student_id,
         enrollment_id: g.enrollment_id,
-        class_subject_id: g.class_subject_id,
+        section_subject_id: g.section_subject_id,
         component_id: g.component_id,
         score: g.score,
         max_score: g.max_score,
@@ -348,7 +348,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
         id: a.id,
         student_id: a.student_id,
         class_id: a.class_id,
-        class_subject_id: a.class_subject_id,
+        section_subject_id: a.section_subject_id,
         scheduled_lesson_id: a.scheduled_lesson_id,
         date: a.attendance_date,
         status: a.status,
@@ -401,7 +401,7 @@ fn academic_result_view_to_dto(view: AcademicResultView) -> AcademicResultViewDt
         learner_id: view.learner_id,
         subject_id: view.subject_id,
         period_id: view.period_id,
-        academic_year_id: view.academic_year_id,
+        calendar_id: view.calendar_id,
         result_type: view.result_type,
         result_key: view.result_key,
         policy_version: view.policy_version,
@@ -548,7 +548,7 @@ pub async fn preview_academic_result(
     .with_context(
         p.subject_id,
         p.period_id,
-        p.academic_year_id,
+        p.calendar_id,
         ctx.user_id(),
         vec![],
     );
@@ -606,7 +606,7 @@ pub async fn record_grade(
             ctx.tenant_id,
             p.period_id,
             p.student_id,
-            p.class_subject_id,
+            p.section_subject_id,
             p.component_id,
             p.score,
             p.max_score.unwrap_or_else(|| Decimal::from(100)),
@@ -631,7 +631,7 @@ pub async fn batch_record_grades(
             period_id: i.period_id,
             student_id: i.student_id,
             enrollment_id: i.enrollment_id,
-            class_subject_id: i.class_subject_id,
+            section_subject_id: i.section_subject_id,
             component_id: i.component_id,
             score: i.score,
             max_score: i.max_score,
@@ -678,8 +678,8 @@ pub async fn list_grades(
 ) -> Result<Json<ApiResponse<Vec<GradeDto>>>, ApiError> {
     let grades = if let Some(sid) = q.student_id {
         state.grade_repo.find_by_student(sid).await?
-    } else if let Some(csid) = q.class_subject_id {
-        state.grade_repo.find_by_class_subject(csid).await?
+    } else if let Some(csid) = q.section_subject_id {
+        state.grade_repo.find_by_section_subject(csid).await?
     } else {
         vec![]
     };
@@ -694,10 +694,10 @@ pub async fn calculate_grades(
     State(state): State<AppState>,
     Json(p): Json<CalculateGradesRequest>,
 ) -> Result<Json<ApiResponse<CalculationResultDto>>, ApiError> {
-    let class_subject_id = p.class_subject_id.unwrap_or_else(Uuid::nil);
+    let section_subject_id = p.section_subject_id.unwrap_or_else(Uuid::nil);
     let score = state
         .assessment_service
-        .calculate_scheme_grades(&ctx, p.scheme_id, p.student_id, class_subject_id)
+        .calculate_scheme_grades(&ctx, p.scheme_id, p.student_id, section_subject_id)
         .await?;
     Ok(ApiResponse::ok(CalculationResultDto {
         final_score: score,
@@ -792,7 +792,7 @@ pub async fn batch_mark_attendance(
             student_id: i.student_id,
             status: i.status,
             notes: i.notes,
-            class_subject_id: i.class_subject_id,
+            section_subject_id: i.section_subject_id,
             scheduled_lesson_id: i.scheduled_lesson_id,
         })
         .collect();

@@ -397,7 +397,7 @@ impl SchedulingService {
     pub async fn schedule_lesson(
         &self,
         ctx: &RequestContext,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
         time_slot_id: Uuid,
         room_id: Option<Uuid>,
         teacher_id: Option<Uuid>,
@@ -423,7 +423,7 @@ impl SchedulingService {
 
         let lesson = ScheduledLesson {
             id: lesson_id,
-            class_subject_id,
+            section_subject_id,
             time_slot_id,
             room_id,
             teacher_id,
@@ -435,7 +435,7 @@ impl SchedulingService {
 
         let event = DomainEvent::LessonScheduled {
             lesson_id,
-            class_subject_id,
+            section_subject_id,
             time_slot_id,
             timestamp: now,
         };
@@ -480,10 +480,10 @@ impl SchedulingService {
 
         let now = Utc::now();
         let mut lessons = Vec::with_capacity(items.len());
-        for (class_subject_id, time_slot_id, room_id, teacher_id) in items {
+        for (section_subject_id, time_slot_id, room_id, teacher_id) in items {
             let lesson = ScheduledLesson {
                 id: Uuid::new_v4(),
-                class_subject_id,
+                section_subject_id,
                 time_slot_id,
                 room_id,
                 teacher_id,
@@ -498,7 +498,7 @@ impl SchedulingService {
         for l in &lessons {
             let event = DomainEvent::LessonScheduled {
                 lesson_id: l.id,
-                class_subject_id: l.class_subject_id,
+                section_subject_id: l.section_subject_id,
                 time_slot_id: l.time_slot_id,
                 timestamp: now,
             };
@@ -522,12 +522,12 @@ impl SchedulingService {
         self.lesson_repo.find_by_teacher(teacher_id).await
     }
 
-    pub async fn list_lessons_by_class_subject(
+    pub async fn list_lessons_by_section_subject(
         &self,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
     ) -> Result<Vec<ScheduledLesson>, DomainError> {
         self.lesson_repo
-            .find_by_class_subject(class_subject_id)
+            .find_by_section_subject(section_subject_id)
             .await
     }
 
@@ -597,7 +597,7 @@ impl SchedulingService {
         &self,
         ctx: &RequestContext,
         session_id: Uuid,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
         exam_date: NaiveDate,
         start_time: NaiveTime,
         end_time: NaiveTime,
@@ -612,7 +612,7 @@ impl SchedulingService {
         let schedule = ExamSchedule {
             id: schedule_id,
             exam_session_id: session_id,
-            class_subject_id,
+            section_subject_id,
             exam_date,
             start_time,
             end_time,

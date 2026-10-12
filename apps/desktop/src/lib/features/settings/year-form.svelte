@@ -8,7 +8,7 @@ Uses FormController, BilingualNameFields, and shared UI components.
   import { api, extractErrorMessage } from "$lib/api";
   import * as m from "$lib/paraglide/messages";
   import { academicContext } from "$lib/stores";
-  import type { AcademicYearDto } from "@orbis/sdk";
+  import type { academicCalendarDto } from "@orbis/sdk";
   import { toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
@@ -27,8 +27,8 @@ Uses FormController, BilingualNameFields, and shared UI components.
     onCancel,
   }: {
     orgId: string;
-    year?: AcademicYearDto | null;
-    existingYears?: AcademicYearDto[];
+    year?: academicCalendarDto | null;
+    existingYears?: academicCalendarDto[];
     onSuccess: () => void;
     onCancel: () => void;
   } = $props();
@@ -104,7 +104,7 @@ Uses FormController, BilingualNameFields, and shared UI components.
       if (!name) throw new Error(m.year_sheet_validation_name());
 
       if (isEdit && year?.id) {
-        await api.updateAcademicYear(year.id, {
+        await api.updateacademicCalendar(year.id, {
           name,
           name_ar: payload.name_ar || undefined,
           start_date: new Date(payload.start_date).toISOString(),
@@ -113,7 +113,7 @@ Uses FormController, BilingualNameFields, and shared UI components.
         });
         toast.success(m.year_sheet_updated_success());
       } else {
-        await api.createAcademicYear({
+        await api.createacademicCalendar({
           name,
           name_ar: payload.name_ar || undefined,
           start_date: new Date(payload.start_date).toISOString(),
@@ -163,7 +163,7 @@ Uses FormController, BilingualNameFields, and shared UI components.
             onclick={applyGregorianPreset}
           >
             <Calendar size={11} />
-            {m.academic_years_filter_all()}
+            {m.academic_calendars_filter_all()}
           </Button>
         </div>
       {/if}

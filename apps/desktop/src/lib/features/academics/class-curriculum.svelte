@@ -6,7 +6,7 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import { createQuery } from "@tanstack/svelte-query";
-import { api, extractErrorMessage, type ClassSubjectDto, type SubjectDto } from "$lib/api";
+import { api, extractErrorMessage, type SectionSubjectDto, type SubjectDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -22,9 +22,9 @@ import { academicContext } from "$lib/stores";
 import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 import { BookOpen, Plus, Refresh } from "@orbis/icons";
-import ClassSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
+import SectionSubjectSheet from "$lib/features/academics/components/class-subject-sheet.svelte";
 
-interface EnrichedClassSubject extends ClassSubjectDto {
+interface EnrichedSectionSubject extends SectionSubjectDto {
   catalog?: SubjectDto;
   teacher_name?: string;
   is_active?: boolean;
@@ -37,8 +37,8 @@ let showSubjectSheet = $state(false);
 
 const subjectsQuery = createQuery(() => ({
   queryKey: ["class-subjects-natural", classId, periodId],
-  queryFn: async (): Promise<EnrichedClassSubject[]> => {
-    const offerings = await api.listClassSubjects(classId, periodId);
+  queryFn: async (): Promise<EnrichedSectionSubject[]> => {
+    const offerings = await api.listSectionSubjects(classId, periodId);
     const catalog = await api.listSubjects();
     const byId = new Map(catalog.map((s) => [String(s.id), s]));
     return offerings.map((o) => ({
@@ -50,11 +50,11 @@ const subjectsQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
-const subjects = $derived((subjectsQuery.data || []) as EnrichedClassSubject[]);
+const subjects = $derived((subjectsQuery.data || []) as EnrichedSectionSubject[]);
 const isLoading = $derived(subjectsQuery.isLoading);
 const error = $derived(subjectsQuery.error);
 
-function subjectName(subject: EnrichedClassSubject): string {
+function subjectName(subject: EnrichedSectionSubject): string {
   return subject.catalog?.name_ar || subject.catalog?.name || subject.subject_id;
 }
 
@@ -187,7 +187,7 @@ function handleGridAction(event: GridActionEvent) {
     </CardContent>
   </Card>
 
-  <ClassSubjectSheet
+  <SectionSubjectSheet
     bind:open={showSubjectSheet}
     {orgId}
     {classId}

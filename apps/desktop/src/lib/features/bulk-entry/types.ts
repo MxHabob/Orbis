@@ -54,7 +54,7 @@ export interface BulkReferenceData {
     required: boolean;
     preventDuplicate: boolean;
   }>;
-  existingClassSubjectAssignments: Array<{
+  existingSectionSubjectAssignments: Array<{
     classId: string;
     subjectId: string;
     periodId: string;

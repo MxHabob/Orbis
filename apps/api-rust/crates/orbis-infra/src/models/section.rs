@@ -1,21 +1,31 @@
 use chrono::{DateTime, Utc};
-use rust_decimal::Decimal;
 use sea_orm::entity::prelude::*;
 
+/// Unified grouping entity for all institution types.
+/// - Schools: a stable class/division (e.g. "Grade 1 / Section A")
+/// - Universities: a course section (e.g. "CS101 - Section 01")
+/// - Institutes: a cohort or training group (e.g. "Cohort 2025-A")
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "courses")]
+#[sea_orm(table_name = "sections")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,
     pub org_id: Uuid,
-    pub unit_id: Option<Uuid>,
+    pub org_unit_id: Option<Uuid>,
+    /// Type discriminator: class, course_section, cohort, group
+    pub section_type: String,
     pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
-    pub description: Option<String>,
-    pub credit_units: Option<Decimal>,
-    pub workload_units: Option<Decimal>,
+    /// Academic level (e.g. grade_1, year_2, level_3) — configurable per institution
+    pub level: Option<String>,
+    /// Optional subdivision (e.g. science_track, literary_track)
+    pub track: Option<String>,
+    pub capacity: Option<i32>,
+    pub color: Option<String>,
     pub is_active: bool,
+    pub is_deleted: bool,
+    pub deleted_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -30,10 +40,10 @@ pub enum Relation {
     Organization,
     #[sea_orm(
         belongs_to = "super::org_unit::Entity",
-        from = "Column::UnitId",
+        from = "Column::OrgUnitId",
         to = "super::org_unit::Column::Id"
     )]
-    Unit,
+    OrgUnit,
 }
 
 impl Related<super::organization::Entity> for Entity {
@@ -44,7 +54,7 @@ impl Related<super::organization::Entity> for Entity {
 
 impl Related<super::org_unit::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Unit.def()
+        Relation::OrgUnit.def()
     }
 }
 

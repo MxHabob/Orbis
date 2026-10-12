@@ -100,8 +100,8 @@ pub struct EnvironmentDetectionResult {
     pub currency_name_ar: String,
     pub is_hijri_recommended: bool,
     pub date_format: String,
-    pub suggested_academic_year: String,
-    pub suggested_academic_year_ar: String,
+    pub suggested_academic_calendar: String,
+    pub suggested_academic_calendar_ar: String,
 }
 
 /// Smart slug generation response.
@@ -588,8 +588,8 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
 
     let current_year = local_now.year();
     let next_year = current_year + 1;
-    let suggested_academic_year = format!("{}/{}", current_year, next_year);
-    let suggested_academic_year_ar = format!("{}/{} م", current_year, next_year);
+    let suggested_academic_calendar = format!("{}/{}", current_year, next_year);
+    let suggested_academic_calendar_ar = format!("{}/{} م", current_year, next_year);
 
     Ok(EnvironmentDetectionResult {
         detected_locale,
@@ -608,8 +608,8 @@ pub async fn bootstrap_detect_environment() -> Result<EnvironmentDetectionResult
         currency_name_ar: currency_name_ar.to_string(),
         is_hijri_recommended: is_hijri,
         date_format: "YYYY-MM-DD".to_string(),
-        suggested_academic_year,
-        suggested_academic_year_ar,
+        suggested_academic_calendar,
+        suggested_academic_calendar_ar,
     })
 }
 

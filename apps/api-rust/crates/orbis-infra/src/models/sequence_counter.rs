@@ -10,7 +10,7 @@ pub struct Model {
     pub id: Uuid,
     pub org_id: Uuid,
     pub sequence_type: String, // e.g. "student", "employee", "invoice"
-    pub academic_year: i32,    // 2026 or 0 for global
+    pub academic_calendar: i32,    // 2026 or 0 for global
     pub current_val: i64,
     pub updated_at: DateTime<Utc>,
 }

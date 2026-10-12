@@ -49,7 +49,7 @@ pub struct UpdateExamSessionRequest {
 pub struct ExamScheduleDto {
     pub id: Uuid,
     pub exam_session_id: Uuid,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub exam_date: NaiveDate,
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
@@ -60,7 +60,7 @@ pub struct ExamScheduleDto {
 #[derive(Deserialize, ToSchema)]
 pub struct ScheduleExamRequest {
     pub exam_session_id: Uuid,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub exam_date: NaiveDate,
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,
@@ -300,7 +300,7 @@ async fn schedule_exam(
         .schedule_exam(
             &ctx,
             p.exam_session_id,
-            p.class_subject_id,
+            p.section_subject_id,
             p.exam_date,
             p.start_time,
             p.end_time,
@@ -309,7 +309,7 @@ async fn schedule_exam(
     Ok(ApiResponse::ok(ExamScheduleDto {
         id: s.id,
         exam_session_id: s.exam_session_id,
-        class_subject_id: s.class_subject_id,
+        section_subject_id: s.section_subject_id,
         exam_date: s.exam_date,
         start_time: s.start_time,
         end_time: s.end_time,
@@ -335,7 +335,7 @@ async fn list_schedules(
         .map(|s| ExamScheduleDto {
             id: s.id,
             exam_session_id: s.exam_session_id,
-            class_subject_id: s.class_subject_id,
+            section_subject_id: s.section_subject_id,
             exam_date: s.exam_date,
             start_time: s.start_time,
             end_time: s.end_time,

@@ -1,4 +1,4 @@
-//! Academic routes — Subjects, Classes, ClassSubjects.
+//! Academic routes — Subjects, Classes, SectionSubjects.
 
 use axum::{
     Json, Router,
@@ -12,7 +12,7 @@ use uuid::Uuid;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
-use orbis_domain::queries::filters::{ClassFilter, ClassSubjectFilter, SubjectFilter};
+use orbis_domain::queries::filters::{ClassFilter, SectionSubjectFilter, SubjectFilter};
 
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
@@ -77,7 +77,7 @@ pub struct CreateClassRequest {
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
-pub struct ClassSubjectDto {
+pub struct SectionSubjectDto {
     pub id: Uuid,
     pub class_id: Uuid,
     pub subject_id: Uuid,
@@ -90,7 +90,7 @@ pub struct ClassSubjectDto {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct AssignClassSubjectRequest {
+pub struct AssignSectionSubjectRequest {
     pub class_id: Uuid,
     pub subject_id: Uuid,
     pub period_id: Uuid,
@@ -118,7 +118,7 @@ fn subject_to_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
     }
 }
 
-fn class_to_dto(c: orbis_domain::entities::class::Class) -> ClassDto {
+fn section_to_dto(c: orbis_domain::entities::section::Section) -> ClassDto {
     ClassDto {
         id: c.id,
         org_id: c.org_id,
@@ -218,7 +218,7 @@ async fn create_class(
             p.capacity,
         )
         .await?;
-    Ok(ApiResponse::ok(class_to_dto(c)))
+    Ok(ApiResponse::ok(section_to_dto(c)))
 }
 
 #[utoipa::path(get, path = "/api/v1/classes",
@@ -232,12 +232,12 @@ async fn list_classes(
         .academic_service
         .list_classes(ctx.tenant_id, ClassFilter::default())
         .await?;
-    let dtos = classes.items.into_iter().map(class_to_dto).collect();
+    let dtos = classes.items.into_iter().map(section_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
 #[utoipa::path(get, path = "/api/v1/classes/{id}",
-    params(("id" = Uuid, Path, description = "Class ID")),
+    params(("id" = Uuid, Path, description = "Section ID")),
     responses((status = 200, body = ClassDto)),
     security(("bearer" = [])), tag = "Academic")]
 async fn get_class(
@@ -249,21 +249,21 @@ async fn get_class(
         .academic_service
         .get_class(id)
         .await?
-        .ok_or_else(|| ApiError::not_found(format!("Class {} not found", id)))?;
-    Ok(ApiResponse::ok(class_to_dto(c)))
+        .ok_or_else(|| ApiError::not_found(format!("Section {} not found", id)))?;
+    Ok(ApiResponse::ok(section_to_dto(c)))
 }
 
-#[utoipa::path(post, path = "/api/v1/class-subjects", request_body = AssignClassSubjectRequest,
-    responses((status = 201, body = ClassSubjectDto)),
+#[utoipa::path(post, path = "/api/v1/Section-subjects", request_body = AssignSectionSubjectRequest,
+    responses((status = 201, body = SectionSubjectDto)),
     security(("bearer" = [])), tag = "Academic")]
-async fn assign_class_subject(
+async fn assign_section_subject(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Json(p): Json<AssignClassSubjectRequest>,
-) -> Result<Json<ApiResponse<ClassSubjectDto>>, ApiError> {
+    Json(p): Json<AssignSectionSubjectRequest>,
+) -> Result<Json<ApiResponse<SectionSubjectDto>>, ApiError> {
     let cs = state
         .academic_service
-        .assign_class_subject(
+        .assign_section_subject(
             &ctx,
             p.class_id,
             p.subject_id,
@@ -272,7 +272,7 @@ async fn assign_class_subject(
             p.weekly_hours,
         )
         .await?;
-    Ok(ApiResponse::ok(ClassSubjectDto {
+    Ok(ApiResponse::ok(SectionSubjectDto {
         id: cs.id,
         class_id: cs.class_id,
         subject_id: cs.subject_id,
@@ -285,28 +285,28 @@ async fn assign_class_subject(
     }))
 }
 
-#[utoipa::path(get, path = "/api/v1/class-subjects",
-    params(("class_id" = Uuid, Query, description = "Class ID"), ("period_id" = Uuid, Query, description = "Period ID")),
-    responses((status = 200, body = Vec<ClassSubjectDto>)),
+#[utoipa::path(get, path = "/api/v1/Section-subjects",
+    params(("class_id" = Uuid, Query, description = "Section ID"), ("period_id" = Uuid, Query, description = "Period ID")),
+    responses((status = 200, body = Vec<SectionSubjectDto>)),
     security(("bearer" = [])), tag = "Academic")]
-async fn list_class_subjects(
+async fn list_section_subjects(
     ctx: AuthContext,
     State(state): State<AppState>,
-    axum::extract::Query(params): axum::extract::Query<ClassSubjectQuery>,
-) -> Result<Json<ApiResponse<Vec<ClassSubjectDto>>>, ApiError> {
-    let filter = ClassSubjectFilter {
+    axum::extract::Query(params): axum::extract::Query<SectionSubjectQuery>,
+) -> Result<Json<ApiResponse<Vec<SectionSubjectDto>>>, ApiError> {
+    let filter = SectionSubjectFilter {
         class_id: Some(params.class_id),
         period_id: Some(params.period_id),
         ..Default::default()
     };
     let items = state
         .academic_service
-        .list_class_subjects(ctx.tenant_id, filter)
+        .list_section_subjects(ctx.tenant_id, filter)
         .await?;
     let dtos = items
         .items
         .into_iter()
-        .map(|cs| ClassSubjectDto {
+        .map(|cs| SectionSubjectDto {
             id: cs.id,
             class_id: cs.class_id,
             subject_id: cs.subject_id,
@@ -322,7 +322,7 @@ async fn list_class_subjects(
 }
 
 #[derive(Deserialize)]
-pub struct ClassSubjectQuery {
+pub struct SectionSubjectQuery {
     pub class_id: Uuid,
     pub period_id: Uuid,
 }
@@ -336,7 +336,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/classes", post(create_class).get(list_classes))
         .route("/api/v1/classes/:id", get(get_class))
         .route(
-            "/api/v1/class-subjects",
-            post(assign_class_subject).get(list_class_subjects),
+            "/api/v1/Section-subjects",
+            post(assign_section_subject).get(list_section_subjects),
         )
 }

@@ -20,7 +20,7 @@ pub struct StorageUploadInput {
     pub category: Option<String>,
     pub asset_type: Option<String>,
     pub description: Option<String>,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
@@ -43,8 +43,8 @@ pub async fn storage_upload_file(
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|e| Uuid::parse_str(&e).ok());
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let academic_year_id = request
-        .academic_year_id
+    let calendar_id = request
+        .calendar_id
         .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
@@ -57,7 +57,7 @@ pub async fn storage_upload_file(
         category: request.category,
         asset_type: request.asset_type,
         description: request.description,
-        academic_year_id,
+        calendar_id,
         term_id,
         tags: request.tags,
         visibility: request.visibility,

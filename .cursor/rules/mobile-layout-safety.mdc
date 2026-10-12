@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+---
+---
+description: Enforce responsive React Native layouts, safe areas, keyboard handling, RTL, and navigation-safe screen composition.
+alwaysApply: true
+---
+
+# Native Layout and Safe Areas
+
+Inspect the existing root layout, route layouts, navigation, and safe-area integration before changing screen layout.
+
+## Safe Areas
+- Respect top and bottom system insets.
+- Reuse the project's existing safe-area provider and screen wrappers.
+- Identify which layer owns each inset.
+- Do not apply the same inset twice.
+- Do not assume fixed status-bar, home-indicator, or tab-bar heights.
+- Do not add safe-area padding blindly to every screen.
+
+## Responsive Layout
+- Prefer flex layouts, content-driven dimensions, and appropriate minimum or maximum widths.
+- Use useWindowDimensions when layout decisions genuinely depend on available window dimensions.
+- Avoid fixed screen heights and arbitrary offsets for primary content.
+- Ensure long text can wrap and controls do not become clipped.
+- Support narrow phones and larger devices; support landscape and tablets where the product requires them.
+
+## Keyboard
+- Inspect existing keyboard and navigation behavior before introducing KeyboardAvoidingView.
+- Keep focused inputs and primary actions accessible when the keyboard opens.
+- Make long forms scrollable and ensure their final fields remain reachable.
+- Avoid stacking multiple keyboard-handling mechanisms without understanding their interaction.
+
+## Navigation Chrome
+- Respect headers and tab bars owned by Expo Router layouts.
+- Do not duplicate navigation UI inside a route.
+- Ensure scrollable content and bottom actions are not obscured.
+- Avoid hardcoding tab-bar heights or compensating with arbitrary bottom padding.
+
+## RTL and Accessibility
+- Follow the existing RTL strategy.
+- Prefer logical start/end alignment where supported and appropriate.
+- Check directional icons, back navigation, mixed-language text, and long Arabic labels.
+- Provide accessible labels and comfortable touch targets.
+- Avoid layouts that break when font scaling increases.
+
+## Verification
+Check top and bottom insets, keyboard behavior, narrow layouts, large layouts, text wrapping, and RTL where applicable.
+
+Never mark device-level checks as passed unless they were actually performed.

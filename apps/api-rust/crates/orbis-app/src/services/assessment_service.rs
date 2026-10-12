@@ -2,8 +2,8 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, AssessmentSchemeRepository,
-    AttendanceRepository, BehaviorRecordRepository, ClassRepository, ClassSubjectRepository,
+    AcademicPeriodRepository, AcademicCalendarRepository, AssessmentSchemeRepository,
+    AttendanceRepository, BehaviorRecordRepository, ClassRepository, SectionSubjectRepository,
     EnrollmentRepository, GpaRecordRepository, GradeRepository, SettingsRepository,
     StudentRepository, SubjectRepository,
 };
@@ -37,7 +37,7 @@ pub struct BatchGradeItem {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -50,7 +50,7 @@ pub struct BatchAttendanceItem {
     pub student_id: Uuid,
     pub status: String,
     pub notes: Option<String>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
 }
 
@@ -60,12 +60,12 @@ pub struct AssessmentService {
     pub attendance_repo: Arc<dyn AttendanceRepository>,
     pub behavior_repo: Arc<dyn BehaviorRecordRepository>,
     pub gpa_repo: Arc<dyn GpaRecordRepository>,
-    pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
+    pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
     pub class_repo: Option<Arc<dyn ClassRepository>>,
     pub student_repo: Option<Arc<dyn StudentRepository>>,
-    pub year_repo: Option<Arc<dyn AcademicYearRepository>>,
+    pub year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
     pub settings_repo: Option<Arc<dyn SettingsRepository>>,
     pub event_bus: Arc<dyn EventBus>,
@@ -79,7 +79,7 @@ impl AssessmentService {
         attendance_repo: Arc<dyn AttendanceRepository>,
         behavior_repo: Arc<dyn BehaviorRecordRepository>,
         gpa_repo: Arc<dyn GpaRecordRepository>,
-        class_subject_repo: Arc<dyn ClassSubjectRepository>,
+        section_subject_repo: Arc<dyn SectionSubjectRepository>,
         subject_repo: Arc<dyn SubjectRepository>,
         event_bus: Arc<dyn EventBus>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
@@ -90,7 +90,7 @@ impl AssessmentService {
             attendance_repo,
             behavior_repo,
             gpa_repo,
-            class_subject_repo,
+            section_subject_repo,
             subject_repo,
             period_repo: None,
             class_repo: None,
@@ -109,7 +109,7 @@ impl AssessmentService {
         period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
         class_repo: Option<Arc<dyn ClassRepository>>,
         student_repo: Option<Arc<dyn StudentRepository>>,
-        year_repo: Option<Arc<dyn AcademicYearRepository>>,
+        year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
         enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
         settings_repo: Option<Arc<dyn SettingsRepository>>,
     ) -> Self {
@@ -143,7 +143,7 @@ impl AssessmentService {
         org_id: Uuid,
         period_id: Uuid,
         student_id: Uuid,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
         component_id: Option<Uuid>,
         score: Decimal,
         max_score: Decimal,
@@ -169,7 +169,7 @@ impl AssessmentService {
             period_id,
             student_id,
             enrollment_id: None,
-            class_subject_id,
+            section_subject_id,
             component_id,
             score,
             max_score,
@@ -195,7 +195,7 @@ impl AssessmentService {
                 &DomainEvent::GradeRecorded {
                     grade_id,
                     student_id,
-                    class_subject_id,
+                    section_subject_id,
                     score,
                     timestamp: now,
                 },
@@ -235,7 +235,7 @@ impl AssessmentService {
                 period_id: item.period_id,
                 student_id: item.student_id,
                 enrollment_id: item.enrollment_id,
-                class_subject_id: item.class_subject_id,
+                section_subject_id: item.section_subject_id,
                 component_id: item.component_id,
                 score: item.score,
                 max_score,
@@ -263,7 +263,7 @@ impl AssessmentService {
                     &DomainEvent::GradeRecorded {
                         grade_id: g.id,
                         student_id: g.student_id,
-                        class_subject_id: g.class_subject_id,
+                        section_subject_id: g.section_subject_id,
                         score: g.score,
                         timestamp: now,
                     },
@@ -317,7 +317,7 @@ impl AssessmentService {
         _ctx: &RequestContext,
         scheme_id: Uuid,
         student_id: Uuid,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
     ) -> Result<Decimal, DomainError> {
         let scheme = self
             .scheme_repo
@@ -334,7 +334,7 @@ impl AssessmentService {
 
         let grades = self
             .grade_repo
-            .find_by_student_and_subject(student_id, class_subject_id)
+            .find_by_student_and_subject(student_id, section_subject_id)
             .await?;
 
         let mut engine = CalcEngine::new();
@@ -342,7 +342,7 @@ impl AssessmentService {
             let var_name = grade
                 .component_id
                 .map(|cid| cid.to_string())
-                .unwrap_or_else(|| grade.class_subject_id.to_string());
+                .unwrap_or_else(|| grade.section_subject_id.to_string());
             engine.set_variable(&var_name, grade.score);
         }
 
@@ -382,8 +382,8 @@ impl AssessmentService {
         for g in &term_grades {
             // Resolve actual subject credit hours
             let credit = if let Some(cs) = self
-                .class_subject_repo
-                .find_by_id(g.class_subject_id)
+                .section_subject_repo
+                .find_by_id(g.section_subject_id)
                 .await?
             {
                 if let Some(subj) = self.subject_repo.find_by_id(cs.subject_id).await? {
@@ -484,7 +484,7 @@ impl AssessmentService {
         _period_id: Uuid,
         student_id: Uuid,
         class_id: Option<Uuid>,
-        class_subject_id: Option<Uuid>,
+        section_subject_id: Option<Uuid>,
         date: NaiveDate,
         status: String,
         notes: Option<String>,
@@ -500,7 +500,7 @@ impl AssessmentService {
             id: att_id,
             student_id,
             class_id,
-            class_subject_id,
+            section_subject_id,
             scheduled_lesson_id: None,
             attendance_date: date,
             status: status.clone(),
@@ -520,7 +520,7 @@ impl AssessmentService {
                     attendance_id: att_id,
                     student_id,
                     class_id,
-                    class_subject_id,
+                    section_subject_id,
                     scheduled_lesson_id: None,
                     status,
                     timestamp: now,
@@ -553,7 +553,7 @@ impl AssessmentService {
                 id: att_id,
                 student_id: item.student_id,
                 class_id: Some(class_id),
-                class_subject_id: item.class_subject_id,
+                section_subject_id: item.section_subject_id,
                 scheduled_lesson_id: item.scheduled_lesson_id,
                 attendance_date: date,
                 status: item.status,
@@ -575,7 +575,7 @@ impl AssessmentService {
                         attendance_id: a.id,
                         student_id: a.student_id,
                         class_id: a.class_id,
-                        class_subject_id: a.class_subject_id,
+                        section_subject_id: a.section_subject_id,
                         scheduled_lesson_id: a.scheduled_lesson_id,
                         status: a.status.clone(),
                         timestamp: now,
@@ -1010,13 +1010,13 @@ impl AssessmentService {
         };
 
         // 4. Resolve class subjects
-        let class_subjects = if resolved_class_id != Uuid::nil() {
+        let section_subjects = if resolved_class_id != Uuid::nil() {
             let cs_list = self
-                .class_subject_repo
+                .section_subject_repo
                 .find_by_class_and_period(resolved_class_id, period_id)
                 .await?;
             if cs_list.is_empty() {
-                self.class_subject_repo
+                self.section_subject_repo
                     .find_by_class(resolved_class_id)
                     .await?
             } else {
@@ -1027,9 +1027,9 @@ impl AssessmentService {
         };
 
         // 5. Calculate subject term results
-        let mut subject_results = Vec::with_capacity(class_subjects.len());
+        let mut subject_results = Vec::with_capacity(section_subjects.len());
 
-        for cs in &class_subjects {
+        for cs in &section_subjects {
             let subject = self.subject_repo.find_by_id(cs.subject_id).await?;
             let (subject_code, subject_name, subject_name_ar, credit_hours) = match &subject {
                 Some(s) => (
@@ -1203,7 +1203,7 @@ impl AssessmentService {
         ctx: &RequestContext,
         org_id: Uuid,
         student_id: Uuid,
-        academic_year_id: Uuid,
+        calendar_id: Uuid,
         class_id: Option<Uuid>,
         policy: Option<AcademicPolicy>,
     ) -> Result<StudentAnnualReportCard, DomainError> {
@@ -1214,7 +1214,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let (year_name, term_periods) = if let Some(pr) = &self.period_repo {
-            let all_periods = pr.find_by_year(academic_year_id).await?;
+            let all_periods = pr.find_by_year(calendar_id).await?;
             let mut terms: Vec<_> = all_periods
                 .into_iter()
                 .filter(|p| p.parent_id.is_none())
@@ -1222,7 +1222,7 @@ impl AssessmentService {
             terms.sort_by_key(|p| p.sort_order);
 
             let yr_name = if let Some(yr) = &self.year_repo {
-                yr.find_by_id(academic_year_id)
+                yr.find_by_id(calendar_id)
                     .await?
                     .map(|y| y.name)
                     .unwrap_or_else(|| "Academic Year".into())
@@ -1353,8 +1353,8 @@ impl AssessmentService {
             student_number,
             class_id: resolved_class_id,
             class_name,
-            academic_year_id,
-            academic_year_name: year_name,
+            calendar_id,
+            academic_calendar_name: year_name,
             subjects: annual_subjects,
             total_score,
             max_possible_score,
@@ -1438,7 +1438,7 @@ impl AssessmentService {
         ctx: &RequestContext,
         org_id: Uuid,
         class_id: Uuid,
-        academic_year_id: Uuid,
+        calendar_id: Uuid,
         policy: Option<AcademicPolicy>,
     ) -> Result<Vec<StudentAnnualReportCard>, DomainError> {
         self.permission_checker
@@ -1460,7 +1460,7 @@ impl AssessmentService {
                     ctx,
                     org_id,
                     en.student_id,
-                    academic_year_id,
+                    calendar_id,
                     Some(class_id),
                     Some(policy.clone()),
                 )

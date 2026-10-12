@@ -19,7 +19,7 @@ const isArabic = $derived(getLocale() === "ar");
 const subjectsQuery = createQuery(() => ({
   queryKey: ["class-subjects-widget", classId, periodId],
   queryFn: async () => {
-    const offerings = await api.listClassSubjects(classId, periodId);
+    const offerings = await api.listSectionSubjects(classId, periodId);
     const catalog = await api.listSubjects();
     const byId = new Map(catalog.map((s: any) => [String(s.id), s]));
     return offerings.map((o: any) => ({
@@ -41,7 +41,7 @@ function subjectName(subject: any): string {
 }
 </script>
 
-<WorkspaceCard title={m.ui_class_subjects_class_subjects()}>
+<WorkspaceCard title={m.ui_section_subjects_section_subjects()}>
   {#snippet actions()}
     <div class="flex items-center gap-2">
       <Badge variant="secondary" class="text-[10px] py-0 px-1.5 h-5 font-bold font-sans">
@@ -55,7 +55,7 @@ function subjectName(subject: any): string {
           goto(localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`))}
       >
         <Plus size={12} />
-        {m.ui_class_subjects_link_subject()}
+        {m.ui_section_subjects_link_subject()}
       </Button>
     </div>
   {/snippet}
@@ -69,9 +69,9 @@ function subjectName(subject: any): string {
   {:else if subjects.length === 0}
     <div class="flex flex-col items-center justify-center h-full py-8 text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
       <BookOpen size={24} class="text-muted-foreground opacity-40 mb-2" />
-      <p class="text-xs font-bold text-foreground">{m.ui_class_subjects_no_subjects_linked()}</p>
+      <p class="text-xs font-bold text-foreground">{m.ui_section_subjects_no_subjects_linked()}</p>
       <p class="text-[10px] text-muted-foreground mt-1 max-w-50">
-        {m.ui_class_subjects_link_curriculum_subjects_to_enable_gradebook_and_timetables()}
+        {m.ui_section_subjects_link_curriculum_subjects_to_enable_gradebook_and_timetables()}
       </p>
       <Button
         variant="outline"
@@ -81,7 +81,7 @@ function subjectName(subject: any): string {
           goto(localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`))}
       >
         <Plus size={12} class="me-1" />
-        {m.ui_class_subjects_link_new_subject()}
+        {m.ui_section_subjects_link_new_subject()}
       </Button>
     </div>
   {:else}
@@ -108,7 +108,7 @@ function subjectName(subject: any): string {
                   <span class="opacity-40">•</span>
                   <span class="flex items-center gap-1 shrink-0">
                     <ClockRotateRight size={10} class="opacity-70" />
-                    {subject.weekly_hours} {m.ui_class_subjects_h()}
+                    {subject.weekly_hours} {m.ui_section_subjects_h()}
                   </span>
                 {/if}
               </div>

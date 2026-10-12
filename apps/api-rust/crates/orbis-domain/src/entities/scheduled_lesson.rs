@@ -5,7 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduledLesson {
     pub id: Uuid,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub room_id: Option<Uuid>,
     pub time_slot_id: Uuid,
     pub teacher_id: Option<Uuid>, // Could override the primary teacher

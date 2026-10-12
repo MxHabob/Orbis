@@ -367,7 +367,7 @@ pub fn get_master_template_definitions() -> Vec<(
                     "student.studentNumber": { "source": "student.student_number", "type": "string", "label": "Student Number", "labelAr": "الرقم الأكاديمي" },
                     "student.className": { "source": "student.class_name", "type": "string", "label": "Class", "labelAr": "الصف والشعبة" },
                     "student.nationalId": { "source": "student.national_id", "type": "string", "label": "National ID", "labelAr": "رقم الهوية / الإقامة" },
-                    "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" }
+                    "AcademicCalendar.name": { "source": "academic_calendar.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" }
                 },
                 "assets": {},
                 "pages": [{
@@ -418,7 +418,7 @@ pub fn get_master_template_definitions() -> Vec<(
                             "type": "Text",
                             "id": "body-text",
                             "props": {
-                                "content": "تشهد إدارة {{$org.name_ar}} بأن الطالب/ة:\n\nالاسم الكامل: {{student.name}}\nرقم الهوية الوطنية / الإقامة: {{student.nationalId}}\nالرقم الأكاديمي: {{student.studentNumber}}\n\nمقيد/ة رسمياً ومنتظم/ة بالدراسة لدينا للعام الدراسي {{academicYear.name}}، في المرحلة الدراسية بالصف: {{student.className}}.\n\nوقد مُنحت له هذه الإفادة بناءً على طلبه لتقديمها إلى من يهمه الأمر، دون أي مسؤولية على المنظمة تجاه حقوق الغير.",
+                                "content": "تشهد إدارة {{$org.name_ar}} بأن الطالب/ة:\n\nالاسم الكامل: {{student.name}}\nرقم الهوية الوطنية / الإقامة: {{student.nationalId}}\nالرقم الأكاديمي: {{student.studentNumber}}\n\nمقيد/ة رسمياً ومنتظم/ة بالدراسة لدينا للعام الدراسي {{AcademicCalendar.name}}، في المرحلة الدراسية بالصف: {{student.className}}.\n\nوقد مُنحت له هذه الإفادة بناءً على طلبه لتقديمها إلى من يهمه الأمر، دون أي مسؤولية على المنظمة تجاه حقوق الغير.",
                                 "fontSize": 12,
                                 "fontFamily": "Rubik",
                                 "fontWeight": "normal",
@@ -495,7 +495,7 @@ pub fn get_master_template_definitions() -> Vec<(
                     "student.studentNumber": { "source": "student.student_number", "type": "string", "label": "Student Number", "labelAr": "الرقم الأكاديمي" },
                     "student.className": { "source": "student.class_name", "type": "string", "label": "Class", "labelAr": "الصف والشعبة" },
                     "period.name": { "source": "period.name", "type": "string", "label": "Academic Period", "labelAr": "الفصل الدراسي" },
-                    "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" }
+                    "AcademicCalendar.name": { "source": "academic_calendar.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" }
                 },
                 "assets": {},
                 "pages": [{
@@ -524,7 +524,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Text",
                             "id": "rep-year-period",
-                            "props": { "content": "العام الدراسي: {{academicYear.name}} | {{period.name}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "center", "direction": "rtl" },
+                            "props": { "content": "العام الدراسي: {{AcademicCalendar.name}} | {{period.name}}", "fontSize": 8.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#475569", "textAlign": "center", "direction": "rtl" },
                             "position": { "x": 50, "y": 30, "width": 110, "height": 5 }
                         },
                         // Student Info Summary Grid
@@ -1302,7 +1302,7 @@ fn default_grade_certificate_templates() -> Vec<(
                 json!({
                     "type": "Text",
                     "id": "student-details-left",
-                    "props": { "content": "العام الدراسي: {{academicYear.name}}\nالتقرير: {{report.periodName}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "start", "direction": "rtl", "lineHeight": 1.7 },
+                    "props": { "content": "العام الدراسي: {{AcademicCalendar.name}}\nالتقرير: {{report.periodName}}", "fontSize": 9, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#111827", "textAlign": "start", "direction": "rtl", "lineHeight": 1.7 },
                     "position": { "x": 10, "y": 45, "width": 90, "height": 15 }
                 }),
                 json!({
@@ -1388,7 +1388,7 @@ fn default_grade_certificate_templates() -> Vec<(
                     "variables": {
                         "student.name": { "source": "student.name", "type": "string", "label": "Student Name", "labelAr": "اسم الطالب" },
                         "student.className": { "source": "student.class_name", "type": "string", "label": "Class", "labelAr": "الصف" },
-                        "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
+                        "AcademicCalendar.name": { "source": "academic_calendar.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
                         "report.periodName": { "source": "report.period_name", "type": "string", "label": "Report Period", "labelAr": "فترة التقرير" },
                         "teacher.name": { "source": "teacher.name", "type": "string", "label": "Teacher Name", "labelAr": "اسم المعلم" }
                     },
@@ -1508,7 +1508,7 @@ fn default_yemeni_academic_certificate_template() -> (
                 "student.seatNumber": { "source": "student.seat_number", "type": "string", "label": "Seat Number", "labelAr": "رقم الجلوس" },
                 "student.nationalId": { "source": "student.national_id", "type": "string", "label": "National ID", "labelAr": "رقم الهوية" },
                 "student.nationality": { "source": "student.nationality", "type": "string", "label": "Nationality", "labelAr": "الجنسية" },
-                "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
+                "AcademicCalendar.name": { "source": "academic_calendar.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
                 "report.periodName": { "source": "report.period_name", "type": "string", "label": "Term / Period", "labelAr": "فترة التقرير" },
                 "summary.totalScore": { "source": "summary.total_score", "type": "number", "label": "Total Score", "labelAr": "المجموع الكلي" },
                 "summary.percentage": { "source": "summary.percentage", "type": "string", "label": "Percentage", "labelAr": "النسبة المئوية" },
@@ -1612,7 +1612,7 @@ fn default_yemeni_academic_certificate_template() -> (
                         "type": "Text",
                         "id": "cert-academic-period-text",
                         "props": {
-                            "content": "للعام الدراسي: {{academicYear.name}} — {{report.periodName}}",
+                            "content": "للعام الدراسي: {{AcademicCalendar.name}} — {{report.periodName}}",
                             "fontSize": 8.5,
                             "fontFamily": "Rubik",
                             "fontWeight": "bold",
@@ -1842,7 +1842,7 @@ fn default_exam_hall_register_template() -> (
                 "exam.hallName": { "source": "exam.hall_name", "type": "string", "label": "Exam Hall", "labelAr": "قاعة الاختبار" },
                 "exam.subjectName": { "source": "exam.subject_name", "type": "string", "label": "Subject", "labelAr": "المادة الدراسية" },
                 "exam.examDate": { "source": "exam.exam_date", "type": "string", "label": "Date & Time", "labelAr": "التاريخ والفترة" },
-                "academicYear.name": { "source": "academic_year.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
+                "AcademicCalendar.name": { "source": "academic_calendar.name", "type": "string", "label": "Academic Year", "labelAr": "العام الدراسي" },
                 "report.periodName": { "source": "report.period_name", "type": "string", "label": "Academic Period", "labelAr": "الفصل الدراسي" }
             },
             "assets": {},
@@ -1881,7 +1881,7 @@ fn default_exam_hall_register_template() -> (
                         "type": "Text",
                         "id": "reg-committee-header",
                         "props": {
-                            "content": "لجنة الكنترول والامتحانات العامة\nالعام الدراسي: {{academicYear.name}}\nالفترة: {{report.periodName}}\nتاريخ الاختبار: {{exam.examDate}}",
+                            "content": "لجنة الكنترول والامتحانات العامة\nالعام الدراسي: {{AcademicCalendar.name}}\nالفترة: {{report.periodName}}\nتاريخ الاختبار: {{exam.examDate}}",
                             "fontSize": 8.0,
                             "fontFamily": "Rubik",
                             "fontWeight": "bold",

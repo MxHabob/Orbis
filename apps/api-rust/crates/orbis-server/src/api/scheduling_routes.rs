@@ -111,7 +111,7 @@ pub struct UpdateTimeSlotRequest {
 #[derive(Serialize, ToSchema)]
 pub struct ScheduledLessonDto {
     pub id: Uuid,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub time_slot_id: Uuid,
     pub room_id: Option<Uuid>,
     pub teacher_id: Option<Uuid>,
@@ -121,7 +121,7 @@ pub struct ScheduledLessonDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ScheduleLessonRequest {
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub time_slot_id: Uuid,
     pub room_id: Option<Uuid>,
     pub teacher_id: Option<Uuid>,
@@ -139,7 +139,7 @@ pub struct TimeSlotQuery {
 
 #[derive(Deserialize)]
 pub struct LessonQuery {
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
     pub class_id: Option<Uuid>,
     pub teacher_id: Option<Uuid>,
@@ -485,7 +485,7 @@ async fn schedule_lesson(
         .scheduling_service
         .schedule_lesson(
             &ctx,
-            p.class_subject_id,
+            p.section_subject_id,
             p.time_slot_id,
             p.room_id,
             p.teacher_id,
@@ -493,7 +493,7 @@ async fn schedule_lesson(
         .await?;
     Ok(ApiResponse::ok(ScheduledLessonDto {
         id: l.id,
-        class_subject_id: l.class_subject_id,
+        section_subject_id: l.section_subject_id,
         time_slot_id: l.time_slot_id,
         room_id: l.room_id,
         teacher_id: l.teacher_id,
@@ -512,7 +512,7 @@ async fn bulk_schedule_lessons(
     let items = p
         .lessons
         .into_iter()
-        .map(|l| (l.class_subject_id, l.time_slot_id, l.room_id, l.teacher_id))
+        .map(|l| (l.section_subject_id, l.time_slot_id, l.room_id, l.teacher_id))
         .collect();
     let lessons = state
         .scheduling_service
@@ -522,7 +522,7 @@ async fn bulk_schedule_lessons(
         .into_iter()
         .map(|l| ScheduledLessonDto {
             id: l.id,
-            class_subject_id: l.class_subject_id,
+            section_subject_id: l.section_subject_id,
             time_slot_id: l.time_slot_id,
             room_id: l.room_id,
             teacher_id: l.teacher_id,
@@ -540,10 +540,10 @@ async fn list_lessons(
     State(state): State<AppState>,
     Query(q): Query<LessonQuery>,
 ) -> Result<Json<ApiResponse<Vec<ScheduledLessonDto>>>, ApiError> {
-    let lessons = if let Some(csid) = q.class_subject_id {
+    let lessons = if let Some(csid) = q.section_subject_id {
         state
             .scheduling_service
-            .list_lessons_by_class_subject(csid)
+            .list_lessons_by_section_subject(csid)
             .await?
     } else if let Some(cid) = q.class_id {
         state.scheduling_service.list_lessons_by_class(cid).await?
@@ -561,7 +561,7 @@ async fn list_lessons(
         .into_iter()
         .map(|l| ScheduledLessonDto {
             id: l.id,
-            class_subject_id: l.class_subject_id,
+            section_subject_id: l.section_subject_id,
             time_slot_id: l.time_slot_id,
             room_id: l.room_id,
             teacher_id: l.teacher_id,

@@ -25,7 +25,7 @@ const emptyReferenceData: BulkReferenceData = {
     bloodTypes: [],
     relationships: [],
   },
-  existingClassSubjectAssignments: [],
+  existingSectionSubjectAssignments: [],
 };
 
 function validRow(rowNumber: number): BulkRowState {

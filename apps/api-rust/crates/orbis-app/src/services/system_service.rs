@@ -61,7 +61,7 @@ pub struct OrganizationReadiness {
     pub org_name: Option<String>,
     pub has_organization: bool,
     pub has_admin: bool,
-    pub has_academic_year: bool,
+    pub has_academic_calendar: bool,
     pub has_classes: bool,
     pub has_subjects: bool,
     pub pending_setup_items: Vec<SetupItem>,
@@ -105,7 +105,7 @@ impl SystemService {
                 org_name: None,
                 has_organization: false,
                 has_admin: false,
-                has_academic_year: false,
+                has_academic_calendar: false,
                 has_classes: false,
                 has_subjects: false,
                 pending_setup_items: vec![],
@@ -116,8 +116,8 @@ impl SystemService {
         let org_name = self.system_repo.get_org_name().await?;
         let has_admin = self.system_repo.has_admin().await?;
 
-        let (has_academic_year, has_classes, has_subjects) = if let Some(oid) = org_id {
-            let year = self.system_repo.has_academic_year(oid).await?;
+        let (has_academic_calendar, has_classes, has_subjects) = if let Some(oid) = org_id {
+            let year = self.system_repo.has_academic_calendar(oid).await?;
             let cls = self.system_repo.has_classes(oid).await?;
             let subj = self.system_repo.has_subjects(oid).await?;
             (year, cls, subj)
@@ -128,9 +128,9 @@ impl SystemService {
         // Determine lifecycle state
         //
         // ReadyWithSetup vs Operational: the simplified check uses
-        // academic_year + classes + subjects as a fast proxy.
+        // academic_calendar + classes + subjects as a fast proxy.
         // The authoritative task graph lives in OnboardingService.
-        let state = if has_academic_year && has_classes && has_subjects {
+        let state = if has_academic_calendar && has_classes && has_subjects {
             OrgLifecycleState::Operational
         } else if has_org && has_admin {
             OrgLifecycleState::ReadyWithSetup
@@ -142,11 +142,11 @@ impl SystemService {
         let mut items = vec![];
 
         items.push(SetupItem {
-            key: "academic_year".into(),
+            key: "academic_calendar".into(),
             label: "Academic Year".into(),
             label_ar: "العام الدراسي".into(),
             is_required: true,
-            is_completed: has_academic_year,
+            is_completed: has_academic_calendar,
         });
         items.push(SetupItem {
             key: "classes".into(),
@@ -169,7 +169,7 @@ impl SystemService {
             org_name,
             has_organization: has_org,
             has_admin,
-            has_academic_year,
+            has_academic_calendar,
             has_classes,
             has_subjects,
             pending_setup_items: items,

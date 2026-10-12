@@ -24,20 +24,20 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  AcademicYearDto,
+  academicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
-  PeriodTemplateDto,
+  PeriodTypeDto,
   CreateYearRequest,
   UpdateYearRequest,
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   CreateSubjectRequest,
   CreateClassRequest,
-  AssignClassSubjectRequest,
+  AssignSectionSubjectRequest,
   EnrollmentDto,
   GuardianDto,
   EnrollStudentRequest,
@@ -177,8 +177,8 @@ import type {
   SubmitOverrideRequestInput,
   ApproveOverrideInput,
   RejectOverrideInput,
-  PromotionJobDto,
-  PromotionDetailDto,
+  progressionJobDto,
+  ProgressionDetailDto,
   StudentProgressionItemInput,
   PromoteCohortInput,
   HealthResponse,
@@ -363,34 +363,34 @@ export class LocalClient implements OrbisApiClient {
   }
 
   // ── Calendar ────────────────────────────────────────────────
-  async createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto> {
+  async createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto> {
     return unwrap(await invoke("calendar_create_year", { request: req }));
   }
-  async updateAcademicYear(
+  async updateacademicCalendar(
     id: string,
     req: UpdateYearRequest,
-  ): Promise<AcademicYearDto> {
+  ): Promise<academicCalendarDto> {
     return unwrap(await invoke("calendar_update_year", { id, request: req }));
   }
-  async listAcademicYears(): Promise<AcademicYearDto[]> {
+  async listacademicCalendars(): Promise<academicCalendarDto[]> {
     return unwrap(await invoke("calendar_list_years"));
   }
   async getAcademicContext(): Promise<AcademicContextResponse> {
     return unwrap(await invoke("calendar_get_context"));
   }
-  async getAcademicYear(id: string): Promise<AcademicYearDto> {
+  async getacademicCalendar(id: string): Promise<academicCalendarDto> {
     return unwrap(await invoke("calendar_get_year", { id }));
   }
-  async activateAcademicYear(id: string): Promise<AcademicYearDto> {
+  async activateacademicCalendar(id: string): Promise<academicCalendarDto> {
     return unwrap(await invoke("calendar_activate_year", { id }));
   }
-  async closeAcademicYear(id: string): Promise<AcademicYearDto> {
+  async closeacademicCalendar(id: string): Promise<academicCalendarDto> {
     return unwrap(await invoke("calendar_close_year", { id }));
   }
-  async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
+  async archiveacademicCalendar(id: string): Promise<academicCalendarDto> {
     return unwrap(await invoke("calendar_archive_year", { id }));
   }
-  async deleteAcademicYear(id: string): Promise<boolean> {
+  async deleteacademicCalendar(id: string): Promise<boolean> {
     return unwrap(await invoke("calendar_delete_year", { id }));
   }
   async createAcademicPeriod(
@@ -422,8 +422,8 @@ export class LocalClient implements OrbisApiClient {
   async closeAcademicPeriod(id: string): Promise<AcademicPeriodDto> {
     return unwrap(await invoke("calendar_close_period", { id }));
   }
-  async listPeriodTemplates(): Promise<PeriodTemplateDto[]> {
-    return unwrap(await invoke("calendar_list_period_templates"));
+  async listPeriodTypes(): Promise<PeriodTypeDto[]> {
+    return unwrap(await invoke("calendar_list_period_types"));
   }
 
   // ── Academic ────────────────────────────────────────────────
@@ -445,19 +445,19 @@ export class LocalClient implements OrbisApiClient {
   async getClass(id: string): Promise<ClassDto> {
     return unwrap(await invoke("academic_get_class", { id }));
   }
-  async assignClassSubject(
-    req: AssignClassSubjectRequest,
-  ): Promise<ClassSubjectDto> {
+  async assignSectionSubject(
+    req: AssignSectionSubjectRequest,
+  ): Promise<SectionSubjectDto> {
     return unwrap(
-      await invoke("academic_assign_class_subject", { request: req }),
+      await invoke("academic_assign_section_subject", { request: req }),
     );
   }
-  async listClassSubjects(
+  async listSectionSubjects(
     classId: string,
     periodId: string,
-  ): Promise<ClassSubjectDto[]> {
+  ): Promise<SectionSubjectDto[]> {
     return unwrap(
-      await invoke("academic_list_class_subjects", { classId, periodId }),
+      await invoke("academic_list_section_subjects", { classId, periodId }),
     );
   }
   async checkPrerequisites(
@@ -661,19 +661,19 @@ export class LocalClient implements OrbisApiClient {
     filterOrPeriodId?:
       | string
       | {
-          classSubjectId?: string;
+          SectionSubjectId?: string;
           periodId?: string;
           classId?: string;
           teacherId?: string;
         },
-    classSubjectId?: string,
+    SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]> {
     const filter =
       typeof filterOrPeriodId === "string"
-        ? { period_id: filterOrPeriodId, class_subject_id: classSubjectId }
+        ? { period_id: filterOrPeriodId, section_subject_id: SectionSubjectId }
         : {
             period_id: filterOrPeriodId?.periodId,
-            class_subject_id: filterOrPeriodId?.classSubjectId,
+            section_subject_id: filterOrPeriodId?.SectionSubjectId,
             class_id: filterOrPeriodId?.classId,
             teacher_id: filterOrPeriodId?.teacherId,
           };
@@ -730,13 +730,13 @@ export class LocalClient implements OrbisApiClient {
   }
   async listGrades(filter?: {
     studentId?: string;
-    classSubjectId?: string;
+    SectionSubjectId?: string;
   }): Promise<GradeDto[]> {
     return unwrap(
       await invoke("assessment_list_grades", {
         filter: {
           student_id: filter?.studentId,
-          class_subject_id: filter?.classSubjectId,
+          section_subject_id: filter?.SectionSubjectId,
         },
       }),
     );
@@ -888,15 +888,15 @@ export class LocalClient implements OrbisApiClient {
       }),
     );
   }
-  async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
+  async promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto> {
     return unwrap(
       await invoke("progression_promote_cohort", { request: req }),
     );
   }
-  async listPromotionJobs(): Promise<PromotionJobDto[]> {
+  async listprogressionJobs(): Promise<progressionJobDto[]> {
     return unwrap(await invoke("progression_list_jobs"));
   }
-  async getPromotionJob(id: string): Promise<PromotionJobDto> {
+  async getprogressionJob(id: string): Promise<progressionJobDto> {
     return unwrap(await invoke("progression_get_job", { id }));
   }
 
@@ -1665,7 +1665,7 @@ export class LocalClient implements OrbisApiClient {
           folder_id: req.folder_id ?? null,
           asset_type: req.asset_type ?? null,
           description: req.description ?? null,
-          academic_year_id: req.academic_year_id ?? null,
+          calendar_id: req.calendar_id ?? null,
           term_id: req.term_id ?? null,
           tags: req.tags ?? null,
           visibility: req.visibility ?? null,

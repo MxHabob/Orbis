@@ -13,7 +13,7 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
 }
 
 #[derive(Serialize)]
-pub struct AcademicYearDto {
+pub struct AcademicCalendarDto {
     pub id: String,
     pub org_id: String,
     pub name: String,
@@ -90,13 +90,13 @@ pub struct UpdatePeriodInput {
 
 #[derive(Serialize)]
 pub struct AcademicContextResponse {
-    pub current_year: Option<AcademicYearDto>,
-    pub all_years: Vec<AcademicYearDto>,
+    pub current_year: Option<AcademicCalendarDto>,
+    pub all_years: Vec<AcademicCalendarDto>,
     pub periods: Vec<AcademicPeriodDto>,
 }
 
 #[derive(Serialize)]
-pub struct PeriodTemplateDto {
+pub struct PeriodTypeDto {
     pub id: String,
     pub name: String,
     pub name_ar: Option<String>,
@@ -105,9 +105,9 @@ pub struct PeriodTemplateDto {
     pub is_default: bool,
 }
 
-fn year_dto(y: orbis_domain::entities::academic_year::AcademicYear) -> AcademicYearDto {
+fn year_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> AcademicCalendarDto {
     let is_active = y.status == "active";
-    AcademicYearDto {
+    AcademicCalendarDto {
         id: y.id.to_string(),
         org_id: y.org_id.to_string(),
         name: y.name,
@@ -159,7 +159,7 @@ fn period_dto(p: orbis_domain::entities::academic_period::AcademicPeriod) -> Aca
 pub async fn calendar_create_year(
     request: CreateYearInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<AcademicYearDto>, String> {
+) -> Result<ApiResponse<AcademicCalendarDto>, String> {
     let ctx = make_ctx(&state);
     let start_date = DateTime::parse_from_rfc3339(&request.start_date)
         .map(|d| d.with_timezone(&Utc))
@@ -189,7 +189,7 @@ pub async fn calendar_update_year(
     id: String,
     request: UpdateYearInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<AcademicYearDto>, String> {
+) -> Result<ApiResponse<AcademicCalendarDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let start_date = match request.start_date {
@@ -230,7 +230,7 @@ pub async fn calendar_update_year(
 pub async fn calendar_activate_year(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<AcademicYearDto>, String> {
+) -> Result<ApiResponse<AcademicCalendarDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let y = state
@@ -245,7 +245,7 @@ pub async fn calendar_activate_year(
 pub async fn calendar_close_year(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<AcademicYearDto>, String> {
+) -> Result<ApiResponse<AcademicCalendarDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let y = state
@@ -260,7 +260,7 @@ pub async fn calendar_close_year(
 pub async fn calendar_archive_year(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<AcademicYearDto>, String> {
+) -> Result<ApiResponse<AcademicCalendarDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let y = state
@@ -289,7 +289,7 @@ pub async fn calendar_delete_year(
 #[tauri::command]
 pub async fn calendar_list_years(
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<AcademicYearDto>>, String> {
+) -> Result<ApiResponse<Vec<AcademicCalendarDto>>, String> {
     let ctx = make_ctx(&state);
     let years = state
         .calendar_service
@@ -303,7 +303,7 @@ pub async fn calendar_list_years(
 pub async fn calendar_get_year(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Option<AcademicYearDto>>, String> {
+) -> Result<ApiResponse<Option<AcademicCalendarDto>>, String> {
     let uid = Uuid::parse_str(&id).map_err(|e| e.to_string())?;
     let year = state
         .calendar_service
@@ -512,18 +512,18 @@ pub async fn calendar_close_period(
 }
 
 #[tauri::command]
-pub async fn calendar_list_period_templates(
+pub async fn calendar_list_period_types(
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<PeriodTemplateDto>>, String> {
+) -> Result<ApiResponse<Vec<PeriodTypeDto>>, String> {
     let ctx = make_ctx(&state);
     let templates = state
-        .period_template_repo
+        .period_type_repo
         .find_by_org(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
     let dtos = templates
         .into_iter()
-        .map(|t| PeriodTemplateDto {
+        .map(|t| PeriodTypeDto {
             id: t.id.to_string(),
             name: t.name,
             name_ar: t.name_ar,

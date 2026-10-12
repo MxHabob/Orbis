@@ -57,7 +57,7 @@ const isEdit = $derived(!!period);
 
 const yearsQuery = createQuery(() => ({
   queryKey: queryKeys.calendar.years(),
-  queryFn: () => api.listAcademicYears(),
+  queryFn: () => api.listacademicCalendars(),
 }));
 const yearsList = $derived(yearsQuery.data ?? []);
 
@@ -105,7 +105,7 @@ async function handleSubmit(e: SubmitEvent) {
   const submitted = await form.submit(async (payload) => {
     if (isEdit && period) {
       if (payload.period_type === "year") {
-        await api.updateAcademicYear(period.id, {
+        await api.updateacademicCalendar(period.id, {
           name: payload.name || payload.name_ar || "",
           name_ar: payload.name_ar || payload.name || undefined,
           start_date: new Date(payload.start_date).toISOString(),
@@ -129,14 +129,14 @@ async function handleSubmit(e: SubmitEvent) {
           start_date: new Date(payload.start_date).toISOString(),
           end_date: new Date(payload.end_date).toISOString(),
         };
-        await api.createAcademicYear(yearReq);
+        await api.createacademicCalendar(yearReq);
         toast.success(m.common_action_save());
       } else {
         const selectedYearId =
           payload.year_id ||
           (yearsList[0]?.id ? String(yearsList[0].id) : "");
         if (!selectedYearId) {
-          throw new Error(m.shared_ui_academic_year_required_for_period());
+          throw new Error(m.shared_ui_academic_calendar_required_for_period());
         }
         const periodReq = {
           year_id: selectedYearId,
@@ -238,7 +238,7 @@ async function handleSubmit(e: SubmitEvent) {
             id="per_code"
             type="text"
             bind:value={form.values.code}
-            placeholder={m.shared_ui_example_academic_year_code()}
+            placeholder={m.shared_ui_example_academic_calendar_code()}
             disabled={form.isSubmitting || isEdit}
           />
           {/snippet}

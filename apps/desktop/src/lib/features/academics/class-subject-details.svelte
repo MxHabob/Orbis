@@ -1,5 +1,5 @@
 <!--
-  @component ClassSubjectDetails
+  @component SectionSubjectDetails
   Feature component for the Coursework Gradebook spreadsheet.
   Provides interactive cell editing, total recalculation, and batch grade saving inside a standardized Card container.
 -->
@@ -29,13 +29,13 @@ import {
 
 import { createGradesQuery } from "$lib/features/academics/queries";
 
-let { orgId, classId, classSubjectId }: { orgId: string; classId: string; classSubjectId: string } = $props();
+let { orgId, classId, SectionSubjectId }: { orgId: string; classId: string; SectionSubjectId: string } = $props();
 
 // Matrix Data (Coursework)
 const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
 const canEnterGrades = $derived(!academicContext.isReadOnly);
 
-const gradesQuery = createGradesQuery(() => classSubjectId);
+const gradesQuery = createGradesQuery(() => SectionSubjectId);
 const isMatrixLoading = $derived(gradesQuery.isLoading);
 
 let gridSource = $state<any[]>([]);
@@ -105,7 +105,7 @@ async function handleSaveAll() {
         period_id: selectedPeriodId,
         student_id: student.student_id || student.enrollment_id,
         enrollment_id: student.enrollment_id,
-        class_subject_id: classSubjectId,
+        section_subject_id: SectionSubjectId,
         score: student.score,
         notes: student.notes ?? undefined,
       });

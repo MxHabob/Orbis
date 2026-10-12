@@ -71,12 +71,12 @@ pub struct OnboardingStateDto {
 
 #[derive(Deserialize, ToSchema)]
 pub struct ProvisionDefaultsReqDto {
-    pub academic_year_id: Option<Uuid>,
-    pub academic_year_name: Option<String>,
-    pub academic_year_name_ar: Option<String>,
+    pub calendar_id: Option<Uuid>,
+    pub academic_calendar_name: Option<String>,
+    pub academic_calendar_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
-    pub provision_academic_year: Option<bool>,
+    pub provision_academic_calendar: Option<bool>,
     pub provision_default_academic_periods: Option<bool>,
     pub provision_stages_and_grades: Option<bool>,
     pub provision_subjects: Option<bool>,
@@ -238,12 +238,12 @@ pub async fn provision_blueprint_defaults(
 ) -> Result<Json<ApiResponse<ProvisionDefaultsResultDto>>, ApiError> {
     let org_id = auth.tenant_id;
     let service_req = orbis_app::services::ProvisionDefaultsRequest {
-        academic_year_id: req.academic_year_id,
-        academic_year_name: req.academic_year_name,
-        academic_year_name_ar: req.academic_year_name_ar,
+        calendar_id: req.calendar_id,
+        academic_calendar_name: req.academic_calendar_name,
+        academic_calendar_name_ar: req.academic_calendar_name_ar,
         start_date: req.start_date,
         end_date: req.end_date,
-        provision_academic_year: req.provision_academic_year,
+        provision_academic_calendar: req.provision_academic_calendar,
         provision_default_academic_periods: req.provision_default_academic_periods,
         provision_stages_and_grades: req.provision_stages_and_grades,
         provision_subjects: req.provision_subjects,

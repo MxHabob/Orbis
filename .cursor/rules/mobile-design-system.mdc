@@ -1,0 +1,44 @@
+---
+alwaysApply: true
+---
+---
+description: Enforce consistent NativeWind styling, existing theme tokens, typography, and reusable UI components.
+alwaysApply: true
+---
+
+# Design System Rules
+
+Before styling a screen, inspect global.css, the installed NativeWind version, theme configuration, typography, and shared UI components.
+
+## Tokens
+- Reuse existing colors, typography, spacing, radii, borders, and theme tokens.
+- Preserve the current light and dark theme behavior.
+- Do not invent colors or spacing values when an appropriate token already exists.
+- Do not modify global.css to solve an isolated component problem.
+- Add a reusable token only when the design system genuinely needs it.
+
+## Shared Components
+- Search for existing Screen, Text, Button, Input, Card, Header, EmptyState, Loading, and other shared components.
+- Extend existing components when the new behavior is reusable.
+- Keep feature-specific components local until reuse is justified.
+- Do not create a parallel component library without a clear reason.
+
+## Typography
+- Follow the project's font and typography scale.
+- Establish hierarchy using size, weight, spacing, and contrast.
+- Keep supporting text visually subordinate.
+- Ensure Arabic, English, and mixed-language text remain legible.
+
+## Composition
+- Do not wrap every section in a Card.
+- Use grouped rows, separators, whitespace, lists, and surfaces intentionally.
+- Keep alignment and horizontal margins consistent.
+- Use restrained decoration and a clear primary action.
+
+## NativeWind
+- Follow conventions supported by the installed version.
+- Preserve the existing global.css and Tailwind integration.
+- Avoid web-only CSS assumptions in native components.
+- Keep conditional class names compatible with the project's build setup.
+
+If a token or component is missing, identify the gap and propose the smallest reusable change that fits the existing design system.

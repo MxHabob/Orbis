@@ -3,7 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { untrack } from "svelte";
 import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
 import { formatDate, l } from "$lib/core/i18n";
-import { createClassSubjectsQuery } from "$lib/features/academics/queries";
+import { createSectionSubjectsQuery } from "$lib/features/academics/queries";
 import { lessonFormInputSchema } from "@orbis/schemas";
 import {
   Accordion,
@@ -83,24 +83,24 @@ const form = new FormController({
 });
 const isEditing = $derived(Boolean(lesson?.id));
 const isSubmitting = $derived(form.isSubmitting);
-const classSubjectsQuery = createClassSubjectsQuery(
+const SectionSubjectsQuery = createSectionSubjectsQuery(
   () => selectedClassId,
   () => periodId,
 );
-const classSubjects = $derived(classSubjectsQuery.data ?? []);
+const SectionSubjects = $derived(SectionSubjectsQuery.data ?? []);
 const availableSubjects = $derived.by(() => {
   const linkedIds = new Set(
-    classSubjects.map((item: any) => String(item.subject_id)),
+    SectionSubjects.map((item: any) => String(item.subject_id)),
   );
   return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
 });
-const selectedClassSubject = $derived(
-  classSubjects.find(
+const selectedSectionSubject = $derived(
+  SectionSubjects.find(
     (item: any) => String(item.subject_id) === selectedSubjectId,
   ),
 );
 const availableTeachers = $derived.by(() => {
-  const linkedIds = classSubjects
+  const linkedIds = SectionSubjects
     .filter(
       (item: any) =>
         !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
@@ -126,7 +126,7 @@ const weekdays = $derived(
 
 function handleSubjectChange(value: string | undefined) {
   selectedSubjectId = value ?? "";
-  const cs = classSubjects.find(
+  const cs = SectionSubjects.find(
     (item: any) => String(item.subject_id) === selectedSubjectId,
   );
   if (cs?.primary_teacher_id) {
@@ -148,7 +148,7 @@ async function handleSubmit(event: SubmitEvent) {
     toast.error(m.common_lesson_required_fields());
     return;
   }
-  if (!selectedClassSubject) {
+  if (!selectedSectionSubject) {
     toast.error(m.common_lesson_error_subject_link());
     return;
   }
@@ -162,7 +162,7 @@ async function handleSubmit(event: SubmitEvent) {
       await api.deleteScheduledLesson(lesson.id);
     }
     const request: ScheduleLessonRequest = {
-      class_subject_id: selectedClassSubject.id,
+      section_subject_id: selectedSectionSubject.id,
       time_slot_id: values.time_slot_id,
       room_id: selectedRoomId || undefined,
       teacher_id: values.teacher_id || undefined,

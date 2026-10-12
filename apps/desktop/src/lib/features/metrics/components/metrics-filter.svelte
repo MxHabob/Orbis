@@ -35,7 +35,7 @@ const terms = $derived(
     (c) =>
       c.period_type === "term" ||
       !c.period_type ||
-      c.period_type === "academic_year",
+      c.period_type === "academic_calendar",
   ),
 );
 

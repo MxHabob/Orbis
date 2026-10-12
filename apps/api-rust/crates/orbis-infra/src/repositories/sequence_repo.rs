@@ -23,13 +23,13 @@ impl SequenceCounterRepository for SequenceCounterRepoImpl {
         &self,
         org_id: Uuid,
         sequence_type: &str,
-        academic_year: i32,
+        academic_calendar: i32,
     ) -> Result<u64, DomainError> {
         let now = Utc::now();
         let existing = SequenceCounterEntity::find()
             .filter(sequence_counter::Column::OrgId.eq(org_id))
             .filter(sequence_counter::Column::SequenceType.eq(sequence_type))
-            .filter(sequence_counter::Column::AcademicYear.eq(academic_year))
+            .filter(sequence_counter::Column::AcademicCalendar.eq(academic_calendar))
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -50,7 +50,7 @@ impl SequenceCounterRepository for SequenceCounterRepoImpl {
                 id: Set(Uuid::new_v4()),
                 org_id: Set(org_id),
                 sequence_type: Set(sequence_type.to_string()),
-                academic_year: Set(academic_year),
+                academic_calendar: Set(academic_calendar),
                 current_val: Set(next_val),
                 updated_at: Set(now),
             };

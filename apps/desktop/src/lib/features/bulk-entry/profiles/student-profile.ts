@@ -370,7 +370,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         ],
       },
       registrationFields: parseRegistrationFieldPolicies(org?.settings),
-      existingClassSubjectAssignments: [],
+      existingSectionSubjectAssignments: [],
     };
   },
 

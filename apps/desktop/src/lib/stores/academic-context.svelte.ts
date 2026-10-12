@@ -4,7 +4,7 @@
  * Unified academic year + period model adhering to Orbis Target Architecture.
  */
 import type {
-  AcademicYearDto,
+  academicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
 } from "@orbis/sdk";
@@ -13,8 +13,8 @@ import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 
 class AcademicContextStore {
-  currentYear = $state<AcademicYearDto | null>(null);
-  allYears = $state<AcademicYearDto[]>([]);
+  currentYear = $state<academicCalendarDto | null>(null);
+  allYears = $state<academicCalendarDto[]>([]);
   periods = $state<AcademicPeriodDto[]>([]);
   yearStatus = $state<string>("active");
   private _isReadOnly = $state(false);
@@ -114,7 +114,7 @@ class AcademicContextStore {
 
   async loadYears() {
     try {
-      this.allYears = await api.listAcademicYears();
+      this.allYears = await api.listacademicCalendars();
     } catch (e: unknown) {
       toast.error(extractErrorMessage(e));
     }
@@ -124,7 +124,7 @@ class AcademicContextStore {
     if (this.isSwitching) return;
     this.isSwitching = true;
     try {
-      const year = await api.getAcademicYear(yearId);
+      const year = await api.getacademicCalendar(yearId);
       this.currentYear = year;
       const periods = await api.listAcademicPeriods();
       this.periods = periods.filter((p) => p.year_id === yearId);

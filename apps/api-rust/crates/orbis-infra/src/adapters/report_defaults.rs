@@ -399,11 +399,11 @@ pub const ENROLLMENT_CERTIFICATE_HTML: &str = r##"
 
     <div class="cert-body">
         {% if is_rtl %}
-        تشهد إدارة <strong>{{ org_name_ar | default(value=org_name | default(value="المؤسسة")) }}</strong> بأن الطالب/ة: <strong>{{ student_name | default(value="---") }}</strong>، والرقم الأكاديمي: <strong>{{ student_id | default(value="---") }}</strong>، والجنسية: <strong>{{ nationality | default(value="---") }}</strong>، مقيد/ة لدينا ومنتظم/ة بالدراسة في <strong>{{ grade_level | default(value="المرحلة الدراسية") }}</strong>، للعام الدراسي <strong>{{ academic_year | default(value="العام الحالي") }}</strong>.
+        تشهد إدارة <strong>{{ org_name_ar | default(value=org_name | default(value="المؤسسة")) }}</strong> بأن الطالب/ة: <strong>{{ student_name | default(value="---") }}</strong>، والرقم الأكاديمي: <strong>{{ student_id | default(value="---") }}</strong>، والجنسية: <strong>{{ nationality | default(value="---") }}</strong>، مقيد/ة لدينا ومنتظم/ة بالدراسة في <strong>{{ grade_level | default(value="المرحلة الدراسية") }}</strong>، للعام الدراسي <strong>{{ academic_calendar | default(value="العام الحالي") }}</strong>.
         <br>
         وقد أُعطيت له هذه الشهادة بناءً على طلبه لتقديمها إلى الجهات المختصة دون أدنى مسؤولية على المؤسسة فيما يتعلق بالتزاماته الأخرى.
         {% else %}
-        This is to certify that student: <strong>{{ student_name | default(value="---") }}</strong>, Student ID: <strong>{{ student_id | default(value="---") }}</strong>, Nationality: <strong>{{ nationality | default(value="---") }}</strong>, is officially enrolled and in good standing at <strong>{{ org_name | default(value="Institution") }}</strong> for the grade/program: <strong>{{ grade_level | default(value="---") }}</strong> during the academic year: <strong>{{ academic_year | default(value="---") }}</strong>.
+        This is to certify that student: <strong>{{ student_name | default(value="---") }}</strong>, Student ID: <strong>{{ student_id | default(value="---") }}</strong>, Nationality: <strong>{{ nationality | default(value="---") }}</strong>, is officially enrolled and in good standing at <strong>{{ org_name | default(value="Institution") }}</strong> for the grade/program: <strong>{{ grade_level | default(value="---") }}</strong> during the academic year: <strong>{{ academic_calendar | default(value="---") }}</strong>.
         <br>
         This certificate is issued upon request to be submitted to the concerned authorities without any liability on the institution.
         {% endif %}

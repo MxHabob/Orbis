@@ -15,14 +15,14 @@ export interface GenerateTemplateOptions {
   profile: BulkImportProfile<any, any>;
   refData: BulkReferenceData;
   orgName?: string;
-  academicYear?: string;
+  academicCalendar?: string;
 }
 
 export async function buildTemplateWorkbook(
   options: GenerateTemplateOptions,
 ): Promise<import("xlsx").WorkBook> {
   const XLSX = await import("xlsx");
-  const { profile, refData, orgName, academicYear } = options;
+  const { profile, refData, orgName, academicCalendar } = options;
   const wb = XLSX.utils.book_new();
   const columns = profile.columnMetadata.filter((column) => {
     if (profile.id !== "students" || !refData.registrationFields) return true;
@@ -263,7 +263,7 @@ export async function buildTemplateWorkbook(
     [m.bulk_entry_workbook_instructions_title()],
     [""],
     [m.bulk_entry_workbook_organization(), orgName || m.bulk_entry_workbook_current_organization()],
-    [m.bulk_entry_workbook_academic_year(), academicYear || m.bulk_entry_workbook_current_year()],
+    [m.bulk_entry_workbook_academic_calendar(), academicCalendar || m.bulk_entry_workbook_current_year()],
     [m.bulk_entry_workbook_template_type(), getBulkEntryProfileName(profile.id)],
     [m.bulk_entry_workbook_template_version(), profile.templateVersion],
     ...(profile.id === "teacher-subjects"

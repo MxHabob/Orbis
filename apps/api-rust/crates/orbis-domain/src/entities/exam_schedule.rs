@@ -6,7 +6,7 @@ use uuid::Uuid;
 pub struct ExamSchedule {
     pub id: Uuid,
     pub exam_session_id: Uuid,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub exam_date: NaiveDate,
     pub start_time: NaiveTime,
     pub end_time: NaiveTime,

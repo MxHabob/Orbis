@@ -117,7 +117,7 @@ async function initEditor() {
           seat_number: { type: "string", label: "رقم الجلوس" },
           class_name: { type: "string", label: "الصف والشعبة" },
           grade_level: { type: "string", label: "المرحلة الدراسية" },
-          academic_year: { type: "string", label: "العام الدراسي" },
+          academic_calendar: { type: "string", label: "العام الدراسي" },
           birth_date: { type: "string", label: "تاريخ الميلاد" },
           birth_place: { type: "string", label: "مكان الميلاد" },
           nationality: { type: "string", label: "الجنسية" },
@@ -158,7 +158,7 @@ async function initEditor() {
         label: "بيانات التقرير والاعتماد",
         properties: {
           period_name: { type: "string", label: "فترة التقرير / الفصل الدراسي" },
-          academic_year: { type: "string", label: "العام الدراسي" },
+          academic_calendar: { type: "string", label: "العام الدراسي" },
           issued_date: { type: "string", label: "تاريخ الإصدار والطباعة" },
           principal_name: { type: "string", label: "مدير المدرسة" },
           class_teacher: { type: "string", label: "مربي الصف" },

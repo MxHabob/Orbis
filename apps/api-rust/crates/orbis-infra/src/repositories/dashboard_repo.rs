@@ -60,7 +60,7 @@ impl DashboardRepository for DashboardRepoImpl {
             let result = self.db.query_one(
                 Statement::from_sql_and_values(
                     self.db.get_database_backend(),
-                    "SELECT name FROM academic_years WHERE org_id = $1 AND status = 'active' LIMIT 1",
+                    "SELECT name FROM academic_calendars WHERE org_id = $1 AND status = 'active' LIMIT 1",
                     [org_id.into()],
                 ),
             ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -72,7 +72,7 @@ impl DashboardRepository for DashboardRepoImpl {
                     let fallback = self.db.query_one(
                         Statement::from_sql_and_values(
                             self.db.get_database_backend(),
-                            "SELECT name FROM academic_years WHERE org_id = $1 ORDER BY created_at DESC LIMIT 1",
+                            "SELECT name FROM academic_calendars WHERE org_id = $1 ORDER BY created_at DESC LIMIT 1",
                             [org_id.into()],
                         ),
                     ).await.map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -102,7 +102,7 @@ impl DashboardRepository for DashboardRepoImpl {
             total_classes,
             total_enrollments,
             total_subjects,
-            active_academic_year: active_year,
+            active_academic_calendar: active_year,
             total_payments_amount,
             pending_fees_amount,
         })

@@ -71,7 +71,7 @@ export const STEP_DEFINITIONS: StepDefinition[] = [
   {
     id: "calendar",
     route: "calendar",
-    taskIds: ["academic_year", "academic_periods"],
+    taskIds: ["academic_calendar", "academic_periods"],
     getLabel: () => m.onboarding_step3_label(),
     getDescription: () => m.onboarding_step3_desc(),
     order: 3,

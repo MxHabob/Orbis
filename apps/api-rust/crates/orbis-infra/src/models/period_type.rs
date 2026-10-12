@@ -1,8 +1,10 @@
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::*;
 
+/// Configurable period type catalog per organization.
+/// Examples: "semester", "trimester", "quarter", "month", "module", "block", "year"
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
-#[sea_orm(table_name = "academic_period_types")]
+#[sea_orm(table_name = "period_types")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: Uuid,

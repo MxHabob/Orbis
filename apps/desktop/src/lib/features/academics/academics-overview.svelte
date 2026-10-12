@@ -30,7 +30,7 @@ import {
   createSubjectsQuery,
   createPeriodsQuery,
 } from "$lib/features/academics";
-import { createPromotionJobsQuery } from "$lib/features/academics/promotion-queries";
+import { createprogressionJobsQuery } from "$lib/features/academics/promotion-queries";
 import { academicContext, licenseStore } from "$lib/stores";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 import { extractErrorMessage } from "$lib/api";
@@ -41,14 +41,14 @@ let { orgId }: { orgId: string } = $props();
 const classesQuery = createClassesQuery(() => orgId);
 const subjectsQuery = createSubjectsQuery(() => orgId);
 const periodsQuery = createPeriodsQuery(() => orgId);
-const promotionJobsQuery = createPromotionJobsQuery(() => orgId);
+const progressionJobsQuery = createprogressionJobsQuery(() => orgId);
 
 // Derived Data
 const classes = $derived(classesQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
 const periods = $derived(periodsQuery.data ?? []);
 const currentYear = $derived(academicContext.currentYear);
-const promotionJobs = $derived(promotionJobsQuery.data ?? []);
+const progressionJobs = $derived(progressionJobsQuery.data ?? []);
 
 // Find active period / term
 const activePeriod = $derived(
@@ -73,7 +73,7 @@ const isLoading = $derived(
   classesQuery.isLoading ||
     subjectsQuery.isLoading ||
     periodsQuery.isLoading ||
-    promotionJobsQuery.isLoading ||
+    progressionJobsQuery.isLoading ||
     (canViewExams && examSessionsQuery.isLoading),
 );
 
@@ -82,7 +82,7 @@ const error = $derived.by(() => {
     classesQuery.error ||
     subjectsQuery.error ||
     periodsQuery.error ||
-    promotionJobsQuery.error ||
+    progressionJobsQuery.error ||
     (canViewExams ? examSessionsQuery.error : null);
   return queryError ? extractErrorMessage(queryError) : null;
 });
@@ -91,7 +91,7 @@ function refetchAll() {
   classesQuery.refetch();
   subjectsQuery.refetch();
   periodsQuery.refetch();
-  promotionJobsQuery.refetch();
+  progressionJobsQuery.refetch();
   if (canViewExams) examSessionsQuery.refetch();
 }
 
@@ -188,7 +188,7 @@ const advisorInsights = $derived.by(() => {
   });
 
   // 3. Student Promotion Insight
-  const activePromoJob = promotionJobs.find(
+  const activePromoJob = progressionJobs.find(
     (job) =>
       job.status === "dry_run" ||
       job.status === "promoting" ||

@@ -1,5 +1,5 @@
 <!--
-@component AcademicYearsManager
+@component academicCalendarsManager
 Allows administrators to manage Academic Years, activate current school year,
 close completed years, archive historical years, and view period structure.
 -->
@@ -8,8 +8,8 @@ close completed years, archive historical years, and view period structure.
   import { formatDate } from "$lib/core/i18n";
   import * as m from "$lib/paraglide/messages";
   import { academicContext, confirmStore } from "$lib/stores";
-  import { createAcademicYearsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
-  import type { AcademicPeriodDto, AcademicYearDto } from "@orbis/sdk";
+  import { createacademicCalendarsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
+  import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { LoadingIndicator, toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
@@ -45,7 +45,7 @@ close completed years, archive historical years, and view period structure.
   const queryClient = useQueryClient();
 
   // Queries
-  const yearsQuery = createAcademicYearsQuery(() => orgId);
+  const yearsQuery = createacademicCalendarsQuery(() => orgId);
   const periodsQuery = createPeriodsQuery(() => orgId);
 
   // Derived state from queries
@@ -62,7 +62,7 @@ close completed years, archive historical years, and view period structure.
 
   // Sheet Controls
   let isSheetOpen = $state(false);
-  let editingYear = $state<AcademicYearDto | null>(null);
+  let editingYear = $state<academicCalendarDto | null>(null);
 
   // Auto expand active year if not yet set
   $effect(() => {
@@ -82,10 +82,10 @@ close completed years, archive historical years, and view period structure.
       id: "status",
       label: m.common_word_status(),
       options: [
-        { value: "status:active", label: m.academic_years_filter_active() },
-        { value: "status:planning", label: m.academic_years_filter_planning() },
-        { value: "status:closed", label: m.academic_years_filter_closed() },
-        { value: "status:archived", label: m.academic_years_filter_archived() },
+        { value: "status:active", label: m.academic_calendars_filter_active() },
+        { value: "status:planning", label: m.academic_calendars_filter_planning() },
+        { value: "status:closed", label: m.academic_calendars_filter_closed() },
+        { value: "status:archived", label: m.academic_calendars_filter_archived() },
       ],
     },
   ]);
@@ -128,26 +128,26 @@ close completed years, archive historical years, and view period structure.
     isSheetOpen = true;
   }
 
-  function openEditSheet(year: AcademicYearDto) {
+  function openEditSheet(year: academicCalendarDto) {
     editingYear = year;
     isSheetOpen = true;
   }
 
-  async function handleActivate(year: AcademicYearDto) {
+  async function handleActivate(year: academicCalendarDto) {
     if (year.status === "active") return;
 
     const confirmed = await confirmStore.prompt({
-      title: m.academic_years_activate_confirm_title(),
-      description: `${m.academic_years_activate_confirm_desc()} (${year.name_ar || year.name})`,
-      confirmText: m.academic_years_activate_btn(),
+      title: m.academic_calendars_activate_confirm_title(),
+      description: `${m.academic_calendars_activate_confirm_desc()} (${year.name_ar || year.name})`,
+      confirmText: m.academic_calendars_activate_btn(),
       variant: "default",
     });
 
     if (!confirmed) return;
 
     try {
-      await api.activateAcademicYear(year.id);
-      toast.success(m.academic_years_activate_success());
+      await api.activateacademicCalendar(year.id);
+      toast.success(m.academic_calendars_activate_success());
       await academicContext.resolveContext(orgId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     } catch (e: unknown) {
@@ -155,19 +155,19 @@ close completed years, archive historical years, and view period structure.
     }
   }
 
-  async function handleClose(year: AcademicYearDto) {
+  async function handleClose(year: academicCalendarDto) {
     const confirmed = await confirmStore.prompt({
-      title: m.academic_years_close_confirm_title(),
-      description: `${m.academic_years_close_confirm_desc()} (${year.name_ar || year.name})`,
-      confirmText: m.academic_years_close_btn(),
+      title: m.academic_calendars_close_confirm_title(),
+      description: `${m.academic_calendars_close_confirm_desc()} (${year.name_ar || year.name})`,
+      confirmText: m.academic_calendars_close_btn(),
       variant: "destructive",
     });
 
     if (!confirmed) return;
 
     try {
-      await api.closeAcademicYear(year.id);
-      toast.success(m.academic_years_close_success());
+      await api.closeacademicCalendar(year.id);
+      toast.success(m.academic_calendars_close_success());
       await academicContext.resolveContext(orgId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     } catch (e: unknown) {
@@ -175,19 +175,19 @@ close completed years, archive historical years, and view period structure.
     }
   }
 
-  async function handleArchive(year: AcademicYearDto) {
+  async function handleArchive(year: academicCalendarDto) {
     const confirmed = await confirmStore.prompt({
-      title: m.academic_years_archive_confirm_title(),
-      description: `${m.academic_years_archive_confirm_desc()} (${year.name_ar || year.name})`,
-      confirmText: m.academic_years_archive_btn(),
+      title: m.academic_calendars_archive_confirm_title(),
+      description: `${m.academic_calendars_archive_confirm_desc()} (${year.name_ar || year.name})`,
+      confirmText: m.academic_calendars_archive_btn(),
       variant: "destructive",
     });
 
     if (!confirmed) return;
 
     try {
-      await api.archiveAcademicYear(year.id);
-      toast.success(m.academic_years_archive_success());
+      await api.archiveacademicCalendar(year.id);
+      toast.success(m.academic_calendars_archive_success());
       await academicContext.resolveContext(orgId);
       await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
     } catch (e: unknown) {
@@ -237,7 +237,7 @@ close completed years, archive historical years, and view period structure.
         />
         <Input
           type="text"
-          placeholder={m.academic_years_search_placeholder()}
+          placeholder={m.academic_calendars_search_placeholder()}
           bind:value={searchQuery}
           class="h-8 ps-8 text-xs bg-card border-border/60"
         />
@@ -247,9 +247,9 @@ close completed years, archive historical years, and view period structure.
         <SearchableMultiFilter
           groups={filterGroups}
           bind:selectedValues={selectedFilters}
-          placeholder={m.academic_years_filter_placeholder()}
-          searchPlaceholder={m.academic_years_filter_search()}
-          emptyText={m.academic_years_no_matching_filters()}
+          placeholder={m.academic_calendars_filter_placeholder()}
+          searchPlaceholder={m.academic_calendars_filter_search()}
+          emptyText={m.academic_calendars_no_matching_filters()}
         />
         <Button
           variant="ghost"
@@ -270,7 +270,7 @@ close completed years, archive historical years, and view period structure.
           onclick={openCreateSheet}
         >
           <Plus size={14} class="me-1.5" />
-          {m.academic_years_add_btn()}
+          {m.academic_calendars_add_btn()}
         </Button>
       </div>
     </div>
@@ -291,13 +291,13 @@ close completed years, archive historical years, and view period structure.
       </div>
       <h3 class="text-xs font-bold text-foreground mb-1">
         {searchQuery || selectedFilters.length > 0
-          ? m.academic_years_empty_search()
-          : m.academic_years_empty_title()}
+          ? m.academic_calendars_empty_search()
+          : m.academic_calendars_empty_title()}
       </h3>
       {#if !searchQuery && selectedFilters.length === 0}
         <Button size="sm" class="h-8 gap-1.5 px-3 text-xs font-semibold" onclick={openCreateSheet}>
           <Plus size={13} />
-          {m.academic_years_add_btn()}
+          {m.academic_calendars_add_btn()}
         </Button>
       {/if}
     </div>
@@ -319,8 +319,8 @@ close completed years, archive historical years, and view period structure.
                 type="button"
                 class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border/50 bg-background text-muted-foreground transition-colors hover:bg-muted"
                 onclick={() => toggleExpand(year.id)}
-                title={m.academic_years_child_periods_title()}
-                aria-label={m.academic_years_child_periods_title()}
+                title={m.academic_calendars_child_periods_title()}
+                aria-label={m.academic_calendars_child_periods_title()}
               >
                 {#if isExpanded}
                   <ChevronDown size={16} />
@@ -344,15 +344,15 @@ close completed years, archive historical years, and view period structure.
                     </Badge>
                   {:else if isPlanning}
                     <Badge variant="secondary" class="h-5 px-2 text-[10px] font-medium">
-                      {m.academic_years_filter_planning()}
+                      {m.academic_calendars_filter_planning()}
                     </Badge>
                   {:else if isClosed}
                     <Badge variant="secondary" class="h-5 border-amber-500/20 bg-amber-500/10 px-2 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-                      {m.academic_years_filter_closed()}
+                      {m.academic_calendars_filter_closed()}
                     </Badge>
                   {:else if isArchived}
                     <Badge variant="secondary" class="h-5 px-2 text-[10px] font-medium text-muted-foreground">
-                      {m.academic_years_filter_archived()}
+                      {m.academic_calendars_filter_archived()}
                     </Badge>
                   {/if}
                 </div>
@@ -364,7 +364,7 @@ close completed years, archive historical years, and view period structure.
                   </span>
                   <span class="inline-flex items-center gap-1.5">
                     <ClockRotateRight size={12} />
-                    {m.academic_years_count_tag({ count: yearPeriods.length })}
+                    {m.academic_calendars_count_tag({ count: yearPeriods.length })}
                   </span>
                 </div>
               </div>
@@ -379,7 +379,7 @@ close completed years, archive historical years, and view period structure.
                   onclick={() => handleActivate(year)}
                 >
                   <CheckCircle size={12} />
-                  <span>{m.academic_years_activate_btn()}</span>
+                  <span>{m.academic_calendars_activate_btn()}</span>
                 </Button>
               {/if}
 
@@ -391,7 +391,7 @@ close completed years, archive historical years, and view period structure.
                   onclick={() => handleClose(year)}
                 >
                   <Lock size={12} />
-                  <span>{m.academic_years_close_btn()}</span>
+                  <span>{m.academic_calendars_close_btn()}</span>
                 </Button>
               {/if}
 
@@ -401,7 +401,7 @@ close completed years, archive historical years, and view period structure.
                   size="icon-sm"
                   class="text-muted-foreground hover:text-foreground h-7 w-7"
                   onclick={() => handleArchive(year)}
-                  title={m.academic_years_archive_btn()}
+                  title={m.academic_calendars_archive_btn()}
                 >
                   <ArchiveBox size={13} />
                 </Button>
@@ -425,26 +425,26 @@ close completed years, archive historical years, and view period structure.
               <div class="flex items-center justify-between mb-2">
                 <span class="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5">
                   <ClockRotateRight size={12} />
-                  <span>{m.academic_years_child_periods_title()}</span>
+                  <span>{m.academic_calendars_child_periods_title()}</span>
                   <span class="text-[10px] font-mono">({yearPeriods.length})</span>
                 </span>
                 <a
                   href={`/${orgId}/settings/periods`}
                   class="text-[11px] text-primary hover:underline font-medium flex items-center gap-1"
                 >
-                  <span>{m.academic_years_manage_periods_link()}</span>
+                  <span>{m.academic_calendars_manage_periods_link()}</span>
                   <ChevronRight size={11} class="rtl:rotate-180" />
                 </a>
               </div>
 
               {#if yearPeriods.length === 0}
                 <div class="py-3 text-center text-[11px] text-muted-foreground/70 border border-dashed border-border/50 rounded-lg bg-card/20">
-                  <span>{m.academic_years_no_periods_configured()}</span>
+                  <span>{m.academic_calendars_no_periods_configured()}</span>
                   <a
                     href={`/${orgId}/settings/periods`}
                     class="text-primary hover:underline font-medium ms-1"
                   >
-                    {m.academic_years_add_periods_link()}
+                    {m.academic_calendars_add_periods_link()}
                   </a>
                 </div>
               {:else}

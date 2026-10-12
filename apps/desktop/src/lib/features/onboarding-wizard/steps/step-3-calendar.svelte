@@ -3,7 +3,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, type AcademicYearDto, type AcademicPeriodDto } from "$lib/api";
+import { api, type academicCalendarDto, type AcademicPeriodDto } from "$lib/api";
 import { orgContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -25,7 +25,7 @@ let isSubmittingPeriod = $state(false);
 let successMessage = $state<string | null>(null);
 
 // Existing Data
-let years = $state<AcademicYearDto[]>([]);
+let years = $state<academicCalendarDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
 
 // Academic Year Form
@@ -109,7 +109,7 @@ function formatGregorianYear(date: string) {
   return String(getDateParts(new Date(`${date}T12:00:00.000Z`), "UTC").year);
 }
 
-function suggestAcademicYear() {
+function suggestacademicCalendar() {
   const now = new Date();
   const today = getOrganizationDate(now);
   let startDate: string;
@@ -233,7 +233,7 @@ async function loadData() {
   try {
     isLoading = true;
     const [yearsRes, periodsRes] = await Promise.all([
-      api.listAcademicYears(),
+      api.listacademicCalendars(),
       api.listAcademicPeriods(),
     ]);
     years = yearsRes;
@@ -262,7 +262,7 @@ async function handleCreateYear() {
   successMessage = null;
 
   try {
-    const newYear = await api.createAcademicYear({
+    const newYear = await api.createacademicCalendar({
       name: yearName.trim() || yearNameAr.trim(),
       name_ar: yearNameAr.trim() || undefined,
       start_date: new Date(`${yearStartDate}T00:00:00Z`).toISOString(),
@@ -347,7 +347,7 @@ async function handleGenerateDefaultPeriods() {
   try {
     await api.onboardingProvisionDefaults(
       {
-        academic_year_id: String(selectedYear.id),
+        calendar_id: String(selectedYear.id),
         provision_hijri_school_calendar: true,
         hijri_start_year: calendarDefaults.hijriStartYear,
         hijri_month_lengths: calendarDefaults.monthLengths,
@@ -372,8 +372,8 @@ async function deletePeriod(period: AcademicPeriodDto) {
   await refreshOnboardingState(orgId, m.common_action_failed());
 }
 
-async function deleteYear(year: AcademicYearDto) {
-  const deleted = await api.deleteAcademicYear(String(year.id));
+async function deleteYear(year: academicCalendarDto) {
+  const deleted = await api.deleteacademicCalendar(String(year.id));
   if (!deleted) throw new Error(m.common_action_failed());
   years = years.filter((item) => item.id !== year.id);
   if (selectedYearId === String(year.id)) {
@@ -478,7 +478,7 @@ async function deleteYear(year: AcademicYearDto) {
               variant="outline"
               size="sm"
               disabled={isSubmittingYear}
-              onclick={suggestAcademicYear}
+              onclick={suggestacademicCalendar}
               class="text-xs"
             >
               {m.onboarding_step3_suggest_year_btn()}

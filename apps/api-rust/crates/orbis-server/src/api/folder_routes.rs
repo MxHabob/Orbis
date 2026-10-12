@@ -27,7 +27,7 @@ pub struct FolderDto {
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
     pub org_unit_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub is_system: bool,
     pub metadata: Option<serde_json::Value>,
@@ -47,7 +47,7 @@ pub fn folder_to_dto(f: orbis_domain::entities::folder::Folder) -> FolderDto {
         entity_type: f.entity_type,
         entity_id: f.entity_id,
         org_unit_id: f.org_unit_id,
-        academic_year_id: f.academic_year_id,
+        calendar_id: f.calendar_id,
         term_id: f.term_id,
         is_system: f.is_system,
         metadata: f.metadata,
@@ -72,7 +72,7 @@ pub struct CreateFolderRequest {
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
     pub org_unit_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -81,7 +81,7 @@ pub struct CreateFolderRequest {
 pub struct UpdateFolderRequest {
     pub name: Option<String>,
     pub parent_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -89,7 +89,7 @@ pub struct UpdateFolderRequest {
 #[derive(Deserialize, ToSchema)]
 pub struct CreateCurriculumFolderRequest {
     pub name: String,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -126,7 +126,7 @@ async fn create_folder(
         entity_type: p.entity_type,
         entity_id: p.entity_id,
         org_unit_id: p.org_unit_id,
-        academic_year_id: p.academic_year_id,
+        calendar_id: p.calendar_id,
         term_id: p.term_id,
         metadata: p.metadata,
     };
@@ -251,7 +251,7 @@ async fn get_or_create_curriculum_folder(
 ) -> Result<Json<ApiResponse<FolderDto>>, ApiError> {
     let folder = state
         .folder_service
-        .get_or_create_curriculum_folder(&ctx, &p.name, p.academic_year_id, p.term_id, p.metadata)
+        .get_or_create_curriculum_folder(&ctx, &p.name, p.calendar_id, p.term_id, p.metadata)
         .await?;
     Ok(ApiResponse::ok(folder_to_dto(folder)))
 }
@@ -274,7 +274,7 @@ async fn update_folder(
     let input = UpdateFolderInput {
         name: p.name,
         parent_id: p.parent_id,
-        academic_year_id: p.academic_year_id,
+        calendar_id: p.calendar_id,
         term_id: p.term_id,
         metadata: p.metadata,
     };

@@ -5,7 +5,7 @@ use crate::ports::repositories::{EnrollmentRepository, PromotionRepository, Stud
 use chrono::Utc;
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus};
 use orbis_domain::entities::progression::{
-    PromotionDecision, PromotionDetail, PromotionJob, PromotionJobStatus,
+    PromotionDecision, ProgressionDetail, ProgressionJob, ProgressionJobStatus,
 };
 use orbis_domain::entities::student::{AcademicStanding, StudentStatus};
 use orbis_domain::errors::DomainError;
@@ -58,7 +58,7 @@ impl ProgressionService {
         target_period_id: Uuid,
         job_name: String,
         items: Vec<StudentProgressionItem>,
-    ) -> Result<PromotionJob, DomainError> {
+    ) -> Result<ProgressionJob, DomainError> {
         self.permission_checker
             .check(ctx, Permission::StudentUpdate)
             .await?;
@@ -127,7 +127,7 @@ impl ProgressionService {
                 }
             }
 
-            let detail = PromotionDetail {
+            let detail = ProgressionDetail {
                 id: Uuid::new_v4(),
                 job_id,
                 student_id: item.student_id,
@@ -160,13 +160,13 @@ impl ProgressionService {
 
         // 3. Save promotion job and audit details
         let total_students = details.len() as u32;
-        let job = PromotionJob {
+        let job = ProgressionJob {
             id: job_id,
             org_id,
             source_period_id,
             target_period_id: Some(target_period_id),
             name: job_name,
-            status: PromotionJobStatus::Completed,
+            status: ProgressionJobStatus::Completed,
             total_students,
             promoted_count,
             retained_count,

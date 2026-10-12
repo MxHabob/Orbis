@@ -155,7 +155,7 @@ async function loadGradeMatrix() {
 
     const result: GradeMatrixResponse = {
       period_id: selectedPeriodId,
-      class_subject_id: `${selectedClassId}_${selectedSubjectId}`,
+      section_subject_id: `${selectedClassId}_${selectedSubjectId}`,
       students,
       assessment_types: assessmentTypes,
     };

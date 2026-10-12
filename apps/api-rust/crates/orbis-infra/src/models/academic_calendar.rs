@@ -1,6 +1,12 @@
 use chrono::{DateTime, Utc};
 use sea_orm::entity::prelude::*;
 
+/// Unified academic calendar — the top-level temporal container.
+/// Replaces both `academic_calendars` and old `academic_calendars`.
+/// Works for any institution type:
+/// - Schools: "2025-2026 Academic Year"
+/// - Universities: "Fall 2025 Semester Calendar"
+/// - Institutes: "2025 Training Cycle"
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "academic_calendars")]
 pub struct Model {
@@ -10,9 +16,21 @@ pub struct Model {
     pub code: Option<String>,
     pub name: String,
     pub name_ar: Option<String>,
-    pub starts_at: Option<DateTime<Utc>>,
-    pub ends_at: Option<DateTime<Utc>>,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub hijri_start: Option<String>,
+    pub hijri_end: Option<String>,
+    /// planning, active, completed, archived
     pub status: String,
+    pub is_locked: bool,
+    pub locked_at: Option<DateTime<Utc>>,
+    pub locked_by: Option<Uuid>,
+    pub lock_reason: Option<String>,
+    pub current_period_id: Option<Uuid>,
+    pub archived_at: Option<DateTime<Utc>>,
+    pub archived_by: Option<Uuid>,
+    pub notes: Option<String>,
+    pub metadata: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

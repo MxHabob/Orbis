@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use orbis_domain::entities::academic_period::{AcademicPeriod, AcademicPeriodState};
-use orbis_domain::entities::academic_year::AcademicYear;
-use orbis_domain::entities::period_template::PeriodTemplate;
+use orbis_domain::entities::academic_calendar::AcademicCalendar;
+use orbis_domain::entities::period_type::PeriodType;
 use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
@@ -12,22 +12,22 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, PeriodTemplateRepository,
+    AcademicPeriodRepository, AcademicCalendarRepository, PeriodTypeRepository,
 };
 
 pub struct CalendarService {
-    pub year_repo: Arc<dyn AcademicYearRepository>,
+    pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
-    pub template_repo: Arc<dyn PeriodTemplateRepository>,
+    pub template_repo: Arc<dyn PeriodTypeRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
 
 impl CalendarService {
     pub fn new(
-        year_repo: Arc<dyn AcademicYearRepository>,
+        year_repo: Arc<dyn AcademicCalendarRepository>,
         period_repo: Arc<dyn AcademicPeriodRepository>,
-        template_repo: Arc<dyn PeriodTemplateRepository>,
+        template_repo: Arc<dyn PeriodTypeRepository>,
         event_bus: Arc<dyn EventBus>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
     ) -> Self {
@@ -49,7 +49,7 @@ impl CalendarService {
         name_ar: Option<String>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -68,7 +68,7 @@ impl CalendarService {
         let now = Utc::now();
         let year_id = Uuid::new_v4();
 
-        let year = AcademicYear {
+        let year = AcademicCalendar {
             id: year_id,
             org_id,
             name,
@@ -92,7 +92,7 @@ impl CalendarService {
 
         self.year_repo.save(&year).await?;
 
-        let event = DomainEvent::AcademicYearCreated {
+        let event = DomainEvent::AcademicCalendarCreated {
             year_id,
             org_id,
             timestamp: now,
@@ -103,7 +103,7 @@ impl CalendarService {
     }
 
     /// List academic years for an organization
-    pub async fn list_years(&self, org_id: Uuid) -> Result<Vec<AcademicYear>, DomainError> {
+    pub async fn list_years(&self, org_id: Uuid) -> Result<Vec<AcademicCalendar>, DomainError> {
         self.year_repo.find_by_org(org_id).await
     }
 
@@ -111,12 +111,12 @@ impl CalendarService {
     pub async fn get_current_year(
         &self,
         org_id: Uuid,
-    ) -> Result<Option<AcademicYear>, DomainError> {
+    ) -> Result<Option<AcademicCalendar>, DomainError> {
         self.year_repo.find_current(org_id).await
     }
 
     /// Get academic year by ID
-    pub async fn get_year(&self, id: Uuid) -> Result<Option<AcademicYear>, DomainError> {
+    pub async fn get_year(&self, id: Uuid) -> Result<Option<AcademicCalendar>, DomainError> {
         self.year_repo.find_by_id(id).await
     }
 
@@ -290,10 +290,10 @@ impl CalendarService {
     }
 
     /// List period templates
-    pub async fn list_period_templates(
+    pub async fn list_period_types(
         &self,
         org_id: Uuid,
-    ) -> Result<Vec<PeriodTemplate>, DomainError> {
+    ) -> Result<Vec<PeriodType>, DomainError> {
         self.template_repo.find_by_org(org_id).await
     }
 
@@ -302,7 +302,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -322,7 +322,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -342,7 +342,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -602,7 +602,7 @@ impl CalendarService {
         start_date: Option<DateTime<Utc>>,
         end_date: Option<DateTime<Utc>>,
         notes: Option<String>,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -644,7 +644,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;

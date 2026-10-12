@@ -9,27 +9,27 @@ import {
 import {
   api,
   queryKeys,
-  type PromotionJobDto,
+  type progressionJobDto,
   type StudentProgressionItemInput,
   type PromoteCohortInput,
 } from "$lib/api";
 
 /** List all cohort promotion jobs */
-export function createPromotionJobsQuery(orgId: () => string) {
-  return createQuery<PromotionJobDto[]>(() => ({
+export function createprogressionJobsQuery(orgId: () => string) {
+  return createQuery<progressionJobDto[]>(() => ({
     queryKey: queryKeys.progression.jobs(orgId()),
-    queryFn: () => api.listPromotionJobs(),
+    queryFn: () => api.listprogressionJobs(),
     enabled: !!orgId(),
     staleTime: 60 * 1000,
   }));
 }
 
 /** Get a single promotion job by ID */
-export function createPromotionJobQuery(jobId: string | (() => string)) {
+export function createprogressionJobQuery(jobId: string | (() => string)) {
   const getJobId = typeof jobId === "function" ? jobId : () => jobId;
-  return createQuery<PromotionJobDto>(() => ({
+  return createQuery<progressionJobDto>(() => ({
     queryKey: queryKeys.progression.job(getJobId()),
-    queryFn: () => api.getPromotionJob(getJobId()),
+    queryFn: () => api.getprogressionJob(getJobId()),
     enabled: !!getJobId(),
     staleTime: 30 * 1000,
   }));
@@ -47,7 +47,7 @@ export function createEvaluateCohortMutation() {
 export function createPromoteCohortMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (req: PromoteCohortInput): Promise<PromotionJobDto> =>
+    mutationFn: (req: PromoteCohortInput): Promise<progressionJobDto> =>
       api.promoteCohort(req),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.progression.all });

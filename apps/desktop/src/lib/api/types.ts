@@ -36,20 +36,20 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  AcademicYearDto,
+  academicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
-  PeriodTemplateDto,
+  PeriodTypeDto,
   CreateYearRequest,
   UpdateYearRequest,
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   CreateSubjectRequest,
   CreateClassRequest,
-  AssignClassSubjectRequest,
+  AssignSectionSubjectRequest,
   EnrollmentDto,
   StudentDto,
   EnrollStudentRequest,
@@ -80,7 +80,7 @@ import type {
   ResolveOverrideRequest,
   ApprovalStepDto,
   StudentProgressionItemInput,
-  PromotionJobDto,
+  progressionJobDto,
   PromoteCohortRequest,
   EvaluateCohortRequest,
   RoomDto,
@@ -601,7 +601,7 @@ export interface RejectOverrideInput {
   requestId?: string;
 }
 
-export interface PromotionDetailDto {
+export interface ProgressionDetailDto {
   id: string;
   job_id: string;
   student_id: string;
@@ -657,7 +657,7 @@ export interface StorageUploadRequest {
   folder_id?: string;
   asset_type?: string;
   description?: string;
-  academic_year_id?: string;
+  calendar_id?: string;
   term_id?: string;
   tags?: string;
   visibility?: string;
@@ -827,7 +827,7 @@ export interface OrganizationReadiness {
   org_name?: string;
   has_organization: boolean;
   has_admin: boolean;
-  has_academic_year: boolean;
+  has_academic_calendar: boolean;
   has_classes: boolean;
   has_subjects: boolean;
   pending_setup_items: SetupItem[];
@@ -889,8 +889,8 @@ export interface EnvironmentDetectionResult {
   currency_name_ar: string;
   is_hijri_recommended: boolean;
   date_format: string;
-  suggested_academic_year: string;
-  suggested_academic_year_ar: string;
+  suggested_academic_calendar: string;
+  suggested_academic_calendar_ar: string;
 }
 
 export interface SlugGenerationResult {
@@ -967,8 +967,8 @@ export interface CompleteOrganizationOnboardingRequest {
     requiredDocuments?: string[];
   };
   calendar: {
-    academicYearName: string;
-    academicYearNameAr?: string;
+    academicCalendarName: string;
+    academicCalendarNameAr?: string;
     startDate: string;
     endDate: string;
     periods: Array<{
@@ -1172,12 +1172,12 @@ export interface OnboardingStateDto {
 }
 
 export interface ProvisionDefaultsReqDto {
-  academic_year_id?: string;
-  academic_year_name?: string;
-  academic_year_name_ar?: string;
+  calendar_id?: string;
+  academic_calendar_name?: string;
+  academic_calendar_name_ar?: string;
   start_date?: string;
   end_date?: string;
-  provision_academic_year?: boolean;
+  provision_academic_calendar?: boolean;
   provision_default_academic_periods?: boolean;
   provision_stages_and_grades?: boolean;
   provision_subjects?: boolean;
@@ -1293,8 +1293,8 @@ export interface StudentAnnualReportCard {
   student_number?: string | null;
   class_id: string;
   class_name: string;
-  academic_year_id: string;
-  academic_year_name: string;
+  calendar_id: string;
+  academic_calendar_name: string;
   subjects: SubjectAnnualResult[];
   total_score: number;
   max_possible_score: number;
@@ -1553,15 +1553,15 @@ export interface OrbisApiClient {
   selectOrgUnit(id?: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
-  createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto>;
-  updateAcademicYear(id: string, req: UpdateYearRequest): Promise<AcademicYearDto>;
-  listAcademicYears(): Promise<AcademicYearDto[]>;
+  createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto>;
+  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<academicCalendarDto>;
+  listacademicCalendars(): Promise<academicCalendarDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
-  getAcademicYear(id: string): Promise<AcademicYearDto>;
-  activateAcademicYear(id: string): Promise<AcademicYearDto>;
-  closeAcademicYear(id: string): Promise<AcademicYearDto>;
-  archiveAcademicYear(id: string): Promise<AcademicYearDto>;
-  deleteAcademicYear(id: string): Promise<boolean>;
+  getacademicCalendar(id: string): Promise<academicCalendarDto>;
+  activateacademicCalendar(id: string): Promise<academicCalendarDto>;
+  closeacademicCalendar(id: string): Promise<academicCalendarDto>;
+  archiveacademicCalendar(id: string): Promise<academicCalendarDto>;
+  deleteacademicCalendar(id: string): Promise<boolean>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
   deleteAcademicPeriod(id: string): Promise<boolean>;
@@ -1570,7 +1570,7 @@ export interface OrbisApiClient {
   lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
-  listPeriodTemplates(): Promise<PeriodTemplateDto[]>;
+  listPeriodTypes(): Promise<PeriodTypeDto[]>;
 
   // ── Academic ────────────────────────────────────────────────
   createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;
@@ -1579,11 +1579,11 @@ export interface OrbisApiClient {
   createClass(req: CreateClassRequest): Promise<ClassDto>;
   listClasses(): Promise<ClassDto[]>;
   getClass(id: string): Promise<ClassDto>;
-  assignClassSubject(req: AssignClassSubjectRequest): Promise<ClassSubjectDto>;
-  listClassSubjects(
+  assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto>;
+  listSectionSubjects(
     classId: string,
     periodId: string,
-  ): Promise<ClassSubjectDto[]>;
+  ): Promise<SectionSubjectDto[]>;
   checkPrerequisites(
     studentId: string,
     subjectId: string,
@@ -1652,12 +1652,12 @@ export interface OrbisApiClient {
     filterOrPeriodId?:
       | string
       | {
-          classSubjectId?: string;
+          SectionSubjectId?: string;
           periodId?: string;
           classId?: string;
           teacherId?: string;
         },
-    classSubjectId?: string,
+    SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]>;
 
   // ── Assessment ──────────────────────────────────────────────
@@ -1678,7 +1678,7 @@ export interface OrbisApiClient {
   deleteGrade(id: string): Promise<void>;
   listGrades(filter?: {
     studentId?: string;
-    classSubjectId?: string;
+    SectionSubjectId?: string;
   }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto>;
@@ -1720,9 +1720,9 @@ export interface OrbisApiClient {
 
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;
-  promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto>;
-  listPromotionJobs(): Promise<PromotionJobDto[]>;
-  getPromotionJob(id: string): Promise<PromotionJobDto>;
+  promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto>;
+  listprogressionJobs(): Promise<progressionJobDto[]>;
+  getprogressionJob(id: string): Promise<progressionJobDto>;
 
   // ── Workflow & Academic Overrides ───────────────────────────
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;

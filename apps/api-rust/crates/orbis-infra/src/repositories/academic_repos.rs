@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::{ClassRepository, ClassSubjectRepository, SubjectRepository};
-use orbis_domain::entities::class::Class as DomainClass;
-use orbis_domain::entities::class_subject::ClassSubject as DomainClassSubject;
+use orbis_app::ports::repositories::{ClassRepository, SectionSubjectRepository, SubjectRepository};
+use orbis_domain::entities::section::Section as DomainSection;
+use orbis_domain::entities::section_subject::SectionSubject as DomainSectionSubject;
 use orbis_domain::entities::subject::Subject as DomainSubject;
 use orbis_domain::errors::DomainError;
 use sea_orm::{
@@ -11,8 +11,8 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::models::{
-    class::{self, Entity as ClassEntity},
-    class_subject::{self, Entity as ClassSubjectEntity},
+    class::{self, Entity as SectionEntity},
+    section_subject::{self, Entity as SectionSubjectEntity},
     subject::{self, Entity as SubjectEntity},
 };
 
@@ -128,16 +128,16 @@ impl SubjectRepository for AcademicRepoImpl {
 
 #[async_trait]
 impl ClassRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainClass>, DomainError> {
-        let model = ClassEntity::find_by_id(id)
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSection>, DomainError> {
+        let model = SectionEntity::find_by_id(id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(map_class_model_to_domain))
     }
 
-    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainClass>, DomainError> {
-        let models = ClassEntity::find()
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
+        let models = SectionEntity::find()
             .filter(class::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
@@ -145,8 +145,8 @@ impl ClassRepository for AcademicRepoImpl {
         Ok(models.into_iter().map(map_class_model_to_domain).collect())
     }
 
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainClass>, DomainError> {
-        let models = ClassEntity::find()
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
+        let models = SectionEntity::find()
             .filter(class::Column::OrgId.eq(org_id))
             .filter(class::Column::IsDeleted.eq(false))
             .all(&self.db)
@@ -159,8 +159,8 @@ impl ClassRepository for AcademicRepoImpl {
         &self,
         org_id: Uuid,
         filter: orbis_domain::queries::filters::ClassFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainClass>, DomainError> {
-        let mut query = ClassEntity::find()
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSection>, DomainError> {
+        let mut query = SectionEntity::find()
             .filter(class::Column::OrgId.eq(org_id))
             .filter(class::Column::IsDeleted.eq(false));
         if let Some(period_id) = filter.period_id {
@@ -190,7 +190,7 @@ impl ClassRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, class: &DomainClass) -> Result<(), DomainError> {
+    async fn save(&self, class: &DomainSection) -> Result<(), DomainError> {
         let active = class::ActiveModel {
             id: Set(class.id),
             org_id: Set(class.org_id),
@@ -212,7 +212,7 @@ impl ClassRepository for AcademicRepoImpl {
             updated_at: Set(class.updated_at),
         };
 
-        if ClassEntity::find_by_id(class.id)
+        if SectionEntity::find_by_id(class.id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
@@ -233,24 +233,24 @@ impl ClassRepository for AcademicRepoImpl {
 }
 
 #[async_trait]
-impl ClassSubjectRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainClassSubject>, DomainError> {
-        let model = ClassSubjectEntity::find_by_id(id)
+impl SectionSubjectRepository for AcademicRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSectionSubject>, DomainError> {
+        let model = SectionSubjectEntity::find_by_id(id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(map_class_subject_model_to_domain))
+        Ok(model.map(map_section_subject_model_to_domain))
     }
 
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainClassSubject>, DomainError> {
-        let models = ClassSubjectEntity::find()
-            .filter(class_subject::Column::ClassId.eq(class_id))
+    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainSectionSubject>, DomainError> {
+        let models = SectionSubjectEntity::find()
+            .filter(section_subject::Column::ClassId.eq(class_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models
             .into_iter()
-            .map(map_class_subject_model_to_domain)
+            .map(map_section_subject_model_to_domain)
             .collect())
     }
 
@@ -258,16 +258,16 @@ impl ClassSubjectRepository for AcademicRepoImpl {
         &self,
         class_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<DomainClassSubject>, DomainError> {
-        let models = ClassSubjectEntity::find()
-            .filter(class_subject::Column::ClassId.eq(class_id))
-            .filter(class_subject::Column::PeriodId.eq(period_id))
+    ) -> Result<Vec<DomainSectionSubject>, DomainError> {
+        let models = SectionSubjectEntity::find()
+            .filter(section_subject::Column::ClassId.eq(class_id))
+            .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models
             .into_iter()
-            .map(map_class_subject_model_to_domain)
+            .map(map_section_subject_model_to_domain)
             .collect())
     }
 
@@ -275,46 +275,46 @@ impl ClassSubjectRepository for AcademicRepoImpl {
         &self,
         teacher_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<DomainClassSubject>, DomainError> {
-        let models = ClassSubjectEntity::find()
+    ) -> Result<Vec<DomainSectionSubject>, DomainError> {
+        let models = SectionSubjectEntity::find()
             .filter(
-                class_subject::Column::PrimaryTeacherId
+                section_subject::Column::PrimaryTeacherId
                     .eq(teacher_id)
-                    .or(class_subject::Column::AssistantTeacherId.eq(teacher_id))
-                    .or(class_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+                    .or(section_subject::Column::AssistantTeacherId.eq(teacher_id))
+                    .or(section_subject::Column::SubstituteTeacherId.eq(teacher_id)),
             )
-            .filter(class_subject::Column::PeriodId.eq(period_id))
+            .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models
             .into_iter()
-            .map(map_class_subject_model_to_domain)
+            .map(map_section_subject_model_to_domain)
             .collect())
     }
 
     async fn list(
         &self,
         _org_id: Uuid,
-        filter: orbis_domain::queries::filters::ClassSubjectFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainClassSubject>, DomainError>
+        filter: orbis_domain::queries::filters::SectionSubjectFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSectionSubject>, DomainError>
     {
-        let mut query = ClassSubjectEntity::find();
+        let mut query = SectionSubjectEntity::find();
         if let Some(class_id) = filter.class_id {
-            query = query.filter(class_subject::Column::ClassId.eq(class_id));
+            query = query.filter(section_subject::Column::ClassId.eq(class_id));
         }
         if let Some(subject_id) = filter.subject_id {
-            query = query.filter(class_subject::Column::SubjectId.eq(subject_id));
+            query = query.filter(section_subject::Column::SubjectId.eq(subject_id));
         }
         if let Some(period_id) = filter.period_id {
-            query = query.filter(class_subject::Column::PeriodId.eq(period_id));
+            query = query.filter(section_subject::Column::PeriodId.eq(period_id));
         }
         if let Some(teacher_id) = filter.teacher_id {
             query = query.filter(
-                class_subject::Column::PrimaryTeacherId
+                section_subject::Column::PrimaryTeacherId
                     .eq(teacher_id)
-                    .or(class_subject::Column::AssistantTeacherId.eq(teacher_id))
-                    .or(class_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+                    .or(section_subject::Column::AssistantTeacherId.eq(teacher_id))
+                    .or(section_subject::Column::SubstituteTeacherId.eq(teacher_id)),
             );
         }
         let pagination = filter.pagination.unwrap_or_default();
@@ -331,7 +331,7 @@ impl ClassSubjectRepository for AcademicRepoImpl {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         let items = rows
             .into_iter()
-            .map(map_class_subject_model_to_domain)
+            .map(map_section_subject_model_to_domain)
             .collect();
         Ok(orbis_domain::queries::filters::PaginatedList::new(
             items,
@@ -341,27 +341,27 @@ impl ClassSubjectRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, class_subject: &DomainClassSubject) -> Result<(), DomainError> {
-        let active = class_subject::ActiveModel {
-            id: Set(class_subject.id),
-            class_id: Set(class_subject.class_id),
-            subject_id: Set(class_subject.subject_id),
-            period_id: Set(class_subject.period_id),
-            primary_teacher_id: Set(class_subject.primary_teacher_id),
-            assistant_teacher_id: Set(class_subject.assistant_teacher_id),
-            substitute_teacher_id: Set(class_subject.substitute_teacher_id),
-            grade_groups: Set(class_subject.grade_groups.clone()),
-            weekly_hours: Set(class_subject.weekly_hours),
-            theory_hours: Set(class_subject.theory_hours),
-            practical_hours: Set(class_subject.practical_hours),
-            assessment_config: Set(class_subject.assessment_config.clone()),
-            scheme_id: Set(class_subject.scheme_id),
-            is_active: Set(class_subject.is_active),
-            created_at: Set(class_subject.created_at),
-            updated_at: Set(class_subject.updated_at),
+    async fn save(&self, section_subject: &DomainSectionSubject) -> Result<(), DomainError> {
+        let active = section_subject::ActiveModel {
+            id: Set(section_subject.id),
+            class_id: Set(section_subject.class_id),
+            subject_id: Set(section_subject.subject_id),
+            period_id: Set(section_subject.period_id),
+            primary_teacher_id: Set(section_subject.primary_teacher_id),
+            assistant_teacher_id: Set(section_subject.assistant_teacher_id),
+            substitute_teacher_id: Set(section_subject.substitute_teacher_id),
+            grade_groups: Set(section_subject.grade_groups.clone()),
+            weekly_hours: Set(section_subject.weekly_hours),
+            theory_hours: Set(section_subject.theory_hours),
+            practical_hours: Set(section_subject.practical_hours),
+            assessment_config: Set(section_subject.assessment_config.clone()),
+            scheme_id: Set(section_subject.scheme_id),
+            is_active: Set(section_subject.is_active),
+            created_at: Set(section_subject.created_at),
+            updated_at: Set(section_subject.updated_at),
         };
 
-        if ClassSubjectEntity::find_by_id(class_subject.id)
+        if SectionSubjectEntity::find_by_id(section_subject.id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
@@ -406,8 +406,8 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
     }
 }
 
-fn map_class_model_to_domain(m: class::Model) -> DomainClass {
-    DomainClass {
+fn map_class_model_to_domain(m: class::Model) -> DomainSection {
+    DomainSection {
         id: m.id,
         org_id: m.org_id,
         unit_id: m.unit_id,
@@ -429,8 +429,8 @@ fn map_class_model_to_domain(m: class::Model) -> DomainClass {
     }
 }
 
-fn map_class_subject_model_to_domain(m: class_subject::Model) -> DomainClassSubject {
-    DomainClassSubject {
+fn map_section_subject_model_to_domain(m: section_subject::Model) -> DomainSectionSubject {
+    DomainSectionSubject {
         id: m.id,
         class_id: m.class_id,
         subject_id: m.subject_id,
@@ -451,27 +451,27 @@ fn map_class_subject_model_to_domain(m: class_subject::Model) -> DomainClassSubj
 }
 
 #[async_trait]
-impl orbis_app::ports::repositories::CoursePrerequisiteRepository for AcademicRepoImpl {
+impl orbis_app::ports::repositories::PrerequisiteRepository for AcademicRepoImpl {
     async fn find_by_subject(
         &self,
         subject_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::course_prerequisite::CoursePrerequisite>, DomainError>
+    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError>
     {
-        let models = crate::models::course_prerequisite::Entity::find()
-            .filter(crate::models::course_prerequisite::Column::SubjectId.eq(subject_id))
+        let models = crate::models::prerequisite::Entity::find()
+            .filter(crate::models::prerequisite::Column::SubjectId.eq(subject_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::course_prerequisite::CoursePrerequisite {
+        Ok(models.into_iter().map(|m| orbis_domain::entities::prerequisite::Prerequisite {
             id: m.id,
             org_id: m.org_id,
             subject_id: m.subject_id,
             prerequisite_subject_id: m.prerequisite_subject_id,
             requirement_type: match m.requirement_type.as_str() {
-                "recommended" => orbis_domain::entities::course_prerequisite::PrerequisiteType::Recommended,
-                "corequisite" => orbis_domain::entities::course_prerequisite::PrerequisiteType::Corequisite,
-                _ => orbis_domain::entities::course_prerequisite::PrerequisiteType::Enforce,
+                "recommended" => orbis_domain::entities::prerequisite::PrerequisiteType::Recommended,
+                "corequisite" => orbis_domain::entities::prerequisite::PrerequisiteType::Corequisite,
+                _ => orbis_domain::entities::prerequisite::PrerequisiteType::Enforce,
             },
             min_grade: m.min_grade,
             min_score: m.min_score,
@@ -483,23 +483,23 @@ impl orbis_app::ports::repositories::CoursePrerequisiteRepository for AcademicRe
     async fn find_by_org(
         &self,
         org_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::course_prerequisite::CoursePrerequisite>, DomainError>
+    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError>
     {
-        let models = crate::models::course_prerequisite::Entity::find()
-            .filter(crate::models::course_prerequisite::Column::OrgId.eq(org_id))
+        let models = crate::models::prerequisite::Entity::find()
+            .filter(crate::models::prerequisite::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::course_prerequisite::CoursePrerequisite {
+        Ok(models.into_iter().map(|m| orbis_domain::entities::prerequisite::Prerequisite {
             id: m.id,
             org_id: m.org_id,
             subject_id: m.subject_id,
             prerequisite_subject_id: m.prerequisite_subject_id,
             requirement_type: match m.requirement_type.as_str() {
-                "recommended" => orbis_domain::entities::course_prerequisite::PrerequisiteType::Recommended,
-                "corequisite" => orbis_domain::entities::course_prerequisite::PrerequisiteType::Corequisite,
-                _ => orbis_domain::entities::course_prerequisite::PrerequisiteType::Enforce,
+                "recommended" => orbis_domain::entities::prerequisite::PrerequisiteType::Recommended,
+                "corequisite" => orbis_domain::entities::prerequisite::PrerequisiteType::Corequisite,
+                _ => orbis_domain::entities::prerequisite::PrerequisiteType::Enforce,
             },
             min_grade: m.min_grade,
             min_score: m.min_score,
@@ -510,9 +510,9 @@ impl orbis_app::ports::repositories::CoursePrerequisiteRepository for AcademicRe
 
     async fn save(
         &self,
-        prereq: &orbis_domain::entities::course_prerequisite::CoursePrerequisite,
+        prereq: &orbis_domain::entities::prerequisite::Prerequisite,
     ) -> Result<(), DomainError> {
-        let active = crate::models::course_prerequisite::ActiveModel {
+        let active = crate::models::prerequisite::ActiveModel {
             id: Set(prereq.id),
             org_id: Set(prereq.org_id),
             subject_id: Set(prereq.subject_id),
@@ -524,7 +524,7 @@ impl orbis_app::ports::repositories::CoursePrerequisiteRepository for AcademicRe
             updated_at: Set(prereq.updated_at),
         };
 
-        if crate::models::course_prerequisite::Entity::find_by_id(prereq.id)
+        if crate::models::prerequisite::Entity::find_by_id(prereq.id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
@@ -544,7 +544,7 @@ impl orbis_app::ports::repositories::CoursePrerequisiteRepository for AcademicRe
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), DomainError> {
-        crate::models::course_prerequisite::Entity::delete_by_id(id)
+        crate::models::prerequisite::Entity::delete_by_id(id)
             .exec(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;

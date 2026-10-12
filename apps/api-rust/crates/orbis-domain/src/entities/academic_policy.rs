@@ -240,8 +240,8 @@ pub struct StudentAnnualReportCard {
     pub student_number: Option<String>,
     pub class_id: Uuid,
     pub class_name: String,
-    pub academic_year_id: Uuid,
-    pub academic_year_name: String,
+    pub calendar_id: Uuid,
+    pub academic_calendar_name: String,
     pub subjects: Vec<SubjectAnnualResult>,
     pub total_score: Decimal,
     pub max_possible_score: Decimal,
@@ -308,7 +308,7 @@ pub struct ResultSnapshot {
     pub learner_id: Uuid,
     pub subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub result_type: String,
     pub result_key: String,
     pub policy_version: u32,
@@ -340,7 +340,7 @@ impl ResultSnapshot {
             learner_id,
             subject_id: None,
             period_id: None,
-            academic_year_id: None,
+            calendar_id: None,
             result_type: result_type.into(),
             result_key: result_key.into(),
             policy_version,
@@ -361,13 +361,13 @@ impl ResultSnapshot {
         mut self,
         subject_id: Option<Uuid>,
         period_id: Option<Uuid>,
-        academic_year_id: Option<Uuid>,
+        calendar_id: Option<Uuid>,
         created_by: Option<Uuid>,
         input_references: Vec<ResultInputReference>,
     ) -> Self {
         self.subject_id = subject_id;
         self.period_id = period_id;
-        self.academic_year_id = academic_year_id;
+        self.calendar_id = calendar_id;
         self.created_by = created_by;
         self.input_references = input_references;
         self
@@ -488,7 +488,7 @@ impl ResultSnapshot {
             learner_id: self.learner_id,
             subject_id: self.subject_id,
             period_id: self.period_id,
-            academic_year_id: self.academic_year_id,
+            calendar_id: self.calendar_id,
             result_type: self.result_type.clone(),
             result_key: self.result_key.clone(),
             policy_version: next_policy_version,
@@ -516,7 +516,7 @@ pub struct AcademicResultView {
     pub learner_id: Uuid,
     pub subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub result_type: String,
     pub result_key: String,
     pub policy_version: u32,
@@ -637,7 +637,7 @@ impl From<ResultSnapshot> for AcademicResultView {
             learner_id: snapshot.learner_id,
             subject_id: snapshot.subject_id,
             period_id: snapshot.period_id,
-            academic_year_id: snapshot.academic_year_id,
+            calendar_id: snapshot.calendar_id,
             result_type: snapshot.result_type,
             result_key: snapshot.result_key,
             policy_version: snapshot.policy_version,

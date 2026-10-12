@@ -199,18 +199,18 @@ export const teacherSubjectImportProfile: BulkImportProfile<
         ]),
       ).values(),
     ];
-    const existingClassSubjectAssignments: BulkReferenceData["existingClassSubjectAssignments"] =
+    const existingSectionSubjectAssignments: BulkReferenceData["existingSectionSubjectAssignments"] =
       [];
     for (let offset = 0; offset < classPeriods.length; offset += 10) {
       const batch = classPeriods.slice(offset, offset + 10);
       const assignments = await Promise.all(
         batch.map(({ classId, periodId }) =>
-          api.listClassSubjects(classId, periodId),
+          api.listSectionSubjects(classId, periodId),
         ),
       );
       for (const assignment of assignments.flat()) {
         if (assignment.is_active) {
-          existingClassSubjectAssignments.push({
+          existingSectionSubjectAssignments.push({
             classId: assignment.class_id,
             subjectId: assignment.subject_id,
             periodId: assignment.period_id,
@@ -239,7 +239,7 @@ export const teacherSubjectImportProfile: BulkImportProfile<
         bloodTypes: [],
         relationships: [],
       },
-      existingClassSubjectAssignments,
+      existingSectionSubjectAssignments,
     };
   },
 
@@ -325,7 +325,7 @@ export const teacherSubjectImportProfile: BulkImportProfile<
           ),
         );
       } else if (
-        refData.existingClassSubjectAssignments.some(
+        refData.existingSectionSubjectAssignments.some(
           (item) => assignmentKey(item.classId, item.subjectId, item.periodId) === key,
         )
       ) {
@@ -404,7 +404,7 @@ export const teacherSubjectImportProfile: BulkImportProfile<
 
       const key = assignmentKey(classItem.id, subjectItem.id, periodItem.id);
       if (
-        refData.existingClassSubjectAssignments.some(
+        refData.existingSectionSubjectAssignments.some(
           (item) => assignmentKey(item.classId, item.subjectId, item.periodId) === key,
         )
       ) {
@@ -420,14 +420,14 @@ export const teacherSubjectImportProfile: BulkImportProfile<
 
       try {
         const weeklyHoursText = String(row.weekly_hours ?? "").trim();
-        await api.assignClassSubject({
+        await api.assignSectionSubject({
           class_id: classItem.id,
           subject_id: subjectItem.id,
           period_id: periodItem.id,
           primary_teacher_id: teacherItem.id,
           weekly_hours: weeklyHoursText ? Number(weeklyHoursText) : undefined,
         });
-        refData.existingClassSubjectAssignments.push({
+        refData.existingSectionSubjectAssignments.push({
           classId: classItem.id,
           subjectId: subjectItem.id,
           periodId: periodItem.id,

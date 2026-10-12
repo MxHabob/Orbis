@@ -60,7 +60,7 @@ pub struct RoomDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LessonAssignmentDto {
     pub id: String,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub class_id: String,
     pub subject_id: String,
     pub teacher_id: String,
@@ -79,7 +79,7 @@ pub struct PinnedLessonDto {
     pub class_id: String,
     pub teacher_id: String,
     pub subject_id: String,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub time_slot_id: String,
     pub day_of_week: i32,
     pub room_id: Option<String>,

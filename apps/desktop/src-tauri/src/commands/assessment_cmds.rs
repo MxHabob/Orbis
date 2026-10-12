@@ -76,7 +76,7 @@ pub struct GradeDto {
     pub period_id: String,
     pub student_id: String,
     pub enrollment_id: Option<String>,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Decimal,
@@ -98,7 +98,7 @@ pub struct RecordGradeInput {
     pub period_id: String,
     pub student_id: String,
     pub enrollment_id: Option<String>,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -114,7 +114,7 @@ pub struct RecordGradeItemInput {
     pub period_id: String,
     pub student_id: String,
     pub enrollment_id: Option<String>,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub component_id: Option<String>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -141,7 +141,7 @@ pub struct AttendanceDto {
     pub id: String,
     pub student_id: String,
     pub class_id: Option<String>,
-    pub class_subject_id: Option<String>,
+    pub section_subject_id: Option<String>,
     pub scheduled_lesson_id: Option<String>,
     pub date: String,
     pub status: String,
@@ -165,7 +165,7 @@ pub struct MarkAttendanceItemInput {
     pub student_id: String,
     pub status: String,
     pub notes: Option<String>,
-    pub class_subject_id: Option<String>,
+    pub section_subject_id: Option<String>,
     pub scheduled_lesson_id: Option<String>,
 }
 
@@ -186,7 +186,7 @@ pub struct BatchMarkAttendanceResponseDto {
 pub struct CalculateGradesInput {
     pub scheme_id: String,
     pub student_id: String,
-    pub class_subject_id: Option<String>,
+    pub section_subject_id: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -223,7 +223,7 @@ pub struct PreviewCalculationInput {
 #[derive(Deserialize, Default)]
 pub struct GradeFilter {
     pub student_id: Option<String>,
-    pub class_subject_id: Option<String>,
+    pub section_subject_id: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -296,7 +296,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         period_id: g.period_id.to_string(),
         student_id: g.student_id.to_string(),
         enrollment_id: g.enrollment_id.map(|e| e.to_string()),
-        class_subject_id: g.class_subject_id.to_string(),
+        section_subject_id: g.section_subject_id.to_string(),
         component_id: g.component_id.map(|c| c.to_string()),
         score: g.score,
         max_score: g.max_score,
@@ -319,7 +319,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
         id: a.id.to_string(),
         student_id: a.student_id.to_string(),
         class_id: a.class_id.map(|c| c.to_string()),
-        class_subject_id: a.class_subject_id.map(|c| c.to_string()),
+        section_subject_id: a.section_subject_id.map(|c| c.to_string()),
         scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
         date: a.attendance_date.to_string(),
         status: a.status,
@@ -474,8 +474,8 @@ pub async fn assessment_record_grade(
     let ctx = make_ctx(&state);
     let period_id = Uuid::parse_str(&request.period_id).map_err(|_| "Invalid periodId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_subject_id =
-        Uuid::parse_str(&request.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+    let section_subject_id =
+        Uuid::parse_str(&request.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
     let component_id = request.component_id.and_then(|c| Uuid::parse_str(&c).ok());
     let max_score = request.max_score.unwrap_or_else(|| Decimal::from(100));
 
@@ -486,7 +486,7 @@ pub async fn assessment_record_grade(
             ctx.tenant_id,
             period_id,
             student_id,
-            class_subject_id,
+            section_subject_id,
             component_id,
             request.score,
             max_score,
@@ -510,15 +510,15 @@ pub async fn assessment_batch_record_grades(
         let period_id = Uuid::parse_str(&item.period_id).map_err(|_| "Invalid periodId")?;
         let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
         let enrollment_id = item.enrollment_id.and_then(|e| Uuid::parse_str(&e).ok());
-        let class_subject_id =
-            Uuid::parse_str(&item.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+        let section_subject_id =
+            Uuid::parse_str(&item.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
         let component_id = item.component_id.and_then(|c| Uuid::parse_str(&c).ok());
 
         items.push(BatchGradeItem {
             period_id,
             student_id,
             enrollment_id,
-            class_subject_id,
+            section_subject_id,
             component_id,
             score: item.score,
             max_score: item.max_score,
@@ -571,11 +571,11 @@ pub async fn assessment_list_grades(
     {
         state.grade_repo.find_by_student(sid).await
     } else if let Some(csid) = f
-        .class_subject_id
+        .section_subject_id
         .as_deref()
         .and_then(|s| Uuid::parse_str(s).ok())
     {
-        state.grade_repo.find_by_class_subject(csid).await
+        state.grade_repo.find_by_section_subject(csid).await
     } else {
         Ok(vec![])
     }
@@ -592,14 +592,14 @@ pub async fn assessment_calculate_grades(
     let ctx = make_ctx(&state);
     let scheme_id = Uuid::parse_str(&request.scheme_id).map_err(|_| "Invalid schemeId")?;
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid studentId")?;
-    let class_subject_id = request
-        .class_subject_id
+    let section_subject_id = request
+        .section_subject_id
         .and_then(|cs| Uuid::parse_str(&cs).ok())
         .unwrap_or_else(Uuid::nil);
 
     let final_score = state
         .assessment_service
-        .calculate_scheme_grades(&ctx, scheme_id, student_id, class_subject_id)
+        .calculate_scheme_grades(&ctx, scheme_id, student_id, section_subject_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -815,8 +815,8 @@ pub async fn assessment_batch_mark_attendance(
     let mut items = Vec::with_capacity(request.items.len());
     for item in request.items {
         let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
-        let class_subject_id = item
-            .class_subject_id
+        let section_subject_id = item
+            .section_subject_id
             .and_then(|cs| Uuid::parse_str(&cs).ok());
         let scheduled_lesson_id = item
             .scheduled_lesson_id
@@ -826,7 +826,7 @@ pub async fn assessment_batch_mark_attendance(
             student_id,
             status: item.status,
             notes: item.notes,
-            class_subject_id,
+            section_subject_id,
             scheduled_lesson_id,
         });
     }

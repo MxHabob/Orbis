@@ -2,19 +2,19 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    ClassRepository, ClassSubjectRepository, CoursePrerequisiteRepository, GradeRepository,
+    ClassRepository, SectionSubjectRepository, PrerequisiteRepository, GradeRepository,
     SubjectRepository,
 };
 use chrono::Utc;
-use orbis_domain::entities::class::Class;
-use orbis_domain::entities::class_subject::ClassSubject;
-use orbis_domain::entities::course_prerequisite::PrerequisiteType;
+use orbis_domain::entities::section::Section;
+use orbis_domain::entities::section_subject::SectionSubject;
+use orbis_domain::entities::prerequisite::PrerequisiteType;
 use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    ClassFilter, ClassSubjectFilter, PaginatedList, SubjectFilter,
+    ClassFilter, SectionSubjectFilter, PaginatedList, SubjectFilter,
 };
 use rust_decimal::Decimal;
 use std::sync::Arc;
@@ -23,8 +23,8 @@ use uuid::Uuid;
 pub struct AcademicService {
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub class_repo: Arc<dyn ClassRepository>,
-    pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
-    pub prereq_repo: Arc<dyn CoursePrerequisiteRepository>,
+    pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
+    pub prereq_repo: Arc<dyn PrerequisiteRepository>,
     pub grade_repo: Arc<dyn GradeRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
@@ -45,8 +45,8 @@ impl AcademicService {
     pub fn new(
         subject_repo: Arc<dyn SubjectRepository>,
         class_repo: Arc<dyn ClassRepository>,
-        class_subject_repo: Arc<dyn ClassSubjectRepository>,
-        prereq_repo: Arc<dyn CoursePrerequisiteRepository>,
+        section_subject_repo: Arc<dyn SectionSubjectRepository>,
+        prereq_repo: Arc<dyn PrerequisiteRepository>,
         grade_repo: Arc<dyn GradeRepository>,
         event_bus: Arc<dyn EventBus>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
@@ -54,7 +54,7 @@ impl AcademicService {
         Self {
             subject_repo,
             class_repo,
-            class_subject_repo,
+            section_subject_repo,
             prereq_repo,
             grade_repo,
             event_bus,
@@ -152,7 +152,7 @@ impl AcademicService {
         self.subject_repo.find_by_id(id).await
     }
 
-    /// Create class
+    /// Create Section
     pub async fn create_class(
         &self,
         ctx: &RequestContext,
@@ -163,7 +163,7 @@ impl AcademicService {
         name_ar: Option<String>,
         level: String,
         capacity: Option<i32>,
-    ) -> Result<Class, DomainError> {
+    ) -> Result<Section, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ClassWrite)
             .await?;
@@ -173,12 +173,12 @@ impl AcademicService {
         let normalized_name_ar = name_ar.as_deref().unwrap_or_default().trim().to_lowercase();
         if normalized_name.is_empty() || normalized_level.is_empty() {
             return Err(DomainError::Validation(
-                "Class name and level are required".into(),
+                "Section name and level are required".into(),
             ));
         }
         if capacity.is_some_and(|value| value <= 0) {
             return Err(DomainError::Validation(
-                "Class capacity must be greater than zero".into(),
+                "Section capacity must be greater than zero".into(),
             ));
         }
         if self
@@ -186,13 +186,13 @@ impl AcademicService {
             .find_by_org(org_id)
             .await?
             .iter()
-            .any(|class| {
-                class.unit_id == unit_id
-                    && class.period_id == period_id
-                    && class.level.trim().to_lowercase() == normalized_level
-                    && (class.name.trim().to_lowercase() == normalized_name
+            .any(|Section| {
+                Section.unit_id == unit_id
+                    && Section.period_id == period_id
+                    && Section.level.trim().to_lowercase() == normalized_level
+                    && (Section.name.trim().to_lowercase() == normalized_name
                         || (!normalized_name_ar.is_empty()
-                            && class
+                            && Section
                                 .name_ar
                                 .as_deref()
                                 .unwrap_or_default()
@@ -202,7 +202,7 @@ impl AcademicService {
             })
         {
             return Err(DomainError::Conflict(format!(
-                "A class named '{}' already exists for this level and period",
+                "A Section named '{}' already exists for this level and period",
                 name.trim()
             )));
         }
@@ -210,7 +210,7 @@ impl AcademicService {
         let now = Utc::now();
         let class_id = Uuid::new_v4();
 
-        let class = Class {
+        let Section = Section {
             id: class_id,
             org_id,
             unit_id,
@@ -231,7 +231,7 @@ impl AcademicService {
             updated_at: now,
         };
 
-        self.class_repo.save(&class).await?;
+        self.class_repo.save(&Section).await?;
 
         let _ = self
             .event_bus
@@ -246,7 +246,7 @@ impl AcademicService {
             )
             .await;
 
-        Ok(class)
+        Ok(Section)
     }
 
     /// List classes
@@ -254,17 +254,17 @@ impl AcademicService {
         &self,
         org_id: Uuid,
         filter: ClassFilter,
-    ) -> Result<PaginatedList<Class>, DomainError> {
+    ) -> Result<PaginatedList<Section>, DomainError> {
         self.class_repo.list(org_id, filter).await
     }
 
-    /// Get class by ID
-    pub async fn get_class(&self, id: Uuid) -> Result<Option<Class>, DomainError> {
+    /// Get Section by ID
+    pub async fn get_class(&self, id: Uuid) -> Result<Option<Section>, DomainError> {
         self.class_repo.find_by_id(id).await
     }
 
-    /// Assign teaching of a subject to a class (ClassSubject)
-    pub async fn assign_class_subject(
+    /// Assign teaching of a subject to a Section (SectionSubject)
+    pub async fn assign_section_subject(
         &self,
         ctx: &RequestContext,
         class_id: Uuid,
@@ -272,7 +272,7 @@ impl AcademicService {
         period_id: Uuid,
         primary_teacher_id: Uuid,
         weekly_hours: Option<i32>,
-    ) -> Result<ClassSubject, DomainError> {
+    ) -> Result<SectionSubject, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ClassWrite)
             .await?;
@@ -280,7 +280,7 @@ impl AcademicService {
         let now = Utc::now();
         let cs_id = Uuid::new_v4();
 
-        let cs = ClassSubject {
+        let cs = SectionSubject {
             id: cs_id,
             class_id,
             subject_id,
@@ -299,14 +299,14 @@ impl AcademicService {
             updated_at: now,
         };
 
-        self.class_subject_repo.save(&cs).await?;
+        self.section_subject_repo.save(&cs).await?;
 
         let _ = self
             .event_bus
             .publish(
                 ctx,
-                &DomainEvent::ClassSubjectAssigned {
-                    class_subject_id: cs_id,
+                &DomainEvent::SectionSubjectAssigned {
+                    section_subject_id: cs_id,
                     class_id,
                     subject_id,
                     timestamp: now,
@@ -317,13 +317,13 @@ impl AcademicService {
         Ok(cs)
     }
 
-    /// List class subjects
-    pub async fn list_class_subjects(
+    /// List Section subjects
+    pub async fn list_section_subjects(
         &self,
         org_id: Uuid,
-        filter: ClassSubjectFilter,
-    ) -> Result<PaginatedList<ClassSubject>, DomainError> {
-        self.class_subject_repo.list(org_id, filter).await
+        filter: SectionSubjectFilter,
+    ) -> Result<PaginatedList<SectionSubject>, DomainError> {
+        self.section_subject_repo.list(org_id, filter).await
     }
 
     /// Check prerequisites for a student before enrolling in a subject
@@ -338,12 +338,12 @@ impl AcademicService {
         let mut results = Vec::new();
 
         for prereq in prereqs {
-            // Find grade for the prerequisite subject by resolving ClassSubject -> Subject
+            // Find grade for the prerequisite subject by resolving SectionSubject -> Subject
             let mut matching_grade = None;
             for g in &student_grades {
                 if let Some(cs) = self
-                    .class_subject_repo
-                    .find_by_id(g.class_subject_id)
+                    .section_subject_repo
+                    .find_by_id(g.section_subject_id)
                     .await?
                 {
                     if cs.subject_id == prereq.prerequisite_subject_id {

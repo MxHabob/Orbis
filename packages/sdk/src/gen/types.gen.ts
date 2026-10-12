@@ -5,11 +5,11 @@ export type ClientOptions = {
 };
 
 export type AcademicAiContext = {
-    academic_year_id?: string | null;
-    academic_year_name?: string | null;
+    calendar_id?: string | null;
+    academic_calendar_name?: string | null;
     class_id?: string | null;
     class_name?: string | null;
-    class_subject_id?: string | null;
+    section_subject_id?: string | null;
     period_id?: string | null;
     period_name?: string | null;
     period_state?: string | null;
@@ -18,8 +18,8 @@ export type AcademicAiContext = {
 };
 
 export type AcademicContextResponse = {
-    all_years: Array<AcademicYearDto>;
-    current_year?: AcademicYearDto | null;
+    all_years: Array<AcademicCalendarDto>;
+    current_year?: AcademicCalendarDto | null;
     periods: Array<AcademicPeriodDto>;
 };
 
@@ -69,7 +69,7 @@ export type AcademicSettingsDto = {
     exclude_withdrawn?: boolean;
 };
 
-export type AcademicYearDto = {
+export type AcademicCalendarDto = {
     created_at: string;
     current_period_id?: string | null;
     end_date: string;
@@ -292,7 +292,7 @@ export type AssessmentSchemeDto = {
     updated_at: string;
 };
 
-export type AssignClassSubjectRequest = {
+export type AssignSectionSubjectRequest = {
     class_id: string;
     period_id: string;
     primary_teacher_id: string;
@@ -342,7 +342,7 @@ export type AssignSecretRequest = {
 
 export type AttendanceDto = {
     class_id?: string | null;
-    class_subject_id?: string | null;
+    section_subject_id?: string | null;
     created_at: string;
     date: string;
     id: string;
@@ -686,7 +686,7 @@ export type CalculateGpaRequest = {
 };
 
 export type CalculateGradesRequest = {
-    class_subject_id?: string | null;
+    section_subject_id?: string | null;
     scheme_id: string;
     student_id: string;
 };
@@ -734,7 +734,7 @@ export type ClassDto = {
     updated_at: string;
 };
 
-export type ClassSubjectDto = {
+export type SectionSubjectDto = {
     class_id: string;
     created_at: string;
     id: string;
@@ -776,7 +776,7 @@ export type CreateClassRequest = {
 };
 
 export type CreateCurriculumFolderRequest = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     metadata?: unknown;
     name: string;
     term_id?: string | null;
@@ -829,7 +829,7 @@ export type CreateFeeTemplateRequest = {
 };
 
 export type CreateFolderRequest = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     entity_id?: string | null;
     entity_type?: string | null;
     folder_type?: string | null;
@@ -1033,7 +1033,7 @@ export type CurrencyDto = {
 };
 
 export type DashboardCountsDto = {
-    active_academic_year?: string | null;
+    active_academic_calendar?: string | null;
     pending_fees_amount: number;
     total_classes: number;
     total_enrollments: number;
@@ -1062,7 +1062,7 @@ export type DiscountTemplateDto = {
 };
 
 export type DocumentDto = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     archive_reason?: string | null;
     archived_at?: string | null;
     archived_by?: string | null;
@@ -1235,7 +1235,7 @@ export type EvaluateCohortRequest = {
 };
 
 export type ExamScheduleDto = {
-    class_subject_id: string;
+    section_subject_id: string;
     created_at: string;
     end_time: string;
     exam_date: string;
@@ -1295,7 +1295,7 @@ export type FolderContentsDto = {
 };
 
 export type FolderDto = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     created_at: string;
     created_by?: string | null;
     entity_id?: string | null;
@@ -1363,7 +1363,7 @@ export type GoogleAuthRequest = {
 
 export type GradeDto = {
     change_reason?: string | null;
-    class_subject_id: string;
+    section_subject_id: string;
     component_id?: string | null;
     created_at: string;
     enrollment_id?: string | null;
@@ -1520,7 +1520,7 @@ export type LoginResponse = {
 };
 
 export type MarkAttendanceItemRequest = {
-    class_subject_id?: string | null;
+    section_subject_id?: string | null;
     notes?: string | null;
     scheduled_lesson_id?: string | null;
     status: string;
@@ -1737,7 +1737,7 @@ export type PaymentDto = {
  */
 export type PeriodKind = 'teaching' | 'examination' | 'break' | 'registration' | 'preparatory';
 
-export type PeriodTemplateDto = {
+export type PeriodTypeDto = {
     id: string;
     institution_type: string;
     is_default: boolean;
@@ -1815,7 +1815,7 @@ export type PromoteCohortRequest = {
     target_period_id: string;
 };
 
-export type PromotionJobDto = {
+export type ProgressionJobDto = {
     created_at: string;
     excluded_count: number;
     executed_at?: string | null;
@@ -1848,14 +1848,14 @@ export type ProviderSchemaResponse = {
 };
 
 export type ProvisionDefaultsReqDto = {
-    academic_year_id?: string | null;
-    academic_year_name?: string | null;
-    academic_year_name_ar?: string | null;
+    calendar_id?: string | null;
+    academic_calendar_name?: string | null;
+    academic_calendar_name_ar?: string | null;
     enable_period_autopilot?: boolean | null;
     end_date?: string | null;
     hijri_month_lengths?: Array<number> | null;
     hijri_start_year?: number | null;
-    provision_academic_year?: boolean | null;
+    provision_academic_calendar?: boolean | null;
     provision_assessment_scheme?: boolean | null;
     provision_default_academic_periods?: boolean | null;
     provision_discount_templates?: boolean | null;
@@ -1910,7 +1910,7 @@ export type RecordBehaviorRequest = {
 };
 
 export type RecordGradeItemRequest = {
-    class_subject_id: string;
+    section_subject_id: string;
     component_id?: string | null;
     enrollment_id?: string | null;
     is_excused?: boolean | null;
@@ -1923,7 +1923,7 @@ export type RecordGradeItemRequest = {
 };
 
 export type RecordGradeRequest = {
-    class_subject_id: string;
+    section_subject_id: string;
     component_id?: string | null;
     enrollment_id?: string | null;
     is_excused?: boolean | null;
@@ -2090,7 +2090,7 @@ export type SaveRoleRequest = {
 };
 
 export type ScheduleExamRequest = {
-    class_subject_id: string;
+    section_subject_id: string;
     end_time: string;
     exam_date: string;
     exam_session_id: string;
@@ -2098,14 +2098,14 @@ export type ScheduleExamRequest = {
 };
 
 export type ScheduleLessonRequest = {
-    class_subject_id: string;
+    section_subject_id: string;
     room_id?: string | null;
     teacher_id?: string | null;
     time_slot_id: string;
 };
 
 export type ScheduledLessonDto = {
-    class_subject_id: string;
+    section_subject_id: string;
     created_at: string;
     id: string;
     room_id?: string | null;
@@ -2282,7 +2282,7 @@ export type SubmitOverrideRequest = {
 export type TeachingAssignmentInfo = {
     class_id: string;
     class_name: string;
-    class_subject_id: string;
+    section_subject_id: string;
     period_id?: string | null;
     subject_id: string;
     subject_name: string;
@@ -2363,7 +2363,7 @@ export type TransferClassRequest = {
 export type UiContext = {
     active_filters?: unknown;
     class_id?: string | null;
-    class_subject_id?: string | null;
+    section_subject_id?: string | null;
     domain?: string | null;
     entity_id?: string | null;
     entity_type?: string | null;
@@ -2387,7 +2387,7 @@ export type UpdateAccountRequest = {
 };
 
 export type UpdateDocumentRequest = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     asset_type?: string | null;
     category?: string | null;
     description?: string | null;
@@ -2469,7 +2469,7 @@ export type UpdateFeeTemplateRequest = {
 };
 
 export type UpdateFolderRequest = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     metadata?: unknown;
     name?: string | null;
     parent_id?: string | null;
@@ -2606,7 +2606,7 @@ export type UpdateUserRequest = {
 };
 
 export type UploadDocumentRequest = {
-    academic_year_id?: string | null;
+    calendar_id?: string | null;
     asset_type?: string | null;
     category?: string | null;
     checksum_sha256?: string | null;
@@ -2844,7 +2844,7 @@ export type ListYearsData = {
 };
 
 export type ListYearsResponses = {
-    200: Array<AcademicYearDto>;
+    200: Array<AcademicCalendarDto>;
 };
 
 export type ListYearsResponse = ListYearsResponses[keyof ListYearsResponses];
@@ -2857,7 +2857,7 @@ export type CreateYearData = {
 };
 
 export type CreateYearResponses = {
-    201: AcademicYearDto;
+    201: AcademicCalendarDto;
 };
 
 export type CreateYearResponse = CreateYearResponses[keyof CreateYearResponses];
@@ -2888,7 +2888,7 @@ export type GetYearData = {
 };
 
 export type GetYearResponses = {
-    200: AcademicYearDto;
+    200: AcademicCalendarDto;
 };
 
 export type GetYearResponse = GetYearResponses[keyof GetYearResponses];
@@ -2903,7 +2903,7 @@ export type UpdateYearData = {
 };
 
 export type UpdateYearResponses = {
-    200: AcademicYearDto;
+    200: AcademicCalendarDto;
 };
 
 export type UpdateYearResponse = UpdateYearResponses[keyof UpdateYearResponses];
@@ -2918,7 +2918,7 @@ export type ActivateYearData = {
 };
 
 export type ActivateYearResponses = {
-    200: AcademicYearDto;
+    200: AcademicCalendarDto;
 };
 
 export type ActivateYearResponse = ActivateYearResponses[keyof ActivateYearResponses];
@@ -2933,7 +2933,7 @@ export type CloseYearData = {
 };
 
 export type CloseYearResponses = {
-    200: AcademicYearDto;
+    200: AcademicCalendarDto;
 };
 
 export type CloseYearResponse = CloseYearResponses[keyof CloseYearResponses];
@@ -2948,7 +2948,7 @@ export type ArchiveYearData = {
 };
 
 export type ArchiveYearResponses = {
-    200: AcademicYearDto;
+    200: AcademicCalendarDto;
 };
 
 export type ArchiveYearResponse = ArchiveYearResponses[keyof ArchiveYearResponses];
@@ -3664,7 +3664,7 @@ export type GetBootstrapStatusResponses = {
 
 export type GetBootstrapStatusResponse = GetBootstrapStatusResponses[keyof GetBootstrapStatusResponses];
 
-export type ListClassSubjectsData = {
+export type ListSectionSubjectsData = {
     body?: never;
     path?: never;
     query: {
@@ -3680,24 +3680,24 @@ export type ListClassSubjectsData = {
     url: '/api/v1/class-subjects';
 };
 
-export type ListClassSubjectsResponses = {
-    200: Array<ClassSubjectDto>;
+export type ListSectionSubjectsResponses = {
+    200: Array<SectionSubjectDto>;
 };
 
-export type ListClassSubjectsResponse = ListClassSubjectsResponses[keyof ListClassSubjectsResponses];
+export type ListSectionSubjectsResponse = ListSectionSubjectsResponses[keyof ListSectionSubjectsResponses];
 
-export type AssignClassSubjectData = {
-    body: AssignClassSubjectRequest;
+export type AssignSectionSubjectData = {
+    body: AssignSectionSubjectRequest;
     path?: never;
     query?: never;
     url: '/api/v1/class-subjects';
 };
 
-export type AssignClassSubjectResponses = {
-    201: ClassSubjectDto;
+export type AssignSectionSubjectResponses = {
+    201: SectionSubjectDto;
 };
 
-export type AssignClassSubjectResponse = AssignClassSubjectResponses[keyof AssignClassSubjectResponses];
+export type AssignSectionSubjectResponse = AssignSectionSubjectResponses[keyof AssignSectionSubjectResponses];
 
 export type ListClassesData = {
     body?: never;
@@ -5766,18 +5766,18 @@ export type DeletePaymentResponses = {
 
 export type DeletePaymentResponse = DeletePaymentResponses[keyof DeletePaymentResponses];
 
-export type ListPeriodTemplatesData = {
+export type ListPeriodTypesData = {
     body?: never;
     path?: never;
     query?: never;
     url: '/api/v1/period-templates';
 };
 
-export type ListPeriodTemplatesResponses = {
-    200: Array<PeriodTemplateDto>;
+export type ListPeriodTypesResponses = {
+    200: Array<PeriodTypeDto>;
 };
 
-export type ListPeriodTemplatesResponse = ListPeriodTemplatesResponses[keyof ListPeriodTemplatesResponses];
+export type ListPeriodTypesResponse = ListPeriodTypesResponses[keyof ListPeriodTypesResponses];
 
 export type EvaluateCohortData = {
     body: EvaluateCohortRequest;
@@ -5800,7 +5800,7 @@ export type ListJobsData = {
 };
 
 export type ListJobsResponses = {
-    200: Array<PromotionJobDto>;
+    200: Array<ProgressionJobDto>;
 };
 
 export type ListJobsResponse = ListJobsResponses[keyof ListJobsResponses];
@@ -5818,7 +5818,7 @@ export type GetJobData = {
 };
 
 export type GetJobResponses = {
-    200: PromotionJobDto;
+    200: ProgressionJobDto;
 };
 
 export type GetJobResponse = GetJobResponses[keyof GetJobResponses];
@@ -5831,7 +5831,7 @@ export type PromoteCohortData = {
 };
 
 export type PromoteCohortResponses = {
-    201: PromotionJobDto;
+    201: ProgressionJobDto;
 };
 
 export type PromoteCohortResponse = PromoteCohortResponses[keyof PromoteCohortResponses];

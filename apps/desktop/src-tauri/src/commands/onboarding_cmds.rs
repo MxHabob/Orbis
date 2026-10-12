@@ -67,12 +67,12 @@ pub struct OnboardingStateDto {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProvisionDefaultsReqDto {
-    pub academic_year_id: Option<Uuid>,
-    pub academic_year_name: Option<String>,
-    pub academic_year_name_ar: Option<String>,
+    pub calendar_id: Option<Uuid>,
+    pub academic_calendar_name: Option<String>,
+    pub academic_calendar_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
-    pub provision_academic_year: Option<bool>,
+    pub provision_academic_calendar: Option<bool>,
     pub provision_default_academic_periods: Option<bool>,
     pub provision_stages_and_grades: Option<bool>,
     pub provision_subjects: Option<bool>,
@@ -236,12 +236,12 @@ pub async fn onboarding_provision_defaults(
     };
 
     let service_req = orbis_app::services::ProvisionDefaultsRequest {
-        academic_year_id: request.academic_year_id,
-        academic_year_name: request.academic_year_name,
-        academic_year_name_ar: request.academic_year_name_ar,
+        calendar_id: request.calendar_id,
+        academic_calendar_name: request.academic_calendar_name,
+        academic_calendar_name_ar: request.academic_calendar_name_ar,
         start_date: request.start_date,
         end_date: request.end_date,
-        provision_academic_year: request.provision_academic_year,
+        provision_academic_calendar: request.provision_academic_calendar,
         provision_default_academic_periods: request.provision_default_academic_periods,
         provision_stages_and_grades: request.provision_stages_and_grades,
         provision_subjects: request.provision_subjects,

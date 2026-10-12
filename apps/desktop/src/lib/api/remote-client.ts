@@ -32,20 +32,20 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  AcademicYearDto,
+  academicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
-  PeriodTemplateDto,
+  PeriodTypeDto,
   CreateYearRequest,
   UpdateYearRequest,
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   CreateSubjectRequest,
   CreateClassRequest,
-  AssignClassSubjectRequest,
+  AssignSectionSubjectRequest,
   EnrollmentDto,
   GuardianDto,
   EnrollStudentRequest,
@@ -175,7 +175,7 @@ import type {
   SubmitOverrideRequestInput,
   ApproveOverrideInput,
   RejectOverrideInput,
-  PromotionJobDto,
+  progressionJobDto,
   PromoteCohortInput,
   StudentProgressionItemInput,
   HealthResponse,
@@ -471,20 +471,20 @@ export class RemoteClient implements OrbisApiClient {
   async selectOrgUnit(_id?: string): Promise<void> {}
 
   // ── Calendar ────────────────────────────────────────────────
-  async createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto> {
+  async createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto> {
     return this.call(sdk.createYear({ client: this.client, body: req }));
   }
 
-  async updateAcademicYear(
+  async updateacademicCalendar(
     id: string,
     req: UpdateYearRequest,
-  ): Promise<AcademicYearDto> {
+  ): Promise<academicCalendarDto> {
     return this.call(
       sdk.updateYear({ client: this.client, path: { id }, body: req }),
     );
   }
 
-  async listAcademicYears(): Promise<AcademicYearDto[]> {
+  async listacademicCalendars(): Promise<academicCalendarDto[]> {
     return this.call(sdk.listYears({ client: this.client })) ?? [];
   }
 
@@ -492,26 +492,26 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getCurrentContext({ client: this.client }));
   }
 
-  async getAcademicYear(id: string): Promise<AcademicYearDto> {
+  async getacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.getYear({ client: this.client, path: { id } }));
   }
 
-  async activateAcademicYear(id: string): Promise<AcademicYearDto> {
+  async activateacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.activateYear({ client: this.client, path: { id } }));
   }
 
-  async closeAcademicYear(id: string): Promise<AcademicYearDto> {
+  async closeacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.closeYear({ client: this.client, path: { id } }));
   }
 
-  async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
+  async archiveacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.archiveYear({ client: this.client, path: { id } }));
   }
 
-  async deleteAcademicYear(id: string): Promise<boolean> {
+  async deleteacademicCalendar(id: string): Promise<boolean> {
     return this.call<boolean>(
       this.client.delete<boolean>({
-        url: `/api/v1/academic-years/${encodeURIComponent(id)}`,
+        url: `/api/v1/academic-calendars/${encodeURIComponent(id)}`,
       }),
     );
   }
@@ -553,8 +553,8 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.closePeriod({ client: this.client, path: { id } }));
   }
 
-  async listPeriodTemplates(): Promise<PeriodTemplateDto[]> {
-    return this.call(sdk.listPeriodTemplates({ client: this.client })) ?? [];
+  async listPeriodTypes(): Promise<PeriodTypeDto[]> {
+    return this.call(sdk.listPeriodTypes({ client: this.client })) ?? [];
   }
 
   // ── Academic ────────────────────────────────────────────────
@@ -582,13 +582,13 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getClass({ client: this.client, path: { id } }));
   }
 
-  async assignClassSubject(req: AssignClassSubjectRequest): Promise<ClassSubjectDto> {
-    return this.call(sdk.assignClassSubject({ client: this.client, body: req }));
+  async assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto> {
+    return this.call(sdk.assignSectionSubject({ client: this.client, body: req }));
   }
 
-  async listClassSubjects(classId: string, periodId: string): Promise<ClassSubjectDto[]> {
+  async listSectionSubjects(classId: string, periodId: string): Promise<SectionSubjectDto[]> {
     return this.call(
-      sdk.listClassSubjects({
+      sdk.listSectionSubjects({
         client: this.client,
         query: { class_id: classId, period_id: periodId },
       }),
@@ -942,17 +942,17 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listScheduledLessons(
-    filterOrPeriodId?: string | { classSubjectId?: string; periodId?: string; classId?: string; teacherId?: string },
-    classSubjectId?: string,
+    filterOrPeriodId?: string | { SectionSubjectId?: string; periodId?: string; classId?: string; teacherId?: string },
+    SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]> {
     const periodId = typeof filterOrPeriodId === "string" ? filterOrPeriodId : filterOrPeriodId?.periodId;
-    const csId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.classSubjectId : classSubjectId;
+    const csId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.SectionSubjectId : SectionSubjectId;
     const classId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.classId : undefined;
     const teacherId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.teacherId : undefined;
     return this.call(
       sdk.listLessons({
         client: this.client,
-        query: { period_id: periodId, class_subject_id: csId, class_id: classId, teacher_id: teacherId } as any,
+        query: { period_id: periodId, section_subject_id: csId, class_id: classId, teacher_id: teacherId } as any,
       }),
     ) ?? [];
   }
@@ -990,11 +990,11 @@ export class RemoteClient implements OrbisApiClient {
     await this.call(sdk.deleteGrade({ client: this.client, path: { id } }));
   }
 
-  async listGrades(filter?: { studentId?: string; classSubjectId?: string }): Promise<GradeDto[]> {
+  async listGrades(filter?: { studentId?: string; SectionSubjectId?: string }): Promise<GradeDto[]> {
     return this.call(
       sdk.listGrades({
         client: this.client,
-        query: { student_id: filter?.studentId, class_subject_id: filter?.classSubjectId } as any,
+        query: { student_id: filter?.studentId, section_subject_id: filter?.SectionSubjectId } as any,
       }),
     ) ?? [];
   }
@@ -1197,15 +1197,15 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.evaluateCohort({ client: this.client, body: { source_period_id: sourcePeriodId } })) ?? [];
   }
 
-  async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
+  async promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto> {
     return this.call(sdk.promoteCohort({ client: this.client, body: req as any }));
   }
 
-  async listPromotionJobs(): Promise<PromotionJobDto[]> {
+  async listprogressionJobs(): Promise<progressionJobDto[]> {
     return this.call(sdk.listJobs({ client: this.client })) ?? [];
   }
 
-  async getPromotionJob(id: string): Promise<PromotionJobDto> {
+  async getprogressionJob(id: string): Promise<progressionJobDto> {
     return this.call(sdk.getJob({ client: this.client, path: { id } }));
   }
 
@@ -1874,8 +1874,8 @@ export class RemoteClient implements OrbisApiClient {
       currency_name_ar: "ريال سعودي",
       is_hijri_recommended: true,
       date_format: "YYYY-MM-DD",
-      suggested_academic_year: "2026/2027",
-      suggested_academic_year_ar: "2026/2027 م",
+      suggested_academic_calendar: "2026/2027",
+      suggested_academic_calendar_ar: "2026/2027 م",
     };
   }
 
@@ -1900,7 +1900,7 @@ export class RemoteClient implements OrbisApiClient {
         state: "operational",
         has_organization: true,
         has_admin: true,
-        has_academic_year: true,
+        has_academic_calendar: true,
         has_classes: true,
         has_subjects: true,
         pending_setup_items: [],
@@ -2164,7 +2164,7 @@ export class RemoteClient implements OrbisApiClient {
     if (req.folder_id) formData.append("folder_id", req.folder_id);
     if (req.asset_type) formData.append("asset_type", req.asset_type);
     if (req.description) formData.append("description", req.description);
-    if (req.academic_year_id) formData.append("academic_year_id", req.academic_year_id);
+    if (req.calendar_id) formData.append("calendar_id", req.calendar_id);
     if (req.term_id) formData.append("term_id", req.term_id);
     if (req.tags) formData.append("tags", req.tags);
     if (req.visibility) formData.append("visibility", req.visibility);

@@ -1042,7 +1042,7 @@ impl ReportDataProvider for TermResultDataProvider {
             ap.name as period_name
         FROM grades g
         LEFT JOIN persons p ON g.student_id = p.id
-        LEFT JOIN class_subjects cs ON g.class_subject_id = cs.id
+        LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
         LEFT JOIN classes c ON cs.class_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
@@ -1494,11 +1494,11 @@ impl ReportDataProvider for AnnualResultDataProvider {
             ay.name as year_name
         FROM grades g
         LEFT JOIN persons p ON g.student_id = p.id
-        LEFT JOIN class_subjects cs ON g.class_subject_id = cs.id
+        LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
         LEFT JOIN classes c ON cs.class_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        LEFT JOIN academic_years ay ON ap.year_id = ay.id
+        LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
         WHERE g.org_id = $1"#
             .to_string();
 
@@ -1675,11 +1675,11 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
             ap.name as period_name
         FROM grades g
         LEFT JOIN persons p ON g.student_id = p.id
-        LEFT JOIN class_subjects cs ON g.class_subject_id = cs.id
+        LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
         LEFT JOIN classes c ON cs.class_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        LEFT JOIN academic_years ay ON ap.year_id = ay.id
+        LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
         WHERE g.org_id = $1"#
             .to_string();
 

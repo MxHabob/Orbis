@@ -37,7 +37,7 @@ pub struct AcademicCalendar {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AcademicPeriodType {
+pub struct PeriodType {
     pub id: Uuid,
     pub org_id: Uuid,
     pub code: String,
@@ -49,7 +49,7 @@ pub struct AcademicPeriodType {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AcademicCalendarPeriod {
+pub struct AcademicPeriod {
     pub id: Uuid,
     pub org_id: Uuid,
     pub calendar_id: Uuid,

@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::AcademicFrameworkRepository;
 use orbis_domain::entities::academic_calendar::{
-    AcademicCalendar, AcademicCalendarPeriod, AcademicCalendarStatus, AcademicPeriodType,
+    AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
 };
-use orbis_domain::entities::course::Course;
-use orbis_domain::entities::course_enrollment::{CourseEnrollment, CourseEnrollmentStatus};
-use orbis_domain::entities::course_offering::{CourseOffering, CourseOfferingStatus};
+use orbis_domain::entities::subject::Course;
+use orbis_domain::entities::enrollment::{Enrollment, Enrollmentstatus};
+use orbis_domain::entities::section_subject::{SectionSubject, SectionSubjectstatus};
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
@@ -14,11 +14,11 @@ use uuid::Uuid;
 
 use crate::models::{
     academic_calendar::{self, Entity as CalendarEntity},
-    academic_calendar_period::{self, Entity as CalendarPeriodEntity},
-    academic_period_type::{self, Entity as PeriodTypeEntity},
-    course::{self, Entity as CourseEntity},
-    course_enrollment::{self, Entity as CourseEnrollmentEntity},
-    course_offering::{self, Entity as CourseOfferingEntity},
+    academic_period::{self, Entity as CalendarPeriodEntity},
+    period_type::{self, Entity as PeriodTypeEntity},
+    course::{self, Entity as SubjectEntity},
+    enrollment::{self, Entity as EnrollmentEntity},
+    section_subject::{self, Entity as SectionSubjectEntity},
 };
 
 pub struct AcademicFrameworkRepoImpl {
@@ -77,8 +77,8 @@ fn map_calendar(m: academic_calendar::Model) -> Result<AcademicCalendar, DomainE
     })
 }
 
-fn map_period_type(m: academic_period_type::Model) -> AcademicPeriodType {
-    AcademicPeriodType {
+fn map_period_type(m: period_type::Model) -> PeriodType {
+    PeriodType {
         id: m.id,
         org_id: m.org_id,
         code: m.code,
@@ -90,8 +90,8 @@ fn map_period_type(m: academic_period_type::Model) -> AcademicPeriodType {
     }
 }
 
-fn map_calendar_period(m: academic_calendar_period::Model) -> AcademicCalendarPeriod {
-    AcademicCalendarPeriod {
+fn map_calendar_period(m: academic_period::Model) -> AcademicPeriod {
+    AcademicPeriod {
         id: m.id,
         org_id: m.org_id,
         calendar_id: m.calendar_id,
@@ -125,13 +125,13 @@ fn map_course(m: course::Model) -> Course {
     }
 }
 
-fn map_offering(m: course_offering::Model) -> Result<CourseOffering, DomainError> {
+fn map_offering(m: section_subject::Model) -> Result<SectionSubject, DomainError> {
     let status = match m.status.as_str() {
-        "draft" => CourseOfferingStatus::Draft,
-        "open" => CourseOfferingStatus::Open,
-        "in_progress" => CourseOfferingStatus::InProgress,
-        "completed" => CourseOfferingStatus::Completed,
-        "cancelled" => CourseOfferingStatus::Cancelled,
+        "draft" => SectionSubjectstatus::Draft,
+        "open" => SectionSubjectstatus::Open,
+        "in_progress" => SectionSubjectstatus::InProgress,
+        "completed" => SectionSubjectstatus::Completed,
+        "cancelled" => SectionSubjectstatus::Cancelled,
         other => {
             return Err(DomainError::Internal(format!(
                 "Unknown course offering status '{}'",
@@ -144,7 +144,7 @@ fn map_offering(m: course_offering::Model) -> Result<CourseOffering, DomainError
         .map(u32::try_from)
         .transpose()
         .map_err(|error| DomainError::Internal(error.to_string()))?;
-    Ok(CourseOffering {
+    Ok(SectionSubject {
         id: m.id,
         org_id: m.org_id,
         course_id: m.course_id,
@@ -160,14 +160,14 @@ fn map_offering(m: course_offering::Model) -> Result<CourseOffering, DomainError
     })
 }
 
-fn map_course_enrollment(m: course_enrollment::Model) -> Result<CourseEnrollment, DomainError> {
+fn map_enrollment(m: enrollment::Model) -> Result<Enrollment, DomainError> {
     let status = match m.status.as_str() {
-        "pending" => CourseEnrollmentStatus::Pending,
-        "active" => CourseEnrollmentStatus::Active,
-        "withdrawn" => CourseEnrollmentStatus::Withdrawn,
-        "completed" => CourseEnrollmentStatus::Completed,
-        "failed" => CourseEnrollmentStatus::Failed,
-        "exempt" => CourseEnrollmentStatus::Exempt,
+        "pending" => Enrollmentstatus::Pending,
+        "active" => Enrollmentstatus::Active,
+        "withdrawn" => Enrollmentstatus::Withdrawn,
+        "completed" => Enrollmentstatus::Completed,
+        "failed" => Enrollmentstatus::Failed,
+        "exempt" => Enrollmentstatus::Exempt,
         other => {
             return Err(DomainError::Internal(format!(
                 "Unknown course enrollment status '{}'",
@@ -177,7 +177,7 @@ fn map_course_enrollment(m: course_enrollment::Model) -> Result<CourseEnrollment
     };
     let attempt_number = u32::try_from(m.attempt_number)
         .map_err(|error| DomainError::Internal(error.to_string()))?;
-    Ok(CourseEnrollment {
+    Ok(Enrollment {
         id: m.id,
         org_id: m.org_id,
         offering_id: m.offering_id,
@@ -252,10 +252,10 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         Ok(())
     }
 
-    async fn list_period_types(&self, org_id: Uuid) -> Result<Vec<AcademicPeriodType>, DomainError> {
+    async fn list_period_types(&self, org_id: Uuid) -> Result<Vec<PeriodType>, DomainError> {
         PeriodTypeEntity::find()
-            .filter(academic_period_type::Column::OrgId.eq(org_id))
-            .order_by_asc(academic_period_type::Column::SortOrder)
+            .filter(period_type::Column::OrgId.eq(org_id))
+            .order_by_asc(period_type::Column::SortOrder)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))
@@ -266,9 +266,9 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         &self,
         org_id: Uuid,
         id: Uuid,
-    ) -> Result<Option<AcademicPeriodType>, DomainError> {
+    ) -> Result<Option<PeriodType>, DomainError> {
         let model = PeriodTypeEntity::find_by_id(id)
-            .filter(academic_period_type::Column::OrgId.eq(org_id))
+            .filter(period_type::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
@@ -279,18 +279,18 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         &self,
         org_id: Uuid,
         code: &str,
-    ) -> Result<Option<AcademicPeriodType>, DomainError> {
+    ) -> Result<Option<PeriodType>, DomainError> {
         let model = PeriodTypeEntity::find()
-            .filter(academic_period_type::Column::OrgId.eq(org_id))
-            .filter(academic_period_type::Column::Code.eq(code))
+            .filter(period_type::Column::OrgId.eq(org_id))
+            .filter(period_type::Column::Code.eq(code))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
         Ok(model.map(map_period_type))
     }
 
-    async fn save_period_type(&self, period_type: &AcademicPeriodType) -> Result<(), DomainError> {
-        let active = academic_period_type::ActiveModel {
+    async fn save_period_type(&self, period_type: &PeriodType) -> Result<(), DomainError> {
+        let active = period_type::ActiveModel {
             id: Set(period_type.id),
             org_id: Set(period_type.org_id),
             code: Set(period_type.code.clone()),
@@ -314,9 +314,9 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         &self,
         org_id: Uuid,
         id: Uuid,
-    ) -> Result<Option<AcademicCalendarPeriod>, DomainError> {
+    ) -> Result<Option<AcademicPeriod>, DomainError> {
         let model = CalendarPeriodEntity::find_by_id(id)
-            .filter(academic_calendar_period::Column::OrgId.eq(org_id))
+            .filter(academic_period::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
@@ -325,9 +325,9 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
 
     async fn save_calendar_period(
         &self,
-        period: &AcademicCalendarPeriod,
+        period: &AcademicPeriod,
     ) -> Result<(), DomainError> {
-        let active = academic_calendar_period::ActiveModel {
+        let active = academic_period::ActiveModel {
             id: Set(period.id),
             org_id: Set(period.org_id),
             calendar_id: Set(period.calendar_id),
@@ -350,11 +350,11 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         &self,
         org_id: Uuid,
         calendar_id: Uuid,
-    ) -> Result<Vec<AcademicCalendarPeriod>, DomainError> {
+    ) -> Result<Vec<AcademicPeriod>, DomainError> {
         CalendarPeriodEntity::find()
-            .filter(academic_calendar_period::Column::OrgId.eq(org_id))
-            .filter(academic_calendar_period::Column::CalendarId.eq(calendar_id))
-            .order_by_asc(academic_calendar_period::Column::SortOrder)
+            .filter(academic_period::Column::OrgId.eq(org_id))
+            .filter(academic_period::Column::CalendarId.eq(calendar_id))
+            .order_by_asc(academic_period::Column::SortOrder)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))
@@ -362,7 +362,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     }
 
     async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Course>, DomainError> {
-        let model = CourseEntity::find_by_id(id)
+        let model = SubjectEntity::find_by_id(id)
             .filter(course::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
@@ -371,7 +371,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     }
 
     async fn list_courses(&self, org_id: Uuid) -> Result<Vec<Course>, DomainError> {
-        CourseEntity::find()
+        SubjectEntity::find()
             .filter(course::Column::OrgId.eq(org_id))
             .order_by_asc(course::Column::Code)
             .all(&self.db)
@@ -385,7 +385,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         org_id: Uuid,
         code: &str,
     ) -> Result<Option<Course>, DomainError> {
-        let model = CourseEntity::find()
+        let model = SubjectEntity::find()
             .filter(course::Column::OrgId.eq(org_id))
             .filter(course::Column::Code.eq(code))
             .one(&self.db)
@@ -409,35 +409,35 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             created_at: Set(course.created_at),
             updated_at: Set(course.updated_at),
         };
-        save_active_model!(self, CourseEntity, active, course.id, course.org_id);
+        save_active_model!(self, SubjectEntity, active, course.id, course.org_id);
         Ok(())
     }
 
-    async fn find_course_offering(
+    async fn find_section_subject(
         &self,
         org_id: Uuid,
         id: Uuid,
-    ) -> Result<Option<CourseOffering>, DomainError> {
-        let model = CourseOfferingEntity::find_by_id(id)
-            .filter(course_offering::Column::OrgId.eq(org_id))
+    ) -> Result<Option<SectionSubject>, DomainError> {
+        let model = SectionSubjectEntity::find_by_id(id)
+            .filter(section_subject::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
         model.map(map_offering).transpose()
     }
 
-    async fn list_course_offerings(
+    async fn list_section_subjects(
         &self,
         org_id: Uuid,
         course_id: Option<Uuid>,
-    ) -> Result<Vec<CourseOffering>, DomainError> {
-        let mut query = CourseOfferingEntity::find()
-            .filter(course_offering::Column::OrgId.eq(org_id));
+    ) -> Result<Vec<SectionSubject>, DomainError> {
+        let mut query = SectionSubjectEntity::find()
+            .filter(section_subject::Column::OrgId.eq(org_id));
         if let Some(course_id) = course_id {
-            query = query.filter(course_offering::Column::CourseId.eq(course_id));
+            query = query.filter(section_subject::Column::CourseId.eq(course_id));
         }
         query
-            .order_by_asc(course_offering::Column::CreatedAt)
+            .order_by_asc(section_subject::Column::CreatedAt)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?
@@ -446,13 +446,13 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             .collect()
     }
 
-    async fn save_course_offering(&self, offering: &CourseOffering) -> Result<(), DomainError> {
+    async fn save_section_subject(&self, offering: &SectionSubject) -> Result<(), DomainError> {
         let capacity = offering
             .capacity
             .map(i32::try_from)
             .transpose()
             .map_err(|error| DomainError::Validation(error.to_string()))?;
-        let active = course_offering::ActiveModel {
+        let active = section_subject::ActiveModel {
             id: Set(offering.id),
             org_id: Set(offering.org_id),
             course_id: Set(offering.course_id),
@@ -468,7 +468,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         };
         save_active_model!(
             self,
-            CourseOfferingEntity,
+            SectionSubjectEntity,
             active,
             offering.id,
             offering.org_id
@@ -476,50 +476,50 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         Ok(())
     }
 
-    async fn find_course_enrollment_attempt(
+    async fn find_enrollment_attempt(
         &self,
         org_id: Uuid,
         offering_id: Uuid,
         student_id: Uuid,
         attempt_number: u32,
-    ) -> Result<Option<CourseEnrollment>, DomainError> {
+    ) -> Result<Option<Enrollment>, DomainError> {
         let attempt_number = i32::try_from(attempt_number)
             .map_err(|error| DomainError::Validation(error.to_string()))?;
-        let model = CourseEnrollmentEntity::find()
-            .filter(course_enrollment::Column::OrgId.eq(org_id))
-            .filter(course_enrollment::Column::OfferingId.eq(offering_id))
-            .filter(course_enrollment::Column::StudentId.eq(student_id))
-            .filter(course_enrollment::Column::AttemptNumber.eq(attempt_number))
+        let model = EnrollmentEntity::find()
+            .filter(enrollment::Column::OrgId.eq(org_id))
+            .filter(enrollment::Column::OfferingId.eq(offering_id))
+            .filter(enrollment::Column::StudentId.eq(student_id))
+            .filter(enrollment::Column::AttemptNumber.eq(attempt_number))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
-        model.map(map_course_enrollment).transpose()
+        model.map(map_enrollment).transpose()
     }
 
-    async fn list_course_enrollments(
+    async fn list_enrollments(
         &self,
         org_id: Uuid,
         offering_id: Uuid,
-    ) -> Result<Vec<CourseEnrollment>, DomainError> {
-        CourseEnrollmentEntity::find()
-            .filter(course_enrollment::Column::OrgId.eq(org_id))
-            .filter(course_enrollment::Column::OfferingId.eq(offering_id))
-            .order_by_asc(course_enrollment::Column::EnrolledAt)
+    ) -> Result<Vec<Enrollment>, DomainError> {
+        EnrollmentEntity::find()
+            .filter(enrollment::Column::OrgId.eq(org_id))
+            .filter(enrollment::Column::OfferingId.eq(offering_id))
+            .order_by_asc(enrollment::Column::EnrolledAt)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?
             .into_iter()
-            .map(map_course_enrollment)
+            .map(map_enrollment)
             .collect()
     }
 
-    async fn save_course_enrollment(
+    async fn save_enrollment(
         &self,
-        enrollment: &CourseEnrollment,
+        enrollment: &Enrollment,
     ) -> Result<(), DomainError> {
         let attempt_number = i32::try_from(enrollment.attempt_number)
             .map_err(|error| DomainError::Validation(error.to_string()))?;
-        let active = course_enrollment::ActiveModel {
+        let active = enrollment::ActiveModel {
             id: Set(enrollment.id),
             org_id: Set(enrollment.org_id),
             offering_id: Set(enrollment.offering_id),
@@ -536,7 +536,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         };
         save_active_model!(
             self,
-            CourseEnrollmentEntity,
+            EnrollmentEntity,
             active,
             enrollment.id,
             enrollment.org_id

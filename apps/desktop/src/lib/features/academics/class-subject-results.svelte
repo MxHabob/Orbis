@@ -18,17 +18,17 @@
   import { getLocale } from "$lib/paraglide/runtime";
 
   let {
-    classSubjectId,
+    SectionSubjectId,
   }: {
     orgId: string;
     classId: string;
-    classSubjectId: string;
+    SectionSubjectId: string;
   } = $props();
 
   const gradesQuery = createQuery(() => ({
-    queryKey: ["assessment-grades", "class-subject", classSubjectId],
-    queryFn: () => api.listGrades({ classSubjectId }),
-    enabled: !!classSubjectId,
+    queryKey: ["assessment-grades", "class-subject", SectionSubjectId],
+    queryFn: () => api.listGrades({ SectionSubjectId }),
+    enabled: !!SectionSubjectId,
   }));
 
   const periodNames = $derived(

@@ -11,7 +11,7 @@ use uuid::Uuid;
 use orbis_app::ports::repositories::SystemRepository;
 use orbis_domain::errors::DomainError;
 
-use crate::models::{academic_year, class, organization, subject, user_role_assignment};
+use crate::models::{academic_calendar, class, organization, subject, user_role_assignment};
 
 pub struct SystemRepoImpl {
     pub db: DatabaseConnection,
@@ -40,9 +40,9 @@ impl SystemRepository for SystemRepoImpl {
         Ok(count > 0)
     }
 
-    async fn has_academic_year(&self, org_id: Uuid) -> Result<bool, DomainError> {
-        let count = academic_year::Entity::find()
-            .filter(academic_year::Column::OrgId.eq(org_id))
+    async fn has_academic_calendar(&self, org_id: Uuid) -> Result<bool, DomainError> {
+        let count = academic_calendar::Entity::find()
+            .filter(academic_calendar::Column::OrgId.eq(org_id))
             .count(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;

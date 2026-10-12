@@ -222,7 +222,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(model.map(|m| DomainScheduledLesson {
             id: m.id,
-            class_subject_id: m.class_subject_id,
+            section_subject_id: m.section_subject_id,
             room_id: m.room_id,
             time_slot_id: m.time_slot_id,
             teacher_id: m.teacher_id,
@@ -231,12 +231,12 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
         }))
     }
 
-    async fn find_by_class_subject(
+    async fn find_by_section_subject(
         &self,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
     ) -> Result<Vec<DomainScheduledLesson>, DomainError> {
         let models = ScheduledLessonEntity::find()
-            .filter(scheduled_lesson::Column::ClassSubjectId.eq(class_subject_id))
+            .filter(scheduled_lesson::Column::SectionSubjectId.eq(section_subject_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -244,7 +244,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .into_iter()
             .map(|m| DomainScheduledLesson {
                 id: m.id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 room_id: m.room_id,
                 time_slot_id: m.time_slot_id,
                 teacher_id: m.teacher_id,
@@ -258,17 +258,17 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
         &self,
         class_id: Uuid,
     ) -> Result<Vec<DomainScheduledLesson>, DomainError> {
-        let class_subjects = crate::models::class_subject::Entity::find()
-            .filter(crate::models::class_subject::Column::ClassId.eq(class_id))
+        let section_subjects = crate::models::section_subject::Entity::find()
+            .filter(crate::models::section_subject::Column::ClassId.eq(class_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        let cs_ids: Vec<Uuid> = class_subjects.into_iter().map(|cs| cs.id).collect();
+        let cs_ids: Vec<Uuid> = section_subjects.into_iter().map(|cs| cs.id).collect();
         if cs_ids.is_empty() {
             return Ok(Vec::new());
         }
         let models = ScheduledLessonEntity::find()
-            .filter(scheduled_lesson::Column::ClassSubjectId.is_in(cs_ids))
+            .filter(scheduled_lesson::Column::SectionSubjectId.is_in(cs_ids))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -276,7 +276,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .into_iter()
             .map(|m| DomainScheduledLesson {
                 id: m.id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 room_id: m.room_id,
                 time_slot_id: m.time_slot_id,
                 teacher_id: m.teacher_id,
@@ -299,7 +299,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .into_iter()
             .map(|m| DomainScheduledLesson {
                 id: m.id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 room_id: m.room_id,
                 time_slot_id: m.time_slot_id,
                 teacher_id: m.teacher_id,
@@ -333,7 +333,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .into_iter()
             .map(|m| DomainScheduledLesson {
                 id: m.id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 room_id: m.room_id,
                 time_slot_id: m.time_slot_id,
                 teacher_id: m.teacher_id,
@@ -346,7 +346,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
     async fn save(&self, lesson: &DomainScheduledLesson) -> Result<(), DomainError> {
         let active = scheduled_lesson::ActiveModel {
             id: Set(lesson.id),
-            class_subject_id: Set(lesson.class_subject_id),
+            section_subject_id: Set(lesson.section_subject_id),
             room_id: Set(lesson.room_id),
             time_slot_id: Set(lesson.time_slot_id),
             teacher_id: Set(lesson.teacher_id),

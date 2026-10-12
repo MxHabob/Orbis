@@ -156,7 +156,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       userGroups: [],
       assessmentSchemes,
       academicPeriods: [],
-      existingClassSubjectAssignments: [],
+      existingSectionSubjectAssignments: [],
       enums: {
         genders: [],
         studyModes: [],
@@ -333,7 +333,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       return {
         period_id: orgId,
         student_id: row.student_number,
-        class_subject_id: matchedSubject?.id || orgId,
+        section_subject_id: matchedSubject?.id || orgId,
         score: String(scoreNum),
         max_score: String(maxScoreNum),
         is_excused: isExcused,

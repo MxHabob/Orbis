@@ -24,8 +24,8 @@ let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 const classId = $derived(data.classId || String(page.params.classId || ""));
 const orgId = $derived(data.orgId || String(page.params.orgId || ""));
-const classSubjectId = $derived(
-  page.params.classSubjectId ? String(page.params.classSubjectId) : null,
+const SectionSubjectId = $derived(
+  page.params.SectionSubjectId ? String(page.params.SectionSubjectId) : null,
 );
 
 // Class Info Query using consolidated feature query
@@ -49,12 +49,12 @@ const isStudentsPage = $derived(
 const isCurriculumListPage = $derived(
   (currentPath.endsWith("/curriculum") ||
     currentPath.endsWith("/curriculum/")) &&
-    !classSubjectId,
+    !SectionSubjectId,
 );
 
 // Dynamic Back navigation
 const backHref = $derived.by(() => {
-  if (classSubjectId) {
+  if (SectionSubjectId) {
     return `/${orgId}/academics/classes/${classId}/curriculum`;
   }
   if (isStudentsPage || isCurriculumListPage) {
@@ -64,7 +64,7 @@ const backHref = $derived.by(() => {
 });
 
 const backLabel = $derived.by(() => {
-  if (classSubjectId) {
+  if (SectionSubjectId) {
     return m.common_search_group_classes();
   }
   if (isStudentsPage || isCurriculumListPage) {
@@ -83,7 +83,7 @@ const backLabel = $derived.by(() => {
     {:else if classData}
       <div class="flex items-center gap-2 min-w-0 flex-wrap">
         <!-- Root Class Name (Clickable link when in subpages) -->
-        {#if classSubjectId || isStudentsPage || isCurriculumListPage}
+        {#if SectionSubjectId || isStudentsPage || isCurriculumListPage}
           <a
             href={localizeHref(`/${orgId}/academics/classes/${classId}`)}
             class="text-base font-bold text-muted-foreground hover:text-primary transition-colors truncate shrink-0"
@@ -109,7 +109,7 @@ const backLabel = $derived.by(() => {
         {/if}
 
         <!-- Class Capacity & Badges (shown on main dashboard) -->
-        {#if !classSubjectId}
+        {#if !SectionSubjectId}
           <Badge
             variant="secondary"
             class="text-[9px] py-0 px-1.5 h-4.5 rounded shrink-0 font-sans"

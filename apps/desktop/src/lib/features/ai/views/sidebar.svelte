@@ -266,8 +266,8 @@ interactive tool inspections, and consequential action approvals.
           };
 
       const activeAcademicContext = {
-        academic_year_id: academicContext.currentYear?.id || null,
-        academic_year_name: academicContext.yearLabel || null,
+        calendar_id: academicContext.currentYear?.id || null,
+        academic_calendar_name: academicContext.yearLabel || null,
         period_id: academicContext.selectedPeriodId || null,
         period_name: academicContext.activePeriod?.name || null,
         class_id: academicContext.selectedClassId || null,

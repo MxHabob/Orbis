@@ -5,6 +5,6 @@ export const load: LayoutLoad = async ({ params, parent }) => {
   return {
     orgId: params.orgId,
     classId: params.classId,
-    classSubjectId: params.classSubjectId,
+    SectionSubjectId: params.SectionSubjectId,
   };
 };

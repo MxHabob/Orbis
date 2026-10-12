@@ -46,7 +46,7 @@ impl Default for ToolCategory {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TeachingAssignmentInfo {
-    pub class_subject_id: uuid::Uuid,
+    pub section_subject_id: uuid::Uuid,
     pub class_id: uuid::Uuid,
     pub class_name: String,
     pub subject_id: uuid::Uuid,
@@ -76,8 +76,8 @@ pub struct UserAiContext {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
 pub struct AcademicAiContext {
-    pub academic_year_id: Option<uuid::Uuid>,
-    pub academic_year_name: Option<String>,
+    pub calendar_id: Option<uuid::Uuid>,
+    pub academic_calendar_name: Option<String>,
     pub period_id: Option<uuid::Uuid>,
     pub period_name: Option<String>,
     pub period_state: Option<String>,
@@ -85,7 +85,7 @@ pub struct AcademicAiContext {
     pub class_name: Option<String>,
     pub subject_id: Option<uuid::Uuid>,
     pub subject_name: Option<String>,
-    pub class_subject_id: Option<uuid::Uuid>,
+    pub section_subject_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, ToSchema)]
@@ -103,7 +103,7 @@ pub struct UiContext {
     pub period_id: Option<uuid::Uuid>,
     pub class_id: Option<uuid::Uuid>,
     pub subject_id: Option<uuid::Uuid>,
-    pub class_subject_id: Option<uuid::Uuid>,
+    pub section_subject_id: Option<uuid::Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

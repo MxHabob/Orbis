@@ -519,7 +519,7 @@ pub struct DashboardCountsDto {
     pub total_classes: u64,
     pub total_enrollments: u64,
     pub total_subjects: u64,
-    pub active_academic_year: Option<String>,
+    pub active_academic_calendar: Option<String>,
     pub total_payments_amount: f64,
     pub pending_fees_amount: f64,
 }
@@ -813,7 +813,7 @@ async fn get_dashboard(
         total_classes: counts.total_classes,
         total_enrollments: counts.total_enrollments,
         total_subjects: counts.total_subjects,
-        active_academic_year: counts.active_academic_year,
+        active_academic_calendar: counts.active_academic_calendar,
         total_payments_amount: counts.total_payments_amount,
         pending_fees_amount: counts.pending_fees_amount,
     }))

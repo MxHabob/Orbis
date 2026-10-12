@@ -69,7 +69,7 @@ async fn upload_file(
     let mut folder_id: Option<Uuid> = None;
     let mut asset_type: Option<String> = None;
     let mut description: Option<String> = None;
-    let mut academic_year_id: Option<Uuid> = None;
+    let mut calendar_id: Option<Uuid> = None;
     let mut term_id: Option<Uuid> = None;
     let mut tags: Option<String> = None;
     let mut visibility: Option<String> = None;
@@ -135,10 +135,10 @@ async fn upload_file(
                     description = Some(text);
                 }
             }
-            "academic_year_id" => {
+            "calendar_id" => {
                 let text = field.text().await.unwrap_or_default();
                 if let Ok(uid) = Uuid::parse_str(&text) {
-                    academic_year_id = Some(uid);
+                    calendar_id = Some(uid);
                 }
             }
             "term_id" => {
@@ -187,7 +187,7 @@ async fn upload_file(
         category,
         asset_type,
         description,
-        academic_year_id,
+        calendar_id,
         term_id,
         tags,
         visibility,

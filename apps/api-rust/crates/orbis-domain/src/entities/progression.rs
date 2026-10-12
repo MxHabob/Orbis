@@ -24,7 +24,7 @@ impl std::fmt::Display for PromotionDecision {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum PromotionJobStatus {
+pub enum ProgressionJobStatus {
     Draft,
     PreviewReady,
     Executing,
@@ -34,13 +34,13 @@ pub enum PromotionJobStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromotionJob {
+pub struct ProgressionJob {
     pub id: Uuid,
     pub org_id: Uuid,
     pub source_period_id: Uuid,
     pub target_period_id: Option<Uuid>,
     pub name: String,
-    pub status: PromotionJobStatus,
+    pub status: ProgressionJobStatus,
     pub total_students: u32,
     pub promoted_count: u32,
     pub retained_count: u32,
@@ -53,7 +53,7 @@ pub struct PromotionJob {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct PromotionDetail {
+pub struct ProgressionDetail {
     pub id: Uuid,
     pub job_id: Uuid,
     pub student_id: Uuid,

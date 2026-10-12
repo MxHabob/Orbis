@@ -130,7 +130,7 @@ impl GradeRepository for AssessmentRepoImpl {
             period_id: m.period_id.unwrap_or_default(),
             student_id: m.student_id,
             enrollment_id: m.enrollment_id,
-            class_subject_id: m.class_subject_id,
+            section_subject_id: m.section_subject_id,
             component_id: m.component_id,
             score: m.score,
             max_score: m
@@ -164,7 +164,7 @@ impl GradeRepository for AssessmentRepoImpl {
                 period_id: m.period_id.unwrap_or_default(),
                 student_id: m.student_id,
                 enrollment_id: m.enrollment_id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 component_id: m.component_id,
                 score: m.score,
                 max_score: m
@@ -192,7 +192,7 @@ impl GradeRepository for AssessmentRepoImpl {
     ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::StudentId.eq(student_id))
-            .filter(grade::Column::ClassSubjectId.eq(cs_id))
+            .filter(grade::Column::SectionSubjectId.eq(cs_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -205,7 +205,7 @@ impl GradeRepository for AssessmentRepoImpl {
                 period_id: m.period_id.unwrap_or_default(),
                 student_id: m.student_id,
                 enrollment_id: m.enrollment_id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 component_id: m.component_id,
                 score: m.score,
                 max_score: m
@@ -252,12 +252,12 @@ impl GradeRepository for AssessmentRepoImpl {
         Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
-    async fn find_by_class_subject(
+    async fn find_by_section_subject(
         &self,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
     ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
-            .filter(grade::Column::ClassSubjectId.eq(class_subject_id))
+            .filter(grade::Column::SectionSubjectId.eq(section_subject_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -276,8 +276,8 @@ impl GradeRepository for AssessmentRepoImpl {
         if let Some(period_id) = filter.period_id {
             query = query.filter(grade::Column::PeriodId.eq(period_id));
         }
-        if let Some(class_subject_id) = filter.class_subject_id {
-            query = query.filter(grade::Column::ClassSubjectId.eq(class_subject_id));
+        if let Some(section_subject_id) = filter.section_subject_id {
+            query = query.filter(grade::Column::SectionSubjectId.eq(section_subject_id));
         }
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
@@ -307,7 +307,7 @@ impl GradeRepository for AssessmentRepoImpl {
             period_id: Set(Some(grade.period_id)),
             student_id: Set(grade.student_id),
             enrollment_id: Set(grade.enrollment_id),
-            class_subject_id: Set(grade.class_subject_id),
+            section_subject_id: Set(grade.section_subject_id),
             component_id: Set(grade.component_id),
             score: Set(grade.score),
             max_score: Set(Some(grade.max_score)),
@@ -364,7 +364,7 @@ fn map_attendance_model_to_domain(m: attendance::Model) -> DomainAttendance {
         id: m.id,
         student_id: m.student_id,
         class_id: m.class_id,
-        class_subject_id: m.class_subject_id,
+        section_subject_id: m.section_subject_id,
         scheduled_lesson_id: m.scheduled_lesson_id,
         attendance_date: m.attendance_date,
         status: m.status,
@@ -461,7 +461,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
             id: Set(attendance.id),
             student_id: Set(attendance.student_id),
             class_id: Set(attendance.class_id),
-            class_subject_id: Set(attendance.class_subject_id),
+            section_subject_id: Set(attendance.section_subject_id),
             scheduled_lesson_id: Set(attendance.scheduled_lesson_id),
             attendance_date: Set(attendance.attendance_date),
             status: Set(attendance.status.clone()),
@@ -513,7 +513,7 @@ fn map_grade_model_to_domain(m: grade::Model) -> DomainGrade {
         period_id: m.period_id.unwrap_or_default(),
         student_id: m.student_id,
         enrollment_id: m.enrollment_id,
-        class_subject_id: m.class_subject_id,
+        section_subject_id: m.section_subject_id,
         component_id: m.component_id,
         score: m.score,
         max_score: m

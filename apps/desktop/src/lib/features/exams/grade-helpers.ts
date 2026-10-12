@@ -23,7 +23,7 @@ export interface GradeMatrixStudent {
 
 export interface GradeMatrixResponse {
   period_id: string;
-  class_subject_id: string;
+  section_subject_id: string;
   students: GradeMatrixStudent[];
   assessment_types: string[];
 }

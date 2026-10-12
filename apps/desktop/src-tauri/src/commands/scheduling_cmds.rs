@@ -114,7 +114,7 @@ pub struct UpdateTimeSlotInput {
 #[derive(Serialize)]
 pub struct ScheduledLessonDto {
     pub id: String,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub time_slot_id: String,
     pub room_id: Option<String>,
     pub teacher_id: Option<String>,
@@ -124,7 +124,7 @@ pub struct ScheduledLessonDto {
 
 #[derive(Deserialize)]
 pub struct ScheduleLessonInput {
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub time_slot_id: String,
     pub room_id: Option<String>,
     pub teacher_id: Option<String>,
@@ -137,7 +137,7 @@ pub struct BulkScheduleLessonsInput {
 
 #[derive(Deserialize, Default)]
 pub struct LessonFilter {
-    pub class_subject_id: Option<String>,
+    pub section_subject_id: Option<String>,
     pub period_id: Option<String>,
     pub class_id: Option<String>,
     pub teacher_id: Option<String>,
@@ -180,7 +180,7 @@ fn time_slot_dto(t: orbis_domain::entities::time_slot::TimeSlot) -> TimeSlotDto 
 fn lesson_dto(l: orbis_domain::entities::scheduled_lesson::ScheduledLesson) -> ScheduledLessonDto {
     ScheduledLessonDto {
         id: l.id.to_string(),
-        class_subject_id: l.class_subject_id.to_string(),
+        section_subject_id: l.section_subject_id.to_string(),
         time_slot_id: l.time_slot_id.to_string(),
         room_id: l.room_id.map(|r| r.to_string()),
         teacher_id: l.teacher_id.map(|t| t.to_string()),
@@ -453,15 +453,15 @@ pub async fn scheduling_schedule_lesson(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<ScheduledLessonDto>, String> {
     let ctx = make_ctx(&state);
-    let class_subject_id =
-        Uuid::parse_str(&request.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+    let section_subject_id =
+        Uuid::parse_str(&request.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
     let time_slot_id = Uuid::parse_str(&request.time_slot_id).map_err(|_| "Invalid timeSlotId")?;
     let room_id = request.room_id.and_then(|r| Uuid::parse_str(&r).ok());
     let teacher_id = request.teacher_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let l = state
         .scheduling_service
-        .schedule_lesson(&ctx, class_subject_id, time_slot_id, room_id, teacher_id)
+        .schedule_lesson(&ctx, section_subject_id, time_slot_id, room_id, teacher_id)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -476,12 +476,12 @@ pub async fn scheduling_bulk_schedule_lessons(
     let ctx = make_ctx(&state);
     let mut items = Vec::with_capacity(request.lessons.len());
     for l in request.lessons {
-        let class_subject_id =
-            Uuid::parse_str(&l.class_subject_id).map_err(|_| "Invalid classSubjectId")?;
+        let section_subject_id =
+            Uuid::parse_str(&l.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
         let time_slot_id = Uuid::parse_str(&l.time_slot_id).map_err(|_| "Invalid timeSlotId")?;
         let room_id = l.room_id.and_then(|r| Uuid::parse_str(&r).ok());
         let teacher_id = l.teacher_id.and_then(|t| Uuid::parse_str(&t).ok());
-        items.push((class_subject_id, time_slot_id, room_id, teacher_id));
+        items.push((section_subject_id, time_slot_id, room_id, teacher_id));
     }
 
     let lessons = state
@@ -516,13 +516,13 @@ pub async fn scheduling_list_lessons(
 ) -> Result<ApiResponse<Vec<ScheduledLessonDto>>, String> {
     let f = filter.unwrap_or_default();
     let items = if let Some(csid) = f
-        .class_subject_id
+        .section_subject_id
         .as_deref()
         .and_then(|s| Uuid::parse_str(s).ok())
     {
         state
             .scheduling_service
-            .list_lessons_by_class_subject(csid)
+            .list_lessons_by_section_subject(csid)
             .await
     } else if let Some(cid) = f.class_id.as_deref().and_then(|s| Uuid::parse_str(s).ok()) {
         state.scheduling_service.list_lessons_by_class(cid).await

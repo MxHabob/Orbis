@@ -59,7 +59,7 @@
   const rows = $derived(
     filteredGrades.map((grade: GradeDto) => ({
       period: periodNames.get(grade.period_id) ?? grade.period_id,
-      offering_id: grade.class_subject_id,
+      offering_id: grade.section_subject_id,
       component_id: grade.component_id ?? "—",
       score: Number(grade.score),
       maximum: Number(grade.max_score),

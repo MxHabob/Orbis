@@ -16,11 +16,11 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::{
     academic_calendar::{
-        AcademicCalendar, AcademicCalendarPeriod, AcademicPeriodType,
+        AcademicCalendar, AcademicPeriod, PeriodType,
     },
     course::Course,
-    course_enrollment::CourseEnrollment,
-    course_offering::CourseOffering,
+    enrollment::Enrollment,
+    section_subject::SectionSubject,
 };
 
 #[derive(Serialize, ToSchema)]
@@ -38,7 +38,7 @@ pub struct AcademicCalendarDto {
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct AcademicPeriodTypeDto {
+pub struct PeriodTypeDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub code: String,
@@ -50,7 +50,7 @@ pub struct AcademicPeriodTypeDto {
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct AcademicCalendarPeriodDto {
+pub struct AcademicPeriodDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub calendar_id: Uuid,
@@ -83,7 +83,7 @@ pub struct CourseDto {
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct CourseOfferingDto {
+pub struct SectionSubjectDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub course_id: Uuid,
@@ -99,7 +99,7 @@ pub struct CourseOfferingDto {
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct CourseEnrollmentDto {
+pub struct EnrollmentDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub offering_id: Uuid,
@@ -125,7 +125,7 @@ pub struct CreateAcademicCalendarRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct CreateAcademicPeriodTypeRequest {
+pub struct CreatePeriodTypeRequest {
     pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
@@ -133,7 +133,7 @@ pub struct CreateAcademicPeriodTypeRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct CreateAcademicCalendarPeriodRequest {
+pub struct CreateAcademicPeriodRequest {
     pub parent_id: Option<Uuid>,
     pub period_type_id: Uuid,
     pub code: Option<String>,
@@ -156,7 +156,7 @@ pub struct CreateCourseRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct CreateCourseOfferingRequest {
+pub struct CreateSectionSubjectRequest {
     pub course_id: Uuid,
     pub period_id: Option<Uuid>,
     pub section_code: Option<String>,
@@ -167,13 +167,13 @@ pub struct CreateCourseOfferingRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct CreateCourseEnrollmentRequest {
+pub struct CreateEnrollmentRequest {
     pub student_id: Uuid,
     pub attempt_number: u32,
 }
 
 #[derive(Deserialize)]
-pub struct CourseOfferingQuery {
+pub struct SectionSubjectQuery {
     pub course_id: Option<Uuid>,
 }
 
@@ -192,8 +192,8 @@ fn calendar_dto(item: AcademicCalendar) -> AcademicCalendarDto {
     }
 }
 
-fn period_type_dto(item: AcademicPeriodType) -> AcademicPeriodTypeDto {
-    AcademicPeriodTypeDto {
+fn period_type_dto(item: PeriodType) -> PeriodTypeDto {
+    PeriodTypeDto {
         id: item.id,
         org_id: item.org_id,
         code: item.code,
@@ -205,8 +205,8 @@ fn period_type_dto(item: AcademicPeriodType) -> AcademicPeriodTypeDto {
     }
 }
 
-fn calendar_period_dto(item: AcademicCalendarPeriod) -> AcademicCalendarPeriodDto {
-    AcademicCalendarPeriodDto {
+fn calendar_period_dto(item: AcademicPeriod) -> AcademicPeriodDto {
+    AcademicPeriodDto {
         id: item.id,
         org_id: item.org_id,
         calendar_id: item.calendar_id,
@@ -240,8 +240,8 @@ fn course_dto(item: Course) -> CourseDto {
     }
 }
 
-fn offering_dto(item: CourseOffering) -> CourseOfferingDto {
-    CourseOfferingDto {
+fn offering_dto(item: SectionSubject) -> SectionSubjectDto {
+    SectionSubjectDto {
         id: item.id,
         org_id: item.org_id,
         course_id: item.course_id,
@@ -257,8 +257,8 @@ fn offering_dto(item: CourseOffering) -> CourseOfferingDto {
     }
 }
 
-fn enrollment_dto(item: CourseEnrollment) -> CourseEnrollmentDto {
-    CourseEnrollmentDto {
+fn enrollment_dto(item: Enrollment) -> EnrollmentDto {
+    EnrollmentDto {
         id: item.id,
         org_id: item.org_id,
         offering_id: item.offering_id,
@@ -311,11 +311,11 @@ pub async fn create_calendar(
 }
 
 #[utoipa::path(get, path = "/api/v1/academic-framework/period-types",
-    responses((status = 200, body = Vec<AcademicPeriodTypeDto>)), security(("bearer" = [])), tag = "Calendar")]
+    responses((status = 200, body = Vec<PeriodTypeDto>)), security(("bearer" = [])), tag = "Calendar")]
 pub async fn list_period_types(
     ctx: AuthContext,
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Vec<AcademicPeriodTypeDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<PeriodTypeDto>>>, ApiError> {
     let items = state
         .academic_framework_service
         .list_period_types(&ctx, ctx.tenant_id)
@@ -323,13 +323,13 @@ pub async fn list_period_types(
     Ok(ApiResponse::ok(items.into_iter().map(period_type_dto).collect()))
 }
 
-#[utoipa::path(post, path = "/api/v1/academic-framework/period-types", request_body = CreateAcademicPeriodTypeRequest,
-    responses((status = 200, body = AcademicPeriodTypeDto)), security(("bearer" = [])), tag = "Calendar")]
+#[utoipa::path(post, path = "/api/v1/academic-framework/period-types", request_body = CreatePeriodTypeRequest,
+    responses((status = 200, body = PeriodTypeDto)), security(("bearer" = [])), tag = "Calendar")]
 pub async fn create_period_type(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Json(request): Json<CreateAcademicPeriodTypeRequest>,
-) -> Result<Json<ApiResponse<AcademicPeriodTypeDto>>, ApiError> {
+    Json(request): Json<CreatePeriodTypeRequest>,
+) -> Result<Json<ApiResponse<PeriodTypeDto>>, ApiError> {
     let item = state
         .academic_framework_service
         .create_period_type(
@@ -346,12 +346,12 @@ pub async fn create_period_type(
 
 #[utoipa::path(get, path = "/api/v1/academic-framework/calendars/{calendar_id}/periods",
     params(("calendar_id" = Uuid, Path, description = "Academic calendar ID")),
-    responses((status = 200, body = Vec<AcademicCalendarPeriodDto>)), security(("bearer" = [])), tag = "Calendar")]
+    responses((status = 200, body = Vec<AcademicPeriodDto>)), security(("bearer" = [])), tag = "Calendar")]
 pub async fn list_calendar_periods(
     ctx: AuthContext,
     State(state): State<AppState>,
     Path(calendar_id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Vec<AcademicCalendarPeriodDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<AcademicPeriodDto>>>, ApiError> {
     let items = state
         .academic_framework_service
         .list_calendar_periods(&ctx, ctx.tenant_id, calendar_id)
@@ -361,15 +361,15 @@ pub async fn list_calendar_periods(
     ))
 }
 
-#[utoipa::path(post, path = "/api/v1/academic-framework/calendars/{calendar_id}/periods", request_body = CreateAcademicCalendarPeriodRequest,
+#[utoipa::path(post, path = "/api/v1/academic-framework/calendars/{calendar_id}/periods", request_body = CreateAcademicPeriodRequest,
     params(("calendar_id" = Uuid, Path, description = "Academic calendar ID")),
-    responses((status = 200, body = AcademicCalendarPeriodDto)), security(("bearer" = [])), tag = "Calendar")]
+    responses((status = 200, body = AcademicPeriodDto)), security(("bearer" = [])), tag = "Calendar")]
 pub async fn create_calendar_period(
     ctx: AuthContext,
     State(state): State<AppState>,
     Path(calendar_id): Path<Uuid>,
-    Json(request): Json<CreateAcademicCalendarPeriodRequest>,
-) -> Result<Json<ApiResponse<AcademicCalendarPeriodDto>>, ApiError> {
+    Json(request): Json<CreateAcademicPeriodRequest>,
+) -> Result<Json<ApiResponse<AcademicPeriodDto>>, ApiError> {
     let item = state
         .academic_framework_service
         .create_calendar_period(
@@ -428,29 +428,29 @@ pub async fn create_course(
 
 #[utoipa::path(get, path = "/api/v1/academic-framework/course-offerings",
     params(("course_id" = Option<Uuid>, Query, description = "Optional course ID")),
-    responses((status = 200, body = Vec<CourseOfferingDto>)), security(("bearer" = [])), tag = "Academic")]
-pub async fn list_course_offerings(
+    responses((status = 200, body = Vec<SectionSubjectDto>)), security(("bearer" = [])), tag = "Academic")]
+pub async fn list_section_subjects(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Query(query): Query<CourseOfferingQuery>,
-) -> Result<Json<ApiResponse<Vec<CourseOfferingDto>>>, ApiError> {
+    Query(query): Query<SectionSubjectQuery>,
+) -> Result<Json<ApiResponse<Vec<SectionSubjectDto>>>, ApiError> {
     let items = state
         .academic_framework_service
-        .list_course_offerings(&ctx, ctx.tenant_id, query.course_id)
+        .list_section_subjects(&ctx, ctx.tenant_id, query.course_id)
         .await?;
     Ok(ApiResponse::ok(items.into_iter().map(offering_dto).collect()))
 }
 
-#[utoipa::path(post, path = "/api/v1/academic-framework/course-offerings", request_body = CreateCourseOfferingRequest,
-    responses((status = 200, body = CourseOfferingDto)), security(("bearer" = [])), tag = "Academic")]
-pub async fn create_course_offering(
+#[utoipa::path(post, path = "/api/v1/academic-framework/course-offerings", request_body = CreateSectionSubjectRequest,
+    responses((status = 200, body = SectionSubjectDto)), security(("bearer" = [])), tag = "Academic")]
+pub async fn create_section_subject(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Json(request): Json<CreateCourseOfferingRequest>,
-) -> Result<Json<ApiResponse<CourseOfferingDto>>, ApiError> {
+    Json(request): Json<CreateSectionSubjectRequest>,
+) -> Result<Json<ApiResponse<SectionSubjectDto>>, ApiError> {
     let item = state
         .academic_framework_service
-        .create_course_offering(
+        .create_section_subject(
             &ctx,
             ctx.tenant_id,
             request.course_id,
@@ -467,30 +467,30 @@ pub async fn create_course_offering(
 
 #[utoipa::path(get, path = "/api/v1/academic-framework/course-offerings/{offering_id}/enrollments",
     params(("offering_id" = Uuid, Path, description = "Course offering ID")),
-    responses((status = 200, body = Vec<CourseEnrollmentDto>)), security(("bearer" = [])), tag = "Student")]
-pub async fn list_course_enrollments(
+    responses((status = 200, body = Vec<EnrollmentDto>)), security(("bearer" = [])), tag = "Student")]
+pub async fn list_enrollments(
     ctx: AuthContext,
     State(state): State<AppState>,
     Path(offering_id): Path<Uuid>,
-) -> Result<Json<ApiResponse<Vec<CourseEnrollmentDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<EnrollmentDto>>>, ApiError> {
     let items = state
         .academic_framework_service
-        .list_course_enrollments(&ctx, ctx.tenant_id, offering_id)
+        .list_enrollments(&ctx, ctx.tenant_id, offering_id)
         .await?;
     Ok(ApiResponse::ok(
         items.into_iter().map(enrollment_dto).collect(),
     ))
 }
 
-#[utoipa::path(post, path = "/api/v1/academic-framework/course-offerings/{offering_id}/enrollments", request_body = CreateCourseEnrollmentRequest,
+#[utoipa::path(post, path = "/api/v1/academic-framework/course-offerings/{offering_id}/enrollments", request_body = CreateEnrollmentRequest,
     params(("offering_id" = Uuid, Path, description = "Course offering ID")),
-    responses((status = 200, body = CourseEnrollmentDto)), security(("bearer" = [])), tag = "Student")]
+    responses((status = 200, body = EnrollmentDto)), security(("bearer" = [])), tag = "Student")]
 pub async fn enroll_student(
     ctx: AuthContext,
     State(state): State<AppState>,
     Path(offering_id): Path<Uuid>,
-    Json(request): Json<CreateCourseEnrollmentRequest>,
-) -> Result<Json<ApiResponse<CourseEnrollmentDto>>, ApiError> {
+    Json(request): Json<CreateEnrollmentRequest>,
+) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
     let item = state
         .academic_framework_service
         .enroll_student(
@@ -524,10 +524,10 @@ pub fn routes() -> Router<AppState> {
         )
         .route(
             "/api/v1/academic-framework/course-offerings",
-            get(list_course_offerings).post(create_course_offering),
+            get(list_section_subjects).post(create_section_subject),
         )
         .route(
             "/api/v1/academic-framework/course-offerings/:offering_id/enrollments",
-            get(list_course_enrollments).post(enroll_student),
+            get(list_enrollments).post(enroll_student),
         )
 }

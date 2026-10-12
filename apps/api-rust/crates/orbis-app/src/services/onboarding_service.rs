@@ -24,11 +24,11 @@ use uuid::Uuid;
 use orbis_domain::entities::academic_period::{
     AcademicPeriod, AcademicPeriodState, PeriodKind, PeriodType,
 };
-use orbis_domain::entities::academic_year::AcademicYear;
+use orbis_domain::entities::academic_calendar::AcademicCalendar;
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
-use orbis_domain::entities::class::Class;
+use orbis_domain::entities::section::Section;
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
 use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate};
 use orbis_domain::entities::org_unit::OrgUnit;
@@ -38,15 +38,15 @@ use orbis_domain::entities::time_slot::TimeSlot;
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    ClassFilter, ClassSubjectFilter, PaginationParams, SubjectFilter,
+    ClassFilter, SectionSubjectFilter, PaginationParams, SubjectFilter,
 };
 
 use crate::context::RequestContext;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository};
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
-    AssessmentSchemeRepository, ClassRepository, ClassSubjectRepository,
+    AcademicPeriodRepository, AcademicCalendarRepository, AccountRepository,
+    AssessmentSchemeRepository, ClassRepository, SectionSubjectRepository,
     DiscountTemplateRepository, DocumentRequirementRepository, FeeTemplateRepository,
     IntegrationRepository, OrgUnitRepository, OrganizationRepository, RoomRepository,
     SettingsRepository, SubjectRepository, TimeSlotRepository,
@@ -182,13 +182,13 @@ pub struct OnboardingStateResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProvisionDefaultsRequest {
-    pub academic_year_id: Option<Uuid>,
-    pub academic_year_name: Option<String>,
-    pub academic_year_name_ar: Option<String>,
+    pub calendar_id: Option<Uuid>,
+    pub academic_calendar_name: Option<String>,
+    pub academic_calendar_name_ar: Option<String>,
     pub start_date: Option<DateTime<Utc>>,
     pub end_date: Option<DateTime<Utc>>,
     /// Whether to create the optional legacy academic-year record.
-    pub provision_academic_year: Option<bool>,
+    pub provision_academic_calendar: Option<bool>,
     /// Whether to add an optional starter period structure to a newly created year.
     pub provision_default_academic_periods: Option<bool>,
     /// Whether to create sample classes. Defaults to **false** (opt-in demo data).
@@ -250,11 +250,11 @@ fn calendar_period_state(
 pub struct OnboardingService {
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
-    pub year_repo: Arc<dyn AcademicYearRepository>,
+    pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub class_repo: Arc<dyn ClassRepository>,
-    pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
+    pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
     pub account_repo: Arc<dyn AccountRepository>,
@@ -273,11 +273,11 @@ impl OnboardingService {
     pub fn new(
         org_repo: Arc<dyn OrganizationRepository>,
         org_unit_repo: Arc<dyn OrgUnitRepository>,
-        year_repo: Arc<dyn AcademicYearRepository>,
+        year_repo: Arc<dyn AcademicCalendarRepository>,
         period_repo: Arc<dyn AcademicPeriodRepository>,
         subject_repo: Arc<dyn SubjectRepository>,
         class_repo: Arc<dyn ClassRepository>,
-        class_subject_repo: Arc<dyn ClassSubjectRepository>,
+        section_subject_repo: Arc<dyn SectionSubjectRepository>,
         assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
         account_repo: Arc<dyn AccountRepository>,
@@ -298,7 +298,7 @@ impl OnboardingService {
             period_repo,
             subject_repo,
             class_repo,
-            class_subject_repo,
+            section_subject_repo,
             assessment_scheme_repo,
             settings_repo,
             account_repo,
@@ -719,9 +719,9 @@ impl OnboardingService {
             .list(org_id, SubjectFilter::default())
             .await?;
         let classes_res = self.class_repo.list(org_id, ClassFilter::default()).await?;
-        let class_subjects_res = self
-            .class_subject_repo
-            .list(org_id, ClassSubjectFilter::default())
+        let section_subjects_res = self
+            .section_subject_repo
+            .list(org_id, SectionSubjectFilter::default())
             .await?;
         let settings = self
             .settings_repo
@@ -813,9 +813,9 @@ impl OnboardingService {
         ));
 
         // Task 4: Academic Year
-        let has_academic_year = active_year.is_some() || !years.is_empty();
+        let has_academic_calendar = active_year.is_some() || !years.is_empty();
         raw_tasks.push((
-            "academic_year",
+            "academic_calendar",
             OnboardingTaskCategory::Calendar,
             "Academic Year & Dates",
             "العام الدراسي والتواريخ",
@@ -823,8 +823,8 @@ impl OnboardingService {
             "تحديد العام الدراسي الفعال، تواريخ البداية والنهاية، وحالة التقويم الرسمي.",
             false,
             vec!["org_units".into()],
-            if has_academic_year { 100 } else { 0 },
-            has_academic_year,
+            if has_academic_calendar { 100 } else { 0 },
+            has_academic_calendar,
             "/settings/periods",
             "navigate",
             vec!["school".into(), "university".into(), "institute".into()],
@@ -912,13 +912,13 @@ impl OnboardingService {
             "/academics/classes",
             "navigate",
             vec!["school".into()],
-            vec!["class:write".into()],
-            "At least one class or section created for the active period.",
+            vec!["Section:write".into()],
+            "At least one Section or section created for the active period.",
             Some(("Requires academic periods and subjects to be created first.", "يتطلب إعداد الفصول الدراسية والمواد أولاً.")),
         ));
 
         // Task 8: Teacher Subject Assignments (Optional prerequisite for timetable)
-        let has_teaching = class_subjects_res.total_count > 0;
+        let has_teaching = section_subjects_res.total_count > 0;
         raw_tasks.push((
             "teaching_assignments",
             OnboardingTaskCategory::Academics,
@@ -933,8 +933,8 @@ impl OnboardingService {
             "/academics/classes",
             "navigate",
             vec!["school".into()],
-            vec!["class:write".into()],
-            "Class-subject teacher assignments configured.",
+            vec!["Section:write".into()],
+            "Section-subject teacher assignments configured.",
             Some((
                 "Requires classes and subjects to be configured.",
                 "يتطلب إنشاء الفصول والمواد أولاً.",
@@ -1085,7 +1085,7 @@ impl OnboardingService {
             OnboardingTaskCategory::Students,
             "Admission & Enrollment Rules",
             "شروط القبول وسياسات التسجيل",
-            "Set default class capacity, waitlist rules, late enrollment permissions, and numbering sequence.",
+            "Set default Section capacity, waitlist rules, late enrollment permissions, and numbering sequence.",
             "تحديد الحد الأقصى للطلاب، سياسة قائمة الانتظار، وشروط القبول المتأخر وتوليد الأرقام الأكاديمية.",
             true,
             vec![],
@@ -1486,7 +1486,7 @@ impl OnboardingService {
         let now = Utc::now();
         let mut created_items = Vec::new();
 
-        // Only create the sample campus when class scaffolding was explicitly requested.
+        // Only create the sample campus when Section scaffolding was explicitly requested.
         let units = self.org_unit_repo.find_by_org(org_id).await?;
         let main_unit_id = if let Some(unit) = units.first() {
             Some(unit.id)
@@ -1529,26 +1529,26 @@ impl OnboardingService {
         // Academic years and starter periods are opt-in; an organization may use another
         // calendar model or intentionally operate without a single year container.
         let existing_years = self.year_repo.find_by_org(org_id).await?;
-        let should_create_year = req.provision_academic_year.unwrap_or(false)
+        let should_create_year = req.provision_academic_calendar.unwrap_or(false)
             || req.provision_default_academic_periods.unwrap_or(false)
-            || req.academic_year_name.is_some()
-            || req.academic_year_name_ar.is_some()
+            || req.academic_calendar_name.is_some()
+            || req.academic_calendar_name_ar.is_some()
             || req.start_date.is_some()
             || req.end_date.is_some()
             || req.provision_hijri_school_calendar.unwrap_or(false);
-        if existing_years.is_empty() && req.academic_year_id.is_some() && !should_create_year {
+        if existing_years.is_empty() && req.calendar_id.is_some() && !should_create_year {
             return Err(DomainError::Validation(
                 "The selected academic year does not exist for this organization.".into(),
             ));
         }
         let active_year_id = if existing_years.is_empty() && should_create_year {
-            if req.academic_year_id.is_some() {
+            if req.calendar_id.is_some() {
                 return Err(DomainError::Validation(
                     "The selected academic year does not exist for this organization.".into(),
                 ));
             }
             let year_name = req
-                .academic_year_name
+                .academic_calendar_name
                 .filter(|name| !name.trim().is_empty())
                 .ok_or_else(|| {
                     DomainError::Validation(
@@ -1576,12 +1576,12 @@ impl OnboardingService {
             let year_id = Uuid::new_v4();
             let current_year_num = chrono::Datelike::year(&now);
 
-            let year = AcademicYear {
+            let year = AcademicCalendar {
                 id: year_id,
                 org_id,
                 name: year_name,
                 name_ar: req
-                    .academic_year_name_ar
+                    .academic_calendar_name_ar
                     .filter(|name| !name.trim().is_empty()),
                 start_date,
                 end_date,
@@ -2042,7 +2042,7 @@ impl OnboardingService {
             }
             Some(year_id)
         } else if !existing_years.is_empty() {
-            Some(if let Some(requested_year_id) = req.academic_year_id {
+            Some(if let Some(requested_year_id) = req.calendar_id {
                 existing_years
                     .iter()
                     .find(|year| year.id == requested_year_id)
@@ -2238,7 +2238,7 @@ impl OnboardingService {
                 if existing_classes
                     .items
                     .iter()
-                    .any(|class| class.level == level)
+                    .any(|Section| Section.level == level)
                 {
                     continue;
                 }
@@ -2247,7 +2247,7 @@ impl OnboardingService {
                         "Create an organizational unit before provisioning classes.".into(),
                     ));
                 };
-                let cls = Class {
+                let cls = Section {
                     id: Uuid::new_v4(),
                     org_id,
                     unit_id: main_unit_id,

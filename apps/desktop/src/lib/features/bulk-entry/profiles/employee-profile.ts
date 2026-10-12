@@ -252,7 +252,7 @@ export const employeeImportProfile: BulkImportProfile<EmployeeRowData, EmployeeP
       userGroups,
       assessmentSchemes: [],
       academicPeriods: [],
-      existingClassSubjectAssignments: [],
+      existingSectionSubjectAssignments: [],
       enums: {
         genders: [
           { value: "male", labelAr: "ذكر", labelEn: "Male" },

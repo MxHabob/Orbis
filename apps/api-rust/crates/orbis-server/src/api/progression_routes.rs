@@ -14,10 +14,10 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::progression_service::StudentProgressionItem;
-use orbis_domain::entities::progression::{PromotionDecision, PromotionJob, PromotionJobStatus};
+use orbis_domain::entities::progression::{PromotionDecision, ProgressionJob, ProgressionJobStatus};
 
 #[derive(Serialize, Deserialize, ToSchema)]
-pub struct PromotionJobDto {
+pub struct ProgressionJobDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub source_period_id: Uuid,
@@ -59,20 +59,20 @@ pub struct EvaluateCohortRequest {
     pub source_period_id: Uuid,
 }
 
-fn job_to_dto(job: PromotionJob) -> PromotionJobDto {
-    PromotionJobDto {
+fn job_to_dto(job: ProgressionJob) -> ProgressionJobDto {
+    ProgressionJobDto {
         id: job.id,
         org_id: job.org_id,
         source_period_id: job.source_period_id,
         target_period_id: job.target_period_id,
         name: job.name,
         status: match job.status {
-            PromotionJobStatus::Draft => "draft".into(),
-            PromotionJobStatus::PreviewReady => "preview_ready".into(),
-            PromotionJobStatus::Executing => "executing".into(),
-            PromotionJobStatus::Completed => "completed".into(),
-            PromotionJobStatus::Failed => "failed".into(),
-            PromotionJobStatus::RolledBack => "rolled_back".into(),
+            ProgressionJobStatus::Draft => "draft".into(),
+            ProgressionJobStatus::PreviewReady => "preview_ready".into(),
+            ProgressionJobStatus::Executing => "executing".into(),
+            ProgressionJobStatus::Completed => "completed".into(),
+            ProgressionJobStatus::Failed => "failed".into(),
+            ProgressionJobStatus::RolledBack => "rolled_back".into(),
         },
         total_students: job.total_students,
         promoted_count: job.promoted_count,
@@ -123,12 +123,12 @@ pub async fn evaluate_cohort(
 }
 
 #[utoipa::path(post, path = "/api/v1/progression/promote", request_body = PromoteCohortRequest,
-    responses((status = 201, body = PromotionJobDto)), security(("bearer" = [])), tag = "Progression")]
+    responses((status = 201, body = ProgressionJobDto)), security(("bearer" = [])), tag = "Progression")]
 pub async fn promote_cohort(
     ctx: AuthContext,
     State(state): State<AppState>,
     Json(p): Json<PromoteCohortRequest>,
-) -> Result<Json<ApiResponse<PromotionJobDto>>, ApiError> {
+) -> Result<Json<ApiResponse<ProgressionJobDto>>, ApiError> {
     let items = p
         .items
         .into_iter()
@@ -157,11 +157,11 @@ pub async fn promote_cohort(
 }
 
 #[utoipa::path(get, path = "/api/v1/progression/jobs",
-    responses((status = 200, body = Vec<PromotionJobDto>)), security(("bearer" = [])), tag = "Progression")]
+    responses((status = 200, body = Vec<ProgressionJobDto>)), security(("bearer" = [])), tag = "Progression")]
 pub async fn list_jobs(
     ctx: AuthContext,
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Vec<PromotionJobDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<ProgressionJobDto>>>, ApiError> {
     let jobs = state
         .progression_service
         .progression_repo
@@ -172,12 +172,12 @@ pub async fn list_jobs(
 }
 
 #[utoipa::path(get, path = "/api/v1/progression/jobs/{id}", params(("id" = Uuid, Path, description = "Promotion Job ID")),
-    responses((status = 200, body = PromotionJobDto)), security(("bearer" = [])), tag = "Progression")]
+    responses((status = 200, body = ProgressionJobDto)), security(("bearer" = [])), tag = "Progression")]
 pub async fn get_job(
     _ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<PromotionJobDto>>, ApiError> {
+) -> Result<Json<ApiResponse<ProgressionJobDto>>, ApiError> {
     let job = state
         .progression_service
         .progression_repo

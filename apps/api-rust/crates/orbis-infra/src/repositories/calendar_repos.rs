@@ -1,18 +1,18 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, PeriodTemplateRepository,
+    AcademicPeriodRepository, AcademicCalendarRepository, PeriodTypeRepository,
 };
 use orbis_domain::entities::academic_period::AcademicPeriod as DomainPeriod;
-use orbis_domain::entities::academic_year::AcademicYear as DomainYear;
-use orbis_domain::entities::period_template::PeriodTemplate as DomainTemplate;
+use orbis_domain::entities::academic_calendar::AcademicCalendar as DomainYear;
+use orbis_domain::entities::period_type::PeriodType as DomainTemplate;
 use orbis_domain::errors::DomainError;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 use crate::models::{
     academic_period::{self, Entity as PeriodEntity},
-    academic_year::{self, Entity as YearEntity},
-    period_template::{self, Entity as TemplateEntity},
+    academic_calendar::{self, Entity as YearEntity},
+    period_type::{self, Entity as TemplateEntity},
 };
 
 pub struct CalendarRepoImpl {
@@ -20,7 +20,7 @@ pub struct CalendarRepoImpl {
 }
 
 #[async_trait]
-impl AcademicYearRepository for CalendarRepoImpl {
+impl AcademicCalendarRepository for CalendarRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainYear>, DomainError> {
         let model = YearEntity::find_by_id(id)
             .one(&self.db)
@@ -51,7 +51,7 @@ impl AcademicYearRepository for CalendarRepoImpl {
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainYear>, DomainError> {
         let models = YearEntity::find()
-            .filter(academic_year::Column::OrgId.eq(org_id))
+            .filter(academic_calendar::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -83,8 +83,8 @@ impl AcademicYearRepository for CalendarRepoImpl {
 
     async fn find_current(&self, org_id: Uuid) -> Result<Option<DomainYear>, DomainError> {
         let model = YearEntity::find()
-            .filter(academic_year::Column::OrgId.eq(org_id))
-            .filter(academic_year::Column::Status.eq("active"))
+            .filter(academic_calendar::Column::OrgId.eq(org_id))
+            .filter(academic_calendar::Column::Status.eq("active"))
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -112,7 +112,7 @@ impl AcademicYearRepository for CalendarRepoImpl {
     }
 
     async fn save(&self, year: &DomainYear) -> Result<(), DomainError> {
-        let active = academic_year::ActiveModel {
+        let active = academic_calendar::ActiveModel {
             id: Set(year.id),
             org_id: Set(year.org_id),
             name: Set(year.name.clone()),
@@ -314,7 +314,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
 }
 
 #[async_trait]
-impl PeriodTemplateRepository for CalendarRepoImpl {
+impl PeriodTypeRepository for CalendarRepoImpl {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainTemplate>, DomainError> {
         let model = TemplateEntity::find_by_id(id)
             .one(&self.db)
@@ -335,7 +335,7 @@ impl PeriodTemplateRepository for CalendarRepoImpl {
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainTemplate>, DomainError> {
         let models = TemplateEntity::find()
-            .filter(period_template::Column::OrgId.eq(org_id))
+            .filter(period_type::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -356,7 +356,7 @@ impl PeriodTemplateRepository for CalendarRepoImpl {
     }
 
     async fn save(&self, template: &DomainTemplate) -> Result<(), DomainError> {
-        let active = period_template::ActiveModel {
+        let active = period_type::ActiveModel {
             id: Set(template.id),
             org_id: Set(template.org_id),
             name: Set(template.name.clone()),
