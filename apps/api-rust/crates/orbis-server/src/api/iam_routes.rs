@@ -447,6 +447,7 @@ async fn provision_user(
             gender: None,
             nationality: None,
             blood_type: None,
+            marital_status: None,
             medical_notes: None,
             special_needs_notes: None,
             email: payload.email.clone(),
@@ -581,6 +582,7 @@ pub struct UpdateUserRequest {
     pub gender: Option<String>,
     pub birth_date: Option<String>,
     pub address: Option<String>,
+    pub avatar_url: Option<String>,
     pub is_active: Option<bool>,
     pub status: Option<String>,
     pub roles: Option<Vec<String>>,
@@ -660,6 +662,14 @@ pub async fn update_user(
         }
         if let Some(addr) = p.address {
             person.address = if addr.is_empty() { None } else { Some(addr) };
+            changed = true;
+        }
+        if let Some(avatar_url) = p.avatar_url {
+            person.avatar_url = if avatar_url.is_empty() {
+                None
+            } else {
+                Some(avatar_url)
+            };
             changed = true;
         }
         if let Some(dob_str) = p.birth_date {

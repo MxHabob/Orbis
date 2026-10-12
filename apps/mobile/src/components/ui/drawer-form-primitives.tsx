@@ -17,7 +17,6 @@ import { CheckCircle } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { useDrawer } from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── DrawerFormField ─────────────────────────────────────────────────────────
 // A labeled text input styled for use inside a Drawer form.
@@ -34,7 +33,7 @@ export function DrawerFormField({
   ...props
 }: DrawerFormFieldProps) {
   return (
-    <View style={formStyles.fieldWrapper}>
+    <View className="gap-one px-five">
       <Input label={label} error={error} style={style} {...props} />
     </View>
   );
@@ -57,7 +56,7 @@ export function DrawerSubmitButton({
   disabled = false,
 }: DrawerSubmitButtonProps) {
   return (
-    <View style={formStyles.submitButtonWrapper}>
+    <View className="mx-five mb-two">
       <Button
         title={label}
         onPress={onPress}
@@ -95,8 +94,8 @@ export function DrawerOptionRow({
 
   return (
     <Pressable
+      className="flex-row items-center justify-between px-five py-four"
       style={({ pressed }) => [
-        formStyles.optionRow,
         !isLast && {
           borderBottomColor: theme.border,
           borderBottomWidth: StyleSheet.hairlineWidth,
@@ -105,19 +104,18 @@ export function DrawerOptionRow({
       ]}
       onPress={onPress}
     >
-      <View style={formStyles.optionLeft}>
-        {icon && <View style={formStyles.optionIcon}>{icon}</View>}
-        <View style={formStyles.optionLabels}>
-          <Text style={[formStyles.optionLabel, { color: theme.text }]}>
+      <View className="flex-1 flex-row items-center">
+        {icon && (
+          <View className="me-three h-9 w-9 items-center justify-center rounded-md">
+            {icon}
+          </View>
+        )}
+        <View className="flex-1 gap-half">
+          <Text className="text-sm leading-5 font-semibold text-foreground">
             {label}
           </Text>
           {sublabel && (
-            <Text
-              style={[
-                formStyles.optionSublabel,
-                { color: theme.textSecondary },
-              ]}
-            >
+            <Text className="text-[11px] leading-[14px] font-medium text-muted-foreground">
               {sublabel}
             </Text>
           )}
@@ -129,46 +127,3 @@ export function DrawerOptionRow({
     </Pressable>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
-const formStyles = StyleSheet.create({
-  fieldWrapper: {
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.five,
-  },
-  submitButtonWrapper: {
-    marginHorizontal: Spacing.five,
-    marginBottom: Spacing.two,
-  },
-  optionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.four,
-  },
-  optionLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  optionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radii.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.three,
-  },
-  optionLabels: {
-    flex: 1,
-    gap: 2,
-  },
-  optionLabel: {
-    ...Typography.bodyBold,
-  },
-  optionSublabel: {
-    ...Typography.small,
-  },
-});

@@ -1,5 +1,6 @@
 import * as m from "$lib/paraglide/messages";
 import type { BulkImportProfile, BulkReferenceData, BulkRowState } from "../types";
+import { createBulkValidationContext } from "./duplicate-index";
 
 export interface ValidationSummary {
   totalRows: number;
@@ -15,6 +16,10 @@ export function validateAllRows<T = Record<string, unknown>>(
   refData: BulkReferenceData,
 ): ValidationSummary {
   const plainRows = rows.map((r) => r.data as T);
+  const validationContext = createBulkValidationContext(
+    profile.id,
+    plainRows as Record<string, unknown>[],
+  );
   let errorCount = 0;
   let warningCount = 0;
   let validCount = 0;
@@ -41,7 +46,13 @@ export function validateAllRows<T = Record<string, unknown>>(
     }
 
     // 2. Level 3 & Level 4: Row & Cross-row validation
-    const rowIssues = profile.validateRow(row.data as T, plainRows, i, refData);
+    const rowIssues = profile.validateRow(
+      row.data as T,
+      plainRows,
+      i,
+      refData,
+      validationContext,
+    );
     for (const issue of rowIssues) {
       if (issue.severity === "BLOCKING_ERROR") {
         rowErrors.set(issue.columnId, issue.message);

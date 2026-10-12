@@ -7,7 +7,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
-import { api, type GroupDetailDto, type User } from "$lib/api";
+import { api, queryKeys, type GroupDetailDto, type User } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
@@ -25,6 +25,7 @@ import ManageUserGroupsSheet from "./components/manage-user-groups-sheet.svelte"
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { userAvatarDrafts } from "./user-avatar-draft.svelte";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
@@ -103,7 +104,8 @@ const isDirty = $derived.by(() => {
     email !== (user.email || "") ||
     phone !== ((user.phone as string) || "") ||
     role !== (user.roles?.[0] || "staff") ||
-    isActiveState !== (user.is_active !== undefined ? Boolean(user.is_active) : true)
+    isActiveState !== (user.is_active !== undefined ? Boolean(user.is_active) : true) ||
+    !!userAvatarDrafts[userId]
   );
 });
 
@@ -120,6 +122,7 @@ function resetForm() {
   role = user.roles?.[0] || "staff";
   isActiveState =
     user.is_active !== undefined ? Boolean(user.is_active) : true;
+  userAvatarDrafts[userId] = null;
 }
 
 async function toggleAccountStatus() {
@@ -166,19 +169,39 @@ async function saveProfile() {
   if (!userId) return;
   isSaving = true;
   try {
+    const avatarFile = userAvatarDrafts[userId];
+    let avatarUrl: string | undefined;
+    if (avatarFile) {
+      const uploaded = await api.uploadFile({
+        file: avatarFile,
+        name: avatarFile.name,
+        entity_type: "user",
+        entity_id: userId,
+        category: "avatar",
+        asset_type: "image",
+        visibility: "public",
+      });
+      avatarUrl = uploaded.url || uploaded.file_path;
+    }
+
     await api.updateUser(userId, {
       full_name: fullName || undefined,
       full_name_ar: nameAr || undefined,
       phone: phone || undefined,
       is_active: isActiveState,
       roles: role ? [role] : user?.roles,
+      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
     });
+    userAvatarDrafts[userId] = null;
 
     await queryClient.invalidateQueries({ queryKey: ["user", orgId, userId] });
     await queryClient.invalidateQueries({ queryKey: ["users", orgId] });
     await queryClient.invalidateQueries({
       queryKey: ["users_paginated", orgId],
     });
+    if (avatarUrl) {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
+    }
 
     toast.success(
       m.settings_user_detail_saved
@@ -300,7 +323,7 @@ async function saveProfile() {
         </span>
       {:else}
         <div class="flex flex-wrap gap-2 py-1">
-          {#each userAssignedGroups as grp}
+          {#each userAssignedGroups as grp (grp.id)}
             <Badge variant="secondary" class="text-xs py-1 px-2.5 font-medium flex items-center gap-1.5">
               <UserGroup size={12} />
               <span>{l(grp.name_ar, grp.name) || grp.name}</span>

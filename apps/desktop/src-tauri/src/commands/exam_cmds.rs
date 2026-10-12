@@ -34,7 +34,7 @@ pub struct CreateExamSessionInput {
 pub struct ExamScheduleDto {
     pub id: String,
     pub exam_session_id: String,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub exam_date: String,
     pub start_time: String,
     pub end_time: String,
@@ -43,7 +43,7 @@ pub struct ExamScheduleDto {
 #[derive(Deserialize)]
 pub struct ScheduleExamInput {
     pub exam_session_id: String,
-    pub class_subject_id: String,
+    pub section_subject_id: String,
     pub exam_date: String,
     pub start_time: String,
     pub end_time: String,
@@ -191,8 +191,8 @@ pub async fn exam_schedule_exam(
     let ctx = make_ctx(&state);
     let session_id =
         Uuid::parse_str(&request.exam_session_id).map_err(|_| "Invalid exam_session_id")?;
-    let class_subject_id =
-        Uuid::parse_str(&request.class_subject_id).map_err(|_| "Invalid class_subject_id")?;
+    let section_subject_id =
+        Uuid::parse_str(&request.section_subject_id).map_err(|_| "Invalid section_subject_id")?;
     let exam_date = NaiveDate::parse_from_str(&request.exam_date, "%Y-%m-%d")
         .map_err(|_| "Invalid exam_date (expected YYYY-MM-DD)")?;
     let start_time = NaiveTime::parse_from_str(&request.start_time, "%H:%M:%S")
@@ -207,7 +207,7 @@ pub async fn exam_schedule_exam(
         .schedule_exam(
             &ctx,
             session_id,
-            class_subject_id,
+            section_subject_id,
             exam_date,
             start_time,
             end_time,
@@ -218,7 +218,7 @@ pub async fn exam_schedule_exam(
     Ok(ok(ExamScheduleDto {
         id: s.id.to_string(),
         exam_session_id: s.exam_session_id.to_string(),
-        class_subject_id: s.class_subject_id.to_string(),
+        section_subject_id: s.section_subject_id.to_string(),
         exam_date: s.exam_date.to_string(),
         start_time: s.start_time.to_string(),
         end_time: s.end_time.to_string(),
@@ -241,7 +241,7 @@ pub async fn exam_list_schedules(
         .map(|s| ExamScheduleDto {
             id: s.id.to_string(),
             exam_session_id: s.exam_session_id.to_string(),
-            class_subject_id: s.class_subject_id.to_string(),
+            section_subject_id: s.section_subject_id.to_string(),
             exam_date: s.exam_date.to_string(),
             start_time: s.start_time.to_string(),
             end_time: s.end_time.to_string(),

@@ -7,17 +7,19 @@
  */
 
 import React, { useEffect, useMemo } from "react";
+import "../global.css";
 import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { useColorScheme } from "react-native";
 
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { AuthProvider } from "@/lib/api";
 import { AppQueryProvider } from "@/providers/query-provider";
 import { EffectiveContextProvider } from "@/providers/effective-context";
 import { I18nProvider } from "@/lib/i18n";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
+import { applyThemePreference, loadThemePreference } from "@/lib/theme-preference";
 import { ToastProvider } from "@/components/ui/toast";
 import { AppErrorBoundary } from "@/components/ui/error-boundary";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -28,7 +30,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  const currentColors = Colors[isDark ? "dark" : "light"];
+  const currentColors = useTheme();
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -43,11 +45,26 @@ export default function RootLayout() {
         primary: currentColors.primary,
       },
     };
-  }, [isDark, currentColors]);
+  }, [
+    isDark,
+    currentColors.background,
+    currentColors.border,
+    currentColors.card,
+    currentColors.primary,
+    currentColors.text,
+  ]);
 
   useEffect(() => {
     // Hide native splash screen after mount
     SplashScreen.hideAsync().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadThemePreference()
+      .then(applyThemePreference)
+      .catch((error: unknown) => {
+        console.error("[Orbis Mobile Theme] Failed to load saved theme.", error);
+      });
   }, []);
 
   useEffect(() => {
@@ -56,7 +73,7 @@ export default function RootLayout() {
   }, [currentColors.background]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView className="flex-1">
       <SafeAreaProvider>
         <I18nProvider>
           <AuthProvider>

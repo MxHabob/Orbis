@@ -16,7 +16,7 @@ interface Props {
   orgId?: string;
   placeholder?: string;
   searchPlaceholder?: string;
-  periodType?: "academic_year" | "term" | "semester" | "quarter" | string;
+  periodType?: "academic_calendar" | "term" | "semester" | "quarter" | string;
   disabled?: boolean;
   id?: string;
   showAllOption?: boolean;
@@ -53,9 +53,9 @@ const periodsQuery = createPeriodsQuery(() => resolvedOrgId);
 const periods = $derived.by(() => {
   const all = periodsQuery.data ?? [];
   if (!periodType) return all;
-  if (periodType === "academic_year" || periodType === "year") {
+  if (periodType === "academic_calendar" || periodType === "year") {
     return all.filter(
-      (p) => p.period_type === "academic_year" || p.period_type === "year",
+      (p) => p.period_type === "academic_calendar" || p.period_type === "year",
     );
   }
   return all.filter((p) => p.period_type === periodType);

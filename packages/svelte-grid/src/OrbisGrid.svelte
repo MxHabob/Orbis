@@ -5,8 +5,10 @@ import type {
   BulkResult,
   CellEditEvent,
   CellRange,
+  DataQuery,
   GridActionEvent,
   GridRow,
+  GridRowsChangeEvent,
   OrbisColumnDef,
   SelectionSnapshot,
   SortSpec,
@@ -49,6 +51,7 @@ import {
   rowFromOffset,
   type ContextMenuItem,
 } from "./engine";
+import { DEFAULT_PAGE_SIZE } from "./data-source";
 
 interface Props {
   columns: OrbisColumnDef[];
@@ -66,15 +69,20 @@ interface Props {
   autoSize?: boolean;
   autoFit?: boolean;
   clientQuery?: boolean;
+  serverQuery?: boolean;
   search?: string;
   filter?: import("./types").GridFilter | null;
+  onquerychange?: (query: DataQuery) => void;
   oncelledit?: (event: CellEditEvent) => void;
   onbeforeedit?: (event: CellEditEvent) => boolean | void;
   onaction?: (event: GridActionEvent) => void;
+  onrowschange?: (event: GridRowsChangeEvent) => void;
   onpasteResult?: (result: BulkResult) => void;
   onselection?: (sel: SelectionSnapshot) => void;
   cellStyle?: (row: GridRow, col: OrbisColumnDef) => string;
   createEmptyRow?: () => GridRow;
+  hasMore?: boolean;
+  onloadmore?: () => void | Promise<unknown>;
 }
 
 let {
@@ -93,15 +101,20 @@ let {
   autoSize = false,
   autoFit = true,
   clientQuery = false,
+  serverQuery = false,
   search = "",
   filter = null,
+  onquerychange,
   oncelledit,
   onbeforeedit,
   onaction,
+  onrowschange,
   onpasteResult,
   onselection,
   cellStyle,
   createEmptyRow,
+  hasMore = false,
+  onloadmore,
 }: Props = $props();
 
 const HEADER_H = 36;
@@ -130,13 +143,16 @@ let origin = $state<{ row: number; col: number } | null>(null);
 let editorEl: HTMLInputElement | HTMLSelectElement | null = $state(null);
 let dragging = $state(false);
 let skipBlur = $state(false);
+let isLoadingMore = $state(false);
+let loadMoreError = $state<unknown>(null);
 
 setContext("orbis-grid-onaction", (event: GridActionEvent) => {
   onaction?.(event);
 });
 
 const shouldRunClientQuery = $derived(
-  clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0,
+  !serverQuery &&
+    (clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0),
 );
 
 const visibleCols = $derived(columns.filter((c) => !c.hidden));
@@ -145,6 +161,22 @@ const displayRows = $derived(
     ? queryClient(source, visibleCols, { filter, search, sorts })
     : source,
 );
+
+let lastServerQueryKey = "";
+$effect(() => {
+  if (!serverQuery || !onquerychange) return;
+  const query: DataQuery = {
+    page: 1,
+    pageSize: DEFAULT_PAGE_SIZE,
+    filter: filter ?? undefined,
+    search: search || undefined,
+    sorts,
+  };
+  const queryKey = JSON.stringify(query);
+  if (queryKey === lastServerQueryKey) return;
+  lastServerQueryKey = queryKey;
+  onquerychange(query);
+});
 
 const rowWindow = $derived(
   visibleWindow(
@@ -311,7 +343,46 @@ function onScroll() {
   if (!bodyEl) return;
   scrollTop = bodyEl.scrollTop;
   scrollLeft = bodyEl.scrollLeft;
+  requestMoreIfNeeded();
 }
+
+function requestMoreIfNeeded(force = false) {
+  if (
+    (!bodyEl && !force) ||
+    !hasMore ||
+    !onloadmore ||
+    loading ||
+    isLoadingMore ||
+    loadMoreError
+  ) {
+    return;
+  }
+  if (!force && bodyEl) {
+    const remaining =
+      bodyEl.scrollHeight - bodyEl.scrollTop - bodyEl.clientHeight;
+    if (remaining > rowSize * 8) return;
+  }
+
+  isLoadingMore = true;
+  loadMoreError = null;
+  Promise.resolve()
+    .then(() => onloadmore?.())
+    .catch((error: unknown) => {
+      console.error("OrbisGrid failed to load the next row batch:", error);
+      loadMoreError = error;
+    })
+    .finally(() => {
+      isLoadingMore = false;
+      if (!loadMoreError) requestAnimationFrame(requestMoreIfNeeded);
+    });
+}
+
+$effect(() => {
+  source.length;
+  hasMore;
+  loading;
+  requestAnimationFrame(requestMoreIfNeeded);
+});
 
 function setActive(row: number, col: number, extend = false) {
   const r = clampIndex(row, Math.max(0, displayRows.length - 1));
@@ -361,8 +432,17 @@ function commitOverlay(
   };
   if (onbeforeedit && onbeforeedit(evt) === false) return;
   row[id] = newValue;
-  source = source;
+  updateRows(source.slice(), "edit", [row]);
   oncelledit?.(evt);
+}
+
+function updateRows(
+  rows: GridRow[],
+  action: GridRowsChangeEvent["action"],
+  changedRows: GridRow[],
+) {
+  source = rows;
+  onrowschange?.({ rows, changedRows, action });
 }
 
 function startEdit(row: number, col: number, seed?: string) {
@@ -420,7 +500,13 @@ function copySelection() {
 function cutSelection() {
   copySelection();
   if (readonly) return;
-  source = clearRange(source, visibleCols, currentRange());
+  const selected = normalizeRange(currentRange());
+  const rows = clearRange(source, visibleCols, selected);
+  updateRows(
+    rows,
+    "cut",
+    rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+  );
 }
 
 function pasteText(text: string) {
@@ -435,7 +521,11 @@ function pasteText(text: string) {
     matrix,
     createEmptyRow,
   });
-  source = rows;
+  updateRows(
+    rows,
+    "paste",
+    rows.slice(start.startRow, Math.min(start.startRow + matrix.length, rows.length)),
+  );
   pasteBanner = result;
   onpasteResult?.(result);
 }
@@ -555,7 +645,15 @@ function handleKeydown(e: KeyboardEvent) {
       menu = null;
       break;
     case "delete":
-      if (!readonly) source = clearRange(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = clearRange(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "delete",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     case "copy":
       copySelection();
@@ -591,10 +689,26 @@ function handleKeydown(e: KeyboardEvent) {
       setActive(active.row + cmd.rowDelta * page, active.col);
       break;
     case "fillDown":
-      if (!readonly) source = fillDown(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = fillDown(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "fill-down",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     case "fillRight":
-      if (!readonly) source = fillRight(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = fillRight(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "fill-right",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     default:
       break;
@@ -619,17 +733,22 @@ function onContext(row: number, col: number, e: MouseEvent) {
     (selection.range &&
       normalizeRange(selection.range).endRow !==
         normalizeRange(selection.range).startRow);
+  const items = contextMenuItems({
+    context: "cell",
+    hasSelection: !!hasSelection,
+    canEdit: !readonly,
+    filtered: (shouldRunClientQuery || serverQuery) && Boolean(filter),
+  }).filter(
+    (item) =>
+      isColumnSortable(visibleCols[col] ?? {}) ||
+      (item.id !== "sort-asc" && item.id !== "sort-desc"),
+  );
   menu = {
     x: e.clientX,
     y: e.clientY,
     row,
     col,
-    items: contextMenuItems({
-      context: "cell",
-      hasSelection: !!hasSelection,
-      canEdit: !readonly,
-      filtered: shouldRunClientQuery && Boolean(filter),
-    }),
+    items,
   };
 }
 
@@ -666,10 +785,21 @@ function runMenu(id: string) {
       startEdit(active.row, active.col);
       break;
     case "delete":
-      if (!readonly) source = clearRange(source, visibleCols, currentRange());
+      if (!readonly) {
+        const selected = normalizeRange(currentRange());
+        const rows = clearRange(source, visibleCols, selected);
+        updateRows(
+          rows,
+          "delete",
+          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+        );
+      }
       break;
     case "duplicate":
-      if (!readonly) source = duplicateRows(source, [active.row]);
+      if (!readonly) {
+        const rows = duplicateRows(source, [active.row], () => crypto.randomUUID());
+        updateRows(rows, "duplicate", rows.slice(source.length));
+      }
       break;
     case "select-row": {
       const row = displayRows[active.row];
@@ -877,23 +1007,17 @@ function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
   return false;
 }
 
-function isAvatarColumn(col: OrbisColumnDef, row?: GridRow): boolean {
+function isAvatarColumn(col: OrbisColumnDef): boolean {
   const id = columnId(col);
   if (col.type === "avatar") return true;
-  if (
+  return (
     id === "student_name" ||
     id === "full_name" ||
     id === "user" ||
     id === "user_name" ||
     id === "student" ||
     id === "teacher"
-  ) {
-    return true;
-  }
-  if (row && (row.avatar_url || row.avatar || row.photo_url || row.image)) {
-    return true;
-  }
-  return false;
+  );
 }
 
 function isActionColumn(col: OrbisColumnDef): boolean {
@@ -939,8 +1063,11 @@ export function refresh() {
 }
 export function setDataAt(rowIndex: number, colId: string, val: unknown) {
   if (!source[rowIndex]) return;
-  source[rowIndex]![colId] = val;
-  source = source;
+  const row = { ...source[rowIndex]!, [colId]: val };
+  const rows = source.slice();
+  rows[rowIndex] = row;
+  source = rows;
+  onrowschange?.({ rows, changedRows: [row], action: "edit" });
 }
 export function clearFocus() {
   selection = emptySelection();
@@ -1025,12 +1152,24 @@ export function scrollToColumnProp(prop: string) {
       {/each}
     </div>
   {:else if displayRows.length === 0}
-    <div class="orbis-empty-wrap">
-      <div class="orbis-empty-title">{emptyTitle}</div>
-      {#if emptyDescription}
-        <div class="orbis-empty-desc">{emptyDescription}</div>
-      {/if}
-    </div>
+    {#if loadMoreError}
+      <div class="orbis-empty-wrap" role="alert">
+        <div class="orbis-empty-title">{rtl ? "تعذر تحميل السجلات" : "Couldn't load records"}</div>
+        <div class="orbis-empty-desc">
+          {loadMoreError instanceof Error ? loadMoreError.message : String(loadMoreError)}
+        </div>
+        <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
+          {rtl ? "إعادة المحاولة" : "Retry"}
+        </button>
+      </div>
+    {:else}
+      <div class="orbis-empty-wrap">
+        <div class="orbis-empty-title">{emptyTitle}</div>
+        {#if emptyDescription}
+          <div class="orbis-empty-desc">{emptyDescription}</div>
+        {/if}
+      </div>
+    {/if}
   {:else}
     <div
       class="orbis-grid-body"
@@ -1225,13 +1364,23 @@ export function scrollToColumnProp(prop: string) {
                           </svg>
                         {/if}
                       </button>
-                    {:else if isAvatarColumn(col, row)}
+                    {:else if isAvatarColumn(col)}
                       {@const val = String(getCellValue(row, col) ?? "")}
                       {@const src = getAvatarSrc(row)}
                       <div class="orbis-avatar-cell">
                         <div class="orbis-avatar-circle">
                           {#if src}
-                            <img src={src} alt={val} class="orbis-avatar-img" />
+                            <img
+                              src={src}
+                              alt={val}
+                              class="orbis-avatar-img"
+                              onerror={(event) => {
+                                event.currentTarget.hidden = true;
+                                const fallback = event.currentTarget.nextElementSibling;
+                                if (fallback instanceof HTMLElement) fallback.hidden = false;
+                              }}
+                            />
+                            <span class="orbis-avatar-fallback" hidden>{getInitials(val)}</span>
                           {:else}
                             <span class="orbis-avatar-fallback">{getInitials(val)}</span>
                           {/if}
@@ -1268,6 +1417,8 @@ export function scrollToColumnProp(prop: string) {
                             >
                               {#if action.icon === "Pencil" || action.id === "edit"}
                                 <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                              {:else if action.icon === "Clipboard" || action.id === "duplicate"}
+                                <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                               {:else if action.icon === "Trash2" || action.icon === "Trash" || action.id === "delete"}
                                 <svg class="orbis-action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
                               {:else if action.icon === "Eye" || action.id === "preview" || action.id === "view"}
@@ -1306,6 +1457,21 @@ export function scrollToColumnProp(prop: string) {
             {/if}
           {/each}
         </div>
+        {#if isLoadingMore || loadMoreError}
+          <div class="orbis-load-status" role={loadMoreError ? "alert" : "status"}>
+            {#if loadMoreError}
+              <span>
+                {rtl ? "تعذر تحميل المزيد" : "Couldn't load more"}
+                {loadMoreError instanceof Error ? `: ${loadMoreError.message}` : ""}
+              </span>
+              <button type="button" class="orbis-load-retry" onclick={() => requestMoreIfNeeded(true)}>
+                {rtl ? "إعادة المحاولة" : "Retry"}
+              </button>
+            {:else}
+              {rtl ? "جارٍ تحميل المزيد…" : "Loading more…"}
+            {/if}
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
@@ -1441,6 +1607,29 @@ export function scrollToColumnProp(prop: string) {
     overflow: auto;
     position: relative;
     background: var(--card);
+  }
+  .orbis-load-status {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    min-height: 36px;
+    padding: 0.4rem 0.75rem;
+    border-top: 1px solid var(--border);
+    background: color-mix(in oklab, var(--card) 94%, transparent);
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+  }
+  .orbis-load-retry {
+    border: 1px solid var(--border);
+    border-radius: 0.375rem;
+    background: var(--background);
+    padding: 0.25rem 0.5rem;
+    color: var(--foreground);
+    cursor: pointer;
   }
   .orbis-spacer {
     position: relative;

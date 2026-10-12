@@ -7,8 +7,8 @@ import {
   type ClassDto,
   type SubjectDto,
   type AcademicPeriodDto,
-  type AcademicYearDto,
-  type ClassSubjectDto,
+  type academicCalendarDto,
+  type SectionSubjectDto,
   type AssessmentSchemeDto,
   type TimeSlotDto,
   type ScheduledLessonDto,
@@ -20,10 +20,10 @@ import {
 } from "$lib/api";
 
 /** All academic years for current organization. */
-export function createAcademicYearsQuery(orgId: () => string) {
-  return createQuery<AcademicYearDto[]>(() => ({
+export function createacademicCalendarsQuery(orgId: () => string) {
+  return createQuery<academicCalendarDto[]>(() => ({
     queryKey: queryKeys.calendar.years(orgId()),
-    queryFn: () => api.listAcademicYears(),
+    queryFn: () => api.listacademicCalendars(),
     enabled: !!orgId(),
     staleTime: 10 * 60 * 1000,
   }));
@@ -109,13 +109,13 @@ export function createSubjectQuery(subjectId: () => string | undefined) {
 }
 
 /** Class subjects / assignments for a specific class and period. */
-export function createClassSubjectsQuery(
+export function createSectionSubjectsQuery(
   classId: () => string | undefined,
   periodId: () => string | undefined,
 ) {
-  return createQuery<ClassSubjectDto[]>(() => ({
-    queryKey: queryKeys.academic.classSubjects(classId() ?? "", periodId() ?? ""),
-    queryFn: () => api.listClassSubjects(classId()!, periodId()!),
+  return createQuery<SectionSubjectDto[]>(() => ({
+    queryKey: queryKeys.academic.SectionSubjects(classId() ?? "", periodId() ?? ""),
+    queryFn: () => api.listSectionSubjects(classId()!, periodId()!),
     enabled: !!classId() && !!periodId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -135,7 +135,7 @@ export function createRoomsQuery(orgId: () => string) {
 export function createAssessmentsQuery(
   params: () => {
     periodId?: string;
-    classSubjectId?: string;
+    SectionSubjectId?: string;
   },
 ) {
   return createQuery<AssessmentSchemeDto[]>(() => ({
@@ -147,11 +147,11 @@ export function createAssessmentsQuery(
 }
 
 /** Grades for a class subject. */
-export function createGradesQuery(classSubjectId: () => string | undefined) {
+export function createGradesQuery(SectionSubjectId: () => string | undefined) {
   return createQuery<GradeDto[]>(() => ({
-    queryKey: queryKeys.assessment.grades({ classSubjectId: classSubjectId() }),
-    queryFn: () => api.listGrades({ classSubjectId: classSubjectId() }),
-    enabled: !!classSubjectId(),
+    queryKey: queryKeys.assessment.grades({ SectionSubjectId: SectionSubjectId() }),
+    queryFn: () => api.listGrades({ SectionSubjectId: SectionSubjectId() }),
+    enabled: !!SectionSubjectId(),
     staleTime: 1 * 60 * 1000,
   }));
 }

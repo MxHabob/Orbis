@@ -27,6 +27,7 @@ import ContextToolbar from "./layout/context-toolbar.svelte";
 import StatusBar from "./layout/status-bar.svelte";
 import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
+import PropertiesInspector from "./panels/properties-inspector.svelte";
 
 let { orgId, templateId }: { orgId: string; templateId: string } = $props();
 
@@ -103,6 +104,119 @@ async function initEditor() {
     if (data.orientation) {
       doc.meta.pageSetup.orientation = data.orientation as any;
     }
+
+    // System schemas for data variables and auto-completion
+    store.setSystemSchemas({
+      student: {
+        type: "object",
+        label: "بيانات الطالب",
+        properties: {
+          name: { type: "string", label: "اسم الطالب الرباعي" },
+          student_number: { type: "string", label: "الرقم الأكاديمي" },
+          national_id: { type: "string", label: "رقم الهوية / الإقامة" },
+          seat_number: { type: "string", label: "رقم الجلوس" },
+          class_name: { type: "string", label: "الصف والشعبة" },
+          grade_level: { type: "string", label: "المرحلة الدراسية" },
+          academic_calendar: { type: "string", label: "العام الدراسي" },
+          birth_date: { type: "string", label: "تاريخ الميلاد" },
+          birth_place: { type: "string", label: "مكان الميلاد" },
+          nationality: { type: "string", label: "الجنسية" },
+          guardian_name: { type: "string", label: "اسم ولي الأمر" },
+        },
+      },
+      academic: {
+        type: "object",
+        label: "البيانات الأكاديمية والدرجات",
+        properties: {
+          subjects: {
+            type: "array",
+            label: "جدول المواد والدرجات",
+            items: { type: "object" },
+          },
+          annual_total: { type: "number", label: "المجموع السنوي العام" },
+          max_score: { type: "number", label: "النهاية الكبرى العامة" },
+          min_score: { type: "number", label: "النهاية الصغرى العامة" },
+          percentage: { type: "string", label: "المعدل التراكمي / النسبة المئوية" },
+          appreciation: { type: "string", label: "التقدير العام" },
+          status: { type: "string", label: "النتيجة النهائية" },
+          rank_in_class: { type: "string", label: "الترتيب على الصف" },
+        },
+      },
+      summary: {
+        type: "object",
+        label: "ملخص النتيجة والإحصائيات",
+        properties: {
+          total_score: { type: "number", label: "مجموع الدرجات المحصلة" },
+          percentage: { type: "string", label: "النسبة المئوية العامة" },
+          status: { type: "string", label: "الحالة والقرار الأكاديمي" },
+          appreciation: { type: "string", label: "التقدير التراكمي" },
+          rank_in_class: { type: "string", label: "الترتيب الأكاديمي" },
+        },
+      },
+      report: {
+        type: "object",
+        label: "بيانات التقرير والاعتماد",
+        properties: {
+          period_name: { type: "string", label: "فترة التقرير / الفصل الدراسي" },
+          academic_calendar: { type: "string", label: "العام الدراسي" },
+          issued_date: { type: "string", label: "تاريخ الإصدار والطباعة" },
+          principal_name: { type: "string", label: "مدير المدرسة" },
+          class_teacher: { type: "string", label: "مربي الصف" },
+          verification_url: { type: "string", label: "رابط التحقق الرقمي QR" },
+        },
+      },
+      exam: {
+        type: "object",
+        label: "بيانات الامتحانات واللجان",
+        properties: {
+          session_name: { type: "string", label: "اسم الدورة الاختبارية" },
+          hall_name: { type: "string", label: "قاعة الاختبار / مقر اللجنة" },
+          seating_number: { type: "string", label: "رقم الجلوس الرسمي" },
+          desk_number: { type: "string", label: "رقم المقعد" },
+          subject_name: { type: "string", label: "المادة الدراسية" },
+          exam_date: { type: "string", label: "تاريخ ووقت الاختبار" },
+          total_count: { type: "string", label: "إجمالي الطلاب باللجنة" },
+        },
+      },
+      employee: {
+        type: "object",
+        label: "بيانات الموظف والكادر",
+        properties: {
+          name: { type: "string", label: "اسم الموظف" },
+          job_title: { type: "string", label: "المسمى الوظيفي" },
+          employee_number: { type: "string", label: "الرقم الوظيفي" },
+          department: { type: "string", label: "القسم / الإدارة" },
+        },
+      },
+      receipt: {
+        type: "object",
+        label: "بيانات السندات المالية",
+        properties: {
+          number: { type: "string", label: "رقم السند" },
+          date: { type: "string", label: "تاريخ السند" },
+          payer_name: { type: "string", label: "اسم الدافع / المستلم منه" },
+          student_name: { type: "string", label: "اسم الطالب" },
+          amount: { type: "number", label: "المبلغ رقماً" },
+          amount_words: { type: "string", label: "المبلغ كتابة" },
+          description: { type: "string", label: "البيان" },
+          payment_method: { type: "string", label: "طريقة الدفع" },
+          cashier_name: { type: "string", label: "أمين الصندوق" },
+        },
+      },
+      $org: {
+        type: "object",
+        label: "بيانات المنشأة والوزارة",
+        properties: {
+          country_name: { type: "string", label: "اسم الدولة" },
+          ministry_name: { type: "string", label: "اسم الوزارة" },
+          region_name: { type: "string", label: "المكتب / المحافظة / المديرية" },
+          name_ar: { type: "string", label: "اسم المنشأة التعليمية (عربي)" },
+          name: { type: "string", label: "اسم المنشأة التعليمية (English)" },
+          logo_url: { type: "string", label: "شعار المنشأة" },
+          emblem_url: { type: "string", label: "شعار الوزارة أو الجمهورية" },
+        },
+      },
+    });
 
     store.loadDocument(doc);
     isLoading = false;
@@ -362,6 +476,10 @@ onMount(() => {
 
         <FlyoutPanel {store} />
       </div>
+
+      {#if store.editorMode === "design"}
+        <PropertiesInspector {store} />
+      {/if}
     </div>
     <StatusBar {store} />
   {/if}

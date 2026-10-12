@@ -4,7 +4,7 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_app::services::progression_service::StudentProgressionItem;
-use orbis_domain::entities::progression::{PromotionDecision, PromotionJob, PromotionJobStatus};
+use orbis_domain::entities::progression::{PromotionDecision, ProgressionJob, ProgressionJobStatus};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -13,7 +13,7 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
 }
 
 #[derive(Serialize)]
-pub struct PromotionJobDto {
+pub struct ProgressionJobDto {
     pub id: String,
     pub org_id: String,
     pub source_period_id: String,
@@ -50,20 +50,20 @@ pub struct PromoteCohortInput {
     pub items: Vec<StudentProgressionItemInput>,
 }
 
-fn job_to_dto(job: PromotionJob) -> PromotionJobDto {
-    PromotionJobDto {
+fn job_to_dto(job: ProgressionJob) -> ProgressionJobDto {
+    ProgressionJobDto {
         id: job.id.to_string(),
         org_id: job.org_id.to_string(),
         source_period_id: job.source_period_id.to_string(),
         target_period_id: job.target_period_id.map(|t| t.to_string()),
         name: job.name,
         status: match job.status {
-            PromotionJobStatus::Draft => "draft".into(),
-            PromotionJobStatus::PreviewReady => "preview_ready".into(),
-            PromotionJobStatus::Executing => "executing".into(),
-            PromotionJobStatus::Completed => "completed".into(),
-            PromotionJobStatus::Failed => "failed".into(),
-            PromotionJobStatus::RolledBack => "rolled_back".into(),
+            ProgressionJobStatus::Draft => "draft".into(),
+            ProgressionJobStatus::PreviewReady => "preview_ready".into(),
+            ProgressionJobStatus::Executing => "executing".into(),
+            ProgressionJobStatus::Completed => "completed".into(),
+            ProgressionJobStatus::Failed => "failed".into(),
+            ProgressionJobStatus::RolledBack => "rolled_back".into(),
         },
         total_students: job.total_students,
         promoted_count: job.promoted_count,
@@ -90,7 +90,7 @@ fn parse_decision(s: &str) -> PromotionDecision {
 pub async fn progression_promote_cohort(
     request: PromoteCohortInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<PromotionJobDto>, String> {
+) -> Result<ApiResponse<ProgressionJobDto>, String> {
     let ctx = make_ctx(&state);
     let source_period_id =
         Uuid::parse_str(&request.source_period_id).map_err(|_| "Invalid sourcePeriodId")?;
@@ -160,7 +160,7 @@ pub async fn progression_evaluate_cohort(
 #[tauri::command]
 pub async fn progression_list_jobs(
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<PromotionJobDto>>, String> {
+) -> Result<ApiResponse<Vec<ProgressionJobDto>>, String> {
     let ctx = make_ctx(&state);
     let jobs = state
         .progression_service
@@ -175,7 +175,7 @@ pub async fn progression_list_jobs(
 pub async fn progression_get_job(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<PromotionJobDto>, String> {
+) -> Result<ApiResponse<ProgressionJobDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let item = state
         .progression_service

@@ -15,14 +15,200 @@
 //! - Return strongly-typed bootstrap result
 
 use chrono::Utc;
+use orbis_domain::entities::academic_calculation::{
+    AstNode, CalculationInput, CalculationOutput, CalculationPlan, CalculationUnit, GradeBand,
+    OutcomePolicy, RoundingRule, WeightedItem,
+};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
 use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstitutionBlueprintConfig {
+    pub grading_system: String,
+    pub calculation_inputs: Vec<(String, Decimal)>,
+    pub passing_threshold_percentage: Decimal,
+    pub honors_threshold_percentage: Decimal,
+    pub minimum_final_exam_score: Option<Decimal>,
+    pub max_failed_subjects_for_conditional_pass: usize,
+    pub min_attendance_rate: Decimal,
+    pub ranking_scope: RankingScope,
+    pub tie_policy: TiePolicy,
+    pub rounding_mode: RoundingMode,
+    pub decimal_places: u32,
+    pub max_class_size_default: i32,
+    pub allow_late_enrollment: bool,
+    pub number_prefix: String,
+}
+
+impl InstitutionBlueprintConfig {
+    pub fn from_institution_type(institution_type: &InstitutionType) -> Self {
+        match institution_type {
+            InstitutionType::School => Self {
+                grading_system: "percentage".to_string(),
+                calculation_inputs: vec![
+                    ("coursework".to_string(), Decimal::new(4, 1)),
+                    ("examination".to_string(), Decimal::new(5, 1)),
+                    ("participation".to_string(), Decimal::new(1, 1)),
+                ],
+                passing_threshold_percentage: Decimal::from(50),
+                honors_threshold_percentage: Decimal::from(85),
+                minimum_final_exam_score: Some(Decimal::from(10)),
+                max_failed_subjects_for_conditional_pass: 2,
+                min_attendance_rate: Decimal::from(75),
+                ranking_scope: RankingScope::Class,
+                tie_policy: TiePolicy::StandardCompetition,
+                rounding_mode: RoundingMode::RoundHalfUp,
+                decimal_places: 2,
+                max_class_size_default: 30,
+                allow_late_enrollment: false,
+                number_prefix: "STD".to_string(),
+            },
+            InstitutionType::University => Self {
+                grading_system: "gpa".to_string(),
+                calculation_inputs: vec![
+                    ("continuous_assessment".to_string(), Decimal::new(4, 1)),
+                    ("final_assessment".to_string(), Decimal::new(6, 1)),
+                ],
+                passing_threshold_percentage: Decimal::from(60),
+                honors_threshold_percentage: Decimal::from(90),
+                minimum_final_exam_score: Some(Decimal::from(15)),
+                max_failed_subjects_for_conditional_pass: 1,
+                min_attendance_rate: Decimal::from(75),
+                ranking_scope: RankingScope::Cohort,
+                tie_policy: TiePolicy::StandardCompetition,
+                rounding_mode: RoundingMode::RoundHalfUp,
+                decimal_places: 2,
+                max_class_size_default: 50,
+                allow_late_enrollment: true,
+                number_prefix: "UNI".to_string(),
+            },
+            InstitutionType::Institute => Self {
+                grading_system: "percentage".to_string(),
+                calculation_inputs: vec![
+                    ("theory".to_string(), Decimal::new(3, 1)),
+                    ("practical".to_string(), Decimal::new(5, 1)),
+                    ("competency".to_string(), Decimal::new(2, 1)),
+                ],
+                passing_threshold_percentage: Decimal::from(50),
+                honors_threshold_percentage: Decimal::from(85),
+                minimum_final_exam_score: Some(Decimal::from(10)),
+                max_failed_subjects_for_conditional_pass: 2,
+                min_attendance_rate: Decimal::from(80),
+                ranking_scope: RankingScope::Class,
+                tie_policy: TiePolicy::StandardCompetition,
+                rounding_mode: RoundingMode::RoundHalfUp,
+                decimal_places: 2,
+                max_class_size_default: 25,
+                allow_late_enrollment: false,
+                number_prefix: "INS".to_string(),
+            },
+        }
+    }
+
+    pub fn apply_to_settings(&self, settings: &mut OrganizationSettings) {
+        settings.academic.default_grading_system = self.grading_system.clone();
+        settings.academic.default_passing_score = self.passing_threshold_percentage;
+        settings.academic.default_max_score = Decimal::from(100);
+        settings.academic.passing_threshold_percentage = self.passing_threshold_percentage;
+        settings.academic.honors_threshold_percentage = self.honors_threshold_percentage;
+        settings.academic.minimum_final_exam_score = self.minimum_final_exam_score;
+        settings.academic.max_failed_subjects_for_conditional_pass =
+            self.max_failed_subjects_for_conditional_pass;
+        settings.academic.min_attendance_rate = self.min_attendance_rate;
+        settings.academic.ranking_scope = self.ranking_scope;
+        settings.academic.tie_policy = self.tie_policy;
+        settings.academic.rounding_mode = self.rounding_mode;
+        settings.academic.decimal_places = self.decimal_places;
+        settings.academic.calculation_plan = Some(self.calculation_plan());
+        settings.academic.outcome_policy = Some(OutcomePolicy {
+            unit: CalculationUnit::Score {
+                scale: "percentage".to_string(),
+            },
+            pass_at_or_above: Some(self.passing_threshold_percentage),
+            honors_at_or_above: Some(self.honors_threshold_percentage),
+            grade_bands: vec![
+                GradeBand {
+                    code: "A".to_string(),
+                    label: "Excellent".to_string(),
+                    minimum_score: Decimal::from(90),
+                },
+                GradeBand {
+                    code: "B".to_string(),
+                    label: "Very good".to_string(),
+                    minimum_score: Decimal::from(80),
+                },
+                GradeBand {
+                    code: "C".to_string(),
+                    label: "Good".to_string(),
+                    minimum_score: Decimal::from(70),
+                },
+                GradeBand {
+                    code: "D".to_string(),
+                    label: "Pass".to_string(),
+                    minimum_score: self.passing_threshold_percentage,
+                },
+                GradeBand {
+                    code: "F".to_string(),
+                    label: "Not passed".to_string(),
+                    minimum_score: Decimal::ZERO,
+                },
+            ],
+        });
+        settings.academic.ranking_enabled = true;
+        settings.academic.max_displayed_rank = None;
+        settings.enrollment.max_class_size_default = self.max_class_size_default;
+        settings.enrollment.allow_late_enrollment = self.allow_late_enrollment;
+    }
+
+    fn calculation_plan(&self) -> CalculationPlan {
+        let unit = CalculationUnit::Score {
+            scale: "percentage".to_string(),
+        };
+
+        CalculationPlan {
+            version: 1,
+            inputs: self
+                .calculation_inputs
+                .iter()
+                .map(|(name, _)| CalculationInput {
+                    name: name.clone(),
+                    unit: unit.clone(),
+                    minimum: Some(Decimal::ZERO),
+                    maximum: Some(Decimal::from(100)),
+                    is_required: true,
+                })
+                .collect(),
+            outputs: vec![CalculationOutput {
+                name: "course_result".to_string(),
+                unit,
+                expression: AstNode::WeightedSum {
+                    items: self
+                        .calculation_inputs
+                        .iter()
+                        .map(|(name, weight)| WeightedItem {
+                            node: AstNode::Variable {
+                                name: name.clone(),
+                            },
+                            weight: *weight,
+                        })
+                        .collect(),
+                    normalize: true,
+                },
+                rounding: Some(RoundingRule {
+                    mode: self.rounding_mode,
+                    decimal_places: self.decimal_places,
+                }),
+            }],
+        }
+    }
+}
 use orbis_domain::entities::admission::{
     AdmissionPolicy, FormFieldConfig, NumberingSchema, YearFormat,
 };
+use orbis_domain::entities::group::Group;
 use orbis_domain::entities::identity::{IdentityProvider, UserIdentity};
 use orbis_domain::entities::organization::{InstitutionType, Organization};
 use orbis_domain::entities::person::Person;
@@ -37,11 +223,102 @@ use rust_decimal::Decimal;
 use super::coa_loader::CoaBlueprintLoader;
 use crate::ports::event_bus::EventBus;
 use crate::ports::repositories::{
-    AccountRepository, CurrencyRepository, OrganizationRepository, PersonRepository,
-    RoleRepository, SettingsRepository, SystemRepository, UserIdentityRepository, UserRepository,
+    AccountRepository, CurrencyRepository, GroupRepository, OrganizationRepository,
+    PersonRepository, RoleRepository, SettingsRepository, SystemRepository, UserIdentityRepository,
+    UserRepository,
 };
 use crate::ports::security::PasswordHasher;
 use orbis_domain::entities::currency::Currency;
+
+fn all_admin_permission_pairs() -> Vec<(&'static str, &'static str)> {
+    [
+        ("organization", &["read", "write"][..]),
+        (
+            "user",
+            &["read", "write", "delete", "role_write", "password_write"][..],
+        ),
+        (
+            "period",
+            &["read", "write", "activate", "lock", "unlock"][..],
+        ),
+        ("org_unit", &["read", "write", "delete"][..]),
+        ("class", &["read", "write", "delete"][..]),
+        ("subject", &["read", "write", "delete"][..]),
+        ("schedule", &["read", "write", "delete"][..]),
+        ("assessment", &["read", "write", "delete"][..]),
+        (
+            "grade",
+            &["read", "write", "entry_manage", "analytics", "report"][..],
+        ),
+        (
+            "student",
+            &["read", "write", "create", "update", "delete"][..],
+        ),
+        ("guardian", &["read", "write", "delete"][..]),
+        ("enrollment", &["read", "write", "promote", "transfer"][..]),
+        ("workflow", &["read", "write", "approve", "execute"][..]),
+        ("attendance", &["read", "write", "analytics", "report"][..]),
+        ("behavior", &["read", "write", "delete", "ai"][..]),
+        ("document", &["read", "write", "delete"][..]),
+        (
+            "template",
+            &[
+                "read",
+                "write",
+                "publish",
+                "delete",
+                "import",
+                "export",
+                "generate_single",
+                "generate_batch",
+                "generate_download",
+                "asset_upload",
+                "asset_delete",
+                "component_write",
+                "component_delete",
+            ][..],
+        ),
+        ("exam_session", &["read", "write", "activate", "delete"][..]),
+        ("seating_number", &["generate", "read"][..]),
+        ("secret_number", &["generate", "read", "reveal"][..]),
+        ("exam_hall", &["read", "write", "allocate"][..]),
+        ("proctor", &["read", "assign"][..]),
+        ("student_order", &["read", "rebuild", "freeze"][..]),
+        ("exam_schedule", &["read", "write"][..]),
+        ("notification", &["read", "write"][..]),
+        ("dashboard", &["read"][..]),
+        ("audit", &["read"][..]),
+        ("data", &["import", "export"][..]),
+        (
+            "finance",
+            &["read", "write", "payment", "backdate", "future_date"][..],
+        ),
+        ("promotion", &["read", "write", "execute"][..]),
+        (
+            "employee",
+            &["read", "write", "create", "update", "delete"][..],
+        ),
+        ("group", &["read", "write", "delete", "assign"][..]),
+        ("system", &["autopilot"][..]),
+    ]
+    .into_iter()
+    .flat_map(|(resource, actions)| actions.iter().map(move |action| (resource, *action)))
+    .collect()
+}
+
+fn all_admin_permission_strings() -> Vec<String> {
+    all_admin_permission_pairs()
+        .into_iter()
+        .map(|(resource, action)| format!("{resource}:{action}"))
+        .collect()
+}
+
+fn default_org_admin_group_permissions() -> Vec<String> {
+    all_admin_permission_strings()
+        .into_iter()
+        .filter(|permission| permission != "system:autopilot")
+        .collect()
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Bootstrap Request
@@ -57,6 +334,9 @@ pub struct BootstrapRequest {
     pub organization_name_ar: Option<String>,
     pub organization_slug: Option<String>,
     pub organization_code: Option<String>,
+    pub country_name: Option<String>,
+    pub ministry_name: Option<String>,
+    pub region_name: Option<String>,
 
     // ── Enriched Organization Profile ─────────────────────────
     pub educational_track: Option<String>,
@@ -142,6 +422,7 @@ pub struct BootstrapService {
     pub user_repo: Arc<dyn UserRepository>,
     pub person_repo: Arc<dyn PersonRepository>,
     pub user_identity_repo: Arc<dyn UserIdentityRepository>,
+    pub group_repo: Arc<dyn GroupRepository>,
     pub role_repo: Arc<dyn RoleRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
     pub system_repo: Arc<dyn SystemRepository>,
@@ -157,6 +438,7 @@ impl BootstrapService {
         user_repo: Arc<dyn UserRepository>,
         person_repo: Arc<dyn PersonRepository>,
         user_identity_repo: Arc<dyn UserIdentityRepository>,
+        group_repo: Arc<dyn GroupRepository>,
         role_repo: Arc<dyn RoleRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
         system_repo: Arc<dyn SystemRepository>,
@@ -170,6 +452,7 @@ impl BootstrapService {
             user_repo,
             person_repo,
             user_identity_repo,
+            group_repo,
             role_repo,
             settings_repo,
             system_repo,
@@ -287,13 +570,16 @@ impl BootstrapService {
         // ── Step 7: Create system roles ───────────────────────
         self.create_system_roles(org_id).await?;
 
-        // ── Step 8: Create initial administrator ──────────────
+        // ── Step 8: Create system user groups ─────────────────
+        self.create_default_user_groups(org_id).await?;
+
+        // ── Step 9: Create initial administrator ──────────────
         let (admin_user, _admin_person) = self.create_administrator(org_id, &req).await?;
 
-        // ── Step 9: Assign admin role ─────────────────────────
+        // ── Step 10: Assign admin role ────────────────────────
         self.assign_admin_role(org_id, admin_user.id).await?;
 
-        // ── Step 10: Verify ───────────────────────────────────
+        // ── Step 11: Verify ───────────────────────────────────
         let verified = self.verify_bootstrap(org_id).await?;
         if !verified {
             warnings.push("Bootstrap verification detected incomplete state".to_string());
@@ -444,6 +730,9 @@ impl BootstrapService {
             "educational_track": req.educational_track,
             "organization_size": req.organization_size,
             "country_code": req.country_code,
+            "country_name": req.country_name,
+            "ministry_name": req.ministry_name,
+            "region_name": req.region_name,
             "city": req.city,
             "phone": req.phone,
             "website": req.website,
@@ -473,64 +762,10 @@ impl BootstrapService {
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let mut settings = OrganizationSettings::default();
+        let blueprint = InstitutionBlueprintConfig::from_institution_type(institution_type);
+        blueprint.apply_to_settings(&mut settings);
 
         // 1. Academic Policies & Evaluation Defaults
-        match institution_type {
-            InstitutionType::School => {
-                settings.academic.default_grading_system = "percentage".to_string();
-                settings.academic.default_passing_score = Decimal::from(50);
-                settings.academic.default_max_score = Decimal::from(100);
-                settings.academic.passing_threshold_percentage = Decimal::from(50);
-                settings.academic.honors_threshold_percentage = Decimal::from(85);
-                settings.academic.minimum_final_exam_score = Some(Decimal::from(10));
-                settings.academic.max_failed_subjects_for_conditional_pass = 2;
-                settings.academic.min_attendance_rate = Decimal::from(75);
-                settings.academic.ranking_enabled = true;
-                settings.academic.max_displayed_rank = None;
-                settings.academic.ranking_scope = RankingScope::Class;
-                settings.academic.tie_policy = TiePolicy::StandardCompetition;
-                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
-                settings.academic.decimal_places = 2;
-                settings.enrollment.max_class_size_default = 30;
-                settings.enrollment.allow_late_enrollment = false;
-            }
-            InstitutionType::University => {
-                settings.academic.default_grading_system = "gpa".to_string();
-                settings.academic.default_passing_score = Decimal::from(60);
-                settings.academic.default_max_score = Decimal::from(100);
-                settings.academic.passing_threshold_percentage = Decimal::from(60);
-                settings.academic.honors_threshold_percentage = Decimal::from(90);
-                settings.academic.minimum_final_exam_score = Some(Decimal::from(15));
-                settings.academic.max_failed_subjects_for_conditional_pass = 1;
-                settings.academic.min_attendance_rate = Decimal::from(75);
-                settings.academic.ranking_enabled = true;
-                settings.academic.max_displayed_rank = None;
-                settings.academic.ranking_scope = RankingScope::Cohort;
-                settings.academic.tie_policy = TiePolicy::StandardCompetition;
-                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
-                settings.academic.decimal_places = 2;
-                settings.enrollment.max_class_size_default = 50;
-                settings.enrollment.allow_late_enrollment = true;
-            }
-            InstitutionType::Institute => {
-                settings.academic.default_grading_system = "percentage".to_string();
-                settings.academic.default_passing_score = Decimal::from(50);
-                settings.academic.default_max_score = Decimal::from(100);
-                settings.academic.passing_threshold_percentage = Decimal::from(50);
-                settings.academic.honors_threshold_percentage = Decimal::from(85);
-                settings.academic.minimum_final_exam_score = Some(Decimal::from(10));
-                settings.academic.max_failed_subjects_for_conditional_pass = 2;
-                settings.academic.min_attendance_rate = Decimal::from(80);
-                settings.academic.ranking_enabled = true;
-                settings.academic.max_displayed_rank = None;
-                settings.academic.ranking_scope = RankingScope::Class;
-                settings.academic.tie_policy = TiePolicy::StandardCompetition;
-                settings.academic.rounding_mode = RoundingMode::RoundHalfUp;
-                settings.academic.decimal_places = 2;
-                settings.enrollment.max_class_size_default = 25;
-                settings.enrollment.allow_late_enrollment = false;
-            }
-        }
         settings.academic.enrollment_auto_close = true;
         settings.academic.late_enrollment_approval = true;
         settings.academic.grade_entry_auto_close = true;
@@ -864,6 +1099,238 @@ impl BootstrapService {
         // Create admin permissions for super_admin and org_admin roles
         self.create_admin_permissions(org_id, "super_admin").await?;
         self.create_admin_permissions(org_id, "org_admin").await?;
+        Ok(())
+    }
+
+    async fn create_default_user_groups(&self, org_id: Uuid) -> Result<(), DomainError> {
+        let now = Utc::now();
+        let groups = [
+            (
+                "Organization Administrators",
+                "مديرو المؤسسة",
+                "org_admin",
+                vec![],
+            ),
+            (
+                "Principals",
+                "المديرون",
+                "principal",
+                vec![
+                    "organization:read",
+                    "period:read",
+                    "period:write",
+                    "period:activate",
+                    "org_unit:read",
+                    "class:read",
+                    "class:write",
+                    "subject:read",
+                    "subject:write",
+                    "schedule:read",
+                    "schedule:write",
+                    "assessment:read",
+                    "assessment:write",
+                    "grade:read",
+                    "grade:write",
+                    "grade:entry_manage",
+                    "grade:analytics",
+                    "grade:report",
+                    "student:read",
+                    "student:create",
+                    "student:update",
+                    "student:write",
+                    "guardian:read",
+                    "guardian:write",
+                    "enrollment:read",
+                    "enrollment:write",
+                    "enrollment:promote",
+                    "enrollment:transfer",
+                    "workflow:read",
+                    "workflow:write",
+                    "workflow:approve",
+                    "attendance:read",
+                    "attendance:write",
+                    "attendance:analytics",
+                    "attendance:report",
+                    "behavior:read",
+                    "behavior:write",
+                    "document:read",
+                    "document:write",
+                    "template:read",
+                    "template:write",
+                    "template:import",
+                    "template:export",
+                    "exam_session:read",
+                    "exam_session:write",
+                    "seating_number:read",
+                    "secret_number:read",
+                    "exam_hall:read",
+                    "exam_hall:write",
+                    "proctor:read",
+                    "proctor:assign",
+                    "student_order:read",
+                    "exam_schedule:read",
+                    "exam_schedule:write",
+                    "notification:read",
+                    "notification:write",
+                    "dashboard:read",
+                    "audit:read",
+                    "data:import",
+                    "data:export",
+                    "promotion:read",
+                    "promotion:write",
+                    "promotion:execute",
+                    "employee:read",
+                    "employee:write",
+                    "employee:create",
+                    "employee:update",
+                    "group:read",
+                ],
+            ),
+            (
+                "Teachers",
+                "المعلمون",
+                "teacher",
+                vec![
+                    "class:read",
+                    "subject:read",
+                    "schedule:read",
+                    "assessment:read",
+                    "grade:read",
+                    "grade:write",
+                    "grade:entry_manage",
+                    "student:read",
+                    "enrollment:read",
+                    "attendance:read",
+                    "attendance:write",
+                    "behavior:read",
+                    "behavior:write",
+                    "document:read",
+                    "exam_session:read",
+                    "seating_number:read",
+                    "secret_number:read",
+                    "exam_hall:read",
+                    "proctor:read",
+                    "exam_schedule:read",
+                    "notification:read",
+                    "dashboard:read",
+                ],
+            ),
+            (
+                "Accountants",
+                "المحاسبون",
+                "accountant",
+                vec![
+                    "finance:read",
+                    "finance:write",
+                    "finance:payment",
+                    "student:read",
+                    "enrollment:read",
+                    "dashboard:read",
+                    "notification:read",
+                ],
+            ),
+            (
+                "Staff",
+                "الموظفون",
+                "staff",
+                vec![
+                    "class:read",
+                    "subject:read",
+                    "schedule:read",
+                    "attendance:read",
+                    "document:read",
+                    "notification:read",
+                    "dashboard:read",
+                ],
+            ),
+            (
+                "Registrars",
+                "موظفو القبول والتسجيل",
+                "registrar",
+                vec![
+                    "period:read",
+                    "class:read",
+                    "subject:read",
+                    "student:read",
+                    "student:create",
+                    "student:update",
+                    "guardian:read",
+                    "guardian:write",
+                    "enrollment:read",
+                    "enrollment:write",
+                    "enrollment:promote",
+                    "enrollment:transfer",
+                    "document:read",
+                    "document:write",
+                    "template:read",
+                    "template:import",
+                    "template:export",
+                    "data:import",
+                    "data:export",
+                    "notification:read",
+                    "dashboard:read",
+                ],
+            ),
+            (
+                "Guardians",
+                "أولياء الأمور",
+                "guardian",
+                vec!["dashboard:read", "notification:read"],
+            ),
+            (
+                "Students",
+                "الطلاب",
+                "student",
+                vec!["dashboard:read", "notification:read"],
+            ),
+        ];
+
+        for (name, name_ar, role_id, configured_permissions) in groups {
+            let existing = self.group_repo.find_by_name(org_id, name).await?;
+            let mut group = if let Some(group) = existing {
+                if !group.is_system {
+                    return Err(DomainError::Conflict(format!(
+                        "A non-system group already uses the reserved default name '{}'",
+                        name
+                    )));
+                }
+                group
+            } else {
+                Group {
+                    id: Uuid::new_v4(),
+                    org_id,
+                    name: name.to_string(),
+                    name_ar: Some(name_ar.to_string()),
+                    description: Some(format!("Default permissions for the {} role", role_id)),
+                    is_system: true,
+                    status: "active".to_string(),
+                    created_by: None,
+                    updated_by: None,
+                    created_at: now,
+                    updated_at: now,
+                }
+            };
+
+            group.name_ar = Some(name_ar.to_string());
+            group.description = Some(format!(
+                "System-managed default permission group for {}",
+                role_id
+            ));
+            group.status = "active".to_string();
+            group.updated_at = now;
+            self.group_repo.save(&group).await?;
+            let permissions: Vec<String> = if role_id == "org_admin" {
+                default_org_admin_group_permissions()
+            } else {
+                configured_permissions
+                    .into_iter()
+                    .map(str::to_string)
+                    .collect()
+            };
+            self.group_repo
+                .set_group_permissions(org_id, group.id, &permissions)
+                .await?;
+        }
 
         Ok(())
     }
@@ -877,88 +1344,17 @@ impl BootstrapService {
     ) -> Result<(), DomainError> {
         let now = Utc::now();
 
-        // All permission strings from the Permission enum
-        let all_permissions = [
-            ("organization", vec!["read", "write"]),
-            (
-                "user",
-                vec!["read", "write", "delete", "role_write", "password_write"],
-            ),
-            (
-                "period",
-                vec!["read", "write", "activate", "lock", "unlock"],
-            ),
-            ("org_unit", vec!["read", "write", "delete"]),
-            ("class", vec!["read", "write", "delete"]),
-            ("subject", vec!["read", "write", "delete"]),
-            ("schedule", vec!["read", "write", "delete"]),
-            ("assessment", vec!["read", "write", "delete"]),
-            (
-                "grade",
-                vec!["read", "write", "entry_manage", "analytics", "report"],
-            ),
-            (
-                "student",
-                vec!["read", "write", "create", "update", "delete"],
-            ),
-            ("guardian", vec!["read", "write", "delete"]),
-            ("enrollment", vec!["read", "write", "promote", "transfer"]),
-            ("workflow", vec!["read", "write", "approve", "execute"]),
-            ("attendance", vec!["read", "write", "analytics", "report"]),
-            ("behavior", vec!["read", "write", "delete", "ai"]),
-            ("document", vec!["read", "write", "delete"]),
-            (
-                "template",
-                vec![
-                    "read",
-                    "write",
-                    "publish",
-                    "delete",
-                    "import",
-                    "export",
-                    "generate_single",
-                    "generate_batch",
-                    "generate_download",
-                    "asset_upload",
-                    "asset_delete",
-                    "component_write",
-                    "component_delete",
-                ],
-            ),
-            ("exam_session", vec!["read", "write", "activate", "delete"]),
-            ("seating_number", vec!["generate", "read"]),
-            ("secret_number", vec!["generate", "read", "reveal"]),
-            ("exam_hall", vec!["read", "write", "allocate"]),
-            ("proctor", vec!["read", "assign"]),
-            ("student_order", vec!["read", "rebuild", "freeze"]),
-            ("exam_schedule", vec!["read", "write"]),
-            ("notification", vec!["read", "write"]),
-            ("dashboard", vec!["read"]),
-            ("audit", vec!["read"]),
-            ("data", vec!["import", "export"]),
-            ("finance", vec!["read", "write", "payment"]),
-            ("promotion", vec!["read", "write", "execute"]),
-            (
-                "employee",
-                vec!["read", "write", "create", "update", "delete"],
-            ),
-            ("group", vec!["read", "write", "delete", "assign"]),
-            ("system", vec!["autopilot"]),
-        ];
-
         let mut perms = Vec::new();
-        for (resource, actions) in &all_permissions {
-            for action in actions {
-                perms.push(RolePermission {
-                    id: Uuid::new_v4(),
-                    role_id: role_id.to_string(),
-                    org_id,
-                    resource: resource.to_string(),
-                    action: action.to_string(),
-                    condition: None,
-                    created_at: now,
-                });
-            }
+        for (resource, action) in all_admin_permission_pairs() {
+            perms.push(RolePermission {
+                id: Uuid::new_v4(),
+                role_id: role_id.to_string(),
+                org_id,
+                resource: resource.to_string(),
+                action: action.to_string(),
+                condition: None,
+                created_at: now,
+            });
         }
 
         self.role_repo
@@ -1012,6 +1408,7 @@ impl BootstrapService {
             place_of_birth: None,
             nationality: None,
             blood_type: None,
+            marital_status: None,
             medical_notes: None,
             special_needs_notes: None,
             phone: req.admin_phone.clone(),
@@ -1264,4 +1661,49 @@ pub fn transliterate_arabic(text: &str) -> String {
     }
 
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{default_org_admin_group_permissions, InstitutionBlueprintConfig};
+    use crate::services::calculation_engine::AcademicCalculationEngine;
+    use orbis_domain::entities::organization::InstitutionType;
+    use orbis_domain::entities::settings::OrganizationSettings;
+    use rust_decimal::Decimal;
+    use std::collections::HashMap;
+
+    #[test]
+    fn default_admin_group_excludes_system_bypass() {
+        let permissions = default_org_admin_group_permissions();
+
+        assert!(permissions.contains(&"group:assign".to_string()));
+        assert!(permissions.contains(&"finance:payment".to_string()));
+        assert!(!permissions.contains(&"system:autopilot".to_string()));
+    }
+
+    #[test]
+    fn bootstrap_blueprints_create_valid_customizable_calculation_plans() {
+        for institution_type in [
+            InstitutionType::School,
+            InstitutionType::University,
+            InstitutionType::Institute,
+        ] {
+            let mut settings = OrganizationSettings::default();
+            InstitutionBlueprintConfig::from_institution_type(&institution_type)
+                .apply_to_settings(&mut settings);
+
+            let plan = settings.academic.calculation_plan.as_ref().unwrap();
+            AcademicCalculationEngine::validate_plan(plan).unwrap();
+            assert_eq!(plan.outputs[0].name, "course_result");
+            assert!(settings.academic.outcome_policy.is_some());
+
+            let inputs = plan
+                .inputs
+                .iter()
+                .map(|input| (input.name.clone(), Decimal::from(80)))
+                .collect::<HashMap<_, _>>();
+            let result = AcademicCalculationEngine::calculate_plan(plan, &inputs).unwrap();
+            assert_eq!(result.outputs[0].value, Decimal::from(80));
+        }
+    }
 }

@@ -21,11 +21,9 @@ import {
   Tag,
   Home,
   CheckCircle,
-  Clock,
   Lock,
   Printer,
   Sparkles,
-  UserBadgeCheck,
 } from "@orbis/icons";
 import {
   Card,
@@ -369,103 +367,78 @@ function handleReset() {
 
   </div>
 
-  <!-- Floating Student Admission Command Bar -->
-  <div
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-4xl pointer-events-auto select-none"
-  >
-    <div class="bg-card/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
-      <!-- Left: Status & Context Indicator -->
-      <div class="flex items-center gap-2.5 text-start w-full sm:w-auto">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-          <UserBadgeCheck class="w-4 h-4" />
-        </div>
-        <div class="flex flex-col min-w-0">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-bold text-foreground truncate">
-              {state.personal.nameAr || state.personal.nameEn || m.ui_copy_student_admission_application_a63eec05()}
-            </span>
-            <Badge variant="outline" class="text-[9px] font-mono uppercase px-1.5 py-0">
-              {state.registrationStatus}
-            </Badge>
-          </div>
-          <span class="text-[10px] text-muted-foreground truncate">
-            {state.selectedClassName} • {state.personal.studentNumber || (state.isEditMode ? "STU" : m.ui_copy_auto_generated_academic_id_a05c74f0())}
-          </span>
-        </div>
-      </div>
+  {#snippet admissionActions()}
+    <div class="flex flex-wrap items-center justify-end gap-1.5">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        class="h-8 px-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
+        onclick={() => goto(localizeHref(`/${orgId}/students`))}
+        disabled={state.isSaving}
+      >
+        {m.common_action_cancel()}
+      </Button>
 
-      <!-- Right: Action Workflow Buttons -->
-      <div class="flex items-center gap-2 flex-wrap justify-end w-full sm:w-auto shrink-0">
-        <!-- Discard / Cancel Button -->
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          class="h-8 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground cursor-pointer"
-          onclick={() => goto(localizeHref(`/${orgId}/students`))}
-          disabled={state.isSaving}
-        >
-          {m.common_action_cancel()}
-        </Button>
-
-        {#if isFormDirty}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive cursor-pointer"
-            onclick={handleReset}
-            disabled={state.isSaving}
-          >
-            {m.ui_copy_clear_0ae75388()}
-          </Button>
-        {/if}
-
-        <!-- Save as Draft Button -->
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          class="h-8 px-3 text-xs font-semibold gap-1.5 cursor-pointer bg-muted/60 hover:bg-muted text-foreground"
-          onclick={() => handleSave("draft")}
-          disabled={state.isSaving}
-        >
-          <span class="w-2 h-2 rounded-full bg-muted-foreground/60"></span>
-          <span>{m.ui_copy_save_draft_e397ad92()}</span>
-        </Button>
-
-        <!-- Submit for Academic Approval Button -->
+      {#if isFormDirty}
         <Button
           type="button"
           variant="outline"
           size="sm"
-          class="h-8 px-3 text-xs font-bold gap-1.5 cursor-pointer border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-          onclick={() => handleSave("pending_review")}
+          class="h-8 px-2.5 text-xs text-muted-foreground hover:text-destructive cursor-pointer"
+          onclick={handleReset}
           disabled={state.isSaving}
         >
-          <Clock class="w-3.5 h-3.5" />
-          <span>{m.ui_copy_submit_for_approval_4cea7b71()}</span>
+          {m.ui_copy_clear_0ae75388()}
         </Button>
+      {/if}
 
-        <!-- Direct Enrollment & Save Button -->
-        <Button
-          type="button"
-          variant="lime"
-          size="sm"
-          class="h-8 px-4 text-xs font-bold gap-1.5 shadow-xs cursor-pointer"
-          onclick={() => handleSave("approved")}
-          disabled={state.isSaving}
-        >
-          {#if state.isSaving}
-            <LoadingIndicator class="w-3.5 h-3.5"  size={14} />
-            <span>{m.common_state_saving()}</span>
-          {:else}
-            <CheckCircle class="w-3.5 h-3.5" />
-            <span>{state.isEditMode ? m.settings_action_save_changes() : m.ui_copy_save_direct_enroll_ed9ff0dc()}</span>
-          {/if}
-        </Button>
-      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        class="h-8 px-2.5 text-xs font-semibold cursor-pointer bg-muted/60 hover:bg-muted text-foreground"
+        onclick={() => handleSave("draft")}
+        disabled={state.isSaving}
+      >
+        {m.ui_copy_save_draft_e397ad92()}
+      </Button>
 
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        class="h-8 px-2.5 text-xs font-bold cursor-pointer border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+        onclick={() => handleSave("pending_review")}
+        disabled={state.isSaving}
+      >
+        {m.ui_copy_submit_for_approval_4cea7b71()}
+      </Button>
+
+      <Button
+        type="button"
+        variant="lime"
+        size="sm"
+        class="h-8 px-3 text-xs font-bold shadow-xs cursor-pointer"
+        onclick={() => handleSave("approved")}
+        disabled={state.isSaving}
+      >
+        {#if state.isSaving}
+          <LoadingIndicator class="me-1.5" size={14} />
+          <span>{m.common_state_saving()}</span>
+        {:else}
+          <CheckCircle class="me-1.5 h-3.5 w-3.5" />
+          <span>{state.isEditMode ? m.settings_action_save_changes() : m.ui_copy_save_direct_enroll_ed9ff0dc()}</span>
+        {/if}
+      </Button>
     </div>
-  </div>
+  {/snippet}
+
+  <SettingsBottomBar
+    isDirty={true}
+    isSaving={state.isSaving}
+    message={state.personal.nameAr || state.personal.nameEn || m.ui_copy_student_admission_application_a63eec05()}
+    maxWidthClass="max-w-4xl"
+    actions={admissionActions}
+  />
 </div>

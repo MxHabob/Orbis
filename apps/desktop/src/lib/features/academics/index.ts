@@ -9,8 +9,8 @@ export { default as ClassesDirectory } from "./classes-directory.svelte";
 export { default as ClassDetails } from "./class-details.svelte";
 export { default as ClassStudents } from "./class-students.svelte";
 export { default as ClassCurriculum } from "./class-curriculum.svelte";
-export { default as ClassSubjectDetails } from "./class-subject-details.svelte";
-export { default as ClassSubjectResults } from "./class-subject-results.svelte";
+export { default as SectionSubjectDetails } from "./class-subject-details.svelte";
+export { default as SectionSubjectResults } from "./class-subject-results.svelte";
 export { default as AcademicsReports } from "./academics-reports.svelte";
 export { default as ScheduleWorkspace } from "./schedule-workspace.svelte";
 
@@ -35,8 +35,8 @@ export { default as ScheduleExportDialog } from "./components/schedule-export-di
 export { default as ScheduleGeneratorStudio } from "./components/schedule-generator-studio.svelte";
 export { default as ClassCreateSheet } from "./components/class-create-sheet.svelte";
 export { default as ClassForm } from "./components/class-form.svelte";
-export { default as ClassSubjectForm } from "./components/class-subject-form.svelte";
-export { default as ClassSubjectSheet } from "./components/class-subject-sheet.svelte";
+export { default as SectionSubjectForm } from "./components/class-subject-form.svelte";
+export { default as SectionSubjectSheet } from "./components/class-subject-sheet.svelte";
 export { default as SubjectCreateSheet } from "./components/subject-create-sheet.svelte";
 export { default as SubjectForm } from "./components/subject-form.svelte";
 export { default as PeriodCreateSheet } from "./components/period-create-sheet.svelte";

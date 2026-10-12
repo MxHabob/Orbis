@@ -45,6 +45,7 @@ pub trait ReportTemplateRepository: Send + Sync {
         document_type: Option<&str>,
         entity_type: Option<&str>,
     ) -> Result<Vec<ReportTemplate>, DomainError>;
+    async fn set_default(&self, org_id: Uuid, template_id: Uuid) -> Result<(), DomainError>;
     async fn save(&self, template: &ReportTemplate) -> Result<(), DomainError>;
     async fn update_status(
         &self,

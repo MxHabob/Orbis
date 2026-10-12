@@ -1,6 +1,7 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
+import type { BulkValidationContext } from "./engine/duplicate-index";
 
-export type BulkProfileId = "students" | "employees" | "grades";
+export type BulkProfileId = "students" | "employees" | "grades" | "teacher-subjects";
 
 export type ValidationSeverity = "BLOCKING_ERROR" | "WARNING" | "INFO";
 
@@ -31,6 +32,7 @@ export interface ReferenceItem {
 
 export interface BulkReferenceData {
   classes: ReferenceItem[];
+  teachers: ReferenceItem[];
   sections: ReferenceItem[];
   levels: ReferenceItem[];
   subjects: ReferenceItem[];
@@ -47,6 +49,17 @@ export interface BulkReferenceData {
     bloodTypes: string[];
     relationships: Array<{ value: string; labelAr: string; labelEn: string }>;
   };
+  registrationFields?: Record<string, {
+    active: boolean;
+    required: boolean;
+    preventDuplicate: boolean;
+  }>;
+  existingSectionSubjectAssignments: Array<{
+    classId: string;
+    subjectId: string;
+    periodId: string;
+    teacherId: string;
+  }>;
 }
 
 export interface ColumnDefinitionMetadata {
@@ -58,6 +71,7 @@ export interface ColumnDefinitionMetadata {
   format?: string;
   descriptionAr?: string;
   descriptionEn?: string;
+  headerAliases?: string[];
   example?: string;
   referenceSource?: keyof BulkReferenceData;
   allowedValues?: string[];
@@ -77,6 +91,7 @@ export interface StudentPreviewDetails {
   studentsToUpdate: number;
   personsToCreate: number;
   personsToLink: number;
+  userAccountsToProvision: number;
   guardiansToLink: number;
   newParentAccounts: number;
   mandatoryFeesAssignedCount: number;
@@ -123,6 +138,7 @@ export interface BulkCommitResult {
   committedCount: number;
   failedCount: number;
   skippedCount: number;
+  licenseRejected: boolean;
   createdUsersCount?: number;
   assignedFeesCount?: number;
   provisionedCredentials?: Array<{
@@ -134,6 +150,14 @@ export interface BulkCommitResult {
   }>;
   failedRowNumbers: number[];
   errors: Array<{ rowNumber: number; reason: string }>;
+  warnings: Array<{ rowNumber: number; reason: string }>;
+}
+
+export interface BulkChunkCommitResult {
+  success: boolean;
+  errors?: string[];
+  rowErrors?: Array<{ rowNumber: number; reason: string }>;
+  warnings?: Array<{ rowNumber: number; reason: string }>;
 }
 
 export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Record<string, unknown>> {
@@ -145,7 +169,13 @@ export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Re
   gridColumns: OrbisColumnDef[];
   buildReferenceData: (orgId: string) => Promise<BulkReferenceData>;
   validateCell: (colId: string, value: unknown, row: TRow, refData: BulkReferenceData) => BulkCellIssue | null;
-  validateRow: (row: TRow, allRows: TRow[], rowIndex: number, refData: BulkReferenceData) => BulkCellIssue[];
+  validateRow: (
+    row: TRow,
+    allRows: TRow[],
+    rowIndex: number,
+    refData: BulkReferenceData,
+    context?: BulkValidationContext,
+  ) => BulkCellIssue[];
   generatePreview: (rows: TRow[], refData: BulkReferenceData) => Promise<BulkPreviewSummary<TSummary>>;
-  commitChunk: (rows: TRow[], orgId: string, refData: BulkReferenceData) => Promise<{ success: boolean; errors?: string[] }>;
+  commitChunk: (rows: TRow[], orgId: string, refData: BulkReferenceData) => Promise<BulkChunkCommitResult>;
 }

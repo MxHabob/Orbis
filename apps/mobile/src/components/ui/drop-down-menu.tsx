@@ -36,7 +36,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle } from "@orbis/icons/native";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -410,7 +409,7 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     position: "absolute",
-    borderRadius: Radii.xl,
+    borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
     ...Platform.select({
@@ -426,26 +425,26 @@ const styles = StyleSheet.create({
     }),
   },
   menuBody: {
-    paddingVertical: Spacing.one,
+    paddingVertical: 4,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
-    marginHorizontal: Spacing.one,
-    borderRadius: Radii.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    borderRadius: 6,
     minHeight: 44,
   },
   menuItemLeading: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
+    gap: 8,
     flex: 1,
   },
   menuItemText: {
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     flexShrink: 1,
   },
   menuAvatar: {
@@ -453,16 +452,16 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    marginHorizontal: Spacing.four,
-    marginVertical: Spacing.one,
+    marginHorizontal: 16,
+    marginVertical: 4,
   },
   labelContainer: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.one,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   labelText: {
-    ...Typography.captionBold,
+    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },

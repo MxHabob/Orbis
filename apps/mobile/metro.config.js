@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
+const { withNativewind } = require("nativewind/metro");
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
@@ -8,7 +9,21 @@ const config = getDefaultConfig(projectRoot);
 
 const defaultResolveRequest = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName.endsWith(".js")) {
+  const originModulePath = context.originModulePath;
+  const relativeOrigin = originModulePath
+    ? path.relative(monorepoRoot, originModulePath)
+    : "..";
+  const isWorkspaceSource =
+    relativeOrigin !== ".." &&
+    !relativeOrigin.startsWith(`..${path.sep}`) &&
+    !relativeOrigin.split(path.sep).includes("node_modules") &&
+    !path.isAbsolute(relativeOrigin);
+
+  if (
+    moduleName.startsWith(".") &&
+    moduleName.endsWith(".js") &&
+    isWorkspaceSource
+  ) {
     const sourceModuleName = moduleName.slice(0, -3);
 
     try {
@@ -39,4 +54,4 @@ config.resolver.extraNodeModules = {
   buffer: require.resolve("buffer/"),
 };
 
-module.exports = config;
+module.exports = withNativewind(config);

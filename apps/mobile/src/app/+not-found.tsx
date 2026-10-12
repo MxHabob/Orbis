@@ -4,25 +4,22 @@
  * 404 Fallback Screen.
  */
 
-import { StyleSheet, View } from "react-native";
+import { View } from "react-native";
 import { Stack, router } from "expo-router";
 import { Header } from "@/components/header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useTheme } from "@/hooks/use-theme";
 
-export default function NotFoundScreen() {
-  const theme = useTheme();
-
+export default function NotFoundScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View flex-1>
         <Header
           title="الصفحة غير موجودة"
           showBack
           onBack={() => router.replace("/")}
         />
-        <View style={styles.center}>
+        <View className="flex-1 items-center justify-center">
           <EmptyState
             icon="alert-circle-outline"
             title="لم نتمكن من العثور على هذه الصفحة"
@@ -35,14 +32,3 @@ export default function NotFoundScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

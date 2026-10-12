@@ -331,7 +331,7 @@ async function handleMoveLesson(
       await api.deleteScheduledLesson(lesson.id);
     }
     const request: ScheduleLessonRequest = {
-      class_subject_id: lesson.class_subject_id,
+      section_subject_id: lesson.section_subject_id,
       time_slot_id: targetSlotId,
       room_id: lesson.room_id || undefined,
       teacher_id: lesson.teacher_id || undefined,

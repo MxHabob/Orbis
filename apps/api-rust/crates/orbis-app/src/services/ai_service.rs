@@ -29,7 +29,7 @@ use orbis_domain::entities::report::{OutputFormat, ParamValue, ReportLocale};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    AttendanceFilter, ClassSubjectFilter, GradeFilter, PaginationParams, StudentFeeFilter,
+    AttendanceFilter, SectionSubjectFilter, GradeFilter, PaginationParams, StudentFeeFilter,
     StudentFilter,
 };
 
@@ -71,7 +71,7 @@ fn teacher_assigned_to_class(
     teacher_id: Uuid,
     class_id: Uuid,
     homeroom_teacher_id: Option<Uuid>,
-    assignments: &[orbis_domain::entities::class_subject::ClassSubject],
+    assignments: &[orbis_domain::entities::section_subject::SectionSubject],
 ) -> bool {
     homeroom_teacher_id == Some(teacher_id)
         || assignments.iter().any(|assignment| {
@@ -159,7 +159,7 @@ impl AiOrchestrationService {
                 continue;
             };
             let assignments = self
-                .class_subjects_for_teacher(employee.id, enrollment.period_id)
+                .section_subjects_for_teacher(employee.id, enrollment.period_id)
                 .await?;
             if teacher_assigned_to_class(
                 employee.id,
@@ -190,13 +190,13 @@ impl AiOrchestrationService {
         Ok(employee.is_teacher().then_some(employee))
     }
 
-    async fn class_subjects_for_teacher(
+    async fn section_subjects_for_teacher(
         &self,
         teacher_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::class_subject::ClassSubject>, DomainError> {
+    ) -> Result<Vec<orbis_domain::entities::section_subject::SectionSubject>, DomainError> {
         self.academic_service
-            .class_subject_repo
+            .section_subject_repo
             .find_by_teacher(teacher_id, period_id)
             .await
     }
@@ -208,10 +208,10 @@ impl AiOrchestrationService {
     ) -> Result<Vec<orbis_domain::entities::ai::TeachingAssignmentInfo>, DomainError> {
         let assignments = self
             .academic_service
-            .class_subject_repo
+            .section_subject_repo
             .list(
                 ctx.tenant_id,
-                ClassSubjectFilter {
+                SectionSubjectFilter {
                     teacher_id: Some(teacher_id),
                     pagination: Some(PaginationParams {
                         page: Some(1),
@@ -247,7 +247,7 @@ impl AiOrchestrationService {
                 continue;
             }
             result.push(orbis_domain::entities::ai::TeachingAssignmentInfo {
-                class_subject_id: assignment.id,
+                section_subject_id: assignment.id,
                 class_id: assignment.class_id,
                 class_name: class.name,
                 subject_id: assignment.subject_id,
@@ -329,11 +329,11 @@ impl AiOrchestrationService {
         };
 
         let assignments = if let Some(period_id) = period_id {
-            self.class_subjects_for_teacher(employee.id, period_id)
+            self.section_subjects_for_teacher(employee.id, period_id)
                 .await?
         } else {
             self.academic_service
-                .class_subject_repo
+                .section_subject_repo
                 .find_by_class(class_id)
                 .await?
                 .into_iter()
@@ -362,15 +362,15 @@ impl AiOrchestrationService {
         }
     }
 
-    async fn ensure_class_subject_access(
+    async fn ensure_section_subject_access(
         &self,
         ctx: &RequestContext,
-        class_subject_id: Uuid,
-    ) -> Result<orbis_domain::entities::class_subject::ClassSubject, DomainError> {
+        section_subject_id: Uuid,
+    ) -> Result<orbis_domain::entities::section_subject::SectionSubject, DomainError> {
         let assignment = self
             .academic_service
-            .class_subject_repo
-            .find_by_id(class_subject_id)
+            .section_subject_repo
+            .find_by_id(section_subject_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class subject not found".into()))?;
         self.ensure_class_access(ctx, assignment.class_id, Some(assignment.period_id))
@@ -708,7 +708,7 @@ impl AiOrchestrationService {
                     "type": "object",
                     "properties": {
                         "class_id": {"type": "string", "description": "Optional UUID of the class"},
-                        "class_subject_id": {"type": "string", "description": "Optional UUID of the class-subject"},
+                        "section_subject_id": {"type": "string", "description": "Optional UUID of the class-subject"},
                         "period_id": {"type": "string", "description": "Optional UUID of the academic period"}
                     }
                 }),
@@ -864,12 +864,12 @@ impl AiOrchestrationService {
             if actx.subject_id.is_none() {
                 actx.subject_id = ui.subject_id;
             }
-            if actx.class_subject_id.is_none() {
-                actx.class_subject_id = ui.class_subject_id;
+            if actx.section_subject_id.is_none() {
+                actx.section_subject_id = ui.section_subject_id;
             }
         }
 
-        if actx.class_id.is_none() && actx.class_subject_id.is_none() {
+        if actx.class_id.is_none() && actx.section_subject_id.is_none() {
             if let Some(employee) = self.teacher_employee(ctx).await? {
                 let assignments = self.teaching_assignments(ctx, employee.id).await?;
                 if assignments.len() == 1 {
@@ -878,7 +878,7 @@ impl AiOrchestrationService {
                     actx.class_name = Some(assignment.class_name.clone());
                     actx.subject_id = Some(assignment.subject_id);
                     actx.subject_name = Some(assignment.subject_name.clone());
-                    actx.class_subject_id = Some(assignment.class_subject_id);
+                    actx.section_subject_id = Some(assignment.section_subject_id);
                     actx.period_id = assignment.period_id;
                 }
             }
@@ -907,9 +907,9 @@ impl AiOrchestrationService {
             actx.subject_name = Some(subject.name);
         }
 
-        if let Some(class_subject_id) = actx.class_subject_id {
+        if let Some(section_subject_id) = actx.section_subject_id {
             let assignment = self
-                .ensure_class_subject_access(ctx, class_subject_id)
+                .ensure_section_subject_access(ctx, section_subject_id)
                 .await?;
             if actx.class_id.is_some_and(|id| id != assignment.class_id)
                 || actx
@@ -1205,7 +1205,7 @@ impl AiOrchestrationService {
                     "total_count": grades.total_count,
                     "grades": grades.items.into_iter().map(|g| json!({
                         "id": g.id,
-                        "class_subject_id": g.class_subject_id,
+                        "section_subject_id": g.section_subject_id,
                         "score": g.score,
                         "max_score": g.max_score,
                         "is_final": g.is_final
@@ -1794,8 +1794,8 @@ impl AiOrchestrationService {
                     .get("class_id")
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
-                let class_subject_id = arguments
-                    .get("class_subject_id")
+                let section_subject_id = arguments
+                    .get("section_subject_id")
                     .and_then(|v| v.as_str())
                     .and_then(|s| Uuid::parse_str(s).ok());
                 let period_id = arguments
@@ -1805,11 +1805,11 @@ impl AiOrchestrationService {
                 if let Some(class_id) = class_id {
                     self.ensure_class_access(ctx, class_id, period_id).await?;
                 }
-                if let Some(class_subject_id) = class_subject_id {
-                    let class_subject = self
-                        .ensure_class_subject_access(ctx, class_subject_id)
+                if let Some(section_subject_id) = section_subject_id {
+                    let section_subject = self
+                        .ensure_section_subject_access(ctx, section_subject_id)
                         .await?;
-                    if class_id.is_some_and(|id| id != class_subject.class_id) {
+                    if class_id.is_some_and(|id| id != section_subject.class_id) {
                         return Err(DomainError::NotFound("Class subject not found".into()));
                     }
                 } else if self.teacher_employee(ctx).await?.is_some()
@@ -1822,7 +1822,7 @@ impl AiOrchestrationService {
                 }
 
                 let mut gr_filter = GradeFilter::default();
-                gr_filter.class_subject_id = class_subject_id;
+                gr_filter.section_subject_id = section_subject_id;
                 gr_filter.period_id = period_id;
 
                 let grades_list = self
@@ -1875,7 +1875,7 @@ impl AiOrchestrationService {
                 Ok(json!({
                     "evaluated_grades_count": count,
                     "class_id": class_id,
-                    "class_subject_id": class_subject_id,
+                    "section_subject_id": section_subject_id,
                     "period_id": period_id,
                     "average_score_pct": format!("{}%", avg_pct),
                     "pass_rate": pass_rate,
@@ -2066,13 +2066,13 @@ impl AiOrchestrationService {
                 .unwrap_or("Root / Organization-wide")
         );
 
-        if academic_context.academic_year_name.is_some()
+        if academic_context.academic_calendar_name.is_some()
             || academic_context.period_name.is_some()
             || academic_context.class_name.is_some()
             || academic_context.subject_name.is_some()
         {
             prompt.push_str("\n[ACADEMIC CONTEXT]\n");
-            if let Some(ref y) = academic_context.academic_year_name {
+            if let Some(ref y) = academic_context.academic_calendar_name {
                 prompt.push_str(&format!("- Academic Year: {}\n", y));
             }
             if let Some(ref p) = academic_context.period_name {
@@ -2099,7 +2099,7 @@ impl AiOrchestrationService {
                         .period_id
                         .map(|id| id.to_string())
                         .unwrap_or_else(|| "unspecified".into()),
-                    assignment.class_subject_id
+                    assignment.section_subject_id
                 ));
             }
             prompt.push_str(
@@ -2157,8 +2157,8 @@ impl AiOrchestrationService {
 mod tests {
     use super::{
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
-        required_tool_permission, take_private_ui_result,
-        teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
+        required_tool_permission, take_private_ui_result, teacher_assigned_to_class,
+        tool_supports_unit_scoping, unit_in_scope,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;
@@ -2271,7 +2271,7 @@ mod tests {
         let teacher_id = Uuid::new_v4();
         let class_id = Uuid::new_v4();
         let other_class_id = Uuid::new_v4();
-        let assignment = orbis_domain::entities::class_subject::ClassSubject {
+        let assignment = orbis_domain::entities::section_subject::SectionSubject {
             id: Uuid::new_v4(),
             class_id,
             subject_id: Uuid::new_v4(),

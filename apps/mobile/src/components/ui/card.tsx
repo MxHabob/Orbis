@@ -8,18 +8,41 @@
 import React from "react";
 import {
   View,
-  StyleSheet,
   type ViewProps,
-  type ViewStyle,
   Pressable,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing } from "@/constants/theme";
+
+type SpacingScale =
+  | "half"
+  | "one"
+  | "two"
+  | "three"
+  | "four"
+  | "five"
+  | "six"
+  | "eight"
+  | "ten"
+  | "twelve"
+  | "sixteen";
+
+const paddingClasses: Record<SpacingScale, string> = {
+  half: "p-half",
+  one: "p-one",
+  two: "p-two",
+  three: "p-three",
+  four: "p-four",
+  five: "p-five",
+  six: "p-six",
+  eight: "p-eight",
+  ten: "p-ten",
+  twelve: "p-twelve",
+  sixteen: "p-sixteen",
+};
 
 export interface CardProps extends ViewProps {
   variant?: "default" | "elevated" | "outline" | "flat" | "interactive";
   onPress?: () => void;
-  padding?: keyof typeof Spacing;
+  padding?: SpacingScale;
   children?: React.ReactNode;
 }
 
@@ -32,49 +55,21 @@ export const Card = React.memo<CardProps>(
     children,
     ...props
   }) => {
-    const theme = useTheme();
-
-    const getVariantStyle = (): ViewStyle => {
-      switch (variant) {
-        case "elevated":
-        case "interactive":
-          return {
-            backgroundColor: theme.card,
-            borderWidth: 0,
-            shadowOpacity: 0,
-            elevation: 0,
-          };
-        case "outline":
-          return {
-            backgroundColor: "transparent",
-            borderColor: theme.border,
-            borderWidth: 1,
-          };
-        case "flat":
-          return { backgroundColor: "transparent", borderWidth: 0 };
-        case "default":
-        default:
-          return {
-            backgroundColor: theme.card,
-            borderWidth: 0,
-            shadowOpacity: 0,
-            elevation: 0,
-          };
-      }
+    const variantClasses: Record<NonNullable<CardProps["variant"]>, string> = {
+      default: "bg-card",
+      elevated: "bg-card",
+      outline: "border border-border bg-transparent",
+      flat: "bg-transparent",
+      interactive: "bg-card",
     };
-
-    const containerStyle: ViewStyle = {
-      borderRadius: Radii.lg,
-      padding: Spacing[padding],
-      ...getVariantStyle(),
-    };
+    const className = `rounded-lg ${paddingClasses[padding]} ${variantClasses[variant]}`;
 
     if (onPress) {
       return (
         <Pressable
+          className={className}
           onPress={onPress}
           style={({ pressed }) => [
-            containerStyle,
             style,
             pressed && { opacity: 0.88, transform: [{ translateY: 1 }] },
           ]}
@@ -86,7 +81,7 @@ export const Card = React.memo<CardProps>(
     }
 
     return (
-      <View style={[containerStyle, style]} {...props}>
+      <View className={className} style={style} {...props}>
         {children}
       </View>
     );

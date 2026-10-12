@@ -1,14 +1,59 @@
-/**
- * Learn more about light and dark modes:
- * https://docs.expo.dev/guides/color-schemes/
- */
-
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
 export function useTheme() {
-  const scheme = useColorScheme();
-  const theme = scheme === "unspecified" ? "light" : scheme;
+  const variable = (name: string) => `var(${name})`;
 
-  return Colors[theme];
+  return {
+    primary: variable("--primary"),
+    primaryForeground: variable("--primary-foreground"),
+    primaryLight: variable("--primary-light"),
+    primaryDark: variable("--primary-dark"),
+    brandPurple: variable("--brand-purple"),
+    brandPurpleLight: variable("--brand-purple-light"),
+    brandPurpleDark: variable("--brand-purple-dark"),
+    brandLime: variable("--brand-lime"),
+    brandPink: variable("--brand-pink"),
+    brandIndigo: variable("--brand-indigo"),
+    brandRose: variable("--brand-rose"),
+    background: variable("--background"),
+    foreground: variable("--foreground"),
+    backgroundElement: variable("--background-element"),
+    backgroundSelected: variable("--background-selected"),
+    card: variable("--card"),
+    cardForeground: variable("--card-foreground"),
+    cardElevated: variable("--card-elevated"),
+    cardBorder: variable("--card-border"),
+    popover: variable("--popover"),
+    popoverForeground: variable("--popover-foreground"),
+    secondary: variable("--secondary"),
+    secondaryForeground: variable("--secondary-foreground"),
+    muted: variable("--muted"),
+    mutedForeground: variable("--muted-foreground"),
+    accent: variable("--accent"),
+    accentForeground: variable("--accent-foreground"),
+    accentLight: variable("--primary-light"),
+    text: variable("--foreground"),
+    textSecondary: variable("--muted-foreground"),
+    textMuted: variable("--muted-foreground"),
+    border: variable("--border"),
+    borderSubtle: variable("--border-subtle"),
+    input: variable("--input"),
+    ring: variable("--ring"),
+    destructive: variable("--destructive"),
+    destructiveForeground: variable("--destructive-foreground"),
+    success: variable("--success"),
+    successLight: variable("--success-light"),
+    warning: variable("--warning"),
+    warningLight: variable("--warning-light"),
+    error: variable("--error"),
+    errorLight: variable("--error-light"),
+    info: variable("--info"),
+    infoLight: variable("--info-light"),
+    btnShadowPrimary: variable("--btn-shadow-primary"),
+    btnShadowSecondary: variable("--btn-shadow-secondary"),
+    btnShadowDestructive: variable("--btn-shadow-destructive"),
+    btnShadowLime: variable("--btn-shadow-lime"),
+    tabBarBackground: variable("--tab-bar-background"),
+    tabBarBorder: variable("--tab-bar-border"),
+    tabBarActive: variable("--tab-bar-active"),
+    tabBarInactive: variable("--tab-bar-inactive"),
+  };
 }

@@ -70,36 +70,36 @@ function getNodePosition() {
 // Click handler → select this node
 function handleClick(e: MouseEvent) {
   e.stopPropagation();
+  if (isEditing) return;
   store.select(node.id, e.ctrlKey || e.metaKey);
 }
 
 // ── Inline Text Editing ──────────────────────────────────────
 const isEditing = $derived(store.editingNodeId === node.id);
+const nodeProps = $derived("props" in node ? (node as any).props || {} : {});
 let editEl: HTMLDivElement | undefined = $state();
-let editingContent = $state("");
+let editedContent = $state<string | null>(null);
+const editingContent = $derived(editedContent ?? nodeProps.content ?? "");
 
-$effect(() => {
-  if (isEditing && editEl && document.activeElement !== editEl) {
-    // Focus and select all text
-    editEl.focus();
-    const range = document.createRange();
-    range.selectNodeContents(editEl);
-    const sel = window.getSelection();
-    sel?.removeAllRanges();
-    sel?.addRange(range);
-  }
-});
+function focusEditable(element: HTMLDivElement) {
+  element.focus();
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+}
 
 function handleDoubleClick(e: MouseEvent) {
   if (node.type !== "Text") return;
   e.stopPropagation();
+  if (isEditing) return;
   e.preventDefault();
-  editingContent = nodeProps.content || "";
   store.editingNodeId = node.id;
 }
 
 function handleEditInput(e: InputEvent) {
-  editingContent = (e.currentTarget as HTMLDivElement).textContent || "";
+  editedContent = (e.currentTarget as HTMLDivElement).textContent || "";
 }
 
 function commitEdit() {
@@ -110,20 +110,19 @@ function commitEdit() {
       props: { ...nodeProps, content: newContent },
     });
   }
+  editedContent = null;
   store.editingNodeId = null;
 }
 
 function handleEditKeydown(e: KeyboardEvent) {
   if (e.key === "Escape") {
     e.preventDefault();
-    store.editingNodeId = null; // Discard changes
+    editedContent = null;
+    store.editingNodeId = null;
   }
   // Stop propagation to prevent canvas shortcuts
   e.stopPropagation();
 }
-
-// Props shorthand
-const nodeProps = $derived("props" in node ? (node as any).props || {} : {});
 
 // Parse text content into segments: literal text and variable expressions
 type ContentSegment =
@@ -157,6 +156,116 @@ const textSegments = $derived(
 );
 
 import { resolveDocumentUrl } from "$lib/features/documents/queries";
+
+// ── Table Layout Derivation ──────────────────────────────────
+const tableLayout = $derived.by(() => {
+  if (node.type !== "Table") return null;
+  const cols = (nodeProps.columns as any[]) || [];
+  if (cols.length === 0) return null;
+
+  const style = nodeProps.style || {};
+  const isRtl = (nodeProps.direction || "rtl") === "rtl";
+  const showHeader = nodeProps.showHeader !== false;
+  const showTotals = nodeProps.showTotals === true || cols.some((c: any) => c.total);
+  const showGrid = nodeProps.showGrid !== false;
+  const showBorder = nodeProps.showBorder !== false;
+
+  let rawWidths: number[] = [];
+  let remainingW = w;
+  let autoCount = 0;
+
+  for (const col of cols) {
+    if (typeof col.width === "string" && col.width.endsWith("%")) {
+      const pct = parseFloat(col.width) / 100;
+      const cw = pct * w;
+      rawWidths.push(cw);
+      remainingW -= cw;
+    } else if (typeof col.width === "string" && col.width.endsWith("mm")) {
+      const cw = mmToPx(parseFloat(col.width), vp.dpi, vp.zoom);
+      rawWidths.push(cw);
+      remainingW -= cw;
+    } else if (typeof col.width === "number") {
+      const cw = mmToPx(col.width, vp.dpi, vp.zoom);
+      rawWidths.push(cw);
+      remainingW -= cw;
+    } else {
+      rawWidths.push(-1);
+      autoCount++;
+    }
+  }
+
+  const autoWidth = autoCount > 0 ? Math.max(remainingW / autoCount, 20) : 0;
+  let widths = rawWidths.map((val) => (val === -1 ? autoWidth : val));
+  const sumW = widths.reduce((a, b) => a + b, 0);
+  if (sumW > 0 && Math.abs(sumW - w) > 1) {
+    const scale = w / sumW;
+    widths = widths.map((val) => val * scale);
+  }
+
+  const headerH = showHeader ? mmToPx(style.headerFontSize ? style.headerFontSize * 0.9 : 8, vp.dpi, vp.zoom) : 0;
+  const rowH = mmToPx(style.rowHeight ? style.rowHeight * 0.35 : 7, vp.dpi, vp.zoom);
+  const totalsH = showTotals ? rowH : 0;
+
+  const availableH = h - headerH - totalsH;
+  const numRows = Math.max(2, Math.min(7, Math.floor(availableH / Math.max(rowH, 10))));
+  const actualRowH = availableH > 0 && numRows > 0 ? availableH / numRows : rowH;
+
+  const colPositions: { x: number; width: number; col: any }[] = [];
+  if (isRtl) {
+    let currentX = w;
+    for (let i = 0; i < cols.length; i++) {
+      currentX -= widths[i]!;
+      colPositions.push({ x: currentX, width: widths[i]!, col: cols[i] });
+    }
+  } else {
+    let currentX = 0;
+    for (let i = 0; i < cols.length; i++) {
+      colPositions.push({ x: currentX, width: widths[i]!, col: cols[i] });
+      currentX += widths[i]!;
+    }
+  }
+
+  return {
+    cols,
+    colPositions,
+    showHeader,
+    showTotals,
+    showGrid,
+    showBorder,
+    headerH,
+    rowH: actualRowH,
+    totalsH,
+    numRows,
+    headerBgColor: style.headerBgColor || "#0f172a",
+    headerTextColor: style.headerTextColor || "#ffffff",
+    alternateRowBgColor: style.alternateRowBgColor || "#f8fafc",
+    borderColor: style.borderColor || "#cbd5e1",
+    borderWidth: style.borderWidth ?? 0.75,
+    headerFontSize: style.headerFontSize ?? 8,
+    fontSize: style.fontSize ?? 7.5,
+  };
+});
+
+function getCellDisplayText(col: any, rowIdx: number, runtimeRows?: any[]): string {
+  const field = col.field || col.key || "";
+  if (runtimeRows && runtimeRows[rowIdx]) {
+    const val = runtimeRows[rowIdx][field];
+    return val != null ? String(val) : "";
+  }
+  const f = field.toLowerCase();
+  if (f === "seq" || f === "#") return String(rowIdx + 1);
+  if (!field) return "—";
+  return `{{${field}}}`;
+}
+
+function getTotalDisplayText(col: any): string {
+  if (col.total) {
+    if (col.total === "label") return col.totalLabel || col.total_label || col.headerAr || "المجموع";
+    return `Σ (${col.total})`;
+  }
+  if (col.totalLabel || col.total_label) return col.totalLabel || col.total_label;
+  return "—";
+}
 </script>
 
 {#if isVisible}
@@ -181,6 +290,7 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
           <div
             xmlns="http://www.w3.org/1999/xhtml"
             bind:this={editEl}
+            use:focusEditable
             contenteditable="true"
             oninput={handleEditInput}
             onblur={commitEdit}
@@ -242,13 +352,16 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
       <!-- Image Node -->
       {#if nodeProps.src || nodeProps.fallbackSrc}
         {@const currentSrc = (nodeProps.src && !nodeProps.src.startsWith("{{")) ? nodeProps.src : (nodeProps.fallbackSrc || nodeProps.src)}
-        {#await resolveDocumentUrl(currentSrc) then resolvedSrc}
+        {#await resolveDocumentUrl(currentSrc, nodeProps.assetRef) then resolvedSrc}
           <image
             href={resolvedSrc}
             width={w}
             height={h}
             preserveAspectRatio={nodeProps.fit === "cover" ? "xMidYMid slice" : nodeProps.fit === "fill" ? "none" : "xMidYMid meet"}
           />
+        {:catch error}
+          {@const _imageError = console.error("Failed to load template image:", error)}
+          <rect width={w} height={h} fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,2" rx="2" />
         {/await}
       {:else}
         <!-- Image placeholder -->
@@ -312,22 +425,100 @@ import { resolveDocumentUrl } from "$lib/features/documents/queries";
       <rect x={w * 0.2} y={h * 0.65} width={w * 0.15} height={h * 0.15} fill="white" rx="1" />
 
     {:else if node.type === "Table"}
-      <!-- Grid -->
-      <rect width={w} height={h} fill="white" stroke="#d1d5db" stroke-width="1" />
-      {#if nodeProps.columns}
-        {@const cols = nodeProps.columns as any[]}
-        {@const colW = w / Math.max(cols.length, 1)}
-        {@const headerH = Math.min(h * 0.3, mmToPx(8, vp.dpi, vp.zoom))}
-        <!-- Header row -->
-        <rect width={w} height={headerH} fill="#f1f5f9" stroke="#d1d5db" stroke-width="0.5" />
-        {#each cols as col, ci}
-          <text x={ci * colW + colW / 2} y={headerH / 2} text-anchor="middle" dominant-baseline="central" fill="#374151" font-size="8">
-            {col.headerAr || col.header || col.key}
-          </text>
-          {#if ci > 0}
-            <line x1={ci * colW} y1="0" x2={ci * colW} y2={h} stroke="#e5e7eb" stroke-width="0.5" />
+      {#if tableLayout}
+        {@const tbl = tableLayout}
+        <!-- Table container background -->
+        <rect width={w} height={h} fill="#ffffff" />
+
+        <!-- Header Row -->
+        {#if tbl.showHeader}
+          <rect x="0" y="0" width={w} height={tbl.headerH} fill={tbl.headerBgColor} />
+          {#each tbl.colPositions as cp}
+            {@const align = cp.col.alignment || cp.col.align || "center"}
+            {@const textX = align === "right" ? cp.x + cp.width - 4 : align === "left" ? cp.x + 4 : cp.x + cp.width / 2}
+            {@const textAnchor = align === "right" ? "end" : align === "left" ? "start" : "middle"}
+            <text
+              x={textX}
+              y={tbl.headerH / 2}
+              text-anchor={textAnchor}
+              dominant-baseline="central"
+              fill={tbl.headerTextColor}
+              font-size={tbl.headerFontSize}
+              font-weight="bold"
+            >
+              {cp.col.headerAr || cp.col.header || cp.col.key || cp.col.field}
+            </text>
+          {/each}
+        {/if}
+
+        <!-- Data Rows -->
+        {#each Array(tbl.numRows) as _, ri}
+          {@const rowY = tbl.headerH + ri * tbl.rowH}
+          {#if ri % 2 === 1}
+            <rect x="0" y={rowY} width={w} height={tbl.rowH} fill={tbl.alternateRowBgColor} />
+          {/if}
+          {#each tbl.colPositions as cp}
+            {@const align = cp.col.alignment || cp.col.align || "center"}
+            {@const textX = align === "right" ? cp.x + cp.width - 4 : align === "left" ? cp.x + 4 : cp.x + cp.width / 2}
+            {@const textAnchor = align === "right" ? "end" : align === "left" ? "start" : "middle"}
+            <text
+              x={textX}
+              y={rowY + tbl.rowH / 2}
+              text-anchor={textAnchor}
+              dominant-baseline="central"
+              fill="#1e293b"
+              font-size={tbl.fontSize}
+            >
+              {getCellDisplayText(cp.col, ri, nodeProps.rows)}
+            </text>
+          {/each}
+          {#if tbl.showGrid}
+            <line x1="0" y1={rowY + tbl.rowH} x2={w} y2={rowY + tbl.rowH} stroke={tbl.borderColor} stroke-width={tbl.borderWidth} />
           {/if}
         {/each}
+
+        <!-- Totals Row -->
+        {#if tbl.showTotals}
+          {@const totY = tbl.headerH + tbl.numRows * tbl.rowH}
+          <rect x="0" y={totY} width={w} height={tbl.totalsH} fill="#f1f5f9" />
+          {#each tbl.colPositions as cp}
+            {@const align = cp.col.alignment || cp.col.align || "center"}
+            {@const textX = align === "right" ? cp.x + cp.width - 4 : align === "left" ? cp.x + 4 : cp.x + cp.width / 2}
+            {@const textAnchor = align === "right" ? "end" : align === "left" ? "start" : "middle"}
+            <text
+              x={textX}
+              y={totY + tbl.totalsH / 2}
+              text-anchor={textAnchor}
+              dominant-baseline="central"
+              fill="#0f172a"
+              font-size={tbl.fontSize}
+              font-weight="bold"
+            >
+              {getTotalDisplayText(cp.col)}
+            </text>
+          {/each}
+          {#if tbl.showGrid}
+            <line x1="0" y1={totY} x2={w} y2={totY} stroke={tbl.borderColor} stroke-width={tbl.borderWidth} />
+          {/if}
+        {/if}
+
+        <!-- Vertical Grid Dividers -->
+        {#if tbl.showGrid}
+          {#each tbl.colPositions.slice(1) as cp}
+            <line x1={cp.x} y1="0" x2={cp.x} y2={h} stroke={tbl.borderColor} stroke-width={tbl.borderWidth} />
+          {/each}
+        {/if}
+
+        <!-- Outer Border -->
+        {#if tbl.showBorder}
+          <rect x="0" y="0" width={w} height={h} fill="none" stroke={tbl.borderColor} stroke-width={tbl.borderWidth} />
+        {/if}
+      {:else}
+        <!-- Fallback empty table placeholder -->
+        <rect width={w} height={h} fill="white" stroke="#d1d5db" stroke-width="1" />
+        <text x={w / 2} y={h / 2} text-anchor="middle" dominant-baseline="central" fill="#94a3b8" font-size="9">
+          جدول بدون أعمدة (انقر لإضافة أعمدة في لوحة الخصائص)
+        </text>
       {/if}
 
     {:else if node.type === "Frame" || node.type === "Grid" || node.type === "Repeater" || node.type === "Conditional" || node.type === "Header" || node.type === "Footer"}

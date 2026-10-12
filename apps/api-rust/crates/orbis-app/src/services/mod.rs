@@ -1,3 +1,4 @@
+pub mod academic_framework_service;
 pub mod academic_service;
 pub mod ai_service;
 pub mod assessment_service;
@@ -24,6 +25,7 @@ pub mod student_service;
 pub mod system_service;
 pub mod workflow_service;
 
+pub use academic_framework_service::AcademicFrameworkService;
 pub use academic_service::AcademicService;
 pub use ai_service::AiOrchestrationService;
 pub use assessment_service::AssessmentService;
@@ -32,7 +34,9 @@ pub use autopilot_service::{AutopilotDiagnostics, AutopilotService};
 pub use bootstrap_service::{
     BootstrapRequest, BootstrapResult, BootstrapService, BootstrapStatus, BootstrapStatusResponse,
 };
-pub use calculation_engine::{AstNode, CalcEngine, WeightedItem, apply_rounding};
+pub use calculation_engine::{
+    AcademicCalculationEngine, AstNode, CalcEngine, WeightedItem, apply_rounding,
+};
 pub use calendar_service::CalendarService;
 pub use coa_loader::{CoaBlueprintLoader, CoaFile, CoaMetadata, CoaNode};
 pub use document_service::{

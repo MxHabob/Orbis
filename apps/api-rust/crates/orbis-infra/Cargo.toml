@@ -8,6 +8,7 @@ sea-orm.workspace = true
 sea-orm-migration = { version = "1.1.0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls"] }
 orbis-domain.workspace = true
 orbis-app.workspace = true
+docforge-engine.workspace = true
 async-trait.workspace = true
 uuid.workspace = true
 tokio.workspace = true
@@ -27,4 +28,10 @@ hmac = { workspace = true }
 ed25519-dalek = { version = "2", features = ["std"] }
 hostname = "0.4"
 rand = "0.8"
+fs2 = "0.4"
+keyring = { version = "3.6.3", default-features = false, features = ["apple-native", "sync-secret-service", "windows-native"] }
+zeroize = "1"
 zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }

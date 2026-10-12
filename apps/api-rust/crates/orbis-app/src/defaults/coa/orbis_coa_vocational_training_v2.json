@@ -1808,32 +1808,32 @@
               "children": [
                 {
                   "code": "410301",
-                  "name_ar": "رسوم دراسية - المرحلة الابتدائية",
-                  "name_en": "Tuition Fees - Primary",
+                  "name_ar": "رسوم دراسية - المستوى التأسيسي",
+                  "name_en": "Tuition Fees - Foundational Level",
                   "type": "REVENUE",
                   "nature": "دائن",
                   "level": 4
                 },
                 {
                   "code": "410302",
-                  "name_ar": "رسوم دراسية - المرحلة المتوسطة",
-                  "name_en": "Tuition Fees - Middle School",
+                  "name_ar": "رسوم دراسية - المستوى المتوسط",
+                  "name_en": "Tuition Fees - Intermediate Level",
                   "type": "REVENUE",
                   "nature": "دائن",
                   "level": 4
                 },
                 {
                   "code": "410303",
-                  "name_ar": "رسوم دراسية - المرحلة الثانوية",
-                  "name_en": "Tuition Fees - High School",
+                  "name_ar": "رسوم دراسية - المستوى المتقدم",
+                  "name_en": "Tuition Fees - Advanced Level",
                   "type": "REVENUE",
                   "nature": "دائن",
                   "level": 4
                 },
                 {
                   "code": "410304",
-                  "name_ar": "رسوم دراسية - رياض الأطفال",
-                  "name_en": "Tuition Fees - Kindergarten",
+                  "name_ar": "رسوم دراسية - المستوى التأسيسي المتقدم",
+                  "name_en": "Tuition Fees - Foundation Level",
                   "type": "REVENUE",
                   "nature": "دائن",
                   "level": 4

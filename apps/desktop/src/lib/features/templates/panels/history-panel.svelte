@@ -86,7 +86,7 @@ function jumpToState(index: number) {
             {#if currentIndex === -1}
               <CheckCircle size={10} class="text-primary" />
             {:else}
-              <Circle size={6} class="text-muted-foreground/30" />
+              <CheckCircle size={6} class="text-muted-foreground/30" />
             {/if}
           </div>
           <span class="text-[10px] font-medium">
@@ -109,9 +109,9 @@ function jumpToState(index: number) {
               {#if isCurrent}
                 <CheckCircle size={10} class="text-primary" />
               {:else if isFuture}
-                <Circle size={5} class="text-muted-foreground/20" />
+                <CheckCircle size={5} class="text-muted-foreground/20" />
               {:else}
-                <Circle size={6} class="text-muted-foreground/40" />
+                <CheckCircle size={6} class="text-muted-foreground/40" />
               {/if}
             </div>
 

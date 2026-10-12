@@ -9,11 +9,9 @@ import {
   View,
   Text,
   ActivityIndicator,
-  StyleSheet,
   type ViewStyle,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Spacing, Typography } from "@/constants/theme";
 
 export interface LoadingStateProps {
   message?: string;
@@ -30,39 +28,15 @@ export function LoadingState({
 
   return (
     <View
-      style={[
-        styles.container,
-        fullscreen && [
-          styles.fullscreen,
-          { backgroundColor: theme.background },
-        ],
-        style,
-      ]}
+      className={`items-center justify-center gap-three p-six ${fullscreen ? "absolute inset-0 z-[999] bg-background" : ""}`}
+      style={style}
     >
       <ActivityIndicator size="large" color={theme.primary} />
       {message && (
-        <Text style={[styles.message, { color: theme.textSecondary }]}>
+        <Text className="text-center text-[13px] leading-[18px] text-muted-foreground">
           {message}
         </Text>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: Spacing.six,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.three,
-  },
-  fullscreen: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 999,
-  },
-
-  message: {
-    ...Typography.bodySmall,
-    textAlign: "center",
-  },
-});

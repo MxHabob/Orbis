@@ -1,6 +1,5 @@
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { Spacing, Typography } from "@/constants/theme";
+import { Text, View } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 
 export type MetricTone =
@@ -55,23 +54,23 @@ export const MetricProgress = React.memo<MetricProgressProps>(
     );
 
     return (
-      <View style={styles.container}>
+      <View className="w-full gap-three">
         {(title || subtitle) && (
-          <View style={styles.header}>
-            <View style={styles.labels}>
+          <View className="flex-row items-start justify-between gap-two">
+            <View className="flex-1 gap-half">
               {title && (
-                <Text style={[styles.title, { color: theme.text }]}>
+                <Text className="text-sm leading-5 font-semibold text-foreground">
                   {title}
                 </Text>
               )}
               {subtitle && (
-                <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+                <Text className="text-[11px] leading-[14px] font-medium text-muted-foreground">
                   {subtitle}
                 </Text>
               )}
             </View>
             {displayValue !== undefined && (
-              <Text style={[styles.value, { color: theme.text }]}>
+              <Text className="text-lg leading-6 font-bold text-foreground">
                 {displayValue}
               </Text>
             )}
@@ -80,37 +79,28 @@ export const MetricProgress = React.memo<MetricProgressProps>(
 
         {showProgress &&
           (segments.length > 0 ? (
-            <View style={styles.progressGroup}>
-              <View
-                style={[styles.progressTrack, { backgroundColor: theme.muted }]}
-              >
+            <View className="gap-two">
+              <View className="h-2 flex-row gap-half overflow-hidden rounded-full bg-muted">
                 {segments.map((segment) => (
                   <View
                     key={segment.label}
-                    style={[
-                      styles.segment,
-                      {
-                        width: `${(Math.max(0, segment.value) / segmentTotal) * 100}%`,
-                        backgroundColor: getToneColor(segment.tone, theme),
-                      },
-                    ]}
+                    className="h-full min-w-[2px] rounded-full"
+                    style={{
+                      width: `${(Math.max(0, segment.value) / segmentTotal) * 100}%`,
+                      backgroundColor: getToneColor(segment.tone, theme),
+                    }}
                   />
                 ))}
               </View>
-              <View style={styles.legend}>
+              <View className="flex-row flex-wrap gap-three">
                 {segments.map((segment) => (
-                  <View key={segment.label} style={styles.legendItem}>
+                  <View key={segment.label} className="flex-row items-center gap-one">
                     <View
-                      style={[
-                        styles.dot,
-                        { backgroundColor: getToneColor(segment.tone, theme) },
-                      ]}
+                      className="h-1.5 w-1.5 rounded-full"
+                      style={{ backgroundColor: getToneColor(segment.tone, theme) }}
                     />
                     <Text
-                      style={[
-                        styles.legendText,
-                        { color: theme.textSecondary },
-                      ]}
+                      className="text-[11px] leading-[14px] font-medium text-muted-foreground"
                     >
                       {segment.label}
                       {segment.displayValue ? ` ${segment.displayValue}` : ""}
@@ -120,17 +110,13 @@ export const MetricProgress = React.memo<MetricProgressProps>(
               </View>
             </View>
           ) : (
-            <View
-              style={[styles.progressTrack, { backgroundColor: theme.muted }]}
-            >
+            <View className="h-2 flex-row gap-half overflow-hidden rounded-full bg-muted">
               <View
-                style={[
-                  styles.segment,
-                  {
-                    width: `${percentage}%`,
-                    backgroundColor: getToneColor(tone, theme),
-                  },
-                ]}
+                className="h-full min-w-[2px] rounded-full"
+                style={{
+                  width: `${percentage}%`,
+                  backgroundColor: getToneColor(tone, theme),
+                }}
               />
             </View>
           ))}
@@ -160,30 +146,3 @@ function getToneColor(
       return theme.primary;
   }
 }
-
-const styles = StyleSheet.create({
-  container: { width: "100%", gap: Spacing.three },
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: Spacing.two,
-  },
-  labels: { flex: 1, gap: 2 },
-  title: { ...Typography.bodyBold },
-  subtitle: { ...Typography.small },
-  value: { ...Typography.h2 },
-  progressGroup: { gap: Spacing.two },
-  progressTrack: {
-    height: 8,
-    flexDirection: "row",
-    gap: 2,
-    overflow: "hidden",
-    borderRadius: 9999,
-  },
-  segment: { height: "100%", minWidth: 2, borderRadius: 9999 },
-  legend: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.three },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: Spacing.one },
-  dot: { width: 6, height: 6, borderRadius: 9999 },
-  legendText: { ...Typography.small },
-});

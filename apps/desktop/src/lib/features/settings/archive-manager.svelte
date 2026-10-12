@@ -66,7 +66,7 @@ let {
 } = $props();
 
 // View and State Management
-let viewMode = $state<"grid" | "table">("table");
+let viewMode = $state<"grid" | "table">("grid");
 let searchQuery = $state("");
 let selectedFilters = $state<string[]>([]);
 let selectedIds = $state<Set<string>>(new Set());
@@ -277,7 +277,7 @@ function handleGridAction(event: GridActionEvent) {
 
 async function downloadDocument(doc: DocumentDto) {
   try {
-    const url = await resolveDocumentUrl(getDocumentSource(doc));
+    const url = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
     const link = document.createElement("a");
     link.href = url;
     link.download = doc.name;
@@ -363,7 +363,7 @@ function navigateToFolder(targetFolderId?: string | null) {
 // Preview Handler
 async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   isPreviewOpen = true;
 }
 
@@ -603,30 +603,18 @@ function onContainerDrop(e: DragEvent) {
     {isDragOverContainer ? 'ring-2 ring-primary ring-inset bg-primary/5' : ''}"
 >
   <!-- Top Navigation & Action Header -->
-  <header class="shrink-0 p-4 border-b border-border/50 bg-card/40 backdrop-blur-sm space-y-3">
-    <!-- Breadcrumbs & Quick Creation Actions -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <FolderBreadcrumbs
-        {orgId}
-        {currentFolder}
-        onnavigate={navigateToFolder}
-      />
-
-      <div class="flex items-center flex-wrap gap-2 w-full sm:w-auto justify-end">
-        <SplitActionMenu
-          label={m.settings_ui_archive_upload_files()}
-          menuLabel={m.ui_copy_more_options_2179e961()}
-          icon={ArrowUpTray}
-          actions={archiveMenuActions}
-          onprimary={() => fileInput?.click()}
+  <header class="shrink-0 border-b border-border/50 bg-card/40 px-4 py-3 backdrop-blur-sm">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="min-w-0 flex-1 basis-48">
+        <FolderBreadcrumbs
+          {orgId}
+          {currentFolder}
+          onnavigate={navigateToFolder}
         />
       </div>
-    </div>
 
-    <!-- Search & Filter Toolbar -->
-    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 pt-1">
       <!-- Search Input -->
-      <div class="relative flex-1 max-w-md">
+      <div class="relative min-w-0 flex-1 basis-64 max-w-md">
         <Search class="w-4 h-4 absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
         <Input
           bind:value={searchQuery}
@@ -645,7 +633,7 @@ function onContainerDrop(e: DragEvent) {
       </div>
 
       <!-- Filter Controls & View Switcher -->
-      <div class="flex items-center flex-wrap gap-2 text-xs">
+      <div class="flex shrink-0 items-center flex-wrap gap-2 text-xs">
         <SearchableMultiFilter
           groups={archiveFilterGroups}
           bind:selectedValues={selectedFilters}
@@ -676,6 +664,14 @@ function onContainerDrop(e: DragEvent) {
           </Button>
         </div>
       </div>
+
+      <SplitActionMenu
+        label={m.settings_ui_archive_upload_files()}
+        menuLabel={m.ui_copy_more_options_2179e961()}
+        icon={ArrowUpTray}
+        actions={archiveMenuActions}
+        onprimary={() => fileInput?.click()}
+      />
     </div>
   </header>
 

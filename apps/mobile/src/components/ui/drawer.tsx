@@ -27,7 +27,6 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── Drawer Context ─────────────────────────────────────────────────────────
 
@@ -355,8 +354,8 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderBottomWidth: 0,
     marginBottom: 0,
-    borderTopLeftRadius: Radii["3xl"],
-    borderTopRightRadius: Radii["3xl"],
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
@@ -365,13 +364,13 @@ const styles = StyleSheet.create({
   },
   cancelWrapper: {
     overflow: "hidden",
-    marginTop: Spacing.three,
+    marginTop: 12,
     borderTopWidth: 1,
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderBottomWidth: 0,
-    borderTopLeftRadius: Radii["2xl"],
-    borderTopRightRadius: Radii["2xl"],
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   bodyContent: {
     paddingVertical: 0,
@@ -379,33 +378,33 @@ const styles = StyleSheet.create({
   dragHandleContainer: {
     width: "100%",
     alignItems: "center",
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.two,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   dragHandle: {
     width: 38,
     height: 5,
-    borderRadius: Radii.full,
+    borderRadius: 9999,
   },
   header: {
-    paddingHorizontal: Spacing.five,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.four,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 16,
     alignItems: "center",
-    gap: Spacing.half,
+    gap: 2,
   },
   footer: {
-    paddingHorizontal: Spacing.five,
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.four,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   title: {
-    ...Typography.h3,
+    ...{"fontSize":16,"lineHeight":22,"fontWeight":"600"},
     fontWeight: "700",
     textAlign: "center",
   },
   description: {
-    ...Typography.small,
+    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
     marginTop: 2,
     textAlign: "center",
   },
@@ -413,14 +412,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.four,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   menuItemText: {
-    ...Typography.bodyBold,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
   },
   separator: {
     height: StyleSheet.hairlineWidth,
-    marginLeft: Spacing.four,
+    marginLeft: 16,
   },
 });

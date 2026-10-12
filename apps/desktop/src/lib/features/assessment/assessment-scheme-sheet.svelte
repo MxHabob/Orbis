@@ -9,14 +9,14 @@ import { InfoCircle, SettingsAlt } from "@orbis/icons";
 
 let {
   open = $bindable(false),
-  classSubjectId,
+  SectionSubjectId,
   periodId,
-}: { open: boolean; classSubjectId: string; periodId: string } = $props();
+}: { open: boolean; SectionSubjectId: string; periodId: string } = $props();
 
 const componentsQuery = createQuery(() => ({
-  queryKey: ["assessment-components", classSubjectId, periodId],
+  queryKey: ["assessment-components", SectionSubjectId, periodId],
   queryFn: () => api.listAssessmentSchemes(),
-  enabled: !!classSubjectId && !!periodId && open,
+  enabled: !!SectionSubjectId && !!periodId && open,
 }));
 
 const components = $derived((componentsQuery.data || []) as any[]);

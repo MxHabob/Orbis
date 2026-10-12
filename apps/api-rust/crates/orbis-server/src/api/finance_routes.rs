@@ -21,6 +21,7 @@ use orbis_app::services::finance_service::{
 use orbis_domain::entities::account::AccountType;
 use orbis_domain::entities::journal_entry::{JournalEntry, JournalEntryLine, JournalPostingStatus};
 use orbis_domain::entities::payment::PaymentMethod;
+use orbis_domain::queries::filters::PaginatedList;
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
 pub struct AccountDto {
@@ -34,6 +35,9 @@ pub struct AccountDto {
     pub parent_id: Option<Uuid>,
     pub currency: String,
     pub is_active: bool,
+    pub is_control_account: bool,
+    pub is_system_account: bool,
+    pub is_finance_default: bool,
     pub balances: serde_json::Value,
     pub created_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,
@@ -190,6 +194,8 @@ pub struct PaymentDto {
     pub student_id: Option<Uuid>,
     pub account_id: Uuid,
     pub amount: Decimal,
+    pub currency_code: String,
+    pub payer_name: Option<String>,
     pub method: String,
     pub reference: Option<String>,
     pub receipt_number: Option<String>,
@@ -206,6 +212,7 @@ pub struct ProcessPaymentRequest {
     pub student_id: Option<Uuid>,
     pub enrollment_id: Option<Uuid>,
     pub account_id: Uuid,
+    pub receivable_account_id: Option<Uuid>,
     pub amount: Decimal,
     pub method: String,
     pub payer_name: Option<String>,
@@ -416,12 +423,29 @@ pub struct SettleGatewayPayoutRequest {
 pub struct FeeQuery {
     pub enrollment_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
+    pub status: Option<String>,
+    pub is_overdue: Option<bool>,
+    pub search: Option<String>,
+    pub sort_by: Option<String>,
+    pub sort_dir: Option<String>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 #[derive(Deserialize)]
 pub struct PaymentQuery {
     pub fee_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
+    pub enrollment_id: Option<Uuid>,
+    pub method: Option<String>,
+    pub from_date: Option<NaiveDate>,
+    pub to_date: Option<NaiveDate>,
+    pub search: Option<String>,
+    pub sort_by: Option<String>,
+    pub sort_dir: Option<String>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 fn map_journal_entry_to_dto(entry: JournalEntry) -> JournalEntryDto {
@@ -497,6 +521,11 @@ pub async fn create_account(
             p.parent_id,
         )
         .await?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
 
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
@@ -509,6 +538,9 @@ pub async fn create_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,
@@ -531,6 +563,11 @@ pub async fn get_account(
         .get_account(ctx.tenant_id, id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Account {} not found", id)))?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
 
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
@@ -543,6 +580,9 @@ pub async fn get_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,
@@ -586,6 +626,11 @@ pub async fn update_account(
             p.is_active.unwrap_or(true),
         )
         .await?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
 
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
@@ -598,6 +643,9 @@ pub async fn update_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,
@@ -629,6 +677,10 @@ pub async fn list_accounts(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<AccountDto>>>, ApiError> {
     let accounts = state.finance_service.list_accounts(ctx.tenant_id).await?;
+    let fixed_account_ids = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?;
     let dtos = accounts
         .into_iter()
         .map(|a| AccountDto {
@@ -642,6 +694,9 @@ pub async fn list_accounts(
             parent_id: a.parent_id,
             currency: a.currency_code,
             is_active: a.is_active,
+            is_control_account: a.is_control_account,
+            is_system_account: a.is_system_account,
+            is_finance_default: fixed_account_ids.contains(&a.id),
             balances: a.balances,
             created_by: a.created_by,
             updated_by: a.updated_by,
@@ -777,49 +832,61 @@ pub async fn generate_fee(
 }
 
 #[utoipa::path(get, path = "/api/v1/student-fees",
-    responses((status = 200, body = Vec<StudentFeeDto>)), security(("bearer" = [])), tag = "Finance")]
+    responses((status = 200, body = PaginatedList<StudentFeeDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn list_fees(
     ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<FeeQuery>,
-) -> Result<Json<ApiResponse<Vec<StudentFeeDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<PaginatedList<StudentFeeDto>>>, ApiError> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(50).clamp(1, 100);
     let filter = orbis_domain::queries::filters::StudentFeeFilter {
         student_id: q.student_id,
         enrollment_id: q.enrollment_id,
         fee_template_id: None,
-        period_id: None,
-        status: None,
-        is_overdue: None,
+        period_id: q.period_id,
+        status: q.status,
+        is_overdue: q.is_overdue,
         only_unpaid: None,
-        pagination: None,
+        search: q.search,
+        pagination: Some(orbis_domain::queries::filters::PaginationParams {
+            page: Some(page),
+            page_size: Some(page_size),
+            sort_by: q.sort_by,
+            sort_dir: q.sort_dir,
+        }),
     };
     let fees = state
         .finance_service
         .list_student_fees(ctx.tenant_id, filter)
-        .await?
-        .items;
-    let dtos = fees
-        .into_iter()
-        .map(|f| StudentFeeDto {
-            id: f.id,
-            org_id: f.org_id,
-            period_id: f.period_id,
-            student_id: f.student_id,
-            enrollment_id: f.enrollment_id,
-            fee_template_id: f.fee_template_id,
-            original_amount: f.original_amount,
-            discount_amount: f.discount_amount,
-            net_amount: f.net_amount,
-            paid_amount: f.paid_amount,
-            balance_due: f.balance_due,
-            status: f.status.to_string(),
-            due_date: f.due_date,
-            created_by: f.created_by,
-            created_at: f.created_at,
-            updated_at: f.updated_at,
-        })
-        .collect();
-    Ok(ApiResponse::ok(dtos))
+        .await?;
+    let result = PaginatedList::new(
+        fees.items
+            .into_iter()
+            .map(|f| StudentFeeDto {
+                id: f.id,
+                org_id: f.org_id,
+                period_id: f.period_id,
+                student_id: f.student_id,
+                enrollment_id: f.enrollment_id,
+                fee_template_id: f.fee_template_id,
+                original_amount: f.original_amount,
+                discount_amount: f.discount_amount,
+                net_amount: f.net_amount,
+                paid_amount: f.paid_amount,
+                balance_due: f.balance_due,
+                status: f.status.to_string(),
+                due_date: f.due_date,
+                created_by: f.created_by,
+                created_at: f.created_at,
+                updated_at: f.updated_at,
+            })
+            .collect(),
+        fees.total_count,
+        fees.page,
+        fees.page_size,
+    );
+    Ok(ApiResponse::ok(result))
 }
 
 #[utoipa::path(post, path = "/api/v1/payments", request_body = ProcessPaymentRequest,
@@ -848,6 +915,7 @@ pub async fn process_payment(
             p.student_id,
             p.enrollment_id,
             p.account_id,
+            p.receivable_account_id,
             p.amount,
             method,
             p.payer_name,
@@ -868,6 +936,8 @@ pub async fn process_payment(
         student_id: pay.student_id,
         account_id: pay.account_id,
         amount: pay.amount,
+        currency_code: pay.currency_code,
+        payer_name: pay.payer_name,
         method: pay.method.to_string(),
         reference: pay.reference,
         receipt_number: pay.receipt_number,
@@ -880,43 +950,79 @@ pub async fn process_payment(
 }
 
 #[utoipa::path(get, path = "/api/v1/payments",
-    responses((status = 200, body = Vec<PaymentDto>)), security(("bearer" = [])), tag = "Finance")]
+    responses((status = 200, body = PaginatedList<PaymentDto>)), security(("bearer" = [])), tag = "Finance")]
 pub async fn list_payments(
     ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<PaymentQuery>,
-) -> Result<Json<ApiResponse<Vec<PaymentDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<PaginatedList<PaymentDto>>>, ApiError> {
+    let page = q.page.unwrap_or(1).max(1);
+    let page_size = q.page_size.unwrap_or(50).clamp(1, 100);
+    let method = q
+        .method
+        .as_deref()
+        .map(|method| match method.to_lowercase().as_str() {
+            "bank_transfer" | "bank" => Ok(PaymentMethod::BankTransfer),
+            "check" | "cheque" => Ok(PaymentMethod::Check),
+            "credit_card" | "card" => Ok(PaymentMethod::CreditCard),
+            "mada" => Ok(PaymentMethod::Mada),
+            "apple_pay" | "applepay" => Ok(PaymentMethod::ApplePay),
+            "cash" => Ok(PaymentMethod::Cash),
+            "other" => Ok(PaymentMethod::Other),
+            _ => Err(ApiError::bad_request(format!(
+                "Invalid payment method filter: {method}"
+            ))),
+        })
+        .transpose()?;
     let filter = orbis_domain::queries::filters::PaymentFilter {
         student_id: q.student_id,
-        enrollment_id: None,
+        enrollment_id: q.enrollment_id,
         fee_id: q.fee_id,
-        method: None,
-        from_date: None,
-        to_date: None,
-        pagination: None,
+        method,
+        from_date: q
+            .from_date
+            .map(|date| date.and_hms_opt(0, 0, 0).unwrap().and_utc()),
+        to_date: q
+            .to_date
+            .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc()),
+        search: q.search,
+        pagination: Some(orbis_domain::queries::filters::PaginationParams {
+            page: Some(page),
+            page_size: Some(page_size),
+            sort_by: q.sort_by,
+            sort_dir: q.sort_dir,
+        }),
     };
-    let payments = state.payment_repo.list(ctx.tenant_id, filter).await?.items;
-    let dtos = payments
-        .into_iter()
-        .map(|p| PaymentDto {
-            id: p.id,
-            org_id: p.org_id,
-            fee_id: p.fee_id,
-            enrollment_id: p.enrollment_id,
-            student_id: p.student_id,
-            account_id: p.account_id,
-            amount: p.amount,
-            method: p.method.to_string(),
-            reference: p.reference,
-            receipt_number: p.receipt_number,
-            journal_entry_id: p.journal_entry_id,
-            paid_at: p.paid_at,
-            created_by: p.created_by,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
-        })
-        .collect();
-    Ok(ApiResponse::ok(dtos))
+    let payments = state.payment_repo.list(ctx.tenant_id, filter).await?;
+    let result = PaginatedList::new(
+        payments
+            .items
+            .into_iter()
+            .map(|p| PaymentDto {
+                id: p.id,
+                org_id: p.org_id,
+                fee_id: p.fee_id,
+                enrollment_id: p.enrollment_id,
+                student_id: p.student_id,
+                account_id: p.account_id,
+                amount: p.amount,
+                currency_code: p.currency_code,
+                payer_name: p.payer_name,
+                method: p.method.to_string(),
+                reference: p.reference,
+                receipt_number: p.receipt_number,
+                journal_entry_id: p.journal_entry_id,
+                paid_at: p.paid_at,
+                created_by: p.created_by,
+                created_at: p.created_at,
+                updated_at: p.updated_at,
+            })
+            .collect(),
+        payments.total_count,
+        payments.page,
+        payments.page_size,
+    );
+    Ok(ApiResponse::ok(result))
 }
 
 #[utoipa::path(get, path = "/api/v1/currencies",
@@ -1020,7 +1126,15 @@ pub async fn create_journal_entry(
         reference_number: p
             .reference_number
             .unwrap_or_else(|| format!("JV-{}", Utc::now().timestamp_millis())),
-        accounting_date: p.accounting_date.unwrap_or_else(|| now.date_naive()),
+        accounting_date: match p.accounting_date {
+            Some(date) => date,
+            None => {
+                state
+                    .finance_service
+                    .current_financial_date(ctx.tenant_id)
+                    .await?
+            }
+        },
         amount: p.amount,
         currency_code: p.currency_code.unwrap_or_else(|| "SAR".into()),
         exchange_rate: p.exchange_rate.unwrap_or(Decimal::ONE),
@@ -1044,8 +1158,10 @@ pub async fn create_journal_entry(
         version: 1,
     };
 
-    entry.validate_balance().map_err(ApiError::bad_request)?;
-    state.journal_entry_repo.save(&entry).await?;
+    let entry = state
+        .finance_service
+        .create_manual_journal_entry(&ctx, ctx.tenant_id, entry)
+        .await?;
 
     Ok(ApiResponse::ok(map_journal_entry_to_dto(entry)))
 }
@@ -1528,6 +1644,11 @@ pub async fn create_sub_account(
         .finance_service
         .create_sub_account(&ctx, ctx.tenant_id, input)
         .await?;
+    let is_finance_default = state
+        .finance_service
+        .fixed_finance_account_ids(ctx.tenant_id)
+        .await?
+        .contains(&a.id);
     Ok(ApiResponse::ok(AccountDto {
         id: a.id,
         org_id: a.org_id,
@@ -1539,6 +1660,9 @@ pub async fn create_sub_account(
         parent_id: a.parent_id,
         currency: a.currency_code,
         is_active: a.is_active,
+        is_control_account: a.is_control_account,
+        is_system_account: a.is_system_account,
+        is_finance_default,
         balances: a.balances,
         created_by: a.created_by,
         updated_by: a.updated_by,

@@ -1,6 +1,7 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
+import { findDuplicateIndex, type BulkValidationContext } from "../engine/duplicate-index";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -146,6 +147,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
 
     return {
       classes: [],
+      teachers: [],
       sections: [],
       levels: [],
       subjects,
@@ -154,6 +156,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       userGroups: [],
       assessmentSchemes,
       academicPeriods: [],
+      existingSectionSubjectAssignments: [],
       enums: {
         genders: [],
         studyModes: [],
@@ -235,17 +238,33 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
     return null;
   },
 
-  validateRow(row: GradeRowData, allRows: GradeRowData[], rowIndex: number, _refData: BulkReferenceData): BulkCellIssue[] {
+  validateRow(
+    row: GradeRowData,
+    allRows: GradeRowData[],
+    rowIndex: number,
+    _refData: BulkReferenceData,
+    context?: BulkValidationContext,
+  ): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
 
     // Check duplicate student + subject + assessment in same batch
     if (row.student_number && row.subject_name && row.assessment_type) {
-      const key = `${row.student_number}_${row.subject_name}_${row.assessment_type}`.toLowerCase();
-      const duplicateIndex = allRows.findIndex((r, idx) => {
-        if (idx === rowIndex) return false;
-        const otherKey = `${r.student_number}_${r.subject_name}_${r.assessment_type}`.toLowerCase();
-        return key === otherKey;
-      });
+      const key = JSON.stringify([
+        row.student_number.trim().toLowerCase(),
+        row.subject_name.trim().toLowerCase(),
+        row.assessment_type.trim().toLowerCase(),
+      ]);
+      const duplicateIndex = context
+        ? findDuplicateIndex(context, "grade_assessment", key, rowIndex) ?? -1
+        : allRows.findIndex((other, index) => {
+            if (index === rowIndex) return false;
+            const otherKey = JSON.stringify([
+              other.student_number?.trim().toLowerCase(),
+              other.subject_name?.trim().toLowerCase(),
+              other.assessment_type?.trim().toLowerCase(),
+            ]);
+            return key === otherKey;
+          });
 
       if (duplicateIndex !== -1) {
         issues.push({
@@ -314,7 +333,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       return {
         period_id: orgId,
         student_id: row.student_number,
-        class_subject_id: matchedSubject?.id || orgId,
+        section_subject_id: matchedSubject?.id || orgId,
         score: String(scoreNum),
         max_score: String(maxScoreNum),
         is_excused: isExcused,

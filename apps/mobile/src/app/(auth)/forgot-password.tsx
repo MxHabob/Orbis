@@ -6,7 +6,6 @@
 
 import React, { useState } from "react";
 import {
-  StyleSheet,
   Text,
   View,
   Pressable,
@@ -20,7 +19,6 @@ import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
-import { Radii, Spacing, Typography, Fonts } from "@/constants/theme";
 import {
   ArrowLeft,
   ArrowRight,
@@ -65,10 +63,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? "#09090B" : "#F8FAFC" },
-      ]}
+      className="flex-1 bg-background"
     >
       <LinearGradient
         colors={
@@ -78,29 +73,33 @@ export default function ForgotPasswordScreen() {
         }
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.5 }}
-        style={StyleSheet.absoluteFill}
+        className="absolute inset-0"
         pointerEvents="none"
       />
 
       <KeyboardAwareView
-        style={styles.keyboardContainer}
-        contentContainerStyle={styles.scrollContent}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: "space-between",
+          paddingHorizontal: 20,
+          paddingTop: Platform.OS === "ios" ? 54 : 36,
+          paddingBottom: 32,
+        }}
       >
         {/* Minimal Nav Header */}
-        <View style={styles.navHeader}>
+        <View className="mb-6 flex-row items-center">
           <Pressable
             onPress={() => router.back()}
-            style={[
-              styles.navIconBtn,
-              {
-                backgroundColor: isDark
-                  ? "rgba(255, 255, 255, 0.08)"
-                  : "rgba(255, 255, 255, 0.8)",
-                borderColor: isDark
-                  ? "rgba(255, 255, 255, 0.12)"
-                  : "rgba(0, 0, 0, 0.06)",
-              },
-            ]}
+            className="h-10 w-10 items-center justify-center rounded-full border"
+            style={{
+              backgroundColor: isDark
+                ? "rgba(255, 255, 255, 0.08)"
+                : "rgba(255, 255, 255, 0.8)",
+              borderColor: isDark
+                ? "rgba(255, 255, 255, 0.12)"
+                : "rgba(0, 0, 0, 0.06)",
+            }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
             <BackIcon size={18} color={isDark ? "#FFFFFF" : "#0F172A"} />
@@ -108,44 +107,26 @@ export default function ForgotPasswordScreen() {
         </View>
 
         {!isSubmitted ? (
-          <View style={styles.mainContent}>
+          <View className="flex-1 justify-center">
             {/* Title Block */}
-            <View style={styles.titleBlock}>
+            <View className="mb-6">
               <Text
-                style={[
-                  styles.stepQuestion,
-                  { color: isDark ? "#FFFFFF" : "#0F172A" },
-                ]}
+                className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground"
               >
                 {t("auth_forgot_title")}
               </Text>
               <Text
-                style={[
-                  styles.stepHint,
-                  {
-                    color: isDark
-                      ? "rgba(255, 255, 255, 0.6)"
-                      : "#64748B",
-                  },
-                ]}
+                className="mt-one font-sans text-sm leading-5 text-muted-foreground"
               >
                 {t("auth_forgot_subtitle")}
               </Text>
             </View>
 
             {errorMsg ? (
-              <View
-                style={[
-                  styles.errorPill,
-                  {
-                    backgroundColor: isDark
-                      ? "rgba(239, 68, 68, 0.18)"
-                      : "#FEF2F2",
-                    borderColor: theme.error,
-                  },
-                ]}
-              >
-                <Text style={[styles.errorPillText, { color: theme.error }]}>
+              <View className="mb-four rounded-lg border border-destructive bg-destructive/10 px-three py-two">
+                <Text
+                  className="font-sans text-xs leading-4 font-semibold text-destructive"
+                >
                   {errorMsg}
                 </Text>
               </View>
@@ -153,30 +134,22 @@ export default function ForgotPasswordScreen() {
 
             {/* Large Pill Input with embedded arrow */}
             <View
-              style={[
-                styles.largePillInputContainer,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(255, 255, 255, 0.06)"
-                    : "#FFFFFF",
-                  borderColor: isDark
-                    ? "rgba(255, 255, 255, 0.18)"
-                    : "rgba(0, 0, 0, 0.1)",
-                },
-              ]}
+              className="h-14 flex-row items-center rounded-full border border-border bg-background-element px-four"
+              style={{
+                shadowColor: "#000000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 6,
+                elevation: 2,
+              }}
             >
               <TextInput
-                style={[
-                  styles.largePillTextInput,
-                  {
-                    color: isDark ? "#FFFFFF" : "#0F172A",
-                    textAlign: isArabic ? "right" : "left",
-                  },
-                ]}
+                className="flex-1 px-2 font-sans text-base text-foreground"
+                style={{
+                  textAlign: isArabic ? "right" : "left",
+                }}
                 placeholder={t("auth_email_placeholder")}
-                placeholderTextColor={
-                  isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                }
+                placeholderTextColor={theme.textMuted}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -189,76 +162,50 @@ export default function ForgotPasswordScreen() {
               <Pressable
                 onPress={handleSend}
                 disabled={isLoading}
-                style={({ pressed }) => [
-                  styles.arrowCircleBtn,
-                  {
-                    backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
-                    transform: [{ scale: pressed ? 0.9 : 1 }],
-                    opacity: isLoading ? 0.6 : 1,
-                  },
-                ]}
+                className="h-[38px] w-[38px] items-center justify-center rounded-full bg-foreground"
+                style={({ pressed }) => ({
+                  transform: [{ scale: pressed ? 0.9 : 1 }],
+                  opacity: isLoading ? 0.6 : 1,
+                })}
               >
                 <ArrowIcon
                   size={16}
-                  color={isDark ? "#0F172A" : "#FFFFFF"}
+                  color={theme.background}
                 />
               </Pressable>
             </View>
           </View>
         ) : (
           /* Confirmation State */
-          <View style={styles.successContent}>
+          <View className="flex-1 items-center justify-center px-4">
             <View
-              style={[
-                styles.successIconBox,
-                {
-                  backgroundColor: isDark
-                    ? "rgba(16, 185, 129, 0.15)"
-                    : theme.successLight,
-                },
-              ]}
+              className="mb-five h-20 w-20 items-center justify-center rounded-full bg-success/10"
             >
               <CheckCircle size={44} color={theme.success} />
             </View>
 
             <Text
-              style={[
-                styles.successTitle,
-                { color: isDark ? "#FFFFFF" : "#0F172A" },
-              ]}
+              className="mb-two text-center font-sans text-2xl leading-[30px] font-extrabold text-foreground"
             >
               {t("auth_forgot_success_title")}
             </Text>
 
             <Text
-              style={[
-                styles.successSub,
-                {
-                  color: isDark
-                    ? "rgba(255, 255, 255, 0.6)"
-                    : "#64748B",
-                },
-              ]}
+              className="mb-eight text-center font-sans text-sm leading-[22px] text-muted-foreground"
             >
               {t("auth_forgot_success_msg")}
             </Text>
 
-            <View style={styles.successFooter}>
+            <View className="w-full">
               <Pressable
                 onPress={() => router.replace("/(auth)/sign-in")}
-                style={({ pressed }) => [
-                  styles.continuePillBtn,
-                  {
-                    backgroundColor: isDark ? "#FFFFFF" : "#0F172A",
-                    transform: [{ scale: pressed ? 0.98 : 1 }],
-                  },
-                ]}
+                className="h-[54px] items-center justify-center rounded-full bg-foreground shadow-md"
+                style={({ pressed }) => ({
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                })}
               >
                 <Text
-                  style={[
-                    styles.continuePillBtnText,
-                    { color: isDark ? "#0F172A" : "#FFFFFF" },
-                  ]}
+                  className="font-sans text-base leading-5 font-bold text-background"
                 >
                   {t("auth_back_to_sign_in")}
                 </Text>
@@ -270,138 +217,3 @@ export default function ForgotPasswordScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.five,
-    paddingTop: Platform.OS === "ios" ? 54 : 36,
-    paddingBottom: Spacing.eight,
-  },
-  navHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.six,
-  },
-  navIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: Radii.full,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mainContent: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  titleBlock: {
-    marginBottom: Spacing.six,
-  },
-  stepQuestion: {
-    ...Typography.display,
-    fontSize: 28,
-    lineHeight: 34,
-    fontFamily: Fonts.sans,
-    fontWeight: "800",
-    letterSpacing: -0.5,
-  },
-  stepHint: {
-    ...Typography.bodyMedium,
-    fontFamily: Fonts.sans,
-    marginTop: Spacing.one,
-  },
-  errorPill: {
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    marginBottom: Spacing.four,
-  },
-  errorPillText: {
-    ...Typography.caption,
-    fontFamily: Fonts.sans,
-    fontWeight: "600",
-  },
-  largePillInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    height: 56,
-    borderRadius: Radii.full,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.four,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  largePillTextInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: Fonts.sans,
-    paddingHorizontal: Spacing.two,
-  },
-  arrowCircleBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  successContent: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: Spacing.four,
-  },
-  successIconBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.five,
-  },
-  successTitle: {
-    ...Typography.h1,
-    fontFamily: Fonts.sans,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: Spacing.two,
-  },
-  successSub: {
-    ...Typography.bodyMedium,
-    fontFamily: Fonts.sans,
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: Spacing.eight,
-  },
-  successFooter: {
-    width: "100%",
-  },
-  continuePillBtn: {
-    height: 54,
-    borderRadius: Radii.full,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  continuePillBtnText: {
-    ...Typography.bodyBold,
-    fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: "700",
-  },
-});

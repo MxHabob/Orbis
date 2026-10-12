@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use orbis_domain::errors::DomainError;
 use crate::models::{
-    academic_year::{self, Entity as YearEntity},
+    academic_calendar::{self, Entity as YearEntity},
     academic_period::{self, Entity as PeriodEntity},
     enrollment::{self, Entity as EnrollmentEntity},
     student_fee::{self, Entity as StudentFeeEntity},
@@ -90,8 +90,8 @@ impl AcademicEvaluator {
 
         // ── 1. Academic Year Lifecycle ──────────────────────────────────
         let years = YearEntity::find()
-            .filter(academic_year::Column::OrgId.eq(org_id))
-            .filter(academic_year::Column::Status.ne("archived"))
+            .filter(academic_calendar::Column::OrgId.eq(org_id))
+            .filter(academic_calendar::Column::Status.ne("archived"))
             .all(db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -101,7 +101,7 @@ impl AcademicEvaluator {
                 tasks.push(ProposedTask::new(
                     "year.activate",
                     year.id,
-                    "academic_year",
+                    "academic_calendar",
                     format!("Academic year '{}' start date has arrived", year.name),
                     Risk::Medium,
                 ));
@@ -119,7 +119,7 @@ impl AcademicEvaluator {
                     tasks.push(ProposedTask::new(
                         "year.start_closing",
                         year.id,
-                        "academic_year",
+                        "academic_calendar",
                         format!("All periods in year '{}' are closed. Ready for year closing", year.name),
                         Risk::High,
                     ));
@@ -130,7 +130,7 @@ impl AcademicEvaluator {
                 tasks.push(ProposedTask::new(
                     "promotion.dry_run",
                     year.id,
-                    "academic_year",
+                    "academic_calendar",
                     format!("Year '{}' is closing — initiate progression dry-run", year.name),
                     Risk::Medium,
                 ));

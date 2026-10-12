@@ -12,5 +12,6 @@
 pub mod barcode_gen;
 pub mod font_cache;
 pub mod image_loader;
+pub mod multi_up_renderer;
 pub mod pdf_renderer;
 pub mod types;

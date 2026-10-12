@@ -14,11 +14,13 @@ export { shouldUseServerFilter };
 
 const SERVER_PAGE_MAX = 100;
 
+export const DEFAULT_PAGE_SIZE = 50;
+
 export function asPage<T>(
   items: T[],
   totalCount = items.length,
   page = 1,
-  pageSize = items.length || 20,
+  pageSize = items.length || DEFAULT_PAGE_SIZE,
 ): DataPage<T> {
   const size = Math.max(1, pageSize);
   return {

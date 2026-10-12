@@ -561,7 +561,8 @@ function getHandles(r: { x: number; y: number; w: number; h: number }) {
         onmousedown={(e) => startDrag(e, rect.id, "move")}
         ondblclick={(e) => {
           const node = findNode(store.document, rect.id);
-          if (node?.type === "Text") {
+          if (node?.type === "Text" && store.editingNodeId !== rect.id) {
+            e.preventDefault();
             store.editingNodeId = rect.id;
           }
         }}

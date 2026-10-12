@@ -1,6 +1,9 @@
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Student record — links person to institutional student identity.
+/// Personal data (names, IDs) lives in `persons`; this table holds
+/// student-specific attributes only.
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "students")]
 pub struct Model {
@@ -10,20 +13,9 @@ pub struct Model {
     pub person_id: Uuid,
     pub user_id: Option<Uuid>,
     pub student_number: String,
-    pub national_id: Option<String>,
-    pub passport_number: Option<String>,
-    pub first_name: String,
-    pub last_name: String,
-    pub full_name: String,
-    pub name_ar: Option<String>,
-    pub gender: String,
-    pub date_of_birth: Option<Date>,
-    pub place_of_birth: Option<String>,
-    pub nationality: Option<String>,
-    pub blood_type: Option<String>,
-    pub medical_notes: Option<String>,
-    pub special_needs_notes: Option<String>,
+    /// active, suspended, graduated, withdrawn, expelled
     pub status: String,
+    /// good, probation, warning, dismissed
     pub standing: String,
     pub admitted_at: DateTimeUtc,
     pub graduated_at: Option<DateTimeUtc>,
@@ -45,8 +37,14 @@ pub enum Relation {
         to = "super::person::Column::Id"
     )]
     Person,
+    #[sea_orm(
+        belongs_to = "super::organization::Entity",
+        from = "Column::OrgId",
+        to = "super::organization::Column::Id"
+    )]
+    Organization,
     #[sea_orm(has_many = "super::enrollment::Entity")]
-    Enrollment,
+    Enrollments,
 }
 
 impl Related<super::person::Entity> for Entity {
@@ -55,9 +53,15 @@ impl Related<super::person::Entity> for Entity {
     }
 }
 
+impl Related<super::organization::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::Organization.def()
+    }
+}
+
 impl Related<super::enrollment::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Enrollment.def()
+        Relation::Enrollments.def()
     }
 }
 

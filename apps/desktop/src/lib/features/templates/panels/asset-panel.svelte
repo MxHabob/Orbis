@@ -19,7 +19,7 @@ import {
 import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
 import {
   useDocuments,
-  useUploadDocument,
+  useUploadFile,
   useDeleteDocument,
   resolveDocumentUrl,
   getDocumentSource,
@@ -36,7 +36,7 @@ let fileInput: HTMLInputElement;
 
 // --- Queries & Mutations ---
 const documentsQuery = useDocuments(() => ({ entityType: "template" }));
-const uploadMutation = useUploadDocument();
+const uploadMutation = useUploadFile();
 const deleteMutation = useDeleteDocument();
 
 // Flatten pages into a single array of documents
@@ -60,7 +60,7 @@ let filteredAssets = $derived(
 
 async function handleAssetDragStart(e: DragEvent, doc: any) {
   e.dataTransfer?.setData("application/x-docforge-asset", doc.id);
-  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   if (srcUrl) {
     e.dataTransfer?.setData("text/uri-list", srcUrl);
   }
@@ -70,7 +70,7 @@ async function handleAssetDragStart(e: DragEvent, doc: any) {
 // ── Insert asset as Image node ───────────────────────────────
 
 async function insertAssetAsImage(doc: any) {
-  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc));
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
   store.addAsset(doc.id, "image");
   store.addElement("Image", {
     assetRef: doc.id,
@@ -79,6 +79,11 @@ async function insertAssetAsImage(doc: any) {
     height: 30,
     fit: "contain",
   });
+}
+
+async function setAssetAsBackground(doc: any) {
+  const srcUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
+  store.setPageBackground(doc.id, srcUrl);
 }
 
 // ── Remove asset ─────────────────────────────────────────────
@@ -105,13 +110,14 @@ function handleFileSelect(e: Event) {
   uploadMutation.mutate(
     {
       file,
+      name: file.name,
       entity_type: "template",
       entity_id: store.document.meta.id || "shared",
       category: "image",
       visibility: "private",
     },
     {
-      onSuccess: (uploaded: any) => {
+      onSuccess: (uploaded) => {
         if (uploaded?.id) {
           store.addAsset(uploaded.id, "image");
         }
@@ -136,6 +142,18 @@ function triggerUpload() {
     </div>
     <div class="flex items-center gap-1">
       <Badge variant="outline" class="text-[8px]">{filteredAssets.length}</Badge>
+      {#if store.activePage?.children.some((child) => child.type === "Image" && child.props.layer === "background")}
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          class="cursor-pointer h-5 w-5"
+          title={m.template_remove_background()}
+          aria-label={m.template_remove_background()}
+          onclick={() => store.clearPageBackground()}
+        >
+          <Trash size={11} />
+        </Button>
+      {/if}
       <Tooltip>
         <TooltipTrigger>
           <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={uploadMutation.isPending}>
@@ -195,7 +213,7 @@ function triggerUpload() {
           >
             <!-- Thumbnail -->
             <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
-              {#await resolveDocumentUrl(getDocumentSource(doc))}
+              {#await resolveDocumentUrl(getDocumentSource(doc), doc.id)}
                 <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
               {:then srcUrl}
                 <img
@@ -219,6 +237,15 @@ function triggerUpload() {
 
             <!-- Hover Actions -->
             <div class="absolute top-1 inset-e-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
+              <button
+                type="button"
+                class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer"
+                title={m.template_set_as_background()}
+                aria-label={m.template_set_as_background()}
+                onclick={() => setAssetAsBackground(doc)}
+              >
+                <Photo size={10} class="text-primary" />
+              </button>
               <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(doc)}>
                 <Plus size={10} class="text-primary" />
               </button>

@@ -53,7 +53,7 @@ pub enum DomainEvent {
         user_id: Uuid,
     },
 
-    AcademicYearCreated {
+    AcademicCalendarCreated {
         year_id: Uuid,
         org_id: Uuid,
         timestamp: DateTime<Utc>,
@@ -82,8 +82,8 @@ pub enum DomainEvent {
         period_id: Uuid,
         timestamp: DateTime<Utc>,
     },
-    ClassSubjectAssigned {
-        class_subject_id: Uuid,
+    SectionSubjectAssigned {
+        section_subject_id: Uuid,
         class_id: Uuid,
         subject_id: Uuid,
         timestamp: DateTime<Utc>,
@@ -179,7 +179,7 @@ pub enum DomainEvent {
     },
     LessonScheduled {
         lesson_id: Uuid,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
         time_slot_id: Uuid,
         timestamp: DateTime<Utc>,
     },
@@ -213,7 +213,7 @@ pub enum DomainEvent {
     GradeRecorded {
         grade_id: Uuid,
         student_id: Uuid,
-        class_subject_id: Uuid,
+        section_subject_id: Uuid,
         score: Decimal,
         timestamp: DateTime<Utc>,
     },
@@ -232,7 +232,7 @@ pub enum DomainEvent {
         attendance_id: Uuid,
         student_id: Uuid,
         class_id: Option<Uuid>,
-        class_subject_id: Option<Uuid>,
+        section_subject_id: Option<Uuid>,
         scheduled_lesson_id: Option<Uuid>,
         status: String,
         timestamp: DateTime<Utc>,
@@ -642,8 +642,8 @@ impl DomainEvent {
             }
 
             // Academic
-            DomainEvent::AcademicYearCreated { year_id, .. } => {
-                Some(("academic_year.created", "academic_year", *year_id))
+            DomainEvent::AcademicCalendarCreated { year_id, .. } => {
+                Some(("academic_calendar.created", "academic_calendar", *year_id))
             }
             DomainEvent::AcademicPeriodCreated { period_id, .. } => {
                 Some(("academic_period.created", "academic_period", *period_id))
@@ -659,9 +659,9 @@ impl DomainEvent {
             DomainEvent::ClassCreated { class_id, .. } => {
                 Some(("class.created", "class", *class_id))
             }
-            DomainEvent::ClassSubjectAssigned {
-                class_subject_id, ..
-            } => Some(("class_subject.assigned", "class_subject", *class_subject_id)),
+            DomainEvent::SectionSubjectAssigned {
+                section_subject_id, ..
+            } => Some(("section_subject.assigned", "section_subject", *section_subject_id)),
 
             // Student
             DomainEvent::StudentRegistered { student_id, .. } => {
@@ -694,7 +694,7 @@ impl DomainEvent {
                 *student_guardian_id,
             )),
             DomainEvent::CohortPromoted { job_id, .. } => {
-                Some(("promotion.completed", "promotion_job", *job_id))
+                Some(("promotion.completed", "progression_job", *job_id))
             }
 
             // Scheduling

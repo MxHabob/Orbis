@@ -8,23 +8,54 @@ import React from "react";
 import {
   View,
   type ViewProps,
-  StyleSheet,
-  useColorScheme,
-  type ViewStyle,
 } from "react-native";
-import { Colors, Radii, Shadows, Spacing } from "@/constants/theme";
+import type { ViewStyle } from "react-native";
+
+type SpacingScale =
+  | "half"
+  | "one"
+  | "two"
+  | "three"
+  | "four"
+  | "five"
+  | "six"
+  | "eight"
+  | "ten"
+  | "twelve"
+  | "sixteen";
+type RadiusScale = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "full";
+
+const paddingClasses: Record<SpacingScale, string> = {
+  half: "p-half",
+  one: "p-one",
+  two: "p-two",
+  three: "p-three",
+  four: "p-four",
+  five: "p-five",
+  six: "p-six",
+  eight: "p-eight",
+  ten: "p-ten",
+  twelve: "p-twelve",
+  sixteen: "p-sixteen",
+};
+
+const radiusClasses: Record<RadiusScale, string> = {
+  none: "rounded-none",
+  xs: "rounded-xs",
+  sm: "rounded-sm",
+  md: "rounded-md",
+  lg: "rounded-lg",
+  xl: "rounded-xl",
+  "2xl": "rounded-2xl",
+  "3xl": "rounded-3xl",
+  full: "rounded-full",
+};
 
 export interface SurfaceProps extends ViewProps {
   variant?: "flat" | "elevated" | "outlined" | "sunken";
-  radius?: keyof typeof Radii;
-  padding?: keyof typeof Spacing | number;
+  radius?: RadiusScale;
+  padding?: SpacingScale | number;
   children?: React.ReactNode;
-}
-
-function resolvePadding(padding?: keyof typeof Spacing | number): number | undefined {
-  if (padding === undefined) return undefined;
-  if (typeof padding === "number") return padding;
-  return Spacing[padding];
 }
 
 export function Surface({
@@ -35,48 +66,25 @@ export function Surface({
   children,
   ...props
 }: SurfaceProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const theme = Colors[isDark ? "dark" : "light"];
-
-  let variantStyle: ViewStyle = {};
-  switch (variant) {
-    case "elevated":
-      variantStyle = {
-        backgroundColor: theme.cardElevated,
-        ...Shadows.md,
-        borderWidth: 1,
-        borderColor: theme.cardBorder,
-      };
-      break;
-    case "outlined":
-      variantStyle = {
-        backgroundColor: theme.card,
-        borderWidth: 1,
-        borderColor: theme.border,
-      };
-      break;
-    case "sunken":
-      variantStyle = {
-        backgroundColor: theme.backgroundElement,
-      };
-      break;
-    case "flat":
-    default:
-      variantStyle = {
-        backgroundColor: theme.card,
-      };
-      break;
-  }
-
-  const computedStyle: ViewStyle = {
-    borderRadius: Radii[radius],
-    padding: resolvePadding(padding),
-    ...variantStyle,
+  const variantClasses: Record<SurfaceProps["variant"] & string, string> = {
+    flat: "bg-card",
+    elevated: "border border-card-border bg-card-elevated shadow-md",
+    outlined: "border border-border bg-card",
+    sunken: "bg-background-element",
   };
 
+  const computedStyle: ViewStyle = {
+    padding: typeof padding === "number" ? padding : undefined,
+  };
+  const paddingClass =
+    typeof padding === "string" ? paddingClasses[padding] : undefined;
+
   return (
-    <View style={[computedStyle, style]} {...props}>
+    <View
+      className={`${radiusClasses[radius]} ${paddingClass ?? ""} ${variantClasses[variant]}`}
+      style={[computedStyle, style]}
+      {...props}
+    >
       {children}
     </View>
   );

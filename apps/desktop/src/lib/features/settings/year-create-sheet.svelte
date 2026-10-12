@@ -6,7 +6,7 @@ Uses the shared @orbis/ui/sheet component and YearForm.
 <script lang="ts">
   import { Sheet, SheetContent } from "@orbis/ui/sheet";
   import YearForm from "./year-form.svelte";
-  import type { AcademicYearDto } from "@orbis/sdk";
+  import type { academicCalendarDto } from "@orbis/sdk";
 
   let {
     open = $bindable(false),
@@ -17,8 +17,8 @@ Uses the shared @orbis/ui/sheet component and YearForm.
   }: {
     open: boolean;
     orgId: string;
-    year?: AcademicYearDto | null;
-    existingYears?: AcademicYearDto[];
+    year?: academicCalendarDto | null;
+    existingYears?: academicCalendarDto[];
     onSuccess?: () => void;
   } = $props();
 </script>

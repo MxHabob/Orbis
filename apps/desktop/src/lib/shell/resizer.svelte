@@ -26,6 +26,8 @@ let {
   maxWidth,
   defaultValue,
   persistId,
+  inside = false,
+  collapsible = true,
   onWidth,
   collapseThreshold = minWidth * 0.75,
   collapsedWidth = 3,
@@ -36,6 +38,8 @@ let {
   maxWidth: number;
   defaultValue: number;
   persistId?: string;
+  inside?: boolean;
+  collapsible?: boolean;
   onWidth?: (widthRem: number) => void;
   collapseThreshold?: number;
   collapsedWidth?: number;
@@ -54,7 +58,8 @@ $effect(() => {
     const val = parseFloat(stored);
     if (
       !isNaN(val) &&
-      (val === collapsedWidth || (val >= minWidth && val <= maxWidth))
+      ((collapsible && val === collapsedWidth) ||
+        (val >= minWidth && val <= maxWidth))
     ) {
       onWidth?.(val);
     }
@@ -91,7 +96,7 @@ function onPointerMove(e: PointerEvent) {
   const newWidthRem = pxToRem(newWidthPx);
 
   let targetWidth = newWidthRem;
-  if (targetWidth < collapseThreshold) {
+  if (collapsible && targetWidth < collapseThreshold) {
     targetWidth = collapsedWidth;
   } else {
     targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
@@ -120,7 +125,7 @@ function onPointerUp(e: PointerEvent) {
   if (persistId && viewport) {
     const currentRem = pxToRem(viewport.getBoundingClientRect().width);
     let targetWidth = currentRem;
-    if (targetWidth < collapseThreshold) {
+    if (collapsible && targetWidth < collapseThreshold) {
       targetWidth = collapsedWidth;
     } else {
       targetWidth = Math.max(minWidth, Math.min(maxWidth, targetWidth));
@@ -144,6 +149,7 @@ function onDoubleClick() {
 	class="resizer"
   class:start={edge === 'start'}
   class:end={edge === 'end'}
+  class:inside
 	class:dragging={isDragging}
 	class:cursor-col-resize={isDragging}
 	onpointerdown={onPointerDown}
@@ -174,6 +180,14 @@ function onDoubleClick() {
   .resizer.start {
 		inset-inline-start: -5px;
 	}
+
+  .resizer.start.inside {
+    inset-inline-start: 0;
+  }
+
+  .resizer.end.inside {
+    inset-inline-end: 0;
+  }
 
 	.resizer-line {
 		position: absolute;

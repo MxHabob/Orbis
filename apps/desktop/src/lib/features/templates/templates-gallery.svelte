@@ -10,7 +10,8 @@ import {
   SelectItem,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import { createDocument } from "@docforge/core";
+import { createDocument, createNode } from "@docforge/core";
+import type { PageSetup, TextNode } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
@@ -27,7 +28,7 @@ import {
   createArchiveTemplateMutation,
 } from "./queries";
 import { confirmStore } from "$lib/stores";
-import { extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -35,11 +36,8 @@ let { orgId }: { orgId: string } = $props();
 let isCreateDialogOpen = $state(false);
 let newTemplateName = $state("");
 let newTemplateNameAr = $state("");
-let newTemplateDesc = $state("");
-let newTemplateEntityType = $state("enrollment");
 let newTemplateDocType = $state("CERTIFICATE");
-let newTemplatePreset = $state("blank");
-let dataSchemas = $state<Record<string, Record<string, unknown>>>({});
+let newTemplateEntityType = $state("enrollment");
 let searchQuery = $state("");
 let filterEntityType = $state("all");
 let filterDocType = $state("all");
@@ -60,6 +58,21 @@ const archiveMutation = createArchiveTemplateMutation();
 
 const rawTemplates = $derived(templatesQuery.data ?? []);
 const loading = $derived(templatesQuery.isLoading);
+const entityTypes = $derived(
+  [...new Set(rawTemplates.map((template) => template.entity_type).filter(Boolean))].sort(),
+);
+const documentTypes = $derived(
+  [...new Set(rawTemplates.map((template) => template.document_type).filter(Boolean))].sort(),
+);
+
+function displayType(value: string): string {
+  return value
+    .toLowerCase()
+    .split(/[_\-.]+/)
+    .filter(Boolean)
+    .map((part) => part[0]!.toUpperCase() + part.slice(1))
+    .join(" ");
+}
 
 const filteredTemplates = $derived.by(() => {
   if (!searchQuery.trim()) return rawTemplates;
@@ -73,14 +86,17 @@ const filteredTemplates = $derived.by(() => {
 });
 
 // Handle Template Creation
-function getDefaultPageSetup() {
+function getDefaultPageSetup(): Pick<PageSetup, "size" | "orientation"> {
   if (newTemplateDocType === "ID_CARD")
     return { size: "ID_CARD", orientation: "landscape" };
   if (newTemplateDocType === "EXAM_CARD")
     return { size: "A5", orientation: "portrait" };
-  if (newTemplateDocType === "RECEIPT")
+  if (
+    newTemplateDocType === "RECEIPT" ||
+    newTemplateDocType === "TRANSCRIPT"
+  )
     return { size: "A4", orientation: "portrait" };
-  return { size: "A4", orientation: "portrait" };
+  return { size: "A5", orientation: "landscape" };
 }
 
 function buildInitialDocument() {
@@ -92,92 +108,36 @@ function buildInitialDocument() {
   document.meta.name = newTemplateName;
   document.meta.nameAr = newTemplateNameAr || undefined;
   const pageSetup = getDefaultPageSetup();
-  document.meta.pageSetup.size = pageSetup.size as any;
-  document.meta.pageSetup.orientation = pageSetup.orientation as any;
-
-  const schema = dataSchemas[newTemplateEntityType] ?? {};
-  for (const [field, definition] of Object.entries(schema)) {
-    const type = (definition as any)?.type;
-    if (
-      ["string", "number", "boolean", "date", "image", "array"].includes(type)
-    ) {
-      document.variables[field] = {
-        source: field,
-        type,
-        label: field,
-        labelAr: (definition as any)?.label,
-      } as any;
-    }
-  }
-
-  const text = (id: string, content: string, y: number, fontSize: number) => ({
-    type: "Text",
-    id,
-    props: {
-      content,
-      fontSize,
-      fontFamily: "Tahoma",
-      fontWeight: fontSize >= 20 ? "bold" : "normal",
-      textAlign: "center",
-      direction: "rtl",
-    },
-    position: { x: 15, y, width: "100%", height: 18 },
-    positionMode: "absolute",
-  });
+  document.meta.pageSetup.size = pageSetup.size;
+  document.meta.pageSetup.orientation = pageSetup.orientation;
 
   const page = document.pages[0]!;
-  if (newTemplatePreset === "certificate") {
-    page.children = [
-      {
-        type: "Header",
-        id: "header",
-        props: { height: 25 },
-        children: [text("header-text", "$org.name_ar", 8, 18)],
-      },
-      text("title", newTemplateNameAr || newTemplateName, 65, 26),
-      text("student", "{{student.nameAr}}", 110, 20),
-      {
-        type: "Footer",
-        id: "footer",
-        props: { height: 15, showPageNumber: true },
-        children: [text("footer-text", "{{student.nationalId}}", 270, 10)],
-      },
-    ] as any;
-  } else if (newTemplatePreset === "transcript") {
-    page.children = [
-      text("title", newTemplateNameAr || newTemplateName, 15, 22),
-      {
-        type: "Table",
-        id: "results-table",
-        props: {
-          dataSource: "subjects",
-          columns: [
-            { header: m.shared_ui_subject(), field: "nameAr", width: "40%" },
-            { header: m.shared_ui_score(), field: "score", width: "30%" },
-            { header: m.shared_ui_grade(), field: "grade", width: "30%" },
-          ],
-          showHeader: true,
-          showGrid: true,
-          direction: "rtl",
-        },
-        position: { x: 15, y: 55, width: "100%", height: 100 },
-        positionMode: "absolute",
-      },
-    ] as any;
-  } else if (newTemplatePreset === "receipt") {
-    page.children = [
-      text("title", newTemplateNameAr || newTemplateName, 20, 22),
-      text("payer", "{{payerName}}", 70, 16),
-      text("amount", "{{amount | number:'0.00'}} {{currency}}", 110, 24),
-      {
-        type: "QRCode",
-        id: "receipt-qr",
-        props: { data: "{{receiptNumber}}", size: 25, errorCorrection: "M" },
-        position: { x: 85, y: 160, width: 25, height: 25 },
-        positionMode: "absolute",
-      },
-    ] as any;
-  }
+  const pageWidth = pageSetup.size === "ID_CARD" ? 85.6 : 210;
+  const margin = pageSetup.size === "ID_CARD" ? 5 : 15;
+  const contentWidth = pageWidth - margin * 2;
+  const header = createNode<TextNode>("Text", {
+    props: {
+      content: "$org.name_ar",
+      fontSize: pageSetup.size === "ID_CARD" ? 7 : 12,
+      fontFamily: "Rubik",
+      fontWeight: "bold",
+      textAlign: "center",
+      direction: "rtl",
+      position: { x: margin, y: 12, width: contentWidth, height: 12 },
+    },
+  });
+  const title = createNode<TextNode>("Text", {
+    props: {
+      content: newTemplateNameAr || newTemplateName,
+      fontSize: pageSetup.size === "ID_CARD" ? 8 : 18,
+      fontFamily: "Rubik",
+      fontWeight: "bold",
+      textAlign: "center",
+      direction: "rtl",
+      position: { x: margin, y: 35, width: contentWidth, height: 18 },
+    },
+  });
+  page.children = [header, title];
 
   return document;
 }
@@ -194,7 +154,7 @@ async function handleCreateTemplate() {
     const createRequest: CreateTemplateRequest = {
       name: newTemplateName,
       name_ar: newTemplateNameAr || null,
-      description: newTemplateDesc || null,
+      description: null,
       document_type: newTemplateDocType,
       entity_type: newTemplateEntityType,
       page_size: pageSetup.size,
@@ -272,6 +232,17 @@ async function restoreTemplate(id: string) {
     toast.error(msg);
   }
 }
+
+async function setDefaultTemplate(id: string) {
+  try {
+    await api.updateTemplate(id, { is_default: true });
+    await templatesQuery.refetch();
+    toast.success(m.settings_templates_set_default_success());
+  } catch (e: unknown) {
+    console.error("Failed to set default template:", e);
+    toast.error(extractErrorMessage(e) || m.shared_ui_template_save_failed());
+  }
+}
 </script>
 
 <div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide">
@@ -288,29 +259,25 @@ async function restoreTemplate(id: string) {
 
         <Select type="single" bind:value={filterEntityType}>
           <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-            {({ all: m.settings_templates_filter_entity_all(), enrollment: m.common_bulk_card_students_tag_enrollment(), payment: m.settings_templates_filter_entity_payment(), exam: m.settings_templates_filter_entity_exam(), user: m.common_agent_default_user_name(), organization: m.settings_templates_filter_entity_organization() } as Record<string, string>)[filterEntityType] || m.common_print_multi_up_entity_type()}
+            {filterEntityType === "all" ? m.settings_templates_filter_entity_all() : displayType(filterEntityType)}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.settings_templates_filter_entity_all()}</SelectItem>
-            <SelectItem value="enrollment">{m.common_bulk_card_students_tag_enrollment()}</SelectItem>
-            <SelectItem value="payment">{m.settings_templates_filter_entity_payment()}</SelectItem>
-            <SelectItem value="exam">{m.settings_templates_filter_entity_exam()}</SelectItem>
-            <SelectItem value="user">{m.common_agent_default_user_name()}</SelectItem>
-            <SelectItem value="organization">{m.settings_templates_filter_entity_organization()}</SelectItem>
+            {#each entityTypes as entityType (entityType)}
+              <SelectItem value={entityType}>{displayType(entityType)}</SelectItem>
+            {/each}
           </SelectContent>
         </Select>
 
         <Select type="single" bind:value={filterDocType}>
           <SelectTrigger class="h-9 text-xs bg-background/40 border-border/40 hover:bg-muted/40 transition-colors">
-            {({ all: m.settings_templates_filter_doc_all(), CERTIFICATE: m.settings_templates_filter_doc_certificate(), ID_CARD: m.settings_templates_filter_doc_id_card(), RECEIPT: m.finance_layout_nav_payments(), EXAM_CARD: m.settings_templates_filter_doc_exam_card(), REPORT: m.common_nav_reports() } as Record<string, string>)[filterDocType] || m.settings_permissions_col_doc_type()}
+            {filterDocType === "all" ? m.settings_templates_filter_doc_all() : displayType(filterDocType)}
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{m.settings_templates_filter_doc_all()}</SelectItem>
-            <SelectItem value="CERTIFICATE">{m.settings_templates_filter_doc_certificate()}</SelectItem>
-            <SelectItem value="ID_CARD">{m.settings_templates_filter_doc_id_card()}</SelectItem>
-            <SelectItem value="RECEIPT">{m.finance_layout_nav_payments()}</SelectItem>
-            <SelectItem value="EXAM_CARD">{m.settings_templates_filter_doc_exam_card()}</SelectItem>
-            <SelectItem value="REPORT">{m.common_nav_reports()}</SelectItem>
+            {#each documentTypes as documentType (documentType)}
+              <SelectItem value={documentType}>{displayType(documentType)}</SelectItem>
+            {/each}
           </SelectContent>
         </Select>
       </div>
@@ -333,6 +300,7 @@ async function restoreTemplate(id: string) {
       onpublish={publishTemplate}
       onarchive={archiveTemplate}
       onrestore={restoreTemplate}
+      onSetDefault={setDefaultTemplate}
       oncreatenew={() => (isCreateDialogOpen = true)}
     />
   </div>
@@ -343,10 +311,7 @@ async function restoreTemplate(id: string) {
   bind:open={isCreateDialogOpen}
   bind:name={newTemplateName}
   bind:nameAr={newTemplateNameAr}
-  bind:desc={newTemplateDesc}
-  bind:entityType={newTemplateEntityType}
   bind:docType={newTemplateDocType}
-  bind:preset={newTemplatePreset}
-  schemas={dataSchemas}
+  bind:entityType={newTemplateEntityType}
   onsubmit={handleCreateTemplate}
 />

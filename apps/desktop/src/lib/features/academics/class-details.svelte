@@ -40,7 +40,7 @@ import RelatedActions, {
   type FooterAction,
 } from "$lib/shared/components/related-actions.svelte";
 import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
-import ClassSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
+import SectionSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
 import ClassRecommendationsWidget from "$lib/shared/components/class-recommendations-widget.svelte";
 import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
     import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
@@ -288,7 +288,7 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
 
         <!-- Right Column: Subjects & AI Insights (30%) -->
         <div class="lg:col-span-3 flex min-w-0 flex-col gap-4">
-          <ClassSubjectsWidget {classId} {periodId} />
+          <SectionSubjectsWidget {classId} {periodId} />
           <ClassRecommendationsWidget {classId} {periodId} />
         </div>
       </div>

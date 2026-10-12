@@ -19,6 +19,7 @@ import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+import { userAvatarDrafts } from "$lib/features/settings/user-avatar-draft.svelte";
 import RelatedActions, {
   type ActionGroup,
   type FooterAction,
@@ -29,19 +30,21 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import UserResetPasswordDialog from "$lib/features/settings/components/user-reset-password-dialog.svelte";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import { createUserQuery } from "$lib/features/settings/queries";
-import { useQueryClient } from "@tanstack/svelte-query";
 
 let { children }: { children: Snippet } = $props();
 
 const orgId = $derived(page.params.orgId);
 const userId = $derived(page.params.userId);
+$effect(() => {
+  const id = String(userId || "");
+  if (id && !(id in userAvatarDrafts)) userAvatarDrafts[id] = null;
+});
 
 // Shared user state
 const userQuery = createUserQuery(
   () => String(orgId || ""),
   () => String(userId || ""),
 );
-const queryClient = useQueryClient();
 const user = $derived((userQuery.data as any) ?? null);
 const isLoading = $derived(userQuery.isLoading);
 const fullName = $derived(user?.full_name ?? "");
@@ -51,12 +54,6 @@ const isActiveState = $derived(
   user?.is_active !== undefined ? Boolean(user.is_active) : true,
 );
 const avatarUrl = $derived(user?.avatar_url ?? null);
-
-function handleAvatarUpload(url: string) {
-  queryClient.setQueryData(["user", orgId, userId], (current: any) =>
-    current ? { ...current, avatar_url: url } : current,
-  );
-}
 
 // CSPRNG Temporary Password Generation
 let credentialModalOpen = $state(false);
@@ -134,7 +131,7 @@ const basePath = $derived(`/${orgId}/settings/users/${userId}`);
 
 const menuItems = $derived([
   {
-    path: "profile",
+    path: "",
     label: m.settings_user_detail_tab_profile(),
   },
   {
@@ -277,12 +274,13 @@ const relatedFooterActions = $derived<FooterAction[]>(user ? [
           <div class="w-full flex justify-start">
             <AvatarUpload
               {avatarUrl}
+              bind:file={userAvatarDrafts[userId]}
+              deferred
               entityType="user"
               entityId={String(userId)}
               size={220}
               fallbackText={fullName}
               class="rounded-xl border border-border"
-              onupload={handleAvatarUpload}
             />
           </div>
 

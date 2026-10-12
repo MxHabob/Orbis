@@ -129,6 +129,8 @@ pub enum Permission {
     FinanceRead,
     FinanceWrite,
     ProcessPayment,
+    FinanceBackdate,
+    FinanceFutureDate,
 
     // --- Promotions ---
     PromotionRead,
@@ -255,6 +257,8 @@ impl Permission {
             Permission::FinanceRead => "finance:read",
             Permission::FinanceWrite => "finance:write",
             Permission::ProcessPayment => "finance:payment",
+            Permission::FinanceBackdate => "finance:backdate",
+            Permission::FinanceFutureDate => "finance:future_date",
             Permission::PromotionRead => "promotion:read",
             Permission::PromotionWrite => "promotion:write",
             Permission::PromotionExecute => "promotion:execute",
@@ -374,6 +378,8 @@ impl Permission {
             Permission::FinanceRead,
             Permission::FinanceWrite,
             Permission::ProcessPayment,
+            Permission::FinanceBackdate,
+            Permission::FinanceFutureDate,
             Permission::PromotionRead,
             Permission::PromotionWrite,
             Permission::PromotionExecute,

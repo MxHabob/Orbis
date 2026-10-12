@@ -9,41 +9,76 @@
     feature = null,
     requireOperational = false,
     licenseReady,
+    orgId = null,
+    blockOrganizationMismatch = true,
     className = "",
     children,
   }: {
     feature?: EntitlementKey | null;
     requireOperational?: boolean;
     licenseReady: boolean;
+    orgId?: string | null;
+    blockOrganizationMismatch?: boolean;
     className?: string;
     children: Snippet;
   } = $props();
 
   let isStartingTrial = $state(false);
+  const organizationMismatch = $derived(
+    Boolean(
+      orgId &&
+        licenseStore.organizationId &&
+        licenseStore.organizationId.toLowerCase() !== orgId.toLowerCase(),
+    ),
+  );
+  const isTrialAwaitingOrganization = $derived(
+    licenseStore.state === "pending" &&
+      licenseStore.plan?.toUpperCase() === "TRIAL" &&
+      !licenseStore.licenseState?.organization_id,
+  );
   const locked = $derived(
     licenseReady &&
-      ((requireOperational && !licenseStore.isOperational) ||
+      ((blockOrganizationMismatch && organizationMismatch) ||
+        (requireOperational && !licenseStore.isOperational) ||
         (feature !== null && !licenseStore.isFeatureEnabled(feature))),
   );
   const canRenderChildren = $derived(
     !requireOperational || (licenseReady && licenseStore.isOperational),
   );
   const canStartTrial = $derived(
-    licenseStore.state === "unavailable" &&
+    licenseStore.hasLoaded &&
+      !organizationMismatch &&
+      (licenseStore.state === "unavailable" || isTrialAwaitingOrganization) &&
       (feature === null
         ? licenseStore.trialFeatures.length > 0
         : licenseStore.trialFeatures.includes(feature)),
   );
 
+  async function retryLicenseState() {
+    await licenseStore.loadState();
+  }
+
   async function startTrial() {
     isStartingTrial = true;
-    const trial = await licenseStore.startTrial();
-    if (trial) {
-      toast.success(m.license_trial_started());
-    } else if (licenseStore.error) {
-      toast.error(licenseStore.error);
+    try {
+      const trial = await licenseStore.startTrial();
+      if (trial) {
+        toast.success(m.license_trial_started());
+      } else if (licenseStore.error) {
+        toast.error(licenseStore.error);
+      }
+    } finally {
+      isStartingTrial = false;
     }
-    isStartingTrial = false;
+  }
+
+  function openLicenseAction() {
+    if (organizationMismatch) return;
+    if (licenseStore.isOperational && !requireOperational) {
+      uiStore.setUpgradeDialog(true);
+      return;
+    }
+    uiStore.setActivationDialog(true);
   }
 </script>
 
@@ -67,25 +102,54 @@
     >
       <div class="flex max-w-md flex-col items-center gap-3 rounded-xl border border-border bg-card/95 p-6 text-center shadow-xl">
         <h2 class="text-base font-semibold text-foreground">
-          {requireOperational
-            ? m.license_setup_step_title()
-            : m.license_gate_title()}
+          {#if organizationMismatch}
+            {m.license_wrong_organization_context_title()}
+          {:else if isTrialAwaitingOrganization}
+            {m.license_trial_waiting_title()}
+          {:else if requireOperational}
+            {m.license_setup_step_title()}
+          {:else}
+            {m.license_gate_title()}
+          {/if}
         </h2>
         <p class="text-sm text-muted-foreground">
-          {requireOperational
-            ? m.license_setup_step_description()
-            : m.license_gate_description()}
+          {#if organizationMismatch}
+            {m.license_wrong_organization_context_description()}
+          {:else if !licenseStore.hasLoaded && licenseStore.error}
+            {licenseStore.error}
+          {:else if isTrialAwaitingOrganization}
+            {m.license_trial_waiting_description()}
+          {:else if requireOperational}
+            {m.license_setup_step_description()}
+          {:else}
+            {m.license_gate_description()}
+          {/if}
         </p>
-        <Button
-          onclick={() => uiStore.setActivationDialog(true)}
-          variant={licenseStore.state === "unavailable" ? "outline" : "default"}
-          disabled={isStartingTrial}
-        >
-          {requireOperational
-            ? m.license_setup_activate_product()
-            : m.license_activate_btn()}
-        </Button>
-        {#if canStartTrial}
+        {#if !licenseStore.hasLoaded && licenseStore.error}
+          <Button
+            onclick={retryLicenseState}
+            variant="outline"
+            disabled={licenseStore.isLoading}
+          >
+            {licenseStore.isLoading ? m.common_saving() : m.common_retry()}
+          </Button>
+        {/if}
+        {#if !organizationMismatch}
+          <Button
+            onclick={openLicenseAction}
+            variant={licenseStore.state === "unavailable" ? "outline" : "default"}
+            disabled={isStartingTrial}
+          >
+            {#if requireOperational || !licenseStore.isOperational}
+              {requireOperational
+                ? m.license_setup_activate_product()
+                : m.license_activate_btn()}
+            {:else}
+              {m.common_upgrade_btn_now()}
+            {/if}
+          </Button>
+        {/if}
+        {#if !organizationMismatch && canStartTrial}
           <Button onclick={startTrial} disabled={isStartingTrial}>
             {#if isStartingTrial}
               {m.common_saving()}

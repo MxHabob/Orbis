@@ -3,6 +3,7 @@
   Group detail inspection, member management, and 2D IAM Permission Matrix editor.
 -->
 <script lang="ts">
+  import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
@@ -265,9 +266,39 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
   {#if groupQuery.isLoading}
-    <div class="h-full w-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
-      <LoadingIndicator class="text-primary"  size={24} />
-      <span class="text-xs">{m.ui_copy_loading_group_e09b26dc()}</span>
+    <div class="flex h-full flex-col gap-6 p-4" aria-busy="true">
+      <span class="sr-only">{m.ui_copy_loading_group_e09b26dc()}</span>
+      <div class="flex items-center gap-4 border-b border-border pb-4">
+        <Skeleton class="h-9 w-9 rounded-md" />
+        <Skeleton class="h-10 w-10 rounded-lg" />
+        <div class="flex flex-1 flex-col gap-2">
+          <Skeleton class="h-5 w-48 max-w-full" />
+          <Skeleton class="h-3 w-72 max-w-full" />
+        </div>
+        <Skeleton class="h-8 w-24" />
+      </div>
+      <div class="flex gap-2 border-b border-border pb-2">
+        <Skeleton class="h-8 w-24" />
+        <Skeleton class="h-8 w-24" />
+      </div>
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-border p-4">
+          <Skeleton class="mb-4 h-5 w-36" />
+          <div class="flex flex-col gap-3">
+            <Skeleton class="h-10 w-full" />
+            <Skeleton class="h-10 w-full" />
+            <Skeleton class="h-10 w-4/5" />
+          </div>
+        </div>
+        <div class="rounded-lg border border-border p-4">
+          <Skeleton class="mb-4 h-5 w-28" />
+          <div class="flex flex-col gap-3">
+            <Skeleton class="h-10 w-full" />
+            <Skeleton class="h-10 w-full" />
+            <Skeleton class="h-10 w-4/5" />
+          </div>
+        </div>
+      </div>
     </div>
   {:else if groupQuery.error || !group}
     <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
@@ -360,9 +391,20 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
             </div>
 
             {#if membersQuery.isLoading}
-              <div class="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
-                <LoadingIndicator class="text-primary"  size={14} />
-                <span>{m.ui_copy_loading_members_a59e1afa()}</span>
+              <div class="divide-y divide-border/40 overflow-hidden rounded-lg border border-border/60" aria-busy="true">
+                <span class="sr-only">{m.ui_copy_loading_members_a59e1afa()}</span>
+                {#each Array.from({ length: 5 }) as _, index (index)}
+                  <div class="flex items-center justify-between gap-4 bg-card p-3">
+                    <div class="flex min-w-0 flex-1 items-center gap-3">
+                      <Skeleton class="h-9 w-9 shrink-0 rounded-full" />
+                      <div class="flex min-w-0 flex-1 flex-col gap-2">
+                        <Skeleton class="h-4 w-40 max-w-full" />
+                        <Skeleton class="h-3 w-28 max-w-full" />
+                      </div>
+                    </div>
+                    <Skeleton class="h-7 w-20 shrink-0" />
+                  </div>
+                {/each}
               </div>
             {:else if members.length === 0}
               <div class="p-8 text-center text-xs text-muted-foreground flex flex-col items-center justify-center gap-2">

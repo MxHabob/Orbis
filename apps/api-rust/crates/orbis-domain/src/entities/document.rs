@@ -15,7 +15,7 @@ pub struct Document {
     pub description: Option<String>,
     pub category: String,
     pub asset_type: String,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: String,

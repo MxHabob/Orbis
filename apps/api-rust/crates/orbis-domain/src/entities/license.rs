@@ -87,6 +87,8 @@ pub const LIMIT_BRANCHES_MAX: &str = "branches.max";
 pub const LIMIT_CLASSES_MAX: &str = "classes.max";
 pub const LIMIT_STORAGE_GB_MAX: &str = "storage_gb.max";
 
+pub const PLAN_ENTERPRISE: &str = "ENTERPRISE";
+
 pub const ALL_LIMIT_KEYS: &[&str] = &[
     LIMIT_STUDENTS_MAX,
     LIMIT_STAFF_MAX,
@@ -132,11 +134,10 @@ impl Default for TrialPolicy {
             duration_days: DEFAULT_OFFLINE_GRACE_PERIOD_DAYS,
             max_staff: Some(25),
             max_students: Some(100),
-            trial_features: vec![
-                ENTITLEMENT_STUDENTS.to_string(),
-                ENTITLEMENT_OFFLINE_SYNC.to_string(),
-                ENTITLEMENT_EXAM_TOOLS.to_string(),
-            ],
+            trial_features: ALL_ENTITLEMENT_KEYS
+                .iter()
+                .map(|key| (*key).to_string())
+                .collect(),
         }
     }
 }
@@ -156,7 +157,7 @@ pub struct SignedEntitlement {
     pub alg: String,
     /// The entitlement payload data.
     pub payload: EntitlementPayload,
-    /// Base64-encoded Ed25519 signature over canonical JSON of `payload`.
+    /// Base64-encoded Ed25519 signature over the compact serde_json payload.
     pub sig: String,
 }
 
@@ -171,10 +172,13 @@ pub struct EntitlementPayload {
     pub product_id: String,
     /// Organization UUID that owns this license.
     pub organization_id: String,
-    /// Edition key (e.g. "SCHOOL", "UNIVERSITY").
-    pub edition_key: String,
-    /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE", "SCHOOL_PRO").
-    pub plan_key: String,
+    /// Edition key (e.g. "SCHOOL", "UNIVERSITY"), if assigned to the license.
+    pub edition_key: Option<String>,
+    /// Plan key (e.g. "BASIC", "PRO", "ENTERPRISE", "SCHOOL_PRO"), if assigned.
+    pub plan_key: Option<String>,
+    /// Human-readable plan name provided by Mulverse; absent in older signed documents.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub plan_name: Option<String>,
     /// Boolean feature capabilities.
     pub entitlements: Vec<EntitlementItem>,
     /// Quantitative limits.
@@ -191,10 +195,10 @@ pub struct EntitlementPayload {
     pub valid_until: Option<DateTime<Utc>>,
     /// Whether offline operation is allowed.
     pub offline_allowed: bool,
-    /// Days the app can operate without contacting Mulverse (default 30).
-    pub offline_grace_period_days: u32,
-    /// How often (hours) the app should verify/refresh online (default 24).
-    pub verification_interval_hours: u32,
+    /// Days the app can operate without contacting Mulverse.
+    pub offline_grace_period_days: Option<i32>,
+    /// How often (hours) the app should verify/refresh online.
+    pub verification_interval_hours: Option<i32>,
 }
 
 /// A boolean entitlement entry from the Mulverse catalog.
@@ -214,8 +218,8 @@ pub type EntitlementEntry = EntitlementItem;
 pub struct LimitItem {
     /// Canonical limit key (e.g. "students.max", "staff.max", "devices.max").
     pub key: String,
-    /// Maximum allowed value.
-    pub max_value: i64,
+    /// `None` means unlimited. Negative values remain accepted from legacy payloads.
+    pub max_value: Option<i64>,
 }
 
 /// Alias for backwards compatibility.
@@ -230,11 +234,27 @@ pub type LimitEntry = LimitItem;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivationRequest {
     pub product_key: String,
+    pub organization_id: uuid::Uuid,
     pub installation_id: String,
     pub platform: String,
     pub app_version: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub machine_label: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrialOrganizationProfile {
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub slug: String,
+    pub institution_type: String,
+    pub organization_size: Option<String>,
+    pub educational_track: Option<String>,
+    pub country_code: Option<String>,
+    pub country_name: Option<String>,
+    pub region_name: Option<String>,
+    pub city: Option<String>,
 }
 
 /// Response from Mulverse Platform activation endpoint.
@@ -253,10 +273,10 @@ pub struct ActivationInfo {
     pub organization_id: String,
     pub installation_id: String,
     pub platform: String,
-    pub app_version: String,
+    pub app_version: Option<String>,
     pub status: String,
     pub activated_at: DateTime<Utc>,
-    pub last_seen_at: DateTime<Utc>,
+    pub last_seen_at: Option<DateTime<Utc>>,
     pub deactivated_at: Option<DateTime<Utc>>,
     pub revoked_at: Option<DateTime<Utc>>,
     pub machine_label: Option<String>,
@@ -324,6 +344,8 @@ pub enum LicenseState {
     Expired,
     /// License is temporarily disabled by the licensing authority.
     Suspended,
+    /// License deactivation was requested but is not yet confirmed centrally.
+    DeactivationPending,
     /// License has been revoked by Mulverse Platform.
     Revoked,
     /// License artifact is corrupt, tampered, or unverifiable.
@@ -350,6 +372,7 @@ impl LicenseState {
                 | LicenseState::Pending
                 | LicenseState::Expired
                 | LicenseState::Suspended
+                | LicenseState::DeactivationPending
                 | LicenseState::Revoked
                 | LicenseState::Invalid
         )
@@ -420,8 +443,12 @@ impl LicenseSnapshot {
         match self.trial_started_at {
             Some(started) => {
                 let end = started + chrono::Duration::days(self.trial_policy.duration_days as i64);
-                let remaining = end.signed_duration_since(Utc::now()).num_days();
-                remaining.max(0)
+                let remaining_seconds = end.signed_duration_since(Utc::now()).num_seconds();
+                if remaining_seconds <= 0 {
+                    0
+                } else {
+                    (remaining_seconds + 86_399) / 86_400
+                }
             }
             None => 0,
         }
@@ -429,7 +456,9 @@ impl LicenseSnapshot {
 
     /// Whether the trial has expired.
     pub fn is_trial_expired(&self) -> bool {
-        self.state == LicenseState::Trial && self.trial_days_remaining() == 0
+        self.trial_started_at.is_some_and(|started| {
+            started + chrono::Duration::days(self.trial_policy.duration_days as i64) <= Utc::now()
+        })
     }
 
     /// Detect obvious clock rollback.
@@ -461,12 +490,21 @@ impl LicenseSnapshot {
     /// Returns `None` if no limit is set (unlimited).
     pub fn get_limit(&self, key: &str) -> Option<i64> {
         match &self.signed_entitlement {
+            Some(se)
+                if se
+                    .payload
+                    .plan_key
+                    .as_deref()
+                    .is_some_and(|plan| plan.eq_ignore_ascii_case(PLAN_ENTERPRISE)) =>
+            {
+                None
+            }
             Some(se) => se
                 .payload
                 .limits
                 .iter()
                 .find(|l| l.key == key)
-                .map(|l| l.max_value),
+                .and_then(|l| l.max_value),
             None => {
                 if self.state == LicenseState::Trial {
                     match key {
@@ -506,14 +544,21 @@ impl LicenseSnapshot {
     pub fn edition_key(&self) -> Option<&str> {
         self.signed_entitlement
             .as_ref()
-            .map(|se| se.payload.edition_key.as_str())
+            .and_then(|se| se.payload.edition_key.as_deref())
     }
 
     /// The plan key (e.g. "BASIC", "PRO", "SCHOOL_PRO") from the active license.
     pub fn plan_key(&self) -> Option<&str> {
         self.signed_entitlement
             .as_ref()
-            .map(|se| se.payload.plan_key.as_str())
+            .and_then(|se| se.payload.plan_key.as_deref())
+    }
+
+    /// Human-readable plan name provided by Mulverse.
+    pub fn plan_name(&self) -> Option<&str> {
+        self.signed_entitlement
+            .as_ref()
+            .and_then(|se| se.payload.plan_name.as_deref())
     }
 
     /// The license ID from the active license.
@@ -668,7 +713,8 @@ pub fn validate_product_key(key: &str) -> Result<(), String> {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct LimitEntryDto {
     pub key: String,
-    pub max_value: i64,
+    /// `None` means this quota is unlimited.
+    pub max_value: Option<i64>,
     pub unit: String,
 }
 
@@ -683,6 +729,8 @@ pub struct LicenseStateDto {
     pub edition: Option<String>,
     /// Plan (e.g. "BASIC", "PRO", "SCHOOL_PRO").
     pub plan: Option<String>,
+    /// Human-readable commercial plan name, when provided.
+    pub plan_name: Option<String>,
     /// Organization ID associated with the license.
     pub organization_id: Option<String>,
     /// License expiration date.
@@ -729,13 +777,29 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
         };
 
         let limits: Vec<LimitEntryDto> = match &snapshot.signed_entitlement {
+            Some(se)
+                if se
+                    .payload
+                    .plan_key
+                    .as_deref()
+                    .is_some_and(|plan| plan.eq_ignore_ascii_case(PLAN_ENTERPRISE)) =>
+            {
+                ALL_LIMIT_KEYS
+                    .iter()
+                    .map(|key| LimitEntryDto {
+                        key: (*key).to_string(),
+                        max_value: None,
+                        unit: get_limit_unit(key).to_string(),
+                    })
+                    .collect()
+            }
             Some(se) => se
                 .payload
                 .limits
                 .iter()
                 .map(|l| LimitEntryDto {
                     key: l.key.clone(),
-                    max_value: l.max_value,
+                    max_value: l.max_value.filter(|value| *value >= 0),
                     unit: get_limit_unit(&l.key).to_string(),
                 })
                 .collect(),
@@ -745,14 +809,14 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
                     if let Some(max) = snapshot.trial_policy.max_staff {
                         trial_limits.push(LimitEntryDto {
                             key: LIMIT_STAFF_MAX.to_string(),
-                            max_value: max as i64,
+                            max_value: Some(max as i64),
                             unit: get_limit_unit(LIMIT_STAFF_MAX).to_string(),
                         });
                     }
                     if let Some(max) = snapshot.trial_policy.max_students {
                         trial_limits.push(LimitEntryDto {
                             key: LIMIT_STUDENTS_MAX.to_string(),
-                            max_value: max as i64,
+                            max_value: Some(max as i64),
                             unit: get_limit_unit(LIMIT_STUDENTS_MAX).to_string(),
                         });
                     }
@@ -768,6 +832,7 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
             product: MULVERSE_PRODUCT_KEY.to_string(),
             edition: snapshot.edition_key().map(String::from),
             plan: snapshot.plan_key().map(String::from),
+            plan_name: snapshot.plan_name().map(String::from),
             organization_id: snapshot.organization_id().map(String::from),
             valid_until: snapshot.valid_until(),
             days_until_expiry: snapshot.days_until_expiry(),
@@ -787,6 +852,83 @@ impl From<&LicenseSnapshot> for LicenseStateDto {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn activation_response_accepts_nullable_fields_from_mulverse() {
+        let response = serde_json::from_value::<ActivationResponse>(serde_json::json!({
+            "activation": {
+                "id": "activation-id",
+                "license_id": "license-id",
+                "product_id": CANONICAL_PRODUCT_ID,
+                "organization_id": "organization-id",
+                "installation_id": "installation-id",
+                "platform": "windows",
+                "app_version": null,
+                "status": "active",
+                "activated_at": "2026-10-09T12:00:00Z",
+                "last_seen_at": null,
+                "deactivated_at": null,
+                "revoked_at": null,
+                "machine_label": null,
+                "created_at": "2026-10-09T12:00:00Z",
+                "updated_at": "2026-10-09T12:00:00Z"
+            },
+            "signed_entitlement": {
+                "v": 1,
+                "kid": "test-key",
+                "alg": "Ed25519",
+                "payload": {
+                    "license_id": "license-id",
+                    "product_key": "FREE_TRIAL",
+                    "product_id": CANONICAL_PRODUCT_ID,
+                    "organization_id": "organization-id",
+                    "edition_key": "SCHOOL",
+                    "plan_key": "SCHOOL_PRO",
+                    "plan_name": "School Professional",
+                    "entitlements": [],
+                    "limits": [
+                        { "key": "students.max", "max_value": null }
+                    ],
+                    "activation_id": "activation-id",
+                    "installation_id": "installation-id",
+                    "issued_at": "2026-10-09T12:00:00Z",
+                    "valid_from": "2026-10-09T12:00:00Z",
+                    "valid_until": null,
+                    "offline_allowed": true,
+                    "offline_grace_period_days": null,
+                    "verification_interval_hours": null
+                },
+                "sig": "signature"
+            }
+        }))
+        .expect("Mulverse nullable activation and entitlement fields should deserialize");
+
+        assert_eq!(response.activation.app_version, None);
+        assert_eq!(response.activation.last_seen_at, None);
+        assert_eq!(
+            response.signed_entitlement.payload.edition_key.as_deref(),
+            Some("SCHOOL")
+        );
+        assert_eq!(
+            response.signed_entitlement.payload.plan_key.as_deref(),
+            Some("SCHOOL_PRO")
+        );
+        assert_eq!(
+            response.signed_entitlement.payload.plan_name.as_deref(),
+            Some("School Professional")
+        );
+        assert_eq!(
+            response
+                .signed_entitlement
+                .payload
+                .offline_grace_period_days,
+            None
+        );
+        assert_eq!(
+            response.signed_entitlement.payload.limits[0].max_value,
+            None
+        );
+    }
 
     #[test]
     fn test_validate_product_key_valid() {
@@ -819,6 +961,7 @@ mod tests {
         assert!(LicenseState::OfflineGrace.is_operational());
         assert!(!LicenseState::Expired.is_operational());
         assert!(!LicenseState::Suspended.is_operational());
+        assert!(!LicenseState::DeactivationPending.is_operational());
         assert!(!LicenseState::Revoked.is_operational());
         assert!(!LicenseState::Invalid.is_operational());
         assert!(!LicenseState::Unavailable.is_operational());
@@ -826,6 +969,7 @@ mod tests {
         assert!(LicenseState::Unavailable.is_restricted());
         assert!(LicenseState::Pending.is_restricted());
         assert!(LicenseState::Suspended.is_restricted());
+        assert!(LicenseState::DeactivationPending.is_restricted());
     }
 
     #[test]
@@ -837,8 +981,12 @@ mod tests {
         );
         assert_eq!(snapshot.state, LicenseState::Trial);
         assert!(snapshot.trial_days_remaining() > 0);
-        assert!(snapshot.is_feature_enabled(ENTITLEMENT_STUDENTS));
-        assert!(!snapshot.is_feature_enabled(ENTITLEMENT_AI_GRADING));
+        for feature in ALL_ENTITLEMENT_KEYS {
+            assert!(
+                snapshot.is_feature_enabled(feature),
+                "trial must enable the {feature} entitlement"
+            );
+        }
         assert_eq!(snapshot.get_limit(LIMIT_STUDENTS_MAX), Some(100));
         assert_eq!(snapshot.get_limit(LIMIT_STAFF_MAX), Some(25));
         assert_eq!(snapshot.get_limit(LIMIT_BRANCHES_MAX), None);
@@ -853,8 +1001,106 @@ mod tests {
         let dto = LicenseStateDto::from(&snapshot);
 
         assert_eq!(dto.trial_features, snapshot.trial_policy.trial_features);
-        assert!(dto.trial_features.contains(&ENTITLEMENT_STUDENTS.to_string()));
-        assert!(!dto.trial_features.contains(&ENTITLEMENT_MULTI_BRANCH.to_string()));
+        assert_eq!(dto.trial_features.len(), ALL_ENTITLEMENT_KEYS.len());
+        for feature in ALL_ENTITLEMENT_KEYS {
+            assert!(dto.trial_features.iter().any(|trial| trial == feature));
+        }
+    }
+
+    #[test]
+    fn trial_license_state_dto_enables_all_trial_features() {
+        let snapshot = LicenseSnapshot::new_trial(
+            "inst_windows_abc123".to_string(),
+            "1.0.0".to_string(),
+            TrialPolicy::default(),
+        );
+        let dto = LicenseStateDto::from(&snapshot);
+
+        assert_eq!(dto.enabled_features.len(), ALL_ENTITLEMENT_KEYS.len());
+        for feature in ALL_ENTITLEMENT_KEYS {
+            assert!(
+                dto.enabled_features
+                    .iter()
+                    .any(|enabled| enabled == feature)
+            );
+        }
+    }
+
+    #[test]
+    fn enterprise_plan_has_unlimited_quotas_without_per_limit_values() {
+        let mut snapshot = LicenseSnapshot::new_unavailable(
+            "inst_windows_abc123".to_string(),
+            "1.0.0".to_string(),
+        );
+        snapshot.signed_entitlement = Some(SignedEntitlement {
+            v: 1,
+            kid: "test-key".to_string(),
+            alg: "Ed25519".to_string(),
+            payload: EntitlementPayload {
+                license_id: "license-test".to_string(),
+                product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_string(),
+                product_id: CANONICAL_PRODUCT_ID.to_string(),
+                organization_id: "org-test".to_string(),
+                edition_key: Some("SCHOOL".to_string()),
+                plan_key: Some("ENTERPRISE".to_string()),
+                plan_name: Some("Enterprise".to_string()),
+                entitlements: vec![],
+                limits: vec![],
+                activation_id: "activation-test".to_string(),
+                installation_id: snapshot.installation_id.clone(),
+                issued_at: Utc::now(),
+                valid_from: Utc::now(),
+                valid_until: None,
+                offline_allowed: true,
+                offline_grace_period_days: Some(DEFAULT_OFFLINE_GRACE_PERIOD_DAYS as i32),
+                verification_interval_hours: Some(DEFAULT_VERIFICATION_INTERVAL_HOURS as i32),
+            },
+            sig: "test-signature".to_string(),
+        });
+
+        assert_eq!(snapshot.get_limit(LIMIT_STUDENTS_MAX), None);
+        assert_eq!(snapshot.get_limit(LIMIT_STAFF_MAX), None);
+        assert!(
+            snapshot
+                .check_limit(LIMIT_STUDENTS_MAX, u64::MAX, 1)
+                .is_ok()
+        );
+
+        let dto = LicenseStateDto::from(&snapshot);
+        assert_eq!(dto.plan_name.as_deref(), Some("Enterprise"));
+        assert_eq!(dto.limits.len(), ALL_LIMIT_KEYS.len());
+        assert!(dto.limits.iter().all(|limit| limit.max_value.is_none()));
+        let serialized = serde_json::to_value(&dto).expect("license DTO should serialize");
+        assert_eq!(
+            serialized["limits"][0]["max_value"],
+            serde_json::Value::Null
+        );
+    }
+
+    #[test]
+    fn old_signed_entitlements_without_plan_name_keep_their_serialized_payload_shape() {
+        let payload: EntitlementPayload = serde_json::from_value(serde_json::json!({
+            "license_id": "license",
+            "product_key": "ORBIS-TEST",
+            "product_id": CANONICAL_PRODUCT_ID,
+            "organization_id": "organization",
+            "edition_key": null,
+            "plan_key": "PRO",
+            "entitlements": [],
+            "limits": [],
+            "activation_id": "activation",
+            "installation_id": "installation",
+            "issued_at": "2026-10-10T00:00:00Z",
+            "valid_from": "2026-10-10T00:00:00Z",
+            "valid_until": null,
+            "offline_allowed": true,
+            "offline_grace_period_days": 14,
+            "verification_interval_hours": 24
+        }))
+        .expect("legacy entitlement should deserialize");
+
+        let serialized = serde_json::to_value(payload).expect("payload should serialize");
+        assert!(serialized.get("plan_name").is_none());
     }
 
     #[test]

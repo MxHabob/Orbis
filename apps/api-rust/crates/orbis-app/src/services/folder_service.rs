@@ -21,7 +21,7 @@ pub struct CreateFolderInput {
     pub entity_type: Option<String>,
     pub entity_id: Option<Uuid>,
     pub org_unit_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -30,7 +30,7 @@ pub struct CreateFolderInput {
 pub struct UpdateFolderInput {
     pub name: Option<String>,
     pub parent_id: Option<Uuid>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -102,7 +102,7 @@ impl FolderService {
             entity_type: input.entity_type,
             entity_id: input.entity_id,
             org_unit_id: input.org_unit_id,
-            academic_year_id: input.academic_year_id,
+            calendar_id: input.calendar_id,
             term_id: input.term_id,
             is_system: false,
             metadata: input.metadata,
@@ -155,7 +155,7 @@ impl FolderService {
                     entity_type: None,
                     entity_id: None,
                     org_unit_id: None,
-                    academic_year_id: None,
+                    calendar_id: None,
                     term_id: None,
                     is_system: true,
                     metadata: None,
@@ -183,7 +183,7 @@ impl FolderService {
             entity_type: Some("student".to_string()),
             entity_id: Some(student_id),
             org_unit_id: None,
-            academic_year_id: None,
+            calendar_id: None,
             term_id: None,
             is_system: false,
             metadata: Some(serde_json::json!({
@@ -206,7 +206,7 @@ impl FolderService {
         &self,
         ctx: &RequestContext,
         folder_name: &str,
-        academic_year_id: Option<Uuid>,
+        calendar_id: Option<Uuid>,
         term_id: Option<Uuid>,
         metadata: Option<serde_json::Value>,
     ) -> Result<Folder, DomainError> {
@@ -238,7 +238,7 @@ impl FolderService {
                     entity_type: None,
                     entity_id: None,
                     org_unit_id: None,
-                    academic_year_id: None,
+                    calendar_id: None,
                     term_id: None,
                     is_system: true,
                     metadata: Some(serde_json::json!({
@@ -281,7 +281,7 @@ impl FolderService {
             entity_type: Some("curriculum".to_string()),
             entity_id: None,
             org_unit_id: None,
-            academic_year_id,
+            calendar_id,
             term_id,
             is_system: false,
             metadata: Some(meta),
@@ -386,8 +386,8 @@ impl FolderService {
         if let Some(pid) = input.parent_id {
             folder.parent_id = Some(pid);
         }
-        if let Some(ay_id) = input.academic_year_id {
-            folder.academic_year_id = Some(ay_id);
+        if let Some(ay_id) = input.calendar_id {
+            folder.calendar_id = Some(ay_id);
         }
         if let Some(t_id) = input.term_id {
             folder.term_id = Some(t_id);

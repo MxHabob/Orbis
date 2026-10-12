@@ -12,6 +12,9 @@ const EMPTY_FORM = {
   organizationNameAr: "",
   organizationSlug: "",
   organizationCode: "",
+  countryName: "",
+  ministryName: "",
+  regionName: "",
   educationalTrack: "",
   organizationSize: "",
   countryCode: "",
@@ -86,6 +89,9 @@ describe("Bootstrap request contract", () => {
       website: " https://orbis.example ",
       taxId: " VAT-123 ",
       licenseNumber: " LIC-456 ",
+      countryName: " Republic of Example ",
+      ministryName: " Ministry of Education ",
+      regionName: " Northern Region ",
       adminPhone: " +966511111111 ",
     });
 
@@ -93,6 +99,9 @@ describe("Bootstrap request contract", () => {
     expect(request.website).toBe("https://orbis.example");
     expect(request.tax_id).toBe("VAT-123");
     expect(request.license_number).toBe("LIC-456");
+    expect(request.country_name).toBe("Republic of Example");
+    expect(request.ministry_name).toBe("Ministry of Education");
+    expect(request.region_name).toBe("Northern Region");
     expect(request.admin_phone).toBe("+966511111111");
   });
 });

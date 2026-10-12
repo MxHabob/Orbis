@@ -6,7 +6,6 @@ import RegionalSettingsCard from "./regional-settings-card.svelte";
 import AvatarSettingsCard from "./avatar-settings-card.svelte";
 import DangerZoneSettingsCard from "./danger-zone-settings-card.svelte";
 import BranchSettingsCard from "./branch-settings-card.svelte";
-import AuthenticationSettingsCard from "./authentication-settings-card.svelte";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
@@ -15,6 +14,7 @@ import { api, type OrganizationSettingsDto } from "$lib/api";
 import { generalSettingsInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { systemStore } from "$lib/stores";
+import { formatLicensePlan } from "$lib/utils/license";
 
 let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
   $props<{
@@ -40,6 +40,19 @@ let dateFormat = $state("YYYY-MM-DD");
 let formatLocale = $state("auto");
 let timeFormat = $state("locale");
 let hijriEnabled = $state(false);
+
+function entitlementStatusLabel(status?: string): string {
+  switch (status) {
+    case "active": return m.license_status_active();
+    case "trial": return m.license_status_trial();
+    case "pending": return m.license_status_pending();
+    case "grace_period": return m.license_status_offline_grace();
+    case "expired": return m.license_status_expired();
+    case "suspended": return m.license_status_suspended();
+    case "unlicensed": return m.license_status_unavailable();
+    default: return m.license_status_unavailable();
+  }
+}
 
 // Institutional Policy Settings State
 let rawSettings = $state<OrganizationSettingsDto | null>(null);
@@ -233,8 +246,6 @@ function handleSaveAvatar(e: Event) {
         onLanguageChange={handleLanguageChange}
       />
 
-      <AuthenticationSettingsCard {org} {isSaving} />
-
       <Card>
         <CardHeader class="flex flex-row items-center justify-between">
           <CardTitle>
@@ -261,7 +272,8 @@ function handleSaveAvatar(e: Event) {
             </div>
             <div class="px-6 py-5 flex flex-col gap-1 text-start">
               <span class="text-xs font-semibold text-foreground">{m.settings_entitlement_plan()}</span>
-              <span class="text-2xl font-semibold capitalize">{systemStore.entitlement?.plan ?? systemStore.entitlement?.status ?? m.settings_entitlement_status_active()}</span>
+              <span class="text-2xl font-semibold">{formatLicensePlan(systemStore.entitlement?.plan) ?? m.settings_entitlement_plan_unavailable()}</span>
+              <span class="text-[11px] text-muted-foreground">{entitlementStatusLabel(systemStore.entitlement?.status)}</span>
               <span class="text-[11px] text-muted-foreground">{m.settings_entitlement_current_status()}</span>
             </div>
           </div>

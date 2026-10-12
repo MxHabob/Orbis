@@ -38,6 +38,7 @@ pub struct OrgDto {
     pub favicon: Option<String>,
     pub settings: Option<serde_json::Value>,
     pub features: Option<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
     pub current_period_id: Option<String>,
     pub is_active: bool,
     pub is_verified: bool,
@@ -67,6 +68,7 @@ fn org_to_dto(org: orbis_domain::entities::organization::Organization) -> OrgDto
         favicon: org.favicon,
         settings: org.settings,
         features: org.features,
+        metadata: org.metadata,
         current_period_id: org.current_period_id,
         is_active: org.is_active,
         is_verified: org.is_verified,
@@ -164,6 +166,7 @@ pub async fn org_update_current(
         .get("favicon")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
+    let metadata = request.get("metadata").cloned();
 
     let req = orbis_app::services::UpdateOrgRequest {
         name,
@@ -179,6 +182,7 @@ pub async fn org_update_current(
         primary_color: color,
         logo,
         favicon,
+        metadata,
     };
     let org = state
         .organization_service

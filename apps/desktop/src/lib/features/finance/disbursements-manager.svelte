@@ -13,10 +13,10 @@ import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
+import type { AccountDto, CurrencyDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import {
   Select,
   SelectContent,
@@ -32,12 +32,19 @@ import {
   XMark,
   Printer,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type SelectionSnapshot,
+  selectionColumn,
+} from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { isCashOrBankAccount } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
@@ -58,24 +65,38 @@ function createDisbursementLine(): DisbursementLine {
 
 // ── State ──────────────────────────────────────────────────────────────
 let disbursements = $state<any[]>([]);
-let accounts = $state<any[]>([]);
-let treasuries = $state<any[]>([]);
-let currencies = $state<{ code: string; name: string }[]>([
-  { code: "YER", name: m.finance_ui_currency_yer() },
-  { code: "USD", name: m.finance_ui_currency_usd() },
-  { code: "SAR", name: m.finance_ui_currency_sar() },
-]);
+let accounts = $state<AccountDto[]>([]);
+let treasuries = $state<AccountDto[]>([]);
+let currencies = $state<CurrencyDto[]>([]);
 let isLoading = $state(true);
 let isSubmitting = $state(false);
 let showAddForm = $state(false);
 
 // Form Fields
 let referenceNumber = $state("");
-let voucherDate = $state("");
-let selectedCurrency = $state("YER");
+let voucherDate = $state(getLocalDateInputValue());
 let treasuryAccountId = $state(""); // Credit: Cash/Bank
 let paymentMethod = $state<"Cash" | "Bank" | "Check">("Cash");
 let disbursementLines = $state<DisbursementLine[]>([createDisbursementLine()]);
+function getLocalDateInputValue(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
+const selectedCurrency = $derived(
+  treasuries.find((account) => String(account.id) === String(treasuryAccountId))?.currency || "",
+);
+const availableCurrencies = $derived(
+  currencies.filter((currency) =>
+    treasuries.some((account) => account.currency.toUpperCase() === currency.code.toUpperCase())
+  ),
+);
+const disbursementAccounts = $derived(
+  accounts.filter((account) =>
+    account.is_active &&
+    !isCashOrBankAccount(account) &&
+    account.currency.toUpperCase() === selectedCurrency.toUpperCase()
+  ),
+);
 const calculatedTotal = $derived(
   disbursementLines.reduce((total, line) => total + (Number(line.amount) || 0), 0),
 );
@@ -83,12 +104,16 @@ const calculatedTotal = $derived(
 // Filters
 let searchQuery = $state("");
 let methodFilter = $state("all");
-let filterDate = $state("");
+let filterDate = $state(getLocalDateInputValue());
 
 // Print
 let printDialogOpen = $state(false);
-let printParameters = $state<Record<string, any>>({});
-let printTitle = $state(m.finance_ui_print_disbursement());
+let disbursementSelection = $state<SelectionSnapshot>({
+  mode: "explicit",
+  ids: new Set(),
+  range: null,
+  active: null,
+});
 
 onMount(async () => {
   await loadData();
@@ -97,21 +122,23 @@ onMount(async () => {
 async function loadData() {
   isLoading = true;
   try {
-    const [entriesList, accountsList] = await Promise.all([
-      api.listJournalEntries().catch(() => []),
-      api.listAccounts().catch(() => []),
+    const [entriesList, accountsList, currenciesList] = await Promise.all([
+      api.listJournalEntries(),
+      api.listAccounts(),
+      api.listCurrencies(),
     ]);
 
-    accounts = accountsList || [];
-    treasuries = (accountsList || []).filter(isCashOrBankAccount);
+    accounts = accountsList;
+    treasuries = accountsList.filter(isCashOrBankAccount);
+    currencies = currenciesList;
 
-    if (treasuries.length > 0 && !treasuryAccountId) {
-      treasuryAccountId = treasuries[0].id;
+    if (treasuries.length > 0 && !treasuries.some((account) => account.id === treasuryAccountId)) {
+      handleTreasuryChange(treasuries[0].id);
     }
 
     // Identify disbursement vouchers (entries where credit is a treasury/cash account)
     const treasuryIds = new Set(treasuries.map((t) => t.id));
-    disbursements = (entriesList || []).filter((e: any) => {
+    disbursements = entriesList.filter((e: any) => {
       const creditId = e.credit_account_id || e.lines?.[1]?.account_id;
       return creditId && treasuryIds.has(creditId);
     });
@@ -125,14 +152,49 @@ async function loadData() {
 
 function clearForm() {
   referenceNumber = "";
-  voucherDate = "";
-  selectedCurrency = "YER";
+  voucherDate = getLocalDateInputValue();
   paymentMethod = "Cash";
   disbursementLines = [createDisbursementLine()];
 }
 
+function handleTreasuryChange(accountId: string) {
+  treasuryAccountId = accountId;
+  const currency = treasuries.find((account) => account.id === accountId)?.currency;
+  for (const line of disbursementLines) {
+    const account = accounts.find((candidate) => candidate.id === line.beneficiaryAccountId);
+    if (account && currency && account.currency.toUpperCase() !== currency.toUpperCase()) {
+      line.beneficiaryAccountId = "";
+    }
+  }
+}
+
+function handleCurrencyChange(currencyCode: string | undefined) {
+  if (!currencyCode || currencyCode === selectedCurrency) return;
+  const treasury = treasuries.find((account) =>
+    account.currency.toUpperCase() === currencyCode.toUpperCase()
+  );
+  if (treasury) handleTreasuryChange(treasury.id);
+}
+
 function addDisbursementLine() {
-  disbursementLines = [...disbursementLines, createDisbursementLine()];
+  const line = createDisbursementLine();
+  disbursementLines = [...disbursementLines, line];
+  return line.id;
+}
+
+function addDisbursementLineAndFocus() {
+  const lineId = addDisbursementLine();
+  requestAnimationFrame(() => {
+    const accountInput = document.getElementById(`disbursement-line-account-${lineId}`);
+    if (accountInput instanceof HTMLInputElement) accountInput.focus();
+  });
+}
+
+function handleQuickAddDisbursementLine(event: KeyboardEvent) {
+  if (event.key !== "Enter" || !event.shiftKey || isSubmitting) return;
+  event.preventDefault();
+  event.stopPropagation();
+  addDisbursementLineAndFocus();
 }
 
 function removeDisbursementLine(lineId: number) {
@@ -163,6 +225,10 @@ async function handleSaveDisbursement() {
     toast.error(m.finance_ui_disbursement_beneficiary_required());
     return;
   }
+  if (disbursementLines.some((line) => !disbursementAccounts.some((account) => account.id === line.beneficiaryAccountId))) {
+    toast.error(m.finance_ui_disbursement_beneficiary_required());
+    return;
+  }
   if (disbursementLines.some((line) => line.beneficiaryAccountId === treasuryAccountId)) {
     toast.error(m.finance_ui_disbursement_accounts_must_differ());
     return;
@@ -184,7 +250,7 @@ async function handleSaveDisbursement() {
         await api.processDisbursement({
           treasury_account_id: treasuryAccountId,
           beneficiary_account_id: line.beneficiaryAccountId,
-          amount: Number(line.amount),
+          amount: String(line.amount),
           currency_code: selectedCurrency,
           payment_method: paymentMethod.toLowerCase(),
           reference: lineReference,
@@ -215,16 +281,6 @@ async function handleSaveDisbursement() {
   }
 }
 
-function handlePrint(d: any) {
-  printParameters = {
-    voucher_id: d.id,
-    reference_number: d.reference_number || d.id.slice(0, 8),
-    org_id: orgId,
-  };
-  printTitle = m.finance_ui_disbursement_print_title({ number: d.reference_number || d.id.slice(0, 8) });
-  printDialogOpen = true;
-}
-
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   disbursements.map((d, idx) => {
@@ -250,12 +306,43 @@ const gridSource = $derived(
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (filterDate && row.accounting_date && !String(row.accounting_date).startsWith(filterDate)) {
+    if (filterDate && (!row.accounting_date || !String(row.accounting_date).startsWith(filterDate))) {
       return false;
     }
     return true;
   })
 );
+const selectedDisbursements = $derived(
+  filteredSource.filter((disbursement) =>
+    disbursementSelection.mode === "allMatching"
+      ? !disbursementSelection.ids.has(disbursement.id)
+      : disbursementSelection.ids.has(disbursement.id),
+  ),
+);
+const disbursementPrintContexts = $derived(
+  selectedDisbursements.map((disbursement) => ({
+    voucher: {
+      number: disbursement.reference_number || disbursement.id.slice(0, 8),
+      date: disbursement.accounting_date || "",
+      primaryName: disbursement.beneficiary_display,
+      secondaryName: disbursement.treasury_display,
+      amount: Number(disbursement.amount || disbursement.lines?.[0]?.debit || 0),
+      currency: disbursement.currency_code || disbursement.currency || orgContext.baseCurrency,
+      description: disbursement.description_ar || disbursement.description || "",
+    },
+    $org: {
+      name: orgContext.name,
+      name_ar: orgContext.nameAr,
+      currency: disbursement.currency_code || orgContext.baseCurrency,
+      logo_url: orgContext.logo,
+      primary_color: orgContext.primaryColor,
+    },
+  })),
+);
+
+function handleDisbursementSelection(selection: SelectionSnapshot) {
+  disbursementSelection = selection;
+}
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
@@ -315,6 +402,16 @@ function exportCsv() {
             <span>{m.finance_ui_new_disbursement()}</span>
           {/if}
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
+          disabled={selectedDisbursements.length === 0}
+          onclick={() => (printDialogOpen = true)}
+        >
+          <Printer size={14} />
+          <span>{m.finance_ui_print_disbursement()}{selectedDisbursements.length ? ` (${selectedDisbursements.length})` : ""}</span>
+        </Button>
       </div>
 
       <div class="flex items-center gap-2">
@@ -346,29 +443,14 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_disbursement_create_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="flex flex-col gap-5 p-4">
-            <section class="rounded-lg border border-border/50 bg-muted/10 p-3 sm:p-4">
-              <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h3 class="text-xs font-semibold text-foreground">{m.finance_ui_disbursement_create_heading()}</h3>
-                <span class="text-[11px] text-muted-foreground">{m.finance_ui_voucher_number_optional()}</span>
-              </div>
-              <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_disbursement_create_heading()}
+          accent="rose"
+          contentClass="gap-5"
+          onclose={() => (showAddForm = false)}
+        >
+              <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
                 <div class="min-w-0">
                   <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_voucher_number_optional()}</Label>
                   <Input
@@ -389,7 +471,7 @@ function exportCsv() {
                     value={treasuryAccountId}
                     placeholder={m.finance_ui_treasury_select_placeholder()}
                     accounts={treasuries}
-                    onchange={(value) => (treasuryAccountId = value ?? "")}
+                    onchange={(value) => handleTreasuryChange(value ?? "")}
                     disabled={isSubmitting}
                   />
                 </div>
@@ -417,35 +499,30 @@ function exportCsv() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div class="mt-4 grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
                 <div class="min-w-0">
-                  <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_currency()}</Label>
-                  <SearchableSelect
-                    value={selectedCurrency}
-                    placeholder={m.finance_ui_currency_placeholder()}
-                    items={currencies}
-                    getItemValue={(currency) => currency.code}
-                    getItemLabel={(currency) => currency.name}
-                    onchange={(value) => { if (value) selectedCurrency = value; }}
-                    disabled={isSubmitting}
+                  <CurrencySelector
+                    compact
+                    title={m.finance_ui_currency()}
+                    description=""
+                    currentCurrency={selectedCurrency}
+                    currencyOptions={availableCurrencies}
+                    onchange={handleCurrencyChange}
+                    disabled={isSubmitting || isLoading || availableCurrencies.length < 2}
                   />
                 </div>
               </div>
-            </section>
 
             <section class="flex flex-col gap-3">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 class="text-sm font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</h3>
-                  <p class="mt-0.5 text-[11px] text-muted-foreground">{disbursementLines.length} · {m.finance_ui_disbursement_save()}</p>
                 </div>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   class="h-8 gap-1.5 text-xs"
-                  onclick={addDisbursementLine}
+                  onclick={addDisbursementLineAndFocus}
                   disabled={isSubmitting}
                 >
                   <Plus size={14} />
@@ -457,7 +534,7 @@ function exportCsv() {
                 <div class="min-w-0 rounded-lg border border-border/60 bg-background p-3 sm:p-4">
                   <div class="mb-3 flex items-center justify-between gap-2">
                     <span class="text-xs font-semibold text-foreground">
-                      {m.finance_ui_disbursement_save()} #{line.sequence}
+                      #{line.sequence}
                     </span>
                     <Button
                       type="button"
@@ -475,10 +552,12 @@ function exportCsv() {
                     <div class="min-w-0">
                       <Label class="mb-1 block text-xs font-semibold text-foreground">{m.finance_ui_disbursement_to_account()}</Label>
                       <AccountSearchInput
+                        id={`disbursement-line-account-${line.id}`}
                         value={line.beneficiaryAccountId}
-                        {accounts}
+                        accounts={disbursementAccounts}
                         placeholder={m.finance_ui_expense_account_select_placeholder()}
                         onchange={(value) => (line.beneficiaryAccountId = value ?? "")}
+                        onkeydown={handleQuickAddDisbursementLine}
                         disabled={isSubmitting}
                       />
                     </div>
@@ -489,6 +568,7 @@ function exportCsv() {
                         min="0.01"
                         step="any"
                         bind:value={line.amount}
+                        onkeydown={handleQuickAddDisbursementLine}
                         placeholder="0.00"
                         class="h-9 text-xs font-mono font-bold text-rose-600 dark:text-rose-400"
                         disabled={isSubmitting}
@@ -500,6 +580,7 @@ function exportCsv() {
                     <Input
                       type="text"
                       bind:value={line.notes}
+                      onkeydown={handleQuickAddDisbursementLine}
                       placeholder={m.finance_ui_disbursement_notes_placeholder()}
                       class="h-9 text-xs"
                       disabled={isSubmitting}
@@ -529,19 +610,19 @@ function exportCsv() {
                 </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
     <!-- Grid Container -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <OrbisGrid
-        columns={columns}
+        columns={[selectionColumn(), ...columns]}
         source={filteredSource}
         loading={isLoading}
         clientQuery
         search={searchQuery}
+        onselection={handleDisbursementSelection}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_disbursements()}
@@ -550,9 +631,11 @@ function exportCsv() {
   </div>
 </div>
 
-<PdfReportViewer
+<PrintDialog
   bind:open={printDialogOpen}
-  reportTemplateId="disbursement-voucher"
-  parameters={printParameters}
-  title={printTitle}
+  entityType="finance_disbursement"
+  documentType="VOUCHER"
+  entityIds={selectedDisbursements.map((disbursement) => disbursement.id)}
+  entityLabels={selectedDisbursements.map((disbursement) => disbursement.receipt_display)}
+  contexts={disbursementPrintContexts}
 />

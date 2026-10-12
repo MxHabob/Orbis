@@ -1,11 +1,11 @@
 //! Report & Template routes — Template CRUD, Preview, Validation, Report Generation, Batch Print.
 
 use axum::{
-    Json, Router,
     extract::{Path, Query, State},
     http::header,
     response::IntoResponse,
     routing::{get, post},
+    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -110,6 +110,7 @@ pub struct UpdateTemplateRequest {
     pub orientation: Option<String>,
     pub margins_json: Option<String>,
     pub document_json: Option<String>,
+    pub is_default: Option<bool>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -212,8 +213,13 @@ pub struct CancelReportResponse {
 }
 
 #[derive(Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct BatchPrintRequest {
-    pub report_code: String,
+    pub template_id: Option<Uuid>,
+    pub document_json: Option<String>,
+    pub contexts: Option<Vec<serde_json::Value>>,
+    pub title: Option<String>,
+    pub report_code: Option<String>,
     pub parameters: Option<serde_json::Value>,
     pub batch_config: serde_json::Value,
     pub locale: Option<String>,
@@ -412,6 +418,14 @@ pub async fn update_template(
         .await
         .map_err(|e| ApiError::bad_request(e.to_string()))?;
 
+    if req.is_default == Some(true) {
+        template = state
+            .report_service
+            .set_default_template(&ctx, id)
+            .await
+            .map_err(|e| ApiError::bad_request(e.to_string()))?;
+    }
+
     Ok(ApiResponse::ok_with_id(
         to_template_dto(template),
         ctx.request_id,
@@ -564,7 +578,7 @@ pub async fn preview_template(
     use docforge_engine::layout::engine::LayoutEngine;
     use docforge_engine::model::document::TemplateDocument;
     use docforge_engine::render::font_cache::FontCache;
-    use docforge_engine::render::pdf_renderer::{PdfRenderConfig, render_to_pdf};
+    use docforge_engine::render::pdf_renderer::{render_to_pdf, PdfRenderConfig};
 
     let doc: TemplateDocument = serde_json::from_str(&req.document_json)
         .map_err(|e| ApiError::bad_request(format!("Invalid template JSON: {}", e)))?;
@@ -1072,161 +1086,187 @@ fn report_download_expired(created_at: chrono::DateTime<Utc>, now: chrono::DateT
     path = "/api/v1/reports/batch-print",
     tag = "Report",
     request_body = BatchPrintRequest,
-    responses((status = 200, description = "Batch print HTML", body = String)),
+    responses((status = 200, description = "Multi-up PDF", content(("application/pdf" = Vec<u8>)))),
     security(("bearer" = []))
 )]
 pub async fn batch_print(
     State(state): State<AppState>,
     auth: AuthContext,
     Json(req): Json<BatchPrintRequest>,
-) -> Result<Json<ApiResponse<String>>, ApiError> {
+) -> Result<impl IntoResponse, ApiError> {
     let ctx = auth.0;
-    let config: BatchPrintConfig = serde_json::from_value(req.batch_config)
-        .map_err(|e| ApiError::bad_request(format!("Invalid batch config: {}", e)))?;
+    let config: docforge_engine::layout::multi_up::MultiUpConfig =
+        serde_json::from_value(req.batch_config)
+            .map_err(|e| ApiError::bad_request(format!("Invalid batch config: {}", e)))?;
 
-    let params: HashMap<String, ParamValue> = req
-        .parameters
-        .and_then(|v| serde_json::from_value(v).ok())
+    let locale = req
+        .locale
+        .as_deref()
+        .map(ReportLocale::from_str)
         .unwrap_or_default();
+    let mut title = req.title.clone();
+    let mut contexts = req.contexts;
+    let mut document_json = req.document_json;
 
-    let definition = state
-        .report_definition_repo
-        .find_by_code(ctx.tenant_id, &req.report_code)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?
-        .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+    if let Some(report_code) = req.report_code.as_deref() {
+        check_report_permissions(&state, &ctx, report_code).await?;
+        let definition = state
+            .report_definition_repo
+            .find_by_code(ctx.tenant_id, report_code)
+            .await
+            .map_err(|error| ApiError::internal(error.to_string()))?
+            .ok_or_else(|| ApiError::not_found("Report definition not found"))?;
+        let org_context = state
+            .report_org_context_resolver
+            .resolve(ctx.tenant_id)
+            .await
+            .map_err(|error| ApiError::internal(error.to_string()))?;
+        let parameters: HashMap<String, ParamValue> = req
+            .parameters
+            .map(serde_json::from_value)
+            .transpose()
+            .map_err(|error| ApiError::bad_request(format!("Invalid report parameters: {error}")))?
+            .unwrap_or_default();
+        let provider = state
+            .report_provider_registry
+            .get_provider(&definition.data_provider_key)
+            .ok_or_else(|| {
+                ApiError::bad_request(format!(
+                    "No data provider for key: {}",
+                    definition.data_provider_key
+                ))
+            })?;
+        let dataset = provider
+            .fetch_data(ctx.tenant_id, &org_context, &parameters, &locale)
+            .await
+            .map_err(|error| ApiError::internal(error.to_string()))?;
 
+        title = Some(if locale.is_rtl() {
+            dataset.report_name_ar.clone()
+        } else {
+            dataset.report_name.clone()
+        });
+        if contexts.is_none() {
+            let org_context = serde_json::json!({
+                "id": org_context.id,
+                "name": org_context.name,
+                "name_ar": org_context.name_ar,
+                "currency": org_context.currency_code,
+                "logo_url": org_context.logo_url,
+                "primary_color": org_context.primary_color,
+            });
+            contexts = Some(
+                dataset
+                    .rows
+                    .into_iter()
+                    .map(|row| {
+                        let mut context = row.as_object().cloned().unwrap_or_default();
+                        context.insert("row".into(), row);
+                        context.insert("$org".into(), org_context.clone());
+                        serde_json::Value::Object(context)
+                    })
+                    .collect(),
+            );
+        }
+
+        if req.template_id.is_none() {
+            let locale_key = if locale.is_rtl() { "ar" } else { "en" };
+            let binding = state
+                .report_template_repo
+                .find_binding(definition.id, locale_key, &OutputFormat::Pdf)
+                .await
+                .map_err(|error| ApiError::internal(error.to_string()))?
+                .ok_or_else(|| {
+                    ApiError::bad_request("No published PDF template is bound to this report")
+                })?;
+            let template = state
+                .report_template_repo
+                .find_by_id(binding.template_id)
+                .await
+                .map_err(|error| ApiError::internal(error.to_string()))?
+                .ok_or_else(|| ApiError::not_found("Bound report template not found"))?;
+            validate_batch_template(&template, ctx.tenant_id)?;
+            title = Some(template.name.clone());
+            document_json = Some(published_template_document(&state, &template).await?);
+        }
+    }
+
+    if let Some(template_id) = req.template_id {
+        let template = state
+            .report_template_repo
+            .find_by_id(template_id)
+            .await
+            .map_err(|error| ApiError::internal(error.to_string()))?
+            .ok_or_else(|| ApiError::not_found("Print template not found"))?;
+        validate_batch_template(&template, ctx.tenant_id)?;
+        title = Some(template.name.clone());
+        document_json = Some(published_template_document(&state, &template).await?);
+    }
+
+    let document_json = document_json
+        .ok_or_else(|| ApiError::bad_request("A template or report code is required"))?;
+    let contexts = contexts
+        .filter(|contexts| !contexts.is_empty())
+        .ok_or_else(|| ApiError::bad_request("At least one data context is required"))?;
     let org_context = state
         .report_org_context_resolver
         .resolve(ctx.tenant_id)
         .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-
-    let locale = req
-        .locale
-        .map(|l| ReportLocale::from_str(&l))
-        .unwrap_or(ReportLocale::Ar);
-
-    let provider = state
-        .report_provider_registry
-        .get_provider(&definition.data_provider_key)
-        .ok_or_else(|| {
+        .map_err(|error| ApiError::internal(error.to_string()))?;
+    let org_context = serde_json::json!({
+        "id": org_context.id,
+        "name": org_context.name,
+        "name_ar": org_context.name_ar,
+        "currency": org_context.currency_code,
+        "logo_url": org_context.logo_url,
+        "primary_color": org_context.primary_color,
+    });
+    let mut contexts = contexts;
+    for (index, context) in contexts.iter_mut().enumerate() {
+        let context = context.as_object_mut().ok_or_else(|| {
             ApiError::bad_request(format!(
-                "No data provider for key: {}",
-                definition.data_provider_key
+                "Data context at index {index} must be a JSON object"
             ))
         })?;
-
-    let dataset = provider
-        .fetch_data(ctx.tenant_id, &org_context, &params, &locale)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
-
-    let layout = config.compute_layout();
-    let is_rtl = matches!(locale, ReportLocale::Ar | ReportLocale::ArEn);
-    let dir = if is_rtl { "rtl" } else { "ltr" };
-    let primary_color = org_context.primary_color.as_deref().unwrap_or("#6366f1");
-
-    let mut html = format!(
-        r#"<!DOCTYPE html>
-<html dir="{dir}">
-<head>
-<meta charset="UTF-8">
-<style>
-@page {{ size: {w}mm {h}mm; margin: 0; }}
-body {{ margin: 0; padding: 0; font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif; }}
-.sheet {{ width: {w}mm; height: {h}mm; position: relative; page-break-after: always; overflow: hidden; }}
-.sheet:last-child {{ page-break-after: auto; }}
-.item {{ position: absolute; overflow: hidden; border: 0.3px solid #e0e0e0; box-sizing: border-box;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 3mm; font-size: 10px; text-align: center; direction: {dir}; }}
-.item .org-name {{ font-weight: 700; color: {color}; font-size: 11px; margin-bottom: 2mm; }}
-.item .field-label {{ color: #888; font-size: 8px; }}
-.item .field-value {{ font-weight: 600; font-size: 10px; margin-bottom: 1mm; }}
-.cut-line-h {{ position: absolute; border-top: 0.5px dashed #ccc; width: 100%; left: 0; }}
-.cut-line-v {{ position: absolute; border-left: 0.5px dashed #ccc; height: 100%; top: 0; }}
-@media print {{ body {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }} }}
-</style>
-</head>
-<body>"#,
-        dir = dir,
-        w = layout.sheet_width_mm,
-        h = layout.sheet_height_mm,
-        color = primary_color,
-    );
-
-    let pages = config.paginate(&dataset.rows);
-    let visible_cols: Vec<&ColumnDef> = dataset.columns.iter().filter(|c| c.visible).collect();
-    let org_name = if is_rtl {
-        &org_context.name_ar
-    } else {
-        &org_context.name
-    };
-
-    for page_items in &pages {
-        html.push_str(r#"<div class="sheet">"#);
-
-        for (idx, row) in page_items.iter().enumerate() {
-            if let Some(slot) = layout.slots.get(idx) {
-                html.push_str(&format!(
-                    r#"<div class="item" style="left:{x}mm; top:{y}mm; width:{w}mm; height:{h}mm;">"#,
-                    x = slot.x_mm,
-                    y = slot.y_mm,
-                    w = slot.width_mm,
-                    h = slot.height_mm,
-                ));
-
-                html.push_str(&format!(r#"<div class="org-name">{}</div>"#, org_name));
-
-                for col in &visible_cols {
-                    let label = if is_rtl { &col.header_ar } else { &col.header };
-                    let val = row
-                        .get(&col.key)
-                        .map(|v| match v {
-                            serde_json::Value::String(s) => s.clone(),
-                            serde_json::Value::Number(n) => n.to_string(),
-                            _ => v.to_string(),
-                        })
-                        .unwrap_or_default();
-
-                    if !val.is_empty() {
-                        html.push_str(&format!(
-                            r#"<div class="field-label">{}</div><div class="field-value">{}</div>"#,
-                            label, val
-                        ));
-                    }
-                }
-
-                html.push_str("</div>");
-            }
-        }
-
-        if config.show_cut_lines {
-            for r in 1..layout.rows {
-                let y = layout.slots.first().map(|s| s.y_mm).unwrap_or(0.0)
-                    + r as f64 * (config.item_height_mm + config.gap_mm)
-                    - config.gap_mm / 2.0;
-                html.push_str(&format!(
-                    r#"<div class="cut-line-h" style="top:{y}mm;"></div>"#,
-                    y = y
-                ));
-            }
-            for c in 1..layout.columns {
-                let x = layout.slots.first().map(|s| s.x_mm).unwrap_or(0.0)
-                    + c as f64 * (config.item_width_mm + config.gap_mm)
-                    - config.gap_mm / 2.0;
-                html.push_str(&format!(
-                    r#"<div class="cut-line-v" style="left:{x}mm;"></div>"#,
-                    x = x
-                ));
-            }
-        }
-
-        html.push_str("</div>");
+        context.entry("$org").or_insert_with(|| org_context.clone());
     }
+    let pdf = docforge_engine::render::multi_up_renderer::render_multi_up(
+        &document_json,
+        &contexts,
+        &config,
+        title,
+    )
+    .map_err(|error| ApiError::bad_request(error.to_string()))?;
 
-    html.push_str("</body></html>");
-    Ok(ApiResponse::ok_with_id(html, ctx.request_id))
+    Ok(([(header::CONTENT_TYPE, "application/pdf")], pdf.bytes))
+}
+
+fn validate_batch_template(template: &ReportTemplate, org_id: Uuid) -> Result<(), ApiError> {
+    if template.org_id != org_id || template.deleted_at.is_some() {
+        return Err(ApiError::not_found("Print template not found"));
+    }
+    if template.status != TemplateStatus::Published {
+        return Err(ApiError::bad_request(
+            "Only published templates can be batch printed",
+        ));
+    }
+    Ok(())
+}
+
+async fn published_template_document(
+    state: &AppState,
+    template: &ReportTemplate,
+) -> Result<String, ApiError> {
+    if let Some(version) = template.published_version {
+        return state
+            .report_template_repo
+            .find_version(template.id, version)
+            .await
+            .map_err(|error| ApiError::internal(error.to_string()))?
+            .map(|version| version.document_json)
+            .ok_or_else(|| ApiError::not_found("Published template version not found"));
+    }
+    Ok(template.document_json.clone())
 }
 
 #[derive(Serialize, ToSchema)]

@@ -491,6 +491,7 @@ pub async fn iam_provision_user(
             gender: None,
             nationality: None,
             blood_type: None,
+            marital_status: None,
             medical_notes: None,
             special_needs_notes: None,
             email,
@@ -717,6 +718,14 @@ pub async fn iam_update_user(
                 None
             } else {
                 Some(addr.to_string())
+            };
+            changed = true;
+        }
+        if let Some(avatar_url) = request.get("avatar_url").and_then(|v| v.as_str()) {
+            person.avatar_url = if avatar_url.is_empty() {
+                None
+            } else {
+                Some(avatar_url.to_string())
             };
             changed = true;
         }

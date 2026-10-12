@@ -645,6 +645,8 @@ pub struct OrgReportContext {
     pub name: String,
     pub name_ar: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub currency_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub code: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo_url: Option<String>,

@@ -52,11 +52,21 @@ export const queryKeys = {
         "classSubjects",
         { classId, periodId },
       ] as const,
+    classRoster: (classId: string) =>
+      [...queryKeys.academic.all, "classRoster", classId] as const,
   },
 
   // ── Student ─────────────────────────────────────────────────
   student: {
     all: ["student"] as const,
+    detail: (id: string) => [...queryKeys.student.all, "detail", id] as const,
+    attendance: (id: string) =>
+      [...queryKeys.student.all, "attendance", id] as const,
+    behavior: (id: string) =>
+      [...queryKeys.student.all, "behavior", id] as const,
+    schedule: (id: string) =>
+      [...queryKeys.student.all, "schedule", id] as const,
+    exams: (id: string) => [...queryKeys.student.all, "exams", id] as const,
     enrollments: (filter?: { classId?: string; studentId?: string }) =>
       [...queryKeys.student.all, "enrollments", filter ?? {}] as const,
     enrollment: (id: string) =>
@@ -86,6 +96,8 @@ export const queryKeys = {
       [...queryKeys.assessment.all, "grades", filter ?? {}] as const,
     attendance: (classId: string, date: string) =>
       [...queryKeys.assessment.all, "attendance", { classId, date }] as const,
+    classGrades: (classSubjectId: string) =>
+      [...queryKeys.assessment.all, "classGrades", classSubjectId] as const,
   },
 
   // ── Exam ────────────────────────────────────────────────────

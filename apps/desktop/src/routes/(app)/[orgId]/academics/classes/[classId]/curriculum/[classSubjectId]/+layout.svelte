@@ -1,20 +1,19 @@
 <!--
-  @component ClassSubjectLayout
+  @component SectionSubjectLayout
   SvelteKit Layout for specific Subject Offering under a Class.
-  Provides tab navigation between Coursework Gradebook and Term Results,
-  along with assessments scheme configuration and PDF print triggers.
+  Provides tab navigation between the coursework gradebook and assessment records,
+  along with assessment scheme configuration.
 -->
 <script lang="ts">
 import { page } from "$app/state";
 import { createQuery } from "@tanstack/svelte-query";
 import { api } from "$lib/api";
-import type { ClassSubjectDto, SubjectDto, UserDto } from "$lib/api/types";
+import type { SectionSubjectDto, SubjectDto, UserDto } from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
 import * as m from "$lib/paraglide/messages";
 import { academicContext } from "$lib/stores";
 import AssessmentSchemeSheet from "$lib/features/assessment/assessment-scheme-sheet.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import type { Snippet } from "svelte";
 import type { LayoutData } from "./$types";
 
@@ -22,28 +21,27 @@ let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 const orgId = $derived(data.orgId || String(page.params.orgId || ""));
 const classId = $derived(data.classId || String(page.params.classId || ""));
-const classSubjectId = $derived(
-  data.classSubjectId || String(page.params.classSubjectId || ""),
+const SectionSubjectId = $derived(
+  data.SectionSubjectId || String(page.params.SectionSubjectId || ""),
 );
 
 let showConfigSheet = $state(false);
-let showPrintDialog = $state(false);
 
-export interface ClassSubjectWithCatalog extends ClassSubjectDto {
+export interface SectionSubjectWithCatalog extends SectionSubjectDto {
   catalog?: SubjectDto;
   teacher_name?: string | null;
 }
 
 // Subject Offering Details
 const subjectQuery = createQuery(() => ({
-  queryKey: ["subject-info-sub-layout", classId, classSubjectId],
-  queryFn: async (): Promise<ClassSubjectWithCatalog> => {
-    const offerings = await api.listClassSubjects(
+  queryKey: ["subject-info-sub-layout", classId, SectionSubjectId],
+  queryFn: async (): Promise<SectionSubjectWithCatalog> => {
+    const offerings = await api.listSectionSubjects(
       classId,
       academicContext.effectivePeriodId || "",
     );
     const offering = offerings.find(
-      (o: ClassSubjectDto) => String(o.id) === classSubjectId,
+      (o: SectionSubjectDto) => String(o.id) === SectionSubjectId,
     );
     if (!offering) throw new Error("Subject not found");
     const catalog = await api.listSubjects();
@@ -52,7 +50,7 @@ const subjectQuery = createQuery(() => ({
     );
     return { ...offering, catalog: catSub };
   },
-  enabled: !!classId && !!classSubjectId,
+  enabled: !!classId && !!SectionSubjectId,
 }));
 
 const usersQuery = createQuery(() => ({
@@ -77,7 +75,7 @@ const teacherDisplayName = $derived.by(() => {
 });
 
 const basePath = $derived(
-  `/${orgId}/academics/classes/${classId}/curriculum/${classSubjectId}`,
+  `/${orgId}/academics/classes/${classId}/curriculum/${SectionSubjectId}`,
 );
 
 const menuItems = $derived([
@@ -86,8 +84,8 @@ const menuItems = $derived([
     label: m.common_coursework_gradebook(),
   },
   {
-    path: "term-results",
-    label: m.common_term_results(),
+    path: "assessments",
+    label: "Assessment records",
   },
 ]);
 </script>
@@ -119,14 +117,6 @@ const menuItems = $derived([
         <span>{m.common_assessment_scheme()}</span>
       </Button>
 
-      <Button
-        variant="outline"
-        size="sm"
-        class="h-8 gap-1.5 text-xs font-semibold"
-        onclick={() => showPrintDialog = true}
-      >
-        <span class="hidden sm:inline">{m.common_action_print()}</span>
-      </Button>
     </div>
   </div>
 
@@ -137,12 +127,5 @@ const menuItems = $derived([
 </div>
 
 {#if showConfigSheet}
-  <AssessmentSchemeSheet bind:open={showConfigSheet} {classSubjectId} periodId={academicContext.effectivePeriodId || ""} />
+  <AssessmentSchemeSheet bind:open={showConfigSheet} {SectionSubjectId} periodId={academicContext.effectivePeriodId || ""} />
 {/if}
-
-<PdfReportViewer
-  bind:open={showPrintDialog}
-  templateId="33333333-3333-3333-3333-333333333333"
-  parameters={{ class_subject_id: classSubjectId, period_id: academicContext.effectivePeriodId }}
-  reportTitle={m.common_print_gradebook()}
-/>

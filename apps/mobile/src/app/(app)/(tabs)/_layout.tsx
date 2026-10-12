@@ -10,12 +10,22 @@
 
 import { Tabs } from "expo-router";
 import { FloatingTabBar } from "@/components/floating-tab-bar";
+import { Header } from "@/components/header";
+import { useI18n } from "@/lib/i18n";
 
 export default function TabsLayout() {
+  const { t } = useI18n();
+
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
+        header: ({ route }) => (
+          <Header
+            title={t(
+              route.name === "behavior" ? "tab_behavior_ai" : "tab_home",
+            )}
+          />
+        ),
         tabBarShowLabel: false,
         tabBarStyle: {
           display: "none",
@@ -28,4 +38,3 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
-

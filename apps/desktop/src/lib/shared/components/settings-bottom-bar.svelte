@@ -22,6 +22,7 @@ interface Props {
   showReset?: boolean;
   saveVariant?: "default" | "destructive" | "primary" | "secondary" | "lime" | "outline";
   statusVariant?: "amber" | "rose" | "primary" | "emerald";
+  maxWidthClass?: string;
   actions?: import("svelte").Snippet;
   onsave?: () => void;
   onreset?: () => void;
@@ -38,6 +39,7 @@ let {
   showReset = true,
   saveVariant = "default",
   statusVariant = "amber",
+  maxWidthClass = "max-w-lg",
   actions,
   onsave,
   onreset,
@@ -58,7 +60,7 @@ const displayMessage = $derived(message || m.settings_unsaved_changes());
 
 {#if visible && isDirty}
   <div
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-lg pointer-events-auto select-none"
+    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] {maxWidthClass} pointer-events-auto select-none"
     transition:fly={{ y: 35, duration: 250, easing: quintOut }}
   >
     <div class="bg-card/95 backdrop-blur-md border border-border/80 shadow-xl rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3">

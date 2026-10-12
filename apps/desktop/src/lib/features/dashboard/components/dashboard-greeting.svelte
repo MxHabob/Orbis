@@ -52,15 +52,18 @@ function handleAvatarClick() {
 // Time-aware greeting calculations
 let hourState = $state(new Date().getHours());
 let minuteInterval: ReturnType<typeof setInterval> | undefined;
+let hatInterval: ReturnType<typeof setInterval> | undefined;
 
 onMount(() => {
   minuteInterval = setInterval(() => {
     hourState = new Date().getHours();
   }, 60000);
+  hatInterval = setInterval(randomizeHat, 12000);
 });
 
 onDestroy(() => {
   if (minuteInterval) clearInterval(minuteInterval);
+  if (hatInterval) clearInterval(hatInterval);
   avatarController.destroy();
 });
 
@@ -127,7 +130,7 @@ const subtitle = $derived.by(() => {
       <Avatar
         controller={avatarController}
         hat={currentHat}
-        width="0px"
+        width="90px"
         height="90px"
       />
     </button>

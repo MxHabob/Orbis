@@ -368,6 +368,7 @@ impl AuthService {
             place_of_birth: None,
             nationality: None,
             blood_type: None,
+            marital_status: None,
             medical_notes: None,
             special_needs_notes: None,
             phone: None,

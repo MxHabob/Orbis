@@ -21,6 +21,7 @@ import RoleSelect from "$lib/shared/components/role-select.svelte";
 import CredentialDeliveryModal from "$lib/shared/components/credential-delivery-modal.svelte";
 import CreateUserSheet from "$lib/features/settings/components/create-user-sheet.svelte";
 import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
+import { resolveEntityDocumentUrl } from "$lib/features/documents/queries";
 
 let { orgId }: { orgId: string } = $props();
 const queryClient = useQueryClient();
@@ -63,6 +64,32 @@ const users = $derived(
   usersQuery.data?.pages?.flatMap((page: any) => page.items) ?? [],
 );
 const isLoading = $derived(usersQuery.isLoading);
+let resolvedAvatarUrls = $state<Record<string, string>>({});
+
+$effect(() => {
+  const usersWithAvatars = users.filter((user) => user.avatar_url);
+  let isCurrent = true;
+
+  void Promise.all(
+    usersWithAvatars.map(async (user) => {
+      try {
+        return [
+          user.id,
+          await resolveEntityDocumentUrl(user.avatar_url, "user", user.id),
+        ] as const;
+      } catch (error: unknown) {
+        console.error(`Failed to resolve avatar for user ${user.id}:`, error);
+        return [user.id, ""] as const;
+      }
+    }),
+  ).then((entries) => {
+    if (isCurrent) resolvedAvatarUrls = Object.fromEntries(entries);
+  });
+
+  return () => {
+    isCurrent = false;
+  };
+});
 
 function loadUsers() {
   usersQuery.refetch();
@@ -90,6 +117,7 @@ const gridSource = $derived(
   users.map((u, i) => ({
     ...u,
     __idx: i + 1,
+    avatar_url: resolvedAvatarUrls[u.id] || undefined,
     full_name: l(u.name_ar, u.full_name) || u.full_name || "—",
     role: u.roles?.[0] || "staff",
     status: u.is_deleted ? "inactive" : "active",
@@ -246,23 +274,6 @@ async function handleAction(event: GridActionEvent) {
       readonly
       onaction={handleAction}
     />
-    {#if usersQuery.hasNextPage && selectedRole === 'all' && searchQuery === ''}
-      <div class="p-2 border-t border-border flex justify-center bg-card shrink-0">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          class="text-xs w-full max-w-md cursor-pointer"
-          disabled={usersQuery.isFetchingNextPage}
-          onclick={() => usersQuery.fetchNextPage()}
-        >
-          {#if usersQuery.isFetchingNextPage}
-            {m.common_loading()}
-          {:else}
-            {m.settings_users_load_more()}
-          {/if}
-        </Button>
-      </div>
-    {/if}
   </div>
 
   <!-- Create User Slide-over Sheet -->

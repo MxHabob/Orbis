@@ -51,7 +51,7 @@ pub struct CreateDocumentInput {
     pub description: Option<String>,
     pub category: String,
     pub asset_type: String,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: String,
@@ -74,7 +74,7 @@ pub struct UpdateDocumentInput {
     pub description: Option<String>,
     pub category: Option<String>,
     pub asset_type: Option<String>,
-    pub academic_year_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
     pub term_id: Option<Uuid>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
@@ -160,7 +160,7 @@ impl DocumentService {
             description: input.description,
             category: input.category,
             asset_type: input.asset_type,
-            academic_year_id: input.academic_year_id,
+            calendar_id: input.calendar_id,
             term_id: input.term_id,
             tags: input.tags,
             visibility: input.visibility,
@@ -230,8 +230,8 @@ impl DocumentService {
         if let Some(asset) = input.asset_type {
             doc.asset_type = asset;
         }
-        if let Some(ay_id) = input.academic_year_id {
-            doc.academic_year_id = Some(ay_id);
+        if let Some(ay_id) = input.calendar_id {
+            doc.calendar_id = Some(ay_id);
         }
         if let Some(t_id) = input.term_id {
             doc.term_id = Some(t_id);

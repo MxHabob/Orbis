@@ -6,14 +6,17 @@
 export interface PrintDialogState {
   isOpen: boolean;
   entityType: string;
+  documentType?: string;
   entityIds: string[];
   entityLabels?: string[];
+  contexts?: Record<string, unknown>[];
 }
 
 // Global reactive state
 export const printState = $state<PrintDialogState>({
   isOpen: false,
   entityType: "",
+  documentType: undefined,
   entityIds: [],
 });
 
@@ -27,10 +30,16 @@ export function openPrintDialog(
   entityType: string,
   entityIds: string[],
   entityLabels?: string[],
+  options?: {
+    documentType?: string;
+    contexts?: Record<string, unknown>[];
+  },
 ) {
   printState.entityType = entityType;
+  printState.documentType = options?.documentType;
   printState.entityIds = entityIds;
   printState.entityLabels = entityLabels;
+  printState.contexts = options?.contexts;
   printState.isOpen = true;
 }
 

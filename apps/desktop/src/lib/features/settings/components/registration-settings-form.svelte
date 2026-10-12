@@ -20,7 +20,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardAction,
 } from "@orbis/ui/card";
@@ -34,16 +33,11 @@ import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem }
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
   AdjustmentsHorizontal,
-  BookOpen,
   CheckCircle,
   DocumentCheck,
-  FloppyDisk,
-  Lock,
   Plus,
-  Sparkles,
   Trash,
   UserBadgeCheck,
-  Tag,
   Funnel,
 } from "@orbis/icons";
 import { toast } from "@orbis/ui";
@@ -507,88 +501,46 @@ function handleFormSave() {
 }
 </script>
 
-<div class="flex flex-col gap-6 text-start pb-24">
-  <!-- Top Profile Selector Banner -->
-  <Card class="border-border/80 shadow-xs">
-    <CardHeader>
-      <div class="flex items-center gap-3 text-start">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-          <BookOpen class="w-4 h-4" />
-        </div>
-        <div class="flex flex-col">
-          <CardTitle>
-            {m.ui_copy_educational_institution_type_044c6d34()}
-          </CardTitle>
-          <CardDescription>
-            {m.ui_copy_customize_admission_and_numbering_schemas__6e581efd()}
-          </CardDescription>
-        </div>
-      </div>
-      <CardAction>
-        <Badge variant="outline" class="px-3 py-1 h-7 text-xs font-bold gap-1.5 bg-muted/40 border-border text-foreground">
-          <Lock class="w-3 h-3 text-muted-foreground" />
-          <span>
-            {#if institutionType === "school"}
-              {m.ui_copy_k_12_school_cd02a44e()}
-            {:else if institutionType === "university"}
-              {m.ui_copy_university_college_5c444bdf()}
-            {:else if institutionType === "institute"}
-              {m.ui_copy_training_institute_b9a51493()}
-            {:else if institutionType === "quran_center"}
-              {m.ui_copy_quranic_center_4c9e12cc()}
-            {:else}
-              {institutionType}
-            {/if}
-          </span>
-        </Badge>
-      </CardAction>
-    </CardHeader>
-  </Card>
-
+<div class="flex flex-col gap-4 text-start pb-24">
   <!-- Tabs Navigation -->
   <Tabs value={activeTab} onValueChange={(v) => (activeTab = v as any)}>
-    <TabsList class="h-9 p-1 bg-muted/50 rounded-lg border border-border/40">
-      <TabsTrigger value="policies" class="text-xs font-semibold gap-1.5 px-4 h-7">
+    <TabsList class="h-10 w-full justify-start gap-1 overflow-x-auto rounded-lg border border-border/60 bg-muted/40 p-1">
+      <TabsTrigger value="policies" class="h-8 rounded-lg px-3 text-xs font-semibold gap-1.5">
         <UserBadgeCheck class="w-3.5 h-3.5" />
         <span>{m.ui_copy_admission_numbering_eca11847()}</span>
       </TabsTrigger>
-      <TabsTrigger value="documents" class="text-xs font-semibold gap-1.5 px-4 h-7">
+      <TabsTrigger value="documents" class="h-8 rounded-lg px-3 text-xs font-semibold gap-1.5">
         <DocumentCheck class="w-3.5 h-3.5" />
         <span>{m.ui_copy_class_requirements_studio_f2d57d31()}</span>
         <Badge variant="secondary" class="ms-1 px-1.5 py-0 text-[10px] font-mono">
           {requiredDocuments.length}
         </Badge>
       </TabsTrigger>
-      <TabsTrigger value="fields" class="text-xs font-semibold gap-1.5 px-4 h-7">
+      <TabsTrigger value="fields" class="h-8 rounded-lg px-3 text-xs font-semibold gap-1.5">
         <AdjustmentsHorizontal class="w-3.5 h-3.5" />
         <span>{m.ui_copy_form_fields_matrix_960721da()}</span>
       </TabsTrigger>
     </TabsList>
 
     <!-- TAB 1: Policies & Student Numbering -->
-    <TabsContent value="policies" class="space-y-6 pt-4">
+    <TabsContent value="policies" class="space-y-4 pt-4">
       <!-- Student Numbering Card -->
-      <Card class="border-border/80 shadow-xs">
-        <CardHeader>
-          <div class="flex flex-col text-start">
-            <CardTitle>
-              {m.ui_copy_student_id_numbering_format_347fd4b4()}
-            </CardTitle>
-            <CardDescription>
-              {m.ui_copy_automated_sequence_schema_for_new_admissio_62932f38()}
-            </CardDescription>
-          </div>
+      <Card class="overflow-hidden border-border/70 shadow-xs">
+        <CardHeader class="border-b border-border/50 px-4 py-3">
+          <CardTitle class="text-xs font-semibold">
+            {m.ui_copy_student_id_numbering_format_347fd4b4()}
+          </CardTitle>
           <CardAction>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-muted-foreground">{m.ui_copy_preview_e0036935()}</span>
-              <Badge variant="lime" class="font-mono text-xs px-2.5 py-0.5 font-bold">
+              <span class="text-[10px] text-muted-foreground">{m.ui_copy_preview_e0036935()}</span>
+              <Badge variant="lime" class="font-mono text-[10px] px-2 py-0.5 font-semibold">
                 {studentNumberPreview}
               </Badge>
             </div>
           </CardAction>
         </CardHeader>
 
-        <CardContent class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-start">
+        <CardContent class="grid grid-cols-1 gap-4 p-6 text-start sm:grid-cols-3">
           <!-- Prefix -->
           <div class="flex flex-col gap-1.5">
             <Label class="text-xs font-semibold text-foreground">
@@ -651,105 +603,79 @@ function handleFormSave() {
       </Card>
 
       <!-- Admission Policies Toggles Card -->
-      <Card class="border-border/80 shadow-xs">
-        <CardHeader>
-          <div class="flex flex-col text-start">
-            <CardTitle>
-              {m.ui_copy_admission_enrollment_governance_rules_71d20dd7()}
-            </CardTitle>
-            <CardDescription>
-              {m.ui_copy_manage_registration_portals_approval_workf_a333aae0()}
-            </CardDescription>
-          </div>
+      <Card class="overflow-hidden border-border/70 shadow-xs">
+        <CardHeader class="border-b border-border/50 px-4 py-3">
+          <CardTitle class="text-xs font-semibold">
+            {m.ui_copy_admission_enrollment_governance_rules_71d20dd7()}
+          </CardTitle>
         </CardHeader>
 
-        <CardContent class="p-6 flex flex-col divide-y divide-border">
+        <CardContent class="flex flex-col divide-y divide-border px-4 py-1">
           <!-- Enable Registration Portal -->
-          <div class="py-3 flex items-center justify-between gap-4 first:pt-0">
+          <div class="py-2.5 flex items-center justify-between gap-4 first:pt-2">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_enable_registration_portal_dbaf8a8e()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_allow_incoming_student_admission_requests__216e66ac()}
               </span>
             </div>
             <Switch bind:checked={registrationEnabled} />
           </div>
 
           <!-- Approval Workflow -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_require_academic_registrar_admin_approval_b147c1b8()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_new_applicants_remain_pending_approval_bef_beccd042()}
               </span>
             </div>
             <Switch bind:checked={requiresApproval} />
           </div>
 
           <!-- Allow Waitlist -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_enable_waitlist_on_capacity_189ed812()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_place_students_on_waitlist_when_classes_re_fb2f377c()}
               </span>
             </div>
             <Switch bind:checked={allowWaitlist} />
           </div>
 
           <!-- Sibling Priority -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_sibling_priority_enrollment_b6d49ba5()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_prioritize_siblings_of_already_enrolled_st_29bdbb54()}
               </span>
             </div>
             <Switch bind:checked={siblingPriorityEnabled} />
           </div>
 
           <!-- Allow Late Enrollment -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_allow_late_enrollment_06114ddb()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_accept_enrollment_applications_after_perio_59f54c88()}
               </span>
             </div>
             <Switch bind:checked={allowLateEnrollment} />
           </div>
 
           <!-- Allow No Guardian -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_allow_independent_enrollment_no_guardian_7ce5a41b()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_applicable_for_adult_university_and_vocati_310c0145()}
               </span>
             </div>
             <Switch bind:checked={allowNoGuardian} />
           </div>
 
           <!-- Prevent Duplicate National ID -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_strict_unique_national_id_enforcement_7efa5e55()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_rejects_duplicate_national_id_entries_acro_410471c5()}
               </span>
             </div>
             <Switch
@@ -759,26 +685,20 @@ function handleFormSave() {
           </div>
 
           <!-- Auto Assign Tuition Fees -->
-          <div class="py-3 flex items-center justify-between gap-4">
+          <div class="py-2.5 flex items-center justify-between gap-4">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_auto_assign_tuition_fee_template_on_enroll_5ed6c3b1()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_automatically_maps_default_fee_templates_b_4e4adc5f()}
               </span>
             </div>
             <Switch bind:checked={autoAssignFees} />
           </div>
 
           <!-- Max Capacity -->
-          <div class="py-3 flex items-center justify-between gap-4 last:pb-0">
+          <div class="py-2.5 flex items-center justify-between gap-4 last:pb-2">
             <div class="flex flex-col gap-0.5 text-start">
               <span class="text-xs font-bold text-foreground">
                 {m.ui_copy_default_class_capacity_limit_700d9cac()}
-              </span>
-              <span class="text-[11px] text-muted-foreground">
-                {m.ui_copy_maximum_enrollment_limit_per_classroom_sec_a7d094ee()}
               </span>
             </div>
             <Input
@@ -796,7 +716,7 @@ function handleFormSave() {
     <!-- TAB 2: Class/Grade Requirements Studio with OrbisGrid -->
     <TabsContent value="documents" class="space-y-4 pt-4">
       <!-- Studio Header Actions Bar -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2">
           <Funnel class="w-4 h-4 text-muted-foreground" />
           <span class="text-xs font-semibold text-muted-foreground">{m.ui_copy_filter_class_grade_a161d4ac()}</span>
@@ -822,7 +742,7 @@ function handleFormSave() {
       </div>
 
       <!-- Requirements OrbisGrid Container -->
-      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
+      <div class="rounded-xl border border-border/60 bg-card overflow-hidden">
         <OrbisGrid
           columns={docGridColumns}
           source={docGridSource}
@@ -837,7 +757,7 @@ function handleFormSave() {
 
     <!-- TAB 3: Form Fields Matrix with OrbisGrid -->
     <TabsContent value="fields" class="space-y-4 pt-4">
-      <div class="rounded-xl border border-border/80 bg-background overflow-hidden">
+      <div class="rounded-xl border border-border/60 bg-card overflow-hidden">
         <OrbisGrid
           columns={fieldGridColumns}
           source={fieldGridSource}

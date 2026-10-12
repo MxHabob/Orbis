@@ -1,7 +1,9 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use sea_orm::entity::prelude::*;
 use uuid::Uuid;
 
+/// Central person identity — all personal data lives here.
+/// Students, employees, guardians, and users link to this table.
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "persons")]
 pub struct Model {
@@ -18,10 +20,11 @@ pub struct Model {
     pub national_id: Option<String>,
     pub passport_number: Option<String>,
     pub gender: Option<String>,
-    pub birth_date: Option<String>,
+    pub birth_date: Option<NaiveDate>,
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,

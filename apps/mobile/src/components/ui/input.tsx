@@ -17,14 +17,12 @@ import {
   Text,
   TextInput,
   type TextInputProps,
-  StyleSheet,
   Pressable,
   type ViewStyle,
 } from "react-native";
 import { Eye, EyeSlash } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -56,25 +54,18 @@ export const Input = React.memo<InputProps>(
     const isActualSecure = isPassword && !showPassword;
 
     return (
-      <View style={[styles.wrapper, containerStyle]}>
+      <View className="w-full gap-1" style={containerStyle}>
         {label && (
-          <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
+          <Text className="mb-0.5 text-xs leading-4 font-semibold text-foreground">
+            {label}
+          </Text>
         )}
 
         {/* Sunken Recessed Input Container */}
         <View
+          className={`min-h-11 flex-row items-center rounded-md border px-3 ${error ? "border-error" : isFocused ? "border-primary" : "border-border"} ${isDark ? "bg-background-element" : "bg-background"}`}
           style={[
-            styles.inputContainer,
             {
-              backgroundColor: isDark
-                ? theme.backgroundElement
-                : theme.background,
-              borderColor: error
-                ? theme.error
-                : isFocused
-                  ? theme.primary
-                  : theme.border,
-              borderWidth: 1,
               shadowColor: isFocused ? theme.primary : "#000000",
               shadowOffset: { width: 0, height: 1 },
               shadowOpacity: isFocused ? 0.15 : isDark ? 0.2 : 0.04,
@@ -83,13 +74,14 @@ export const Input = React.memo<InputProps>(
             },
           ]}
         >
-          {icon && <View style={styles.iconBox}>{icon}</View>}
+          {icon && (
+            <View className="me-2 items-center justify-center">{icon}</View>
+          )}
 
           <TextInput
+            className="flex-1 py-2 text-sm leading-5 text-foreground"
             style={[
-              styles.input,
               {
-                color: theme.text,
                 backgroundColor: "transparent",
               },
               style,
@@ -109,8 +101,8 @@ export const Input = React.memo<InputProps>(
 
           {isPassword && (
             <Pressable
+              className="p-one"
               onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeButton}
               hitSlop={8}
             >
               {showPassword ? (
@@ -123,11 +115,11 @@ export const Input = React.memo<InputProps>(
         </View>
 
         {error ? (
-          <Text style={[styles.errorText, { color: theme.error }]}>
+          <Text className="mt-0.5 text-[11px] leading-[14px] font-medium text-error">
             {error}
           </Text>
         ) : hint ? (
-          <Text style={[styles.hintText, { color: theme.textMuted }]}>
+          <Text className="mt-0.5 text-[11px] leading-[14px] font-medium text-muted-foreground">
             {hint}
           </Text>
         ) : null}
@@ -137,46 +129,3 @@ export const Input = React.memo<InputProps>(
 );
 
 Input.displayName = "Input";
-
-const styles = StyleSheet.create({
-  wrapper: {
-    gap: 4,
-    width: "100%",
-  },
-  label: {
-    ...Typography.captionBold,
-    fontSize: 12.5,
-    marginBottom: 2,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Radii.md,
-    paddingHorizontal: 12,
-    minHeight: 44,
-  },
-  iconBox: {
-    marginEnd: Spacing.two,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  input: {
-    flex: 1,
-    ...Typography.body,
-    fontSize: 14,
-    paddingVertical: 8,
-  },
-  eyeButton: {
-    padding: Spacing.one,
-  },
-  errorText: {
-    ...Typography.small,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  hintText: {
-    ...Typography.small,
-    fontSize: 11,
-    marginTop: 2,
-  },
-});

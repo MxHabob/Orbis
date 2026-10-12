@@ -1,4 +1,4 @@
-//! Tauri IPC commands — Academic (Subjects, Classes, ClassSubjects, Prerequisites).
+//! Tauri IPC commands — Academic (Subjects, Classes, SectionSubjects, Prerequisites).
 
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
@@ -10,7 +10,7 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
 }
 
-use orbis_domain::queries::filters::{ClassFilter, ClassSubjectFilter, SubjectFilter};
+use orbis_domain::queries::filters::{ClassFilter, SectionSubjectFilter, SubjectFilter};
 use rust_decimal::Decimal;
 
 #[derive(Serialize)]
@@ -72,7 +72,7 @@ pub struct CreateClassInput {
 }
 
 #[derive(Serialize)]
-pub struct ClassSubjectDto {
+pub struct SectionSubjectDto {
     pub id: String,
     pub class_id: String,
     pub subject_id: String,
@@ -85,7 +85,7 @@ pub struct ClassSubjectDto {
 }
 
 #[derive(Deserialize)]
-pub struct AssignClassSubjectInput {
+pub struct AssignSectionSubjectInput {
     pub class_id: String,
     pub subject_id: String,
     pub period_id: String,
@@ -145,8 +145,8 @@ fn class_dto(c: orbis_domain::entities::class::Class) -> ClassDto {
     }
 }
 
-fn class_subject_dto(cs: orbis_domain::entities::class_subject::ClassSubject) -> ClassSubjectDto {
-    ClassSubjectDto {
+fn section_subject_dto(cs: orbis_domain::entities::section_subject::SectionSubject) -> SectionSubjectDto {
+    SectionSubjectDto {
         id: cs.id.to_string(),
         class_id: cs.class_id.to_string(),
         subject_id: cs.subject_id.to_string(),
@@ -268,10 +268,10 @@ pub async fn academic_get_class(
 }
 
 #[tauri::command]
-pub async fn academic_assign_class_subject(
-    request: AssignClassSubjectInput,
+pub async fn academic_assign_section_subject(
+    request: AssignSectionSubjectInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<ClassSubjectDto>, String> {
+) -> Result<ApiResponse<SectionSubjectDto>, String> {
     let ctx = make_ctx(&state);
     let class_id = Uuid::parse_str(&request.class_id).map_err(|_| "Invalid classId")?;
     let subject_id = Uuid::parse_str(&request.subject_id).map_err(|_| "Invalid subjectId")?;
@@ -281,7 +281,7 @@ pub async fn academic_assign_class_subject(
 
     let cs = state
         .academic_service
-        .assign_class_subject(
+        .assign_section_subject(
             &ctx,
             class_id,
             subject_id,
@@ -292,29 +292,29 @@ pub async fn academic_assign_class_subject(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(class_subject_dto(cs)))
+    Ok(ok(section_subject_dto(cs)))
 }
 
 #[tauri::command]
-pub async fn academic_list_class_subjects(
+pub async fn academic_list_section_subjects(
     class_id: String,
     period_id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<ClassSubjectDto>>, String> {
+) -> Result<ApiResponse<Vec<SectionSubjectDto>>, String> {
     let ctx = make_ctx(&state);
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
-    let filter = ClassSubjectFilter {
+    let filter = SectionSubjectFilter {
         class_id: Some(cid),
         period_id: Some(pid),
         ..Default::default()
     };
     let items = state
         .academic_service
-        .list_class_subjects(ctx.tenant_id, filter)
+        .list_section_subjects(ctx.tenant_id, filter)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(class_subject_dto).collect()))
+    Ok(ok(items.items.into_iter().map(section_subject_dto).collect()))
 }
 
 #[tauri::command]

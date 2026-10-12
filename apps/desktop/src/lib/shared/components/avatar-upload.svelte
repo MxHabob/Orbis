@@ -9,19 +9,21 @@ import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { cn } from "@orbis/ui/utils";
 import { AdjustmentsHorizontal, ArrowPath, User } from "@orbis/icons";
 import {
-  useUploadDocument,
+  useUploadFile,
   resolveDocumentUrl,
+  resolveEntityDocumentUrl,
 } from "$lib/features/documents/queries";
 
 let {
   avatarUrl = $bindable(null),
-  file = $bindable<File | null>(null),
+  file = $bindable<File | null>(),
   size = 64,
   isLoading = false,
   fallbackText = "",
   class: className,
   entityType = "user",
   entityId,
+  folderId,
   category = "avatar",
   deferred = false,
   onupload,
@@ -35,29 +37,45 @@ let {
   class?: string;
   entityType?: string;
   entityId: string;
+  folderId?: string;
   category?: string;
   deferred?: boolean;
   onupload?: (url: string) => void;
   onchange?: (file: File) => void;
 } = $props();
 
-import { onMount } from "svelte";
-
-const uploadMutation = useUploadDocument();
+const uploadMutation = useUploadFile();
 let fileInputRef: HTMLInputElement | undefined = $state();
 let localPreviewUrl: string | null = $state(null);
 
 let resolvedAvatarUrl: string | null = $state(null);
 
-onMount(() => {
-  if (avatarUrl && !localPreviewUrl) {
-    resolveDocumentUrl(avatarUrl).then((url) => {
-      resolvedAvatarUrl = url;
-    });
+$effect(() => {
+  const currentFile = file;
+  const currentAvatarUrl = avatarUrl;
+  if (currentFile) return;
+
+  localPreviewUrl = null;
+  if (!currentAvatarUrl) {
+    resolvedAvatarUrl = null;
+    return;
   }
+
+  let active = true;
+  resolveEntityDocumentUrl(currentAvatarUrl, entityType, entityId)
+    .then((url) => {
+      if (active) resolvedAvatarUrl = url;
+    })
+    .catch((error: unknown) => {
+      if (active) console.error("Failed to load avatar:", error);
+    });
+
+  return () => {
+    active = false;
+  };
 });
 
-let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl || avatarUrl);
+let displayUrl = $derived(localPreviewUrl || resolvedAvatarUrl);
 
 function triggerFileInput() {
   if (isLoading || uploadMutation.isPending) return;
@@ -88,15 +106,25 @@ function handleFileChange(event: Event) {
   uploadMutation.mutate(
     {
       file: selectedFile,
+      name: selectedFile.name,
       entity_type: entityType,
       entity_id: entityId,
+      folder_id: folderId,
       category: category,
       visibility: "public",
     },
     {
-      onSuccess: (data: any) => {
-        const serverUrl = data.url;
+      onSuccess: (data) => {
+        const serverUrl = data.url || data.file_path;
         avatarUrl = serverUrl;
+        resolveDocumentUrl(serverUrl, data.id)
+          .then((url) => {
+            resolvedAvatarUrl = url;
+            localPreviewUrl = null;
+          })
+          .catch((error: unknown) => {
+            console.error("Failed to load uploaded avatar:", error);
+          });
         if (onupload) onupload(serverUrl);
       },
       onError: (err) => {

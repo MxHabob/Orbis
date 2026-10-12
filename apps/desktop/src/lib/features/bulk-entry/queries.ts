@@ -10,17 +10,20 @@ export const bulkEntryQueryKeys = {
 
 export function createBulkReferenceDataQuery(
   profileId: () => BulkProfileId,
+  orgId: () => string,
   currency: () => string,
 ) {
   return createQuery<BulkReferenceData>(() => {
     const pId = profileId();
+    const organizationId = orgId();
     const curr = currency();
     const profile = getBulkProfile(pId);
 
     return {
-      queryKey: bulkEntryQueryKeys.referenceData(pId, curr),
-      queryFn: () => profile.buildReferenceData(curr),
+      queryKey: [...bulkEntryQueryKeys.referenceData(pId, curr), organizationId],
+      queryFn: () => profile.buildReferenceData(organizationId),
       staleTime: 1000 * 60 * 5, // 5 minutes
+      enabled: !!organizationId,
     };
   });
 }

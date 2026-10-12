@@ -39,14 +39,13 @@ describe("Onboarding step mapping", () => {
       "org_profile",
       "org_units",
       "facilities_rooms",
-      "academic_year",
+      "academic_calendar",
       "academic_periods",
       "academic_subjects",
       "academic_classes",
       "teaching_assignments",
       "scheduling_setup",
-      "assessment_schemes",
-      "academic_policy",
+      "calculation_policy",
       "chart_of_accounts",
       "fee_templates",
       "discount_templates",
@@ -76,7 +75,7 @@ describe("Onboarding step mapping", () => {
   it("preserves completed, in-progress, blocked, optional, and not-applicable statuses", () => {
     const steps = deriveSteps([
       task("org_profile", "completed"),
-      task("academic_year", "blocked", {
+      task("academic_calendar", "blocked", {
         category: "calendar",
         dependencies: ["org_profile"],
       }),
@@ -84,7 +83,7 @@ describe("Onboarding step mapping", () => {
         category: "integrations",
         is_required: false,
       }),
-      task("assessment_schemes", "not_applicable", {
+      task("calculation_policy", "not_applicable", {
         category: "assessment",
       }),
     ], () => true);
@@ -105,7 +104,7 @@ describe("Onboarding step mapping", () => {
         dependencies: ["org_profile"],
         required_permissions: ["organization:write"],
       }),
-      task("academic_year", "not_started", {
+      task("academic_calendar", "not_started", {
         category: "calendar",
         dependencies: ["org_profile"],
         required_permissions: ["calendar:write"],

@@ -7,6 +7,10 @@
 import { Avatar, AvatarImage, AvatarFallback } from "@orbis/ui/avatar";
 import { authStore } from "$lib/stores";
 import type { UserDto } from "$lib/api/types";
+import {
+  resolveDocumentUrl,
+  resolveEntityDocumentUrl,
+} from "$lib/features/documents/queries";
 
 interface Props {
   user?: UserDto | { name?: string; full_name?: string; email?: string; avatar_url?: string } | null;
@@ -35,6 +39,32 @@ const displayName = $derived.by(() => {
 });
 
 const src = $derived(avatarUrl || (targetUser as any)?.avatar_url || undefined);
+let resolvedSrc = $state<string | undefined>();
+
+$effect(() => {
+  const source = src;
+  const userId = (targetUser as any)?.id as string | undefined;
+  if (!source) {
+    resolvedSrc = undefined;
+    return;
+  }
+
+  let isCurrent = true;
+  const resolve = userId
+    ? resolveEntityDocumentUrl(source, "user", userId)
+    : resolveDocumentUrl(source);
+  resolve
+    .then((url) => {
+      if (isCurrent) resolvedSrc = url;
+    })
+    .catch((error: unknown) => {
+      console.error("Failed to load user avatar:", error);
+    });
+
+  return () => {
+    isCurrent = false;
+  };
+});
 
 const initials = $derived.by(() => {
   const clean = displayName.trim();
@@ -60,7 +90,7 @@ const hue = $derived(getHue(displayName));
 
 <Avatar {size} class="shrink-0 {className}">
   {#if src}
-    <AvatarImage src={src} alt={displayName} />
+    <AvatarImage src={resolvedSrc} alt={displayName} />
   {/if}
   <AvatarFallback
     class="font-semibold text-white tracking-wider flex items-center justify-center"

@@ -8,8 +8,8 @@ progress tracking, and academic cycle status for the school year.
   import { formatDate } from "$lib/core/i18n";
   import * as m from "$lib/paraglide/messages";
   import { academicContext, confirmStore } from "$lib/stores";
-  import { createAcademicYearsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
-  import type { AcademicPeriodDto, AcademicYearDto } from "@orbis/sdk";
+  import { createacademicCalendarsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
+  import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { LoadingIndicator, toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
@@ -38,7 +38,7 @@ progress tracking, and academic cycle status for the school year.
   const queryClient = useQueryClient();
 
   // Queries
-  const yearsQuery = createAcademicYearsQuery(() => orgId);
+  const yearsQuery = createacademicCalendarsQuery(() => orgId);
   const periodsQuery = createPeriodsQuery(() => orgId);
 
   // Derived state from queries
@@ -59,7 +59,7 @@ progress tracking, and academic cycle status for the school year.
 
   // Sheets
   let isYearSheetOpen = $state(false);
-  let editingYear = $state<AcademicYearDto | null>(null);
+  let editingYear = $state<academicCalendarDto | null>(null);
   let isPeriodSheetOpen = $state(false);
   let editingPeriod = $state<any>(null);
 
@@ -130,7 +130,7 @@ progress tracking, and academic cycle status for the school year.
     isPeriodSheetOpen = true;
   }
 
-  function openEditYear(year: AcademicYearDto) {
+  function openEditYear(year: academicCalendarDto) {
     editingYear = year;
     isYearSheetOpen = true;
   }
@@ -158,9 +158,9 @@ progress tracking, and academic cycle status for the school year.
           href: `/${orgId}/academics/classes`,
         },
         {
-          id: "settings_academic_years",
-          label: m.settings_nav_academic_years(),
-          href: `/${orgId}/settings/academic-years`,
+          id: "settings_academic_calendars",
+          label: m.settings_nav_academic_calendars(),
+          href: `/${orgId}/settings/academic-calendars`,
         },
         {
           id: "settings_periods",

@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::context::RequestContext;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, EnrollmentRepository, PolicyRepository,
+    AcademicPeriodRepository, AcademicCalendarRepository, EnrollmentRepository, PolicyRepository,
     StudentFeeRepository,
 };
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
@@ -15,7 +15,7 @@ use orbis_domain::queries::filters::StudentFeeFilter;
 
 pub struct AutopilotEvaluator {
     pub policy_repo: Arc<dyn PolicyRepository>,
-    pub year_repo: Arc<dyn AcademicYearRepository>,
+    pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
     pub student_fee_repo: Arc<dyn StudentFeeRepository>,
@@ -24,7 +24,7 @@ pub struct AutopilotEvaluator {
 impl AutopilotEvaluator {
     pub fn new(
         policy_repo: Arc<dyn PolicyRepository>,
-        year_repo: Arc<dyn AcademicYearRepository>,
+        year_repo: Arc<dyn AcademicCalendarRepository>,
         period_repo: Arc<dyn AcademicPeriodRepository>,
         enrollment_repo: Arc<dyn EnrollmentRepository>,
         student_fee_repo: Arc<dyn StudentFeeRepository>,
@@ -60,7 +60,7 @@ impl AutopilotEvaluator {
                     org_id,
                     TaskType::YearActivate,
                     Some(year.id),
-                    Some("academic_year".to_string()),
+                    Some("academic_calendar".to_string()),
                     RiskLevel::Medium,
                     Some(format!(
                         "Academic year '{}' start date has arrived",
@@ -81,7 +81,7 @@ impl AutopilotEvaluator {
                         org_id,
                         TaskType::YearClose,
                         Some(year.id),
-                        Some("academic_year".to_string()),
+                        Some("academic_calendar".to_string()),
                         RiskLevel::High,
                         Some(format!(
                             "All periods in year '{}' are closed. Ready for year closing",
@@ -97,7 +97,7 @@ impl AutopilotEvaluator {
                     org_id,
                     TaskType::PromotionDryRun,
                     Some(year.id),
-                    Some("academic_year".to_string()),
+                    Some("academic_calendar".to_string()),
                     RiskLevel::Medium,
                     Some(format!(
                         "Year '{}' is closing — progression dry-run recommended",

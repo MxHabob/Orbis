@@ -14,7 +14,7 @@ use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, Set,
+    QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -150,6 +150,7 @@ impl StudentRepository for StudentRepoImpl {
                     place_of_birth: sm.place_of_birth.clone(),
                     nationality: sm.nationality.clone(),
                     blood_type: sm.blood_type.clone(),
+                    marital_status: None,
                     medical_notes: sm.medical_notes.clone(),
                     special_needs_notes: sm.special_needs_notes.clone(),
                     phone: None,
@@ -211,38 +212,7 @@ impl StudentRepository for StudentRepoImpl {
     }
 
     async fn save(&self, s: &DomainStudent) -> Result<(), DomainError> {
-        let active = student::ActiveModel {
-            id: Set(s.id),
-            org_id: Set(s.org_id),
-            person_id: Set(s.person_id),
-            user_id: Set(s.user_id),
-            student_number: Set(s.student_number.clone()),
-            national_id: Set(None),
-            passport_number: Set(None),
-            first_name: Set("".into()),
-            last_name: Set("".into()),
-            full_name: Set("".into()),
-            name_ar: Set(None),
-            gender: Set("male".into()),
-            date_of_birth: Set(None),
-            place_of_birth: Set(None),
-            nationality: Set(None),
-            blood_type: Set(None),
-            medical_notes: Set(None),
-            special_needs_notes: Set(None),
-            org_unit_id: Set(s.org_unit_id),
-            status: Set(s.status.to_string()),
-            standing: Set(s.standing.to_string()),
-            admitted_at: Set(s.admitted_at),
-            graduated_at: Set(s.graduated_at),
-            is_deleted: Set(s.is_deleted),
-            deleted_at: Set(s.deleted_at),
-            created_by: Set(s.created_by),
-            updated_by: Set(s.updated_by),
-            meta: Set(Some(s.meta.clone())),
-            created_at: Set(s.created_at),
-            updated_at: Set(s.updated_at),
-        };
+        let active = student_to_active_model(s);
 
         if StudentEntity::find_by_id(s.id)
             .one(&self.db)
@@ -261,6 +231,45 @@ impl StudentRepository for StudentRepoImpl {
                 .map_err(|e| DomainError::Internal(e.to_string()))?;
         }
         Ok(())
+    }
+
+    async fn create_with_license_limit(
+        &self,
+        s: &DomainStudent,
+        max_students: Option<u64>,
+    ) -> Result<(), DomainError> {
+        let Some(max_students) = max_students else {
+            return StudentRepository::save(self, s).await;
+        };
+
+        let transaction = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        crate::repositories::license_quota::acquire_organization_quota_lock(&transaction, s.org_id)
+            .await?;
+
+        let current = StudentEntity::find()
+            .filter(student::Column::OrgId.eq(s.org_id))
+            .filter(student::Column::IsDeleted.eq(false))
+            .count(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        if current.saturating_add(1) > max_students {
+            return Err(DomainError::LicenseRequired(format!(
+                "The student quota of {max_students} has been reached"
+            )));
+        }
+
+        student_to_active_model(s)
+            .insert(&transaction)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        transaction
+            .commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))
     }
 
     async fn update_status(&self, id: Uuid, status: &str) -> Result<(), DomainError> {
@@ -295,6 +304,41 @@ impl StudentRepository for StudentRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
+    }
+}
+
+fn student_to_active_model(s: &DomainStudent) -> student::ActiveModel {
+    student::ActiveModel {
+        id: Set(s.id),
+        org_id: Set(s.org_id),
+        person_id: Set(s.person_id),
+        user_id: Set(s.user_id),
+        student_number: Set(s.student_number.clone()),
+        national_id: Set(None),
+        passport_number: Set(None),
+        first_name: Set("".into()),
+        last_name: Set("".into()),
+        full_name: Set("".into()),
+        name_ar: Set(None),
+        gender: Set("male".into()),
+        date_of_birth: Set(None),
+        place_of_birth: Set(None),
+        nationality: Set(None),
+        blood_type: Set(None),
+        medical_notes: Set(None),
+        special_needs_notes: Set(None),
+        org_unit_id: Set(s.org_unit_id),
+        status: Set(s.status.to_string()),
+        standing: Set(s.standing.to_string()),
+        admitted_at: Set(s.admitted_at),
+        graduated_at: Set(s.graduated_at),
+        is_deleted: Set(s.is_deleted),
+        deleted_at: Set(s.deleted_at),
+        created_by: Set(s.created_by),
+        updated_by: Set(s.updated_by),
+        meta: Set(Some(s.meta.clone())),
+        created_at: Set(s.created_at),
+        updated_at: Set(s.updated_at),
     }
 }
 
@@ -356,6 +400,7 @@ fn map_person_model_to_domain(m: person::Model) -> DomainPerson {
         place_of_birth: m.place_of_birth,
         nationality: m.nationality,
         blood_type: m.blood_type,
+        marital_status: m.marital_status,
         medical_notes: m.medical_notes,
         special_needs_notes: m.special_needs_notes,
         phone: m.phone,

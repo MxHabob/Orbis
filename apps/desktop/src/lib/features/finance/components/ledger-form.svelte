@@ -331,6 +331,7 @@ async function handleSubmit(e: SubmitEvent) {
             value={glParentId}
             placeholder={m.common_ledger_placeholder_parent()}
             accounts={ledgers}
+            includeGroupAccounts
             onchange={handleParentChange}
             disabled={isSubmitting || isLoading}
             class="w-full text-xs"

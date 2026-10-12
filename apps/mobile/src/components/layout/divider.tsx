@@ -5,8 +5,7 @@
  */
 
 import React from "react";
-import { StyleSheet, View, type ViewProps, useColorScheme } from "react-native";
-import { Colors } from "@/constants/theme";
+import { StyleSheet, View, type ViewProps } from "react-native";
 
 export interface DividerProps extends ViewProps {
   orientation?: "horizontal" | "vertical";
@@ -23,19 +22,14 @@ export function Divider({
   style,
   ...props
 }: DividerProps) {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === "dark" ? "dark" : "light"];
-
-  const dividerColor = color ?? theme.border;
-
   if (orientation === "vertical") {
     return (
       <View
+        className="h-full bg-border"
         style={[
-          styles.vertical,
           {
             width: thickness,
-            backgroundColor: dividerColor,
+            ...(color ? { backgroundColor: color } : {}),
             marginHorizontal: spacing,
           },
           style,
@@ -47,11 +41,11 @@ export function Divider({
 
   return (
     <View
+      className="w-full bg-border"
       style={[
-        styles.horizontal,
         {
           height: thickness,
-          backgroundColor: dividerColor,
+          ...(color ? { backgroundColor: color } : {}),
           marginVertical: spacing,
         },
         style,
@@ -60,12 +54,3 @@ export function Divider({
     />
   );
 }
-
-const styles = StyleSheet.create({
-  horizontal: {
-    width: "100%",
-  },
-  vertical: {
-    height: "100%",
-  },
-});

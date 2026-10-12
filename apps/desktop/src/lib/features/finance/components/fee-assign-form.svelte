@@ -7,12 +7,7 @@
   import { FormField, toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-  } from "@orbis/ui/select";
+  import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 
   let {
     orgId,
@@ -40,7 +35,11 @@
   });
 
   let description = $state("");
-  let dueDate = $state(new Date().toISOString().split("T")[0]);
+  let dueDate = $state(getLocalDateInputValue());
+
+  function getLocalDateInputValue(date = new Date()) {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  }
 
   onMount(async () => {
     if (!orgId) return;
@@ -69,7 +68,7 @@
     }
   });
 
-  function handleTemplateChange(val: string | undefined) {
+  function handleTemplateChange(val: string | null) {
     if (!val) return;
     form.values.fee_template_id = val;
     const tpl = templates.find((t) => String(t.id) === val);
@@ -91,7 +90,7 @@
       toast.success(m.common_fee_toast_success());
       form.reset();
       description = "";
-      dueDate = new Date().toISOString().split("T")[0];
+      dueDate = getLocalDateInputValue();
     });
     if (submitted) {
       onSuccess();
@@ -115,31 +114,20 @@
     required
   >
     {#snippet children()}
-      <Select
-        type="single"
-        value={form.values.enrollment_id || undefined}
-        onValueChange={(value) => {
+      <SearchableSelect
+        value={form.values.enrollment_id}
+        items={students}
+        placeholder={m.common_fee_dropdown_loading_students()}
+        getItemValue={(student) => String(student.id)}
+        getItemLabel={(student) => student.full_name || student.student_number || String(student.id)}
+        onchange={(value) => {
           if (value) form.values.enrollment_id = value;
           form.markTouched("enrollment_id");
         }}
         disabled={isLoadingDropdowns || form.isSubmitting}
-      >
-        <SelectTrigger id="fee_student" class="h-9 w-full text-sm">
-          {students.find((student) => String(student.id) === form.values.enrollment_id)?.full_name
-            ?? m.common_fee_dropdown_loading_students()}
-        </SelectTrigger>
-        <SelectContent>
-        {#if isLoadingDropdowns}
-          <SelectItem value="loading" disabled>{m.common_fee_dropdown_loading_students()}</SelectItem>
-        {:else}
-          {#each students as s (s.id)}
-            <SelectItem value={String(s.id)}>
-              {s.full_name || s.student_number || s.id}
-            </SelectItem>
-          {/each}
-        {/if}
-        </SelectContent>
-      </Select>
+        searchPlaceholder={m.common_fee_label_student()}
+        class="w-full"
+      />
     {/snippet}
   </FormField>
 
@@ -151,29 +139,17 @@
     required
   >
     {#snippet children()}
-      <Select
-        type="single"
-        value={form.values.fee_template_id || undefined}
-        onValueChange={handleTemplateChange}
+      <SearchableSelect
+        value={form.values.fee_template_id}
+        items={templates}
+        placeholder={m.common_fee_dropdown_loading_ledgers()}
+        getItemValue={(template) => String(template.id)}
+        getItemLabel={(template) => template.name_ar || template.name || template.code || String(template.id)}
+        onchange={handleTemplateChange}
         disabled={isLoadingDropdowns || form.isSubmitting}
-      >
-        <SelectTrigger id="fee_ledger" class="h-9 w-full text-sm">
-          {templates.find((template) => String(template.id) === form.values.fee_template_id)?.name_ar
-            || templates.find((template) => String(template.id) === form.values.fee_template_id)?.name
-            || m.common_fee_dropdown_loading_ledgers()}
-        </SelectTrigger>
-        <SelectContent>
-        {#if isLoadingDropdowns}
-          <SelectItem value="loading" disabled>{m.common_fee_dropdown_loading_ledgers()}</SelectItem>
-        {:else}
-          {#each templates as t (t.id)}
-            <SelectItem value={String(t.id)}>
-              {t.name_ar || t.name || t.code}
-            </SelectItem>
-          {/each}
-        {/if}
-        </SelectContent>
-      </Select>
+        searchPlaceholder={m.common_fee_label_ledger()}
+        class="w-full"
+      />
     {/snippet}
   </FormField>
 

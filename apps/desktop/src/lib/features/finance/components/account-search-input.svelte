@@ -1,23 +1,18 @@
-<!--
-  @component AccountSearchInput
-  Live, direct-typing searchable account input component for the Financial System.
-  Allows immediate inline typing of account code or name with live floating search results,
-  keyboard navigation (Up/Down/Enter/Escape), and localized account type badges.
--->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
 import { api, type AccountDto } from "$lib/api";
-import { onMount } from "svelte";
+import { LoadingIndicator } from "@orbis/ui";
 import { Input } from "@orbis/ui/input";
-import { Badge } from "@orbis/ui/badge";
 import { Check, Search, XMark } from "@orbis/icons";
+import { onDestroy, onMount } from "svelte";
 import { slide } from "svelte/transition";
 
 interface Props {
   value?: string | null;
   accounts?: AccountDto[];
   accountTypeFilter?: string[] | string;
+  includeGroupAccounts?: boolean;
   placeholder?: string;
   searchPlaceholder?: string;
   emptyText?: string;
@@ -27,13 +22,16 @@ interface Props {
   id?: string;
   onselect?: (account: AccountDto) => void;
   onchange?: (accountId: string | null) => void;
+  onkeydown?: (event: KeyboardEvent) => void;
 }
 
 let {
   value = $bindable<string | null>(null),
   accounts = undefined,
   accountTypeFilter = undefined,
+  includeGroupAccounts = false,
   placeholder = m.finance_ui_account_search_placeholder(),
+  searchPlaceholder = m.finance_ui_account_search_placeholder(),
   emptyText = m.finance_ui_account_search_empty(),
   disabled = false,
   size = "default",
@@ -41,191 +39,231 @@ let {
   id = undefined,
   onselect = undefined,
   onchange = undefined,
+  onkeydown = undefined,
 }: Props = $props();
 
+const generatedId = $props.id();
+const inputId = $derived(id ?? generatedId);
+const listboxId = $derived(`${inputId}-account-options`);
 let fetchedAccounts = $state<AccountDto[]>([]);
 let isLoading = $state(false);
-
-onMount(async () => {
-  if (accounts === undefined) {
-    isLoading = true;
-    try {
-      const list = await api.listAccounts();
-      if (Array.isArray(list)) {
-        fetchedAccounts = list;
-      }
-    } catch (e) {
-      console.warn("Failed to fetch accounts in AccountSearchInput:", e);
-    } finally {
-      isLoading = false;
-    }
-  }
-});
-
-const allAccounts = $derived(accounts ?? fetchedAccounts);
-
-// Apply optional account type filter
-const filteredByTypeAccounts = $derived.by(() => {
-  if (!accountTypeFilter) return allAccounts;
-  const types = Array.isArray(accountTypeFilter)
-    ? accountTypeFilter.map((t) => t.toLowerCase())
-    : [accountTypeFilter.toLowerCase()];
-  return allAccounts.filter((a) => {
-    const accountTypes = [
-      a.account_type,
-      a.sub_type,
-    ].filter((type): type is string => Boolean(type)).map((type) => type.toLowerCase());
-    return accountTypes.some((type) => types.includes(type));
-  });
-});
-
-let isDropdownOpen = $state(false);
-let searchInputText = $state("");
+let isOpen = $state(false);
+let searchText = $state("");
+let debouncedQuery = $state("");
 let highlightedIndex = $state(0);
 let inputElement = $state<HTMLInputElement | null>(null);
 let containerElement = $state<HTMLDivElement | null>(null);
+let optionElements = $state<HTMLButtonElement[]>([]);
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
 
-const selectedAccount = $derived(
-  allAccounts.find((a) => String(a.id) === String(value || "") || String(a.code) === String(value || ""))
-);
+onMount(async () => {
+  if (accounts !== undefined) return;
 
-const selectedAccountLabel = $derived.by(() => {
-  if (!selectedAccount) return "";
-  const code = selectedAccount.code ? `${selectedAccount.code} - ` : "";
-  const name = l(selectedAccount.name_ar, selectedAccount.name) || selectedAccount.name || "";
-  return `${code}${name}`.trim();
-});
-
-// Real-time search query matching
-const filteredResults = $derived.by(() => {
-  const query = searchInputText.trim().toLowerCase();
-  if (!query) {
-    return filteredByTypeAccounts.slice(0, 50);
+  isLoading = true;
+  try {
+    fetchedAccounts = await api.listAccounts();
+  } catch (error) {
+    console.error("Failed to fetch accounts in AccountSearchInput:", error);
+  } finally {
+    isLoading = false;
   }
-  return filteredByTypeAccounts.filter((acc) => {
-    const code = String(acc.code || "").toLowerCase();
-    const name = String(acc.name || "").toLowerCase();
-    const nameAr = String(acc.name_ar || "").toLowerCase();
-    const type = String(acc.account_type || "").toLowerCase();
-    const subType = String(acc.sub_type || "").toLowerCase();
-    return code.includes(query) || name.includes(query) || nameAr.includes(query) || type.includes(query) || subType.includes(query);
-  }).slice(0, 50);
 });
 
-const accountTypeLabels: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "lime" | "destructive" }> = {
-  asset: { label: m.finance_ui_account_type_asset(), variant: "lime" },
-  liability: { label: m.finance_ui_account_type_liability(), variant: "destructive" },
-  equity: { label: m.finance_ui_account_type_equity(), variant: "secondary" },
-  revenue: { label: m.finance_ui_account_type_revenue(), variant: "default" },
-  expense: { label: m.finance_ui_account_type_expense(), variant: "outline" },
-  cash: { label: m.finance_ui_account_type_cash(), variant: "lime" },
-  bank: { label: m.finance_ui_account_type_bank(), variant: "secondary" },
-};
+onDestroy(() => {
+  if (debounceTimer) clearTimeout(debounceTimer);
+});
 
-function getAccountTypeBadge(type?: string | null) {
-  if (!type) return null;
-  const key = type.toLowerCase();
-  return accountTypeLabels[key] || { label: type, variant: "outline" as const };
+const allAccounts = $derived(accounts ?? fetchedAccounts);
+const parentAccountIds = $derived(
+  new Set(allAccounts.flatMap((account) => account.parent_id ? [account.parent_id] : []))
+);
+const filteredByTypeAccounts = $derived.by(() => {
+  if (!accountTypeFilter) return allAccounts;
+  const types = Array.isArray(accountTypeFilter)
+    ? accountTypeFilter.map((type) => type.toLowerCase())
+    : [accountTypeFilter.toLowerCase()];
+
+  return allAccounts.filter((account) => {
+    const accountTypes = [account.account_type, account.sub_type]
+      .filter((type): type is string => Boolean(type))
+      .map((type) => type.toLowerCase());
+    return accountTypes.some((type) => types.includes(type));
+  });
+});
+const selectableAccounts = $derived(
+  filteredByTypeAccounts.filter((account) =>
+    account.is_active && (includeGroupAccounts || !parentAccountIds.has(account.id))
+  )
+);
+const selectedAccount = $derived(
+  allAccounts.find((account) =>
+    String(account.id) === String(value || "") || String(account.code) === String(value || "")
+  )
+);
+const selectedAccountLabel = $derived(
+  selectedAccount
+    ? `${selectedAccount.code ? `${selectedAccount.code} - ` : ""}${getAccountName(selectedAccount)}`
+    : ""
+);
+const searchableAccounts = $derived(
+  selectableAccounts.map((account) => ({
+    account,
+    searchText: [
+      account.code,
+      account.name,
+      account.name_ar,
+      account.account_type,
+      account.sub_type,
+    ].filter(Boolean).join(" ").toLowerCase(),
+  }))
+);
+const filteredResults = $derived.by(() => {
+  const query = debouncedQuery.trim().toLowerCase();
+  if (!query) return [];
+  return searchableAccounts
+    .filter((item) => item.searchText.includes(query))
+    .slice(0, 40)
+    .map((item) => item.account);
+});
+const isSearching = $derived(searchText.trim() !== debouncedQuery);
+
+function getAccountName(account: AccountDto) {
+  return l(account.name_ar, account.name) || account.name || account.code || String(account.id);
 }
 
-function handleFocus() {
-  if (disabled) return;
-  searchInputText = selectedAccountLabel;
-  isDropdownOpen = true;
-  highlightedIndex = 0;
+function clearPendingSearch() {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
+  }
 }
 
-function handleInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  searchInputText = target.value;
-  isDropdownOpen = true;
-  highlightedIndex = 0;
-  if (!target.value.trim() && value) {
+function handleInput(event: Event) {
+  const target = event.currentTarget as HTMLInputElement;
+  if (value) {
     value = null;
     onchange?.(null);
   }
+  searchText = target.value;
+  isOpen = Boolean(searchText.trim());
+  highlightedIndex = 0;
+
+  clearPendingSearch();
+  const query = searchText.trim();
+  if (!query) {
+    debouncedQuery = "";
+    return;
+  }
+
+  debounceTimer = setTimeout(() => {
+    debouncedQuery = query;
+    debounceTimer = undefined;
+  }, 180);
 }
 
-function handleSelectAccount(acc: AccountDto) {
-  value = String(acc.id);
-  searchInputText = "";
-  isDropdownOpen = false;
-  onselect?.(acc);
-  onchange?.(String(acc.id));
+function handleFocus() {
+  if (value) requestAnimationFrame(() => inputElement?.select());
 }
 
-function handleClear(e: MouseEvent) {
-  e.stopPropagation();
+function handleSelectAccount(account: AccountDto) {
+  value = String(account.id);
+  searchText = "";
+  debouncedQuery = "";
+  isOpen = false;
+  onselect?.(account);
+  onchange?.(String(account.id));
+}
+
+function handleClear(event: MouseEvent) {
+  event.stopPropagation();
   value = null;
-  searchInputText = "";
-  isDropdownOpen = false;
+  searchText = "";
+  debouncedQuery = "";
+  isOpen = false;
+  clearPendingSearch();
   onchange?.(null);
   inputElement?.focus();
 }
 
-function handleKeyDown(e: KeyboardEvent) {
-  if (!isDropdownOpen) {
-    if (e.key === "ArrowDown" || e.key === "Enter") {
-      isDropdownOpen = true;
-      e.preventDefault();
-    }
-    return;
-  }
-
-  if (e.key === "ArrowDown") {
-    e.preventDefault();
-    highlightedIndex = (highlightedIndex + 1) % Math.max(1, filteredResults.length);
-  } else if (e.key === "ArrowUp") {
-    e.preventDefault();
-    highlightedIndex = (highlightedIndex - 1 + filteredResults.length) % Math.max(1, filteredResults.length);
-  } else if (e.key === "Enter") {
-    e.preventDefault();
-    if (filteredResults.length > 0 && filteredResults[highlightedIndex]) {
-      handleSelectAccount(filteredResults[highlightedIndex]);
-    }
-  } else if (e.key === "Escape") {
-    e.preventDefault();
-    isDropdownOpen = false;
-  }
+function scrollHighlightedOptionIntoView() {
+  requestAnimationFrame(() => {
+    optionElements[highlightedIndex]?.scrollIntoView({ block: "nearest" });
+  });
 }
 
-function handleClickOutside(e: MouseEvent) {
-  if (containerElement && !containerElement.contains(e.target as Node)) {
-    isDropdownOpen = false;
-    searchInputText = "";
+function handleKeyDown(event: KeyboardEvent) {
+  if (!(event.key === "Enter" && event.shiftKey)) {
+    if (isOpen && filteredResults.length > 0 && event.key === "ArrowDown") {
+      event.preventDefault();
+      highlightedIndex = (highlightedIndex + 1) % filteredResults.length;
+      scrollHighlightedOptionIntoView();
+    } else if (isOpen && filteredResults.length > 0 && event.key === "ArrowUp") {
+      event.preventDefault();
+      highlightedIndex = (highlightedIndex - 1 + filteredResults.length) % filteredResults.length;
+      scrollHighlightedOptionIntoView();
+    } else if (isOpen && event.key === "Enter") {
+      event.preventDefault();
+      const account = filteredResults[highlightedIndex];
+      if (account) handleSelectAccount(account);
+    } else if (isOpen && event.key === "Escape") {
+      event.preventDefault();
+      isOpen = false;
+      searchText = "";
+      debouncedQuery = "";
+      clearPendingSearch();
+    }
+  }
+
+  onkeydown?.(event);
+}
+
+function handleClickOutside(event: MouseEvent) {
+  const target = event.target;
+  if (target instanceof Node && !containerElement?.contains(target)) {
+    isOpen = false;
+    searchText = "";
+    debouncedQuery = "";
+    clearPendingSearch();
   }
 }
 </script>
 
 <svelte:window onclick={handleClickOutside} />
 
-<div class="relative w-full text-start" bind:this={containerElement}>
-  <!-- Direct Search Input Field -->
-  <div class="relative flex items-center w-full">
+<div bind:this={containerElement} class="relative w-full min-w-0 text-start">
+  <div class="relative flex w-full min-w-0 items-center">
     <Search
       size={14}
-      class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none transition-colors {isDropdownOpen ? 'text-primary' : ''}"
+      class="pointer-events-none absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground"
     />
     <Input
-      {id}
+      id={inputId}
       bind:this={inputElement}
       type="text"
       autocomplete="off"
       spellcheck="false"
-      {placeholder}
+      placeholder={searchPlaceholder || placeholder}
       {disabled}
-      value={isDropdownOpen ? searchInputText : selectedAccountLabel}
+      role="combobox"
+      aria-expanded={isOpen}
+      aria-autocomplete="list"
+      aria-controls={listboxId}
+      aria-activedescendant={isOpen && filteredResults[highlightedIndex]
+        ? `${inputId}-option-${filteredResults[highlightedIndex].id}`
+        : undefined}
+      value={isOpen ? searchText : selectedAccountLabel}
       oninput={handleInput}
       onfocus={handleFocus}
       onkeydown={handleKeyDown}
-      class="{size === 'sm' ? 'h-8 text-xs ps-8.5 pe-7' : 'h-9 text-xs ps-9 pe-8'} bg-background border-border/80 focus-visible:ring-1 focus-visible:ring-primary/50 w-full font-medium transition-all {className}"
+      class="{size === 'sm' ? 'h-8 ps-8 pe-8 text-xs' : 'h-9 ps-9 pe-9 text-sm'} w-full bg-background font-normal focus-visible:border-ring focus-visible:ring-ring/50 {className}"
     />
-    {#if (isDropdownOpen && searchInputText) || value}
+    {#if (isOpen && searchText) || value}
       <button
         type="button"
-        class="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer p-0.5 rounded-full hover:bg-muted/80 transition-colors"
+        class="absolute inset-e-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         onclick={handleClear}
         tabindex="-1"
+        aria-label={m.finance_ui_account_clear()}
         title={m.finance_ui_account_clear()}
       >
         <XMark size={13} />
@@ -233,59 +271,45 @@ function handleClickOutside(e: MouseEvent) {
     {/if}
   </div>
 
-  <!-- Live Dropdown Results List -->
-  {#if isDropdownOpen}
+  {#if isOpen}
     <div
-      transition:slide={{ duration: 120 }}
-      class="absolute start-0 end-0 top-full mt-1.5 z-50 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl overflow-hidden backdrop-blur-md"
+      transition:slide={{ duration: 100 }}
+      id={listboxId}
+      role="listbox"
+      class="absolute inset-x-0 top-full z-50 mt-1 max-h-[min(18rem,40vh)] w-full min-w-0 overflow-y-auto overscroll-contain rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg"
     >
-      <div class="max-h-64 overflow-y-auto p-1.5 scrollbar-thin flex flex-col gap-1">
-        {#each filteredResults as acc, idx (acc.id)}
-          {@const isSelected = String(acc.id) === String(value || "")}
-          {@const isHighlighted = idx === highlightedIndex}
-          {@const badgeInfo = getAccountTypeBadge(acc.account_type || (acc as any).type)}
+      {#if isSearching || isLoading}
+        <div class="flex justify-center px-3 py-3 text-muted-foreground">
+          <LoadingIndicator size={14} />
+        </div>
+      {:else if filteredResults.length === 0}
+        <div class="px-3 py-4 text-center text-sm text-muted-foreground">{emptyText}</div>
+      {:else}
+        {#each filteredResults as account, index (account.id)}
+          {@const selected = String(account.id) === String(value || "")}
+          {@const highlighted = index === highlightedIndex}
           <button
+            id="{inputId}-option-{account.id}"
+            bind:this={optionElements[index]}
             type="button"
-            class="w-full text-start px-3 py-2 rounded-lg text-xs flex items-center justify-between gap-3 transition-colors cursor-pointer {isHighlighted ? 'bg-accent/80 text-accent-foreground' : 'hover:bg-muted/60'} {isSelected ? 'bg-primary/10 font-semibold' : ''}"
-            onclick={() => handleSelectAccount(acc)}
-            onmouseenter={() => (highlightedIndex = idx)}
+            role="option"
+            aria-selected={selected}
+            class="flex w-full min-w-0 items-center justify-between gap-3 rounded px-2.5 py-2 text-start text-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {highlighted ? 'bg-accent text-accent-foreground' : ''}"
+            onclick={() => handleSelectAccount(account)}
+            onmouseenter={() => (highlightedIndex = index)}
           >
-            <div class="flex items-center gap-2.5 min-w-0 flex-1">
-              <span class="font-mono font-bold text-[11px] px-1.5 py-0.5 rounded bg-muted/60 border border-border/50 text-foreground shrink-0">
-                {acc.code || "—"}
-              </span>
-              <div class="flex flex-col min-w-0">
-                <span class="truncate font-medium text-foreground text-xs">
-                  {l(acc.name_ar, acc.name) || acc.name || acc.code}
-                </span>
-                {#if acc.name_ar && acc.name && acc.name_ar !== acc.name}
-                  <span class="text-[10px] text-muted-foreground truncate leading-tight mt-0.5">
-                    {acc.name}
-                  </span>
-                {/if}
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 shrink-0">
-              {#if badgeInfo}
-                <Badge variant={badgeInfo.variant} class="text-[9px] py-0 px-1.5 font-normal">
-                  {badgeInfo.label}
-                </Badge>
+            <span class="min-w-0 flex-1 truncate font-medium">
+              {getAccountName(account)}
+            </span>
+            <span class="flex shrink-0 items-center gap-2">
+              <span class="font-mono text-xs text-muted-foreground">{account.code || "—"}</span>
+              {#if selected}
+                <Check size={14} class="text-primary" />
               {/if}
-              {#if isSelected}
-                <Check size={14} class="text-primary shrink-0" />
-              {/if}
-            </div>
+            </span>
           </button>
         {/each}
-
-        {#if filteredResults.length === 0}
-          <div class="py-6 px-3 text-center text-xs text-muted-foreground italic flex flex-col gap-1">
-            <span>{emptyText}</span>
-            <span class="text-[10px] opacity-70">{m.finance_ui_account_search_tip()}</span>
-          </div>
-        {/if}
-      </div>
+      {/if}
     </div>
   {/if}
 </div>

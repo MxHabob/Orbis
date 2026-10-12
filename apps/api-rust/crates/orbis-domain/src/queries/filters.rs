@@ -109,7 +109,7 @@ pub struct ClassFilter {
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
-pub struct ClassSubjectFilter {
+pub struct SectionSubjectFilter {
     pub class_id: Option<Uuid>,
     pub subject_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
@@ -121,7 +121,7 @@ pub struct ClassSubjectFilter {
 pub struct GradeFilter {
     pub student_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub component_id: Option<Uuid>,
     pub is_final: Option<bool>,
     pub pagination: Option<PaginationParams>,
@@ -131,7 +131,7 @@ pub struct GradeFilter {
 pub struct AttendanceFilter {
     pub class_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub date: Option<chrono::NaiveDate>,
     pub status: Option<String>,
     pub pagination: Option<PaginationParams>,
@@ -145,6 +145,7 @@ pub struct PaymentFilter {
     pub method: Option<PaymentMethod>,
     pub from_date: Option<chrono::DateTime<chrono::Utc>>,
     pub to_date: Option<chrono::DateTime<chrono::Utc>>,
+    pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
 }
 
@@ -157,6 +158,7 @@ pub struct StudentFeeFilter {
     pub status: Option<String>,
     pub is_overdue: Option<bool>,
     pub only_unpaid: Option<bool>,
+    pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
 }
 

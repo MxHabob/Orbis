@@ -1,3 +1,4 @@
+pub mod academic_framework_repos;
 pub mod academic_repos;
 pub mod assessment_repos;
 pub mod calendar_repos;
@@ -11,6 +12,7 @@ pub mod folder_repo;
 pub mod group_repo;
 pub mod identity_repo;
 pub mod integration_repos;
+pub mod license_quota;
 pub mod mfa_repo;
 pub mod org_repo;
 pub mod org_unit_repo;

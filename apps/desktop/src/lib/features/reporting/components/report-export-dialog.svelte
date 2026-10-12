@@ -12,6 +12,10 @@ import { Button } from "@orbis/ui/button";
 import { ArrowPath, DocumentChartBar, Download } from "@orbis/icons";
 import { api } from "$lib/api";
 import { toast } from "@orbis/ui";
+import {
+  createShowInFolderToastAction,
+  downloadBlob,
+} from "$lib/shared/utils/download";
 
 import * as m from "$lib/paraglide/messages";
 
@@ -47,14 +51,13 @@ async function handleExport() {
     const blob = new Blob([new Uint8Array(result)], {
       type: "text/csv",
     });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `report_${definitionId}_${new Date().toISOString()}.${selectedFormat}`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast.success(m.ui_copy_report_exported_successfully_566e1620());
+    const openFile = downloadBlob(
+      blob,
+      `report_${definitionId}_${new Date().toISOString()}.${selectedFormat}`,
+    );
+    toast.success(m.ui_copy_report_exported_successfully_566e1620(), {
+      action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+    });
     onOpenChange(false);
   } catch (e: any) {
     toast.error(e.message || m.operations_ui_report_export_error());

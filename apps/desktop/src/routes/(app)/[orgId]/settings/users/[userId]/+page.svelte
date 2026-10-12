@@ -1,19 +1,9 @@
-<!--
-@component UserDetailRedirect
-Redirects to the profile sub-page.
--->
 <script lang="ts">
 import { page } from "$app/state";
-import { goto } from "$app/navigation";
-import { localizeHref } from "$lib/paraglide/runtime";
-import { onMount } from "svelte";
+import UserProfile from "$lib/features/settings/user-profile.svelte";
 
-const orgId = $derived(page.params.orgId);
-const userId = $derived(page.params.userId);
-
-onMount(() => {
-  goto(localizeHref(`/${orgId}/settings/users/${userId}/profile`), {
-    replaceState: true,
-  });
-});
+const orgId = $derived(page.params.orgId || "");
+const userId = $derived(page.params.userId || "");
 </script>
+
+<UserProfile {orgId} {userId} />

@@ -19,13 +19,13 @@ import { toast } from "@orbis/ui";
 let {
   open = $bindable(false),
   parentId = null,
-  academicYearId = null,
+  calendarId = null,
   termId = null,
   oncreated,
 }: {
   open: boolean;
   parentId?: string | null;
-  academicYearId?: string | null;
+  calendarId?: string | null;
   termId?: string | null;
   oncreated: (folder: FolderDto) => void;
 } = $props();
@@ -85,7 +85,7 @@ async function handleCreate() {
         name: folderName.trim(),
         parent_id: parentId ?? undefined,
         folder_type: "custom",
-        academic_year_id: academicYearId ?? undefined,
+        calendar_id: calendarId ?? undefined,
         term_id: termId ?? undefined,
       };
       const created = await api.createFolder(req);
@@ -99,7 +99,7 @@ async function handleCreate() {
       }
       const req: CreateCurriculumFolderRequest = {
         name: curriculumName.trim(),
-        academic_year_id: academicYearId ?? undefined,
+        calendar_id: calendarId ?? undefined,
         term_id: termId ?? undefined,
         metadata: {
           grade: curriculumGrade.trim() || undefined,

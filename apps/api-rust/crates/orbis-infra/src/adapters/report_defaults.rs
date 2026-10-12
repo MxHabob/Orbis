@@ -69,7 +69,7 @@ pub const TABULAR_REPORT_HTML: &str = r##"
         <tr>
             {% for col in columns %}
                 {% if col.visible %}
-                    <th>{% if is_rtl %}{{ col.header_ar }}{% else %}{{ col.header }}{% endif %}</th>
+                    <th>{% if is_rtl %}{{ col.headerAr }}{% else %}{{ col.header }}{% endif %}</th>
                 {% endif %}
             {% endfor %}
         </tr>
@@ -92,41 +92,46 @@ pub const TABULAR_REPORT_HTML: &str = r##"
 
 pub const PAYMENT_RECEIPT_HTML: &str = r##"
 <style>
-.receipt-box { border: 2px dashed #ccc; padding: 20px; border-radius: 12px; max-width: 600px; margin: 0 auto; background: #fff; }
-.r-header { text-align: center; margin-bottom: 20px; }
-.r-header h2 { color: {{ primary_color | default(value="#10b981") }}; margin: 0; font-size: 24px; }
-.r-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; font-size: 13px; }
-.r-item { border-bottom: 1px solid #eee; padding-bottom: 5px; }
-.r-item strong { color: #555; display: block; font-size: 11px; margin-bottom: 2px; }
-.r-amount { text-align: center; background: #f0fdf4; color: #166534; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-.r-footer { text-align: center; font-size: 11px; color: #888; margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px; }
+.receipt-box { max-width: 760px; margin: 0 auto; padding: 30px; border: 1px solid #d8e2eb; border-radius: 16px; background: #fff; color: #172033; font-family: 'Noto Sans Arabic', 'Segoe UI', sans-serif; }
+.r-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 1px solid #e5ebf1; }
+.r-org { color: #475569; font-size: 12px; font-weight: 600; }
+.r-title { margin: 4px 0 0; color: {{ primary_color | default(value="#0f766e") }}; font-size: 22px; font-weight: 800; }
+.r-number { padding: 8px 12px; border: 1px solid #d8e2eb; border-radius: 8px; color: #334155; font-size: 12px; white-space: nowrap; }
+.r-amount { margin: 20px 0; padding: 18px; border: 1px solid #cce9e3; border-radius: 12px; background: #f0fdfa; color: #0f766e; text-align: center; font-size: 26px; font-weight: 800; }
+.r-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.r-item { min-width: 0; padding: 12px 14px; border: 1px solid #e5ebf1; border-radius: 9px; overflow-wrap: anywhere; }
+.r-item-wide { grid-column: 1 / -1; }
+.r-item strong { display: block; margin-bottom: 4px; color: #64748b; font-size: 11px; font-weight: 600; }
+.r-footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; padding-top: 16px; border-top: 1px dashed #cbd5e1; color: #64748b; font-size: 11px; }
+@media print { .receipt-box { max-width: none; border-radius: 0; box-shadow: none; } }
 </style>
-<div class="receipt-box">
+<div class="receipt-box" dir="{% if is_rtl %}rtl{% else %}ltr{% endif %}">
     <div class="r-header">
-        <h2>{% if is_rtl %}سند قبض{% else %}Payment Receipt{% endif %}</h2>
-        <div>#{% if rows and rows | length > 0 %}{{ rows[0].receipt_number | default(value="N/A") }}{% endif %}</div>
+        <div>
+            <div class="r-org">{% if is_rtl %}{{ org_name_ar | default(value=org_name | default(value="")) }}{% else %}{{ org_name | default(value="") }}{% endif %}</div>
+            <h2 class="r-title">{% if is_rtl %}سند قبض مالي{% else %}Payment Receipt{% endif %}</h2>
+        </div>
+        <div class="r-number">{% if is_rtl %}رقم السند{% else %}Receipt No.{% endif %} · {% if rows and rows | length > 0 %}{{ rows[0].receipt_number | default(value="—") }}{% endif %}</div>
     </div>
-    
+
+    {% if rows and rows | length > 0 %}
     <div class="r-amount">
-        {% if rows and rows | length > 0 %}{{ rows[0].amount | default(value="0.00") }}{% endif %} 
-        {% if rows and rows | length > 0 %}{{ rows[0].currency | default(value="SAR") }}{% endif %}
+        {{ rows[0].amount | default(value="0.00") }}
+        {% if rows[0].currency %}<span>{{ rows[0].currency }}</span>{% endif %}
     </div>
 
     <div class="r-grid">
-        <div class="r-item"><strong>{% if is_rtl %}التاريخ{% else %}Date{% endif %}</strong> {% if rows and rows | length > 0 %}{{ rows[0].date | default(value=generated_at) }}{% endif %}</div>
-        <div class="r-item"><strong>{% if is_rtl %}طريقة الدفع{% else %}Payment Method{% endif %}</strong> {% if rows and rows | length > 0 %}{{ rows[0].payment_method | default(value="Cash") }}{% endif %}</div>
-        <div class="r-item"><strong>{% if is_rtl %}استلمنا من السيد/ة{% else %}Received From{% endif %}</strong> {% if rows and rows | length > 0 %}{{ rows[0].student_name | default(value="Student Name") }}{% endif %}</div>
-        <div class="r-item"><strong>{% if is_rtl %}الرقم الأكاديمي{% else %}Student ID{% endif %}</strong> {% if rows and rows | length > 0 %}{{ rows[0].student_id | default(value="---") }}{% endif %}</div>
+        <div class="r-item"><strong>{% if is_rtl %}التاريخ{% else %}Date{% endif %}</strong>{{ rows[0].payment_date | default(value=generated_at) }}</div>
+        <div class="r-item"><strong>{% if is_rtl %}طريقة الدفع{% else %}Payment Method{% endif %}</strong>{{ rows[0].payment_method | default(value="—") }}</div>
+        <div class="r-item"><strong>{% if is_rtl %}استلمنا من{% else %}Received From{% endif %}</strong>{{ rows[0].student_name | default(value="—") }}</div>
+        <div class="r-item"><strong>{% if is_rtl %}نوع الرسم{% else %}Fee Type{% endif %}</strong>{{ rows[0].fee_name | default(value="—") }}</div>
+        <div class="r-item r-item-wide"><strong>{% if is_rtl %}البيان{% else %}Description{% endif %}</strong>{{ rows[0].notes | default(value="—") }}</div>
     </div>
-
-    <div class="r-item" style="grid-column: 1 / -1;">
-        <strong>{% if is_rtl %}وذلك عن{% else %}For (Description){% endif %}</strong> 
-        {% if rows and rows | length > 0 %}{{ rows[0].description | default(value="Tuition Fees") }}{% endif %}
-    </div>
+    {% endif %}
 
     <div class="r-footer">
-        {% if is_rtl %}المستلم{% else %}Received By{% endif %}: {{ printed_by }}<br><br>
-        <em>{% if is_rtl %}هذا السند إلكتروني ولا يحتاج لتوقيع{% else %}This is an electronic receipt and does not require a signature{% endif %}</em>
+        <span>{% if is_rtl %}تم إصدار هذا السند إلكترونياً{% else %}Electronically issued receipt{% endif %}</span>
+        <span>{% if is_rtl %}المستلم{% else %}Received By{% endif %}: {{ printed_by }}</span>
     </div>
 </div>
 "##;
@@ -342,10 +347,10 @@ pub const STUDENT_INVOICE_HTML: &str = r##"
             <tr>
                 <td>{{ loop.index }}</td>
                 <td>{{ item.description }}</td>
-                <td>{{ item.amount }} {{ currency | default(value="SAR") }}</td>
-                <td>{{ item.discount | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
-                <td>{{ item.tax | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
-                <td><strong>{{ item.net_amount }} {{ currency | default(value="SAR") }}</strong></td>
+                <td>{{ item.amount }} {{ currency | default(value="") }}</td>
+                <td>{{ item.discount | default(value="0.00") }} {{ currency | default(value="") }}</td>
+                <td>{{ item.tax | default(value="0.00") }} {{ currency | default(value="") }}</td>
+                <td><strong>{{ item.net_amount }} {{ currency | default(value="") }}</strong></td>
             </tr>
             {% endfor %}
         </tbody>
@@ -354,23 +359,23 @@ pub const STUDENT_INVOICE_HTML: &str = r##"
     <table class="total-table">
         <tr>
             <td>{% if is_rtl %}الإجمالي قبل الضريبة:{% else %}Subtotal:{% endif %}</td>
-            <td style="text-align: end;">{{ subtotal | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
+            <td style="text-align: end;">{{ subtotal | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
         <tr>
             <td>{% if is_rtl %}إجمالي الخصومات:{% else %}Total Discounts:{% endif %}</td>
-            <td style="text-align: end; color: #dc2626;">-{{ total_discounts | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
+            <td style="text-align: end; color: #dc2626;">-{{ total_discounts | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
         <tr>
             <td>{% if is_rtl %}ضريبة القيمة المضافة (15%):{% else %}VAT (15%):{% endif %}</td>
-            <td style="text-align: end;">{{ total_vat | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
+            <td style="text-align: end;">{{ total_vat | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
         <tr>
             <td>{% if is_rtl %}المسدد سابقاً:{% else %}Paid Amount:{% endif %}</td>
-            <td style="text-align: end; color: #16a34a;">{{ paid_amount | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
+            <td style="text-align: end; color: #16a34a;">{{ paid_amount | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
         <tr class="grand-total">
             <td>{% if is_rtl %}المتبقي للاستحقاق:{% else %}Balance Due:{% endif %}</td>
-            <td style="text-align: end;">{{ balance_due | default(value="0.00") }} {{ currency | default(value="SAR") }}</td>
+            <td style="text-align: end;">{{ balance_due | default(value="0.00") }} {{ currency | default(value="") }}</td>
         </tr>
     </table>
 </div>
@@ -394,11 +399,11 @@ pub const ENROLLMENT_CERTIFICATE_HTML: &str = r##"
 
     <div class="cert-body">
         {% if is_rtl %}
-        تشهد إدارة <strong>{{ org_name_ar | default(value=org_name | default(value="المؤسسة")) }}</strong> بأن الطالب/ة: <strong>{{ student_name | default(value="---") }}</strong>، والرقم الأكاديمي: <strong>{{ student_id | default(value="---") }}</strong>، والجنسية: <strong>{{ nationality | default(value="---") }}</strong>، مقيد/ة لدينا ومنتظم/ة بالدراسة في <strong>{{ grade_level | default(value="المرحلة الدراسية") }}</strong>، للعام الدراسي <strong>{{ academic_year | default(value="العام الحالي") }}</strong>.
+        تشهد إدارة <strong>{{ org_name_ar | default(value=org_name | default(value="المؤسسة")) }}</strong> بأن الطالب/ة: <strong>{{ student_name | default(value="---") }}</strong>، والرقم الأكاديمي: <strong>{{ student_id | default(value="---") }}</strong>، والجنسية: <strong>{{ nationality | default(value="---") }}</strong>، مقيد/ة لدينا ومنتظم/ة بالدراسة في <strong>{{ grade_level | default(value="المرحلة الدراسية") }}</strong>، للعام الدراسي <strong>{{ academic_calendar | default(value="العام الحالي") }}</strong>.
         <br>
         وقد أُعطيت له هذه الشهادة بناءً على طلبه لتقديمها إلى الجهات المختصة دون أدنى مسؤولية على المؤسسة فيما يتعلق بالتزاماته الأخرى.
         {% else %}
-        This is to certify that student: <strong>{{ student_name | default(value="---") }}</strong>, Student ID: <strong>{{ student_id | default(value="---") }}</strong>, Nationality: <strong>{{ nationality | default(value="---") }}</strong>, is officially enrolled and in good standing at <strong>{{ org_name | default(value="Institution") }}</strong> for the grade/program: <strong>{{ grade_level | default(value="---") }}</strong> during the academic year: <strong>{{ academic_year | default(value="---") }}</strong>.
+        This is to certify that student: <strong>{{ student_name | default(value="---") }}</strong>, Student ID: <strong>{{ student_id | default(value="---") }}</strong>, Nationality: <strong>{{ nationality | default(value="---") }}</strong>, is officially enrolled and in good standing at <strong>{{ org_name | default(value="Institution") }}</strong> for the grade/program: <strong>{{ grade_level | default(value="---") }}</strong> during the academic year: <strong>{{ academic_calendar | default(value="---") }}</strong>.
         <br>
         This certificate is issued upon request to be submitted to the concerned authorities without any liability on the institution.
         {% endif %}
@@ -490,13 +495,22 @@ mod tests {
 
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
-        ctx.insert("columns", &Vec::<String>::new()); // dummy
-        ctx.insert("rows", &Vec::<String>::new());
+        ctx.insert(
+            "columns",
+            &serde_json::json!([{
+                "key": "student_name",
+                "header": "Student",
+                "headerAr": "الطالب",
+                "visible": true
+            }]),
+        );
+        ctx.insert("rows", &serde_json::json!([{"student_name": "أحمد"}]));
 
         let result = tera
             .render("tabular", &ctx)
             .expect("Failed to render tabular template");
-        assert!(result.contains("<table>"));
+        assert!(result.contains("الطالب"));
+        assert!(result.contains("أحمد"));
     }
 
     #[test]
@@ -507,14 +521,28 @@ mod tests {
 
         let mut ctx = Context::new();
         ctx.insert("is_rtl", &true);
-        ctx.insert("rows", &Vec::<String>::new());
+        ctx.insert(
+            "rows",
+            &vec![serde_json::json!({
+                "receipt_number": "R-2024-01",
+                "amount": 125.0,
+                "currency": "YER",
+                "student_name": "طالب تجريبي",
+                "fee_name": "رسوم دراسية",
+                "payment_method": "نقداً",
+                "payment_date": "2024-01-01",
+                "notes": "رسوم الفصل"
+            })],
+        );
         ctx.insert("printed_by", &"System");
         ctx.insert("generated_at", &"2023-01-01 10:00");
 
         let result = tera
             .render("receipt", &ctx)
             .expect("Failed to render payment receipt template");
-        assert!(result.contains("Payment Receipt") || result.contains("سند قبض"));
+        assert!(result.contains("سند قبض"));
+        assert!(result.contains("YER"));
+        assert!(!result.contains("SAR"));
     }
 
     #[test]

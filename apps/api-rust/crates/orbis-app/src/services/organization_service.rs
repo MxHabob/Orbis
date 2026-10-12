@@ -9,6 +9,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::context::RequestContext;
+use crate::services::calculation_engine::AcademicCalculationEngine;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
@@ -31,6 +32,7 @@ pub struct UpdateOrgRequest {
     pub primary_color: Option<String>,
     pub logo: Option<String>,
     pub favicon: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
@@ -178,6 +180,16 @@ impl OrganizationService {
         }
         if let Some(fav) = req.favicon {
             org.favicon = Some(fav);
+        }
+        if let Some(metadata) = req.metadata {
+            let mut merged = org.metadata.take().unwrap_or_else(|| serde_json::json!({}));
+            if let (Some(existing), Some(incoming)) = (merged.as_object_mut(), metadata.as_object())
+            {
+                existing.extend(incoming.clone());
+            } else {
+                merged = metadata;
+            }
+            org.metadata = Some(merged);
         }
         org.updated_at = Utc::now();
         org.version += 1;
@@ -401,11 +413,47 @@ impl OrganizationService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        settings: OrganizationSettings,
+        mut settings: OrganizationSettings,
     ) -> Result<OrganizationSettings, DomainError> {
         self.permission_checker
             .check(ctx, Permission::OrganizationWrite)
             .await?;
+
+        if let Some(plan) = settings.academic.calculation_plan.as_mut() {
+            AcademicCalculationEngine::validate_plan(plan)?;
+            let current = self.settings_repo.get_settings(org_id).await?;
+            plan.version = current
+                .academic
+                .calculation_plan
+                .as_ref()
+                .map_or(Some(1), |active| active.version.checked_add(1))
+                .ok_or_else(|| {
+                    DomainError::Validation("Calculation policy version overflow".into())
+                })?;
+        }
+
+        if let Some(outcome_policy) = settings.academic.outcome_policy.as_ref() {
+            let plan = settings
+                .academic
+                .calculation_plan
+                .as_ref()
+                .ok_or_else(|| {
+                    DomainError::Validation(
+                        "An outcome policy requires an active calculation plan".into(),
+                    )
+                })?;
+            if !plan.outputs.iter().any(|output| output.unit == outcome_policy.unit) {
+                return Err(DomainError::Validation(
+                    "Outcome policy unit must match at least one calculation output".into(),
+                ));
+            }
+            AcademicCalculationEngine::evaluate_outcome(
+                rust_decimal::Decimal::ZERO,
+                &outcome_policy.unit,
+                outcome_policy,
+            )?;
+        }
+
         self.settings_repo.save_settings(org_id, &settings).await?;
         Ok(settings)
     }

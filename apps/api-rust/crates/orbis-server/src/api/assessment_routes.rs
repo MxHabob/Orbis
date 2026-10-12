@@ -5,9 +5,10 @@ use axum::{
     extract::{Path, Query, State},
     routing::{delete, get, post},
 };
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -15,7 +16,13 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
-use orbis_domain::entities::academic_policy::{StudentAnnualReportCard, StudentTermReportCard};
+use orbis_domain::entities::academic_policy::{
+    AcademicPolicy, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
+    StudentTermReportCard, TiePolicy,
+};
+use orbis_domain::entities::academic_calculation::{
+    CalculationPreview, CalculationOutputOutcome,
+};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
@@ -71,7 +78,7 @@ pub struct GradeDto {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Decimal,
@@ -93,7 +100,7 @@ pub struct RecordGradeRequest {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -107,7 +114,7 @@ pub struct RecordGradeItemRequest {
     pub period_id: Uuid,
     pub student_id: Uuid,
     pub enrollment_id: Option<Uuid>,
-    pub class_subject_id: Uuid,
+    pub section_subject_id: Uuid,
     pub component_id: Option<Uuid>,
     pub score: Decimal,
     pub max_score: Option<Decimal>,
@@ -132,7 +139,7 @@ pub struct AttendanceDto {
     pub id: Uuid,
     pub student_id: Uuid,
     pub class_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
     pub date: NaiveDate,
     pub status: String,
@@ -156,7 +163,7 @@ pub struct MarkAttendanceItemRequest {
     pub student_id: Uuid,
     pub status: String,
     pub notes: Option<String>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
 }
 
@@ -194,11 +201,61 @@ pub struct RecordBehaviorRequest {
     pub points: i32,
 }
 
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicPolicyDto {
+    pub org_id: Uuid,
+    pub passing_threshold_percentage: Decimal,
+    pub honors_threshold_percentage: Decimal,
+    pub minimum_final_exam_score: Option<Decimal>,
+    pub max_failed_subjects_for_conditional_pass: usize,
+    pub rounding_mode: String,
+    pub decimal_places: u32,
+    pub ranking_scope: String,
+    pub tie_policy: String,
+    pub ranking_enabled: bool,
+    pub max_displayed_rank: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, ToSchema)]
+pub struct AcademicResultViewDto {
+    pub snapshot_id: Uuid,
+    pub org_id: Uuid,
+    pub learner_id: Uuid,
+    pub subject_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
+    pub result_type: String,
+    pub result_key: String,
+    pub policy_version: u32,
+    pub revision: u32,
+    pub state: String,
+    pub produced_at: chrono::DateTime<chrono::Utc>,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct AcademicResultPreviewRequest {
+    pub learner_id: Uuid,
+    pub result_type: String,
+    pub result_key: String,
+    pub subject_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Deserialize)]
+pub struct CalculationPreviewRequest {
+    pub values: HashMap<String, Decimal>,
+}
+
 #[derive(Deserialize, ToSchema)]
 pub struct CalculateGradesRequest {
     pub scheme_id: Uuid,
     pub student_id: Uuid,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -234,7 +291,7 @@ pub struct CumulativeGpaRecordDto {
 #[derive(Deserialize, ToSchema)]
 pub struct CalculateRankingsRequest {
     pub items: Vec<ScoreItemRequest>,
-    pub tie_policy: Option<String>,
+    pub tie_policy: Option<TiePolicy>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -246,13 +303,13 @@ pub struct ScoreItemRequest {
 #[derive(Serialize, ToSchema)]
 pub struct RankingItemDto {
     pub id: Uuid,
-    pub rank: u32,
+    pub rank: Decimal,
 }
 
 #[derive(Deserialize)]
 pub struct GradeQuery {
     pub student_id: Option<Uuid>,
-    pub class_subject_id: Option<Uuid>,
+    pub section_subject_id: Option<Uuid>,
 }
 
 #[derive(Deserialize)]
@@ -268,7 +325,7 @@ fn grade_to_dto(g: orbis_domain::entities::grade::Grade) -> GradeDto {
         period_id: g.period_id,
         student_id: g.student_id,
         enrollment_id: g.enrollment_id,
-        class_subject_id: g.class_subject_id,
+        section_subject_id: g.section_subject_id,
         component_id: g.component_id,
         score: g.score,
         max_score: g.max_score,
@@ -291,7 +348,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
         id: a.id,
         student_id: a.student_id,
         class_id: a.class_id,
-        class_subject_id: a.class_subject_id,
+        section_subject_id: a.section_subject_id,
         scheduled_lesson_id: a.scheduled_lesson_id,
         date: a.attendance_date,
         status: a.status,
@@ -318,6 +375,42 @@ fn scheme_to_dto(s: AssessmentScheme) -> AssessmentSchemeDto {
         is_system: s.is_system,
         created_at: s.created_at,
         updated_at: s.updated_at,
+    }
+}
+
+fn academic_policy_to_dto(policy: AcademicPolicy) -> AcademicPolicyDto {
+    AcademicPolicyDto {
+        org_id: policy.org_id,
+        passing_threshold_percentage: policy.passing_threshold_percentage,
+        honors_threshold_percentage: policy.honors_threshold_percentage,
+        minimum_final_exam_score: policy.minimum_final_exam_score,
+        max_failed_subjects_for_conditional_pass: policy.max_failed_subjects_for_conditional_pass,
+        rounding_mode: format!("{:?}", policy.rounding_mode),
+        decimal_places: policy.decimal_places,
+        ranking_scope: format!("{:?}", policy.ranking_scope),
+        tie_policy: format!("{:?}", policy.tie_policy),
+        ranking_enabled: policy.ranking_enabled,
+        max_displayed_rank: policy.max_displayed_rank,
+    }
+}
+
+fn academic_result_view_to_dto(view: AcademicResultView) -> AcademicResultViewDto {
+    AcademicResultViewDto {
+        snapshot_id: view.snapshot_id,
+        org_id: view.org_id,
+        learner_id: view.learner_id,
+        subject_id: view.subject_id,
+        period_id: view.period_id,
+        calendar_id: view.calendar_id,
+        result_type: view.result_type,
+        result_key: view.result_key,
+        policy_version: view.policy_version,
+        revision: view.revision,
+        state: format!("{:?}", view.state),
+        produced_at: view.produced_at,
+        approved_by: view.approved_by,
+        approved_at: view.approved_at,
+        payload: view.payload,
     }
 }
 
@@ -423,6 +516,82 @@ pub async fn delete_scheme(
     Ok(ApiResponse::ok(()))
 }
 
+#[utoipa::path(get, path = "/api/v1/academic-policy",
+    responses((status = 200, body = AcademicPolicyDto)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_current_academic_policy(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<AcademicPolicyDto>>, ApiError> {
+    let settings = state.settings_repo.get_settings(ctx.tenant_id).await?;
+    let policy = settings.academic.to_academic_policy(ctx.tenant_id);
+    Ok(ApiResponse::ok(academic_policy_to_dto(policy)))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-results/preview", request_body = AcademicResultPreviewRequest,
+    responses((status = 200, body = AcademicResultViewDto)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn preview_academic_result(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(p): Json<AcademicResultPreviewRequest>,
+) -> Result<Json<ApiResponse<AcademicResultViewDto>>, ApiError> {
+    let settings = state.settings_repo.get_settings(ctx.tenant_id).await?;
+    let _policy = settings.academic.to_academic_policy(ctx.tenant_id);
+    let snapshot = ResultSnapshot::new(
+        ctx.tenant_id,
+        p.learner_id,
+        p.result_type,
+        p.result_key,
+        1,
+        Utc::now(),
+        p.payload,
+    )
+    .with_context(
+        p.subject_id,
+        p.period_id,
+        p.calendar_id,
+        ctx.user_id(),
+        vec![],
+    );
+
+    let view: AcademicResultView = snapshot.into();
+    let dto = academic_result_view_to_dto(view);
+    Ok(ApiResponse::ok(dto))
+}
+
+pub async fn preview_configured_calculation(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(request): Json<CalculationPreviewRequest>,
+) -> Result<Json<ApiResponse<CalculationPreview>>, ApiError> {
+    let settings = state.settings_repo.get_settings(ctx.tenant_id).await?;
+    let plan = settings
+        .academic
+        .calculation_plan
+        .as_ref()
+        .ok_or_else(|| ApiError::bad_request("No calculation plan is configured"))?;
+    let result = orbis_app::services::calculation_engine::AcademicCalculationEngine::calculate_plan(
+        plan,
+        &request.values,
+    )?;
+    let mut outcomes = Vec::new();
+    if let Some(policy) = settings.academic.outcome_policy.as_ref() {
+        for output in &result.outputs {
+            if output.unit == policy.unit {
+                outcomes.push(CalculationOutputOutcome {
+                    output_name: output.name.clone(),
+                    outcome: orbis_app::services::calculation_engine::AcademicCalculationEngine::evaluate_outcome(
+                        output.value,
+                        &output.unit,
+                        policy,
+                    )?,
+                });
+            }
+        }
+    }
+
+    Ok(ApiResponse::ok(CalculationPreview { result, outcomes }))
+}
+
 #[utoipa::path(post, path = "/api/v1/grades", request_body = RecordGradeRequest,
     responses((status = 201, body = GradeDto)), security(("bearer" = [])), tag = "Assessment")]
 pub async fn record_grade(
@@ -437,7 +606,7 @@ pub async fn record_grade(
             ctx.tenant_id,
             p.period_id,
             p.student_id,
-            p.class_subject_id,
+            p.section_subject_id,
             p.component_id,
             p.score,
             p.max_score.unwrap_or_else(|| Decimal::from(100)),
@@ -462,7 +631,7 @@ pub async fn batch_record_grades(
             period_id: i.period_id,
             student_id: i.student_id,
             enrollment_id: i.enrollment_id,
-            class_subject_id: i.class_subject_id,
+            section_subject_id: i.section_subject_id,
             component_id: i.component_id,
             score: i.score,
             max_score: i.max_score,
@@ -509,8 +678,8 @@ pub async fn list_grades(
 ) -> Result<Json<ApiResponse<Vec<GradeDto>>>, ApiError> {
     let grades = if let Some(sid) = q.student_id {
         state.grade_repo.find_by_student(sid).await?
-    } else if let Some(csid) = q.class_subject_id {
-        state.grade_repo.find_by_class_subject(csid).await?
+    } else if let Some(csid) = q.section_subject_id {
+        state.grade_repo.find_by_section_subject(csid).await?
     } else {
         vec![]
     };
@@ -525,10 +694,10 @@ pub async fn calculate_grades(
     State(state): State<AppState>,
     Json(p): Json<CalculateGradesRequest>,
 ) -> Result<Json<ApiResponse<CalculationResultDto>>, ApiError> {
-    let class_subject_id = p.class_subject_id.unwrap_or_else(Uuid::nil);
+    let section_subject_id = p.section_subject_id.unwrap_or_else(Uuid::nil);
     let score = state
         .assessment_service
-        .calculate_scheme_grades(&ctx, p.scheme_id, p.student_id, class_subject_id)
+        .calculate_scheme_grades(&ctx, p.scheme_id, p.student_id, section_subject_id)
         .await?;
     Ok(ApiResponse::ok(CalculationResultDto {
         final_score: score,
@@ -573,13 +742,7 @@ pub async fn calculate_rankings(
     Json(p): Json<CalculateRankingsRequest>,
 ) -> Result<Json<ApiResponse<Vec<RankingItemDto>>>, ApiError> {
     use orbis_app::services::calculation_engine::AcademicCalculationEngine;
-    use orbis_domain::entities::academic_policy::TiePolicy;
-
-    let tie_policy = match p.tie_policy.as_deref() {
-        Some("dense") => TiePolicy::Dense,
-        Some("fractional") => TiePolicy::Fractional,
-        _ => TiePolicy::StandardCompetition,
-    };
+    let tie_policy = p.tie_policy.unwrap_or_default();
 
     let items_tuples: Vec<(Uuid, Decimal)> = p.items.into_iter().map(|i| (i.id, i.score)).collect();
     let rankings = AcademicCalculationEngine::compute_rankings(&items_tuples, tie_policy);
@@ -629,7 +792,7 @@ pub async fn batch_mark_attendance(
             student_id: i.student_id,
             status: i.status,
             notes: i.notes,
-            class_subject_id: i.class_subject_id,
+            section_subject_id: i.section_subject_id,
             scheduled_lesson_id: i.scheduled_lesson_id,
         })
         .collect();
@@ -918,6 +1081,15 @@ pub fn routes() -> Router<AppState> {
         .route(
             "/api/v1/assessment-schemes/:id",
             get(get_scheme).put(update_scheme).delete(delete_scheme),
+        )
+        .route("/api/v1/academic-policy", get(get_current_academic_policy))
+        .route(
+            "/api/v1/academic-results/preview",
+            post(preview_academic_result),
+        )
+        .route(
+            "/api/v1/academic-calculations/preview",
+            post(preview_configured_calculation),
         )
         .route("/api/v1/grades", post(record_grade).get(list_grades))
         .route("/api/v1/grades/batch", post(batch_record_grades))

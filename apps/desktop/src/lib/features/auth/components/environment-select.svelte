@@ -16,11 +16,11 @@ let { selectedBranch = $bindable(""), selectedYear = $bindable("") } = $props<{
   selectedYear?: string;
 }>();
 
-let academicYears = $state<{ value: string; label: string }[]>([]);
+let academicCalendars = $state<{ value: string; label: string }[]>([]);
 
 async function loadYears() {
   if (!authStore.isAuthenticated) {
-    academicYears = [];
+    academicCalendars = [];
     selectedYear = "";
     return;
   }
@@ -43,21 +43,21 @@ async function loadYears() {
 
   try {
     const years = await api.listAcademicPeriods();
-    academicYears = years.map((y: any) => ({
+    academicCalendars = years.map((y: any) => ({
       value: y.id,
       label: y.name_ar || y.name,
     }));
-    if (academicYears.length > 0) {
+    if (academicCalendars.length > 0) {
       const activeYear = years.find((y: any) => y.is_active_in_app);
       if (activeYear) {
         selectedYear = activeYear.id;
       } else {
-        selectedYear = academicYears[0].value;
+        selectedYear = academicCalendars[0].value;
       }
     }
   } catch (err) {
     console.debug("Failed to load academic years for org:", orgId, err);
-    academicYears = [];
+    academicCalendars = [];
     selectedYear = "";
   }
 }
@@ -81,10 +81,10 @@ onMount(() => {
 		onValueChange={(v: string | undefined) => (selectedYear = v ?? "")}
 	>
 		<SelectTrigger class="h-10 text-xs focus-visible:ring-primary bg-background/50 border-input w-full flex justify-between items-center px-3">
-			{academicYears.find(y => y.value === selectedYear)?.label || selectedYear}
+			{academicCalendars.find(y => y.value === selectedYear)?.label || selectedYear}
 		</SelectTrigger>
 		<SelectContent>
-			{#each academicYears as y}
+			{#each academicCalendars as y}
 				<SelectItem value={y.value}>{y.label}</SelectItem>
 			{/each}
 		</SelectContent>

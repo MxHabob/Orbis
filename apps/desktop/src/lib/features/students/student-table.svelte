@@ -19,6 +19,8 @@ let {
   enableSelection = true,
   selectedIds = $bindable(new Set()),
   onSelectionChange,
+  hasMore = false,
+  onloadmore,
   orgId,
 }: {
   students: StudentDetailDto[];
@@ -27,6 +29,8 @@ let {
   enableSelection?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
+  hasMore?: boolean;
+  onloadmore?: () => void | Promise<unknown>;
   orgId: string;
 } = $props();
 
@@ -258,6 +262,8 @@ function handleGridAction(event: GridActionEvent) {
       clientQuery
       filter={activeFilter}
       onaction={handleGridAction}
+      {hasMore}
+      {onloadmore}
       emptyTitle={m.common_table_no_students()}
       emptyDescription={m.common_table_no_students_hint()}
       readonly

@@ -19,7 +19,6 @@ import {
 import Animated, { ZoomIn } from "react-native-reanimated";
 import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 // ─── Dialog Context ─────────────────────────────────────────────────────────
 
@@ -204,14 +203,14 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.52)",
     justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.six,
+    padding: 24,
   },
   container: {
     width: "100%",
     maxWidth: 380,
-    borderRadius: Radii["2xl"],
+    borderRadius: 16,
     borderWidth: 1,
-    padding: Spacing.six,
+    padding: 24,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.16,
@@ -219,23 +218,23 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   header: {
-    marginBottom: Spacing.four,
-    gap: Spacing.one,
+    marginBottom: 16,
+    gap: 4,
   },
   title: {
-    ...Typography.h2,
+    ...{"fontSize":18,"lineHeight":24,"fontWeight":"700"},
     fontWeight: "700",
     letterSpacing: -0.3,
   },
   description: {
-    ...Typography.body,
+    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
     lineHeight: 20,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    gap: Spacing.three,
-    marginTop: Spacing.six,
+    gap: 12,
+    marginTop: 24,
   },
 });

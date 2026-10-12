@@ -16,8 +16,8 @@ import type {
   BootstrapRequest,
   BootstrapResult,
 } from "$lib/api/types";
-import { authStore, systemStore } from "$lib/stores";
-import { toast } from "@orbis/ui";
+import { authStore, licenseStore } from "$lib/stores";
+import { LoadingIndicator, toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import {
@@ -62,6 +62,7 @@ const isSubmitting = $derived(form.isSubmitting || bootstrapMutation.isPending);
 let isComplete = $state(false);
 let postBootstrapError = $state<string | null>(null);
 let bootstrapResult = $state<BootstrapResult | null>(null);
+let isCheckingBootstrap = $state(true);
 
 const steps: Array<{ id: OnboardingStep }> = [
   { id: "intro" },
@@ -77,6 +78,34 @@ const currentStepIndex = $derived(steps.findIndex((s) => s.id === currentStep));
 const canGoBack = $derived(currentStepIndex > 0);
 const isSkippable = $derived(currentStep === "mfa");
 const isLastStep = $derived(currentStep === "review");
+function navigateToWorkspace(organizationId: string) {
+  return goto(resolve(localizeHref(`/${organizationId}`)), {
+    replaceState: true,
+  });
+}
+
+async function initializeBootstrap() {
+  try {
+    await authStore.restore();
+    const status = await api.bootstrapGetStatus();
+    if (status.status === "completed") {
+      const organizationId = authStore.orgId || status.organization_id;
+      if (authStore.isAuthenticated && organizationId) {
+        await navigateToWorkspace(organizationId);
+      } else {
+        await goto(resolve(localizeHref("/login")), { replaceState: true });
+      }
+      return;
+    }
+  } catch (error) {
+    console.error("Failed to check bootstrap status:", error);
+    toast.error(extractErrorMessage(error));
+  }
+
+  await loadEnvironment();
+  isCheckingBootstrap = false;
+}
+
 // Silent background environment detection and calibration
 async function loadEnvironment() {
   try {
@@ -94,7 +123,7 @@ async function loadEnvironment() {
 }
 
 onMount(() => {
-  loadEnvironment();
+  void initializeBootstrap();
 });
 
 function validateCurrentStep(): boolean {
@@ -203,16 +232,7 @@ async function handleLaunchBootstrap() {
       toast.error(postBootstrapError);
     }
     if (!postBootstrapError) {
-      try {
-        const readiness = await systemStore.loadReadiness();
-        if (!readiness) {
-          postBootstrapError = m.common_action_failed();
-          toast.error(postBootstrapError);
-        }
-      } catch (readinessError) {
-        postBootstrapError = extractErrorMessage(readinessError);
-        toast.error(postBootstrapError);
-      }
+      await navigateToWorkspace(result.organization_id);
     }
   });
 
@@ -264,14 +284,27 @@ function enterWorkspace() {
     goto(resolve(localizeHref("/login")), { replaceState: true });
   }
 }
+
+async function startTrialFromBootstrap(): Promise<boolean> {
+  return Boolean(await licenseStore.startTrial());
+}
+
+async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
+  return Boolean(await licenseStore.redeemKey(productKey));
+}
 </script>
 
-<SetupWorkspace
-  viewportId="onboarding-viewport"
->
-  {#snippet header()}
-    <OnboardingHeader {currentStep} {steps} />
-  {/snippet}
+{#if isCheckingBootstrap}
+  <div class="flex h-full w-full items-center justify-center bg-background">
+    <LoadingIndicator size="lg" label={m.onboarding_state_loading()} />
+  </div>
+{:else}
+  <SetupWorkspace
+    viewportId="onboarding-viewport"
+  >
+    {#snippet header()}
+      <OnboardingHeader {currentStep} {steps} />
+    {/snippet}
 
   {#if currentStep === "intro"}
     <StepReleaseIntro />
@@ -291,24 +324,30 @@ function enterWorkspace() {
       {isSubmitting}
       {isComplete}
       authenticationRequired={Boolean(postBootstrapError && !authStore.isAuthenticated)}
+      licenseError={licenseStore.error}
+      licenseLoading={licenseStore.isLoading}
+      licenseIsOperational={licenseStore.isOperational}
       warnings={bootstrapResult?.warnings ?? []}
       result={bootstrapResult}
       onLaunch={handleLaunchBootstrap}
       onEnterWorkspace={enterWorkspace}
+      onStartTrial={startTrialFromBootstrap}
+      onRedeemKey={redeemKeyFromBootstrap}
     />
   {/if}
 
-  {#snippet footer()}
-    {#if !isComplete}
-      <OnboardingFooter
-        {canGoBack}
-        canGoNext={!isLastStep}
-        {isSkippable}
-        {isSubmitting}
-        onPrev={prevStep}
-        onNext={nextStep}
-        onSkip={skipStep}
-      />
-    {/if}
-  {/snippet}
-</SetupWorkspace>
+    {#snippet footer()}
+      {#if !isComplete}
+        <OnboardingFooter
+          {canGoBack}
+          canGoNext={!isLastStep}
+          {isSkippable}
+          {isSubmitting}
+          onPrev={prevStep}
+          onNext={nextStep}
+          onSkip={skipStep}
+        />
+      {/if}
+    {/snippet}
+  </SetupWorkspace>
+{/if}

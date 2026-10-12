@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
-import { Typography } from "@/constants/theme";
+import { Image, Text, View } from "react-native";
 
 interface AvatarProps {
   name: string;
@@ -18,37 +16,33 @@ function getInitials(name: string) {
 
 export const Avatar = React.memo<AvatarProps>(
   ({ name, imageUrl, size = 32 }) => {
-    const theme = useTheme();
     const [imageError, setImageError] = useState(false);
     const initials = getInitials(name);
     const showImage = Boolean(imageUrl) && !imageError;
 
     return (
       <View
+        className="items-center justify-center overflow-hidden rounded-full border border-border bg-brand-pink"
         style={[
-          styles.container,
           {
             width: size,
             height: size,
             borderRadius: size / 2,
-            backgroundColor: theme.brandPink,
-            borderColor: theme.border,
           },
         ]}
       >
         {showImage ? (
           <Image
             source={{ uri: imageUrl! }}
+            className="rounded-full"
             style={{ width: size, height: size, borderRadius: size / 2 }}
             resizeMode="cover"
             onError={() => setImageError(true)}
           />
         ) : (
           <Text
-            style={[
-              styles.initials,
-              { color: theme.primaryForeground, fontSize: size * 0.3 },
-            ]}
+            className="text-center font-semibold text-primary-foreground"
+            style={{ fontSize: size * 0.3 }}
           >
             {initials}
           </Text>
@@ -59,16 +53,3 @@ export const Avatar = React.memo<AvatarProps>(
 );
 
 Avatar.displayName = "Avatar";
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  initials: {
-    ...Typography.bodyBold,
-    textAlign: "center",
-  },
-});

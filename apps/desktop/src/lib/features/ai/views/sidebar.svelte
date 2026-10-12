@@ -33,7 +33,13 @@ interactive tool inspections, and consequential action approvals.
   import ChatInput from "../components/chat-input.svelte";
   import ChatMessageList from "../components/chat-message-list.svelte";
 
-  let { isStandalone = false }: { isStandalone?: boolean } = $props();
+  let {
+    isStandalone = false,
+    preferredWidth = $bindable(25),
+  }: {
+    isStandalone?: boolean;
+    preferredWidth?: number;
+  } = $props();
 
   const currentOrgId = $derived(
     page.params.orgId || authStore.orgId || "default",
@@ -58,7 +64,6 @@ interactive tool inspections, and consequential action approvals.
     return px / base;
   }
 
-  let preferredWidth = $state(pxToRem(400));
   const minWidth = $derived(pxToRem(320));
   const maxWidth = $derived(pxToRem(1470));
 
@@ -261,8 +266,8 @@ interactive tool inspections, and consequential action approvals.
           };
 
       const activeAcademicContext = {
-        academic_year_id: academicContext.currentYear?.id || null,
-        academic_year_name: academicContext.yearLabel || null,
+        calendar_id: academicContext.currentYear?.id || null,
+        academic_calendar_name: academicContext.yearLabel || null,
         period_id: academicContext.selectedPeriodId || null,
         period_name: academicContext.activePeriod?.name || null,
         class_id: academicContext.selectedClassId || null,
@@ -479,6 +484,8 @@ interactive tool inspections, and consequential action approvals.
     <Resizer
       viewport={sidebarDiv}
       edge="start"
+      inside
+      collapsible={false}
       {minWidth}
       {maxWidth}
       defaultValue={pxToRem(400)}

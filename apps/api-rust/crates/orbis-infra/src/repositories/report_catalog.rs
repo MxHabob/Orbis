@@ -44,6 +44,56 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             provider_key: "academic.term_result",
         },
         ReportDefEntry {
+            code: "rep.academic.student-certificate",
+            name: "Official Academic Student Certificate",
+            name_ar: "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل)",
+            domain: "academic",
+            category: "certificates",
+            description: "Official comprehensive annual academic certificate with subject breakdown, semester coursework, exam marks, percentages, appreciation, and verification QR code",
+            description_ar: "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل) متضمنة المحصلات والاختبارات والمجموع والنسبة المئوية والتقدير ورمز التحقق الرقمي",
+            provider_key: "academic.certificate",
+        },
+        ReportDefEntry {
+            code: "rep.academic.primary-midterm-grade-certificate",
+            name: "Primary School Midterm Grade Certificate",
+            name_ar: "شهادة درجات منتصف الفصل للمرحلة الابتدائية",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for primary-school students, designed for midterm results",
+            description_ar: "شهادة درجات بمقاس A5 لطلاب المرحلة الابتدائية في منتصف الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.primary-final-grade-certificate",
+            name: "Primary School Final Grade Certificate",
+            name_ar: "شهادة درجات نهاية الفصل للمرحلة الابتدائية",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for primary-school students, designed for final results",
+            description_ar: "شهادة درجات بمقاس A5 لطلاب المرحلة الابتدائية في نهاية الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.general-midterm-grade-certificate",
+            name: "General Midterm Grade Certificate",
+            name_ar: "شهادة درجات منتصف الفصل العامة",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for students in any educational stage, designed for midterm results",
+            description_ar: "شهادة درجات عامة بمقاس A5 في منتصف الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
+            code: "rep.academic.general-final-grade-certificate",
+            name: "General Final Grade Certificate",
+            name_ar: "شهادة درجات نهاية الفصل العامة",
+            domain: "academic",
+            category: "certificates",
+            description: "A5 grade certificate for students in any educational stage, designed for final results",
+            description_ar: "شهادة درجات عامة بمقاس A5 في نهاية الفصل الدراسي",
+            provider_key: "academic.term_result",
+        },
+        ReportDefEntry {
             code: "rep.academic.official-transcript",
             name: "Official Multi-Year Academic Transcript",
             name_ar: "السجل الأكاديمي الشامل وكشف العلامات التراكمي",
@@ -544,12 +594,12 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
         },
         ReportDefEntry {
             code: "rep.finance.payment-receipt-slip",
-            name: "Official Electronic Payment Receipt",
-            name_ar: "سند قبض مالي إلكتروني رسمي مزود بـ QR",
+            name: "Official Payment Receipt Voucher",
+            name_ar: "سند قبض مالي رسمي",
             domain: "finance",
             category: "cash",
-            description: "Official printable payment receipt voucher with QR verification",
-            description_ar: "سند استلام وقبض مالي معتمد مع رمز التحقق الإلكتروني",
+            description: "Printable payment receipt showing the transaction amount, currency, and payment details",
+            description_ar: "سند قبض قابل للطباعة يعرض مبلغ العملية وعملتها وتفاصيل الدفع",
             provider_key: "finance.payment_receipt",
         },
         ReportDefEntry {
@@ -831,7 +881,9 @@ pub async fn provision_master_report_definitions<C: ConnectionTrait>(
                 (idx as i32).into(),
                 now.to_string().into(), now.to_string().into()
             ]
-        )).await.ok();
+        )).await.map_err(|error| {
+            DomainError::Internal(format!("Failed to provision report {}: {error}", entry.code))
+        })?;
     }
 
     Ok(())

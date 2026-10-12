@@ -22,6 +22,8 @@ import {
 } from "$lib/features/finance";
 import { api, extractErrorMessage, type StudentDto } from "$lib/api";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Checkbox } from "@orbis/ui/checkbox";
@@ -62,6 +64,9 @@ let sourceToken = $state("");
 let notes = $state("");
 let shouldPrintReceipt = $state(true);
 let lastReceiptPayment = $state<PaymentDto | null>(null);
+let printReceiptOpen = $state(false);
+let printReceiptPayment = $state<PaymentDto | null>(null);
+let printReceiptContext = $state<Record<string, unknown>[]>([]);
 
 // ── Queries & Mutations ───────────────────────────────────────────────
 
@@ -179,6 +184,7 @@ async function handlePaymentSubmit(e: SubmitEvent) {
 
     toast.success(m.common_payment_toast_success());
     lastReceiptPayment = payment;
+    const paymentNotes = notes;
 
     // Reset payment fields
     formAmount = null;
@@ -192,33 +198,37 @@ async function handlePaymentSubmit(e: SubmitEvent) {
     recentPaymentsQuery.refetch();
 
     if (shouldPrintReceipt) {
-      handlePrintReceipt(payment);
+      handlePrintReceipt(payment, paymentNotes);
     }
   } catch (err) {
     toast.error(extractErrorMessage(err));
   }
 }
 
-async function handlePrintReceipt(payment: PaymentDto) {
-  try {
-    toast.info(m.finance_ui_receipt_print_preparing());
-    const pdfUrl = await api.renderReport("doc_payment_receipt", {
-      payment_id: payment.id,
-      receipt_number: payment.receipt_number || payment.id.slice(0, 8),
-      amount: String(payment.amount),
-      currency: payment.currency,
-      student_name: selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : "",
-      student_id: selectedStudent?.student_number || "",
-      payment_method: payment.method,
-      date: formatDate(payment.paid_at),
-    });
-    if (pdfUrl) {
-      window.open(pdfUrl, "_blank");
-    }
-  } catch (e) {
-    console.warn("DocForge direct preview failed:", e);
-    toast.info(m.finance_ui_receipt_printed({ number: payment.receipt_number || payment.id.slice(0, 8) }));
-  }
+function handlePrintReceipt(payment: PaymentDto, description = notes) {
+  printReceiptPayment = payment;
+  printReceiptContext = [{
+    receipt: {
+      number: payment.receipt_number || payment.id.slice(0, 8),
+      date: payment.paid_at || payment.created_at,
+      payerName: payment.payer_name || (selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : ""),
+      studentName: selectedStudent ? `${selectedStudent.first_name} ${selectedStudent.last_name}` : "",
+      amount: Number(payment.amount),
+      amountWords: "",
+      description,
+      paymentMethod: payment.method,
+      referenceNumber: payment.reference || "",
+      cashierName: "",
+    },
+    $org: {
+      name: orgContext.name,
+      name_ar: orgContext.nameAr,
+      currency: payment.currency_code || orgContext.baseCurrency,
+      logo_url: orgContext.logo,
+      primary_color: orgContext.primaryColor,
+    },
+  }];
+  printReceiptOpen = true;
 }
 
 // ── Keyboard Shortcuts ────────────────────────────────────────────────
@@ -269,6 +279,7 @@ const rtl = $derived(getLocale() === "ar");
       <div class="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center font-bold">
         <CreditCard size={15} />
       </div>
+
       <div>
         <h1 class="text-xs font-bold text-foreground leading-none">
           {m.finance_pos_quick_pos_payment_register()}
@@ -278,6 +289,15 @@ const rtl = $derived(getLocale() === "ar");
         </p>
       </div>
     </div>
+
+    <PrintDialog
+      bind:open={printReceiptOpen}
+      entityType="finance"
+      documentType="RECEIPT"
+      entityIds={printReceiptPayment ? [printReceiptPayment.id] : []}
+      entityLabels={printReceiptPayment ? [printReceiptPayment.receipt_number || printReceiptPayment.id.slice(0, 8)] : []}
+      contexts={printReceiptContext}
+    />
 
     <!-- Active Cashier & Treasury Dropdown -->
     <div class="flex items-center gap-2">

@@ -13,8 +13,9 @@
 
 use orbis_domain::entities::license::{
     ActivationRequest, ActivationResponse, DeactivationRequest, MULVERSE_PRODUCT_KEY,
-    PublicKeyInfo, RefreshRequest, TauriUpdateManifest,
+    PublicKeyInfo, RefreshRequest, SignedEntitlement, TauriUpdateManifest,
 };
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::time::Duration;
 use tracing::{debug, warn};
 
@@ -29,6 +30,106 @@ const MAX_RETRIES: u32 = 3;
 
 /// Base delay for exponential backoff (milliseconds).
 const BASE_BACKOFF_MS: u64 = 1000;
+
+#[derive(Debug, Deserialize)]
+pub struct TrialChallenge {
+    pub challenge_id: String,
+    pub challenge: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RegisterTrialRequest {
+    pub device_public_key: String,
+    pub device_signature: String,
+    pub challenge_id: String,
+    pub challenge: String,
+    pub installation_id: String,
+    pub organization_id: String,
+    pub organization_name: String,
+    pub organization_slug: String,
+    pub organization_profile: TrialOrganizationProfile,
+    pub platform: String,
+    pub app_version: String,
+    pub machine_label: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TrialOrganizationProfile {
+    pub name_ar: Option<String>,
+    pub institution_type: String,
+    pub organization_size: Option<String>,
+    pub educational_track: Option<String>,
+    pub country_code: Option<String>,
+    pub country_name: Option<String>,
+    pub region_name: Option<String>,
+    pub city: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ClaimProductKeyRequest {
+    pub product_key: String,
+    pub organization_id: String,
+    pub organization_name: String,
+    pub organization_slug: String,
+    pub organization_profile: TrialOrganizationProfile,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ClaimProductKeyResponse {
+    pub organization_id: String,
+    pub license_id: String,
+    pub valid_until: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RefreshTrialRequest {
+    pub trial_id: String,
+    pub device_public_key: String,
+    pub device_signature: String,
+    pub challenge_id: String,
+    pub challenge: String,
+    pub installation_id: String,
+    pub organization_id: String,
+    pub app_version: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrialDevice {
+    pub id: String,
+    pub status: String,
+    pub installation_id: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TrialRegistrationResponse {
+    pub trial: TrialDevice,
+    pub signed_entitlement: SignedEntitlement,
+}
+
+#[derive(Deserialize)]
+struct ApiErrorEnvelope {
+    error: ApiErrorDetails,
+}
+
+#[derive(Deserialize)]
+struct ApiErrorDetails {
+    code: Option<String>,
+    message: Option<String>,
+}
+
+fn format_api_error_body(body: &str) -> String {
+    if let Ok(envelope) = serde_json::from_str::<ApiErrorEnvelope>(body) {
+        let message = envelope.error.message.unwrap_or_default();
+        return match (envelope.error.code, message.is_empty()) {
+            (Some(code), false) => format!("{code}: {message}"),
+            (Some(code), true) => code,
+            (None, false) => message,
+            (None, true) => body.to_string(),
+        };
+    }
+
+    body.to_string()
+}
 
 /// Mulverse Platform HTTP client.
 ///
@@ -96,6 +197,17 @@ impl MulverseClient {
         }
     }
 
+    pub async fn claim_product_key(
+        &self,
+        request: &ClaimProductKeyRequest,
+    ) -> Result<ClaimProductKeyResponse, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/keys/claim", self.base_url),
+            request,
+        )
+        .await
+    }
+
     /// Refresh the license (periodic heartbeat).
     ///
     /// `POST /api/v1/public/licenses/refresh`
@@ -117,6 +229,36 @@ impl MulverseClient {
         } else {
             Err(self.parse_error_response(response).await)
         }
+    }
+
+    pub async fn create_trial_challenge(&self) -> Result<TrialChallenge, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/trials/challenge", self.base_url),
+            &serde_json::json!({}),
+        )
+        .await
+    }
+
+    pub async fn register_trial(
+        &self,
+        request: &RegisterTrialRequest,
+    ) -> Result<TrialRegistrationResponse, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/trials/register", self.base_url),
+            request,
+        )
+        .await
+    }
+
+    pub async fn refresh_trial(
+        &self,
+        request: &RefreshTrialRequest,
+    ) -> Result<TrialRegistrationResponse, MulverseApiError> {
+        self.post_once(
+            &format!("{}/api/v1/public/trials/refresh", self.base_url),
+            request,
+        )
+        .await
     }
 
     /// Deactivate an installation (release device seat).
@@ -205,6 +347,28 @@ impl MulverseClient {
 
     // ── Internal helpers ─────────────────────────────────────────
 
+    async fn post_once<T, R>(&self, url: &str, body: &T) -> Result<R, MulverseApiError>
+    where
+        T: Serialize + ?Sized,
+        R: DeserializeOwned,
+    {
+        let response = self
+            .client
+            .post(url)
+            .json(body)
+            .send()
+            .await
+            .map_err(|error| MulverseApiError::NetworkError(error.to_string()))?;
+        if response.status().is_success() {
+            response
+                .json::<R>()
+                .await
+                .map_err(|error| MulverseApiError::ParseError(error.to_string()))
+        } else {
+            Err(self.parse_error_response(response).await)
+        }
+    }
+
     /// POST with exponential backoff and jitter for transient failures.
     async fn post_with_retry<T: serde::Serialize>(
         &self,
@@ -278,13 +442,20 @@ impl MulverseClient {
     /// Parse a non-success HTTP response into a typed error.
     async fn parse_error_response(&self, response: reqwest::Response) -> MulverseApiError {
         let status = response.status();
-        let body = response.text().await.unwrap_or_default();
+        let body = match response.text().await {
+            Ok(body) => format_api_error_body(&body),
+            Err(error) => {
+                return MulverseApiError::ParseError(format!(
+                    "HTTP {status} error response could not be read: {error}"
+                ));
+            }
+        };
 
         match status.as_u16() {
             400 => MulverseApiError::ValidationError(body),
             403 => MulverseApiError::Forbidden(body),
             404 => MulverseApiError::NotFound(body),
-            409 => MulverseApiError::SeatLimitExceeded(body),
+            409 => MulverseApiError::Conflict(body),
             429 => MulverseApiError::RateLimited,
             500..=599 => MulverseApiError::ServerError(body),
             _ => MulverseApiError::UnexpectedStatus(status.as_u16(), body),
@@ -323,8 +494,8 @@ pub enum MulverseApiError {
     Forbidden(String),
     /// 404 — Not found (key not found).
     NotFound(String),
-    /// 409 — Seat limit exceeded.
-    SeatLimitExceeded(String),
+    /// 409 — Conflict, including seat limits and license-key assignment errors.
+    Conflict(String),
     /// 429 — Rate limited.
     RateLimited,
     /// 5xx — Server error.
@@ -342,7 +513,7 @@ impl std::fmt::Display for MulverseApiError {
             Self::ValidationError(e) => write!(f, "Validation error: {e}"),
             Self::Forbidden(e) => write!(f, "Forbidden: {e}"),
             Self::NotFound(e) => write!(f, "Not found: {e}"),
-            Self::SeatLimitExceeded(e) => write!(f, "Seat limit exceeded: {e}"),
+            Self::Conflict(e) => write!(f, "Conflict: {e}"),
             Self::RateLimited => write!(f, "Rate limited by Mulverse Platform"),
             Self::ServerError(e) => write!(f, "Mulverse server error: {e}"),
             Self::ParseError(e) => write!(f, "Response parse error: {e}"),
@@ -362,7 +533,18 @@ impl MulverseApiError {
     pub fn is_license_error(&self) -> bool {
         matches!(
             self,
-            Self::Forbidden(_) | Self::NotFound(_) | Self::SeatLimitExceeded(_)
+            Self::Forbidden(_) | Self::NotFound(_) | Self::Conflict(_)
+        )
+    }
+
+    pub fn is_trial_revoked(&self) -> bool {
+        matches!(
+            self,
+            Self::Forbidden(message)
+                if message
+                    .trim()
+                    .to_ascii_lowercase()
+                    .ends_with("this device trial has been revoked")
         )
     }
 }
@@ -382,8 +564,8 @@ impl From<MulverseApiError> for orbis_domain::errors::DomainError {
             MulverseApiError::NotFound(e) => {
                 orbis_domain::errors::DomainError::NotFound(format!("License: {e}"))
             }
-            MulverseApiError::SeatLimitExceeded(e) => {
-                orbis_domain::errors::DomainError::Conflict(format!("Seat limit: {e}"))
+            MulverseApiError::Conflict(e) => {
+                orbis_domain::errors::DomainError::Conflict(format!("Mulverse: {e}"))
             }
             MulverseApiError::RateLimited => {
                 orbis_domain::errors::DomainError::Internal("Mulverse rate limited".to_string())
@@ -398,5 +580,42 @@ impl From<MulverseApiError> for orbis_domain::errors::DomainError {
                 orbis_domain::errors::DomainError::Internal(format!("Mulverse {code}: {e}"))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{MulverseApiError, format_api_error_body};
+
+    #[test]
+    fn api_error_envelope_displays_message_instead_of_raw_json() {
+        assert_eq!(
+            format_api_error_body(
+                r#"{"error":{"code":"CONFLICT","message":"No license is assigned to this product key"}}"#
+            ),
+            "CONFLICT: No license is assigned to this product key"
+        );
+    }
+
+    #[test]
+    fn api_error_body_falls_back_to_plain_text() {
+        assert_eq!(
+            format_api_error_body("upstream unavailable"),
+            "upstream unavailable"
+        );
+    }
+
+    #[test]
+    fn only_explicit_trial_revocation_is_terminal() {
+        assert!(
+            MulverseApiError::Forbidden("FORBIDDEN: This device trial has been revoked".to_owned())
+                .is_trial_revoked()
+        );
+        assert!(
+            !MulverseApiError::Forbidden(
+                "This trial device is already bound to another organization".to_owned()
+            )
+            .is_trial_revoked()
+        );
     }
 }

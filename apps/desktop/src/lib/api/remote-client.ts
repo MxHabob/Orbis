@@ -32,20 +32,20 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  AcademicYearDto,
+  academicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
-  PeriodTemplateDto,
+  PeriodTypeDto,
   CreateYearRequest,
   UpdateYearRequest,
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   CreateSubjectRequest,
   CreateClassRequest,
-  AssignClassSubjectRequest,
+  AssignSectionSubjectRequest,
   EnrollmentDto,
   GuardianDto,
   EnrollStudentRequest,
@@ -67,6 +67,13 @@ import type {
   BehaviorRecordDto,
   CumulativeGpaRecordDto,
   CalculationResultDto,
+  CalculationEngineSettings,
+  CalculationPreview,
+  CalculationPlan,
+  CalculationOutcomePolicy,
+  DecimalValue,
+  RankingScope,
+  TiePolicy,
   CreateSchemeRequest,
   UpdateSchemeRequest,
   RecordGradeRequest,
@@ -168,7 +175,7 @@ import type {
   SubmitOverrideRequestInput,
   ApproveOverrideInput,
   RejectOverrideInput,
-  PromotionJobDto,
+  progressionJobDto,
   PromoteCohortInput,
   StudentProgressionItemInput,
   HealthResponse,
@@ -464,20 +471,20 @@ export class RemoteClient implements OrbisApiClient {
   async selectOrgUnit(_id?: string): Promise<void> {}
 
   // ── Calendar ────────────────────────────────────────────────
-  async createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto> {
+  async createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto> {
     return this.call(sdk.createYear({ client: this.client, body: req }));
   }
 
-  async updateAcademicYear(
+  async updateacademicCalendar(
     id: string,
     req: UpdateYearRequest,
-  ): Promise<AcademicYearDto> {
+  ): Promise<academicCalendarDto> {
     return this.call(
       sdk.updateYear({ client: this.client, path: { id }, body: req }),
     );
   }
 
-  async listAcademicYears(): Promise<AcademicYearDto[]> {
+  async listacademicCalendars(): Promise<academicCalendarDto[]> {
     return this.call(sdk.listYears({ client: this.client })) ?? [];
   }
 
@@ -485,20 +492,28 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getCurrentContext({ client: this.client }));
   }
 
-  async getAcademicYear(id: string): Promise<AcademicYearDto> {
+  async getacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.getYear({ client: this.client, path: { id } }));
   }
 
-  async activateAcademicYear(id: string): Promise<AcademicYearDto> {
+  async activateacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.activateYear({ client: this.client, path: { id } }));
   }
 
-  async closeAcademicYear(id: string): Promise<AcademicYearDto> {
+  async closeacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.closeYear({ client: this.client, path: { id } }));
   }
 
-  async archiveAcademicYear(id: string): Promise<AcademicYearDto> {
+  async archiveacademicCalendar(id: string): Promise<academicCalendarDto> {
     return this.call(sdk.archiveYear({ client: this.client, path: { id } }));
+  }
+
+  async deleteacademicCalendar(id: string): Promise<boolean> {
+    return this.call<boolean>(
+      this.client.delete<boolean>({
+        url: `/api/v1/academic-calendars/${encodeURIComponent(id)}`,
+      }),
+    );
   }
 
   async createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto> {
@@ -538,8 +553,8 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.closePeriod({ client: this.client, path: { id } }));
   }
 
-  async listPeriodTemplates(): Promise<PeriodTemplateDto[]> {
-    return this.call(sdk.listPeriodTemplates({ client: this.client })) ?? [];
+  async listPeriodTypes(): Promise<PeriodTypeDto[]> {
+    return this.call(sdk.listPeriodTypes({ client: this.client })) ?? [];
   }
 
   // ── Academic ────────────────────────────────────────────────
@@ -567,13 +582,13 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getClass({ client: this.client, path: { id } }));
   }
 
-  async assignClassSubject(req: AssignClassSubjectRequest): Promise<ClassSubjectDto> {
-    return this.call(sdk.assignClassSubject({ client: this.client, body: req }));
+  async assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto> {
+    return this.call(sdk.assignSectionSubject({ client: this.client, body: req }));
   }
 
-  async listClassSubjects(classId: string, periodId: string): Promise<ClassSubjectDto[]> {
+  async listSectionSubjects(classId: string, periodId: string): Promise<SectionSubjectDto[]> {
     return this.call(
-      sdk.listClassSubjects({
+      sdk.listSectionSubjects({
         client: this.client,
         query: { class_id: classId, period_id: periodId },
       }),
@@ -927,17 +942,17 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listScheduledLessons(
-    filterOrPeriodId?: string | { classSubjectId?: string; periodId?: string; classId?: string; teacherId?: string },
-    classSubjectId?: string,
+    filterOrPeriodId?: string | { SectionSubjectId?: string; periodId?: string; classId?: string; teacherId?: string },
+    SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]> {
     const periodId = typeof filterOrPeriodId === "string" ? filterOrPeriodId : filterOrPeriodId?.periodId;
-    const csId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.classSubjectId : classSubjectId;
+    const csId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.SectionSubjectId : SectionSubjectId;
     const classId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.classId : undefined;
     const teacherId = typeof filterOrPeriodId === "object" ? filterOrPeriodId.teacherId : undefined;
     return this.call(
       sdk.listLessons({
         client: this.client,
-        query: { period_id: periodId, class_subject_id: csId, class_id: classId, teacher_id: teacherId } as any,
+        query: { period_id: periodId, section_subject_id: csId, class_id: classId, teacher_id: teacherId } as any,
       }),
     ) ?? [];
   }
@@ -975,11 +990,11 @@ export class RemoteClient implements OrbisApiClient {
     await this.call(sdk.deleteGrade({ client: this.client, path: { id } }));
   }
 
-  async listGrades(filter?: { studentId?: string; classSubjectId?: string }): Promise<GradeDto[]> {
+  async listGrades(filter?: { studentId?: string; SectionSubjectId?: string }): Promise<GradeDto[]> {
     return this.call(
       sdk.listGrades({
         client: this.client,
-        query: { student_id: filter?.studentId, class_subject_id: filter?.classSubjectId } as any,
+        query: { student_id: filter?.studentId, section_subject_id: filter?.SectionSubjectId } as any,
       }),
     ) ?? [];
   }
@@ -994,6 +1009,91 @@ export class RemoteClient implements OrbisApiClient {
 
   async calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]> {
     return this.call(sdk.calculateRankings({ client: this.client, body: req })) ?? [];
+  }
+
+  async getCalculationEngineSettings(): Promise<CalculationEngineSettings> {
+    const settings = await this.getSettings();
+    const academic = settings.academic as
+      | (NonNullable<OrganizationSettingsDto["academic"]> & {
+          calculation_plan?: CalculationPlan | null;
+          outcome_policy?: CalculationOutcomePolicy | null;
+        })
+      | undefined;
+    return {
+      calculation_plan: academic?.calculation_plan ?? null,
+      outcome_policy: academic?.outcome_policy ?? null,
+      ranking_enabled: academic?.ranking_enabled ?? true,
+      ranking_scope: (academic?.ranking_scope as RankingScope) ?? "class",
+      tie_policy:
+        (academic?.tie_policy as TiePolicy) ?? "standard_competition",
+      max_displayed_rank: academic?.max_displayed_rank ?? null,
+    };
+  }
+
+  async updateCalculationEngineSettings(
+    engineSettings: CalculationEngineSettings,
+  ): Promise<CalculationEngineSettings> {
+    const current = await this.getSettings();
+    const academic = current.academic ?? {
+      default_grading_system: "percentage",
+    };
+    const academicWithEngine: NonNullable<
+      OrganizationSettingsDto["academic"]
+    > & {
+      calculation_plan: CalculationPlan | null;
+      outcome_policy: CalculationOutcomePolicy | null;
+    } = {
+      ...academic,
+      calculation_plan: engineSettings.calculation_plan,
+      outcome_policy: engineSettings.outcome_policy,
+      ranking_enabled: engineSettings.ranking_enabled,
+      ranking_scope: engineSettings.ranking_scope,
+      tie_policy: engineSettings.tie_policy,
+      max_displayed_rank: engineSettings.max_displayed_rank,
+    };
+    const updated = await this.updateSettings({
+      ...current,
+      academic: academicWithEngine,
+    });
+    const updatedAcademic = updated.academic as
+      | (NonNullable<OrganizationSettingsDto["academic"]> & {
+          calculation_plan?: CalculationPlan | null;
+          outcome_policy?: CalculationOutcomePolicy | null;
+        })
+      | undefined;
+    return {
+      calculation_plan: updatedAcademic?.calculation_plan ?? null,
+      outcome_policy: updatedAcademic?.outcome_policy ?? null,
+      ranking_enabled: updatedAcademic?.ranking_enabled ?? true,
+      ranking_scope: (updatedAcademic?.ranking_scope as RankingScope) ?? "class",
+      tie_policy:
+        (updatedAcademic?.tie_policy as TiePolicy) ?? "standard_competition",
+      max_displayed_rank: updatedAcademic?.max_displayed_rank ?? null,
+    };
+  }
+
+  async previewCalculation(
+    values: Record<string, DecimalValue>,
+  ): Promise<CalculationPreview> {
+    const response = await fetch(
+      `${this.baseUrl}/api/v1/academic-calculations/preview`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(this.token ? { Authorization: "Bearer " + this.token } : {}),
+        },
+        body: JSON.stringify({ values }),
+      },
+    );
+    if (!response.ok) {
+      throw new ApiRequestError(
+        response.status,
+        await response.json().catch(() => ({ message: response.statusText })),
+      );
+    }
+    const envelope = (await response.json()) as { data: CalculationPreview };
+    return envelope.data;
   }
 
   async getStudentTermResults(
@@ -1097,15 +1197,15 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.evaluateCohort({ client: this.client, body: { source_period_id: sourcePeriodId } })) ?? [];
   }
 
-  async promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto> {
+  async promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto> {
     return this.call(sdk.promoteCohort({ client: this.client, body: req as any }));
   }
 
-  async listPromotionJobs(): Promise<PromotionJobDto[]> {
+  async listprogressionJobs(): Promise<progressionJobDto[]> {
     return this.call(sdk.listJobs({ client: this.client })) ?? [];
   }
 
-  async getPromotionJob(id: string): Promise<PromotionJobDto> {
+  async getprogressionJob(id: string): Promise<progressionJobDto> {
     return this.call(sdk.getJob({ client: this.client, path: { id } }));
   }
 
@@ -1267,7 +1367,37 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]> {
-    return this.call(sdk.listFees({ client: this.client, query: filter as any })) ?? [];
+    const firstPage = await this.listStudentFeesPaginated({
+      ...filter,
+      page: 1,
+      page_size: 100,
+    });
+    if (firstPage.total_pages <= 1) return firstPage.items;
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+        this.listStudentFeesPaginated({
+          ...filter,
+          page: index + 2,
+          page_size: 100,
+        }),
+      ),
+    );
+    return firstPage.items.concat(...remainingPages.map((page) => page.items));
+  }
+
+  async listStudentFeesPaginated(
+    filter?: StudentFeeFilterParams,
+  ): Promise<PaginatedList<StudentFeeDto>> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries({
+      ...filter,
+      page_size: Math.min(Math.max(filter?.page_size ?? 50, 1), 100),
+    })) {
+      if (value !== undefined && value !== null) query.set(key, String(value));
+    }
+    return this.fetchApi(
+      `/api/v1/student-fees?${query.toString()}`,
+    );
   }
 
   async deleteStudentFee(id: string): Promise<boolean> {
@@ -1280,7 +1410,35 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
-    return this.call(sdk.listPayments({ client: this.client, query: filter as any })) ?? [];
+    const firstPage = await this.listPaymentsPaginated({
+      ...filter,
+      page: 1,
+      page_size: 100,
+    });
+    if (firstPage.total_pages <= 1) return firstPage.items;
+    const remainingPages = await Promise.all(
+      Array.from({ length: firstPage.total_pages - 1 }, (_, index) =>
+        this.listPaymentsPaginated({
+          ...filter,
+          page: index + 2,
+          page_size: 100,
+        }),
+      ),
+    );
+    return firstPage.items.concat(...remainingPages.map((page) => page.items));
+  }
+
+  async listPaymentsPaginated(
+    filter?: PaymentFilterParams,
+  ): Promise<PaginatedList<PaymentDto>> {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries({
+      ...filter,
+      page_size: Math.min(Math.max(filter?.page_size ?? 50, 1), 100),
+    })) {
+      if (value !== undefined && value !== null) query.set(key, String(value));
+    }
+    return this.fetchApi(`/api/v1/payments?${query.toString()}`);
   }
 
   async deletePayment(id: string): Promise<boolean> {
@@ -1549,8 +1707,11 @@ export class RemoteClient implements OrbisApiClient {
     return res instanceof Uint8Array ? res : new Uint8Array(res as any);
   }
 
-  async batchPrint(req: BatchPrintParams): Promise<string> {
-    return this.call(sdk.batchPrint({ client: this.client, body: req as any }));
+  async batchPrint(req: BatchPrintParams): Promise<Uint8Array> {
+    const response = await this.call(
+      sdk.batchPrint({ client: this.client, body: req as any }),
+    );
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   async listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]> {
@@ -1713,8 +1874,8 @@ export class RemoteClient implements OrbisApiClient {
       currency_name_ar: "ريال سعودي",
       is_hijri_recommended: true,
       date_format: "YYYY-MM-DD",
-      suggested_academic_year: "2026/2027",
-      suggested_academic_year_ar: "2026/2027 م",
+      suggested_academic_calendar: "2026/2027",
+      suggested_academic_calendar_ar: "2026/2027 م",
     };
   }
 
@@ -1739,7 +1900,7 @@ export class RemoteClient implements OrbisApiClient {
         state: "operational",
         has_organization: true,
         has_admin: true,
-        has_academic_year: true,
+        has_academic_calendar: true,
         has_classes: true,
         has_subjects: true,
         pending_setup_items: [],
@@ -2003,7 +2164,7 @@ export class RemoteClient implements OrbisApiClient {
     if (req.folder_id) formData.append("folder_id", req.folder_id);
     if (req.asset_type) formData.append("asset_type", req.asset_type);
     if (req.description) formData.append("description", req.description);
-    if (req.academic_year_id) formData.append("academic_year_id", req.academic_year_id);
+    if (req.calendar_id) formData.append("calendar_id", req.calendar_id);
     if (req.term_id) formData.append("term_id", req.term_id);
     if (req.tags) formData.append("tags", req.tags);
     if (req.visibility) formData.append("visibility", req.visibility);

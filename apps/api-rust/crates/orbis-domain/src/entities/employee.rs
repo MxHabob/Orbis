@@ -101,6 +101,7 @@ pub enum EmploymentType {
     PartTime,
     Contract,
     Hourly,
+    Volunteer,
 }
 
 impl std::fmt::Display for EmploymentType {
@@ -110,6 +111,7 @@ impl std::fmt::Display for EmploymentType {
             EmploymentType::PartTime => write!(f, "part_time"),
             EmploymentType::Contract => write!(f, "contract"),
             EmploymentType::Hourly => write!(f, "hourly"),
+            EmploymentType::Volunteer => write!(f, "volunteer"),
         }
     }
 }
@@ -121,8 +123,22 @@ impl From<&str> for EmploymentType {
             "part_time" | "parttime" => EmploymentType::PartTime,
             "contract" => EmploymentType::Contract,
             "hourly" => EmploymentType::Hourly,
+            "volunteer" => EmploymentType::Volunteer,
             _ => EmploymentType::FullTime,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::EmploymentType;
+
+    #[test]
+    fn volunteer_employment_type_round_trips() {
+        let employment_type = EmploymentType::from("volunteer");
+
+        assert_eq!(employment_type, EmploymentType::Volunteer);
+        assert_eq!(employment_type.to_string(), "volunteer");
     }
 }
 

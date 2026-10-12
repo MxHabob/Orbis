@@ -14,6 +14,7 @@ import type { BootstrapResult } from "$lib/api/types";
 import { getBlueprint } from "@orbis/blueprints";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
 import { Card, CardContent } from "@orbis/ui/card";
 import { Check } from "@orbis/icons";
 
@@ -24,8 +25,13 @@ let {
   authenticationRequired = false,
   warnings = [],
   result = null,
+  licenseError = null,
+  licenseLoading = false,
+  licenseIsOperational = false,
   onLaunch,
   onEnterWorkspace,
+  onStartTrial,
+  onRedeemKey,
 }: {
   form: OnboardingFormModel;
   isSubmitting?: boolean;
@@ -33,10 +39,16 @@ let {
   authenticationRequired?: boolean;
   warnings?: string[];
   result?: BootstrapResult | null;
+  licenseError?: string | null;
+  licenseLoading?: boolean;
+  licenseIsOperational?: boolean;
   onLaunch: () => void;
   onEnterWorkspace: () => void;
+  onStartTrial: () => Promise<boolean>;
+  onRedeemKey: (productKey: string) => Promise<boolean>;
 } = $props();
 
+let productKey = $state("");
 const blueprint = $derived(getBlueprint(form.institutionType));
 const tz = $derived(TIMEZONE_OPTIONS.find((t) => t.value === form.timezone));
 const cur = $derived(CURRENCY_OPTIONS.find((c) => c.code === form.baseCurrencyCode));
@@ -44,6 +56,13 @@ const country = $derived(COUNTRIES_LIST.find((c) => c.code === form.countryCode)
 const track = $derived(EDUCATIONAL_TRACK_OPTIONS.find((t) => t.value === form.educationalTrack));
 const size = $derived(ORGANIZATION_SIZE_OPTIONS.find((s) => s.value === form.organizationSize));
 const isArabic = $derived(getLocale().startsWith("ar"));
+
+async function redeemProductKey(event: SubmitEvent) {
+  event.preventDefault();
+  const key = productKey.trim();
+  if (!key || licenseLoading) return;
+  if (await onRedeemKey(key)) productKey = "";
+}
 
 </script>
 
@@ -90,6 +109,49 @@ const isArabic = $derived(getLocale().startsWith("ar"));
               <li>{warning}</li>
             {/each}
           </ul>
+        </div>
+      {/if}
+
+      {#if !authenticationRequired}
+        <div class="mx-auto max-w-xl space-y-4 rounded-xl border border-border bg-muted/20 p-5 text-start">
+          <div class="space-y-1">
+            <h4 class="text-sm font-semibold text-foreground">
+              {m.license_activation_title()}
+            </h4>
+            <p class="text-xs leading-relaxed text-muted-foreground">
+              {m.license_activation_desc()}
+            </p>
+          </div>
+
+          {#if licenseIsOperational}
+            <p class="text-sm text-emerald-600 dark:text-emerald-400" role="status">
+              {m.license_activation_success()}
+            </p>
+          {:else}
+            <form class="flex flex-col gap-2 sm:flex-row" onsubmit={redeemProductKey}>
+              <Input
+                bind:value={productKey}
+                aria-label={m.license_key_label()}
+                placeholder={m.license_key_placeholder()}
+                disabled={licenseLoading}
+                autocomplete="off"
+              />
+              <Button type="submit" disabled={licenseLoading || !productKey.trim()}>
+                {m.license_activate_btn()}
+              </Button>
+            </form>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={licenseLoading}
+              onclick={onStartTrial}
+            >
+              {m.license_start_trial_btn()}
+            </Button>
+            {#if licenseError}
+              <p class="text-sm text-destructive" role="alert">{licenseError}</p>
+            {/if}
+          {/if}
         </div>
       {/if}
 

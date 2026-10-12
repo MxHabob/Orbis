@@ -1,11 +1,11 @@
 <!--
-  @component ClassSubjectSheet
+  @component SectionSubjectSheet
   Side panel for creating or editing a class-subject-teacher assignment.
 -->
 <script lang="ts">
 import * as Sheet from "@orbis/ui/sheet";
-import ClassSubjectForm from "$lib/features/academics/components/class-subject-form.svelte";
-import type { ClassSubject } from "@orbis/sdk";
+import SectionSubjectForm from "$lib/features/academics/components/class-subject-form.svelte";
+import type { SectionSubject } from "@orbis/sdk";
 
 let {
   open = $bindable(false),
@@ -17,7 +17,7 @@ let {
   open?: boolean;
   orgId: string;
   classId?: string;
-  editData?: ClassSubject | null;
+  editData?: SectionSubject | null;
   onSuccess?: () => void;
 } = $props();
 
@@ -29,7 +29,7 @@ function handleSuccess() {
 
 <Sheet.Root bind:open>
   <Sheet.Content side="end" class="flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
-    <ClassSubjectForm
+    <SectionSubjectForm
       {orgId}
       fixedClassId={classId}
       {editData}

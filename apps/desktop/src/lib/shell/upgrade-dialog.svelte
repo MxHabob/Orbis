@@ -27,7 +27,8 @@ const currentPlanDisplay = $derived.by(() => {
     return `${licenseStore.plan ?? "Trial"} (${m.license_trial_days_remaining({ count: String(licenseStore.trialDaysRemaining) })})`;
   }
   if (licenseStore.plan) {
-    return licenseStore.edition ? `${licenseStore.plan} — ${licenseStore.edition}` : licenseStore.plan;
+    const planName = licenseStore.planName ?? licenseStore.plan;
+    return licenseStore.edition ? `${planName} — ${licenseStore.edition}` : planName;
   }
   return m.common_upgrade_plan_dev();
 });

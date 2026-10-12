@@ -3,6 +3,7 @@
   User Groups catalog and lifecycle manager for IAM subsystem.
 -->
 <script lang="ts">
+  import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
@@ -182,9 +183,28 @@ async function promptDeleteGroup(group: GroupDetailDto) {
   <!-- Content Area -->
   <div class="flex-1 min-h-0 overflow-y-auto">
     {#if groupsQuery.isLoading}
-      <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
-        <LoadingIndicator class="text-primary"  size={24} />
-        <span class="text-xs">{m.ui_copy_loading_user_groups_ff96ce28()}</span>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+        <span class="sr-only">{m.ui_copy_loading_user_groups_ff96ce28()}</span>
+        {#each Array.from({ length: 6 }) as _, index (index)}
+          <div class="flex min-h-56 flex-col justify-between rounded-xl border border-border/80 bg-card p-5 shadow-xs">
+            <div class="flex flex-col gap-4">
+              <div class="flex items-start justify-between gap-3">
+                <Skeleton class="h-5 w-2/3" />
+                <Skeleton class="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton class="h-3 w-full" />
+              <Skeleton class="h-3 w-4/5" />
+              <div class="flex gap-4 pt-2">
+                <Skeleton class="h-4 w-20" />
+                <Skeleton class="h-4 w-24" />
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-5">
+              <Skeleton class="h-8 w-20" />
+              <Skeleton class="h-8 w-8" />
+            </div>
+          </div>
+        {/each}
       </div>
     {:else if groupsQuery.error}
       <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">

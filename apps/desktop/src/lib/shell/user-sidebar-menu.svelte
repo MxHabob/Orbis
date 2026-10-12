@@ -20,6 +20,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { authStore, effectiveContext } from "$lib/stores";
 import { api } from "$lib/api/client";
 import { l } from "$lib/core/i18n/locale";
+import { resolveEntityDocumentUrl } from "$lib/features/documents/queries";
 import { onMount } from "svelte";
 
 let {
@@ -29,6 +30,32 @@ let {
 } = $props();
 
 let branches = $state<{ id: string; name: string; name_ar?: string | null }[]>([]);
+let resolvedAvatarUrl = $state<string | undefined>();
+
+$effect(() => {
+  const avatarUrl = authStore.user?.avatar_url
+    ? String(authStore.user.avatar_url)
+    : undefined;
+  const userId = authStore.user?.id;
+
+  if (!avatarUrl || !userId) {
+    resolvedAvatarUrl = avatarUrl;
+    return;
+  }
+
+  let isCurrent = true;
+  resolveEntityDocumentUrl(avatarUrl, "user", userId)
+    .then((url) => {
+      if (isCurrent) resolvedAvatarUrl = url;
+    })
+    .catch((error: unknown) => {
+      console.error("Failed to load sidebar avatar:", error);
+    });
+
+  return () => {
+    isCurrent = false;
+  };
+});
 
 onMount(() => {
   api
@@ -83,7 +110,7 @@ async function handleLogout() {
             aria-label={m.common_nav_account()}
           >
             <Avatar class="h-full w-full rounded-[10px] bg-transparent">
-              <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={displayName} class="object-cover" />
+              <AvatarImage src={resolvedAvatarUrl} alt={displayName} class="object-cover" />
               <AvatarFallback class="bg-transparent text-white font-bold text-sm">
                 {userInitials}
               </AvatarFallback>
@@ -104,7 +131,7 @@ async function handleLogout() {
     <DropdownMenuContent align="end" side="inline-end" sideOffset={12} class="w-72 p-1.5 z-50 bg-popover border border-border shadow-md rounded-md select-none overflow-visible">
       <div class="flex items-start gap-3 px-3 py-2.5 border-b border-border/50">
         <Avatar class="h-9 w-9 rounded-full shrink-0">
-          <AvatarImage src={authStore.user?.avatar_url ? String(authStore.user.avatar_url) : undefined} alt={displayName} class="object-cover" />
+          <AvatarImage src={resolvedAvatarUrl} alt={displayName} class="object-cover" />
           <AvatarFallback class="bg-[#b02a87] text-white font-bold text-xs">
             {userInitials}
           </AvatarFallback>

@@ -13,11 +13,15 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { formatCurrency, formatDate, l, isAr } from "$lib/core/i18n";
-import type { JournalEntryDto, AccountDto, CurrencyDto } from "$lib/api/types";
+import type {
+  JournalEntryDto,
+  AccountDto,
+  CurrencyDto,
+  CreateJournalEntryRequest,
+} from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import { toast } from "@orbis/ui";
 import {
   Plus,
@@ -27,11 +31,18 @@ import {
   XMark,
   Printer,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type SelectionSnapshot,
+  selectionColumn,
+} from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
-import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
-import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
+import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import { confirmStore } from "$lib/stores";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
@@ -46,21 +57,36 @@ let showAddForm = $state(false);
 
 // Form Fields
 let referenceNumber = $state("");
-let accountingDate = $state(new Date().toISOString().slice(0, 10));
+let accountingDate = $state(getLocalDateInputValue());
 let amount = $state<number | null>(null);
-let selectedCurrency = $state("YER");
+let selectedCurrency = $state(orgContext.baseCurrency || "");
 let debitAccountId = $state("");
 let creditAccountId = $state("");
 let notes = $state("");
 
 // Filters
 let searchQuery = $state("");
-let filterDate = $state("");
+let filterDate = $state(getLocalDateInputValue());
+
+function getLocalDateInputValue(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
+const journalAccounts = $derived(
+  accounts.filter((account) =>
+    account.is_active &&
+    account.currency.toUpperCase() === selectedCurrency.toUpperCase()
+  ),
+);
 
 // Print
 let printReportOpen = $state(false);
-let printParameters = $state<Record<string, any>>({});
-let printTitle = $state(m.finance_ui_print_journal_entry());
+let journalSelection = $state<SelectionSnapshot>({
+  mode: "explicit",
+  ids: new Set(),
+  range: null,
+  active: null,
+});
 
 onMount(async () => {
   await loadData();
@@ -70,18 +96,17 @@ async function loadData() {
   isLoading = true;
   try {
     const [entriesList, accountsList, currenciesList] = await Promise.all([
-      api.listJournalEntries().catch(() => []),
-      api.listAccounts().catch(() => []),
-      api.listCurrencies().catch(() => []),
+      api.listJournalEntries(),
+      api.listAccounts(),
+      api.listCurrencies(),
     ]);
 
-    journalEntries = entriesList || [];
-    accounts = accountsList || [];
-    currencies = currenciesList || [];
+    journalEntries = entriesList;
+    accounts = accountsList;
+    currencies = currenciesList;
 
-    const base = currenciesList?.find((c) => c.is_base);
-    if (base && !selectedCurrency) {
-      selectedCurrency = base.code;
+    if (!currencies.some((currency) => currency.code === selectedCurrency)) {
+      selectedCurrency = orgContext.baseCurrency || currencies[0]?.code || "";
     }
   } catch (e) {
     console.error("Failed to load journal entries master data:", e);
@@ -93,11 +118,18 @@ async function loadData() {
 
 function clearForm() {
   referenceNumber = "";
-  accountingDate = new Date().toISOString().slice(0, 10);
+  accountingDate = getLocalDateInputValue();
   amount = null;
   debitAccountId = "";
   creditAccountId = "";
   notes = "";
+}
+
+function handleCurrencyChange(currency: string | undefined) {
+  if (!currency || currency === selectedCurrency) return;
+  selectedCurrency = currency;
+  if (!journalAccounts.some((account) => account.id === debitAccountId)) debitAccountId = "";
+  if (!journalAccounts.some((account) => account.id === creditAccountId)) creditAccountId = "";
 }
 
 function getAccountName(id?: string | null): string {
@@ -124,40 +156,50 @@ async function handleSaveNew() {
     toast.error(m.finance_ui_journal_accounts_must_differ());
     return;
   }
+  if (!selectedCurrency) {
+    toast.error(m.finance_ui_currency_select_placeholder());
+    return;
+  }
+  if (
+    !journalAccounts.some((account) => account.id === debitAccountId) ||
+    !journalAccounts.some((account) => account.id === creditAccountId)
+  ) {
+    toast.error(m.finance_ui_journal_accounts_must_differ());
+    return;
+  }
 
   isSubmitting = true;
   try {
-    const payload = {
+    const amountValue = String(amount);
+    const description = notes.trim() || (referenceNumber
+      ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
+      : m.finance_ui_journal_entry_default_description());
+    const payload: CreateJournalEntryRequest = {
       reference_number: referenceNumber.trim() || undefined,
       accounting_date: accountingDate,
-      amount: Number(amount),
-      currency: selectedCurrency,
+      amount: amountValue,
       currency_code: selectedCurrency,
       debit_account_id: debitAccountId,
       credit_account_id: creditAccountId,
-      description: notes.trim() || (referenceNumber
-        ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
-        : m.finance_ui_journal_entry_default_description()),
-      description_ar: notes.trim() || (referenceNumber
-        ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
-        : m.finance_ui_journal_entry_default_description()),
+      description,
+      description_ar: description,
       lines: [
         {
           account_id: debitAccountId,
-          debit: Number(amount),
-          credit: 0,
+          debit_amount: amountValue,
+          credit_amount: "0",
           description: notes.trim() || m.finance_ui_journal_from_account_description(),
         },
         {
           account_id: creditAccountId,
-          debit: 0,
-          credit: Number(amount),
+          debit_amount: "0",
+          credit_amount: amountValue,
           description: notes.trim() || m.finance_ui_journal_to_account_description(),
         },
       ],
     };
 
-    await api.createJournalEntry(payload as any);
+    await api.createJournalEntry(payload);
     toast.success(m.finance_ui_journal_entry_posted_success());
     clearForm();
     showAddForm = false;
@@ -191,16 +233,6 @@ async function handleReverse(entry: JournalEntryDto) {
   }
 }
 
-function handlePrint(entry: JournalEntryDto) {
-  printParameters = {
-    voucher_id: entry.id,
-    reference_number: entry.reference_number,
-    org_id: orgId,
-  };
-  printTitle = m.finance_ui_journal_entry_print_title({ number: entry.reference_number || entry.id.slice(0, 8) });
-  printReportOpen = true;
-}
-
 // ── Grid Data ─────────────────────────────────────────────────────────
 const gridSource = $derived(
   journalEntries.map((e, idx) => {
@@ -232,12 +264,44 @@ const gridSource = $derived(
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (filterDate && row.accounting_date && !String(row.accounting_date).startsWith(filterDate)) {
+    if (filterDate && (!row.accounting_date || !String(row.accounting_date).startsWith(filterDate))) {
       return false;
     }
     return true;
   })
 );
+const selectedJournalEntries = $derived(
+  filteredSource.filter((entry) =>
+    journalSelection.mode === "allMatching"
+      ? !journalSelection.ids.has(entry.id)
+      : journalSelection.ids.has(entry.id),
+  ),
+);
+const journalPrintContexts = $derived(
+  selectedJournalEntries.map((entry) => ({
+    voucher: {
+      number: entry.ref_display,
+      date: entry.accounting_date,
+      primaryName: entry.debit_account_display,
+      secondaryName: entry.credit_account_display,
+      amount: Number(entry.amount),
+      currency: entry.currency_code,
+      description: entry.description_ar || entry.description || "",
+      status: entry.status,
+    },
+    $org: {
+      name: orgContext.name,
+      name_ar: orgContext.nameAr,
+      currency: entry.currency_code || orgContext.baseCurrency,
+      logo_url: orgContext.logo,
+      primary_color: orgContext.primaryColor,
+    },
+  })),
+);
+
+function handleJournalSelection(selection: SelectionSnapshot) {
+  journalSelection = selection;
+}
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
@@ -297,6 +361,16 @@ function exportCsv() {
             <span>{m.finance_ui_new_journal_entry()}</span>
           {/if}
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 px-3 text-xs font-semibold shrink-0 gap-1.5"
+          disabled={selectedJournalEntries.length === 0}
+          onclick={() => (printReportOpen = true)}
+        >
+          <Printer size={14} />
+          <span>{m.finance_ui_print_journal_entry()}{selectedJournalEntries.length ? ` (${selectedJournalEntries.length})` : ""}</span>
+        </Button>
       </div>
 
       <div class="flex items-center gap-2">
@@ -328,23 +402,11 @@ function exportCsv() {
 
     <!-- In-Page Creation Card (Matching FinanceOverview Card Style) -->
     {#if showAddForm}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-primary"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_journal_entry_create_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => showAddForm = false} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_journal_entry_create_heading()}
+          onclose={() => (showAddForm = false)}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_voucher_number_optional()}</Label>
@@ -376,15 +438,14 @@ function exportCsv() {
               </div>
 
               <div class="min-w-0">
-                <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_currency()}</Label>
-                <SearchableSelect
-                  value={selectedCurrency}
-                  placeholder={m.finance_ui_currency_select_placeholder()}
-                  items={currencies}
-                  getItemValue={(c) => c.code}
-                  getItemLabel={(c) => `${c.name || c.code} (${c.code})`}
-                  onchange={(val) => { if (val) selectedCurrency = val; }}
-                  class="w-full h-8 text-xs bg-background border-border/60"
+                <CurrencySelector
+                  compact
+                  title={m.finance_ui_currency()}
+                  description=""
+                  bind:currentCurrency={selectedCurrency}
+                  currencyOptions={currencies}
+                  onchange={handleCurrencyChange}
+                  disabled={isLoading || isSubmitting || currencies.length < 2}
                 />
               </div>
             </div>
@@ -394,7 +455,7 @@ function exportCsv() {
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_debit_account()}</Label>
                 <AccountSearchInput
                   bind:value={debitAccountId}
-                  {accounts}
+                  accounts={journalAccounts}
                   placeholder={m.finance_ui_debit_account_select_placeholder()}
                 />
               </div>
@@ -403,7 +464,7 @@ function exportCsv() {
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_credit_account()}</Label>
                 <AccountSearchInput
                   bind:value={creditAccountId}
-                  {accounts}
+                  accounts={journalAccounts}
                   placeholder={m.finance_ui_credit_account_select_placeholder()}
                 />
               </div>
@@ -433,19 +494,19 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_saving() : m.finance_ui_journal_entry_save()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
     <!-- Grid Container -->
     <div class="flex-1 min-h-0 overflow-hidden">
       <OrbisGrid
-        columns={columns}
+        columns={[selectionColumn(), ...columns]}
         source={filteredSource}
         loading={isLoading}
         clientQuery
         search={searchQuery}
+        onselection={handleJournalSelection}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_journal_entries()}
@@ -454,9 +515,11 @@ function exportCsv() {
   </div>
 </div>
 
-<PdfReportViewer
+<PrintDialog
   bind:open={printReportOpen}
-  reportTemplateId="journal-voucher"
-  parameters={printParameters}
-  title={printTitle}
+  entityType="finance_journal"
+  documentType="VOUCHER"
+  entityIds={selectedJournalEntries.map((entry) => entry.id)}
+  entityLabels={selectedJournalEntries.map((entry) => entry.ref_display)}
+  contexts={journalPrintContexts}
 />

@@ -42,6 +42,7 @@ let {
 } = $props();
 
 const queryClient = useQueryClient();
+let askOrbisWidth = $state(25);
 
 const requiredFeature = $derived.by((): EntitlementKey | null => {
   const path = page.url.pathname;
@@ -98,7 +99,13 @@ function handleKeyDown(e: KeyboardEvent) {
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<LicenseFeatureGate requireOperational {licenseReady} className="h-full w-full min-w-0 flex-1 overflow-hidden">
+<LicenseFeatureGate
+  requireOperational
+  blockOrganizationMismatch={false}
+  {licenseReady}
+  {orgId}
+  className="h-full w-full min-w-0 flex-1 overflow-hidden"
+>
 <div class="flex h-full max-w-full bg-background">
 	{#if !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
@@ -111,20 +118,26 @@ function handleKeyDown(e: KeyboardEvent) {
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>
 			<div class="flex flex-1 min-w-0 items-stretch overflow-hidden">
-				<LicenseFeatureGate feature={requiredFeature} {licenseReady}>
+				<LicenseFeatureGate feature={requiredFeature} {licenseReady} {orgId}>
 					{@render children()}
 				</LicenseFeatureGate>
 			</div>
 		</div>
 		{#if uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
-				<LicenseFeatureGate
-					feature="ai_grading"
-					{licenseReady}
-					className="absolute inset-y-0 end-0 z-50 w-[min(28rem,90vw)]"
+				<div
+					class="absolute inset-y-0 inset-e-0 z-50"
+					style:width="{askOrbisWidth + 0.875}rem"
 				>
-					<AskOrbisSidebar />
-				</LicenseFeatureGate>
+					<LicenseFeatureGate
+						feature="ai_grading"
+						{licenseReady}
+						{orgId}
+						className="h-full w-full"
+					>
+						<AskOrbisSidebar bind:preferredWidth={askOrbisWidth} />
+					</LicenseFeatureGate>
+				</div>
 			{/key}
 		{/if}
 	</div>

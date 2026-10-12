@@ -9,7 +9,7 @@ import { extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import { formatDate } from "$lib/core/i18n";
 import {
-  createPromotionJobsQuery,
+  createprogressionJobsQuery,
   createRollbackMutation,
 } from "$lib/features/academics/promotion-queries";
 import { Badge } from "@orbis/ui/badge";
@@ -42,14 +42,14 @@ import {
   UndoAction,
   XMark,
 } from "@orbis/icons";
-import type { PromotionJobDto } from "@orbis/sdk";
+import type { progressionJobDto } from "@orbis/sdk";
 
 let { orgId, userId }: { orgId: string; userId: string } = $props();
 
-const jobsQuery = createPromotionJobsQuery(() => orgId);
+const jobsQuery = createprogressionJobsQuery(() => orgId);
 const rollbackMutation = createRollbackMutation();
 
-let rollbackTarget = $state<PromotionJobDto | null>(null);
+let rollbackTarget = $state<progressionJobDto | null>(null);
 
 async function handleRollback() {
   if (!rollbackTarget) return;

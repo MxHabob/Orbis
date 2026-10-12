@@ -5,6 +5,7 @@
   search, CSV export, slide-over EmployeeSheet, and unified account lifecycle actions.
 -->
 <script lang="ts">
+  import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -28,16 +29,18 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatNumber, formatDate, l } from "$lib/core/i18n";
 import { extractErrorMessage } from "$lib/api";
 import { debounce } from "$lib/shared/utils/debounce";
+import { createShowInFolderToastAction } from "$lib/shared/utils/download";
 import { exportToCsv } from "$lib/shared/utils/export";
 import type { EmployeeDetailDto } from "$lib/api/types";
 import {
-  createEmployeesQuery,
   createEmployeeStatsQuery,
   createUpdateEmployeeStatusMutation,
   createDeleteEmployeeMutation,
 } from "./queries";
 import EmployeeSheet from "./components/employee-sheet.svelte";
+import { api, queryKeys } from "$lib/api";
 import { confirmStore } from "$lib/stores";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
 import {
   OrbisGrid,
   type OrbisColumnDef,
@@ -73,11 +76,19 @@ const filterInput = $derived({
   query: searchQuery.trim() || undefined,
   status: statusFilter !== "all" ? statusFilter : undefined,
   employee_type: typeFilter !== "all" ? typeFilter : undefined,
-  limit: 200,
 });
 
 // Queries
-const employeesQuery = createEmployeesQuery(() => orgId, () => filterInput);
+const employeesQuery = createInfiniteQuery(() => ({
+  queryKey: queryKeys.employee.list(orgId, filterInput as Record<string, unknown>),
+  queryFn: ({ pageParam }) =>
+    api.listEmployees({ ...filterInput, page: pageParam, page_size: 50 }),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage) =>
+    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+  enabled: !!orgId,
+  staleTime: 60 * 1000,
+}));
 const statsQuery = createEmployeeStatsQuery(() => orgId);
 
 // Mutations
@@ -85,17 +96,33 @@ const statusMutation = createUpdateEmployeeStatusMutation();
 const deleteMutation = createDeleteEmployeeMutation();
 
 // Derived Data
-const employees = $derived(employeesQuery.data?.items ?? []);
-const totalCount = $derived(employeesQuery.data?.total_count ?? 0);
+const employees = $derived(
+  employeesQuery.data?.pages.flatMap((page) => page.items) ?? [],
+);
+async function loadMoreEmployees() {
+  const result = await employeesQuery.fetchNextPage();
+  if (result.isError) throw result.error;
+}
 const stats = $derived(statsQuery.data ?? { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 });
 const isLoading = $derived(employeesQuery.isLoading || statsQuery.isLoading);
-const error = $derived(employeesQuery.error || statsQuery.error);
+const error = $derived(
+  (employeesQuery.data?.pages.length ? undefined : employeesQuery.error) ||
+    statsQuery.error,
+);
 
 // Search with debounce
 let localSearch = $state("");
 const updateSearch = debounce((q: string) => {
   searchQuery = q;
 }, 150);
+
+function setStatusFilter(status: string) {
+  statusFilter = status;
+}
+
+function setTypeFilter(type: string) {
+  typeFilter = type;
+}
 
 function clearFilters() {
   searchQuery = "";
@@ -171,29 +198,51 @@ async function promptDelete(emp: EmployeeDetailDto) {
 
 
 // Export CSV Handler
-function handleExport() {
-  const dataset = selectedIds.size > 0
-    ? employees.filter((e) => selectedIds.has(e.id))
-    : employees;
+async function handleExport() {
+  try {
+    let dataset: EmployeeDetailDto[];
+    if (selectedIds.size > 0) {
+      dataset = await Promise.all(
+        [...selectedIds].map((id) => api.getEmployee(id)),
+      );
+    } else {
+      const filter = {
+        query: searchQuery.trim() || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        employee_type: typeFilter === "all" ? undefined : typeFilter,
+        page_size: 100,
+      };
+      const firstPage = await api.listEmployees({ ...filter, page: 1 });
+      dataset = [...firstPage.items];
+      for (let page = 2; page <= firstPage.total_pages; page += 1) {
+        const nextPage = await api.listEmployees({ ...filter, page });
+        dataset.push(...nextPage.items);
+      }
+    }
 
-  exportToCsv(
-    `Employees_Roster_${orgId}`,
-    dataset,
-    [
-      { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
-      { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
-      { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
-      { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
-      { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
-      { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
-      { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
-      { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
-      { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
-      { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
-      { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
-    ]
-  );
-  toast.success(m.operations_ui_employee_export_success());
+    const openFile = exportToCsv(
+      `Employees_Roster_${orgId}`,
+      dataset,
+      [
+        { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
+        { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
+        { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
+        { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
+        { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
+        { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
+        { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
+        { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
+        { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
+        { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
+        { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
+      ]
+    );
+    toast.success(m.operations_ui_employee_export_success(), {
+      action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+    });
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
 }
 
 function getStatusLabel(s: string): string {
@@ -427,31 +476,31 @@ function handleGridAction(event: GridActionEvent) {
                 label: m.employees_filter_all(),
                 badge: formatNumber(stats.total),
                 isActive: statusFilter === "all",
-                onclick: () => (statusFilter = "all"),
+                onclick: () => setStatusFilter("all"),
               },
               {
                 label: m.employees_status_active(),
                 badge: formatNumber(stats.active),
                 isActive: statusFilter === "active",
-                onclick: () => (statusFilter = "active"),
+                onclick: () => setStatusFilter("active"),
               },
               {
                 label: m.employees_status_on_leave(),
                 badge: formatNumber(stats.on_leave),
                 isActive: statusFilter === "on_leave",
-                onclick: () => (statusFilter = "on_leave"),
+                onclick: () => setStatusFilter("on_leave"),
               },
               {
                 label: m.employees_status_suspended(),
                 badge: formatNumber(stats.suspended),
                 isActive: statusFilter === "suspended",
-                onclick: () => (statusFilter = "suspended"),
+                onclick: () => setStatusFilter("suspended"),
               },
               {
                 label: m.employees_status_terminated(),
                 badge: formatNumber(stats.terminated),
                 isActive: statusFilter === "terminated",
-                onclick: () => (statusFilter = "terminated"),
+                onclick: () => setStatusFilter("terminated"),
               },
             ],
           },
@@ -462,27 +511,27 @@ function handleGridAction(event: GridActionEvent) {
                 label: m.ui_copy_all_types_f376a2ae(),
                 badge: formatNumber(stats.total),
                 isActive: typeFilter === "all",
-                onclick: () => (typeFilter = "all"),
+                onclick: () => setTypeFilter("all"),
               },
               {
                 label: m.employees_type_teacher(),
                 isActive: typeFilter === "teacher",
-                onclick: () => (typeFilter = "teacher"),
+                onclick: () => setTypeFilter("teacher"),
               },
               {
                 label: m.employees_type_admin(),
                 isActive: typeFilter === "admin",
-                onclick: () => (typeFilter = "admin"),
+                onclick: () => setTypeFilter("admin"),
               },
               {
                 label: m.employees_type_specialist(),
                 isActive: typeFilter === "specialist",
-                onclick: () => (typeFilter = "specialist"),
+                onclick: () => setTypeFilter("specialist"),
               },
               {
                 label: m.employees_type_support(),
                 isActive: typeFilter === "support",
-                onclick: () => (typeFilter = "support"),
+                onclick: () => setTypeFilter("support"),
               },
             ],
           },
@@ -575,9 +624,22 @@ function handleGridAction(event: GridActionEvent) {
         <!-- Table View with OrbisGrid -->
         <div class="flex-1 min-h-0 flex flex-col bg-card border border-border rounded-lg overflow-hidden shadow-xs">
           {#if isLoading}
-            <div class="h-full w-full flex flex-col items-center justify-center p-8 gap-3 text-muted-foreground">
-              <LoadingIndicator class="text-primary"  size={24} />
-              <span class="text-xs">{m.ui_copy_loading_employees_3e3b45d1()}</span>
+            <div class="flex h-full min-h-0 flex-col" aria-busy="true">
+              <span class="sr-only">{m.ui_copy_loading_employees_3e3b45d1()}</span>
+              <div class="flex h-11 shrink-0 items-center gap-4 border-b border-border bg-muted/30 px-4">
+                {#each Array.from({ length: 5 }) as _, index (index)}
+                  <Skeleton class="h-4 flex-1" />
+                {/each}
+              </div>
+              <div class="flex-1 divide-y divide-border/60 overflow-hidden">
+                {#each Array.from({ length: 9 }) as _, rowIndex (rowIndex)}
+                  <div class="flex h-11 items-center gap-4 px-4">
+                    {#each Array.from({ length: 5 }) as _, columnIndex (columnIndex)}
+                      <Skeleton class="h-4 flex-1" />
+                    {/each}
+                  </div>
+                {/each}
+              </div>
             </div>
           {:else if error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
@@ -612,6 +674,8 @@ function handleGridAction(event: GridActionEvent) {
                 rtl={getLocale() === "ar"}
                 readonly
                 onaction={handleGridAction}
+                hasMore={employeesQuery.hasNextPage ?? false}
+                onloadmore={loadMoreEmployees}
               />
             </div>
           {/if}

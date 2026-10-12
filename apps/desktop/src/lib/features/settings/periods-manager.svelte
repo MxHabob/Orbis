@@ -1,12 +1,12 @@
 <!--
 @component PeriodsManager
-Allows administrators to manage academic periods, terms, semesters, and locking states.
+Allows administrators to manage configured academic periods and locking states.
 Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hierarchical trees.
 -->
 <script lang="ts">
   import { api, extractErrorMessage, queryKeys } from "$lib/api";
   import { formatDate } from "$lib/core/i18n";
-  import { createPeriodsQuery, createAcademicYearsQuery } from "$lib/features/academics/queries";
+  import { createPeriodsQuery, createacademicCalendarsQuery } from "$lib/features/academics/queries";
   import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
   import * as m from "$lib/paraglide/messages";
   import { confirmStore } from "$lib/stores";
@@ -45,11 +45,11 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
 
   // Queries
   const periodsQuery = createPeriodsQuery(() => orgId);
-  const yearsQuery = createAcademicYearsQuery(() => orgId);
+  const yearsQuery = createacademicCalendarsQuery(() => orgId);
 
   // Derived state from queries
   const periods = $derived(periodsQuery.data ?? []);
-  const academicYears = $derived(yearsQuery.data ?? []);
+  const academicCalendars = $derived(yearsQuery.data ?? []);
   const isLoading = $derived(periodsQuery.isLoading || yearsQuery.isLoading);
   const isRefreshing = $derived(periodsQuery.isFetching || yearsQuery.isFetching);
 
@@ -71,8 +71,8 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
   const filterGroups = $derived<SearchableMultiFilterGroup[]>([
     {
       id: "years",
-      label: m.settings_nav_academic_years(),
-      options: academicYears.map((y) => ({
+      label: m.settings_nav_academic_calendars(),
+      options: academicCalendars.map((y) => ({
         value: `year:${y.id}`,
         label: `${y.name_ar || y.name}${y.status === "active" ? " ★" : ""}`,
       })),
@@ -81,7 +81,7 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
       id: "status",
       label: m.common_word_status(),
       options: [
-        { value: "status:active", label: m.academic_years_filter_active() },
+        { value: "status:active", label: m.academic_calendars_filter_active() },
         { value: "status:locked", label: m.academic_calendar_locked_badge() },
       ],
     },
@@ -89,9 +89,15 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
       id: "type",
       label: m.common_filter(),
       options: [
-        { value: "type:term", label: m.common_period_form_type_term() },
-        { value: "type:semester", label: m.common_cycle_form_type_year() },
-      ],
+        ...new Set(
+          periods
+            .map((period) => period.period_type)
+            .filter((periodType): periodType is string => Boolean(periodType)),
+        ),
+      ].map((periodType) => ({
+        value: `type:${periodType}`,
+        label: periodType,
+      })),
     },
   ]);
 
@@ -153,7 +159,7 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
 
   function getYearName(yearId?: string | null): string | null {
     if (!yearId) return null;
-    const y = academicYears.find((item) => item.id === yearId);
+    const y = academicCalendars.find((item) => item.id === yearId);
     return y ? (y.name_ar || y.name) : null;
   }
 
@@ -231,15 +237,15 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
 
   const relatedActionGroups = $derived<ActionGroup[]>([
     {
-      id: "academic_years_nav",
+      id: "academic_calendars_nav",
       title: m.academic_calendar_title(),
       icon: Calendar,
       defaultExpanded: true,
       subLinks: [
         {
-          id: "academic_years_settings",
-          label: m.settings_nav_academic_years(),
-          href: `/${orgId}/settings/academic-years`,
+          id: "academic_calendars_settings",
+          label: m.settings_nav_academic_calendars(),
+          href: `/${orgId}/settings/academic-calendars`,
         },
         {
           id: "visual_calendar",
@@ -274,50 +280,56 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
   ]);
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide font-sans">
-  <!-- Minimal Standard Toolbar -->
-  <div class="flex items-center justify-between gap-3 flex-nowrap shrink-0">
-    <div class="relative flex-1 max-w-xs">
-      <Search
-        size={14}
-        class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
-      />
-      <Input
-        type="text"
-        placeholder={m.settings_subjects_search_placeholder_custom ? m.academic_years_search_placeholder() : "Search..."}
-        bind:value={searchQuery}
-        class="h-8 ps-8 text-xs bg-card border-border/60"
-      />
-    </div>
+<div class="flex h-full w-full flex-col overflow-hidden bg-background font-sans text-start">
+  <header class="shrink-0 border-b border-border/50 bg-card/40 px-4 py-3 backdrop-blur-sm">
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="relative min-w-0 flex-1 basis-56 max-w-md">
+        <Search
+          size={14}
+          class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+        />
+        <Input
+          type="text"
+          placeholder={m.academic_calendars_search_placeholder()}
+          bind:value={searchQuery}
+          class="h-8 ps-8 text-xs bg-card border-border/60"
+        />
+      </div>
 
-    <div class="flex items-center gap-2">
-      <SearchableMultiFilter
-        groups={filterGroups}
-        bind:selectedValues={selectedFilters}
-        placeholder={m.academic_years_filter_placeholder()}
-        searchPlaceholder={m.academic_years_filter_search()}
-        emptyText={m.academic_years_no_matching_filters()}
-      />
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        onclick={handleRefresh}
-        class="text-muted-foreground"
-        disabled={isRefreshing}
-      >
-        {#if isRefreshing}
-          <LoadingIndicator size={14} />
-        {:else}
-          <Refresh size={14} />
-        {/if}
-      </Button>
-      <Button variant="lime" class="text-xs h-8 px-3 font-semibold shrink-0" onclick={openCreateSheet}>
-        <Plus size={14} class="me-1.5" />
-        {m.settings_periods_add()}
-      </Button>
+      <div class="ms-auto flex items-center gap-2">
+        <SearchableMultiFilter
+          groups={filterGroups}
+          bind:selectedValues={selectedFilters}
+          placeholder={m.academic_calendars_filter_placeholder()}
+          searchPlaceholder={m.academic_calendars_filter_search()}
+          emptyText={m.academic_calendars_no_matching_filters()}
+        />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onclick={handleRefresh}
+          class="text-muted-foreground"
+          disabled={isRefreshing}
+        >
+          {#if isRefreshing}
+            <LoadingIndicator size={14} />
+          {:else}
+            <Refresh size={14} />
+          {/if}
+        </Button>
+        <Button
+          variant="lime"
+          class="h-8 shrink-0 px-3 text-xs font-semibold"
+          onclick={openCreateSheet}
+        >
+          <Plus size={14} class="me-1.5" />
+          {m.settings_periods_add()}
+        </Button>
+      </div>
     </div>
-  </div>
+  </header>
 
+  <main class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 scrollbar-hide sm:p-6">
   {#snippet periodNode(node: any, depth: number)}
     {#if depth <= 10}
       {@const children = getChildren(node.id)}
@@ -406,7 +418,7 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
                 onclick={() => requestActivate(node.id)}
               >
                 <CheckCircle size={12} />
-                <span class="hidden sm:inline">{m.common_word_status()}</span>
+                <span class="hidden sm:inline">{m.ui_copy_activate_c2b12d71()}</span>
               </Button>
             {/if}
 
@@ -470,19 +482,16 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
       </div>
       <h3 class="text-xs font-bold text-foreground mb-1">
         {searchQuery || selectedFilters.length > 0
-          ? m.academic_years_empty_search()
+          ? m.academic_calendars_empty_search()
           : m.periods_manager_empty_all()}
       </h3>
-      <p class="text-[11px] text-muted-foreground max-w-sm mb-4">
-        {m.periods_manager_empty_desc()}
-      </p>
       <Button size="sm" variant="lime" class="text-xs h-8 px-3 font-semibold gap-1.5" onclick={openCreateSheet}>
         <Plus size={13} />
         {m.settings_periods_add()}
       </Button>
     </div>
   {:else}
-    <div class="flex flex-col divide-y divide-border/40 bg-card/30 rounded-xl border border-border/60 p-4" in:fade={{ duration: 150 }}>
+    <div class="flex flex-col divide-y divide-border/40 rounded-xl border border-border/60 bg-card/50 p-3 sm:p-4" in:fade={{ duration: 150 }}>
       {#each rootPeriods as root (root.id)}
         {@render periodNode(root, 0)}
       {/each}
@@ -494,6 +503,7 @@ Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hiera
     title={m.ui_copy_related_support_bf36e16f()}
     groups={relatedActionGroups}
   />
+  </main>
 </div>
 
 <!-- Sheets -->

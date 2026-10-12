@@ -10,7 +10,6 @@ import React, { useState } from "react";
 import {
   View,
   Image,
-  StyleSheet,
   type ViewStyle,
   type ImageSourcePropType,
 } from "react-native";
@@ -57,12 +56,11 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
 
     const logoContent = (
       <View
+        className="items-center justify-center"
         pointerEvents="none"
         style={{
           width: size,
           height: size,
-          alignItems: "center",
-          justifyContent: "center",
         }}
       >
         {hasImage ? (
@@ -95,8 +93,8 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
       const containerSize = size + 36;
       return (
         <View
+          className="items-center justify-center border-[1.5px]"
           style={[
-            styles.container,
             {
               width: containerSize,
               height: containerSize,
@@ -106,22 +104,24 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
                 ? "rgba(139, 92, 246, 0.3)"
                 : "rgba(139, 92, 246, 0.2)",
               shadowColor: "#8B5CF6",
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.25,
+              shadowRadius: 16,
+              elevation: 6,
             },
             containerStyle,
           ]}
         >
           <View
-            style={[
-              styles.innerBox,
-              {
-                width: size + 16,
-                height: size + 16,
-                borderRadius: 18,
-                backgroundColor: isDark
-                  ? "rgba(139, 92, 246, 0.18)"
-                  : "rgba(139, 92, 246, 0.1)",
-              },
-            ]}
+            className="items-center justify-center"
+            style={{
+              width: size + 16,
+              height: size + 16,
+              borderRadius: 18,
+              backgroundColor: isDark
+                ? "rgba(139, 92, 246, 0.18)"
+                : "rgba(139, 92, 246, 0.1)",
+            }}
           >
             {logoContent}
           </View>
@@ -134,19 +134,3 @@ export const OrganizationLogo = React.memo<OrganizationLogoProps>(
 );
 
 OrganizationLogo.displayName = "OrganizationLogo";
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  innerBox: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

@@ -12,6 +12,8 @@ pub struct Model {
     pub slug: String,
     #[sea_orm(unique)]
     pub code: Option<String>,
+    /// school, university, institute, training_center
+    pub institution_type: String,
     pub timezone: String,
     pub locale: String,
     pub date_format: Option<String>,
@@ -29,7 +31,7 @@ pub struct Model {
     pub is_deleted: bool,
     pub deleted_at: Option<DateTime<Utc>>,
     pub deleted_by: Option<Uuid>,
-    pub current_period_id: Option<String>,
+    pub current_period_id: Option<Uuid>,
     pub metadata: Option<serde_json::Value>,
     pub created_by: Option<Uuid>,
     pub updated_by: Option<Uuid>,

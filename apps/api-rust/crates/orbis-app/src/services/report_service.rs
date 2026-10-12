@@ -632,6 +632,37 @@ impl ReportService {
         self.template_repo.find_by_id(id).await
     }
 
+    pub async fn set_default_template(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+    ) -> Result<ReportTemplate, DomainError> {
+        let template = self
+            .template_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))?;
+
+        if template.org_id != ctx.tenant_id {
+            return Err(DomainError::Forbidden(
+                "Template belongs to another organization".into(),
+            ));
+        }
+        if template.status != TemplateStatus::Published {
+            return Err(DomainError::Validation(
+                "Only published templates can be set as default".into(),
+            ));
+        }
+
+        self.template_repo
+            .set_default(ctx.tenant_id, id)
+            .await?;
+        self.template_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Template not found".into()))
+    }
+
     /// Delete (soft delete) a template
     pub async fn delete_template(&self, ctx: &RequestContext, id: Uuid) -> Result<(), DomainError> {
         let template = self

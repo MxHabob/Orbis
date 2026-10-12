@@ -39,8 +39,8 @@ export const queryKeys = {
     year: (id: string) => [...queryKeys.calendar.all, "year", id] as const,
     periods: (orgId?: string) => [...queryKeys.calendar.all, "periods", orgId ?? "current"] as const,
     period: (id: string) => [...queryKeys.calendar.all, "period", id] as const,
-    periodTemplates: () =>
-      [...queryKeys.calendar.all, "periodTemplates"] as const,
+    PeriodTypes: () =>
+      [...queryKeys.calendar.all, "PeriodTypes"] as const,
   },
 
   // ── Academic ────────────────────────────────────────────────
@@ -51,10 +51,10 @@ export const queryKeys = {
       [...queryKeys.academic.all, "subject", id] as const,
     classes: (orgId?: string) => [...queryKeys.academic.all, "classes", orgId ?? "current"] as const,
     class: (id: string) => [...queryKeys.academic.all, "class", id] as const,
-    classSubjects: (classId: string, periodId: string) =>
+    SectionSubjects: (classId: string, periodId: string) =>
       [
         ...queryKeys.academic.all,
-        "classSubjects",
+        "SectionSubjects",
         { classId, periodId },
       ] as const,
     prerequisites: (studentId: string, subjectId: string) =>
@@ -133,7 +133,7 @@ export const queryKeys = {
     room: (id: string) => [...queryKeys.scheduling.all, "room", id] as const,
     timeSlots: (periodId: string) =>
       [...queryKeys.scheduling.all, "timeSlots", periodId] as const,
-    lessons: (filter?: { classSubjectId?: string; periodId?: string }) =>
+    lessons: (filter?: { SectionSubjectId?: string; periodId?: string }) =>
       [...queryKeys.scheduling.all, "lessons", filter ?? {}] as const,
   },
 
@@ -143,7 +143,7 @@ export const queryKeys = {
     schemes: (orgId?: string) => [...queryKeys.assessment.all, "schemes", orgId ?? "current"] as const,
     scheme: (id: string) =>
       [...queryKeys.assessment.all, "scheme", id] as const,
-    grades: (filter?: { studentId?: string; classSubjectId?: string }) =>
+    grades: (filter?: { studentId?: string; SectionSubjectId?: string }) =>
       [...queryKeys.assessment.all, "grades", filter ?? {}] as const,
     attendance: (classId: string, date: string) =>
       [...queryKeys.assessment.all, "attendance", { classId, date }] as const,

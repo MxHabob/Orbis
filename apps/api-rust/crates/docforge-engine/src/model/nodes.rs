@@ -205,6 +205,8 @@ pub struct TableNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     /// Table props — accepts either the new typed `TableProps` or legacy
     /// opaque JSON. Old templates continue to work via `serde(untagged)`.
     pub props: TablePropsWrapper,
@@ -217,6 +219,31 @@ pub struct TableNode {
 pub enum TablePropsWrapper {
     Typed(TableProps),
     Legacy(serde_json::Value),
+}
+
+impl TablePropsWrapper {
+    pub fn into_typed(self) -> TableProps {
+        match self {
+            TablePropsWrapper::Typed(props) => props,
+            TablePropsWrapper::Legacy(val) => serde_json::from_value(val).unwrap_or_else(|_| TableProps {
+                columns: Vec::new(),
+                data_source: None,
+                rows: None,
+                show_header: true,
+                show_totals: false,
+                show_subtotals: false,
+                group_by: None,
+                sort_by: None,
+                repeating_header: false,
+                position: None,
+                show_grid: true,
+                show_border: true,
+                direction: None,
+                style: None,
+                conditional_formatting: None,
+            }),
+        }
+    }
 }
 
 /// Typed table properties for structured table rendering.
@@ -249,6 +276,18 @@ pub struct TableProps {
     /// Whether the header repeats on every page.
     #[serde(default)]
     pub repeating_header: bool,
+    /// Position if configured inside props.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
+    /// Whether to draw grid divider lines. Default true.
+    #[serde(default = "default_true")]
+    pub show_grid: bool,
+    /// Whether to draw outer border. Default true.
+    #[serde(default = "default_true")]
+    pub show_border: bool,
+    /// Text direction ("rtl" or "ltr").
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direction: Option<String>,
     /// Table-level styling.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<TableStyle>,
@@ -262,20 +301,26 @@ pub struct TableProps {
 #[serde(rename_all = "camelCase")]
 pub struct TableColumnDef {
     /// Unique column identifier.
+    #[serde(default)]
     pub id: String,
     /// Display header text.
+    #[serde(default)]
     pub header: String,
     /// Arabic header text (for bilingual templates).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub header_ar: Option<String>,
     /// Data field path to bind (e.g. "totalScore", "student.name").
+    #[serde(default, alias = "key")]
     pub field: String,
     /// Column width (e.g. "120px", "20%", "auto").
     #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<String>,
     /// Text alignment: "left", "center", "right".
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "align")]
     pub alignment: Option<String>,
+    /// Default fallback value if data is null/missing.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub default_value: Option<String>,
     /// Display format (e.g. "number:2" for 2 decimal places).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub format: Option<String>,
@@ -300,15 +345,23 @@ pub struct TableStyle {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub header_text_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub header_font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub header_font_weight: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row_bg_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub alt_row_bg_color: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub font_size: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub row_height: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub padding: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub direction: Option<String>,
 }
 
 /// Conditional formatting rule for table cells.

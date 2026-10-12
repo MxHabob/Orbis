@@ -25,7 +25,7 @@ const menuItems = $derived([
 ]);
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide">
+<div class="h-full w-full overflow-y-auto scrollbar-hide px-2">
   <div class="w-full  flex flex-col gap-6">
     <!-- Secondary Navigation -->
     <SecondaryMenu items={menuItems} {basePath} />

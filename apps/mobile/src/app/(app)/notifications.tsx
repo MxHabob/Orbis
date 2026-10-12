@@ -1,25 +1,20 @@
-import { StyleSheet, Text, View } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
-import { Typography, Fonts } from "@/constants/theme";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
+import { useI18n } from "@/lib/i18n";
 
 export default function NotificationsScreen() {
-  const theme = useTheme();
+  const { t } = useI18n();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Text style={[styles.title, { color: theme.text }]}>Notifications</Text>
-    </View>
+    <ScreenScrollView
+      horizontalPadding="five"
+      verticalPadding="six"
+      scrollViewProps={{ contentContainerClassName: "flex-grow justify-center" }}
+    >
+      <EmptyState
+        title={t("notifications_inbox_unavailable_title")}
+        description={t("notifications_inbox_unavailable_description")}
+      />
+    </ScreenScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    ...Typography.h1,
-    fontFamily: Fonts.sans,
-  },
-});

@@ -48,13 +48,17 @@ import PrintConfigPanel from "./print-config-panel.svelte";
 let {
   open = $bindable(false),
   entityType,
+  documentType,
   entityIds = [],
   entityLabels = [],
+  contexts: suppliedContexts,
 }: {
   open: boolean;
   entityType: string;
+  documentType?: string;
   entityIds: string[];
   entityLabels?: string[];
+  contexts?: Record<string, unknown>[];
 } = $props();
 
 // ── State ────────────────────────────────────────────────────
@@ -106,18 +110,42 @@ async function loadTemplates() {
   try {
     const list = await api.listTemplates({
       entityType: entityType,
+      documentType,
       status: "published",
     });
     templates = Array.isArray(list) ? list : [];
     if (templates.length > 0) {
-      selectedTemplateId = templates[0].id;
-      updateConfigFromTemplate(templates[0]);
+      const defaultTemplate = templates.find((template) => template.is_default);
+      const initialTemplate = defaultTemplate ?? templates[0];
+      selectedTemplateId = initialTemplate.id;
+      updateConfigFromTemplate(initialTemplate);
+    } else {
+      selectedTemplateId = "";
     }
   } catch (e: unknown) {
     const msg = (e as any)?.message || m.shared_ui_print_templates_load_failed();
     console.error(msg);
   } finally {
     loadingTemplates = false;
+  }
+}
+
+async function setSelectedTemplateDefault() {
+  const selected = templates.find((template) => template.id === selectedTemplateId);
+  if (!selected || selected.is_default) return;
+
+  try {
+    const updated = await api.updateTemplate(selected.id, { is_default: true });
+    templates = templates.map((template) => ({
+      ...template,
+      is_default: template.id === updated.id,
+    }));
+    toast.success(m.settings_templates_set_default_success());
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+    console.error("Failed to set print template as default:", error);
+    toast.error(message);
   }
 }
 
@@ -219,23 +247,76 @@ function serializeMultiUpConfig(config: MultiUpConfig): string {
 
 // ── Preview Generation ───────────────────────────────────────
 
-async function generatePreview() {
-  if (!selectedTemplateId || entityIds.length === 0) return;
+async function resolveContexts(): Promise<Record<string, unknown>[]> {
+  if (suppliedContexts) return suppliedContexts;
+  if (entityType === "student") {
+    const students = await Promise.all(entityIds.map((id) => api.getStudent(id)));
+    const classIds = [
+      ...new Set(
+        students
+          .map(({ enrollment }) => enrollment?.class_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const classes = await Promise.all(classIds.map((id) => api.getClass(id)));
+    const classesById = new Map(classes.map((item) => [item.id, item]));
+
+    return students.map(({ student, person, enrollment }, index) => {
+      const classInfo = enrollment?.class_id
+        ? classesById.get(enrollment.class_id)
+        : undefined;
+      return {
+        student: {
+          ...student,
+          name: person.full_name,
+          nameAr: person.full_name_ar ?? student.name_ar ?? student.full_name,
+          studentNumber: student.student_number,
+          nationalId: person.national_id ?? student.national_id,
+          avatarUrl: student.avatar_url,
+          classId: enrollment?.class_id,
+          className: classInfo?.name,
+          classNameAr: classInfo?.name_ar,
+          level: classInfo?.level,
+        },
+        person,
+        enrollment,
+        class: classInfo,
+        label: entityLabels[index],
+      };
+    });
+  }
+  return entityIds.map((id, index) => ({
+    entity: { id, label: entityLabels[index] },
+  }));
+}
+
+async function generatePdf(): Promise<boolean> {
+  if (!selectedTemplateId || entityIds.length === 0) return false;
   generatingPdf = true;
   pdfUrl = null;
   try {
     const template = templates.find((t) => t.id === selectedTemplateId);
-    if (template) {
-      const docJson = template.documentJson ?? (template as any).document_json;
-      const pdfBytes = await api.previewTemplate(docJson, {}, "ar");
-      if (pdfBytes && pdfBytes.length > 0) {
-        const base64 = uint8ArrayToBase64(Array.from(pdfBytes));
-        pdfUrl = `data:application/pdf;base64,${base64}`;
-      }
-    }
+    if (!template) throw new Error(m.shared_ui_print_preview_failed());
+
+    const docJson = template.documentJson ?? (template as any).document_json;
+    const pdfBytes = await api.batchPrint({
+      templateId: selectedTemplateId,
+      documentJson: docJson,
+      contexts: await resolveContexts(),
+      title: template.name,
+      batchConfig: JSON.parse(serializeMultiUpConfig(multiUpConfig)),
+      locale: getLocale(),
+    });
+    if (!pdfBytes.length) throw new Error(m.shared_ui_print_preview_failed());
+
+    const base64 = uint8ArrayToBase64(Array.from(pdfBytes));
+    pdfUrl = `data:application/pdf;base64,${base64}`;
+    activeTab = "pdf";
+    return true;
   } catch (e: unknown) {
     const msg = (e as any)?.message || m.shared_ui_print_preview_failed();
     toast.error(msg);
+    return false;
   } finally {
     generatingPdf = false;
   }
@@ -250,41 +331,48 @@ async function handlePrintAction() {
   }
 
   if (entityIds.length <= multiUpLayout.itemsPerSheet) {
-    // Single sheet — generate preview
-    await generatePreview();
-    toast.success(m.common_print_multi_up_complete());
+    if (await generatePdf()) {
+      toast.success(m.shared_ui_template_preview_generated());
+    }
   } else {
-    // Batch multi-up printing
+    const printWin = window.open("", "_blank");
+    if (!printWin) {
+      toast.error(m.shared_ui_print_frame_unavailable());
+      return;
+    }
+
     isBatchProcessing = true;
     batchProgress = 30;
     batchStatusText = m.common_print_multi_up_processing();
 
     try {
-      const html = await api.batchPrint({
-        reportCode: selectedTemplateId,
-        parameters: {
-          entity_ids: entityIds,
-          entity_type: entityType,
-        },
-        gridColumns: multiUpLayout.columns,
-        gridRows: multiUpLayout.rows,
-        marginMm: multiUpConfig.outerMarginMm,
-        cutMarks: multiUpConfig.showCropMarks,
-      }).catch(() => null);
-
+      const template = templates.find((item) => item.id === selectedTemplateId);
+      if (!template) throw new Error(m.shared_ui_print_generation_failed());
+      const docJson = template.documentJson ?? (template as any).document_json;
+      const pdfBytes = await api.batchPrint({
+        templateId: selectedTemplateId,
+        documentJson: docJson,
+        contexts: await resolveContexts(),
+        title: template.name,
+        batchConfig: JSON.parse(serializeMultiUpConfig(multiUpConfig)),
+        locale: getLocale(),
+      });
+      if (!pdfBytes.length) throw new Error(m.shared_ui_print_generation_failed());
       batchProgress = 80;
 
-      if (html) {
-        const printWin = window.open("", "_blank");
-        if (printWin) {
-          printWin.document.write(html);
-          printWin.document.close();
+      const blobUrl = URL.createObjectURL(
+        new Blob([pdfBytes], { type: "application/pdf" }),
+      );
+      printWin.addEventListener(
+        "load",
+        () => {
           printWin.focus();
           printWin.print();
-        }
-      } else {
-        await generatePreview();
-      }
+          URL.revokeObjectURL(blobUrl);
+        },
+        { once: true },
+      );
+      printWin.location.href = blobUrl;
 
       batchProgress = 100;
       toast.success(
@@ -293,6 +381,7 @@ async function handlePrintAction() {
         }),
       );
     } catch (e: unknown) {
+      printWin.close();
       const msg = (e as any)?.message || m.shared_ui_print_generation_failed();
       toast.error(msg);
     } finally {
@@ -378,11 +467,21 @@ function applySuggestion(suggestion: MultiUpLayout) {
                 <SelectContent>
                   {#each templates as t (t.id)}
                     <SelectItem value={t.id}>
-                      {isRtl && t.name_ar ? t.name_ar : t.name}
+                      {(isRtl && t.name_ar ? t.name_ar : t.name)}{t.is_default ? ` — ${m.settings_templates_default_badge()}` : ""}
                     </SelectItem>
                   {/each}
                 </SelectContent>
               </Select>
+              {#if templates.some((template) => template.id === selectedTemplateId && !template.is_default)}
+                <Button
+                  variant="outline"
+                  size="xs"
+                  class="mt-1 w-full"
+                  onclick={setSelectedTemplateDefault}
+                >
+                  {m.settings_templates_action_set_default()}
+                </Button>
+              {/if}
             {/if}
           </div>
 

@@ -12,13 +12,15 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, queryClient } from "$lib/api";
+import { createInfiniteQuery } from "@tanstack/svelte-query";
+import { debounce } from "$lib/shared/utils/debounce";
+import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import type { StudentFeeDto, FeeTemplateDto, DiscountTemplateDto, AcademicPeriodDto } from "$lib/api/types";
+import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import {
   Select,
   SelectContent,
@@ -35,14 +37,19 @@ import {
   Calendar,
   ArrowPath,
 } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type DataQuery,
+  type OrbisColumnDef,
+  type SortSpec,
+} from "@orbis/svelte-grid";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import FinanceInlineFormCard from "$lib/features/finance/components/finance-inline-form-card.svelte";
 import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
 // ── State ──────────────────────────────────────────────────────────────
-let fees = $state<StudentFeeDto[]>([]);
 let feeTemplates = $state<FeeTemplateDto[]>([]);
 let discountTemplates = $state<DiscountTemplateDto[]>([]);
 let students = $state<any[]>([]);
@@ -75,36 +82,106 @@ let refundNotes = $state("");
 
 // Filters
 let searchQuery = $state("");
+let searchInput = $state("");
 let statusFilter = $state<"all" | "pending" | "partially_paid" | "paid" | "overdue">("all");
+let gridSort = $state<SortSpec[]>([]);
+const updateFeeSearch = debounce((value: string) => {
+  searchQuery = value;
+}, 250);
+const feePageSort = $derived.by(() => {
+  const sort = gridSort[0];
+  const fieldByColumn: Record<string, string> = {
+    due_date_display: "due_date",
+    status_display: "status",
+    net_formatted: "net_amount",
+    paid_formatted: "paid_amount",
+    balance_formatted: "balance_due",
+  };
+  const sortBy = sort ? fieldByColumn[sort.id] : undefined;
+  return sortBy ? { sort_by: sortBy, sort_dir: sort!.dir } : {};
+});
+function handleFeeGridQuery(query: DataQuery) {
+  gridSort = query.sorts;
+}
+
+const feePageFilter = $derived({
+  status:
+    statusFilter !== "all" && statusFilter !== "overdue"
+      ? statusFilter
+      : undefined,
+  is_overdue: statusFilter === "overdue" ? true : undefined,
+});
+const feesQuery = createInfiniteQuery(() => ({
+  queryKey: queryKeys.finance.studentFees(orgId, {
+    ...feePageFilter,
+    search: searchQuery.trim() || undefined,
+    ...feePageSort,
+  }),
+  queryFn: ({ pageParam }) =>
+    api.listStudentFeesPaginated({
+      ...feePageFilter,
+      search: searchQuery.trim() || undefined,
+      ...feePageSort,
+      page: pageParam,
+      page_size: 50,
+    }),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage) =>
+    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+  enabled: !!orgId,
+  staleTime: 2 * 60 * 1000,
+}));
+const fees = $derived(feesQuery.data?.pages.flatMap((page) => page.items) ?? []);
+const gridLoading = $derived(
+  isLoading || (feesQuery.isLoading && !feesQuery.data),
+);
+
+async function loadMoreFees() {
+  const result = await feesQuery.fetchNextPage();
+  if (result.isError) throw result.error;
+}
+
+function getFeeCurrency(fee: StudentFeeDto) {
+  const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
+  return template?.currency || (fee as StudentFeeDto & { currency?: string }).currency || orgContext.baseCurrency || "";
+}
+
+function formatFeeAmount(amount: number, currency: string) {
+  return currency ? formatCurrency(amount, currency) : amount.toLocaleString();
+}
 
 onMount(async () => {
   if (orgId) {
-    await loadData();
+    await loadData(false);
   }
 });
 
-async function loadData() {
+async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [feesList, templatesList, discountsList, enrollmentsList, periodsList] = await Promise.all([
-      api.listStudentFees().catch(() => []),
-      api.listFeeTemplates().catch(() => []),
-      api.listDiscountTemplates().catch(() => []),
-      api.listEnrollments ? api.listEnrollments().catch(() => []) : Promise.resolve([]),
-      api.listAcademicPeriods ? api.listAcademicPeriods().catch(() => []) : Promise.resolve([]),
+    const [templatesList, discountsList, enrollmentsList, periodsList] = await Promise.all([
+      api.listFeeTemplates(),
+      api.listDiscountTemplates(),
+      api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
+      api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
     ]);
 
-    fees = feesList || [];
-    feeTemplates = templatesList || [];
-    discountTemplates = discountsList || [];
-    students = (enrollmentsList || []).map((e: any) => ({
+    feeTemplates = templatesList;
+    discountTemplates = discountsList;
+    students = enrollmentsList.map((e: any) => ({
       id: String(e.id),
+      student_id: String(e.student_id),
       full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
     }));
-    periods = periodsList || [];
+    periods = periodsList;
 
     if (periods.length > 0 && !formPeriodId) {
       formPeriodId = periods[0].id;
+    }
+    if (refreshFees) {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.studentFees(orgId),
+      });
     }
   } catch (e) {
     console.error("Failed to load fees master data:", e);
@@ -115,21 +192,22 @@ async function loadData() {
 }
 
 // ── KPI Summary Calculations ───────────────────────────────────────────
-const totalFeesAmount = $derived(
-  fees.reduce((sum, f) => sum + Number(f.net_amount ?? f.original_amount ?? 0), 0)
-);
-
-const totalPaidAmount = $derived(
-  fees.reduce((sum, f) => sum + Number(f.paid_amount ?? 0), 0)
-);
-
-const totalBalanceDue = $derived(
-  Math.max(0, totalFeesAmount - totalPaidAmount)
-);
-
-const collectionRate = $derived(
-  totalFeesAmount > 0 ? Math.round((totalPaidAmount / totalFeesAmount) * 100) : 0
-);
+const feeTotals = $derived.by(() => {
+  const totals = new Map<string, { currency: string; due: number; paid: number; balance: number }>();
+  for (const fee of fees) {
+    const currency = getFeeCurrency(fee);
+    const key = currency || "unspecified";
+    const total = totals.get(key) || { currency, due: 0, paid: 0, balance: 0 };
+    total.due += Number(fee.net_amount ?? fee.original_amount ?? 0);
+    total.paid += Number(fee.paid_amount ?? 0);
+    total.balance += Number(fee.balance_due ?? Math.max(0, Number(fee.net_amount ?? fee.original_amount ?? 0) - Number(fee.paid_amount ?? 0)));
+    totals.set(key, total);
+  }
+  return [...totals.values()].map((total) => ({
+    ...total,
+    collectionRate: total.due > 0 ? Math.round((total.paid / total.due) * 100) : 0,
+  }));
+});
 
 // ── Form Actions ───────────────────────────────────────────────────────
 async function handleCreateFee() {
@@ -141,28 +219,38 @@ async function handleCreateFee() {
     toast.error(m.finance_ui_fee_template_required());
     return;
   }
+  if (!formPeriodId) {
+    toast.error(m.finance_ui_period_placeholder());
+    return;
+  }
+
+  const template = feeTemplates.find((item) => item.id === formTemplateId);
+  const enrollment = students.find((student) => student.id === formStudentId);
+  if (!template) {
+    toast.error(m.finance_ui_fee_template_required());
+    return;
+  }
+  if (!enrollment) {
+    toast.error(m.finance_ui_student_required());
+    return;
+  }
+  const origAmt = Number(template.default_amount);
+  const discAmt = Number(formDiscountAmount || 0);
+  if (discAmt < 0 || discAmt > origAmt) {
+    toast.error(m.finance_ui_discount_amount_invalid());
+    return;
+  }
 
   isSubmitting = true;
   try {
-    const template = feeTemplates.find((t) => t.id === formTemplateId);
-    const origAmt = Number(template?.amount || 0);
-    const discAmt = Number(formDiscountAmount || 0);
-    const netAmt = Math.max(0, origAmt - discAmt);
-
-    const payload = {
+    await api.generateStudentFee({
       enrollment_id: formStudentId,
+      student_id: enrollment.student_id,
+      period_id: formPeriodId,
       fee_template_id: formTemplateId,
-      academic_period_id: formPeriodId || undefined,
-      original_amount: origAmt,
-      discount_amount: discAmt,
-      net_amount: netAmt,
-      paid_amount: 0,
-      balance_due: netAmt,
+      discount_amount: discAmt > 0 ? String(discAmt) : undefined,
       due_date: formDueDate,
-      status: "unpaid",
-    };
-
-    await api.createStudentFee(payload as any);
+    });
     toast.success(m.finance_ui_fee_assigned_success());
     activeForm = "none";
     formStudentId = "";
@@ -232,16 +320,19 @@ async function handleRefundFee() {
 }
 
 // ── Grid Data ─────────────────────────────────────────────────────────
-const gridSource = $derived(
-  fees.map((f, idx) => {
-    const student = students.find((s) => String(s.id) === String(f.enrollment_id));
+function toFeeGridRow(f: StudentFeeDto, idx: number) {
+    const student = students.find(
+      (s) =>
+        String(s.student_id) === String(f.student_id) ||
+        String(s.id) === String(f.enrollment_id),
+    );
     const template = feeTemplates.find((t) => t.id === f.fee_template_id);
     const templateName = template?.name_ar || template?.name || f.fee_type_name || m.finance_ui_tuition_fees();
 
     const net = Number(f.net_amount ?? f.original_amount ?? 0);
     const paid = Number(f.paid_amount ?? 0);
     const balance = Number(f.balance_due ?? Math.max(0, net - paid));
-    const curr = f.currency || "YER";
+    const curr = getFeeCurrency(f);
 
     let statusLabel = m.finance_ui_fee_status_unpaid();
     if (f.status === "paid" || balance <= 0) {
@@ -265,51 +356,55 @@ const gridSource = $derived(
       due_date_display: f.due_date ? formatDate(f.due_date) : "—",
       status_display: statusLabel,
     };
-  })
-);
+}
 
-const filteredSource = $derived(
-  gridSource.filter((row) => {
-    if (statusFilter !== "all" && row.status_key !== statusFilter) return false;
-    return true;
-  })
-);
+const gridSource = $derived(fees.map(toFeeGridRow));
+
+const filteredSource = $derived(gridSource);
 
 const columns: OrbisColumnDef[] = [
   { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
   { id: "student_display", prop: "student_display", header: m.finance_ui_student_name(), name: m.finance_ui_student_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
   { id: "template_display", prop: "template_display", header: m.finance_ui_fee_item(), name: m.finance_ui_fee_item(), width: 180, size: 180, readonly: true },
-  { id: "net_formatted", prop: "net_formatted", header: m.finance_ui_net_amount(), name: m.finance_ui_net_amount(), width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "paid_formatted", prop: "paid_formatted", header: m.finance_ui_paid_amount(), name: m.finance_ui_paid_amount(), width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold" },
-  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_remaining_amount(), name: m.finance_ui_remaining_amount(), width: 130, size: 130, readonly: true, align: "end", cellClass: "font-mono text-rose-600 dark:text-rose-400 font-bold" },
+  { id: "net_formatted", prop: "net_formatted", header: m.finance_ui_net_amount(), name: m.finance_ui_net_amount(), width: 130, size: 130, readonly: true, sortable: true, align: "end", cellClass: "font-mono font-bold" },
+  { id: "paid_formatted", prop: "paid_formatted", header: m.finance_ui_paid_amount(), name: m.finance_ui_paid_amount(), width: 130, size: 130, readonly: true, sortable: true, align: "end", cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold" },
+  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_remaining_amount(), name: m.finance_ui_remaining_amount(), width: 130, size: 130, readonly: true, sortable: true, align: "end", cellClass: "font-mono text-rose-600 dark:text-rose-400 font-bold" },
   { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
-  { id: "due_date_display", prop: "due_date_display", header: m.finance_ui_due_date(), name: m.finance_ui_due_date(), width: 120, size: 120, readonly: true, align: "center" },
+  { id: "due_date_display", prop: "due_date_display", header: m.finance_ui_due_date(), name: m.finance_ui_due_date(), width: 120, size: 120, readonly: true, sortable: true, align: "center" },
   { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
 ];
 
-function exportCsv() {
-  const rows = filteredSource.map((f) => [
-    f.student_display,
-    f.template_display,
-    f.net_formatted,
-    f.paid_formatted,
-    f.balance_formatted,
-    f.currency_display,
-    f.due_date_display,
-    f.status_display,
-  ]);
-  const csv = [
-    [m.finance_ui_student_name(), m.finance_ui_fee_item(), m.finance_ui_net_amount(), m.finance_ui_paid_amount(), m.finance_ui_balance_due(), m.finance_ui_currency(), m.finance_ui_due_date(), m.finance_ui_status()],
-    ...rows,
-  ]
-    .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
-    .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `student-fees-${orgId}.csv`;
-  link.click();
-  URL.revokeObjectURL(url);
+async function exportCsv() {
+  try {
+    const allFees = await api.listStudentFees({
+      ...feePageFilter,
+      search: searchQuery.trim() || undefined,
+    });
+    const rows = allFees.map(toFeeGridRow).map((fee) => [
+      fee.student_display,
+      fee.template_display,
+      fee.net_formatted,
+      fee.paid_formatted,
+      fee.balance_formatted,
+      fee.currency_display,
+      fee.due_date_display,
+      fee.status_display,
+    ]);
+    const csv = [
+      [m.finance_ui_student_name(), m.finance_ui_fee_item(), m.finance_ui_net_amount(), m.finance_ui_paid_amount(), m.finance_ui_balance_due(), m.finance_ui_currency(), m.finance_ui_due_date(), m.finance_ui_status()],
+      ...rows,
+    ]
+      .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `student-fees-${orgId}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
 }
 </script>
 
@@ -324,7 +419,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-primary"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-foreground">
-          {formatCurrency(totalFeesAmount, "YER")}
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{formatFeeAmount(totals.due, totals.currency)}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
 
@@ -334,7 +435,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400">
-          {formatCurrency(totalPaidAmount, "YER")}
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{formatFeeAmount(totals.paid, totals.currency)}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
 
@@ -344,7 +451,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-rose-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-rose-600 dark:text-rose-400">
-          {formatCurrency(totalBalanceDue, "YER")}
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{formatFeeAmount(totals.balance, totals.currency)}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
 
@@ -354,7 +467,13 @@ function exportCsv() {
           <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
         </div>
         <div class="mt-2 text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400">
-          {collectionRate}%
+          {#if feeTotals.length}
+            {#each feeTotals as totals (totals.currency || "unspecified")}
+              <span class="block">{totals.collectionRate}%{totals.currency ? ` (${totals.currency})` : ""}</span>
+            {/each}
+          {:else}
+            —
+          {/if}
         </div>
       </Card>
     </div>
@@ -404,7 +523,8 @@ function exportCsv() {
           <Input
             type="text"
             placeholder={m.finance_ui_fee_search_placeholder()}
-            bind:value={searchQuery}
+            bind:value={searchInput}
+            oninput={() => updateFeeSearch(searchInput)}
             class="h-8 ps-8 text-xs bg-card border-border/60"
           />
         </div>
@@ -452,23 +572,11 @@ function exportCsv() {
 
     <!-- In-Page Creation Form Card -->
     {#if activeForm === "create"}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-primary/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-primary"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_assign_fee_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_assign_fee_heading()}
+          onclose={() => (activeForm = "none")}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_student()}</Label>
@@ -490,7 +598,7 @@ function exportCsv() {
                   placeholder={m.finance_ui_fee_item_select_placeholder()}
                   items={feeTemplates}
                   getItemValue={(t) => t.id}
-                  getItemLabel={(t) => `${t.name_ar || t.name} (${formatCurrency(Number(t.amount || 0), "YER")})`}
+                  getItemLabel={(t) => `${t.name_ar || t.name} (${formatFeeAmount(Number(t.default_amount || 0), t.currency)})`}
                   onchange={(val) => { if (val) formTemplateId = val; }}
                   class="w-full h-8 text-xs bg-background border-border/60"
                 />
@@ -545,30 +653,18 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_saving() : m.finance_ui_assign_fee_save()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
     <!-- In-Page Installment Split Form Card -->
     {#if activeForm === "split"}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-indigo-500/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_installment_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_installment_heading()}
+          accent="indigo"
+          onclose={() => (activeForm = "none")}
+        >
             <div class="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
               <div class="min-w-0">
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_unpaid_fee()}</Label>
@@ -582,7 +678,7 @@ function exportCsv() {
                     return m.finance_ui_installment_fee_option({
                       student: st?.full_name || m.finance_ui_student(),
                       fee: f.fee_type_name || m.finance_ui_fees(),
-                      amount: formatCurrency(Number(f.net_amount || 0), 'YER'),
+                      amount: formatFeeAmount(Number(f.net_amount || 0), getFeeCurrency(f)),
                     });
                   }}
                   onchange={(val) => {
@@ -630,30 +726,18 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_processing() : m.finance_ui_apply_installment_plan()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
     <!-- In-Page Refund Form Card -->
     {#if activeForm === "refund"}
-      <div transition:slide={{ duration: 200 }} class="min-h-0 max-h-[min(70vh,44rem)] shrink-0 overflow-x-hidden overflow-y-auto overscroll-contain">
-        <Card class="border border-rose-500/20 bg-card shadow-sm text-start">
-          <CardHeader class="py-3 px-4 border-b border-border/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-                  {m.finance_ui_refund_heading()}
-                </CardTitle>
-              </div>
-              <Button variant="ghost" size="icon-xs" onclick={() => activeForm = "none"} class="text-muted-foreground">
-                <XMark size={14} />
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent class="p-4 flex flex-col gap-4">
+      <div transition:slide={{ duration: 200 }}>
+        <FinanceInlineFormCard
+          title={m.finance_ui_refund_heading()}
+          accent="rose"
+          onclose={() => (activeForm = "none")}
+        >
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label class="text-xs font-semibold text-foreground mb-1 block">{m.finance_ui_select_paid_fee()}</Label>
@@ -667,7 +751,7 @@ function exportCsv() {
                     return m.finance_ui_refund_fee_option({
                       student: st?.full_name || m.finance_ui_student(),
                       fee: f.fee_type_name || m.finance_ui_fees(),
-                      amount: formatCurrency(Number(f.paid_amount || 0), 'YER'),
+                      amount: formatFeeAmount(Number(f.paid_amount || 0), getFeeCurrency(f)),
                     });
                   }}
                   onchange={(val) => {
@@ -715,8 +799,7 @@ function exportCsv() {
                 {isSubmitting ? m.finance_ui_processing() : m.finance_ui_confirm_refund()}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+        </FinanceInlineFormCard>
       </div>
     {/if}
 
@@ -725,12 +808,15 @@ function exportCsv() {
       <OrbisGrid
         columns={columns}
         source={filteredSource}
-        loading={isLoading}
-        clientQuery
+        loading={gridLoading}
+        serverQuery
         search={searchQuery}
+        onquerychange={handleFeeGridQuery}
         rtl={isAr()}
         readonly
         emptyTitle={m.finance_ui_no_student_fees()}
+        hasMore={feesQuery.hasNextPage ?? false}
+        onloadmore={loadMoreFees}
       />
     </div>
   </div>

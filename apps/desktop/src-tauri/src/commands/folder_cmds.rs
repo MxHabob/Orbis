@@ -21,7 +21,7 @@ pub struct FolderDto {
     pub entity_type: Option<String>,
     pub entity_id: Option<String>,
     pub org_unit_id: Option<String>,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub is_system: bool,
     pub metadata: Option<serde_json::Value>,
@@ -41,7 +41,7 @@ pub fn folder_dto(f: orbis_domain::entities::folder::Folder) -> FolderDto {
         entity_type: f.entity_type,
         entity_id: f.entity_id.map(|e| e.to_string()),
         org_unit_id: f.org_unit_id.map(|u| u.to_string()),
-        academic_year_id: f.academic_year_id.map(|y| y.to_string()),
+        calendar_id: f.calendar_id.map(|y| y.to_string()),
         term_id: f.term_id.map(|t| t.to_string()),
         is_system: f.is_system,
         metadata: f.metadata,
@@ -66,7 +66,7 @@ pub struct CreateFolderInputDto {
     pub entity_type: Option<String>,
     pub entity_id: Option<String>,
     pub org_unit_id: Option<String>,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -75,7 +75,7 @@ pub struct CreateFolderInputDto {
 pub struct UpdateFolderInputDto {
     pub name: Option<String>,
     pub parent_id: Option<String>,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -83,7 +83,7 @@ pub struct UpdateFolderInputDto {
 #[derive(Deserialize)]
 pub struct CreateCurriculumFolderInputDto {
     pub name: String,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub metadata: Option<serde_json::Value>,
 }
@@ -97,8 +97,8 @@ pub async fn folder_create(
     let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|u| Uuid::parse_str(&u).ok());
-    let academic_year_id = request
-        .academic_year_id
+    let calendar_id = request
+        .calendar_id
         .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
@@ -109,7 +109,7 @@ pub async fn folder_create(
         entity_type: request.entity_type,
         entity_id,
         org_unit_id,
-        academic_year_id,
+        calendar_id,
         term_id,
         metadata: request.metadata,
     };
@@ -218,8 +218,8 @@ pub async fn folder_get_or_create_curriculum(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<FolderDto>, String> {
     let ctx = make_ctx(&state);
-    let academic_year_id = request
-        .academic_year_id
+    let calendar_id = request
+        .calendar_id
         .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
@@ -228,7 +228,7 @@ pub async fn folder_get_or_create_curriculum(
         .get_or_create_curriculum_folder(
             &ctx,
             &request.name,
-            academic_year_id,
+            calendar_id,
             term_id,
             request.metadata,
         )
@@ -247,15 +247,15 @@ pub async fn folder_update(
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid Folder ID")?;
     let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
-    let academic_year_id = request
-        .academic_year_id
+    let calendar_id = request
+        .calendar_id
         .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let input = UpdateFolderInput {
         name: request.name,
         parent_id,
-        academic_year_id,
+        calendar_id,
         term_id,
         metadata: request.metadata,
     };

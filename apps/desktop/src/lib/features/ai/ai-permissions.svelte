@@ -105,7 +105,7 @@ const domainLabels: Record<string, string> = {
   academic: m.ai_ui_domain_academic_affairs(),
   assessment: m.ai_ui_domain_assessment_results(),
   finance: m.ai_ui_domain_finance(),
-  lifecycle: m.ai_ui_domain_academic_year(),
+  lifecycle: m.ai_ui_domain_academic_calendar(),
   scheduling: m.ai_ui_domain_scheduling_classes(),
   exam: m.ai_ui_domain_exams(),
 };

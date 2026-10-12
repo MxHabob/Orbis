@@ -4,9 +4,10 @@
 //! They delegate to the `LicenseRuntime` port — no direct Mulverse HTTP calls.
 
 use crate::state::AppState;
-use orbis_domain::entities::license::LicenseStateDto;
+use orbis_domain::entities::license::{LicenseStateDto, TrialOrganizationProfile};
 use serde::{Deserialize, Serialize};
 use tauri::State;
+use uuid::Uuid;
 
 // ═══════════════════════════════════════════════════════════════
 // DTOs
@@ -15,13 +16,6 @@ use tauri::State;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivateKeyRequest {
     pub product_key: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ActivationResultDto {
-    pub success: bool,
-    pub license_state: LicenseStateDto,
-    pub message: String,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -39,37 +33,49 @@ pub async fn license_get_state(state: State<'_, AppState>) -> Result<LicenseStat
 pub async fn license_activate_key(
     state: State<'_, AppState>,
     request: ActivateKeyRequest,
-) -> Result<ActivationResultDto, String> {
-    match state
-        .license_runtime
-        .activate_product_key(&request.product_key)
-        .await
-    {
-        Ok(_response) => {
-            let license_state = state.license_runtime.current_state_dto();
-            Ok(ActivationResultDto {
-                success: true,
-                license_state,
-                message: "Product key activated successfully".to_string(),
-            })
-        }
-        Err(e) => {
-            let license_state = state.license_runtime.current_state_dto();
-            Ok(ActivationResultDto {
-                success: false,
-                license_state,
-                message: e.to_string(),
-            })
-        }
+) -> Result<LicenseStateDto, String> {
+    let ctx = crate::commands::make_ctx(&state);
+    if ctx.tenant_id.is_nil() {
+        return Err("An active organization is required to activate a product key.".to_string());
     }
+    state
+        .license_runtime
+        .activate_product_key(&request.product_key, ctx.tenant_id)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(state.license_runtime.current_state_dto())
+}
+
+/// Claim a reseller key for the active organization and activate this device.
+#[tauri::command]
+pub async fn license_redeem_key(
+    state: State<'_, AppState>,
+    request: ActivateKeyRequest,
+) -> Result<LicenseStateDto, String> {
+    let ctx = crate::commands::make_ctx(&state);
+    if ctx.tenant_id.is_nil() {
+        return Err("An active organization is required to redeem a product key.".to_string());
+    }
+    let organization = trial_organization_profile(&state, ctx.tenant_id).await?;
+    state
+        .license_runtime
+        .redeem_product_key(&request.product_key, organization)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(state.license_runtime.current_state_dto())
 }
 
 /// Start a trial evaluation period.
 #[tauri::command]
 pub async fn license_start_trial(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
+    let ctx = crate::commands::make_ctx(&state);
+    if ctx.tenant_id.is_nil() {
+        return Err("An active organization is required to start a license trial.".to_string());
+    }
+    let organization = trial_organization_profile(&state, ctx.tenant_id).await?;
     state
         .license_runtime
-        .start_trial()
+        .start_trial(organization)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -91,9 +97,13 @@ pub async fn license_deactivate(state: State<'_, AppState>) -> Result<LicenseSta
 /// Force a license refresh with Mulverse Platform.
 #[tauri::command]
 pub async fn license_refresh(state: State<'_, AppState>) -> Result<LicenseStateDto, String> {
+    let ctx = crate::commands::make_ctx(&state);
+    if ctx.tenant_id.is_nil() {
+        return Err("An active organization is required to refresh its license.".to_string());
+    }
     state
         .license_runtime
-        .refresh()
+        .refresh(Some(ctx.tenant_id))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -113,4 +123,46 @@ pub async fn license_check_feature(
 #[tauri::command]
 pub async fn license_get_installation_id(state: State<'_, AppState>) -> Result<String, String> {
     Ok(state.license_runtime.installation_id())
+}
+
+async fn trial_organization_profile(
+    state: &AppState,
+    organization_id: Uuid,
+) -> Result<TrialOrganizationProfile, String> {
+    let organization = state
+        .org_repo
+        .find_by_id(organization_id)
+        .await
+        .map_err(|error| error.to_string())?
+        .ok_or_else(|| "The active organization could not be found.".to_string())?;
+    let metadata_value = |key: &str| {
+        organization
+            .metadata
+            .as_ref()
+            .and_then(|metadata| metadata.get(key))
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned)
+    };
+    let institution_type = metadata_value("institution_type")
+        .ok_or_else(|| "The organization is missing its institution type.".to_string())?;
+    let organization_size = metadata_value("organization_size");
+    let educational_track = metadata_value("educational_track");
+    let country_code = metadata_value("country_code");
+    let country_name = metadata_value("country_name");
+    let region_name = metadata_value("region_name");
+    let city = metadata_value("city");
+
+    Ok(TrialOrganizationProfile {
+        id: organization.id,
+        name: organization.name,
+        name_ar: organization.name_ar,
+        slug: organization.slug,
+        institution_type,
+        organization_size,
+        educational_track,
+        country_code,
+        country_name,
+        region_name,
+        city,
+    })
 }

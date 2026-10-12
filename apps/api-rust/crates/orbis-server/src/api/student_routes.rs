@@ -1,9 +1,9 @@
 //! Student routes — Registrations, Enrollments, Study Mode changes, Status updates, Guardians, Bulk registration.
 
 use axum::{
-    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, patch, post},
+    Json, Router,
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -129,6 +129,7 @@ pub struct RegisterStudentRequest {
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
     pub email: Option<String>,
+    pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub initial_period_id: Option<Uuid>,
     pub initial_class_id: Option<Uuid>,
@@ -412,6 +413,7 @@ pub async fn register_student(
         special_needs_notes: p.special_needs_notes,
         phone: p.phone,
         email: p.email,
+        address: p.address,
         avatar_url: p.avatar_url,
         initial_period_id: p.initial_period_id,
         initial_class_id: p.initial_class_id,
@@ -472,6 +474,32 @@ pub async fn list_students(
         .await?;
     let dtos = paginated.items.into_iter().map(Into::into).collect();
     Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(get, path = "/api/v1/students/me",
+    responses((status = 200, body = StudentDto)),
+    security(("bearer" = [])), tag = "Student")]
+pub async fn get_my_student(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let user_id = ctx
+        .user_id()
+        .ok_or_else(|| ApiError::unauthorized("No user identity in token"))?;
+    let student = state
+        .student_service
+        .student_repo
+        .find_by_user_id(ctx.tenant_id, user_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Student profile not found"))?;
+    let detail = state
+        .student_service
+        .student_repo
+        .find_detail_by_id(student.id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Student profile not found"))?;
+
+    Ok(ApiResponse::ok(detail.into()))
 }
 
 #[utoipa::path(get, path = "/api/v1/students/{id}",
@@ -652,6 +680,7 @@ pub async fn bulk_register_students(
             special_needs_notes: item.registration.special_needs_notes,
             phone: item.registration.phone,
             email: item.registration.email,
+            address: item.registration.address,
             avatar_url: item.registration.avatar_url,
             initial_period_id: item.registration.initial_period_id,
             initial_class_id: item.registration.initial_class_id,
@@ -955,6 +984,7 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/students/bulk-register",
             post(bulk_register_students),
         )
+        .route("/api/v1/students/me", get(get_my_student))
         .route("/api/v1/students/check-duplicate", post(check_duplicate))
         .route(
             "/api/v1/students/:id",

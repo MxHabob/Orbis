@@ -9,13 +9,11 @@ import {
   View,
   Text,
   Pressable,
-  StyleSheet,
   type ViewStyle,
 } from "react-native";
 import { ChevronRight, ChevronLeft } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface ListItemProps {
   title: string;
@@ -47,31 +45,36 @@ export function ListItem({
 
   const isInteractive = Boolean(onPress) && !disabled;
 
-  const titleColor = destructive
-    ? theme.destructive
+  const titleClass = destructive
+    ? "text-destructive"
     : disabled
-      ? theme.textMuted
-      : theme.foreground;
+      ? "text-muted-foreground"
+      : "text-foreground";
 
   const content = (
-    <View style={[styles.container, style]}>
-      {left && <View style={styles.leftBox}>{left}</View>}
+    <View
+      className="min-h-[52px] w-full flex-row items-center px-two py-two"
+      style={style}
+    >
+      {left && (
+        <View className="me-three items-center justify-center">{left}</View>
+      )}
 
-      <View style={styles.centerBox}>
-        <View style={styles.titleRow}>
+      <View className="flex-1 justify-center">
+        <View className="flex-row items-center gap-two">
           <Text
             numberOfLines={1}
-            style={[styles.title, { color: titleColor }]}
+            className={`shrink text-sm leading-5 font-semibold ${titleClass}`}
           >
             {title}
           </Text>
-          {badge && <View style={styles.badgeBox}>{badge}</View>}
+          {badge && <View className="shrink-0">{badge}</View>}
         </View>
 
         {subtitle && (
           <Text
             numberOfLines={2}
-            style={[styles.subtitle, { color: theme.textSecondary }]}
+            className="mt-0.5 text-xs leading-4 text-muted-foreground"
           >
             {subtitle}
           </Text>
@@ -79,7 +82,7 @@ export function ListItem({
       </View>
 
       {(right || chevron) && (
-        <View style={styles.rightBox}>
+        <View className="ms-two flex-row items-center gap-two">
           {right}
           {chevron && (
             isArabic ? (
@@ -99,11 +102,11 @@ export function ListItem({
         accessibilityRole="button"
         accessibilityState={{ disabled }}
         onPress={onPress}
+        className="w-full"
         style={({ pressed }) => [
-          styles.pressable,
           pressed && {
             backgroundColor: theme.backgroundSelected,
-            borderRadius: Radii.md,
+            borderRadius: 6,
           },
         ]}
       >
@@ -114,48 +117,3 @@ export function ListItem({
 
   return content;
 }
-
-const styles = StyleSheet.create({
-  pressable: {
-    width: "100%",
-  },
-  container: {
-    width: "100%",
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
-  },
-  leftBox: {
-    marginRight: Spacing.three,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  centerBox: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  titleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
-  title: {
-    ...Typography.bodyBold,
-    flexShrink: 1,
-  },
-  badgeBox: {
-    flexShrink: 0,
-  },
-  subtitle: {
-    ...Typography.caption,
-    marginTop: Spacing.half,
-  },
-  rightBox: {
-    marginLeft: Spacing.two,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
-});

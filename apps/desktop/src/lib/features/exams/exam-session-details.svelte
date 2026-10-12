@@ -52,6 +52,31 @@ function toggleSelectAllSeats() {
   }
 }
 
+const selectedSeatingContexts = $derived.by(() => {
+  return seatingNumbers
+    .filter((sn) => selectedSeatIds.has(String(sn.id)))
+    .map((sn) => ({
+      exam: {
+        seatingNumber: sn.seating_number,
+        hallName: sn.room_name ?? (sn as any).hall_name ?? "",
+        deskNumber: (sn as any).desk_number ?? "",
+        sessionName: session?.name ?? "",
+      },
+      student: {
+        name: sn.student_name_ar || (sn as any).student_name || sn.enrollment_id || "",
+        studentNumber: sn.seating_number,
+        className: (sn as any).class_name ?? sn.class_id ?? "",
+        level: sn.level ?? "",
+      },
+    }));
+});
+
+const selectedSeatingLabels = $derived.by(() => {
+  return seatingNumbers
+    .filter((sn) => selectedSeatIds.has(String(sn.id)))
+    .map((sn) => `${sn.student_name_ar || sn.enrollment_id || ""} (${sn.seating_number})`);
+});
+
 let halls = $state<any[]>([]);
 let proctors = $state<any[]>([]);
 let rooms = $state<any[]>([]);
@@ -1293,5 +1318,8 @@ async function handleAssignProctors() {
 <PrintDialog
 	bind:open={printDialogOpen}
 	entityType="exam"
+	documentType="EXAM_CARD"
 	entityIds={Array.from(selectedSeatIds)}
+	entityLabels={selectedSeatingLabels}
+	contexts={selectedSeatingContexts}
 />

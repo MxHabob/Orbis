@@ -3,15 +3,23 @@
 pub mod api;
 pub mod state;
 
-use axum::Router;
+use axum::{
+    Router,
+    body::Body,
+    extract::{FromRequestParts, State},
+    http::Request,
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
-    academic_routes, ai_routes, assessment_routes, autopilot_routes, bootstrap_routes,
-    calendar_routes, document_routes, employee_routes, exam_routes, finance_routes, folder_routes,
-    group_routes, iam_routes, integration_routes, onboarding_routes, org_routes, override_routes,
-    progression_routes, report_routes, scheduling_routes, storage_routes, student_routes,
+    academic_framework_routes, academic_routes, ai_routes, assessment_routes, autopilot_routes,
+    bootstrap_routes, calendar_routes, document_routes, employee_routes, exam_routes,
+    finance_routes, folder_routes, group_routes, iam_routes, integration_routes,
+    onboarding_routes, org_routes, override_routes, progression_routes, report_routes,
+    scheduling_routes, storage_routes, student_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -86,6 +94,7 @@ use api::{
         api::calendar_routes::list_years,
         api::calendar_routes::get_current_context,
         api::calendar_routes::get_year,
+        api::calendar_routes::delete_year,
         api::calendar_routes::update_year,
         api::calendar_routes::activate_year,
         api::calendar_routes::close_year_handler,
@@ -98,7 +107,20 @@ use api::{
         api::calendar_routes::lock_period,
         api::calendar_routes::unlock_period,
         api::calendar_routes::close_period,
-        api::calendar_routes::list_period_templates,
+        api::calendar_routes::list_period_types,
+        // Configurable Academic Framework
+        api::academic_framework_routes::list_calendars,
+        api::academic_framework_routes::create_calendar,
+        api::academic_framework_routes::list_period_types,
+        api::academic_framework_routes::create_period_type,
+        api::academic_framework_routes::list_calendar_periods,
+        api::academic_framework_routes::create_calendar_period,
+        api::academic_framework_routes::list_courses,
+        api::academic_framework_routes::create_course,
+        api::academic_framework_routes::list_section_subjects,
+        api::academic_framework_routes::create_section_subject,
+        api::academic_framework_routes::list_enrollments,
+        api::academic_framework_routes::enroll_student,
         // Academic
         api::academic_routes::create_subject,
         api::academic_routes::list_subjects,
@@ -106,12 +128,13 @@ use api::{
         api::academic_routes::create_class,
         api::academic_routes::list_classes,
         api::academic_routes::get_class,
-        api::academic_routes::assign_class_subject,
-        api::academic_routes::list_class_subjects,
+        api::academic_routes::assign_section_subject,
+        api::academic_routes::list_section_subjects,
         // Student
         api::student_routes::register_student,
         api::student_routes::check_duplicate,
         api::student_routes::list_students,
+        api::student_routes::get_my_student,
         api::student_routes::get_student,
         api::student_routes::update_student_status,
         api::student_routes::update_student_profile,
@@ -182,6 +205,8 @@ use api::{
         api::assessment_routes::get_scheme,
         api::assessment_routes::update_scheme,
         api::assessment_routes::delete_scheme,
+        api::assessment_routes::get_current_academic_policy,
+        api::assessment_routes::preview_academic_result,
         api::assessment_routes::record_grade,
         api::assessment_routes::batch_record_grades,
         api::assessment_routes::delete_grade,
@@ -379,14 +404,26 @@ use api::{
             api::calendar_routes::UpdateYearRequest,
             api::calendar_routes::CreatePeriodRequest,
             api::calendar_routes::UpdatePeriodRequest,
-            api::calendar_routes::PeriodTemplateDto,
+            api::calendar_routes::PeriodTypeDto,
+            api::academic_framework_routes::AcademicCalendarDto,
+            api::academic_framework_routes::PeriodTypeDto,
+            api::academic_framework_routes::AcademicPeriodDto,
+            api::academic_framework_routes::CourseDto,
+            api::academic_framework_routes::SectionSubjectDto,
+            api::academic_framework_routes::EnrollmentDto,
+            api::academic_framework_routes::CreateAcademicCalendarRequest,
+            api::academic_framework_routes::CreatePeriodTypeRequest,
+            api::academic_framework_routes::CreateAcademicPeriodRequest,
+            api::academic_framework_routes::CreateCourseRequest,
+            api::academic_framework_routes::CreateSectionSubjectRequest,
+            api::academic_framework_routes::CreateEnrollmentRequest,
             // Academic
             api::academic_routes::SubjectDto,
             api::academic_routes::CreateSubjectRequest,
             api::academic_routes::ClassDto,
             api::academic_routes::CreateClassRequest,
-            api::academic_routes::ClassSubjectDto,
-            api::academic_routes::AssignClassSubjectRequest,
+            api::academic_routes::SectionSubjectDto,
+            api::academic_routes::AssignSectionSubjectRequest,
             // Student
             api::student_routes::StudentDto,
             api::student_routes::RegisterStudentRequest,
@@ -427,6 +464,9 @@ use api::{
             orbis_domain::entities::assessment_scheme::AssessmentLevel,
             orbis_domain::entities::assessment_scheme::AssessmentComponent,
             orbis_domain::entities::assessment_scheme::InstitutionScope,
+            api::assessment_routes::AcademicPolicyDto,
+            api::assessment_routes::AcademicResultViewDto,
+            api::assessment_routes::AcademicResultPreviewRequest,
             api::assessment_routes::CreateSchemeRequest,
             api::assessment_routes::UpdateSchemeRequest,
             api::assessment_routes::GradeDto,
@@ -550,7 +590,7 @@ use api::{
             api::autopilot_routes::RunTickRequest,
             api::autopilot_routes::ListTasksResponse,
             // Progression
-            api::progression_routes::PromotionJobDto,
+            api::progression_routes::ProgressionJobDto,
             api::progression_routes::StudentProgressionItemInput,
             api::progression_routes::PromoteCohortRequest,
             api::progression_routes::EvaluateCohortRequest,
@@ -603,6 +643,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(iam_routes::routes())
         .merge(org_routes::routes())
         .merge(calendar_routes::routes())
+        .merge(academic_framework_routes::routes())
         .merge(academic_routes::routes())
         .merge(student_routes::routes())
         .merge(employee_routes::routes())
@@ -624,5 +665,61 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(onboarding_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            enforce_api_license,
+        ))
         .with_state(state)
+}
+
+async fn enforce_api_license(
+    State(state): State<state::AppState>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    let path = request.uri().path();
+    if path.starts_with("/api/v1/auth/")
+        || path.starts_with("/api/v1/bootstrap")
+        || path == "/api/v1/system/readiness"
+        || path == "/api/v1/system/has-organization"
+        || path.starts_with("/swagger-ui")
+        || path.starts_with("/api-docs")
+    {
+        return next.run(request).await;
+    }
+
+    let feature = required_feature_for_path(path);
+    let (mut parts, body) = request.into_parts();
+    let auth = match api::extractors::AuthContext::from_request_parts(&mut parts, &state).await {
+        Ok(auth) => auth,
+        Err(error) => return error.into_response(),
+    };
+
+    if let Err(error) = state.license_runtime.authorize(auth.tenant_id, feature) {
+        return api::ApiError::from(error).into_response();
+    }
+
+    next.run(Request::from_parts(parts, body)).await
+}
+
+fn required_feature_for_path(path: &str) -> Option<&'static str> {
+    if path.starts_with("/api/v1/students") {
+        Some("students")
+    } else if path.starts_with("/api/v1/ai") {
+        Some("ai_grading")
+    } else if path.starts_with("/api/v1/exam") {
+        Some("exam_tools")
+    } else if path.starts_with("/api/v1/org-units") {
+        Some("multi_branch")
+    } else if path.starts_with("/api/v1/reports") || path.starts_with("/api/v1/analytics") {
+        Some("campus_analytics")
+    } else if path.starts_with("/api/v1/parent") {
+        Some("parent_portal")
+    } else if path.starts_with("/api/v1/sso") {
+        Some("sso")
+    } else if path.contains("offline-sync") {
+        Some("offline_sync")
+    } else {
+        None
+    }
 }

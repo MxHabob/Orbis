@@ -19,10 +19,51 @@
 | **Signing Algorithm** | `Ed25519` | خوارزمية التوقيع التشفيري للتحقق من التراخيص بدون اتصال (Offline). |
 | **Public Key Endpoint** | `GET /api/v1/public/keys/active` | بيانات تدوير المفاتيح؛ لا تُعتمد كجذر ثقة من دون توقيع بجذر مثبت أو تحديث تطبيق موقّع. |
 | **Activation Endpoint** | `POST /api/v1/public/licenses/activate` | نقطة تفعيل مقعد الجهاز وربطه بالـ `installation_id`. |
+| **Product Key Claim** | `POST /api/v1/public/keys/claim` | ربط رمز الموزع بالمؤسسة بعد إعدادها وإنشاء الترخيص؛ يلي ذلك تفعيل الجهاز منفصلاً. |
 | **Refresh Endpoint** | `POST /api/v1/public/licenses/refresh` | نقطة تجديد وإرسال نبضات التفعيل دورياً (Heartbeat). |
 | **Deactivate Endpoint** | `POST /api/v1/public/licenses/deactivate` | نقطة تحرير المقعد لتمكين تشغيله على جهاز آخر. |
+| **Trial Challenge** | `POST /api/v1/public/trials/challenge` | تحدٍ خادمي عشوائي أحادي الاستخدام صالح لدقيقتين قبل تسجيل/تجديد التجربة. |
+| **Trial Registration** | `POST /api/v1/public/trials/register` | تسجيل مركزي لتجربة الجهاز وإرجاع استحقاق Ed25519 موقّع مدته 30 يوماً. |
+| **Trial Refresh** | `POST /api/v1/public/trials/refresh` | تحديث حالة الجهاز والاستحقاق؛ يتوقف الاستخدام بعد 7 أيام دون اتصال. |
 | **Tauri Updater Endpoint** | `GET /api/v1/public/updates/tauri` | مسار التحقق من التحديثات المتوافق مباشرة مع Tauri Updater. |
 | **Release Automation Token** | `MULVERSE_RELEASE_API_TOKEN` | الرمز السري المستخدم في CI/CD لرفع نسخ الـ Setup والـ Artifacts. |
+
+---
+
+## 1.1 التجربة المركزية وملف المؤسسة
+
+لا يبدأ Orbis طلب التجربة إلا بعد اكتمال إعداد المؤسسة. يتضمن `POST /api/v1/public/trials/register` معرّف المؤسسة المحلي الثابت (`organization_id`)، والاسم (`organization_name`)، والمعرّف المقروء (`organization_slug`)، و`organization_profile` الذي يحمل نوع المؤسسة وحجمها والمنهج والموقع والاسم العربي عند توفره. يوقّع مفتاح Ed25519 الخاص بالجهاز هذه الحقول مع `challenge_id` و`challenge` وبيانات التثبيت؛ لذلك لا يمكن تبديل المؤسسة أو ملفها أثناء نقل الطلب.
+
+ينشئ Mulverse المؤسسة بنفس المعرّف والاسم والملف ويعرض الملف لمسؤولي المنصة. التسجيل وإعادة المحاولة متوافقان مع idempotency، ولا يسمحان بتغيير ملف مؤسسة مسجلة أو نقل سجل التجربة إلى مؤسسة أخرى. تبدأ مدة التجربة المركزية البالغة 30 يوماً عند أول تسجيل ناجح، ويعيد Orbis التحقق من توقيع Mulverse وربط المؤسسة والتثبيت قبل حفظ الاستحقاق. يختار مسؤول المنصة خطة ما بعد التجربة يدوياً بناءً على ملف المؤسسة؛ لا يستنتج Orbis أو Mulverse خطة تجارية تلقائياً من الحجم أو المنهج. لا يعيد مسار إلغاء التفعيل منح تجربة جديدة.
+
+قبل التسجيل أو التجديد، يطلب Orbis تحدياً عشوائياً أحادي الاستخدام صالحاً لدقيقتين. تحفظ هوية الجهاز ومفتاح Ed25519 باستخدام Windows DPAPI ضمن حساب المستخدم. إذا تعذر الاتصال عند بدء التجربة، يسمح Orbis بفترة تمهيد محلية لا تتجاوز 7 أيام، ثم يطلب اتصالاً ناجحاً قبل السماح بالعمل.
+
+**حد أمني:** DPAPI تخزين محمي لكل مستخدم، وليس مفتاح TPM ولا دليلاً على وجود TPM. هذا يمنع نقل المفتاح المحمي إلى سياق مستخدم/جهاز آخر، لكنه لا يمنع مالك الجهاز من حذف ملف الهوية وإعادة إنشاء مفتاح. يجب عدم تسويق هذا كإثبات عتادي؛ مقاومة هذا النوع من إعادة التسجيل تتطلب مفتاح TPM/Windows CNG موثقاً والتحقق من إثباته مركزياً.
+
+## 1.2 مطالبة مفاتيح الموزعين والبيع بالتجزئة
+
+بعد إنشاء المؤسسة في Orbis، يرسل العميل مفتاح الشراء إلى `POST /api/v1/public/keys/claim` مع UUID المؤسسة المحلي نفسه والاسم والـslug وملف المؤسسة. لا يرسل Orbis بيانات دفع أو ينشئ المؤسسة بمعرّف جديد. ينشئ Mulverse المؤسسة بنفس UUID إن لم تكن موجودة، أو يتحقق من تطابق المؤسسة القائمة، ثم يربط مفتاح الموزع بها وينشئ الترخيص من الخطة/الطبعة المحفوظة في المفتاح.
+
+```json
+{
+  "product_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
+  "organization_id": "00000000-0000-0000-0000-000000000002",
+  "organization_name": "Example Academy",
+  "organization_slug": "example-academy",
+  "organization_profile": {
+    "name_ar": "أكاديمية المثال",
+    "institution_type": "school",
+    "organization_size": "medium",
+    "educational_track": "national",
+    "country_code": "SA",
+    "country_name": "Saudi Arabia",
+    "region_name": "Riyadh",
+    "city": "Riyadh"
+  }
+}
+```
+
+تُحدد مدة الترخيص بالأيام عند إصدار المفتاح التجاري، وتبدأ عند أول مطالبة ناجحة؛ وهي مستقلة عن نافذة صلاحية المطالبة التي تبدأ عند إصدار المفتاح. تكون إعادة إرسال الرمز للمؤسسة نفسها idempotent وتعيد الترخيص نفسه، أما مؤسسة أخرى فتُرفض. لا تُعد المطالبة تفعيلًا لمقعد جهاز: بعد نجاحها يستدعي Orbis `POST /api/v1/public/licenses/activate` بالمفتاح ومعرّف المؤسسة والتثبيت، ويتحقق من استحقاق Ed25519 الموقع ويحفظه محليًا للعمل دون اتصال. فشل التفعيل بعد المطالبة لا يستهلك الرمز لمؤسسة مختلفة، ويمكن إعادة المحاولة للمؤسسة نفسها.
 
 ---
 
@@ -39,6 +80,14 @@ sequenceDiagram
     Orbis->>Platform: POST /api/v1/public/licenses/activate (product_key, installation_id, machine_label)
     Platform-->>Orbis: 201 Created (Activation Details + SignedEntitlement Token)
     Orbis->>SecStorage: حفظ الـ SignedEntitlement وتاريخ آخر تحقق سليم
+
+    Note over Orbis, Platform: مطالبة رمز موزع بعد إعداد المؤسسة (Retail Claim)
+    Orbis->>Platform: POST /api/v1/public/keys/claim (product_key, organization_id, organization_name, organization_slug, organization_profile)
+    Platform->>Platform: ربط المفتاح بالمؤسسة وإنشاء ترخيص الخطة وبدء مدته
+    Platform-->>Orbis: 200 OK (organization_id, license_id, valid_until)
+    Orbis->>Platform: POST /api/v1/public/licenses/activate (product_key, organization_id, installation_id)
+    Platform-->>Orbis: 201 Created (Activation + SignedEntitlement)
+    Orbis->>SecStorage: التحقق من الاستحقاق الموقع وحفظه محليًا
 
     Note over Orbis, Platform: المرحلة 2: التحقق بدون اتصال (Offline Engine)
     Orbis->>SecStorage: قراءة وثيقة SignedEntitlement
@@ -73,8 +122,8 @@ sequenceDiagram
     "product_key": "ORBIS-XXXXX-XXXXX-XXXXX-XXXXX",
     "product_id": "11111111-1111-4111-8111-111111111111",
     "organization_id": "00000000-0000-0000-0000-000000000002",
-    "edition_key": "SCHOOL",
-    "plan_key": "SCHOOL_PRO",
+    "edition_key": null,
+    "plan_key": null,
     "entitlements": [
       { "key": "students", "granted": true },
       { "key": "ai_grading", "granted": true },
@@ -99,12 +148,14 @@ sequenceDiagram
     "valid_from": "2026-10-01T00:00:00Z",
     "valid_until": "2027-10-01T00:00:00Z",
     "offline_allowed": true,
-    "offline_grace_period_days": 30,
+    "offline_grace_period_days": 14,
     "verification_interval_hours": 24
   },
   "sig": "MEQCIE/2u3s..."
 }
 ```
+
+حقول `edition_key` و`plan_key` وسياسات التحقق من الاتصال اختيارية وقد تُعاد بقيمة `null` من Mulverse؛ يجب على العميل قبولها وعدم استنتاج صلاحية أو مزايا غير موجودة في الاستحقاق الموقع.
 
 ---
 
@@ -153,7 +204,7 @@ sequenceDiagram
 * كتالوج الخطط، السعر، وتوزيع المفاتيح والحدود مصدره Mulverse فقط؛ لا تُنشأ الخطط ولا تُعدّل من Orbis أو CLI.
 * إضافة خطة أو تعديلها في Mulverse ينعكس في وثيقة entitlement الموقعة التالية. لا يحتاج تعديل توزيع خطة إلى إصدار Orbis إذا بقيت مفاتيح العقد كما هي.
 * إضافة entitlement جديد تحتاج تنسيقاً من جهتين: تعريفه وإسناده للخطط في Mulverse، ثم إصدار Orbis يضيف ربطاً ثابتاً بينه وبين الأوامر/الشاشات. وثيقة موقعة وحدها لا تقفل وظيفة برمجية غير مربوطة.
-* إعدادات البناء في GitHub Actions يجب أن تحتوي المتغيرين العامين `MULVERSE_LICENSE_PUBLIC_KEY_B64` و`MULVERSE_LICENSE_KEY_ID`. المفتاح العام يُثبّت داخل التطبيق؛ لا يثق التطبيق بمفتاح يرد من نقطة API وحدها. عند تدوير المفتاح، ثبّت المفتاح الجديد في إصدار موثوق قبل أن يبدأ Mulverse بالتوقيع به.
+* إعدادات بناء GitHub Actions يجب أن تحتوي `MULVERSE_LICENSE_PUBLIC_KEY_B64` و`MULVERSE_LICENSE_KEY_ID` صراحةً، وتتحقق workflows من وجودهما. مفتاح الإنتاج العام الحالي مضمّن كمرجع افتراضي لتشغيل نسخ التطوير فقط؛ بناء الإصدار يجب أن يثبّت المفتاح المطابق لبيئته صراحةً. لا يثق التطبيق بمفتاح يُجلب من API وقت التشغيل. عند تدوير المفتاح، حدّث إعدادات البناء والمفتاح الافتراضي قبل أن يبدأ Mulverse بالتوقيع بالمفتاح الجديد.
 * بعد Activate أو Refresh، يتعامل backend في Orbis مع الوثيقة الموقعة ويحدّث حالة التشغيل والاستحقاقات محلياً. استعلام الواجهة الدوري يعكس الحالة المحلية ولا يتصل بمنصة Mulverse بحد ذاته.
 
 ### 4.3 الحدود والكميات (Resource Limits / Quotas)
@@ -176,17 +227,19 @@ sequenceDiagram
 ```json
 {
   "product_key": "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST",
+  "organization_id": "33333333-3333-4333-8333-333333333333",
   "installation_id": "inst_win_8b9f71c42de34",
   "platform": "windows",
   "app_version": "1.0.0",
   "machine_label": "School Server 01"
 }
 ```
-* **Response `201 Created`:** كائن `activation` مع `signed_entitlement`.
+* `organization_id` هو معرّف المؤسسة النشطة في Orbis؛ يرسله التطبيق ويجب أن يطابق المؤسسة المسند إليها الترخيص في Mulverse. التفعيل لا ينشئ مؤسسة جديدة ولا يغيّر ربط المنتج بالمؤسسة.
+* **Response `201 Created`:** كائن `activation` مع `signed_entitlement`. حقلا `activation.app_version` و`activation.last_seen_at` اختياريان وقد تكون قيمتهما `null`.
 * **الأخطاء الشائعة:**
   * `400`: بيانات ناقصة أو غير صالحة.
   * `404`: مفتاح الترخيص غير موجود.
-  * `409`: تم استنفاد عدد المقاعد المسموح بها للمفتاح (`Seat limit exceeded`).
+  * `409`: تعارض، مثل عدم ربط المفتاح بترخيص صريح أو بلوغ حد المقاعد.
 
 ---
 
@@ -280,7 +333,8 @@ pub struct EntitlementPayload {
     pub valid_from: String,
     pub valid_until: Option<String>,
     pub offline_allowed: bool,
-    pub offline_grace_period_days: u32,
+    pub offline_grace_period_days: Option<i32>,
+    pub verification_interval_hours: Option<i32>,
     pub entitlements: Vec<EntitlementItem>,
     pub limits: Vec<LimitItem>,
 }

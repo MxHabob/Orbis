@@ -1,8 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
+import { Input } from "@orbis/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -25,11 +25,8 @@ interface Props {
   open: boolean;
   name: string;
   nameAr: string;
-  desc: string;
-  entityType: string;
   docType: string;
-  preset: string;
-  schemas?: Record<string, any>;
+  entityType: string;
   onsubmit: () => void;
 }
 
@@ -37,13 +34,34 @@ let {
   open = $bindable(),
   name = $bindable(),
   nameAr = $bindable(),
-  desc = $bindable(),
-  entityType = $bindable(),
   docType = $bindable(),
-  preset = $bindable(),
-  schemas = {},
+  entityType = $bindable(),
   onsubmit,
 }: Props = $props();
+
+function entityForDocument(type: string): string {
+  if (type === "RECEIPT") return "finance";
+  if (type === "VOUCHER") return "finance_journal";
+  if (type === "EXAM_CARD") return "exam";
+  if (type === "ID_CARD") return "user";
+  if (type === "REPORT" || type === "TRANSCRIPT") return "period_score";
+  return "enrollment";
+}
+
+function handleDocumentTypeChange(type: string | undefined) {
+  if (!type) return;
+  docType = type;
+  entityType = entityForDocument(type);
+}
+
+function presetForDocument(type: string): string {
+  if (type === "RECEIPT") return "receipt";
+  if (type === "REPORT" || type === "TRANSCRIPT") return "transcript";
+  if (type === "CERTIFICATE" || type === "TERM_CERTIFICATE" || type === "ANNUAL_CERTIFICATE") {
+    return "certificate";
+  }
+  return "blank";
+}
 
 const form = new FormController({
   initialValues: {
@@ -61,71 +79,25 @@ async function handleSubmit() {
   form.values = {
     name,
     name_ar: nameAr,
-    description: desc,
+    description: "",
     entity_type: entityType,
     document_type: docType,
-    preset,
+    preset: presetForDocument(docType),
   };
   if (await form.submit(async () => {})) onsubmit();
 }
 
-const entityLabels: Record<string, string> = {
-  enrollment: m.template_entity_student_reg(),
-  payment: m.template_entity_receipts(),
-  exam: m.template_entity_seat_numbers(),
-  user: m.template_entity_id_cards(),
-  organization: m.template_entity_school(),
-  period_score: m.template_entity_period_score(),
-  report_card: m.template_entity_report_card(),
-  term_certificate: m.template_entity_term_certificate(),
-  annual_certificate: m.template_entity_annual_certificate(),
-  exam_session: m.template_entity_exam_session(),
-};
-
-const entityDocuments: Record<string, string[]> = {
-  enrollment: ["CERTIFICATE", "ID_CARD", "REPORT"],
-  payment: ["RECEIPT", "REPORT"],
-  exam: ["EXAM_CARD", "REPORT"],
-  user: ["ID_CARD", "CERTIFICATE", "REPORT"],
-  organization: ["CERTIFICATE", "REPORT"],
-  period_score: ["REPORT", "TRANSCRIPT"],
-  report_card: ["REPORT", "TRANSCRIPT"],
-  term_certificate: ["CERTIFICATE", "TERM_CERTIFICATE"],
-  annual_certificate: ["CERTIFICATE", "ANNUAL_CERTIFICATE"],
-  exam_session: ["EXAM_CARD", "REPORT"],
-};
-
-const allEntities = $derived(
-  Array.from(new Set([...Object.keys(entityLabels), ...Object.keys(schemas)])),
-);
-const availableDocumentTypes = $derived(
-  entityDocuments[entityType] ?? ["CUSTOM"],
-);
-const schemaFieldCount = $derived(
-  Object.keys(schemas[entityType] ?? {}).filter(
-    (key) => key !== "type" && key !== "description",
-  ).length,
-);
-
-$effect(() => {
-  if (!availableDocumentTypes.includes(docType)) {
-    docType = availableDocumentTypes[0] ?? "CUSTOM";
-  }
-});
-
-$effect(() => {
-  const presetByDocument: Record<string, string> = {
-    CERTIFICATE: "certificate",
-    TERM_CERTIFICATE: "certificate",
-    ANNUAL_CERTIFICATE: "certificate",
-    REPORT: "transcript",
-    TRANSCRIPT: "transcript",
-    RECEIPT: "receipt",
-  };
-  if (presetByDocument[docType]) {
-    preset = presetByDocument[docType];
-  }
-});
+const documentTypes = [
+  "CERTIFICATE",
+  "TERM_CERTIFICATE",
+  "ANNUAL_CERTIFICATE",
+  "REPORT",
+  "TRANSCRIPT",
+  "ID_CARD",
+  "EXAM_CARD",
+  "RECEIPT",
+  "VOUCHER",
+];
 
 function documentLabel(type: string) {
   const labels: Record<string, string> = {
@@ -149,7 +121,7 @@ function documentLabel(type: string) {
       <DialogTitle>{m.settings_templates_create_btn()}</DialogTitle>
     </DialogHeader>
 
-    <div class="flex flex-col gap-3 py-1">
+    <div class="flex flex-col gap-5 py-2">
       <BilingualNameFields
         arId="name-ar"
         enId="name-en"
@@ -169,58 +141,24 @@ function documentLabel(type: string) {
         failureMessage={m.bilingual_entry_failure()}
       />
 
-      <FormField id="desc" label={m.template_label_desc()} error={form.errors.description?.[0]}>
-        {#snippet children()}
-        <Input id="desc" bind:value={desc} placeholder={m.template_placeholder_description()} />
-        {/snippet}
-      </FormField>
-
-      <div class="grid grid-cols-2 gap-4">
-        <FormField label={m.template_label_entity()} error={form.errors.entity_type?.[0]} required>
-          {#snippet children()}
-          <Select type="single" bind:value={entityType}>
-            <SelectTrigger>
-              {entityLabels[entityType] ?? entityType}
-            </SelectTrigger>
-            <SelectContent>
-              {#each allEntities as value (value)}
-                <SelectItem value={value}>{entityLabels[value] ?? value}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-          <span class="text-[10px] text-muted-foreground">{m.template_available_fields({ count: String(schemaFieldCount) })}</span>
-          {/snippet}
-        </FormField>
-
-        <FormField label={m.template_label_doc_type()} error={form.errors.document_type?.[0]} required>
-          {#snippet children()}
-          <Select type="single" bind:value={docType}>
-            <SelectTrigger>
-              {documentLabel(docType)}
-            </SelectTrigger>
-            <SelectContent>
-              {#each availableDocumentTypes as value (value)}
-                <SelectItem value={value}>{documentLabel(value)}</SelectItem>
-              {/each}
-            </SelectContent>
-          </Select>
-          {/snippet}
-        </FormField>
-      </div>
-
-      <FormField label={m.template_label_preset()} error={form.errors.preset?.[0]} required>
-        {#snippet children()}
-        <Select type="single" bind:value={preset}>
-          <SelectTrigger>{preset === "blank" ? m.template_preset_blank() : preset === "certificate" ? m.template_preset_certificate() : preset === "transcript" ? m.template_preset_transcript() : m.template_preset_receipt()}</SelectTrigger>
+      <FormField label={m.template_label_doc_type()} error={form.errors.document_type?.[0]} required>
+        <Select type="single" value={docType} onValueChange={handleDocumentTypeChange}>
+          <SelectTrigger>{documentLabel(docType)}</SelectTrigger>
           <SelectContent>
-            <SelectItem value="blank">{m.template_preset_blank()}</SelectItem>
-            <SelectItem value="certificate">{m.template_preset_certificate()}</SelectItem>
-            <SelectItem value="transcript">{m.template_preset_transcript()}</SelectItem>
-            <SelectItem value="receipt">{m.template_preset_receipt()}</SelectItem>
+            {#each documentTypes as value (value)}
+              <SelectItem value={value}>{documentLabel(value)}</SelectItem>
+            {/each}
           </SelectContent>
         </Select>
-        {/snippet}
       </FormField>
+
+      <FormField label={m.template_label_entity()} error={form.errors.entity_type?.[0]} required>
+        <Input bind:value={entityType} placeholder="finance_journal" />
+      </FormField>
+
+      <p class="text-xs text-muted-foreground">
+        {m.template_create_hint()}
+      </p>
     </div>
 
     <DialogFooter class="gap-2">

@@ -39,6 +39,7 @@ const saveOrganizationMutation = createMutation(() => ({
     timezone: string;
     locale: string;
     is_hijri_enabled: boolean;
+    metadata: Record<string, unknown>;
   }) => api.updateCurrentOrg(request),
   onSuccess: async () => {
     await Promise.all([
@@ -60,6 +61,10 @@ let baseCurrencyCode = $state("SAR");
 let timezone = $state("Asia/Riyadh");
 let locale = $state("ar");
 let isHijriEnabled = $state(false);
+let countryName = $state("");
+let ministryName = $state("");
+let regionName = $state("");
+let organizationMetadata = $state<Record<string, unknown>>({});
 
 const stepTasks = $derived(getTasksForStep("organization", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.every((t) => t.status === "completed"));
@@ -76,6 +81,14 @@ onMount(async () => {
       timezone = org.timezone || timezone;
       locale = org.locale || locale;
       isHijriEnabled = Boolean(org.is_hijri_enabled ?? (org as any).hijri_enabled ?? isHijriEnabled);
+      const metadata =
+        org.metadata && typeof org.metadata === "object" && !Array.isArray(org.metadata)
+          ? (org.metadata as Record<string, unknown>)
+          : {};
+      organizationMetadata = metadata;
+      countryName = typeof metadata.country_name === "string" ? metadata.country_name : "";
+      ministryName = typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
+      regionName = typeof metadata.region_name === "string" ? metadata.region_name : "";
     }
     if (!name && authStore.currentOrg?.name) {
       name = authStore.currentOrg.name;
@@ -105,7 +118,19 @@ async function saveOrganization() {
       timezone,
       locale,
       is_hijri_enabled: isHijriEnabled,
+      metadata: {
+        ...organizationMetadata,
+        country_name: countryName.trim() || null,
+        ministry_name: ministryName.trim() || null,
+        region_name: regionName.trim() || null,
+      },
     });
+    organizationMetadata = {
+      ...organizationMetadata,
+      country_name: countryName.trim() || null,
+      ministry_name: ministryName.trim() || null,
+      region_name: regionName.trim() || null,
+    };
 
     // Refresh onboarding DAG state
     await refreshOnboardingState(orgId, m.common_action_failed());
@@ -178,6 +203,32 @@ async function saveOrganization() {
           <p class="text-[11px] text-muted-foreground">
             {m.onboarding_step1_slug_desc()}
           </p>
+        </div>
+      </div>
+    </OnboardingSection>
+
+    <OnboardingSection
+      title={m.onboarding_org_document_identity()}
+      description={m.onboarding_org_document_identity_description()}
+    >
+      <div class="grid gap-4 sm:grid-cols-3">
+        <div class="space-y-2">
+          <Label for="onboarding-country-name" class="text-xs font-semibold">
+            {m.onboarding_org_country_name()}
+          </Label>
+          <Input id="onboarding-country-name" bind:value={countryName} disabled={isSaving} />
+        </div>
+        <div class="space-y-2">
+          <Label for="onboarding-ministry-name" class="text-xs font-semibold">
+            {m.onboarding_org_ministry_name()}
+          </Label>
+          <Input id="onboarding-ministry-name" bind:value={ministryName} disabled={isSaving} />
+        </div>
+        <div class="space-y-2">
+          <Label for="onboarding-region-name" class="text-xs font-semibold">
+            {m.onboarding_org_region_name()}
+          </Label>
+          <Input id="onboarding-region-name" bind:value={regionName} disabled={isSaving} />
         </div>
       </div>
     </OnboardingSection>

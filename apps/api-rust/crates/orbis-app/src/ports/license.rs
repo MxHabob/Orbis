@@ -26,6 +26,7 @@ use orbis_domain::entities::license::{
     ActivationResponse, LicenseSnapshot, LicenseStateDto, LicenseVerificationError,
 };
 use orbis_domain::errors::DomainError;
+use uuid::Uuid;
 
 /// Port for the Orbis license runtime.
 ///
@@ -60,6 +61,14 @@ pub trait LicenseRuntime: Send + Sync {
     async fn activate_product_key(
         &self,
         product_key: &str,
+        organization_id: uuid::Uuid,
+    ) -> Result<ActivationResponse, DomainError>;
+
+    /// Claim a reseller key for an existing Orbis organization, then activate this installation.
+    async fn redeem_product_key(
+        &self,
+        product_key: &str,
+        organization: orbis_domain::entities::license::TrialOrganizationProfile,
     ) -> Result<ActivationResponse, DomainError>;
 
     /// Start a trial evaluation period.
@@ -67,14 +76,17 @@ pub trait LicenseRuntime: Send + Sync {
     /// Creates a local trial state with the configured trial policy.
     /// Does NOT contact Mulverse Platform.
     /// Returns an error if a trial has already been used.
-    async fn start_trial(&self) -> Result<LicenseSnapshot, DomainError>;
+    async fn start_trial(
+        &self,
+        organization: orbis_domain::entities::license::TrialOrganizationProfile,
+    ) -> Result<LicenseSnapshot, DomainError>;
 
     /// Refresh the license with Mulverse Platform.
     ///
     /// Called periodically by the background sync task.
     /// Updates the local signed entitlement if Mulverse returns a newer one.
     /// Network failure is NOT a license failure — the existing cached state remains valid.
-    async fn refresh(&self) -> Result<(), DomainError>;
+    async fn refresh(&self, organization_id: Option<uuid::Uuid>) -> Result<(), DomainError>;
 
     /// Deactivate the current installation.
     ///
@@ -86,6 +98,44 @@ pub trait LicenseRuntime: Send + Sync {
     ///
     /// Reads from the cached license state — no network call.
     fn is_feature_enabled(&self, key: &str) -> bool;
+
+    /// Authorize an operation for a tenant and optional feature entitlement.
+    fn authorize(&self, organization_id: Uuid, feature: Option<&str>) -> Result<(), DomainError> {
+        let snapshot = self.current_snapshot();
+        if !snapshot.state.is_operational() {
+            return Err(DomainError::LicenseRequired(format!(
+                "License state {:?} does not permit this operation",
+                snapshot.state
+            )));
+        }
+
+        self.verify_signature()
+            .map_err(|error| DomainError::LicenseRequired(error.to_string()))?;
+
+        if let Some(entitlement) = snapshot.signed_entitlement.as_ref() {
+            let licensed_organization = Uuid::parse_str(&entitlement.payload.organization_id)
+                .map_err(|_| {
+                    DomainError::LicenseRequired(
+                        "The license is not bound to a valid organization".to_string(),
+                    )
+                })?;
+            if licensed_organization != organization_id {
+                return Err(DomainError::Forbidden(
+                    "The license is not valid for the active organization".to_string(),
+                ));
+            }
+        }
+
+        if let Some(feature) = feature
+            && !self.is_feature_enabled(feature)
+        {
+            return Err(DomainError::LicenseRequired(format!(
+                "The '{feature}' license entitlement is required"
+            )));
+        }
+
+        Ok(())
+    }
 
     /// Get the limit value for a given limit key.
     ///

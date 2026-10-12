@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use orbis_domain::entities::academic_period::{AcademicPeriod, AcademicPeriodState};
-use orbis_domain::entities::academic_year::AcademicYear;
-use orbis_domain::entities::period_template::PeriodTemplate;
+use orbis_domain::entities::academic_calendar::AcademicCalendar;
+use orbis_domain::entities::period_type::PeriodType;
 use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
@@ -12,22 +12,22 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, PeriodTemplateRepository,
+    AcademicPeriodRepository, AcademicCalendarRepository, PeriodTypeRepository,
 };
 
 pub struct CalendarService {
-    pub year_repo: Arc<dyn AcademicYearRepository>,
+    pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
-    pub template_repo: Arc<dyn PeriodTemplateRepository>,
+    pub template_repo: Arc<dyn PeriodTypeRepository>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
 
 impl CalendarService {
     pub fn new(
-        year_repo: Arc<dyn AcademicYearRepository>,
+        year_repo: Arc<dyn AcademicCalendarRepository>,
         period_repo: Arc<dyn AcademicPeriodRepository>,
-        template_repo: Arc<dyn PeriodTemplateRepository>,
+        template_repo: Arc<dyn PeriodTypeRepository>,
         event_bus: Arc<dyn EventBus>,
         permission_checker: Arc<dyn PermissionCheckerPort>,
     ) -> Self {
@@ -49,15 +49,26 @@ impl CalendarService {
         name_ar: Option<String>,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
 
+        if name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Academic year name cannot be empty.".into(),
+            ));
+        }
+        if end_date <= start_date {
+            return Err(DomainError::Validation(
+                "Academic year end date must be after its start date.".into(),
+            ));
+        }
+
         let now = Utc::now();
         let year_id = Uuid::new_v4();
 
-        let year = AcademicYear {
+        let year = AcademicCalendar {
             id: year_id,
             org_id,
             name,
@@ -81,7 +92,7 @@ impl CalendarService {
 
         self.year_repo.save(&year).await?;
 
-        let event = DomainEvent::AcademicYearCreated {
+        let event = DomainEvent::AcademicCalendarCreated {
             year_id,
             org_id,
             timestamp: now,
@@ -92,7 +103,7 @@ impl CalendarService {
     }
 
     /// List academic years for an organization
-    pub async fn list_years(&self, org_id: Uuid) -> Result<Vec<AcademicYear>, DomainError> {
+    pub async fn list_years(&self, org_id: Uuid) -> Result<Vec<AcademicCalendar>, DomainError> {
         self.year_repo.find_by_org(org_id).await
     }
 
@@ -100,13 +111,41 @@ impl CalendarService {
     pub async fn get_current_year(
         &self,
         org_id: Uuid,
-    ) -> Result<Option<AcademicYear>, DomainError> {
+    ) -> Result<Option<AcademicCalendar>, DomainError> {
         self.year_repo.find_current(org_id).await
     }
 
     /// Get academic year by ID
-    pub async fn get_year(&self, id: Uuid) -> Result<Option<AcademicYear>, DomainError> {
+    pub async fn get_year(&self, id: Uuid) -> Result<Option<AcademicCalendar>, DomainError> {
         self.year_repo.find_by_id(id).await
+    }
+
+    /// Delete an academic year only when it has no academic periods.
+    pub async fn delete_year(
+        &self,
+        ctx: &RequestContext,
+        year_id: Uuid,
+    ) -> Result<(), DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+        let year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .filter(|year| year.org_id == ctx.tenant_id)
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Academic year {} not found", year_id))
+            })?;
+
+        if !self.period_repo.find_by_year(year.id).await?.is_empty() {
+            return Err(DomainError::Validation(
+                "Cannot delete an academic year that has periods. Delete its periods first."
+                    .into(),
+            ));
+        }
+
+        self.year_repo.delete(year_id).await
     }
 
     /// Create an academic period within a year
@@ -129,6 +168,46 @@ impl CalendarService {
             .await?;
 
         use orbis_domain::entities::academic_period::{PeriodKind, PeriodType};
+
+        if name.trim().is_empty() {
+            return Err(DomainError::Validation(
+                "Academic period name cannot be empty.".into(),
+            ));
+        }
+        if end_date <= start_date {
+            return Err(DomainError::Validation(
+                "Academic period end date must be after its start date.".into(),
+            ));
+        }
+
+        let year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .filter(|year| year.org_id == org_id)
+            .ok_or_else(|| DomainError::NotFound("Academic year not found.".into()))?;
+        if start_date < year.start_date || end_date > year.end_date {
+            return Err(DomainError::Validation(
+                "Academic period dates must fall within its academic year.".into(),
+            ));
+        }
+
+        if let Some(parent_id) = parent_id {
+            let parent = self
+                .period_repo
+                .find_by_id(parent_id)
+                .await?
+                .filter(|parent| parent.org_id == org_id && parent.year_id == year_id)
+                .ok_or_else(|| DomainError::Validation(
+                    "Academic period parent must belong to the same organization and year."
+                        .into(),
+                ))?;
+            if start_date < parent.start_date || end_date > parent.end_date {
+                return Err(DomainError::Validation(
+                    "Academic period dates must fall within its parent period.".into(),
+                ));
+            }
+        }
 
         let now = Utc::now();
         let period_id = Uuid::new_v4();
@@ -211,10 +290,10 @@ impl CalendarService {
     }
 
     /// List period templates
-    pub async fn list_period_templates(
+    pub async fn list_period_types(
         &self,
         org_id: Uuid,
-    ) -> Result<Vec<PeriodTemplate>, DomainError> {
+    ) -> Result<Vec<PeriodType>, DomainError> {
         self.template_repo.find_by_org(org_id).await
     }
 
@@ -223,7 +302,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -243,7 +322,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -263,7 +342,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -523,7 +602,7 @@ impl CalendarService {
         start_date: Option<DateTime<Utc>>,
         end_date: Option<DateTime<Utc>>,
         notes: Option<String>,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;
@@ -565,7 +644,7 @@ impl CalendarService {
         &self,
         ctx: &RequestContext,
         year_id: Uuid,
-    ) -> Result<AcademicYear, DomainError> {
+    ) -> Result<AcademicCalendar, DomainError> {
         self.permission_checker
             .check(ctx, Permission::PeriodWrite)
             .await?;

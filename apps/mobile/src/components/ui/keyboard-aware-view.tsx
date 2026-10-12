@@ -15,7 +15,6 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Platform,
-  StyleSheet,
   ViewStyle,
   StyleProp,
   View,
@@ -45,13 +44,14 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           keyboardVerticalOffset={defaultOffset}
-          style={[styles.container, style]}
+          className="flex-1"
+          style={style}
         >
           <TouchableWithoutFeedback
             onPress={Keyboard.dismiss}
             accessible={false}
           >
-            <View style={[styles.inner, contentContainerStyle]}>
+            <View className="flex-1" style={contentContainerStyle}>
               {children}
             </View>
           </TouchableWithoutFeedback>
@@ -63,11 +63,12 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={defaultOffset}
-        style={[styles.container, style]}
+        className="flex-1"
+        style={style}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView
-            style={styles.scrollView}
+            className="flex-1"
             contentContainerStyle={contentContainerStyle}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -82,15 +83,3 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
 );
 
 KeyboardAwareView.displayName = "KeyboardAwareView";
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  inner: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-});

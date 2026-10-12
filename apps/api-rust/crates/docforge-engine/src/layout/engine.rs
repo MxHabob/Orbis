@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 use crate::error::DocforgeError;
-use crate::layout::expr_eval::{evaluate_node_tree, EvaluatedNode};
+use crate::layout::expr_eval::{evaluate_node_tree, EvaluatedNode, EvaluatedTable};
 use crate::model::document::{Orientation, PageSetup, PageSize, TemplateDocument};
 use crate::model::nodes::TextProps;
 use crate::render::font_cache::FontCache;
@@ -103,9 +103,9 @@ impl<'a> LayoutEngine<'a> {
             for node in nodes {
                 // Check if the node has an absolute position. If so, layout absolute.
                 if let Some(abs_pos) = get_absolute_position(node) {
-                    let elem =
+                    let elems =
                         layout_absolute_node(node, &abs_pos, 0.0, 0.0, page_width, page_height)?;
-                    positioned_elements.push(elem);
+                    positioned_elements.extend(elems);
                 } else {
                     // Regular in-flow node: add to Taffy tree
                     let taffy_node_id =
@@ -274,6 +274,7 @@ fn get_absolute_position(node: &EvaluatedNode) -> Option<crate::model::document:
         EvaluatedNode::Text(n) => n.props.position.clone(),
         EvaluatedNode::Image(n) => n.props.position.clone(),
         EvaluatedNode::Shape(n) => n.props.position.clone(),
+        EvaluatedNode::Table(n) => n.position.clone(),
         EvaluatedNode::Barcode(n) => n.props.position.clone(),
         EvaluatedNode::QRCode(n) => n.props.position.clone(),
         EvaluatedNode::Separator(n) => n.props.position.clone(),
@@ -321,7 +322,7 @@ fn layout_absolute_node(
     margin_top: f32,
     parent_w: f32,
     parent_h: f32,
-) -> Result<PositionedElement, DocforgeError> {
+) -> Result<Vec<PositionedElement>, DocforgeError> {
     let x = mm_to_pt(pos.x) + margin_left;
     let y = mm_to_pt(pos.y) + margin_top;
     let w = parse_json_dimension(&pos.width, parent_w);
@@ -339,7 +340,7 @@ fn layout_absolute_node(
             let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#000000"))
                 .unwrap_or(Color::BLACK);
 
-            Ok(PositionedElement::Text(TextElement {
+            Ok(vec![PositionedElement::Text(TextElement {
                 x,
                 y,
                 width: w,
@@ -353,23 +354,27 @@ fn layout_absolute_node(
                 text_align: align,
                 direction: dir,
                 line_height: n.props.line_height.unwrap_or(n.props.font_size * 1.2) as f32,
-            }))
+            })])
         }
-        EvaluatedNode::Image(_n) => {
-            let mime = "image/png".to_string();
-            Ok(PositionedElement::Image(ImageElement {
+        EvaluatedNode::Image(n) => {
+            let (mime, data) = match n.props.src.as_deref() {
+                Some(src) => crate::render::image_loader::decode_data_uri(src)?
+                    .unwrap_or_else(|| ("image/png".to_string(), Vec::new())),
+                None => ("image/png".to_string(), Vec::new()),
+            };
+            Ok(vec![PositionedElement::Image(ImageElement {
                 x,
                 y,
                 width: w,
                 height: h,
-                data: Vec::new(),
+                data,
                 mime_type: mime,
-            }))
+            })])
         }
         EvaluatedNode::Shape(n) => {
             let fill = n.props.fill.as_deref().and_then(Color::from_hex);
             let stroke = n.props.stroke.as_deref().and_then(Color::from_hex);
-            Ok(PositionedElement::Rect(RectElement {
+            Ok(vec![PositionedElement::Rect(RectElement {
                 x,
                 y,
                 width: w,
@@ -378,20 +383,23 @@ fn layout_absolute_node(
                 stroke,
                 stroke_width: n.props.stroke_width.unwrap_or(0.0) as f32,
                 border_radius: 0.0,
-            }))
+            })])
+        }
+        EvaluatedNode::Table(t) => {
+            layout_table_elements(t, x, y, w, h)
         }
         EvaluatedNode::Barcode(n) => {
             let format = crate::render::barcode_gen::BarcodeFormat::from_str(&n.props.format)
                 .unwrap_or(crate::render::barcode_gen::BarcodeFormat::Code128);
             let svg_content =
                 crate::render::barcode_gen::generate_barcode_svg(format, &n.props.data, w, h)?;
-            Ok(PositionedElement::BarcodeSvg(SvgElement {
+            Ok(vec![PositionedElement::BarcodeSvg(SvgElement {
                 x,
                 y,
                 width: w,
                 height: h,
                 svg_content,
-            }))
+            })])
         }
         EvaluatedNode::QRCode(n) => {
             let correction =
@@ -403,13 +411,13 @@ fn layout_absolute_node(
                 "#000000",
                 "#ffffff",
             )?;
-            Ok(PositionedElement::QrCodeSvg(SvgElement {
+            Ok(vec![PositionedElement::QrCodeSvg(SvgElement {
                 x,
                 y,
                 width: w,
                 height: h,
                 svg_content,
-            }))
+            })])
         }
         EvaluatedNode::Separator(n) => {
             let col = Color::from_hex(n.props.color.as_deref().unwrap_or("#cccccc"))
@@ -425,19 +433,450 @@ fn layout_absolute_node(
                 y + h
             };
 
-            Ok(PositionedElement::Line(LineElement {
+            Ok(vec![PositionedElement::Line(LineElement {
                 x1: x,
                 y1: y,
                 x2,
                 y2,
                 color: col,
                 width: n.props.thickness.unwrap_or(1.0) as f32,
-            }))
+            })])
         }
         _ => Err(DocforgeError::Render(
             "Unsupported node type for absolute layout".to_string(),
         )),
     }
+}
+
+/// Computes positioned elements for a table node.
+pub fn layout_table_elements(
+    table: &EvaluatedTable,
+    x: f32,
+    y: f32,
+    table_w: f32,
+    _table_h: f32,
+) -> Result<Vec<PositionedElement>, DocforgeError> {
+    let cols = &table.props.columns;
+    if cols.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let mut elements = Vec::new();
+    let num_cols = cols.len();
+
+    // 1. Resolve target table width
+    let target_w = if table_w > 0.0 { table_w } else { 500.0 };
+
+    // 2. Compute individual column widths
+    let mut col_widths = Vec::with_capacity(num_cols);
+    let mut auto_count = 0usize;
+    let mut fixed_sum = 0.0f32;
+
+    for col in cols {
+        if let Some(ref w_str) = col.width {
+            let trimmed = w_str.trim();
+            if trimmed.ends_with('%') {
+                if let Ok(pct) = trimmed[..trimmed.len() - 1].parse::<f32>() {
+                    let w = target_w * (pct / 100.0);
+                    col_widths.push(Some(w));
+                    fixed_sum += w;
+                    continue;
+                }
+            } else if trimmed.ends_with("px") {
+                if let Ok(px) = trimmed[..trimmed.len() - 2].parse::<f32>() {
+                    let w = px * PX_TO_PT;
+                    col_widths.push(Some(w));
+                    fixed_sum += w;
+                    continue;
+                }
+            } else if trimmed.ends_with("mm") {
+                if let Ok(mm) = trimmed[..trimmed.len() - 2].parse::<f64>() {
+                    let w = mm_to_pt(mm);
+                    col_widths.push(Some(w));
+                    fixed_sum += w;
+                    continue;
+                }
+            } else if trimmed.ends_with("pt") {
+                if let Ok(pt) = trimmed[..trimmed.len() - 2].parse::<f32>() {
+                    col_widths.push(Some(pt));
+                    fixed_sum += pt;
+                    continue;
+                }
+            } else if let Ok(val) = trimmed.parse::<f64>() {
+                let w = mm_to_pt(val);
+                col_widths.push(Some(w));
+                fixed_sum += w;
+                continue;
+            }
+        }
+        col_widths.push(None);
+        auto_count += 1;
+    }
+
+    // Distribute remaining width to auto columns
+    let auto_w = if auto_count > 0 {
+        ((target_w - fixed_sum).max(0.0)) / (auto_count as f32)
+    } else {
+        0.0
+    };
+
+    let resolved_col_widths: Vec<f32> = col_widths
+        .into_iter()
+        .map(|w_opt| w_opt.unwrap_or_else(|| auto_w.max(25.0)))
+        .collect();
+
+    let actual_table_w: f32 = resolved_col_widths.iter().sum();
+
+    // 3. Direction (RTL vs LTR)
+    let is_rtl = table
+        .props
+        .direction
+        .as_deref()
+        .or_else(|| table.props.style.as_ref().and_then(|s| s.direction.as_deref()))
+        .map(|d| d.eq_ignore_ascii_case("rtl"))
+        .unwrap_or_else(|| {
+            cols.iter().any(|c| {
+                c.header.chars().any(|ch| ('\u{0600}'..='\u{06FF}').contains(&ch))
+                    || c.header_ar.as_ref().map(|ar| ar.chars().any(|ch| ('\u{0600}'..='\u{06FF}').contains(&ch))).unwrap_or(false)
+            })
+        });
+
+    let mut col_x = Vec::with_capacity(num_cols);
+    if is_rtl {
+        let mut accum = 0.0f32;
+        for &w in &resolved_col_widths {
+            col_x.push(x + actual_table_w - accum - w);
+            accum += w;
+        }
+    } else {
+        let mut accum = 0.0f32;
+        for &w in &resolved_col_widths {
+            col_x.push(x + accum);
+            accum += w;
+        }
+    }
+
+    // 4. Styles
+    let style = table.props.style.as_ref();
+    let header_bg_col = style
+        .and_then(|s| s.header_bg_color.as_deref())
+        .and_then(Color::from_hex)
+        .or_else(|| Some(Color::new(241, 245, 249))); // subtle slate #f1f5f9
+    let header_text_col = style
+        .and_then(|s| s.header_text_color.as_deref())
+        .and_then(Color::from_hex)
+        .unwrap_or(Color::new(30, 41, 59)); // #1e293b
+    let header_font_size = style.and_then(|s| s.header_font_size).unwrap_or(9.0) as f32;
+    let header_font_weight = style
+        .and_then(|s| s.header_font_weight.as_deref())
+        .map(|w| FontWeight::from_str_opt(Some(w)))
+        .unwrap_or(FontWeight::Bold);
+    let row_bg_col = style
+        .and_then(|s| s.row_bg_color.as_deref())
+        .and_then(Color::from_hex);
+    let alt_row_bg_col = style
+        .and_then(|s| s.alt_row_bg_color.as_deref())
+        .and_then(Color::from_hex);
+    let font_size = style.and_then(|s| s.font_size).unwrap_or(8.5) as f32;
+    let font_family = style
+        .and_then(|s| s.font_family.as_deref())
+        .unwrap_or("Amiri")
+        .to_string();
+    let header_h = style.and_then(|s| s.row_height).unwrap_or(24.0) as f32;
+    let row_h = style.and_then(|s| s.row_height).unwrap_or(20.0) as f32;
+    let padding = style.and_then(|s| s.padding).unwrap_or(3.5) as f32;
+    let border_color = style
+        .and_then(|s| s.border_color.as_deref())
+        .and_then(Color::from_hex)
+        .unwrap_or(Color::new(148, 163, 184)); // slate-400
+    let border_width = style.and_then(|s| s.border_width).unwrap_or(0.75) as f32;
+    let show_grid = table.props.show_grid;
+    let show_border = table.props.show_border;
+
+    let mut current_y = y;
+
+    // 5. Render Header Row
+    if table.props.show_header {
+        if let Some(bg) = header_bg_col {
+            elements.push(PositionedElement::Rect(RectElement {
+                x,
+                y: current_y,
+                width: actual_table_w,
+                height: header_h,
+                fill: Some(bg),
+                stroke: None,
+                stroke_width: 0.0,
+                border_radius: 0.0,
+            }));
+        }
+
+        for (i, col) in cols.iter().enumerate() {
+            let col_w = resolved_col_widths[i];
+            let cell_x = col_x[i];
+            let text_content = if is_rtl {
+                col.header_ar.as_deref().unwrap_or(&col.header)
+            } else {
+                &col.header
+            };
+
+            let align = TextAlign::from_str_opt(col.alignment.as_deref());
+            let text_y = current_y + ((header_h - header_font_size) * 0.35).max(1.0);
+
+            elements.push(PositionedElement::Text(TextElement {
+                x: cell_x + padding,
+                y: text_y,
+                width: (col_w - 2.0 * padding).max(1.0),
+                height: header_h,
+                content: text_content.to_string(),
+                font_family: font_family.clone(),
+                font_size: header_font_size,
+                font_weight: header_font_weight,
+                font_style: FontStyle::Normal,
+                color: header_text_col,
+                text_align: align,
+                direction: if is_rtl { TextDirection::Rtl } else { TextDirection::Ltr },
+                line_height: header_font_size * 1.2,
+            }));
+        }
+
+        current_y += header_h;
+    }
+
+    // 6. Render Data Rows
+    let rows = table.props.rows.as_deref().unwrap_or(&[]);
+    for (row_idx, row) in rows.iter().enumerate() {
+        // Row background
+        let bg = if row_idx % 2 == 1 {
+            alt_row_bg_col.or(row_bg_col)
+        } else {
+            row_bg_col
+        };
+
+        if let Some(fill) = bg {
+            elements.push(PositionedElement::Rect(RectElement {
+                x,
+                y: current_y,
+                width: actual_table_w,
+                height: row_h,
+                fill: Some(fill),
+                stroke: None,
+                stroke_width: 0.0,
+                border_radius: 0.0,
+            }));
+        }
+
+        // Cell contents
+        for (i, col) in cols.iter().enumerate() {
+            let col_w = resolved_col_widths[i];
+            let cell_x = col_x[i];
+            let raw_val = row.get(&col.field);
+
+            let formatted = match raw_val {
+                Some(Value::String(s)) => s.clone(),
+                Some(Value::Number(n)) => {
+                    if let Some(i) = n.as_i64() {
+                        i.to_string()
+                    } else if let Some(f) = n.as_f64() {
+                        if f.fract() == 0.0 {
+                            format!("{:.0}", f)
+                        } else {
+                            format!("{:.1}", f)
+                        }
+                    } else {
+                        n.to_string()
+                    }
+                }
+                Some(Value::Bool(b)) => b.to_string(),
+                Some(Value::Null) | None => col.default_value.clone().unwrap_or_else(|| "-".to_string()),
+                Some(other) => other.to_string(),
+            };
+
+            let align = if let Some(ref a) = col.alignment {
+                TextAlign::from_str_opt(Some(a.as_str()))
+            } else if raw_val.map(|v| v.is_number()).unwrap_or(false) {
+                TextAlign::Center
+            } else if is_rtl {
+                TextAlign::End
+            } else {
+                TextAlign::Start
+            };
+
+            let text_y = current_y + ((row_h - font_size) * 0.35).max(1.0);
+
+            elements.push(PositionedElement::Text(TextElement {
+                x: cell_x + padding,
+                y: text_y,
+                width: (col_w - 2.0 * padding).max(1.0),
+                height: row_h,
+                content: formatted,
+                font_family: font_family.clone(),
+                font_size,
+                font_weight: FontWeight::Normal,
+                font_style: FontStyle::Normal,
+                color: Color::BLACK,
+                text_align: align,
+                direction: if is_rtl { TextDirection::Rtl } else { TextDirection::Ltr },
+                line_height: font_size * 1.2,
+            }));
+        }
+
+        current_y += row_h;
+    }
+
+    // 7. Render Totals Row
+    if table.props.show_totals && !rows.is_empty() {
+        let totals_h = row_h;
+        let totals_bg = Color::new(241, 245, 249);
+
+        elements.push(PositionedElement::Rect(RectElement {
+            x,
+            y: current_y,
+            width: actual_table_w,
+            height: totals_h,
+            fill: Some(totals_bg),
+            stroke: None,
+            stroke_width: 0.0,
+            border_radius: 0.0,
+        }));
+
+        let mut label_placed = false;
+
+        for (i, col) in cols.iter().enumerate() {
+            let col_w = resolved_col_widths[i];
+            let cell_x = col_x[i];
+
+            let cell_text = if let Some(ref total_type) = col.total_type {
+                match total_type.to_lowercase().as_str() {
+                    "sum" => {
+                        let sum: f64 = rows
+                            .iter()
+                            .filter_map(|r| r.get(&col.field).and_then(|v| v.as_f64()))
+                            .sum();
+                        if sum.fract() == 0.0 {
+                            format!("{:.0}", sum)
+                        } else {
+                            format!("{:.1}", sum)
+                        }
+                    }
+                    "avg" => {
+                        let nums: Vec<f64> = rows
+                            .iter()
+                            .filter_map(|r| r.get(&col.field).and_then(|v| v.as_f64()))
+                            .collect();
+                        if !nums.is_empty() {
+                            let avg = nums.iter().sum::<f64>() / nums.len() as f64;
+                            format!("{:.1}", avg)
+                        } else {
+                            "-".to_string()
+                        }
+                    }
+                    "count" => {
+                        let cnt = rows
+                            .iter()
+                            .filter(|r| r.get(&col.field).map(|v| !v.is_null()).unwrap_or(false))
+                            .count();
+                        cnt.to_string()
+                    }
+                    "label" => {
+                        label_placed = true;
+                        if is_rtl { "المجموع".to_string() } else { "Total".to_string() }
+                    }
+                    _ => String::new(),
+                }
+            } else if !label_placed && i == 0 {
+                label_placed = true;
+                if is_rtl { "المجموع العام".to_string() } else { "Total".to_string() }
+            } else {
+                String::new()
+            };
+
+            if !cell_text.is_empty() {
+                let align = TextAlign::from_str_opt(col.alignment.as_deref());
+                let text_y = current_y + ((totals_h - font_size) * 0.35).max(1.0);
+
+                elements.push(PositionedElement::Text(TextElement {
+                    x: cell_x + padding,
+                    y: text_y,
+                    width: (col_w - 2.0 * padding).max(1.0),
+                    height: totals_h,
+                    content: cell_text,
+                    font_family: font_family.clone(),
+                    font_size,
+                    font_weight: FontWeight::Bold,
+                    font_style: FontStyle::Normal,
+                    color: Color::new(15, 23, 42),
+                    text_align: align,
+                    direction: if is_rtl { TextDirection::Rtl } else { TextDirection::Ltr },
+                    line_height: font_size * 1.2,
+                }));
+            }
+        }
+
+        current_y += totals_h;
+    }
+
+    let total_table_h = current_y - y;
+
+    // 8. Grid Lines
+    if show_grid {
+        let mut row_cursor_y = y;
+        if table.props.show_header {
+            row_cursor_y += header_h;
+            elements.push(PositionedElement::Line(LineElement {
+                x1: x,
+                y1: row_cursor_y,
+                x2: x + actual_table_w,
+                y2: row_cursor_y,
+                color: border_color,
+                width: border_width,
+            }));
+        }
+
+        for _ in 0..rows.len() {
+            row_cursor_y += row_h;
+            elements.push(PositionedElement::Line(LineElement {
+                x1: x,
+                y1: row_cursor_y,
+                x2: x + actual_table_w,
+                y2: row_cursor_y,
+                color: border_color,
+                width: border_width * 0.8,
+            }));
+        }
+
+        // Vertical divider lines between columns
+        for i in 1..num_cols {
+            let div_x = if is_rtl {
+                col_x[i - 1]
+            } else {
+                col_x[i]
+            };
+            elements.push(PositionedElement::Line(LineElement {
+                x1: div_x,
+                y1: y,
+                x2: div_x,
+                y2: current_y,
+                color: border_color,
+                width: border_width * 0.8,
+            }));
+        }
+    }
+
+    // 9. Outer Border
+    if show_border {
+        elements.push(PositionedElement::Rect(RectElement {
+            x,
+            y,
+            width: actual_table_w,
+            height: total_table_h,
+            fill: None,
+            stroke: Some(border_color),
+            stroke_width: border_width,
+            border_radius: 0.0,
+        }));
+    }
+
+    Ok(elements)
 }
 
 // ── Taffy Tree Layout Builder ─────────────────────────────────
@@ -515,6 +954,23 @@ fn build_taffy_node(
             }
             taffy.new_leaf(style).map_err(|e| {
                 DocforgeError::Render(format!("Failed to create taffy separator node: {:?}", e))
+            })
+        }
+        EvaluatedNode::Table(t) => {
+            style.size.width = taffy::style::Dimension::Percent(1.0);
+            let row_h = t.props.style.as_ref().and_then(|s| s.row_height).unwrap_or(20.0);
+            let header_h = if t.props.show_header {
+                t.props.style.as_ref().and_then(|s| s.row_height).unwrap_or(24.0)
+            } else {
+                0.0
+            };
+            let rows_count = t.props.rows.as_ref().map(|r| r.len()).unwrap_or(0) as f64;
+            let totals_h = if t.props.show_totals { row_h } else { 0.0 };
+            let total_h = header_h + (rows_count * row_h) + totals_h;
+            style.size.height = taffy::style::Dimension::Length(total_h as f32);
+
+            taffy.new_leaf(style).map_err(|e| {
+                DocforgeError::Render(format!("Failed to create taffy table node: {:?}", e))
             })
         }
         _ => {
@@ -716,6 +1172,10 @@ fn extract_positioned_elements(
                     )?;
                 }
             }
+        }
+        EvaluatedNode::Table(t) => {
+            let table_elems = layout_table_elements(t, abs_x, abs_y, w, h)?;
+            elements.extend(table_elems);
         }
         _ => {}
     }
@@ -1045,5 +1505,208 @@ mod tests {
             "PoC layout PDF successfully written to: {}",
             pdf_path.display()
         );
+    }
+
+    #[test]
+    fn test_layout_table_node_and_render_pdf() {
+        use crate::model::document::Spacing;
+        use crate::model::nodes::{TableColumnDef, TableNode, TableProps, TablePropsWrapper, TableStyle};
+
+        let setup = PageSetup {
+            size: PageSize::A4,
+            width: None,
+            height: None,
+            orientation: Orientation::Portrait,
+            margins: Spacing {
+                top: 15.0,
+                bottom: 15.0,
+                left: 15.0,
+                right: 15.0,
+            },
+            unit: "mm".to_string(),
+        };
+
+        let font_candidates = [
+            ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
+            (
+                "DejaVu Sans",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ),
+            ("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"),
+        ];
+        let (font_family, font_path) = font_candidates
+            .iter()
+            .find(|(_, path)| std::path::Path::new(path).exists())
+            .copied()
+            .expect("A supported system font must be installed for PDF rendering tests");
+        let mut fonts = FontCache::new(font_family);
+        fonts
+            .load_font_file(
+                font_family,
+                400,
+                crate::render::font_cache::FontStyleKind::Normal,
+                font_path,
+            )
+            .expect("Should load the system font successfully");
+
+        let table_props = TableProps {
+            columns: vec![
+                TableColumnDef {
+                    id: "seq".to_string(),
+                    header: "م".to_string(),
+                    header_ar: Some("م".to_string()),
+                    field: "seq".to_string(),
+                    width: Some("10%".to_string()),
+                    alignment: Some("center".to_string()),
+                    default_value: None,
+                    format: None,
+                    is_visible: true,
+                    total_type: Some("label".to_string()),
+                },
+                TableColumnDef {
+                    id: "subject".to_string(),
+                    header: "المادة".to_string(),
+                    header_ar: Some("المادة".to_string()),
+                    field: "subject".to_string(),
+                    width: Some("50%".to_string()),
+                    alignment: Some("right".to_string()),
+                    default_value: None,
+                    format: None,
+                    is_visible: true,
+                    total_type: None,
+                },
+                TableColumnDef {
+                    id: "score".to_string(),
+                    header: "الدرجة".to_string(),
+                    header_ar: Some("الدرجة".to_string()),
+                    field: "score".to_string(),
+                    width: Some("40%".to_string()),
+                    alignment: Some("center".to_string()),
+                    default_value: None,
+                    format: None,
+                    is_visible: true,
+                    total_type: Some("sum".to_string()),
+                },
+            ],
+            data_source: Some("subjects".to_string()),
+            rows: None,
+            show_header: true,
+            show_totals: true,
+            show_subtotals: false,
+            group_by: None,
+            sort_by: None,
+            repeating_header: false,
+            position: Some(Position {
+                x: 15.0,
+                y: 20.0,
+                width: Value::String("180mm".to_string()),
+                height: None,
+            }),
+            show_grid: true,
+            show_border: true,
+            direction: Some("rtl".to_string()),
+            style: Some(TableStyle {
+                border_color: Some("#334155".to_string()),
+                border_width: Some(1.0),
+                header_bg_color: Some("#e2e8f0".to_string()),
+                header_text_color: Some("#0f172a".to_string()),
+                header_font_size: Some(10.0),
+                header_font_weight: Some("bold".to_string()),
+                row_bg_color: Some("#ffffff".to_string()),
+                alt_row_bg_color: Some("#f8fafc".to_string()),
+                font_size: Some(9.0),
+                font_family: Some(font_family.to_string()),
+                row_height: Some(22.0),
+                padding: Some(4.0),
+                direction: Some("rtl".to_string()),
+            }),
+            conditional_formatting: None,
+        };
+
+        let doc = TemplateDocument {
+            version: "1.0".to_string(),
+            meta: DocumentMeta {
+                id: None,
+                name: "Academic Certificate Table".to_string(),
+                name_ar: None,
+                document_type: "CERTIFICATE".to_string(),
+                entity_type: "STUDENT".to_string(),
+                locale: "ar".to_string(),
+                page_setup: setup,
+            },
+            variables: HashMap::new(),
+            assets: HashMap::new(),
+            root: TemplateNode::Table(TableNode {
+                id: "academic-grades-table".to_string(),
+                name: Some("Grades Table".to_string()),
+                position: None,
+                props: TablePropsWrapper::Typed(table_props),
+            }),
+        };
+
+        let context = json!({
+            "subjects": [
+                { "seq": 1, "subject": "القرآن الكريم", "score": 98 },
+                { "seq": 2, "subject": "التربية الإسلامية", "score": 94 },
+                { "seq": 3, "subject": "اللغة العربية", "score": 91 },
+                { "seq": 4, "subject": "الرياضيات", "score": 95 }
+            ]
+        });
+
+        let engine = LayoutEngine::new(&fonts);
+        let layout_result = engine
+            .layout(&doc, &context)
+            .expect("Should compute table layout");
+
+        assert_eq!(layout_result.pages.len(), 1);
+        let page = &layout_result.pages[0];
+
+        // Ensure header text is present
+        let has_header_subject = page.elements.iter().any(|el| {
+            if let PositionedElement::Text(t) = el {
+                t.content == "المادة"
+            } else {
+                false
+            }
+        });
+        assert!(has_header_subject, "Table header 'المادة' should be rendered");
+
+        // Ensure row content is present
+        let has_row_quran = page.elements.iter().any(|el| {
+            if let PositionedElement::Text(t) = el {
+                t.content == "القرآن الكريم"
+            } else {
+                false
+            }
+        });
+        assert!(has_row_quran, "Table row 'القرآن الكريم' should be rendered");
+
+        // Ensure total sum (98 + 94 + 91 + 95 = 378) is computed and present
+        let has_total_sum = page.elements.iter().any(|el| {
+            if let PositionedElement::Text(t) = el {
+                t.content == "378"
+            } else {
+                false
+            }
+        });
+        assert!(has_total_sum, "Table totals sum '378' should be computed and rendered");
+
+        // Ensure grid lines and rects are present
+        let lines_count = page.elements.iter().filter(|el| matches!(el, PositionedElement::Line(_))).count();
+        assert!(lines_count > 0, "Grid lines should be drawn");
+
+        let rects_count = page.elements.iter().filter(|el| matches!(el, PositionedElement::Rect(_))).count();
+        assert!(rects_count > 0, "Borders and backgrounds should be drawn");
+
+        // Render to genuine PDF
+        let pdf_output = crate::render::pdf_renderer::render_to_pdf(
+            &layout_result,
+            &fonts,
+            &crate::render::pdf_renderer::PdfRenderConfig::default(),
+        )
+        .expect("Should render table to PDF");
+
+        assert!(!pdf_output.bytes.is_empty(), "PDF bytes should not be empty");
+        assert!(pdf_output.bytes.starts_with(b"%PDF-"), "Output must be valid PDF");
     }
 }

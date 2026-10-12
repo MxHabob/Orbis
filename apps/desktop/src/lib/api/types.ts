@@ -36,20 +36,20 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  AcademicYearDto,
+  academicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
-  PeriodTemplateDto,
+  PeriodTypeDto,
   CreateYearRequest,
   UpdateYearRequest,
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   CreateSubjectRequest,
   CreateClassRequest,
-  AssignClassSubjectRequest,
+  AssignSectionSubjectRequest,
   EnrollmentDto,
   StudentDto,
   EnrollStudentRequest,
@@ -80,7 +80,7 @@ import type {
   ResolveOverrideRequest,
   ApprovalStepDto,
   StudentProgressionItemInput,
-  PromotionJobDto,
+  progressionJobDto,
   PromoteCohortRequest,
   EvaluateCohortRequest,
   RoomDto,
@@ -300,6 +300,7 @@ export interface RegisterStudentInput {
   special_needs_notes?: string;
   phone?: string;
   email?: string;
+  address?: string;
   initial_period_id?: string;
   initial_class_id?: string;
   study_mode?: string;
@@ -421,12 +422,14 @@ export interface ReportJobStatusDto {
 }
 
 export interface BatchPrintParams {
-  reportCode: string;
-  parameters: Record<string, unknown>;
-  gridColumns?: number;
-  gridRows?: number;
-  marginMm?: number;
-  cutMarks?: boolean;
+  templateId?: string;
+  documentJson?: string;
+  contexts?: Record<string, unknown>[];
+  title?: string;
+  reportCode?: string;
+  parameters?: Record<string, unknown>;
+  batchConfig: Record<string, unknown>;
+  locale?: string;
 }
 
 export interface StudentFeeFilterParams {
@@ -436,6 +439,7 @@ export interface StudentFeeFilterParams {
   feeTemplate_id?: string;
   status?: string;
   is_overdue?: boolean;
+  search?: string;
   page?: number;
   page_size?: number;
   sort_by?: string;
@@ -449,6 +453,7 @@ export interface PaymentFilterParams {
   method?: string;
   from_date?: string;
   to_date?: string;
+  search?: string;
   page?: number;
   page_size?: number;
   sort_by?: string;
@@ -596,7 +601,7 @@ export interface RejectOverrideInput {
   requestId?: string;
 }
 
-export interface PromotionDetailDto {
+export interface ProgressionDetailDto {
   id: string;
   job_id: string;
   student_id: string;
@@ -652,7 +657,7 @@ export interface StorageUploadRequest {
   folder_id?: string;
   asset_type?: string;
   description?: string;
-  academic_year_id?: string;
+  calendar_id?: string;
   term_id?: string;
   tags?: string;
   visibility?: string;
@@ -822,7 +827,7 @@ export interface OrganizationReadiness {
   org_name?: string;
   has_organization: boolean;
   has_admin: boolean;
-  has_academic_year: boolean;
+  has_academic_calendar: boolean;
   has_classes: boolean;
   has_subjects: boolean;
   pending_setup_items: SetupItem[];
@@ -884,8 +889,8 @@ export interface EnvironmentDetectionResult {
   currency_name_ar: string;
   is_hijri_recommended: boolean;
   date_format: string;
-  suggested_academic_year: string;
-  suggested_academic_year_ar: string;
+  suggested_academic_calendar: string;
+  suggested_academic_calendar_ar: string;
 }
 
 export interface SlugGenerationResult {
@@ -962,8 +967,8 @@ export interface CompleteOrganizationOnboardingRequest {
     requiredDocuments?: string[];
   };
   calendar: {
-    academicYearName: string;
-    academicYearNameAr?: string;
+    academicCalendarName: string;
+    academicCalendarNameAr?: string;
     startDate: string;
     endDate: string;
     periods: Array<{
@@ -1167,11 +1172,13 @@ export interface OnboardingStateDto {
 }
 
 export interface ProvisionDefaultsReqDto {
-  academic_year_id?: string;
-  academic_year_name?: string;
-  academic_year_name_ar?: string;
+  calendar_id?: string;
+  academic_calendar_name?: string;
+  academic_calendar_name_ar?: string;
   start_date?: string;
   end_date?: string;
+  provision_academic_calendar?: boolean;
+  provision_default_academic_periods?: boolean;
   provision_stages_and_grades?: boolean;
   provision_subjects?: boolean;
   provision_assessment_scheme?: boolean;
@@ -1286,8 +1293,8 @@ export interface StudentAnnualReportCard {
   student_number?: string | null;
   class_id: string;
   class_name: string;
-  academic_year_id: string;
-  academic_year_name: string;
+  calendar_id: string;
+  academic_calendar_name: string;
   subjects: SubjectAnnualResult[];
   total_score: number;
   max_possible_score: number;
@@ -1315,6 +1322,123 @@ export interface AcademicPolicy {
   max_displayed_rank?: number | null;
 }
 
+export type DecimalValue = number | string;
+
+export type CalculationUnit =
+  | { type: "dimensionless" }
+  | { type: "score"; scale: string }
+  | { type: "credit" }
+  | { type: "count" }
+  | { type: "custom"; scale: string };
+
+export interface CalculationWeightedItem {
+  node: CalculationExpression;
+  weight: DecimalValue;
+}
+
+export type CalculationExpression =
+  | { type: "literal"; value: DecimalValue }
+  | { type: "measure_literal"; value: DecimalValue; unit: CalculationUnit }
+  | { type: "variable"; name: string }
+  | {
+      type: "add" | "multiply";
+      operands: CalculationExpression[];
+      left?: CalculationExpression | null;
+      right?: CalculationExpression | null;
+    }
+  | { type: "subtract" | "divide"; left: CalculationExpression; right: CalculationExpression }
+  | { type: "max" | "min" | "average"; operands: CalculationExpression[] }
+  | {
+      type: "weighted_sum";
+      items: CalculationWeightedItem[];
+      normalize: boolean;
+    }
+  | {
+      type: "convert";
+      value: CalculationExpression;
+      from: CalculationUnit;
+      to: CalculationUnit;
+      factor: DecimalValue;
+      offset: DecimalValue;
+    };
+
+export type CalculationRoundingMode =
+  | "round_half_up"
+  | "round_up"
+  | "round_down"
+  | "truncate";
+
+export interface CalculationRoundingRule {
+  mode: CalculationRoundingMode;
+  decimal_places: number;
+}
+
+export interface CalculationInput {
+  name: string;
+  unit: CalculationUnit;
+  minimum?: DecimalValue | null;
+  maximum?: DecimalValue | null;
+  is_required: boolean;
+}
+
+export interface CalculationOutput {
+  name: string;
+  unit: CalculationUnit;
+  expression: CalculationExpression;
+  rounding?: CalculationRoundingRule | null;
+}
+
+export interface CalculationGradeBand {
+  code: string;
+  label: string;
+  minimum_score: DecimalValue;
+}
+
+export interface CalculationOutcomePolicy {
+  unit: CalculationUnit;
+  pass_at_or_above?: DecimalValue | null;
+  honors_at_or_above?: DecimalValue | null;
+  grade_bands: CalculationGradeBand[];
+}
+
+export interface CalculationPlan {
+  version: number;
+  inputs: CalculationInput[];
+  outputs: CalculationOutput[];
+}
+
+export interface CalculationEngineSettings {
+  calculation_plan: CalculationPlan | null;
+  outcome_policy: CalculationOutcomePolicy | null;
+  ranking_enabled: boolean;
+  ranking_scope: RankingScope;
+  tie_policy: TiePolicy;
+  max_displayed_rank: number | null;
+}
+
+export interface CalculationResult {
+  policy_version: number;
+  outputs: Array<{
+    name: string;
+    unit: CalculationUnit;
+    value: DecimalValue;
+  }>;
+}
+
+export interface CalculationOutcome {
+  is_passed?: boolean | null;
+  is_honors?: boolean | null;
+  grade_code?: string | null;
+}
+
+export interface CalculationPreview {
+  result: CalculationResult;
+  outcomes: Array<{
+    output_name: string;
+    outcome: CalculationOutcome;
+  }>;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // LICENSE & ACTIVATION TYPES (Mulverse Platform)
 // ═══════════════════════════════════════════════════════════════
@@ -1328,6 +1452,7 @@ export type LicenseState =
   | "offline_grace"
   | "expired"
   | "suspended"
+  | "deactivation_pending"
   | "revoked"
   | "invalid";
 
@@ -1351,7 +1476,8 @@ export type LimitKey =
 
 export interface LimitEntry {
   key: string;
-  max_value: number;
+  /** `null` means the quota is unlimited. */
+  max_value: number | null;
   unit?: string;
 }
 
@@ -1360,6 +1486,7 @@ export interface LicenseStateDto {
   product: string;
   edition: string | null;
   plan: string | null;
+  plan_name: string | null;
   organization_id: string | null;
   valid_until: string | null;
   days_until_expiry: number | null;
@@ -1376,12 +1503,6 @@ export interface LicenseStateDto {
 
 export interface ActivateKeyRequest {
   product_key: string;
-}
-
-export interface ActivationResultDto {
-  success: boolean;
-  license_state: LicenseStateDto;
-  message: string;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1432,14 +1553,15 @@ export interface OrbisApiClient {
   selectOrgUnit(id?: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
-  createAcademicYear(req: CreateYearRequest): Promise<AcademicYearDto>;
-  updateAcademicYear(id: string, req: UpdateYearRequest): Promise<AcademicYearDto>;
-  listAcademicYears(): Promise<AcademicYearDto[]>;
+  createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto>;
+  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<academicCalendarDto>;
+  listacademicCalendars(): Promise<academicCalendarDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
-  getAcademicYear(id: string): Promise<AcademicYearDto>;
-  activateAcademicYear(id: string): Promise<AcademicYearDto>;
-  closeAcademicYear(id: string): Promise<AcademicYearDto>;
-  archiveAcademicYear(id: string): Promise<AcademicYearDto>;
+  getacademicCalendar(id: string): Promise<academicCalendarDto>;
+  activateacademicCalendar(id: string): Promise<academicCalendarDto>;
+  closeacademicCalendar(id: string): Promise<academicCalendarDto>;
+  archiveacademicCalendar(id: string): Promise<academicCalendarDto>;
+  deleteacademicCalendar(id: string): Promise<boolean>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
   deleteAcademicPeriod(id: string): Promise<boolean>;
@@ -1448,7 +1570,7 @@ export interface OrbisApiClient {
   lockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
-  listPeriodTemplates(): Promise<PeriodTemplateDto[]>;
+  listPeriodTypes(): Promise<PeriodTypeDto[]>;
 
   // ── Academic ────────────────────────────────────────────────
   createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;
@@ -1457,11 +1579,11 @@ export interface OrbisApiClient {
   createClass(req: CreateClassRequest): Promise<ClassDto>;
   listClasses(): Promise<ClassDto[]>;
   getClass(id: string): Promise<ClassDto>;
-  assignClassSubject(req: AssignClassSubjectRequest): Promise<ClassSubjectDto>;
-  listClassSubjects(
+  assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto>;
+  listSectionSubjects(
     classId: string,
     periodId: string,
-  ): Promise<ClassSubjectDto[]>;
+  ): Promise<SectionSubjectDto[]>;
   checkPrerequisites(
     studentId: string,
     subjectId: string,
@@ -1530,12 +1652,12 @@ export interface OrbisApiClient {
     filterOrPeriodId?:
       | string
       | {
-          classSubjectId?: string;
+          SectionSubjectId?: string;
           periodId?: string;
           classId?: string;
           teacherId?: string;
         },
-    classSubjectId?: string,
+    SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]>;
 
   // ── Assessment ──────────────────────────────────────────────
@@ -1556,11 +1678,16 @@ export interface OrbisApiClient {
   deleteGrade(id: string): Promise<void>;
   listGrades(filter?: {
     studentId?: string;
-    classSubjectId?: string;
+    SectionSubjectId?: string;
   }): Promise<GradeDto[]>;
   calculateGrades(req: CalculateGradesRequest): Promise<CalculationResultDto>;
   calculateGpa(req: CalculateGpaRequest): Promise<CumulativeGpaRecordDto>;
   calculateRankings(req: CalculateRankingsRequest): Promise<RankingItemDto[]>;
+  getCalculationEngineSettings(): Promise<CalculationEngineSettings>;
+  updateCalculationEngineSettings(
+    settings: CalculationEngineSettings,
+  ): Promise<CalculationEngineSettings>;
+  previewCalculation(values: Record<string, DecimalValue>): Promise<CalculationPreview>;
   getStudentTermResults(
     studentId: string,
     periodId: string,
@@ -1593,9 +1720,9 @@ export interface OrbisApiClient {
 
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;
-  promoteCohort(req: PromoteCohortInput): Promise<PromotionJobDto>;
-  listPromotionJobs(): Promise<PromotionJobDto[]>;
-  getPromotionJob(id: string): Promise<PromotionJobDto>;
+  promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto>;
+  listprogressionJobs(): Promise<progressionJobDto[]>;
+  getprogressionJob(id: string): Promise<progressionJobDto>;
 
   // ── Workflow & Academic Overrides ───────────────────────────
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;
@@ -1638,9 +1765,15 @@ export interface OrbisApiClient {
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
   listStudentFees(filter?: StudentFeeFilterParams): Promise<StudentFeeDto[]>;
+  listStudentFeesPaginated(
+    filter?: StudentFeeFilterParams,
+  ): Promise<PaginatedList<StudentFeeDto>>;
   deleteStudentFee(id: string): Promise<boolean>;
   processPayment(req: ProcessPaymentRequest): Promise<PaymentDto>;
   listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]>;
+  listPaymentsPaginated(
+    filter?: PaymentFilterParams,
+  ): Promise<PaginatedList<PaymentDto>>;
   deletePayment(id: string): Promise<boolean>;
   listCurrencies(): Promise<CurrencyDto[]>;
   listJournalEntries(): Promise<JournalEntryDto[]>;
@@ -1770,7 +1903,7 @@ export interface OrbisApiClient {
   ): Promise<string>;
   getReportJobStatus(jobId: string): Promise<ReportJobStatusDto>;
   downloadReportFile(jobId: string): Promise<Uint8Array>;
-  batchPrint(req: BatchPrintParams): Promise<string>;
+  batchPrint(req: BatchPrintParams): Promise<Uint8Array>;
   listAuditLogs(limit?: number, offset?: number): Promise<AuditLogDto[]>;
   getEntityAudit(
     entityType: string,
@@ -1793,7 +1926,8 @@ export interface OrbisApiClient {
 
   // ── License & Activation ────────────────────────────────
   licenseGetState(): Promise<LicenseStateDto>;
-  licenseActivateKey(req: ActivateKeyRequest): Promise<ActivationResultDto>;
+  licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
+  licenseRedeemKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
   licenseStartTrial(): Promise<LicenseStateDto>;
   licenseDeactivate(): Promise<LicenseStateDto>;
   licenseRefresh(): Promise<LicenseStateDto>;

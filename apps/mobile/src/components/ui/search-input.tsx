@@ -11,12 +11,10 @@ import {
   type TextInputProps,
   Pressable,
   ActivityIndicator,
-  StyleSheet,
   type ViewStyle,
 } from "react-native";
 import { Search, ChevronRight } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Spacing, Typography } from "@/constants/theme";
 
 export interface SearchInputProps extends Omit<TextInputProps, "style"> {
   value: string;
@@ -45,20 +43,15 @@ export function SearchInput({
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.backgroundElement,
-          borderColor: theme.border,
-        },
-        containerStyle,
-      ]}
+      className="h-[42px] flex-row items-center rounded-full border border-border bg-background-element px-three"
+      style={containerStyle}
     >
-      <View style={styles.iconBox}>
+      <View className="me-two items-center justify-center">
         <Search size={18} color={theme.textMuted} />
       </View>
 
       <TextInput
+        className="h-full flex-1 py-0 text-sm leading-5 text-foreground"
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -67,17 +60,11 @@ export function SearchInput({
         clearButtonMode="never"
         autoCapitalize="none"
         autoCorrect={false}
-        style={[
-          styles.input,
-          {
-            color: theme.foreground,
-          },
-        ]}
         {...props}
       />
 
       {loading ? (
-        <View style={styles.rightBox}>
+        <View className="ms-two items-center justify-center">
           <ActivityIndicator size="small" color={theme.primary} />
         </View>
       ) : value ? (
@@ -86,68 +73,16 @@ export function SearchInput({
           accessibilityLabel="Clear search"
           onPress={handleClear}
           hitSlop={8}
-          style={styles.rightBox}
+          className="ms-two items-center justify-center"
         >
           <View
-            style={[
-              styles.clearCircle,
-              { backgroundColor: theme.mutedForeground },
-            ]}
+            className="relative h-[18px] w-[18px] items-center justify-center rounded-full bg-muted-foreground"
           >
-            <View style={styles.clearBar1} />
-            <View style={styles.clearBar2} />
+            <View className="absolute h-[1.5px] w-2.5 rotate-45 bg-white" />
+            <View className="absolute h-[1.5px] w-2.5 -rotate-45 bg-white" />
           </View>
         </Pressable>
       ) : null}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    height: 42,
-    borderRadius: Radii.full,
-    borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.three,
-  },
-  iconBox: {
-    marginRight: Spacing.two,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  input: {
-    flex: 1,
-    height: "100%",
-    ...Typography.body,
-    paddingVertical: 0,
-  },
-  rightBox: {
-    marginLeft: Spacing.two,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  clearCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-  clearBar1: {
-    position: "absolute",
-    width: 10,
-    height: 1.5,
-    backgroundColor: "#FFFFFF",
-    transform: [{ rotate: "45deg" }],
-  },
-  clearBar2: {
-    position: "absolute",
-    width: 10,
-    height: 1.5,
-    backgroundColor: "#FFFFFF",
-    transform: [{ rotate: "-45deg" }],
-  },
-});

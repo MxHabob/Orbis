@@ -12,8 +12,6 @@ import {
   StyleSheet,
   type ViewStyle,
 } from "react-native";
-import { useTheme } from "@/hooks/use-theme";
-import { Radii, Shadows, Spacing, Typography } from "@/constants/theme";
 
 export interface SegmentOption<T extends string = string> {
   value: T;
@@ -34,18 +32,10 @@ export function SegmentedControl<T extends string = string>({
   onChange,
   style,
 }: SegmentedControlProps<T>) {
-  const theme = useTheme();
-
   return (
     <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.backgroundElement,
-          borderColor: theme.border,
-        },
-        style,
-      ]}
+      className="flex-row items-center rounded-lg border border-border bg-background-element p-half"
+      style={style}
     >
       {options.map((option) => {
         const isSelected = option.value === value;
@@ -56,28 +46,14 @@ export function SegmentedControl<T extends string = string>({
             accessibilityRole="button"
             accessibilityState={{ selected: isSelected }}
             onPress={() => onChange(option.value)}
-            style={[
-              styles.segment,
-              isSelected && [
-                styles.selectedSegment,
-                {
-                  backgroundColor: theme.cardElevated,
-                  borderColor: theme.cardBorder,
-                },
-              ],
-            ]}
+            className={`flex-1 flex-row items-center justify-center gap-one rounded-md px-two py-two ${isSelected ? "border border-card-border bg-card-elevated" : ""}`}
+            style={isSelected ? styles.selectedElevation : undefined}
           >
             {option.icon && (
-              <View style={styles.iconContainer}>{option.icon}</View>
+              <View className="items-center justify-center">{option.icon}</View>
             )}
             <Text
-              style={[
-                styles.label,
-                {
-                  color: isSelected ? theme.foreground : theme.textSecondary,
-                  fontWeight: isSelected ? "600" : "500",
-                },
-              ]}
+              className={`text-center text-[13px] leading-[18px] ${isSelected ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}
             >
               {option.label}
             </Text>
@@ -89,33 +65,7 @@ export function SegmentedControl<T extends string = string>({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    padding: Spacing.half,
-    borderRadius: Radii.lg,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  segment: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    borderRadius: Radii.md,
-    gap: Spacing.one,
-  },
-  selectedSegment: {
-    ...Shadows.sm,
-    borderWidth: 1,
-  },
-  iconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    ...Typography.bodySmall,
-    textAlign: "center",
+  selectedElevation: {
+    ...{"shadowColor":"#000000","shadowOffset":{"width":0,"height":1},"shadowOpacity":0.05,"shadowRadius":2,"elevation":1},
   },
 });

@@ -75,7 +75,8 @@ pub struct EvaluatedShape {
 pub struct EvaluatedTable {
     pub id: String,
     pub name: Option<String>,
-    pub props: Value, // Complex table props
+    pub position: Option<crate::model::document::Position>,
+    pub props: TableProps,
 }
 
 #[derive(Debug, Clone)]
@@ -193,11 +194,23 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             })]
         }
         TemplateNode::Table(n) => {
-            // Table structure is evaluated inside layout engine or passed through
+            let mut props = n.props.clone().into_typed();
+            let position = n.position.clone().or_else(|| props.position.clone());
+
+            // If props.data_source is provided, resolve rows from data_source in context
+            if let Some(ref data_source) = props.data_source {
+                if let Some(val) = resolve_path(context, data_source) {
+                    if let Value::Array(arr) = val {
+                        props.rows = Some(arr);
+                    }
+                }
+            }
+
             vec![EvaluatedNode::Table(EvaluatedTable {
                 id: n.id.clone(),
                 name: n.name.clone(),
-                props: serde_json::to_value(&n.props).unwrap_or(serde_json::Value::Null),
+                position,
+                props,
             })]
         }
         TemplateNode::Barcode(n) => {

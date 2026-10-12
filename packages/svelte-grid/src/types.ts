@@ -197,6 +197,12 @@ export interface BulkResult<T = GridRow> {
   rejectedCount: number;
 }
 
+export interface GridRowsChangeEvent {
+  rows: GridRow[];
+  changedRows: GridRow[];
+  action: "edit" | "paste" | "cut" | "delete" | "fill-down" | "fill-right" | "duplicate";
+}
+
 export interface VirtualWindow {
   start: number;
   end: number;

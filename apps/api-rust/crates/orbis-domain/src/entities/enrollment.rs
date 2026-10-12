@@ -72,7 +72,8 @@ pub struct Enrollment {
     pub org_id: Uuid,
     pub period_id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
+    pub attempt_number: i32,
     pub student_number: String,
     pub study_mode: StudyMode,
     pub status: EnrollmentStatus,
@@ -93,7 +94,7 @@ impl Enrollment {
         org_id: Uuid,
         period_id: Uuid,
         student_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         student_number: String,
         study_mode: StudyMode,
     ) -> Self {
@@ -103,7 +104,8 @@ impl Enrollment {
             org_id,
             period_id,
             student_id,
-            class_id,
+            section_id,
+            attempt_number: 1,
             student_number,
             is_attendance_exempt: study_mode.default_attendance_exempt(),
             is_grade_exempt: study_mode.default_grade_exempt(),
@@ -120,3 +122,6 @@ impl Enrollment {
         }
     }
 }
+
+/// Backward compat alias
+pub type Enrollmentstatus = EnrollmentStatus;

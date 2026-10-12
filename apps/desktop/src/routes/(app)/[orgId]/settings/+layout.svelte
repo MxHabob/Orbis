@@ -20,6 +20,7 @@ import {
   DocumentPage,
   GlobeAlt,
   Keyframes,
+  Lock,
   Pin,
   ReceiptPercent,
   Scale,
@@ -52,6 +53,11 @@ const navGroups = $derived([
         label: m.common_nav_notifications(),
         icon: AppNotification,
       },
+      {
+        path: "login-rules",
+        label: m.settings_nav_login_rules(),
+        icon: Lock,
+      },
     ],
   },
   {
@@ -83,8 +89,8 @@ const navGroups = $derived([
     title: m.settings_sidebar_academic_rules(),
     items: [
       {
-        path: "academic-years",
-        label: m.settings_nav_academic_years(),
+        path: "academic-calendars",
+        label: m.settings_nav_academic_calendars(),
         icon: Calendar,
       },
       {
@@ -108,13 +114,18 @@ const navGroups = $derived([
         icon: Scale,
       },
       {
+        path: "calculation-engine",
+        label: m.settings_nav_calculation_engine(),
+        icon: Bolt,
+      },
+      {
         path: "assessment-schemes",
         label: m.settings_sidebar_assessment_schemes(),
         icon: Keyframes,
       },
       {
         path: "registration",
-        label: m.settings_nav_registration(),
+        label: m.settings_nav_admission(),
         icon: DocumentPage,
       },
       {

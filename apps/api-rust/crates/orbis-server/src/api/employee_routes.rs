@@ -55,6 +55,7 @@ pub struct EmployeeDetailDto {
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
@@ -118,6 +119,7 @@ impl From<EmployeeDetail> for EmployeeDetailDto {
             place_of_birth: p.place_of_birth,
             nationality: p.nationality,
             blood_type: p.blood_type,
+            marital_status: p.marital_status,
             medical_notes: p.medical_notes,
             special_needs_notes: p.special_needs_notes,
             phone: p.phone,
@@ -222,6 +224,7 @@ pub struct RegisterEmployeeRequest {
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
@@ -258,6 +261,7 @@ pub struct UpdateEmployeeRequest {
     pub place_of_birth: Option<String>,
     pub nationality: Option<String>,
     pub blood_type: Option<String>,
+    pub marital_status: Option<String>,
     pub medical_notes: Option<String>,
     pub special_needs_notes: Option<String>,
     pub phone: Option<String>,
@@ -384,6 +388,7 @@ pub async fn register_employee(
         "part_time" => Some(EmploymentType::PartTime),
         "contract" => Some(EmploymentType::Contract),
         "hourly" => Some(EmploymentType::Hourly),
+        "volunteer" => Some(EmploymentType::Volunteer),
         _ => None,
     });
 
@@ -413,6 +418,7 @@ pub async fn register_employee(
         place_of_birth: p.place_of_birth,
         nationality: p.nationality,
         blood_type: p.blood_type,
+        marital_status: p.marital_status,
         medical_notes: p.medical_notes,
         special_needs_notes: p.special_needs_notes,
         phone: p.phone,
@@ -527,6 +533,7 @@ pub async fn update_employee(
         "part_time" => Some(EmploymentType::PartTime),
         "contract" => Some(EmploymentType::Contract),
         "hourly" => Some(EmploymentType::Hourly),
+        "volunteer" => Some(EmploymentType::Volunteer),
         _ => None,
     });
 
@@ -554,6 +561,7 @@ pub async fn update_employee(
         place_of_birth: p.place_of_birth,
         nationality: p.nationality,
         blood_type: p.blood_type,
+        marital_status: p.marital_status,
         medical_notes: p.medical_notes,
         special_needs_notes: p.special_needs_notes,
         phone: p.phone,
@@ -682,6 +690,7 @@ pub async fn bulk_register_employees(
             "part_time" => Some(EmploymentType::PartTime),
             "contract" => Some(EmploymentType::Contract),
             "hourly" => Some(EmploymentType::Hourly),
+            "volunteer" => Some(EmploymentType::Volunteer),
             _ => None,
         });
 
@@ -711,6 +720,7 @@ pub async fn bulk_register_employees(
             place_of_birth: reg.place_of_birth,
             nationality: reg.nationality,
             blood_type: reg.blood_type,
+            marital_status: reg.marital_status,
             medical_notes: reg.medical_notes,
             special_needs_notes: reg.special_needs_notes,
             phone: reg.phone,

@@ -7,13 +7,11 @@
 import React from "react";
 import {
   Pressable,
-  StyleSheet,
   type ViewStyle,
   ActivityIndicator,
   View,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
-import { Radii, Shadows } from "@/constants/theme";
 
 export type IconButtonVariant =
   | "default"
@@ -59,68 +57,36 @@ export const IconButton = React.memo<IconButtonProps>(
     const isDisabled = disabled || loading;
     const dimensions = SIZE_MAP[size];
 
-    const getVariantStyles = (): {
-      container: ViewStyle;
-      indicatorColor: string;
-    } => {
-      switch (variant) {
-        case "secondary":
-          return {
-            container: {
-              backgroundColor: theme.secondary,
-              borderColor: theme.border,
-              borderWidth: 1,
-              borderBottomWidth: 2,
-              borderBottomColor: theme.btnShadowSecondary,
-            },
-            indicatorColor: theme.secondaryForeground,
-          };
-        case "outline":
-          return {
-            container: {
-              backgroundColor: theme.card,
-              borderColor: theme.border,
-              borderWidth: 1,
-              borderBottomWidth: 2,
-              borderBottomColor: theme.border,
-            },
-            indicatorColor: theme.foreground,
-          };
-        case "destructive":
-          return {
-            container: {
-              backgroundColor: theme.destructive,
-              borderColor: theme.destructive,
-              borderWidth: 1,
-              borderBottomWidth: 2,
-              borderBottomColor: theme.btnShadowDestructive,
-            },
-            indicatorColor: theme.destructiveForeground,
-          };
-        case "ghost":
-          return {
-            container: {
-              backgroundColor: "transparent",
-            },
-            indicatorColor: theme.foreground,
-          };
-        case "default":
-        default:
-          return {
-            container: {
-              backgroundColor: theme.primary,
-              borderColor: theme.primary,
-              borderWidth: 1,
-              borderBottomWidth: 2,
-              borderBottomColor: theme.btnShadowPrimary,
-            },
-            indicatorColor: theme.primaryForeground,
-          };
-      }
+    const variantClasses: Record<
+      IconButtonVariant,
+      { container: string; indicatorColor: string }
+    > = {
+      default: {
+        container:
+          "border border-primary border-b-2 border-b-btn-shadow-primary bg-primary",
+        indicatorColor: theme.primaryForeground,
+      },
+      secondary: {
+        container:
+          "border border-border border-b-2 border-b-btn-shadow-secondary bg-secondary",
+        indicatorColor: theme.secondaryForeground,
+      },
+      outline: {
+        container: "border border-border border-b-2 border-b-border bg-card",
+        indicatorColor: theme.foreground,
+      },
+      destructive: {
+        container:
+          "border border-destructive border-b-2 border-b-btn-shadow-destructive bg-destructive",
+        indicatorColor: theme.destructiveForeground,
+      },
+      ghost: {
+        container: "bg-transparent",
+        indicatorColor: theme.foreground,
+      },
     };
 
-    const vStyles = getVariantStyles();
-    const borderRadius = rounded ? dimensions.size / 2 : Radii.md;
+    const variantStyle = variantClasses[variant];
 
     // Hit slop expands smaller buttons to minimum 44px touch area
     const hitSlopAmount = Math.max(0, (44 - dimensions.size) / 2);
@@ -132,13 +98,11 @@ export const IconButton = React.memo<IconButtonProps>(
         disabled={isDisabled}
         hitSlop={hitSlopAmount}
         onPress={isDisabled ? undefined : onPress}
+        className={`items-center justify-center ${rounded ? "rounded-full" : "rounded-md"} ${variantStyle.container}`}
         style={({ pressed }) => [
-          styles.base,
-          vStyles.container,
           {
             width: dimensions.size,
             height: dimensions.size,
-            borderRadius,
             opacity: isDisabled ? 0.45 : 1,
             transform: [{ scale: pressed && !isDisabled ? 0.94 : 1 }],
           },
@@ -146,9 +110,9 @@ export const IconButton = React.memo<IconButtonProps>(
         ]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={vStyles.indicatorColor} />
+          <ActivityIndicator size="small" color={variantStyle.indicatorColor} />
         ) : (
-          <View style={styles.center}>{icon}</View>
+          <View className="items-center justify-center">{icon}</View>
         )}
       </Pressable>
     );
@@ -156,14 +120,3 @@ export const IconButton = React.memo<IconButtonProps>(
 );
 
 IconButton.displayName = "IconButton";
-
-const styles = StyleSheet.create({
-  base: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  center: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

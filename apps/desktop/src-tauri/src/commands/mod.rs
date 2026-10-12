@@ -57,8 +57,7 @@ pub fn generate_handlers() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync 
             .try_get::<crate::state::AppState>()
         {
             let snapshot = state.license_runtime.current_snapshot();
-            if !snapshot.state.is_operational()
-                && !is_allowed_without_operational_license(&command)
+            if !snapshot.state.is_operational() && !is_allowed_without_operational_license(&command)
             {
                 invoke.resolver.reject(format!(
                     "This operation is unavailable while the license state is {:?}. Activate a valid license or start a trial to continue.",
@@ -94,6 +93,7 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
             command,
             "license_get_state"
                 | "license_activate_key"
+                | "license_redeem_key"
                 | "license_start_trial"
                 | "license_deactivate"
                 | "license_refresh"
@@ -107,6 +107,10 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_get_changelog"
                 | "system_check_for_updates"
                 | "system_install_update"
+                | "bootstrap_detect_environment"
+                | "bootstrap_generate_slug"
+                | "bootstrap_get_status"
+                | "bootstrap_execute"
         )
 }
 
@@ -152,6 +156,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         calendar_cmds::calendar_activate_year,
         calendar_cmds::calendar_close_year,
         calendar_cmds::calendar_archive_year,
+        calendar_cmds::calendar_delete_year,
         calendar_cmds::calendar_list_years,
         calendar_cmds::calendar_get_context,
         calendar_cmds::calendar_get_year,
@@ -163,7 +168,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         calendar_cmds::calendar_lock_period,
         calendar_cmds::calendar_unlock_period,
         calendar_cmds::calendar_close_period,
-        calendar_cmds::calendar_list_period_templates,
+        calendar_cmds::calendar_list_period_types,
         // ── Academic ────────────────────────────────────────────
         academic_cmds::academic_create_subject,
         academic_cmds::academic_list_subjects,
@@ -171,8 +176,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         academic_cmds::academic_create_class,
         academic_cmds::academic_list_classes,
         academic_cmds::academic_get_class,
-        academic_cmds::academic_assign_class_subject,
-        academic_cmds::academic_list_class_subjects,
+        academic_cmds::academic_assign_section_subject,
+        academic_cmds::academic_list_section_subjects,
         academic_cmds::academic_check_prerequisites,
         // ── Student ─────────────────────────────────────────────
         student_cmds::student_register_student,
@@ -253,6 +258,9 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         assessment_cmds::assessment_delete_grade,
         assessment_cmds::assessment_list_grades,
         assessment_cmds::assessment_calculate_grades,
+        assessment_cmds::assessment_get_calculation_engine_settings,
+        assessment_cmds::assessment_update_calculation_engine_settings,
+        assessment_cmds::assessment_preview_calculation,
         assessment_cmds::assessment_calculate_gpa,
         assessment_cmds::assessment_calculate_rankings,
         assessment_cmds::assessment_mark_attendance,
@@ -301,9 +309,11 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         finance_cmds::finance_get_fee_template,
         finance_cmds::finance_generate_fee,
         finance_cmds::finance_list_student_fees,
+        finance_cmds::finance_list_student_fees_paginated,
         finance_cmds::finance_delete_student_fee,
         finance_cmds::finance_process_payment,
         finance_cmds::finance_list_payments,
+        finance_cmds::finance_list_payments_paginated,
         finance_cmds::finance_delete_payment,
         finance_cmds::finance_list_currencies,
         finance_cmds::finance_list_journal_entries,
@@ -436,6 +446,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         // ── License & Activation ────────────────────────────────
         license_cmds::license_get_state,
         license_cmds::license_activate_key,
+        license_cmds::license_redeem_key,
         license_cmds::license_start_trial,
         license_cmds::license_deactivate,
         license_cmds::license_refresh,
@@ -564,14 +575,37 @@ mod license_policy_tests {
     }
 
     #[test]
-    fn non_operational_license_only_allows_auth_activation_and_support_commands() {
+    fn non_operational_license_allows_activation_and_initial_bootstrap() {
         assert!(is_allowed_without_operational_license("auth_login"));
         assert!(is_allowed_without_operational_license("license_get_state"));
-        assert!(is_allowed_without_operational_license("license_activate_key"));
-        assert!(is_allowed_without_operational_license("license_start_trial"));
-        assert!(is_allowed_without_operational_license("system_get_readiness"));
-        assert!(!is_allowed_without_operational_license("finance_list_accounts"));
-        assert!(!is_allowed_without_operational_license("student_list_students"));
+        assert!(is_allowed_without_operational_license(
+            "license_activate_key"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "license_start_trial"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "system_get_readiness"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "bootstrap_detect_environment"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "bootstrap_generate_slug"
+        ));
+        assert!(is_allowed_without_operational_license(
+            "bootstrap_get_status"
+        ));
+        assert!(is_allowed_without_operational_license("bootstrap_execute"));
+        assert!(!is_allowed_without_operational_license(
+            "finance_list_accounts"
+        ));
+        assert!(!is_allowed_without_operational_license(
+            "student_list_students"
+        ));
         assert!(!is_allowed_without_operational_license("org_get_current"));
+        assert!(!is_allowed_without_operational_license(
+            "onboarding_provision_defaults"
+        ));
     }
 }

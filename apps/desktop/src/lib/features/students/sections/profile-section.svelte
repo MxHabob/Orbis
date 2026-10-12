@@ -8,6 +8,7 @@
 import * as m from "$lib/paraglide/messages";
 import { Label } from "@orbis/ui/label";
 import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -126,6 +127,20 @@ const studyModes = [
         />
       </div>
 
+      {#if !state.isEditMode}
+        <div class="px-6 py-4 flex items-start gap-3">
+          <Checkbox
+            id="student-create-login-account"
+            checked={state.createLoginAccount}
+            onCheckedChange={(value) => (state.createLoginAccount = !!value)}
+          />
+          <label for="student-create-login-account" class="flex flex-col gap-1 text-start cursor-pointer">
+            <span class="text-xs font-semibold text-foreground">{m.bulk_entry_employee_header_provision_user()}</span>
+            <span class="text-[11px] text-muted-foreground">{m.students_create_login_account_description()}</span>
+          </label>
+        </div>
+      {/if}
+
       <!-- Target Class & Section with CapacityIndicator -->
       <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div class="flex flex-col gap-1 text-start">
@@ -165,7 +180,7 @@ const studyModes = [
             <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_profile_nid_desc()}</span>
           </div>
           <div class="w-full md:w-120 shrink-0 flex flex-col gap-1.5">
-            <Input 
+            <Input
               id="nationalId"
               type="text" 
               placeholder="1000234900" 
@@ -420,23 +435,26 @@ const studyModes = [
       {/if}
 
       <!-- Special Needs Notes -->
-      <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
-        <div class="flex flex-col gap-1 text-start">
-          <Label for="specialNeedsNotes" class="text-xs font-semibold text-foreground">
-            {m.ui_copy_special_needs_accommodations_4763ae09()}
-          </Label>
-          <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_special_accommodations_or_accessibility_as_701c987f()}</span>
+      {#if state.activeFields.special_needs_notes}
+        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between last:border-b-0 gap-4">
+          <div class="flex flex-col gap-1 text-start">
+            <Label for="specialNeedsNotes" class="text-xs font-semibold text-foreground">
+              {m.ui_copy_special_needs_accommodations_4763ae09()}
+              {#if state.requiredFields.special_needs_notes}<span class="text-destructive">*</span>{/if}
+            </Label>
+            <span class="text-[11px] text-muted-foreground leading-relaxed">{m.ui_copy_special_accommodations_or_accessibility_as_701c987f()}</span>
+          </div>
+          <div class="w-full md:w-120 shrink-0">
+            <Input 
+              id="specialNeedsNotes"
+              type="text"
+              placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()}
+              class="h-9 w-full bg-background"
+              bind:value={state.personal.specialNeedsNotes}
+            />
+          </div>
         </div>
-        <div class="w-full md:w-120 shrink-0">
-          <Input 
-            id="specialNeedsNotes"
-            type="text" 
-            placeholder={m.ui_copy_enter_special_needs_notes_if_any_0ef91688()} 
-            class="h-9 w-full bg-background" 
-            bind:value={state.personal.specialNeedsNotes}
-          />
-        </div>
-      </div>
+      {/if}
     </div>
   </CardContent>
 </Card>

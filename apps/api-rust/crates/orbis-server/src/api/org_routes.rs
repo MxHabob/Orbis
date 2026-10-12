@@ -13,6 +13,7 @@ use uuid::Uuid;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
+use orbis_domain::entities::academic_calculation::{CalculationPlan, OutcomePolicy};
 use orbis_domain::entities::academic_policy::{RankingScope, RoundingMode, TiePolicy};
 use orbis_domain::entities::settings::OrganizationSettings;
 use rust_decimal::Decimal;
@@ -46,6 +47,7 @@ pub struct UpdateOrgRequest {
     pub primary_color: Option<String>,
     pub logo: Option<String>,
     pub favicon: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 #[derive(Serialize, ToSchema)]
@@ -295,6 +297,7 @@ async fn update_current_org(
                 primary_color: payload.primary_color,
                 logo: payload.logo,
                 favicon: payload.favicon,
+                metadata: payload.metadata,
             },
         )
         .await?;
@@ -367,6 +370,8 @@ pub struct AcademicSettingsDto {
     pub tie_policy: TiePolicy,
     pub rounding_mode: RoundingMode,
     pub decimal_places: u32,
+    pub calculation_plan: Option<CalculationPlan>,
+    pub outcome_policy: Option<OutcomePolicy>,
     pub enrollment_auto_close: bool,
     pub allow_late_enrollment: bool,
     pub late_enrollment_approval: bool,
@@ -394,6 +399,8 @@ impl Default for AcademicSettingsDto {
             tie_policy: TiePolicy::StandardCompetition,
             rounding_mode: RoundingMode::RoundHalfUp,
             decimal_places: 2,
+            calculation_plan: None,
+            outcome_policy: None,
             enrollment_auto_close: true,
             allow_late_enrollment: false,
             late_enrollment_approval: true,
@@ -512,7 +519,7 @@ pub struct DashboardCountsDto {
     pub total_classes: u64,
     pub total_enrollments: u64,
     pub total_subjects: u64,
-    pub active_academic_year: Option<String>,
+    pub active_academic_calendar: Option<String>,
     pub total_payments_amount: f64,
     pub pending_fees_amount: f64,
 }
@@ -537,6 +544,8 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 tie_policy: s.academic.tie_policy,
                 rounding_mode: s.academic.rounding_mode,
                 decimal_places: s.academic.decimal_places,
+                calculation_plan: s.academic.calculation_plan,
+                outcome_policy: s.academic.outcome_policy,
                 enrollment_auto_close: s.academic.enrollment_auto_close,
                 allow_late_enrollment: s.academic.allow_late_enrollment,
                 late_enrollment_approval: s.academic.late_enrollment_approval,
@@ -654,6 +663,8 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 tie_policy: s.academic.tie_policy,
                 rounding_mode: s.academic.rounding_mode,
                 decimal_places: s.academic.decimal_places,
+                calculation_plan: s.academic.calculation_plan,
+                outcome_policy: s.academic.outcome_policy,
                 enrollment_auto_close: s.academic.enrollment_auto_close,
                 allow_late_enrollment: s.academic.allow_late_enrollment,
                 late_enrollment_approval: s.academic.late_enrollment_approval,
@@ -802,7 +813,7 @@ async fn get_dashboard(
         total_classes: counts.total_classes,
         total_enrollments: counts.total_enrollments,
         total_subjects: counts.total_subjects,
-        active_academic_year: counts.active_academic_year,
+        active_academic_calendar: counts.active_academic_calendar,
         total_payments_amount: counts.total_payments_amount,
         pending_fees_amount: counts.pending_fees_amount,
     }))

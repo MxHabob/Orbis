@@ -1,6 +1,6 @@
 <script lang="ts">
   import { untrack } from "svelte";
-  import { OrbisGrid } from "@orbis/svelte-grid";
+  import { OrbisGrid, parseClipboard, type CellEditEvent, type GridRowsChangeEvent } from "@orbis/svelte-grid";
   import { Button } from "@orbis/ui/button";
   import { Badge } from "@orbis/ui/badge";
   import { toast } from "@orbis/ui";
@@ -12,13 +12,12 @@
     ArrowUpTray,
     ArrowDownTray,
     CheckCircle,
-    Users,
-    BookOpen,
     FolderOpen,
   } from "@orbis/icons";
   import * as m from "$lib/paraglide/messages";
   import { orgContext } from "$lib/stores/org-context.svelte";
   import { getBulkEntryGridColumns, getBulkEntryProfileName } from "../localization";
+  import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
   import type {
     BulkProfileId,
     BulkRowState,
@@ -33,7 +32,8 @@
   import { validateAllRows } from "../engine/validator";
   import { revalidateCellChange } from "../engine/revalidator";
   import { executeCommitPipeline } from "../engine/commit-pipeline";
-  import { exportCorrectedDataset, openExportedFile } from "../engine/exporter";
+  import { exportCorrectedDataset } from "../engine/exporter";
+  import { createShowInFolderToastAction } from "$lib/shared/utils/download";
   import ImpactPreviewModal from "./impact-preview-modal.svelte";
   import CommitProgressModal from "./commit-progress-modal.svelte";
   import ImportResultSummary from "./import-result-summary.svelte";
@@ -54,10 +54,21 @@
   // Declarative TanStack Query for Reference Data (Zero $effect data loading!)
   const refDataQuery = createBulkReferenceDataQuery(
     () => selectedProfileId,
+    () => orgContext.orgId || "",
     () => orgContext.baseCurrency || "",
   );
   const refData = $derived(refDataQuery.data ?? null);
   const isLoadingRefData = $derived(refDataQuery.isLoading);
+  const referenceDataError = $derived(
+    refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
+  );
+  const activeColumnMetadata = $derived(
+    currentProfile.columnMetadata.filter((column) => {
+      if (currentProfile.id !== "students" || !refData?.registrationFields) return true;
+      if (column.id === "full_name_ar" || column.id === "class_name") return true;
+      return refData.registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
+    }),
+  );
 
   let fileName = $state<string | null>(null);
   let rawRows = $state<BulkRowState[]>([]);
@@ -114,9 +125,9 @@
     const data: Record<string, any> = {
       __idx: rowNumber,
       rowNumber,
-      id: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      id: `row-${crypto.randomUUID()}`,
     };
-    for (const col of currentProfile.columnMetadata) {
+    for (const col of activeColumnMetadata) {
       data[col.id] = "";
     }
     return {
@@ -162,19 +173,18 @@
         return;
       }
 
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length === 0) return;
+      const matrix = parseClipboard(text);
+      if (matrix.length === 0) return;
 
       const newRows: BulkRowState[] = [];
       const startIndex = rawRows.length + 1;
 
-      for (let r = 0; r < lines.length; r++) {
-        const line = lines[r]!;
-        const cells = line.includes("\t") ? line.split("\t") : line.split(",");
+      for (let r = 0; r < matrix.length; r++) {
+        const cells = matrix[r]!;
         const row = createBlankRow(startIndex + r);
 
-        for (let c = 0; c < Math.min(cells.length, currentProfile.columnMetadata.length); c++) {
-          const col = currentProfile.columnMetadata[c]!;
+        for (let c = 0; c < Math.min(cells.length, activeColumnMetadata.length); c++) {
+          const col = activeColumnMetadata[c]!;
           const cellVal = cells[c]?.trim() || "";
           row.data[col.id] = cellVal;
         }
@@ -199,7 +209,7 @@
     if (!refData || rawRows.length === 0) return;
 
     const cleaned = rawRows.filter((row) => {
-      return currentProfile.columnMetadata.some((col) => {
+      return activeColumnMetadata.some((col) => {
         const val = row.data[col.id];
         return val !== undefined && val !== null && String(val).trim() !== "";
       });
@@ -225,12 +235,16 @@
       return;
     }
     try {
-      await downloadExcelTemplate({
+      const openFile = await downloadExcelTemplate({
         profile: currentProfile,
         refData,
         orgName: orgContext.displayName,
       });
-      toast.success(m.bulk_entry_toast_template_downloaded());
+      toast.success(m.bulk_entry_toast_template_downloaded(), {
+        action: openFile
+          ? createShowInFolderToastAction(openFile)
+          : undefined,
+      });
     } catch (err: any) {
       toast.error(m.bulk_entry_toast_template_download_failed({ reason: err.message || String(err) }));
     }
@@ -278,9 +292,13 @@
   }
 
   // Live cell edit handler from OrbisGrid
-  function handleCellEdit(e: any) {
+  function handleCellEdit(e: CellEditEvent) {
     if (!refData) return;
-    const rowIndex = e.rowIndex;
+    const rowId = String(e.row.id ?? "");
+    const rowIndex = rawRows.findIndex(
+      (row) => rowId && String(row.data.id ?? "") === rowId,
+    );
+    if (rowIndex < 0) return;
     const columnId = e.columnId;
     const newValue = e.newValue;
 
@@ -297,6 +315,45 @@
     validCount = result.validCount;
   }
 
+  function handleGridRowsChange(event: GridRowsChangeEvent) {
+    if (!refData || event.action === "edit" || event.changedRows.length === 0) return;
+
+    const updatedRows = rawRows.slice();
+    const rowIndexes: Record<string, number> = {};
+    updatedRows.forEach((row, index) => {
+      rowIndexes[String(row.data.id ?? "")] = index;
+    });
+
+    for (const changedData of event.changedRows) {
+      const id = String(changedData.id ?? "");
+      const existingIndex = rowIndexes[id];
+      if (existingIndex !== undefined) {
+        const existing = updatedRows[existingIndex]!;
+        existing.data = { ...existing.data, ...changedData };
+        continue;
+      }
+
+      const rowNumber = updatedRows.length + 1;
+      const data = { ...changedData, __idx: rowNumber, rowNumber };
+      const row: BulkRowState = {
+        rowNumber,
+        data,
+        errors: new Map(),
+        warnings: new Map(),
+        info: new Map(),
+        status: "pending",
+      };
+      rowIndexes[id] = updatedRows.length;
+      updatedRows.push(row);
+    }
+
+    const summary = validateAllRows(updatedRows, currentProfile, refData);
+    rawRows = updatedRows;
+    errorCount = summary.errorCount;
+    warningCount = summary.warningCount;
+    validCount = summary.validCount;
+  }
+
   // Jump to next error shortcut (F8)
   function handleNextError() {
     const errIdx = rawRows.findIndex((r) => r.status === "error" || r.status === "failed");
@@ -311,16 +368,15 @@
   async function handleExportCorrected() {
     if (rawRows.length === 0) return;
     try {
-      const savedPath = await exportCorrectedDataset({
+      const openFile = await exportCorrectedDataset({
         profile: currentProfile,
         rows: rawRows,
         filenamePrefix: `Orbis_${selectedProfileId}_Data`,
       });
 
-      if (savedPath) {
-        toast.success(m.bulk_entry_toast_data_exported());
-        await openExportedFile(savedPath);
-      }
+      toast.success(m.bulk_entry_toast_data_exported(), {
+        action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+      });
     } catch (err: any) {
       toast.error(m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }));
     }
@@ -359,10 +415,10 @@
       commitResult = result;
       isProgressModalOpen = false;
 
-      if (result.failedCount === 0) {
+      if (result.failedCount === 0 && result.warnings.length === 0) {
         toast.success(m.bulk_entry_toast_committed({ count: result.committedCount }));
       } else {
-        toast.warning(m.bulk_entry_toast_commit_partial({ count: result.failedCount }));
+        toast.warning(m.bulk_entry_toast_commit_partial({ count: result.failedCount + result.warnings.length }));
       }
     } catch (err: any) {
       isProgressModalOpen = false;
@@ -396,7 +452,7 @@
     <div class="flex items-center gap-1.5 flex-wrap">
       {#if !hideProfileSelector}
         <div class="flex items-center bg-muted/70 p-0.5 rounded-lg border border-border/60">
-          {#each Object.entries(BULK_PROFILES) as [id, prof]}
+          {#each Object.entries(BULK_PROFILES) as [id, prof] (id)}
             <button
               type="button"
               onclick={() => handleProfileChange(id as BulkProfileId)}
@@ -418,24 +474,14 @@
     <!-- Actions Toolbar -->
     <div class="flex items-center gap-1.5 flex-wrap">
       <Button
-        variant="outline"
+        variant="secondary"
         size="sm"
         disabled={isLoadingRefData}
         onclick={() => handleAddBlankRows(1)}
-        class="h-8 gap-1 text-xs"
+        class="h-8 gap-1.5 px-3 text-xs"
       >
         <Plus size={14} />
         <span>{m.bulk_entry_add_row()}</span>
-      </Button>
-
-      <Button
-        variant="outline"
-        size="sm"
-        disabled={isLoadingRefData}
-        onclick={() => handleAddBlankRows(5)}
-        class="h-8 gap-1 text-xs"
-      >
-        <span>+ 5</span>
       </Button>
 
       <Button
@@ -474,6 +520,15 @@
     </div>
   </div>
 
+  {#if referenceDataError}
+    <div class="mx-4 mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center justify-between gap-3" role="alert">
+      <span class="text-xs text-destructive">{referenceDataError}</span>
+      <Button variant="outline" size="sm" onclick={() => refDataQuery.refetch()}>
+        إعادة المحاولة
+      </Button>
+    </div>
+  {/if}
+
   {#if commitResult}
     <!-- Completion View -->
     <div class="flex-1 overflow-y-auto p-6 flex items-center justify-center">
@@ -508,14 +563,14 @@
 
         <div class="flex items-center gap-2 flex-wrap justify-center">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            onclick={() => handleAddBlankRows(5)}
+            onclick={() => handleAddBlankRows(1)}
             disabled={isLoadingRefData}
-            class="h-8 gap-1 text-xs"
+            class="h-8 gap-1.5 px-3 text-xs font-semibold shadow-sm"
           >
             <Plus size={14} />
-            <span>{m.bulk_entry_add_five_rows()}</span>
+            <span>{m.bulk_entry_add_row()}</span>
           </Button>
 
           <Button
@@ -623,28 +678,26 @@
     <!-- Central OrbisGrid Workspace -->
     <div class="flex-1 w-full overflow-hidden bg-background relative">
       <OrbisGrid
-        columns={getBulkEntryGridColumns(currentProfile)}
+        columns={getBulkEntryGridColumns(currentProfile, refData?.registrationFields).map((column) => ({
+          ...column,
+          ...(!column.readonly ? { type: "text" as const, options: undefined } : {}),
+          sortable: false,
+          sort: false,
+        }))}
         source={gridSource}
         rtl={true}
         height="100%"
         range={true}
         clipboard={true}
+        createEmptyRow={() => createBlankRow(rawRows.length + 1).data}
         oncelledit={handleCellEdit}
+        onrowschange={handleGridRowsChange}
       />
     </div>
 
     <!-- Minimal Settings Footer -->
     <div class="px-4 py-2 border-t border-border bg-card/50 flex items-center justify-between gap-3">
       <div class="flex items-center gap-1.5">
-        <Button
-          variant="ghost"
-          size="sm"
-          onclick={handleReset}
-          class="h-8 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {m.common_action_clear()}
-        </Button>
-
         <Button
           variant="outline"
           size="sm"
@@ -664,7 +717,7 @@
         {/if}
 
         <Button
-          variant="primary"
+          variant="default"
           size="sm"
           disabled={validCount === 0}
           onclick={handleReviewImpact}
@@ -681,7 +734,6 @@
 <!-- Impact Preview Modal -->
 <ImpactPreviewModal
   open={isPreviewModalOpen}
-  profileId={selectedProfileId}
   summary={previewSummary}
   onclose={() => (isPreviewModalOpen = false)}
   onconfirm={handleConfirmCommit}

@@ -19,8 +19,8 @@ use orbis_domain::errors::DomainError;
 use rust_decimal::Decimal;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait,
-    PaginatorTrait, QueryFilter, Set,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, EntityTrait, Order,
+    PaginatorTrait, QueryFilter, QueryOrder, Set,
 };
 use uuid::Uuid;
 
@@ -478,7 +478,12 @@ impl DiscountTemplateRepository for FinanceRepoImpl {
 fn build_student_fee_list_query(
     org_id: Uuid,
     filter: &orbis_domain::queries::filters::StudentFeeFilter,
+    backend: sea_orm::DatabaseBackend,
 ) -> sea_orm::Select<StudentFeeEntity> {
+    let placeholder = |index| match backend {
+        sea_orm::DatabaseBackend::Postgres => format!("${index}"),
+        _ => "?".to_string(),
+    };
     let mut query = StudentFeeEntity::find().filter(student_fee::Column::OrgId.eq(org_id));
     if let Some(student_id) = filter.student_id {
         query = query.filter(student_fee::Column::StudentId.eq(student_id));
@@ -492,7 +497,10 @@ fn build_student_fee_list_query(
     if filter.only_unpaid == Some(true) {
         query = query
             .filter(Expr::cust_with_values(
-                "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > ?",
+                format!(
+                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > {}",
+                    placeholder(1)
+                ),
                 [Decimal::ZERO],
             ))
             .filter(student_fee::Column::Status.is_in(["pending", "partially_paid", "overdue"]));
@@ -501,9 +509,136 @@ fn build_student_fee_list_query(
         query = query
             .filter(student_fee::Column::DueDate.lt(chrono::Utc::now().date_naive()))
             .filter(Expr::cust_with_values(
-                "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > ?",
+                format!(
+                    "COALESCE(balance_due, net_amount - COALESCE(paid_amount, 0)) > {}",
+                    placeholder(1)
+                ),
                 [Decimal::ZERO],
             ));
+    }
+    if let Some(search) = filter
+        .search
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        let pattern = format!("%{search}%");
+        query = query.filter(Expr::cust_with_values(
+            format!(
+                "(LOWER(CAST(student_fees.id AS TEXT)) LIKE LOWER({}) \
+             OR LOWER(CAST(student_fees.student_id AS TEXT)) LIKE LOWER({}) \
+             OR LOWER(CAST(student_fees.fee_template_id AS TEXT)) LIKE LOWER({}) \
+             OR LOWER(CAST(student_fees.status AS TEXT)) LIKE LOWER({}) \
+             OR EXISTS (SELECT 1 FROM students s \
+               WHERE s.id = student_fees.student_id \
+                 AND s.org_id = student_fees.org_id \
+                 AND (LOWER(s.student_number) LIKE LOWER({}) \
+                   OR LOWER(s.full_name) LIKE LOWER({}) \
+                   OR LOWER(s.name_ar) LIKE LOWER({}))) \
+             OR EXISTS (SELECT 1 FROM fee_templates ft \
+               WHERE ft.id = student_fees.fee_template_id \
+                 AND ft.org_id = student_fees.org_id \
+                 AND (LOWER(ft.name) LIKE LOWER({}) OR LOWER(ft.name_ar) LIKE LOWER({}))))",
+                placeholder(1),
+                placeholder(2),
+                placeholder(3),
+                placeholder(4),
+                placeholder(5),
+                placeholder(6),
+                placeholder(7),
+                placeholder(8),
+                placeholder(9),
+            ),
+            [
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern,
+            ],
+        ));
+    }
+    query
+}
+
+fn build_payment_list_query(
+    org_id: Uuid,
+    filter: &orbis_domain::queries::filters::PaymentFilter,
+    backend: sea_orm::DatabaseBackend,
+) -> sea_orm::Select<PaymentEntity> {
+    let placeholder = |index| match backend {
+        sea_orm::DatabaseBackend::Postgres => format!("${index}"),
+        _ => "?".to_string(),
+    };
+    let mut query = PaymentEntity::find().filter(payment::Column::OrgId.eq(org_id));
+    if let Some(student_id) = filter.student_id {
+        query = query.filter(payment::Column::StudentId.eq(student_id));
+    }
+    if let Some(fee_id) = filter.fee_id {
+        query = query.filter(payment::Column::FeeId.eq(fee_id));
+    }
+    if let Some(method) = filter.method {
+        query = query.filter(payment::Column::Method.eq(method.to_string()));
+    }
+    if let Some(from_date) = filter.from_date {
+        query = query.filter(payment::Column::PaidAt.gte(from_date));
+    }
+    if let Some(to_date) = filter.to_date {
+        query = query.filter(payment::Column::PaidAt.lte(to_date));
+    }
+    if let Some(search) = filter
+        .search
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        let pattern = format!("%{search}%");
+        query = query.filter(Expr::cust_with_values(
+            format!(
+                "(LOWER(CAST(payments.id AS TEXT)) LIKE LOWER({}) \
+             OR LOWER(CAST(payments.student_id AS TEXT)) LIKE LOWER({}) \
+             OR LOWER(payments.receipt_number) LIKE LOWER({}) \
+             OR LOWER(payments.reference) LIKE LOWER({}) \
+             OR LOWER(payments.payer_name) LIKE LOWER({}) \
+             OR LOWER(payments.payer_phone) LIKE LOWER({}) \
+             OR LOWER(payments.notes) LIKE LOWER({}) \
+             OR LOWER(payments.method) LIKE LOWER({}) \
+             OR EXISTS (SELECT 1 FROM students s \
+               WHERE s.id = payments.student_id \
+                 AND s.org_id = payments.org_id \
+                 AND (LOWER(s.student_number) LIKE LOWER({}) \
+                   OR LOWER(s.full_name) LIKE LOWER({}) \
+                   OR LOWER(s.name_ar) LIKE LOWER({}))))",
+                placeholder(1),
+                placeholder(2),
+                placeholder(3),
+                placeholder(4),
+                placeholder(5),
+                placeholder(6),
+                placeholder(7),
+                placeholder(8),
+                placeholder(9),
+                placeholder(10),
+                placeholder(11),
+            ),
+            [
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern.clone(),
+                pattern,
+            ],
+        ));
     }
     query
 }
@@ -577,8 +712,28 @@ impl StudentFeeRepository for FinanceRepoImpl {
         org_id: Uuid,
         filter: orbis_domain::queries::filters::StudentFeeFilter,
     ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainStudentFee>, DomainError> {
-        let query = build_student_fee_list_query(org_id, &filter);
+        let mut query =
+            build_student_fee_list_query(org_id, &filter, self.db.get_database_backend());
         let pagination = filter.pagination.unwrap_or_default();
+        let order = if pagination
+            .sort_dir
+            .as_deref()
+            .is_some_and(|direction| direction.eq_ignore_ascii_case("desc"))
+        {
+            Order::Desc
+        } else {
+            Order::Asc
+        };
+        query = match pagination.sort_by.as_deref() {
+            Some("due_date") => query.order_by(student_fee::Column::DueDate, order),
+            Some("original_amount") => query.order_by(student_fee::Column::OriginalAmount, order),
+            Some("net_amount") => query.order_by(student_fee::Column::NetAmount, order),
+            Some("paid_amount") => query.order_by(student_fee::Column::PaidAmount, order),
+            Some("balance_due") => query.order_by(student_fee::Column::BalanceDue, order),
+            Some("status") => query.order_by(student_fee::Column::Status, order),
+            Some("created_at") => query.order_by(student_fee::Column::CreatedAt, order),
+            _ => query,
+        };
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
@@ -692,14 +847,26 @@ impl PaymentRepository for FinanceRepoImpl {
         org_id: Uuid,
         filter: orbis_domain::queries::filters::PaymentFilter,
     ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainPayment>, DomainError> {
-        let mut query = PaymentEntity::find().filter(payment::Column::OrgId.eq(org_id));
-        if let Some(student_id) = filter.student_id {
-            query = query.filter(payment::Column::StudentId.eq(student_id));
-        }
-        if let Some(fee_id) = filter.fee_id {
-            query = query.filter(payment::Column::FeeId.eq(fee_id));
-        }
+        let mut query = build_payment_list_query(org_id, &filter, self.db.get_database_backend());
         let pagination = filter.pagination.unwrap_or_default();
+        let order = if pagination
+            .sort_dir
+            .as_deref()
+            .is_some_and(|direction| direction.eq_ignore_ascii_case("desc"))
+        {
+            Order::Desc
+        } else {
+            Order::Asc
+        };
+        query = match pagination.sort_by.as_deref() {
+            Some("paid_at") => query.order_by(payment::Column::PaidAt, order),
+            Some("amount") => query.order_by(payment::Column::Amount, order),
+            Some("method") => query.order_by(payment::Column::Method, order),
+            Some("receipt_number") => query.order_by(payment::Column::ReceiptNumber, order),
+            Some("currency_code") => query.order_by(payment::Column::CurrencyCode, order),
+            Some("created_at") => query.order_by(payment::Column::CreatedAt, order),
+            _ => query,
+        };
         let page = pagination.page();
         let page_size = pagination.page_size();
         let paginator = query.paginate(&self.db, page_size);
@@ -1027,15 +1194,65 @@ mod tests {
             ..Default::default()
         };
 
-        let statement =
-            build_student_fee_list_query(org_id, &filter).build(sea_orm::DatabaseBackend::Postgres);
-        let values = format!("{:?}", statement.values);
+        for backend in [
+            sea_orm::DatabaseBackend::Postgres,
+            sea_orm::DatabaseBackend::Sqlite,
+        ] {
+            let statement = build_student_fee_list_query(org_id, &filter, backend).build(backend);
+            let values = format!("{:?}", statement.values);
+            assert!(statement.sql.contains("org_id"));
+            assert!(statement.sql.contains("period_id"));
+            assert!(statement.sql.contains("balance_due"));
+            assert!(values.contains("partially_paid"));
+            assert!(values.contains(&org_id.to_string()));
+            assert!(values.contains(&period_id.to_string()));
+        }
+    }
 
-        assert!(statement.sql.contains("org_id"));
-        assert!(statement.sql.contains("period_id"));
-        assert!(statement.sql.contains("balance_due"));
-        assert!(values.contains("partially_paid"));
-        assert!(values.contains(&org_id.to_string()));
-        assert!(values.contains(&period_id.to_string()));
+    #[test]
+    fn student_fee_query_searches_student_and_fee_template_fields() {
+        let org_id = Uuid::new_v4();
+        let filter = orbis_domain::queries::filters::StudentFeeFilter {
+            search: Some("Rana".to_string()),
+            ..Default::default()
+        };
+
+        for backend in [
+            sea_orm::DatabaseBackend::Postgres,
+            sea_orm::DatabaseBackend::Sqlite,
+        ] {
+            let statement = build_student_fee_list_query(org_id, &filter, backend).build(backend);
+            let values = format!("{:?}", statement.values);
+            assert!(statement.sql.contains("student_fees"));
+            assert!(statement.sql.contains("students"));
+            assert!(statement.sql.contains("fee_templates"));
+            assert!(values.contains("%Rana%"), "query values: {values}");
+            assert!(values.contains(&org_id.to_string()));
+        }
+    }
+
+    #[test]
+    fn payment_query_applies_search_and_method_filters_before_pagination() {
+        let org_id = Uuid::new_v4();
+        let filter = orbis_domain::queries::filters::PaymentFilter {
+            method: Some(PaymentMethod::Cash),
+            search: Some("receipt-7".to_string()),
+            ..Default::default()
+        };
+
+        for backend in [
+            sea_orm::DatabaseBackend::Postgres,
+            sea_orm::DatabaseBackend::Sqlite,
+        ] {
+            let statement = build_payment_list_query(org_id, &filter, backend).build(backend);
+            let values = format!("{:?}", statement.values);
+
+            assert!(statement.sql.contains("payments.method"));
+            assert!(statement.sql.contains("payments.receipt_number"));
+            assert!(statement.sql.contains("students"));
+            assert!(values.contains("cash"));
+            assert!(values.contains("%receipt-7%"), "query values: {values}");
+            assert!(values.contains(&org_id.to_string()));
+        }
     }
 }

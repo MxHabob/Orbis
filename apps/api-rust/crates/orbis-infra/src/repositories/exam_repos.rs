@@ -117,7 +117,7 @@ impl ExamScheduleRepository for ExamRepoImpl {
         Ok(model.map(|m| DomainExamSchedule {
             id: m.id,
             exam_session_id: m.exam_session_id,
-            class_subject_id: m.class_subject_id,
+            section_subject_id: m.section_subject_id,
             exam_date: m.exam_date,
             start_time: m.start_time,
             end_time: m.end_time,
@@ -140,7 +140,7 @@ impl ExamScheduleRepository for ExamRepoImpl {
             .map(|m| DomainExamSchedule {
                 id: m.id,
                 exam_session_id: m.exam_session_id,
-                class_subject_id: m.class_subject_id,
+                section_subject_id: m.section_subject_id,
                 exam_date: m.exam_date,
                 start_time: m.start_time,
                 end_time: m.end_time,
@@ -154,7 +154,7 @@ impl ExamScheduleRepository for ExamRepoImpl {
         let active = exam_schedule::ActiveModel {
             id: Set(schedule.id),
             exam_session_id: Set(schedule.exam_session_id),
-            class_subject_id: Set(schedule.class_subject_id),
+            section_subject_id: Set(schedule.section_subject_id),
             exam_date: Set(schedule.exam_date),
             start_time: Set(schedule.start_time),
             end_time: Set(schedule.end_time),

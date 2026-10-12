@@ -27,7 +27,7 @@ pub struct DocumentDto {
     pub description: Option<String>,
     pub category: String,
     pub asset_type: String,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub tags: Option<String>,
     pub visibility: String,
@@ -62,7 +62,7 @@ pub struct UploadDocumentInput {
     pub description: Option<String>,
     pub category: Option<String>,
     pub asset_type: Option<String>,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
@@ -87,7 +87,7 @@ pub struct UpdateDocumentTauriInput {
     pub description: Option<String>,
     pub category: Option<String>,
     pub asset_type: Option<String>,
-    pub academic_year_id: Option<String>,
+    pub calendar_id: Option<String>,
     pub term_id: Option<String>,
     pub tags: Option<String>,
     pub visibility: Option<String>,
@@ -106,7 +106,7 @@ pub fn doc_dto(d: orbis_domain::entities::document::Document) -> DocumentDto {
         description: d.description,
         category: d.category,
         asset_type: d.asset_type,
-        academic_year_id: d.academic_year_id.map(|y| y.to_string()),
+        calendar_id: d.calendar_id.map(|y| y.to_string()),
         term_id: d.term_id.map(|t| t.to_string()),
         tags: d.tags,
         visibility: d.visibility,
@@ -148,8 +148,8 @@ pub async fn document_upload(
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|e| Uuid::parse_str(&e).ok());
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let academic_year_id = request
-        .academic_year_id
+    let calendar_id = request
+        .calendar_id
         .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
     let uploaded_by = match ctx.actor {
@@ -167,7 +167,7 @@ pub async fn document_upload(
         description: request.description,
         category: request.category.unwrap_or_else(|| "general".to_string()),
         asset_type: request.asset_type.unwrap_or_else(|| "file".to_string()),
-        academic_year_id,
+        calendar_id,
         term_id,
         tags: request.tags,
         visibility: request.visibility.unwrap_or_else(|| "internal".to_string()),
@@ -201,8 +201,8 @@ pub async fn document_update(
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let academic_year_id = request
-        .academic_year_id
+    let calendar_id = request
+        .calendar_id
         .and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
@@ -212,7 +212,7 @@ pub async fn document_update(
         description: request.description,
         category: request.category,
         asset_type: request.asset_type,
-        academic_year_id,
+        calendar_id,
         term_id,
         tags: request.tags,
         visibility: request.visibility,

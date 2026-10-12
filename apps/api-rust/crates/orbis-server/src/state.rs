@@ -5,16 +5,16 @@ use orbis_app::ports::reporting::{
     ReportJobRepository, ReportTemplateRepository,
 };
 use orbis_app::ports::repositories::{
-    AcademicPeriodRepository, AcademicYearRepository, AccountRepository,
-    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, ClassRepository,
-    ClassSubjectRepository, CurrencyRepository, DashboardRepository, DocumentRepository,
-    EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository,
-    FeeTemplateRepository, GradeRepository, IntegrationRepository, JournalEntryRepository,
-    OrgUnitRepository, OrganizationRepository, PaymentRepository, PeriodTemplateRepository,
-    PersonRepository, PolicyRepository, RoomRepository, ScheduledLessonRepository,
-    SeatingNumberRepository, SecretNumberRepository, SessionRepository, SettingsRepository,
-    StudentFeeRepository, StudentGuardianRepository, SubjectRepository, TimeSlotRepository,
-    UserRepository, WorkflowRepository,
+    AcademicFrameworkRepository, AcademicPeriodRepository, AcademicYearRepository,
+    AccountRepository, AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
+    ClassRepository, SectionSubjectRepository, CurrencyRepository, DashboardRepository,
+    DocumentRepository, EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository,
+    ExamSessionRepository, FeeTemplateRepository, GradeRepository, IntegrationRepository,
+    JournalEntryRepository, OrgUnitRepository, OrganizationRepository, PaymentRepository,
+    PeriodTypeRepository, PersonRepository, PolicyRepository, RoomRepository,
+    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, SessionRepository,
+    SettingsRepository, StudentFeeRepository, StudentGuardianRepository, SubjectRepository,
+    TimeSlotRepository, UserRepository, WorkflowRepository,
 };
 use orbis_app::ports::security::{PasswordHasher, TokenService};
 use orbis_app::services::OrgContextResolver;
@@ -23,6 +23,7 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
+    pub license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime>,
     pub db: DatabaseConnection,
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,
@@ -31,15 +32,16 @@ pub struct AppState {
     pub session_repo: Arc<dyn SessionRepository>,
     pub year_repo: Arc<dyn AcademicYearRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
-    pub period_template_repo: Arc<dyn PeriodTemplateRepository>,
+    pub period_type_repo: Arc<dyn PeriodTypeRepository>,
+    pub academic_framework_repo: Arc<dyn AcademicFrameworkRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub class_repo: Arc<dyn ClassRepository>,
-    pub class_subject_repo: Arc<dyn ClassSubjectRepository>,
+    pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
     pub student_repo: Arc<dyn orbis_app::ports::repositories::StudentRepository>,
     pub student_guardian_repo: Arc<dyn StudentGuardianRepository>,
     pub override_repo: Arc<dyn orbis_app::ports::repositories::OverrideRequestRepository>,
-    pub prerequisite_repo: Arc<dyn orbis_app::ports::repositories::CoursePrerequisiteRepository>,
+    pub prerequisite_repo: Arc<dyn orbis_app::ports::repositories::PrerequisiteRepository>,
     pub gpa_repo: Arc<dyn orbis_app::ports::repositories::GpaRecordRepository>,
     pub promotion_repo: Arc<dyn orbis_app::ports::repositories::PromotionRepository>,
     pub discount_template_repo: Arc<dyn orbis_app::ports::repositories::DiscountTemplateRepository>,
@@ -87,6 +89,7 @@ pub struct AppState {
     pub student_service: Arc<orbis_app::services::StudentService>,
     pub progression_service: Arc<orbis_app::services::ProgressionService>,
     pub academic_service: Arc<orbis_app::services::AcademicService>,
+    pub academic_framework_service: Arc<orbis_app::services::AcademicFrameworkService>,
     pub finance_service: Arc<orbis_app::services::FinanceService>,
     pub assessment_service: Arc<orbis_app::services::AssessmentService>,
     pub auth_service: Arc<orbis_app::services::AuthService>,

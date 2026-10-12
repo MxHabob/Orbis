@@ -4,7 +4,8 @@ use crate::ports::gateways::{NotificationPort, PaymentGatewayPort};
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AccountRepository, CurrencyRepository, DiscountTemplateRepository, FeeTemplateRepository,
-    JournalEntryRepository, PaymentRepository, PolicyRepository, StudentFeeRepository,
+    JournalEntryRepository, OrganizationRepository, PaymentRepository, PolicyRepository,
+    StudentFeeRepository,
 };
 use chrono::{NaiveDate, TimeZone, Utc};
 use orbis_domain::entities::account::{Account, AccountType};
@@ -19,7 +20,7 @@ use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{PaginatedList, PaymentFilter, StudentFeeFilter};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 use uuid::Uuid;
 
 fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
@@ -32,6 +33,13 @@ fn is_cash_or_bank_treasury(account: &Account, org_id: Uuid) -> bool {
             account.code.as_str(),
             "110101" | "110102" | "110103" | "110104"
         ))
+}
+
+fn is_receivable_account(account: &Account, org_id: Uuid, currency_code: &str) -> bool {
+    account.org_id == org_id
+        && account.is_active
+        && !is_cash_or_bank_treasury(account, org_id)
+        && account.currency_code.eq_ignore_ascii_case(currency_code)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -67,6 +75,204 @@ pub enum AccountPurpose {
     AcademicSalariesExpense,     // 510101
     AdminSalariesExpense,        // 520101
     BankGatewayFeesExpense,      // 520301
+}
+
+impl AccountPurpose {
+    const ALL: [Self; 30] = [
+        Self::MainCashbox,
+        Self::MainBank,
+        Self::PettyCash,
+        Self::ElectronicGatewayClearing,
+        Self::StudentReceivableTuition,
+        Self::StudentReceivableTransport,
+        Self::StudentReceivableActivities,
+        Self::CorporateReceivable,
+        Self::EmployeeAdvance,
+        Self::VatInputRecoverable,
+        Self::VendorPayable,
+        Self::ServiceContractorPayable,
+        Self::GeneralSupplierPayable,
+        Self::SalariesPayable,
+        Self::AllowancesPayable,
+        Self::SocialInsuranceGosiPayable,
+        Self::EndOfServiceProvision,
+        Self::UnearnedTuition,
+        Self::VatOutputPayable,
+        Self::TuitionRevenue,
+        Self::TransportRevenue,
+        Self::BooksRevenue,
+        Self::RegistrationRevenue,
+        Self::SiblingDiscount,
+        Self::MeritScholarship,
+        Self::StaffChildDiscount,
+        Self::EarlyPaymentDiscount,
+        Self::AcademicSalariesExpense,
+        Self::AdminSalariesExpense,
+        Self::BankGatewayFeesExpense,
+    ];
+}
+
+fn resolve_default_account_from_accounts(
+    accounts: &[Account],
+    purpose: AccountPurpose,
+) -> Option<&Account> {
+    let parent_account_ids: HashSet<Uuid> = accounts
+        .iter()
+        .filter_map(|account| account.parent_id)
+        .collect();
+    let posting_accounts: Vec<&Account> = accounts
+        .iter()
+        .filter(|account| {
+            account.is_active
+                && !account.is_control_account
+                && !parent_account_ids.contains(&account.id)
+        })
+        .collect();
+
+    match purpose {
+        AccountPurpose::MainCashbox => posting_accounts.iter().copied().find(|account| {
+            account.code == "110101"
+                || account.code.starts_with("1101")
+                || account.sub_type.as_deref() == Some("cash")
+        }),
+        AccountPurpose::MainBank => posting_accounts.iter().copied().find(|account| {
+            account.code == "110102" || account.sub_type.as_deref() == Some("bank")
+        }),
+        AccountPurpose::PettyCash => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110103"),
+        AccountPurpose::ElectronicGatewayClearing => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110106" || account.code == "110102"),
+        AccountPurpose::StudentReceivableTuition => {
+            posting_accounts.iter().copied().find(|account| {
+                account.code == "110301"
+                    || account.code == "1103"
+                    || (account.account_type == AccountType::Asset
+                        && account.code.starts_with("1103"))
+            })
+        }
+        AccountPurpose::StudentReceivableTransport => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110302" || account.code == "110301"),
+        AccountPurpose::StudentReceivableActivities => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110304" || account.code == "110301"),
+        AccountPurpose::CorporateReceivable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110305" || account.code == "110301"),
+        AccountPurpose::EmployeeAdvance => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110306" || account.code == "110301"),
+        AccountPurpose::VatInputRecoverable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "110401"),
+        AccountPurpose::VendorPayable => posting_accounts.iter().copied().find(|account| {
+            account.code == "210101"
+                || account.code == "2101"
+                || (account.account_type == AccountType::Liability
+                    && account.code.starts_with("2101"))
+        }),
+        AccountPurpose::ServiceContractorPayable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210102" || account.code == "210101"),
+        AccountPurpose::GeneralSupplierPayable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210103" || account.code == "210101"),
+        AccountPurpose::SalariesPayable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210201" || account.code.starts_with("2102")),
+        AccountPurpose::AllowancesPayable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210202" || account.code == "210201"),
+        AccountPurpose::SocialInsuranceGosiPayable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210203" || account.code == "210201"),
+        AccountPurpose::EndOfServiceProvision => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210204" || account.code == "210201"),
+        AccountPurpose::UnearnedTuition => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210301" || account.code.starts_with("2103")),
+        AccountPurpose::VatOutputPayable => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "210401"),
+        AccountPurpose::TuitionRevenue => posting_accounts.iter().copied().find(|account| {
+            account.code == "410101"
+                || account.code == "4101"
+                || (account.account_type == AccountType::Revenue
+                    && account.code.starts_with("4101"))
+        }),
+        AccountPurpose::TransportRevenue => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410201" || account.code == "410101"),
+        AccountPurpose::BooksRevenue => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410202" || account.code == "410101"),
+        AccountPurpose::RegistrationRevenue => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410203" || account.code == "410101"),
+        AccountPurpose::SiblingDiscount => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410301" || account.code.starts_with("4103")),
+        AccountPurpose::MeritScholarship => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410302" || account.code == "410301"),
+        AccountPurpose::StaffChildDiscount => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410303" || account.code == "410301"),
+        AccountPurpose::EarlyPaymentDiscount => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "410304" || account.code == "410301"),
+        AccountPurpose::AcademicSalariesExpense => {
+            posting_accounts.iter().copied().find(|account| {
+                account.code == "510101"
+                    || account.code == "5101"
+                    || (account.account_type == AccountType::Expense
+                        && account.code.starts_with("51"))
+            })
+        }
+        AccountPurpose::AdminSalariesExpense => posting_accounts.iter().copied().find(|account| {
+            account.code == "520101"
+                || account.code == "5201"
+                || (account.account_type == AccountType::Expense && account.code.starts_with("52"))
+        }),
+        AccountPurpose::BankGatewayFeesExpense => posting_accounts
+            .iter()
+            .copied()
+            .find(|account| account.code == "520301" || account.code.starts_with("52")),
+    }
+}
+
+fn resolved_purpose_account_ids(accounts: &[Account]) -> Vec<Option<Uuid>> {
+    AccountPurpose::ALL
+        .iter()
+        .map(|purpose| {
+            resolve_default_account_from_accounts(accounts, *purpose).map(|account| account.id)
+        })
+        .collect()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -174,6 +380,7 @@ pub struct FinanceService {
     pub fee_template_repo: Arc<dyn FeeTemplateRepository>,
     pub discount_template_repo: Arc<dyn DiscountTemplateRepository>,
     pub account_repo: Arc<dyn AccountRepository>,
+    pub organization_repo: Arc<dyn OrganizationRepository>,
     pub currency_repo: Arc<dyn CurrencyRepository>,
     pub policy_repo: Arc<dyn PolicyRepository>,
     pub event_bus: Arc<dyn EventBus>,
@@ -183,6 +390,49 @@ pub struct FinanceService {
 }
 
 impl FinanceService {
+    async fn organization_timezone(&self, org_id: Uuid) -> Result<chrono_tz::Tz, DomainError> {
+        let organization = self
+            .organization_repo
+            .find_by_id(org_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound(format!("Organization {} not found", org_id)))?;
+        organization.timezone.parse::<chrono_tz::Tz>().map_err(|_| {
+            DomainError::Validation(format!(
+                "Invalid organization timezone '{}'",
+                organization.timezone
+            ))
+        })
+    }
+
+    pub async fn current_financial_date(&self, org_id: Uuid) -> Result<NaiveDate, DomainError> {
+        let timezone = self.organization_timezone(org_id).await?;
+        Ok(Utc::now().with_timezone(&timezone).date_naive())
+    }
+
+    async fn resolve_and_validate_transaction_date(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        requested_date: Option<NaiveDate>,
+        now: chrono::DateTime<Utc>,
+    ) -> Result<(NaiveDate, chrono_tz::Tz), DomainError> {
+        let timezone = self.organization_timezone(org_id).await?;
+        let today = now.with_timezone(&timezone).date_naive();
+        let accounting_date = requested_date.unwrap_or(today);
+
+        if accounting_date < today {
+            self.permission_checker
+                .check(ctx, Permission::FinanceBackdate)
+                .await?;
+        } else if accounting_date > today {
+            self.permission_checker
+                .check(ctx, Permission::FinanceFutureDate)
+                .await?;
+        }
+
+        Ok((accounting_date, timezone))
+    }
+
     pub fn new(
         payment_repo: Arc<dyn PaymentRepository>,
         journal_repo: Arc<dyn JournalEntryRepository>,
@@ -190,6 +440,7 @@ impl FinanceService {
         fee_template_repo: Arc<dyn FeeTemplateRepository>,
         discount_template_repo: Arc<dyn DiscountTemplateRepository>,
         account_repo: Arc<dyn AccountRepository>,
+        organization_repo: Arc<dyn OrganizationRepository>,
         currency_repo: Arc<dyn CurrencyRepository>,
         policy_repo: Arc<dyn PolicyRepository>,
         event_bus: Arc<dyn EventBus>,
@@ -204,6 +455,7 @@ impl FinanceService {
             fee_template_repo,
             discount_template_repo,
             account_repo,
+            organization_repo,
             currency_repo,
             policy_repo,
             event_bus,
@@ -222,6 +474,7 @@ impl FinanceService {
         student_id: Option<Uuid>,
         enrollment_id: Option<Uuid>,
         account_id: Uuid,
+        receivable_account_id: Option<Uuid>,
         amount: Decimal,
         method: PaymentMethod,
         payer_name: Option<String>,
@@ -243,11 +496,25 @@ impl FinanceService {
         }
 
         let now = Utc::now();
-        let paid_at = payment_date
-            .and_then(|date| date.and_hms_opt(0, 0, 0))
-            .map(|date| Utc.from_utc_datetime(&date))
-            .unwrap_or(now);
-        let accounting_date = paid_at.date_naive();
+        let (accounting_date, timezone) = self
+            .resolve_and_validate_transaction_date(ctx, org_id, payment_date, now)
+            .await?;
+        let paid_at = if payment_date.is_some() {
+            let local_midnight = accounting_date
+                .and_hms_opt(0, 0, 0)
+                .ok_or_else(|| DomainError::Validation("Invalid payment accounting date".into()))?;
+            timezone
+                .from_local_datetime(&local_midnight)
+                .single()
+                .ok_or_else(|| {
+                    DomainError::Validation(
+                        "Payment date cannot be represented in the organization timezone".into(),
+                    )
+                })?
+                .with_timezone(&Utc)
+        } else {
+            now
+        };
         let journal_entry_id = Uuid::new_v4();
         let payment_id = Uuid::new_v4();
 
@@ -267,6 +534,38 @@ impl FinanceService {
             ));
         }
         let transaction_currency = account.currency_code;
+
+        if receivable_account_id.is_some() && fee_id.is_some() {
+            return Err(DomainError::Validation(
+                "A direct receivable account cannot be combined with a student fee".into(),
+            ));
+        }
+
+        let direct_receivable_account = if let Some(receivable_id) = receivable_account_id {
+            if receivable_id == account_id {
+                return Err(DomainError::Validation(
+                    "Receiving and receivable accounts must be different".into(),
+                ));
+            }
+            let receivable = self
+                .account_repo
+                .find_by_id(receivable_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "Receivable account {} not found",
+                        receivable_id
+                    ))
+                })?;
+            if !is_receivable_account(&receivable, org_id, &transaction_currency) {
+                return Err(DomainError::Validation(
+                    "Receivable account must be an active, non-treasury account in the same organization and currency".into(),
+                ));
+            }
+            Some(receivable.id)
+        } else {
+            None
+        };
 
         let mut exchange_rate_value = Decimal::from(1);
         if transaction_currency != base_currency {
@@ -306,7 +605,7 @@ impl FinanceService {
         }
 
         // 4. Update StudentFee if fee_id is provided
-        let mut receivable_acct = account_id;
+        let mut receivable_acct = direct_receivable_account.unwrap_or(account_id);
         let mut student_resolved_id = student_id;
         let mut enrollment_resolved_id = enrollment_id;
 
@@ -342,14 +641,26 @@ impl FinanceService {
         let base_amount = amount * exchange_rate_value;
 
         // 5. Construct balanced multi-line double entry voucher
+        let is_account_receipt = direct_receivable_account.is_some();
+        let entity_type = student_resolved_id.map(|_| "student".to_string());
+        let receipt_description = if is_account_receipt {
+            "General account receipt"
+        } else {
+            "Payment Receipt for Student"
+        };
+        let receipt_description_ar = if is_account_receipt {
+            "سند قبض على حساب"
+        } else {
+            "إيصال قبض دفعة رسوم دراسية"
+        };
         let lines = vec![
             JournalEntryLine {
                 id: Uuid::new_v4(),
                 account_id, // Debit Cash/Bank
                 debit_amount: amount,
                 credit_amount: Decimal::ZERO,
-                description: Some("Payment received for student fee".into()),
-                entity_type: Some("student".into()),
+                description: Some(receipt_description.into()),
+                entity_type: entity_type.clone(),
                 entity_id: student_resolved_id,
             },
             JournalEntryLine {
@@ -357,8 +668,15 @@ impl FinanceService {
                 account_id: receivable_acct, // Credit Accounts Receivable / Revenue
                 debit_amount: Decimal::ZERO,
                 credit_amount: amount,
-                description: Some("AR settlement".into()),
-                entity_type: Some("student".into()),
+                description: Some(
+                    if is_account_receipt {
+                        "General account receipt"
+                    } else {
+                        "AR settlement"
+                    }
+                    .into(),
+                ),
+                entity_type,
                 entity_id: student_resolved_id,
             },
         ];
@@ -377,9 +695,13 @@ impl FinanceService {
             base_amount,
             debit_account_id: account_id,
             credit_account_id: receivable_acct,
-            description: "Payment Receipt for Student".into(),
-            description_ar: Some("إيصال قبض دفعة رسوم دراسية".into()),
-            source_type: "student_payment".into(),
+            description: receipt_description.into(),
+            description_ar: Some(receipt_description_ar.into()),
+            source_type: if is_account_receipt {
+                "account_receipt".into()
+            } else {
+                "student_payment".into()
+            },
             source_id: Some(payment_id),
             status: JournalPostingStatus::Posted,
             lines,
@@ -493,6 +815,7 @@ impl FinanceService {
         let net_amount = (template.default_amount - discount).max(Decimal::ZERO);
 
         let now = Utc::now();
+        let current_date = self.current_financial_date(org_id).await?;
         let fee_id = Uuid::new_v4();
 
         let org_settings = self.policy_repo.get_settings(org_id).await?;
@@ -515,8 +838,7 @@ impl FinanceService {
             paid_amount: Decimal::ZERO,
             balance_due: net_amount,
             status: FeeStatus::Pending,
-            due_date: due_date
-                .unwrap_or_else(|| (now + chrono::Duration::days(due_days)).date_naive()),
+            due_date: due_date.unwrap_or_else(|| current_date + chrono::Duration::days(due_days)),
             discount_details: None,
             installment_number: None,
             notes: None,
@@ -574,7 +896,7 @@ impl FinanceService {
                 "INV-{}",
                 fee_id.to_string().chars().take(8).collect::<String>()
             ),
-            accounting_date: now.date_naive(),
+            accounting_date: current_date,
             amount: template.default_amount,
             currency_code: template.currency_code.clone(),
             exchange_rate: Decimal::from(1),
@@ -1009,13 +1331,101 @@ impl FinanceService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
+        let all_accounts = self.account_repo.find_by_org(org_id).await?;
+        let current_purpose_ids = resolved_purpose_account_ids(&all_accounts);
+        let fixed_account_ids: HashSet<Uuid> =
+            current_purpose_ids.iter().flatten().copied().collect();
+        let changes_posting_structure = account.code != code
+            || account.account_type != account_type
+            || account.sub_type != sub_type
+            || account.parent_id != parent_id
+            || account.currency_code != currency_code
+            || account.is_active != is_active;
+        let has_children = all_accounts
+            .iter()
+            .any(|candidate| candidate.parent_id == Some(id));
+
+        if (fixed_account_ids.contains(&id)
+            || account.is_system_account
+            || account.is_control_account)
+            && changes_posting_structure
+        {
+            return Err(DomainError::Validation(
+                "This account is used by a fixed finance purpose; its code, type, parent, currency, and active status cannot be changed".into(),
+            ));
+        }
+        if has_children && changes_posting_structure {
+            return Err(DomainError::Validation(
+                "An account with child accounts cannot have its posting structure changed".into(),
+            ));
+        }
+
+        let parent = match parent_id {
+            Some(parent_id) => {
+                let parent = all_accounts
+                    .iter()
+                    .find(|candidate| candidate.id == parent_id)
+                    .ok_or_else(|| {
+                        DomainError::NotFound(format!("Parent account {} not found", parent_id))
+                    })?;
+                if parent_id == id || !parent.is_active {
+                    return Err(DomainError::Validation(
+                        "The parent account must be a different active account".into(),
+                    ));
+                }
+
+                let mut ancestor = Some(parent_id);
+                let mut visited = HashSet::new();
+                while let Some(ancestor_id) = ancestor {
+                    if ancestor_id == id || !visited.insert(ancestor_id) {
+                        return Err(DomainError::Validation(
+                            "The account hierarchy cannot contain a cycle".into(),
+                        ));
+                    }
+                    ancestor = all_accounts
+                        .iter()
+                        .find(|candidate| candidate.id == ancestor_id)
+                        .and_then(|candidate| candidate.parent_id);
+                }
+                Some(parent)
+            }
+            None => None,
+        };
+
+        let mut proposed_accounts = all_accounts.clone();
+        if let Some(proposed) = proposed_accounts
+            .iter_mut()
+            .find(|candidate| candidate.id == id)
+        {
+            proposed.code = code.clone();
+            proposed.account_type = account_type;
+            proposed.sub_type = sub_type.clone();
+            proposed.parent_id = parent_id;
+            proposed.currency_code = currency_code.clone();
+            proposed.is_active = is_active;
+        }
+        let proposed_purpose_ids = resolved_purpose_account_ids(&proposed_accounts);
+        if current_purpose_ids
+            .iter()
+            .zip(&proposed_purpose_ids)
+            .any(|(current, proposed)| current.is_some() && current != proposed)
+        {
+            return Err(DomainError::Validation(
+                "This change would redirect a fixed finance purpose to another account".into(),
+            ));
+        }
+
         account.code = code.clone();
         account.name = name;
         account.name_ar = name_ar;
         account.account_type = account_type;
         account.sub_type = sub_type;
         account.parent_id = parent_id;
-        account.path = format!("/{}", code);
+        account.path = match parent {
+            Some(parent) => format!("{}{}/", parent.path.trim_end_matches('/'), code),
+            None => format!("/{}/", code),
+        };
+        account.depth = parent.map_or(0, |parent| parent.depth + 1);
         account.currency_code = currency_code;
         account.is_active = is_active;
         account.updated_by = ctx.user_id();
@@ -1060,9 +1470,25 @@ impl FinanceService {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
 
-        if account.is_system_account {
+        let all_accounts = self.account_repo.find_by_org(org_id).await?;
+        let fixed_account_ids: HashSet<Uuid> = resolved_purpose_account_ids(&all_accounts)
+            .into_iter()
+            .flatten()
+            .collect();
+        if account.is_system_account
+            || account.is_control_account
+            || fixed_account_ids.contains(&id)
+        {
             return Err(DomainError::Validation(
-                "Cannot delete system protected account".into(),
+                "Cannot delete a system, control, or fixed finance purpose account".into(),
+            ));
+        }
+        if all_accounts
+            .iter()
+            .any(|candidate| candidate.parent_id == Some(id))
+        {
+            return Err(DomainError::Validation(
+                "Cannot delete an account that has child accounts".into(),
             ));
         }
 
@@ -1137,6 +1563,7 @@ impl FinanceService {
         }
 
         let now = Utc::now();
+        let current_date = self.current_financial_date(org_id).await?;
         let user_id = ctx.user_id().unwrap_or(Uuid::nil());
 
         // Mark original as reversed
@@ -1165,7 +1592,7 @@ impl FinanceService {
             id: reversal_id,
             org_id,
             reference_number: format!("REV-{}", original_entry.reference_number),
-            accounting_date: now.date_naive(),
+            accounting_date: current_date,
             amount: original_entry.amount,
             currency_code: original_entry.currency_code,
             exchange_rate: original_entry.exchange_rate,
@@ -1566,117 +1993,132 @@ impl FinanceService {
         purpose: AccountPurpose,
     ) -> Result<Account, DomainError> {
         let accounts = self.account_repo.find_by_org(org_id).await?;
+        resolve_default_account_from_accounts(&accounts, purpose)
+            .cloned()
+            .ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "No matching account found in Chart of Accounts for purpose '{:?}'",
+                    purpose
+                ))
+            })
+    }
 
-        let matching = match purpose {
-            AccountPurpose::MainCashbox => accounts.iter().find(|a| {
-                a.code == "110101"
-                    || a.code.starts_with("1101")
-                    || a.sub_type.as_deref() == Some("cash")
-            }),
-            AccountPurpose::MainBank => accounts
-                .iter()
-                .find(|a| a.code == "110102" || a.sub_type.as_deref() == Some("bank")),
-            AccountPurpose::PettyCash => accounts.iter().find(|a| a.code == "110103"),
-            AccountPurpose::ElectronicGatewayClearing => accounts
-                .iter()
-                .find(|a| a.code == "110106" || a.code == "110102"),
-            AccountPurpose::StudentReceivableTuition => accounts.iter().find(|a| {
-                a.code == "110301"
-                    || a.code == "1103"
-                    || (a.account_type == orbis_domain::entities::account::AccountType::Asset
-                        && a.code.starts_with("1103"))
-            }),
-            AccountPurpose::StudentReceivableTransport => accounts
-                .iter()
-                .find(|a| a.code == "110302" || a.code == "110301"),
-            AccountPurpose::StudentReceivableActivities => accounts
-                .iter()
-                .find(|a| a.code == "110304" || a.code == "110301"),
-            AccountPurpose::CorporateReceivable => accounts
-                .iter()
-                .find(|a| a.code == "110305" || a.code == "110301"),
-            AccountPurpose::EmployeeAdvance => accounts
-                .iter()
-                .find(|a| a.code == "110306" || a.code == "110301"),
-            AccountPurpose::VatInputRecoverable => accounts.iter().find(|a| a.code == "110401"),
-            AccountPurpose::VendorPayable => accounts.iter().find(|a| {
-                a.code == "210101"
-                    || a.code == "2101"
-                    || (a.account_type == orbis_domain::entities::account::AccountType::Liability
-                        && a.code.starts_with("2101"))
-            }),
-            AccountPurpose::ServiceContractorPayable => accounts
-                .iter()
-                .find(|a| a.code == "210102" || a.code == "210101"),
-            AccountPurpose::GeneralSupplierPayable => accounts
-                .iter()
-                .find(|a| a.code == "210103" || a.code == "210101"),
-            AccountPurpose::SalariesPayable => accounts
-                .iter()
-                .find(|a| a.code == "210201" || a.code.starts_with("2102")),
-            AccountPurpose::AllowancesPayable => accounts
-                .iter()
-                .find(|a| a.code == "210202" || a.code == "210201"),
-            AccountPurpose::SocialInsuranceGosiPayable => accounts
-                .iter()
-                .find(|a| a.code == "210203" || a.code == "210201"),
-            AccountPurpose::EndOfServiceProvision => accounts
-                .iter()
-                .find(|a| a.code == "210204" || a.code == "210201"),
-            AccountPurpose::UnearnedTuition => accounts
-                .iter()
-                .find(|a| a.code == "210301" || a.code.starts_with("2103")),
-            AccountPurpose::VatOutputPayable => accounts.iter().find(|a| a.code == "210401"),
-            AccountPurpose::TuitionRevenue => accounts.iter().find(|a| {
-                a.code == "410101"
-                    || a.code == "4101"
-                    || (a.account_type == orbis_domain::entities::account::AccountType::Revenue
-                        && a.code.starts_with("4101"))
-            }),
-            AccountPurpose::TransportRevenue => accounts
-                .iter()
-                .find(|a| a.code == "410201" || a.code == "410101"),
-            AccountPurpose::BooksRevenue => accounts
-                .iter()
-                .find(|a| a.code == "410202" || a.code == "410101"),
-            AccountPurpose::RegistrationRevenue => accounts
-                .iter()
-                .find(|a| a.code == "410203" || a.code == "410101"),
-            AccountPurpose::SiblingDiscount => accounts
-                .iter()
-                .find(|a| a.code == "410301" || a.code.starts_with("4103")),
-            AccountPurpose::MeritScholarship => accounts
-                .iter()
-                .find(|a| a.code == "410302" || a.code == "410301"),
-            AccountPurpose::StaffChildDiscount => accounts
-                .iter()
-                .find(|a| a.code == "410303" || a.code == "410301"),
-            AccountPurpose::EarlyPaymentDiscount => accounts
-                .iter()
-                .find(|a| a.code == "410304" || a.code == "410301"),
-            AccountPurpose::AcademicSalariesExpense => accounts.iter().find(|a| {
-                a.code == "510101"
-                    || a.code == "5101"
-                    || (a.account_type == orbis_domain::entities::account::AccountType::Expense
-                        && a.code.starts_with("51"))
-            }),
-            AccountPurpose::AdminSalariesExpense => accounts.iter().find(|a| {
-                a.code == "520101"
-                    || a.code == "5201"
-                    || (a.account_type == orbis_domain::entities::account::AccountType::Expense
-                        && a.code.starts_with("52"))
-            }),
-            AccountPurpose::BankGatewayFeesExpense => accounts
-                .iter()
-                .find(|a| a.code == "520301" || a.code.starts_with("52")),
-        };
+    pub async fn fixed_finance_account_ids(
+        &self,
+        org_id: Uuid,
+    ) -> Result<HashSet<Uuid>, DomainError> {
+        let accounts = self.account_repo.find_by_org(org_id).await?;
+        Ok(AccountPurpose::ALL
+            .iter()
+            .filter_map(|purpose| {
+                resolve_default_account_from_accounts(&accounts, *purpose).map(|account| account.id)
+            })
+            .collect())
+    }
 
-        matching.cloned().ok_or_else(|| {
-            DomainError::NotFound(format!(
-                "No matching account found in Chart of Accounts for purpose '{:?}'",
-                purpose
-            ))
-        })
+    pub async fn create_manual_journal_entry(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        mut entry: JournalEntry,
+    ) -> Result<JournalEntry, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::FinanceWrite)
+            .await?;
+
+        if entry.org_id != org_id || entry.lines.is_empty() {
+            return Err(DomainError::Validation(
+                "A manual journal entry must belong to the organization and contain lines".into(),
+            ));
+        }
+
+        self.resolve_and_validate_transaction_date(
+            ctx,
+            org_id,
+            Some(entry.accounting_date),
+            Utc::now(),
+        )
+        .await?;
+
+        let mut total_debit = Decimal::ZERO;
+        let mut total_credit = Decimal::ZERO;
+        for line in &entry.lines {
+            if line.debit_amount < Decimal::ZERO
+                || line.credit_amount < Decimal::ZERO
+                || (line.debit_amount > Decimal::ZERO && line.credit_amount > Decimal::ZERO)
+            {
+                return Err(DomainError::Validation(
+                    "Each journal line must contain one non-negative debit or credit amount".into(),
+                ));
+            }
+
+            let account = self
+                .account_repo
+                .find_by_id(line.account_id)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "Journal account {} was not found",
+                        line.account_id
+                    ))
+                })?;
+            if account.org_id != org_id
+                || !account.is_active
+                || !account
+                    .currency_code
+                    .eq_ignore_ascii_case(&entry.currency_code)
+            {
+                return Err(DomainError::Validation(
+                    "Journal accounts must be active, belong to the same organization, and use the entry currency".into(),
+                ));
+            }
+
+            total_debit += line.debit_amount;
+            total_credit += line.credit_amount;
+        }
+
+        if total_debit <= Decimal::ZERO || total_debit != total_credit {
+            return Err(DomainError::Validation(
+                "Journal entry debits and credits must be equal and greater than zero".into(),
+            ));
+        }
+        if entry.amount != total_debit {
+            return Err(DomainError::Validation(
+                "Journal entry amount must equal its total debit".into(),
+            ));
+        }
+        if !entry.lines.iter().any(|line| {
+            line.account_id == entry.debit_account_id && line.debit_amount > Decimal::ZERO
+        }) || !entry.lines.iter().any(|line| {
+            line.account_id == entry.credit_account_id && line.credit_amount > Decimal::ZERO
+        }) {
+            return Err(DomainError::Validation(
+                "Journal debit and credit account ids must match their entry lines".into(),
+            ));
+        }
+
+        let settings = self.policy_repo.get_settings(org_id).await?;
+        let base_currency = settings.finance.currency;
+        if entry.currency_code.eq_ignore_ascii_case(&base_currency) {
+            entry.exchange_rate = Decimal::ONE;
+        } else {
+            let rate = self
+                .currency_repo
+                .get_exchange_rate(org_id, &base_currency, &entry.currency_code)
+                .await?
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "Exchange rate not found from {} to {}",
+                        base_currency, entry.currency_code
+                    ))
+                })?;
+            entry.exchange_rate = rate.rate;
+        }
+        entry.base_amount = entry.amount * entry.exchange_rate;
+
+        entry.validate_balance().map_err(DomainError::Validation)?;
+        self.journal_repo.save(&entry).await?;
+        Ok(entry)
     }
 
     /// Process a disbursement voucher (سند صرف)
@@ -1697,7 +2139,9 @@ impl FinanceService {
         }
 
         let now = Utc::now();
-        let accounting_date = input.voucher_date.unwrap_or_else(|| now.date_naive());
+        let (accounting_date, _) = self
+            .resolve_and_validate_transaction_date(ctx, org_id, input.voucher_date, now)
+            .await?;
         let journal_entry_id = Uuid::new_v4();
 
         // 1. Fetch treasury (credit) and beneficiary (debit) accounts
@@ -1732,10 +2176,27 @@ impl FinanceService {
                 "Organization mismatch for accounts".into(),
             ));
         }
+        if !beneficiary.is_active {
+            return Err(DomainError::Validation(
+                "Disbursement beneficiary account must be active".into(),
+            ));
+        }
+        if treasury.id == beneficiary.id {
+            return Err(DomainError::Validation(
+                "Disbursement treasury and beneficiary accounts must be different".into(),
+            ));
+        }
 
         let currency = input
             .currency_code
             .unwrap_or_else(|| treasury.currency_code.clone());
+        if !treasury.currency_code.eq_ignore_ascii_case(&currency)
+            || !beneficiary.currency_code.eq_ignore_ascii_case(&currency)
+        {
+            return Err(DomainError::Validation(
+                "Disbursement accounts and voucher must use the same currency".into(),
+            ));
+        }
 
         // 2. Multi-line balanced entry
         let lines = vec![
@@ -1858,7 +2319,9 @@ impl FinanceService {
         }
 
         let now = Utc::now();
-        let accounting_date = input.accounting_date.unwrap_or_else(|| now.date_naive());
+        let (accounting_date, _) = self
+            .resolve_and_validate_transaction_date(ctx, org_id, input.accounting_date, now)
+            .await?;
         let journal_entry_id = Uuid::new_v4();
 
         // 1. Resolve accounts
@@ -2001,6 +2464,14 @@ impl FinanceService {
                 "Payroll must contain at least one employee item".into(),
             ));
         }
+
+        self.resolve_and_validate_transaction_date(
+            ctx,
+            org_id,
+            Some(input.accounting_date),
+            Utc::now(),
+        )
+        .await?;
 
         let now = Utc::now();
         let journal_entry_id = Uuid::new_v4();
@@ -2398,6 +2869,15 @@ impl FinanceService {
         if parent.org_id != org_id {
             return Err(DomainError::Unauthorized("Organization mismatch".into()));
         }
+        if self
+            .fixed_finance_account_ids(org_id)
+            .await?
+            .contains(&parent.id)
+        {
+            return Err(DomainError::Validation(
+                "Cannot add a child to an account currently used by a fixed finance purpose".into(),
+            ));
+        }
 
         let now = Utc::now();
         let sub_id = Uuid::new_v4();
@@ -2518,5 +2998,56 @@ mod treasury_account_tests {
         assert!(!is_cash_or_bank_treasury(&account, org_id));
         account.is_active = true;
         assert!(!is_cash_or_bank_treasury(&account, Uuid::new_v4()));
+    }
+
+    #[test]
+    fn accepts_only_active_non_treasury_accounts_with_matching_currency_as_receivables() {
+        let org_id = Uuid::new_v4();
+        let mut account = account(org_id);
+
+        assert!(is_receivable_account(&account, org_id, "yer"));
+        assert!(!is_receivable_account(&account, Uuid::new_v4(), "YER"));
+        assert!(!is_receivable_account(&account, org_id, "SAR"));
+
+        account.is_active = false;
+        assert!(!is_receivable_account(&account, org_id, "YER"));
+
+        account.is_active = true;
+        account.sub_type = Some("cash".into());
+        assert!(!is_receivable_account(&account, org_id, "YER"));
+    }
+
+    #[test]
+    fn fixed_finance_purposes_resolve_only_to_active_posting_accounts() {
+        let org_id = Uuid::new_v4();
+        let mut group = account(org_id);
+        group.code = "1101".into();
+        group.is_control_account = true;
+
+        let mut posting_account = account(org_id);
+        posting_account.code = "110101".into();
+        posting_account.sub_type = Some("cash".into());
+        posting_account.parent_id = Some(group.id);
+
+        let accounts = vec![group.clone(), posting_account.clone()];
+        assert_eq!(
+            resolve_default_account_from_accounts(&accounts, AccountPurpose::MainCashbox)
+                .map(|account| account.id),
+            Some(posting_account.id)
+        );
+
+        let mut inactive_accounts = accounts.clone();
+        inactive_accounts[1].is_active = false;
+        assert!(
+            resolve_default_account_from_accounts(&inactive_accounts, AccountPurpose::MainCashbox)
+                .is_none()
+        );
+
+        let mut control_accounts = accounts;
+        control_accounts[1].is_control_account = true;
+        assert!(
+            resolve_default_account_from_accounts(&control_accounts, AccountPurpose::MainCashbox)
+                .is_none()
+        );
     }
 }

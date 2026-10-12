@@ -189,24 +189,32 @@ impl AssessmentScheme {
         Ok(())
     }
 
-    /// Create the default school monthly assessment scheme (100 points).
+    /// Create a generic default periodic assessment scheme (100 points).
     pub fn default_school_monthly(org_id: Uuid) -> Self {
+        Self::default_periodic_monthly(org_id)
+    }
+
+    /// Create a generic default periodic assessment scheme (100 points).
+    pub fn default_periodic_monthly(org_id: Uuid) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
             org_id,
-            name: "Monthly Assessment".to_string(),
-            name_ar: Some("التقييم الشهري".to_string()),
-            description: Some("Standard school monthly assessment: Assignments(20) + Oral(20) + Attendance(20) + Written Test(40) = 100".to_string()),
+            name: "Periodic Assessment".to_string(),
+            name_ar: Some("التقييم الدوري".to_string()),
+            description: Some(
+                "Baseline periodic assessment covering coursework, participation, attendance, and written evaluation."
+                    .to_string(),
+            ),
             max_score: Decimal::from(100),
             formula: None,
             level: AssessmentLevel::MonthlyPeriod,
-            institution_scope: InstitutionScope::School,
+            institution_scope: InstitutionScope::All,
             components: vec![
                 AssessmentComponent {
                     code: "assignments".to_string(),
-                    name: "Assignments".to_string(),
-                    name_ar: Some("الواجبات".to_string()),
+                    name: "Assignments & Coursework".to_string(),
+                    name_ar: Some("الواجبات والأعمال الدراسية".to_string()),
                     max_score: Decimal::from(20),
                     weight: Decimal::ONE,
                     sort_order: 1,
@@ -214,8 +222,8 @@ impl AssessmentScheme {
                 },
                 AssessmentComponent {
                     code: "oral".to_string(),
-                    name: "Oral".to_string(),
-                    name_ar: Some("المشاركة الشفوية".to_string()),
+                    name: "Participation & Oral".to_string(),
+                    name_ar: Some("المشاركة والشفهي".to_string()),
                     max_score: Decimal::from(20),
                     weight: Decimal::ONE,
                     sort_order: 2,
@@ -223,8 +231,8 @@ impl AssessmentScheme {
                 },
                 AssessmentComponent {
                     code: "attendance".to_string(),
-                    name: "Attendance".to_string(),
-                    name_ar: Some("الحضور والانضباط".to_string()),
+                    name: "Attendance & Conduct".to_string(),
+                    name_ar: Some("الحضور والسلوك".to_string()),
                     max_score: Decimal::from(20),
                     weight: Decimal::ONE,
                     sort_order: 3,
@@ -232,8 +240,8 @@ impl AssessmentScheme {
                 },
                 AssessmentComponent {
                     code: "written_test".to_string(),
-                    name: "Written Test".to_string(),
-                    name_ar: Some("الاختبار التحريري".to_string()),
+                    name: "Written Evaluation".to_string(),
+                    name_ar: Some("التقييم التحريري".to_string()),
                     max_score: Decimal::from(40),
                     weight: Decimal::ONE,
                     sort_order: 4,
@@ -247,26 +255,31 @@ impl AssessmentScheme {
         }
     }
 
-    /// Create the default school term exam scheme (30 points).
+    /// Create a generic default period-end examination scheme (30 points).
     pub fn default_school_term_exam(org_id: Uuid) -> Self {
+        Self::default_periodic_term_exam(org_id)
+    }
+
+    /// Create a generic default period-end examination scheme (30 points).
+    pub fn default_periodic_term_exam(org_id: Uuid) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
             org_id,
-            name: "Term Examination".to_string(),
-            name_ar: Some("اختبار الفصل".to_string()),
+            name: "Periodic Examination".to_string(),
+            name_ar: Some("اختبار دوري".to_string()),
             description: Some(
-                "Term final examination worth 30 points (combined with 20 monthly = 50 per term)"
+                "End-of-period examination for institutions using a periodic/term-based assessment model."
                     .to_string(),
             ),
             max_score: Decimal::from(30),
             formula: None,
             level: AssessmentLevel::Term,
-            institution_scope: InstitutionScope::School,
+            institution_scope: InstitutionScope::All,
             components: vec![AssessmentComponent {
                 code: "term_exam".to_string(),
-                name: "Term Examination".to_string(),
-                name_ar: Some("اختبار نهاية الفصل".to_string()),
+                name: "Period Examination".to_string(),
+                name_ar: Some("اختبار الفترة".to_string()),
                 max_score: Decimal::from(30),
                 weight: Decimal::ONE,
                 sort_order: 1,
@@ -399,5 +412,26 @@ impl AssessmentScheme {
             created_at: now,
             updated_at: now,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AssessmentLevel, AssessmentScheme, InstitutionScope};
+    use uuid::Uuid;
+
+    #[test]
+    fn generic_periodic_defaults_are_institution_neutral() {
+        let monthly = AssessmentScheme::default_periodic_monthly(Uuid::new_v4());
+        let term = AssessmentScheme::default_periodic_term_exam(Uuid::new_v4());
+
+        assert_eq!(monthly.institution_scope, InstitutionScope::All);
+        assert_eq!(term.institution_scope, InstitutionScope::All);
+        assert_eq!(monthly.level, AssessmentLevel::MonthlyPeriod);
+        assert_eq!(term.level, AssessmentLevel::Term);
+        assert!(!monthly.name.to_lowercase().contains("school"));
+        assert!(!term.name.to_lowercase().contains("school"));
+        assert!(!monthly.description.as_ref().unwrap().to_lowercase().contains("kindergarten"));
+        assert!(!term.description.as_ref().unwrap().to_lowercase().contains("kindergarten"));
     }
 }

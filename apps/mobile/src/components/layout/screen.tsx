@@ -8,14 +8,12 @@
 import React from "react";
 import {
   View,
-  StyleSheet,
   type ViewProps,
-  useColorScheme,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets, type Edge } from "react-native-safe-area-context";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 export interface ScreenProps extends ViewProps {
@@ -43,8 +41,7 @@ export function Screen({
   style,
   ...props
 }: ScreenProps) {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === "dark" ? "dark" : "light"];
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
 
   const resolvedBg = backgroundColor ?? theme.background;
@@ -58,9 +55,9 @@ export function Screen({
 
   const content = (
     <View
+      className="flex-1 w-full bg-background"
       style={[
-        styles.container,
-        { backgroundColor: resolvedBg },
+        backgroundColor ? { backgroundColor } : undefined,
         edgePadding,
         style,
       ]}
@@ -72,7 +69,7 @@ export function Screen({
       />
 
       {header}
-      <View style={styles.body}>{children}</View>
+      <View className="flex-1 w-full">{children}</View>
       {footer}
     </View>
   );
@@ -80,7 +77,7 @@ export function Screen({
   if (keyboardAvoiding) {
     return (
       <KeyboardAvoidingView
-        style={styles.keyboardContainer}
+        className="flex-1"
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={keyboardVerticalOffset}
       >
@@ -91,17 +88,3 @@ export function Screen({
 
   return content;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: "100%",
-  },
-  body: {
-    flex: 1,
-    width: "100%",
-  },
-  keyboardContainer: {
-    flex: 1,
-  },
-});

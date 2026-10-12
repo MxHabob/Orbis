@@ -25,7 +25,7 @@ fn map_document_model_to_domain(m: document::Model) -> DomainDocument {
         description: m.description,
         category: m.category,
         asset_type: m.asset_type,
-        academic_year_id: m.academic_year_id,
+        calendar_id: m.calendar_id,
         term_id: m.term_id,
         tags: m.tags,
         visibility: m.visibility,
@@ -116,7 +116,7 @@ impl DocumentRepository for DocumentRepoImpl {
     async fn find_by_curriculum(
         &self,
         org_id: Uuid,
-        academic_year_id: Option<Uuid>,
+        calendar_id: Option<Uuid>,
         term_id: Option<Uuid>,
     ) -> Result<Vec<DomainDocument>, DomainError> {
         let mut query = DocumentEntity::find()
@@ -125,8 +125,8 @@ impl DocumentRepository for DocumentRepoImpl {
             .filter(document::Column::DeletedAt.is_null())
             .filter(document::Column::IsArchived.eq(false));
 
-        if let Some(ay) = academic_year_id {
-            query = query.filter(document::Column::AcademicYearId.eq(Some(ay)));
+        if let Some(ay) = calendar_id {
+            query = query.filter(document::Column::CalendarId.eq(Some(ay)));
         }
         if let Some(t) = term_id {
             query = query.filter(document::Column::TermId.eq(Some(t)));
@@ -182,7 +182,7 @@ impl DocumentRepository for DocumentRepoImpl {
             description: Set(document.description.clone()),
             category: Set(document.category.clone()),
             asset_type: Set(document.asset_type.clone()),
-            academic_year_id: Set(document.academic_year_id),
+            calendar_id: Set(document.calendar_id),
             term_id: Set(document.term_id),
             tags: Set(document.tags.clone()),
             visibility: Set(document.visibility.clone()),

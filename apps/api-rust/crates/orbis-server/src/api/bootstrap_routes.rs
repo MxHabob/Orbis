@@ -34,6 +34,12 @@ pub struct BootstrapRequest {
     pub organization_slug: Option<String>,
     /// Short organization code
     pub organization_code: Option<String>,
+    /// Country label printed in organization documents
+    pub country_name: Option<String>,
+    /// Ministry label printed in organization documents
+    pub ministry_name: Option<String>,
+    /// Regional authority label printed in organization documents
+    pub region_name: Option<String>,
     /// Educational curriculum track
     pub educational_track: Option<String>,
     /// Organization estimated size
@@ -169,6 +175,9 @@ pub async fn execute_bootstrap(
         organization_name_ar: req.organization_name_ar,
         organization_slug: req.organization_slug,
         organization_code: req.organization_code,
+        country_name: req.country_name,
+        ministry_name: req.ministry_name,
+        region_name: req.region_name,
         educational_track: req.educational_track,
         organization_size: req.organization_size,
         country_code: req.country_code,

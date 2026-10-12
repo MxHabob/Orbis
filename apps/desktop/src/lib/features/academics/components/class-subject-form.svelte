@@ -1,5 +1,5 @@
 <!--
-  @component ClassSubjectForm
+  @component SectionSubjectForm
   Form for assigning a subject to a teacher for a specific class and academic period.
   Used in both create and edit modes via a Sheet panel.
   Utilizes self-fetching Searchable Select components for periods, classes, subjects, and teachers.
@@ -18,9 +18,9 @@ import {
 } from "@orbis/ui/select";
 import { api } from "$lib/api";
 import type {
-  ClassSubjectDto,
+  SectionSubjectDto,
   AssessmentSchemeDto,
-  AssignClassSubjectRequest,
+  AssignSectionSubjectRequest,
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 
@@ -29,7 +29,7 @@ import SubjectSelect from "$lib/features/academics/components/subject-select.sve
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
 import { createAssessmentSchemesQuery } from "$lib/features/academics/queries-assessment";
-import { classSubjectFormInputSchema } from "@orbis/schemas";
+import { SectionSubjectFormInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
 
@@ -42,7 +42,7 @@ let {
 }: {
   orgId: string;
   fixedClassId?: string;
-  editData?: ClassSubjectDto | null;
+  editData?: SectionSubjectDto | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 } = $props();
@@ -73,7 +73,7 @@ const form = new FormController({
     period_id: "",
     weekly_hours: 4,
   },
-  schema: classSubjectFormInputSchema,
+  schema: SectionSubjectFormInputSchema,
 });
 const isSaving = $derived(form.isSubmitting);
 
@@ -86,7 +86,7 @@ async function handleSubmit() {
     weekly_hours: Number(weeklyHours),
   };
   const submitted = await form.submit(async (values) => {
-    const request: AssignClassSubjectRequest = {
+    const request: AssignSectionSubjectRequest = {
       class_id: values.class_id,
       subject_id: values.subject_id,
       period_id: values.period_id,
@@ -95,10 +95,10 @@ async function handleSubmit() {
     };
 
     if (isEditMode && editData?.id) {
-      await api.assignClassSubject(request);
+      await api.assignSectionSubject(request);
       toast.success(m.common_cs_update_success());
     } else {
-      await api.assignClassSubject(request);
+      await api.assignSectionSubject(request);
       toast.success(m.common_cs_create_success());
     }
 

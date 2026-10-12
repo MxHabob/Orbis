@@ -1,3 +1,5 @@
+#![recursion_limit = "512"]
+
 pub mod adapters;
 pub mod autopilot;
 pub mod config;

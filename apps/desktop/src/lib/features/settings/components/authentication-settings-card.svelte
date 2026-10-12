@@ -1,18 +1,11 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from "@orbis/ui/card";
+import { Card, CardContent } from "@orbis/ui/card";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
 type AuthenticationSettings = {
   max_failed_logins: number;
@@ -21,7 +14,7 @@ type AuthenticationSettings = {
   refresh_token_days: number;
 };
 
-let { org, isSaving = false }: { org: any; isSaving?: boolean } = $props();
+let { org }: { org: any } = $props();
 
 const defaults = (): AuthenticationSettings => ({
   max_failed_logins: 5,
@@ -46,6 +39,7 @@ function readSettings(): AuthenticationSettings {
 
 let values = $state<AuthenticationSettings>(defaults());
 let savedValues = $state<AuthenticationSettings | null>(null);
+let isSaving = $state(false);
 
 $effect(() => {
   if (org && !savedValues) {
@@ -88,12 +82,16 @@ async function save() {
     toast.error(validationError);
     return;
   }
+
+  isSaving = true;
   try {
     await api.updateSettings({ authentication: values });
     savedValues = { ...values };
     toast.success(m.settings_ui_auth_settings_saved());
   } catch (error) {
     toast.error(extractErrorMessage(error));
+  } finally {
+    isSaving = false;
   }
 }
 
@@ -103,40 +101,98 @@ function reset() {
 }
 </script>
 
-<Card>
-  <CardHeader>
-    <div class="flex flex-col">
-      <CardTitle>{m.settings_ui_auth_title()}</CardTitle>
-      <CardDescription>{m.settings_ui_auth_description()}</CardDescription>
+<Card class="overflow-hidden border-border/70 shadow-xs">
+  <CardContent class="grid grid-cols-1 gap-5 p-6 text-start sm:grid-cols-2">
+    <div class="flex flex-col gap-1.5">
+      <Label for="auth-max-failed-logins" class="text-xs font-medium">
+        {m.settings_ui_auth_max_failed_logins()}
+      </Label>
+      <Input
+        id="auth-max-failed-logins"
+        type="number"
+        min="1"
+        max="20"
+        value={values.max_failed_logins}
+        oninput={(event: Event) =>
+          setNumber(
+            "max_failed_logins",
+            (event.currentTarget as HTMLInputElement).value,
+            1,
+          )}
+        disabled={isSaving}
+        class="h-9 text-xs"
+      />
     </div>
-  </CardHeader>
 
-  <CardContent class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5 text-start">
-    <div class="flex flex-col gap-2">
-      <Label for="auth-max-failed-logins" class="text-xs font-semibold">{m.settings_ui_auth_max_failed_logins()}</Label>
-      <Input id="auth-max-failed-logins" type="number" min="1" max="20" value={values.max_failed_logins} oninput={(event: Event) => setNumber("max_failed_logins", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
+    <div class="flex flex-col gap-1.5">
+      <Label for="auth-lockout-minutes" class="text-xs font-medium">
+        {m.settings_ui_auth_lockout_minutes()}
+      </Label>
+      <Input
+        id="auth-lockout-minutes"
+        type="number"
+        min="1"
+        max="1440"
+        value={values.lockout_minutes}
+        oninput={(event: Event) =>
+          setNumber(
+            "lockout_minutes",
+            (event.currentTarget as HTMLInputElement).value,
+            1,
+          )}
+        disabled={isSaving}
+        class="h-9 text-xs"
+      />
     </div>
 
-    <div class="flex flex-col gap-2">
-      <Label for="auth-lockout-minutes" class="text-xs font-semibold">{m.settings_ui_auth_lockout_minutes()}</Label>
-      <Input id="auth-lockout-minutes" type="number" min="1" max="1440" value={values.lockout_minutes} oninput={(event: Event) => setNumber("lockout_minutes", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
+    <div class="flex flex-col gap-1.5">
+      <Label for="auth-session-days" class="text-xs font-medium">
+        {m.settings_ui_auth_session_days()}
+      </Label>
+      <Input
+        id="auth-session-days"
+        type="number"
+        min="1"
+        max="365"
+        value={values.session_days}
+        oninput={(event: Event) =>
+          setNumber(
+            "session_days",
+            (event.currentTarget as HTMLInputElement).value,
+            1,
+          )}
+        disabled={isSaving}
+        class="h-9 text-xs"
+      />
     </div>
 
-    <div class="flex flex-col gap-2">
-      <Label for="auth-session-days" class="text-xs font-semibold">{m.settings_ui_auth_session_days()}</Label>
-      <Input id="auth-session-days" type="number" min="1" max="365" value={values.session_days} oninput={(event: Event) => setNumber("session_days", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
-    </div>
-
-    <div class="flex flex-col gap-2">
-      <Label for="auth-refresh-days" class="text-xs font-semibold">{m.settings_ui_auth_refresh_token_days()}</Label>
-      <Input id="auth-refresh-days" type="number" min="1" max="730" value={values.refresh_token_days} oninput={(event: Event) => setNumber("refresh_token_days", (event.currentTarget as HTMLInputElement).value, 1)} disabled={isSaving} class="h-9 text-xs" />
+    <div class="flex flex-col gap-1.5">
+      <Label for="auth-refresh-days" class="text-xs font-medium">
+        {m.settings_ui_auth_refresh_token_days()}
+      </Label>
+      <Input
+        id="auth-refresh-days"
+        type="number"
+        min="1"
+        max="730"
+        value={values.refresh_token_days}
+        oninput={(event: Event) =>
+          setNumber(
+            "refresh_token_days",
+            (event.currentTarget as HTMLInputElement).value,
+            1,
+          )}
+        disabled={isSaving}
+        class="h-9 text-xs"
+      />
     </div>
   </CardContent>
-
-  {#if isDirty}
-    <CardFooter class="justify-end gap-2">
-      <Button type="button" variant="outline" size="sm" onclick={reset}>{m.common_action_cancel()}</Button>
-      <Button type="button" size="sm" onclick={save} disabled={isSaving}>{m.settings_ui_auth_save_settings()}</Button>
-    </CardFooter>
-  {/if}
 </Card>
+
+<SettingsBottomBar
+  visible={isDirty}
+  {isDirty}
+  {isSaving}
+  onsave={save}
+  onreset={reset}
+/>

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -239,8 +240,8 @@ pub struct StudentAnnualReportCard {
     pub student_number: Option<String>,
     pub class_id: Uuid,
     pub class_name: String,
-    pub academic_year_id: Uuid,
-    pub academic_year_name: String,
+    pub calendar_id: Uuid,
+    pub academic_calendar_name: String,
     pub subjects: Vec<SubjectAnnualResult>,
     pub total_score: Decimal,
     pub max_possible_score: Decimal,
@@ -252,6 +253,402 @@ pub struct StudentAnnualReportCard {
     pub total_students_in_grade: usize,
     pub status: AcademicStatus,
     pub calculated_at: DateTime<Utc>,
+}
+
+/// Result lifecycle states for a calculation snapshot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ResultLifecycleState {
+    Draft,
+    Calculated,
+    Submitted,
+    Reviewed,
+    Approved,
+    Revised,
+    Archived,
+}
+
+/// Reference to a source record used when calculating and storing a result.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct ResultInputReference {
+    pub source_kind: String,
+    pub source_id: Uuid,
+    pub source_revision: Option<String>,
+    pub policy_version: Option<u32>,
+}
+
+/// Approval transition record used for auditability and review history.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct ResultApprovalTransition {
+    pub actor_id: Uuid,
+    pub from_state: ResultLifecycleState,
+    pub to_state: ResultLifecycleState,
+    pub reason: Option<String>,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Audit log entry for every result lifecycle event.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct ResultAuditEntry {
+    pub id: Uuid,
+    pub snapshot_id: Uuid,
+    pub actor_id: Uuid,
+    pub action: String,
+    pub from_state: ResultLifecycleState,
+    pub to_state: ResultLifecycleState,
+    pub reason: Option<String>,
+    pub occurred_at: DateTime<Utc>,
+}
+
+/// Immutable academic result snapshot tied to a specific policy version.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ResultSnapshot {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub learner_id: Uuid,
+    pub subject_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
+    pub result_type: String,
+    pub result_key: String,
+    pub policy_version: u32,
+    pub revision: u32,
+    pub parent_snapshot_id: Option<Uuid>,
+    pub supersedes_snapshot_id: Option<Uuid>,
+    pub state: ResultLifecycleState,
+    pub produced_at: DateTime<Utc>,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub created_by: Option<Uuid>,
+    pub input_references: Vec<ResultInputReference>,
+    pub payload: JsonValue,
+}
+
+impl ResultSnapshot {
+    pub fn new(
+        org_id: Uuid,
+        learner_id: Uuid,
+        result_type: impl Into<String>,
+        result_key: impl Into<String>,
+        policy_version: u32,
+        produced_at: DateTime<Utc>,
+        payload: JsonValue,
+    ) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            learner_id,
+            subject_id: None,
+            period_id: None,
+            calendar_id: None,
+            result_type: result_type.into(),
+            result_key: result_key.into(),
+            policy_version,
+            revision: 1,
+            parent_snapshot_id: None,
+            supersedes_snapshot_id: None,
+            state: ResultLifecycleState::Calculated,
+            produced_at,
+            approved_by: None,
+            approved_at: None,
+            created_by: None,
+            input_references: Vec::new(),
+            payload,
+        }
+    }
+
+    pub fn with_context(
+        mut self,
+        subject_id: Option<Uuid>,
+        period_id: Option<Uuid>,
+        calendar_id: Option<Uuid>,
+        created_by: Option<Uuid>,
+        input_references: Vec<ResultInputReference>,
+    ) -> Self {
+        self.subject_id = subject_id;
+        self.period_id = period_id;
+        self.calendar_id = calendar_id;
+        self.created_by = created_by;
+        self.input_references = input_references;
+        self
+    }
+
+    pub fn is_approved(&self) -> bool {
+        matches!(self.state, ResultLifecycleState::Approved)
+    }
+
+    pub fn ensure_mutation_allowed(&self) -> Result<(), String> {
+        if self.is_approved() || matches!(self.state, ResultLifecycleState::Archived) {
+            return Err(
+                "Approved or archived result snapshots cannot be directly modified; create a revision with a correction reason.".into(),
+            );
+        }
+        Ok(())
+    }
+
+    pub fn transition_to(
+        &mut self,
+        actor_id: Uuid,
+        to_state: ResultLifecycleState,
+        occurred_at: DateTime<Utc>,
+        reason: Option<&str>,
+    ) -> Result<ResultApprovalTransition, String> {
+        let from_state = self.state;
+        let valid_transition = match (from_state, to_state) {
+            (ResultLifecycleState::Draft, ResultLifecycleState::Calculated) => true,
+            (ResultLifecycleState::Calculated, ResultLifecycleState::Submitted) => true,
+            (ResultLifecycleState::Submitted, ResultLifecycleState::Reviewed) => true,
+            (ResultLifecycleState::Reviewed, ResultLifecycleState::Approved) => true,
+            (ResultLifecycleState::Submitted, ResultLifecycleState::Archived) => true,
+            (ResultLifecycleState::Approved, ResultLifecycleState::Revised) => true,
+            (ResultLifecycleState::Approved, ResultLifecycleState::Archived) => true,
+            _ => false,
+        };
+
+        if !valid_transition {
+            return Err(format!(
+                "Invalid lifecycle transition from {:?} to {:?}.",
+                from_state, to_state
+            ));
+        }
+
+        if matches!(to_state, ResultLifecycleState::Approved) && reason.is_none() {
+            return Err("Approval requires a recorded reason.".into());
+        }
+
+        if matches!(from_state, ResultLifecycleState::Approved)
+            && !matches!(to_state, ResultLifecycleState::Archived | ResultLifecycleState::Revised)
+        {
+            return Err("Approved results must move through a recorded revision or archival action.".into());
+        }
+
+        self.state = to_state;
+        if matches!(to_state, ResultLifecycleState::Approved) {
+            self.approved_by = Some(actor_id);
+            self.approved_at = Some(occurred_at);
+        }
+
+        Ok(ResultApprovalTransition {
+            actor_id,
+            from_state,
+            to_state,
+            reason: reason.map(str::to_owned),
+            occurred_at,
+        })
+    }
+
+    pub fn approve(
+        &mut self,
+        approved_by: Uuid,
+        approved_at: DateTime<Utc>,
+        reason: Option<&str>,
+    ) -> Result<ResultApprovalTransition, String> {
+        self.transition_to(
+            approved_by,
+            ResultLifecycleState::Approved,
+            approved_at,
+            reason,
+        )
+    }
+
+    pub fn audit_entry(
+        &self,
+        actor_id: Uuid,
+        action: &str,
+        from_state: ResultLifecycleState,
+        to_state: ResultLifecycleState,
+        reason: Option<&str>,
+        occurred_at: DateTime<Utc>,
+    ) -> ResultAuditEntry {
+        ResultAuditEntry {
+            id: Uuid::new_v4(),
+            snapshot_id: self.id,
+            actor_id,
+            action: action.to_string(),
+            from_state,
+            to_state,
+            reason: reason.map(str::to_owned),
+            occurred_at,
+        }
+    }
+
+    pub fn new_revision(
+        &self,
+        next_policy_version: u32,
+        next_payload: JsonValue,
+        correction_reason: Option<&str>,
+    ) -> Result<Self, String> {
+        if self.state == ResultLifecycleState::Approved && correction_reason.is_none() {
+            return Err("Approved results require a correction reason for a new revision.".into());
+        }
+
+        Ok(Self {
+            id: Uuid::new_v4(),
+            org_id: self.org_id,
+            learner_id: self.learner_id,
+            subject_id: self.subject_id,
+            period_id: self.period_id,
+            calendar_id: self.calendar_id,
+            result_type: self.result_type.clone(),
+            result_key: self.result_key.clone(),
+            policy_version: next_policy_version,
+            revision: self.revision + 1,
+            parent_snapshot_id: Some(self.id),
+            supersedes_snapshot_id: Some(self.id),
+            state: ResultLifecycleState::Revised,
+            produced_at: Utc::now(),
+            approved_by: None,
+            approved_at: None,
+            created_by: self.created_by,
+            input_references: self.input_references.clone(),
+            payload: next_payload,
+        })
+    }
+}
+
+/// Semantic contract for downstream report generation and DocForge.
+/// This intentionally exposes a stable, institution-neutral payload rather than any
+/// database table shape or legacy school-only report model.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AcademicResultView {
+    pub snapshot_id: Uuid,
+    pub org_id: Uuid,
+    pub learner_id: Uuid,
+    pub subject_id: Option<Uuid>,
+    pub period_id: Option<Uuid>,
+    pub calendar_id: Option<Uuid>,
+    pub result_type: String,
+    pub result_key: String,
+    pub policy_version: u32,
+    pub revision: u32,
+    pub state: ResultLifecycleState,
+    pub produced_at: DateTime<Utc>,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub payload: JsonValue,
+}
+
+/// Typed projection contract used by report templates and DocForge outputs.
+/// It ensures a report is bound to a specific semantic result shape without coupling
+/// to a single certificate or database schema.
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ReportProjectionSpec {
+    pub template_key: String,
+    pub result_type: String,
+    pub required_fields: Vec<String>,
+    pub optional_fields: Vec<String>,
+    pub accepted_statuses: Vec<String>,
+    pub requires_approval: bool,
+    pub policy_versions: Vec<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct ProjectionValidationResult {
+    pub is_valid: bool,
+    pub missing_fields: Vec<String>,
+    pub unknown_fields: Vec<String>,
+    pub warnings: Vec<String>,
+}
+
+impl AcademicResultView {
+    /// Validates an institution-neutral result payload against a DocForge projection.
+    /// Unknown keys are flagged so reports can fail fast when templates rely on fields
+    /// the result contract does not expose.
+    pub fn validate_projection(&self, projection: &ReportProjectionSpec) -> ProjectionValidationResult {
+        let mut missing_fields = Vec::new();
+        let mut unknown_fields = Vec::new();
+        let mut warnings = Vec::new();
+
+        let payload_map = match &self.payload {
+            JsonValue::Object(map) => map,
+            _ => {
+                warnings.push("Result payload must be a JSON object to validate projection fields.".to_string());
+                return ProjectionValidationResult {
+                    is_valid: false,
+                    missing_fields: projection.required_fields.clone(),
+                    unknown_fields: vec![],
+                    warnings,
+                };
+            }
+        };
+
+        let known_fields: Vec<String> = projection
+            .required_fields
+            .iter()
+            .chain(projection.optional_fields.iter())
+            .cloned()
+            .collect();
+
+        for field in &projection.required_fields {
+            if !payload_map.contains_key(field) {
+                missing_fields.push(field.clone());
+            }
+        }
+
+        for field in payload_map.keys() {
+            if !known_fields.iter().any(|known| known == field) {
+                unknown_fields.push(field.clone());
+            }
+        }
+
+        if !projection.accepted_statuses.is_empty()
+            && !projection
+                .accepted_statuses
+                .iter()
+                .any(|status| status == &format!("{:?}", self.state).to_ascii_lowercase())
+        {
+            warnings.push(format!(
+                "Result state {:?} is not accepted by this projection.",
+                self.state
+            ));
+        }
+
+        if projection.requires_approval && !self.state.eq(&ResultLifecycleState::Approved) {
+            warnings.push("Projection requires an approved result snapshot.".to_string());
+        }
+
+        if !projection.policy_versions.is_empty()
+            && !projection
+                .policy_versions
+                .iter()
+                .any(|version| *version == self.policy_version)
+        {
+            warnings.push(format!(
+                "Policy version {} is not included in the projection policy set.",
+                self.policy_version
+            ));
+        }
+
+        let is_valid = missing_fields.is_empty() && unknown_fields.is_empty();
+        ProjectionValidationResult {
+            is_valid,
+            missing_fields,
+            unknown_fields,
+            warnings,
+        }
+    }
+}
+
+impl From<ResultSnapshot> for AcademicResultView {
+    fn from(snapshot: ResultSnapshot) -> Self {
+        Self {
+            snapshot_id: snapshot.id,
+            org_id: snapshot.org_id,
+            learner_id: snapshot.learner_id,
+            subject_id: snapshot.subject_id,
+            period_id: snapshot.period_id,
+            calendar_id: snapshot.calendar_id,
+            result_type: snapshot.result_type,
+            result_key: snapshot.result_key,
+            policy_version: snapshot.policy_version,
+            revision: snapshot.revision,
+            state: snapshot.state,
+            produced_at: snapshot.produced_at,
+            approved_by: snapshot.approved_by,
+            approved_at: snapshot.approved_at,
+            payload: snapshot.payload,
+        }
+    }
 }
 
 /// Organization-wide or class-level Academic Policy.
@@ -293,5 +690,206 @@ impl Default for AcademicPolicy {
             ranking_enabled: true,
             max_displayed_rank: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn result_snapshot_captures_policy_version_and_input_references() {
+        let org = Uuid::new_v4();
+        let learner = Uuid::new_v4();
+        let subject = Uuid::new_v4();
+        let period = Uuid::new_v4();
+        let now = Utc::now();
+        let snapshot = ResultSnapshot::new(
+            org,
+            learner,
+            "term_report_card",
+            "term-2025-q1",
+            7,
+            now,
+            serde_json::json!({"overall_percentage": 88.5, "status": "passed"}),
+        )
+        .with_context(
+            Some(subject),
+            Some(period),
+            None,
+            Some(Uuid::new_v4()),
+            vec![ResultInputReference {
+                source_kind: "assessment_record".into(),
+                source_id: Uuid::new_v4(),
+                source_revision: Some("v2".into()),
+                policy_version: Some(7),
+            }],
+        );
+
+        assert_eq!(snapshot.policy_version, 7);
+        assert_eq!(snapshot.revision, 1);
+        assert_eq!(snapshot.input_references.len(), 1);
+        assert_eq!(snapshot.payload["overall_percentage"], 88.5);
+    }
+
+    #[test]
+    fn result_snapshot_revision_keeps_original_record_immutable() {
+        let org = Uuid::new_v4();
+        let learner = Uuid::new_v4();
+        let original = ResultSnapshot::new(
+            org,
+            learner,
+            "annual_report_card",
+            "annual-2025",
+            3,
+            Utc::now(),
+            serde_json::json!({"overall_percentage": 82.0, "status": "passed"}),
+        );
+
+        let revised = original
+            .new_revision(
+                4,
+                serde_json::json!({"overall_percentage": 84.5, "status": "passed"}),
+                Some("Corrected assessment input"),
+            )
+            .unwrap();
+
+        assert_eq!(original.policy_version, 3);
+        assert_eq!(revised.policy_version, 4);
+        assert_eq!(revised.parent_snapshot_id, Some(original.id));
+        assert_eq!(revised.revision, original.revision + 1);
+        assert_eq!(original.payload["overall_percentage"], 82.0);
+        assert_eq!(revised.payload["overall_percentage"], 84.5);
+    }
+
+    #[test]
+    fn result_snapshot_requires_reason_for_approved_revision_and_blocks_mutation() {
+        let org = Uuid::new_v4();
+        let learner = Uuid::new_v4();
+        let mut snapshot = ResultSnapshot::new(
+            org,
+            learner,
+            "term_report_card",
+            "term-2025-a",
+            1,
+            Utc::now(),
+            serde_json::json!({"overall_percentage": 80.0, "status": "passed"}),
+        );
+
+        let actor = Uuid::new_v4();
+        let approval = snapshot
+            .transition_to(
+                actor,
+                ResultLifecycleState::Submitted,
+                Utc::now(),
+                Some("Ready for review"),
+            )
+            .unwrap();
+        assert_eq!(approval.to_state, ResultLifecycleState::Submitted);
+
+        let result = snapshot
+            .transition_to(
+                actor,
+                ResultLifecycleState::Reviewed,
+                Utc::now(),
+                Some("Reviewed by registrar"),
+            )
+            .unwrap();
+        assert_eq!(result.to_state, ResultLifecycleState::Reviewed);
+
+        let approved = snapshot
+            .transition_to(
+                actor,
+                ResultLifecycleState::Approved,
+                Utc::now(),
+                Some("Approved by registrar"),
+            )
+            .unwrap();
+        assert_eq!(approved.to_state, ResultLifecycleState::Approved);
+        assert!(snapshot.is_approved());
+
+        assert!(snapshot.ensure_mutation_allowed().is_err());
+        assert!(snapshot
+            .new_revision(
+                2,
+                serde_json::json!({"overall_percentage": 82.0, "status": "passed"}),
+                None,
+            )
+            .is_err());
+    }
+
+    #[test]
+    fn academic_result_view_exposes_semantic_contract_for_docforge() {
+        let snapshot = ResultSnapshot::new(
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            "annual_report_card",
+            "annual-2025",
+            7,
+            Utc::now(),
+            serde_json::json!({"overall_percentage": 92.5, "status": "passed"}),
+        );
+
+        let view: AcademicResultView = snapshot.clone().into();
+        assert_eq!(view.snapshot_id, snapshot.id);
+        assert_eq!(view.policy_version, 7);
+        assert_eq!(view.payload["overall_percentage"], 92.5);
+        assert_eq!(view.state, ResultLifecycleState::Calculated);
+    }
+
+    #[test]
+    fn projection_validation_surfaces_unknown_fields_and_non_gpa_certification_payloads() {
+        let snapshot = ResultSnapshot::new(
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            "competency_report",
+            "competency-2025",
+            9,
+            Utc::now(),
+            serde_json::json!({
+                "overall_percentage": 88.0,
+                "status": "passed",
+                "competency_summary": ["digital_literacy", "teamwork"],
+                "gpa": null
+            }),
+        );
+
+        let view: AcademicResultView = snapshot.into();
+        let projection = ReportProjectionSpec {
+            template_key: "competency_certificate".to_string(),
+            result_type: "competency_report".to_string(),
+            required_fields: vec!["overall_percentage".to_string(), "status".to_string()],
+            optional_fields: vec!["competency_summary".to_string(), "gpa".to_string()],
+            accepted_statuses: vec!["passed".to_string(), "conditional_pass".to_string()],
+            requires_approval: false,
+            policy_versions: vec![9, 10],
+        };
+
+        let validation = view.validate_projection(&projection);
+        assert!(validation.is_valid);
+        assert!(validation.missing_fields.is_empty());
+        assert!(validation.unknown_fields.is_empty());
+
+        let snapshot_with_legacy_field = ResultSnapshot::new(
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            "annual_report_card",
+            "annual-2025",
+            9,
+            Utc::now(),
+            serde_json::json!({
+                "overall_percentage": 91.5,
+                "status": "passed",
+                "legacy_gpa": 3.8,
+                "certificate_type": "school_certificate"
+            }),
+        );
+
+        let view_with_legacy_fields: AcademicResultView = snapshot_with_legacy_field.into();
+        let validation_for_legacy_fields = view_with_legacy_fields.validate_projection(&projection);
+        assert!(!validation_for_legacy_fields.is_valid);
+        assert_eq!(validation_for_legacy_fields.unknown_fields.len(), 2);
+        assert!(validation_for_legacy_fields.unknown_fields.contains(&"legacy_gpa".to_string()));
+        assert!(validation_for_legacy_fields.unknown_fields.contains(&"certificate_type".to_string()));
     }
 }
