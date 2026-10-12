@@ -154,8 +154,8 @@ export default function SignInScreen() {
               </Pressable>
             </View>
 
-            <View className="min-h-[160px] flex-1 justify-end gap-3 pb-5 pt-5">
-              <Text className="text-[32px] leading-[39px] font-semibold tracking-tight text-white">
+            <View className="min-h-40 flex-1 justify-end gap-3 pb-5 pt-5">
+              <Text className="text-[32px] leading-9.75 font-semibold tracking-tight text-white">
                 {t("visitor_title")}
               </Text>
               <Text className="text-base leading-6 text-white/90">
@@ -216,7 +216,6 @@ export default function SignInScreen() {
                 loading={isSubmitting}
                 fullWidth
                 size="lg"
-                style={{ borderRadius: 999 }}
               />
 
               <View className="flex-row items-center gap-3">
@@ -234,10 +233,6 @@ export default function SignInScreen() {
                 variant="outline"
                 fullWidth
                 size="lg"
-                icon={
-                  <Text className="text-lg font-bold text-[#4285F4]">G</Text>
-                }
-                style={{ borderRadius: 999 }}
               />
 
               <View className="items-center gap-1 pt-1">
