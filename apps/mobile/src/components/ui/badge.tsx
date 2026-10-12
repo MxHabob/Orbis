@@ -29,12 +29,14 @@ export type BadgeVariant =
   | "neutral";
 
 export interface BadgeProps {
-  label: string;
+  label?: string;
   variant?: BadgeVariant;
   size?: "sm" | "md";
   icon?: React.ReactNode;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 const badgeVariantClasses: Record<BadgeVariant, { container: string; text: string }> = {
@@ -54,22 +56,35 @@ const badgeVariantClasses: Record<BadgeVariant, { container: string; text: strin
 };
 
 export const Badge = React.memo<BadgeProps>(
-  ({ label, variant = "default", size = "md", icon, style, textStyle }) => {
+  ({ label, variant = "default", size = "md", icon, style, textStyle, className, children }) => {
     const isSm = size === "sm";
     const variantClasses = badgeVariantClasses[variant];
 
     return (
       <View
-        className={`flex-row items-center self-start gap-1 rounded-full border ${isSm ? "px-two py-half" : "px-[10px] py-one"} ${variantClasses.container}`}
+        className={`flex-row items-center self-start gap-1 rounded-full border ${isSm ? "px-two py-half" : "px-[10px] py-one"} ${variantClasses.container} ${className ?? ""}`}
         style={style}
       >
         {icon && <View className="mr-0.5">{icon}</View>}
-        <Text
-          className={`text-center ${isSm ? "text-[11px] leading-[14px] font-medium" : "text-xs leading-4 font-semibold"} ${variantClasses.text}`}
-          style={textStyle}
-        >
-          {label}
-        </Text>
+        {children !== undefined ? (
+          typeof children === "string" || typeof children === "number" ? (
+            <Text
+              className={`text-center ${isSm ? "text-[11px] leading-[14px] font-medium" : "text-xs leading-4 font-semibold"} ${variantClasses.text}`}
+              style={textStyle}
+            >
+              {children}
+            </Text>
+          ) : (
+            children
+          )
+        ) : label ? (
+          <Text
+            className={`text-center ${isSm ? "text-[11px] leading-[14px] font-medium" : "text-xs leading-4 font-semibold"} ${variantClasses.text}`}
+            style={textStyle}
+          >
+            {label}
+          </Text>
+        ) : null}
       </View>
     );
   },

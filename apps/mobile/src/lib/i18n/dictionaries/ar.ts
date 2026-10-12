@@ -397,6 +397,20 @@ export const ar = {
   common_unknown: "غير محدد",
   common_now: "الآن",
   common_you_teacher: "أنت (معلم)",
+  common_retry_hint: "يرجى التحقق من اتصال الشبكة ثم إعادة المحاولة.",
+
+  // Brand & Auth
+  app_name: "أوربس",
+  app_tagline: "منصة إدارة المدارس والتعلم الذكي",
+  auth_email: "البريد الإلكتروني",
+
+  // Academic & Student Record
+  exams_scheduled: "اختبارات مجدولة",
+  student_no_exams_description: "لا توجد اختبارات مجدولة لهذا الطالب حالياً.",
+  classroom_label: "قاعة {room}",
+  academic_average_label: "المعدل العام",
+  assessments_count: "التقييمات",
+  schedule_day_off_hint: "لا توجد حصص دراسية في هذا اليوم.",
 } as const;
 
 export type TranslationKey = keyof typeof ar;

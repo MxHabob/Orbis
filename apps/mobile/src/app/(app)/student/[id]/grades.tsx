@@ -1,16 +1,35 @@
+/**
+ * @module @orbis/mobile/app/(app)/student/[id]/grades
+ *
+ * Academic Grades & Assessment Performance for Students.
+ * Shows overall score average, letter grade badges, progress indicators,
+ * and individual assessment breakdowns.
+ */
+
+import React from "react";
+import { View, Text } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   useGradesQuery,
   useLinkedStudentId,
 } from "@/hooks/use-api-queries";
-import { useI18n } from "@/lib/i18n";
-import { useLocalSearchParams } from "expo-router";
-import { Text, View } from "react-native";
+import { useI18n, formatNumber } from "@/lib/i18n";
+import { useTheme } from "@/hooks/use-theme";
+import {
+  ChartBar,
+  AcademicCap,
+  Sparkles,
+} from "@orbis/icons/native";
 
 export default function StudentGradesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
+  const { t, formatDate } = useI18n();
+
   const requestedStudentId = typeof id === "string" ? id : undefined;
   const {
     studentId,
@@ -18,17 +37,33 @@ export default function StudentGradesScreen() {
     isResolving,
     identityError,
     retryIdentity,
-  } =
-    useLinkedStudentId(requestedStudentId);
+  } = useLinkedStudentId(requestedStudentId);
+
   const gradesQuery = useGradesQuery({ studentId });
-  const { t, formatDate } = useI18n();
-  const grades = [...(gradesQuery.data ?? [])].sort((a, b) =>
+  const rawGrades = gradesQuery.data ?? [];
+  const grades = [...rawGrades].sort((a, b) =>
     b.created_at.localeCompare(a.created_at),
   );
 
+  // Compute average percentage
+  let validPercentSum = 0;
+  let validPercentCount = 0;
+  grades.forEach((g) => {
+    const s = Number(g.score);
+    const m = Number(g.max_score);
+    if (Number.isFinite(s) && Number.isFinite(m) && m > 0) {
+      validPercentSum += (s / m) * 100;
+      validPercentCount += 1;
+    }
+  });
+
+  const overallAverage =
+    validPercentCount > 0 ? Math.round(validPercentSum / validPercentCount) : null;
+
   return (
     <StudentRecordLayout
-      title={t("student_grades")}
+      title={t("student_grades") || "Grades"}
+      showBack={true}
       isPending={isResolving || (isLinked && gradesQuery.isPending)}
       isError={!isResolving && (!isLinked || gradesQuery.isError)}
       canRetry
@@ -41,8 +76,43 @@ export default function StudentGradesScreen() {
         void (isLinked ? gradesQuery.refetch() : retryIdentity())
       }
     >
+      {/* 1. Academic Performance Summary Widget */}
+      {overallAverage !== null ? (
+        <Card
+          variant="default"
+          padding="four"
+          className="bg-card border border-border/80 shadow-sm"
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="gap-half">
+              <Text className="text-xs font-semibold text-muted-foreground">
+                {t("academic_average_label") || "Academic Average"}
+              </Text>
+              <View className="flex-row items-baseline gap-two">
+                <Text className="text-3xl font-extrabold text-primary">
+                  {formatNumber(overallAverage)}%
+                </Text>
+                <Text className="text-xs font-medium text-muted-foreground">
+                  ({grades.length} {t("assessments_count") || "Assessments"})
+                </Text>
+              </View>
+            </View>
+
+            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+              <AcademicCap size={28} color={theme.primary} />
+            </View>
+          </View>
+        </Card>
+      ) : null}
+
+      {/* 2. Grades List */}
       {grades.length === 0 ? (
-        <EmptyState title={t("student_no_grades")} />
+        <View className="py-ten">
+          <EmptyState
+            title={t("student_no_grades")}
+            icon={<ChartBar size={32} className="text-muted-foreground" />}
+          />
+        </View>
       ) : (
         <View className="gap-three">
           {grades.map((grade) => {
@@ -50,42 +120,59 @@ export default function StudentGradesScreen() {
             const maxScore = Number(grade.max_score);
             const scoreText =
               Number.isFinite(score) && Number.isFinite(maxScore)
-                ? `${score} / ${maxScore}`
+                ? `${formatNumber(score)} / ${formatNumber(maxScore)}`
                 : grade.score;
+
             const percent =
               Number.isFinite(score) && Number.isFinite(maxScore) && maxScore > 0
                 ? Math.round((score / maxScore) * 100)
-                : undefined;
+                : null;
+
+            const letter = grade.letter_grade || (percent !== null ? (percent >= 90 ? "A" : percent >= 80 ? "B" : percent >= 70 ? "C" : "D") : "—");
 
             return (
-              <Card key={grade.id} variant="outline" padding="four">
-                <View className="gap-two">
-                  <View className="flex-row items-center justify-between gap-three">
-                    <Text className="text-base font-semibold text-foreground">
+              <Card
+                key={grade.id}
+                variant="outline"
+                padding="four"
+                className="bg-card border-border/80 shadow-2xs gap-two"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center gap-two">
+                    <Badge variant="secondary" className="px-two py-half">
+                      <Text className="text-xs font-bold text-primary">
+                        {letter}
+                      </Text>
+                    </Badge>
+                    <Text className="text-sm font-bold text-foreground">
                       {grade.letter_grade || t("student_grade_score")}
                     </Text>
-                    {percent !== undefined ? (
-                      <Text className="text-sm font-semibold text-primary">
-                        {percent}%
-                      </Text>
-                    ) : null}
                   </View>
-                  <View className="flex-row items-center justify-between gap-three">
-                    <Text className="text-sm text-muted-foreground">
-                      {t("student_grade_score")}
+
+                  {percent !== null ? (
+                    <Text className="text-sm font-extrabold text-primary">
+                      {formatNumber(percent)}%
                     </Text>
-                    <Text className="text-sm font-medium text-foreground">
-                      {scoreText}
-                    </Text>
+                  ) : null}
+                </View>
+
+                {/* Score Ratio Progress Bar */}
+                {percent !== null ? (
+                  <View className="h-1.5 w-full overflow-hidden rounded-full bg-secondary my-one">
+                    <View
+                      style={{ width: `${Math.min(percent, 100)}%` }}
+                      className="h-full rounded-full bg-primary"
+                    />
                   </View>
-                  <View className="flex-row items-center justify-between gap-three">
-                    <Text className="text-sm text-muted-foreground">
-                      {t("student_grade_date")}
-                    </Text>
-                    <Text className="text-sm text-foreground">
-                      {formatDate(grade.created_at)}
-                    </Text>
-                  </View>
+                ) : null}
+
+                <View className="flex-row items-center justify-between border-t border-border/40 pt-two">
+                  <Text className="text-xs font-medium text-muted-foreground">
+                    {scoreText}
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">
+                    {formatDate(grade.created_at)}
+                  </Text>
                 </View>
               </Card>
             );

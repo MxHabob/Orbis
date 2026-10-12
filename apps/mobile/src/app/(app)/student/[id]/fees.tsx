@@ -1,16 +1,31 @@
+/**
+ * @module @orbis/mobile/app/(app)/student/[id]/fees
+ *
+ * Student Financial Ledger & Tuition Fee Statement for Orbis Mobile.
+ * Shows balance due, payment progress, invoice statuses, and due dates.
+ */
+
+import React from "react";
+import { View, Text } from "react-native";
+import { useLocalSearchParams } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   useCurrentOrgQuery,
   useFeesQuery,
   useLinkedStudentId,
 } from "@/hooks/use-api-queries";
-import { formatCurrency } from "@/lib/i18n";
-import { useI18n } from "@/lib/i18n";
+import { formatCurrency, useI18n } from "@/lib/i18n";
+import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
-import { useLocalSearchParams } from "expo-router";
-import { Text, View } from "react-native";
+import {
+  CreditCard,
+  Banknotes,
+  CheckCircle,
+  ExclamationCircle,
+} from "@orbis/icons/native";
 
 const feeStatusKeys: Record<string, TranslationKey> = {
   pending: "student_fee_pending",
@@ -23,6 +38,9 @@ const feeStatusKeys: Record<string, TranslationKey> = {
 
 export default function StudentFeesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
+  const { t, formatDate } = useI18n();
+
   const requestedStudentId = typeof id === "string" ? id : undefined;
   const {
     studentId,
@@ -30,22 +48,24 @@ export default function StudentFeesScreen() {
     isResolving,
     retryIdentity,
   } = useLinkedStudentId(requestedStudentId);
+
   const feesQuery = useFeesQuery(studentId);
   const orgQuery = useCurrentOrgQuery();
-  const { t, formatDate } = useI18n();
 
-  const fees = [...(feesQuery.data ?? [])].sort((a, b) =>
-    a.due_date.localeCompare(b.due_date),
-  );
+  const rawFees = feesQuery.data ?? [];
+  const fees = [...rawFees].sort((a, b) => a.due_date.localeCompare(b.due_date));
+
   const balanceDue = fees.reduce((total, fee) => {
     const amount = Number(fee.balance_due);
     return Number.isFinite(amount) ? total + amount : total;
   }, 0);
-  const currency = orgQuery.data?.base_currency_code ?? "YER";
+
+  const currency = orgQuery.data?.base_currency_code ?? "USD";
 
   return (
     <StudentRecordLayout
-      title={t("student_fees")}
+      title={t("student_fees") || "Fees & Tuition"}
+      showBack={true}
       isPending={isResolving || (isLinked && feesQuery.isPending)}
       isError={!isResolving && (!isLinked || feesQuery.isError)}
       errorDescription={isLinked ? undefined : t("student_access_denied")}
@@ -58,56 +78,109 @@ export default function StudentFeesScreen() {
         }
       }}
     >
+      {/* 1. Total Balance Due Banner */}
+      <Card
+        variant="default"
+        padding="four"
+        className="bg-card border border-border/80 shadow-sm"
+      >
+        <View className="flex-row items-center justify-between">
+          <View className="gap-half">
+            <Text className="text-xs font-semibold text-muted-foreground">
+              {t("student_total_balance_due") || "Total Balance Due"}
+            </Text>
+            <Text
+              className={`text-3xl font-extrabold ${
+                balanceDue > 0 ? "text-destructive" : "text-success"
+              }`}
+            >
+              {formatCurrency(balanceDue, currency)}
+            </Text>
+          </View>
+
+          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <CreditCard size={28} color={theme.primary} />
+          </View>
+        </View>
+      </Card>
+
+      {/* 2. Fee Invoices Breakdown */}
       {fees.length === 0 ? (
-        <EmptyState title={t("student_no_fees")} />
+        <View className="py-ten">
+          <EmptyState
+            title={t("student_no_fees") || "No Fees Found"}
+            icon={<Banknotes size={32} className="text-muted-foreground" />}
+          />
+        </View>
       ) : (
         <View className="gap-three">
-          <Card variant="outline" padding="four">
-            <View className="gap-one">
-              <Text className="text-sm text-muted-foreground">
-                {t("student_total_balance_due")}
-              </Text>
-              <Text className="text-2xl font-bold text-foreground">
-                {formatCurrency(balanceDue, currency)}
-              </Text>
-            </View>
-          </Card>
           {fees.map((fee) => {
-            const statusKey =
-              feeStatusKeys[fee.status.toLowerCase()] ?? "student_fee_pending";
+            const status = fee.status.toLowerCase();
+            const statusKey = feeStatusKeys[status] ?? "student_fee_pending";
+            const isOverdue = status === "overdue";
+            const isPaid = status === "paid";
+
+            const net = Number(fee.net_amount) || 0;
+            const paid = Number(fee.paid_amount) || 0;
+            const percentPaid = net > 0 ? Math.round((paid / net) * 100) : 0;
+
             return (
-              <Card key={fee.id} variant="outline" padding="four">
-                <View className="gap-two">
-                  <View className="flex-row items-center justify-between gap-three">
-                    <Text className="text-base font-semibold text-foreground">
-                      {t("student_fee")}
-                    </Text>
+              <Card
+                key={fee.id}
+                variant="outline"
+                padding="four"
+                className="bg-card border-border/80 shadow-2xs gap-two"
+              >
+                <View className="flex-row items-center justify-between pb-one">
+                  <Text className="text-base font-bold text-foreground">
+                    {t("student_fee") || "Tuition Invoice"}
+                  </Text>
+
+                  <Badge
+                    variant={isOverdue ? "destructive" : isPaid ? "default" : "secondary"}
+                    className={`px-two py-half ${isPaid ? "bg-success/20" : ""}`}
+                  >
                     <Text
-                      className={`text-sm font-semibold ${
-                        fee.status === "overdue"
-                          ? "text-destructive"
-                          : fee.status === "paid"
-                            ? "text-primary"
-                            : "text-muted-foreground"
+                      className={`text-[10px] font-bold ${
+                        isOverdue
+                          ? "text-destructive-foreground"
+                          : isPaid
+                            ? "text-success"
+                            : "text-foreground"
                       }`}
                     >
                       {t(statusKey)}
                     </Text>
-                  </View>
+                  </Badge>
+                </View>
+
+                {/* Progress ratio */}
+                <View className="h-1.5 w-full overflow-hidden rounded-full bg-secondary my-one">
+                  <View
+                    style={{ width: `${Math.min(percentPaid, 100)}%` }}
+                    className={`h-full rounded-full ${
+                      isPaid ? "bg-success" : "bg-primary"
+                    }`}
+                  />
+                </View>
+
+                {/* Detailed financial attributes */}
+                <View className="gap-one border-t border-border/40 pt-two">
                   <FeeAmount
-                    label={t("student_fee_amount")}
-                    value={formatCurrency(Number(fee.net_amount), currency)}
+                    label={t("student_fee_amount") || "Total Amount"}
+                    value={formatCurrency(net, currency)}
                   />
                   <FeeAmount
-                    label={t("student_fee_paid_amount")}
-                    value={formatCurrency(Number(fee.paid_amount), currency)}
+                    label={t("student_fee_paid_amount") || "Paid Amount"}
+                    value={formatCurrency(paid, currency)}
                   />
                   <FeeAmount
-                    label={t("student_fee_balance")}
-                    value={formatCurrency(Number(fee.balance_due), currency)}
+                    label={t("student_fee_balance") || "Remaining Balance"}
+                    value={formatCurrency(Number(fee.balance_due) || 0, currency)}
+                    highlight={Number(fee.balance_due) > 0}
                   />
                   <FeeAmount
-                    label={t("student_fee_due_date")}
+                    label={t("student_fee_due_date") || "Due Date"}
                     value={formatDate(fee.due_date)}
                   />
                 </View>
@@ -120,11 +193,25 @@ export default function StudentFeesScreen() {
   );
 }
 
-function FeeAmount({ label, value }: { label: string; value: string }) {
+function FeeAmount({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: string;
+  highlight?: boolean;
+}) {
   return (
-    <View className="flex-row items-center justify-between gap-three">
-      <Text className="text-sm text-muted-foreground">{label}</Text>
-      <Text className="text-sm font-medium text-foreground">{value}</Text>
+    <View className="flex-row items-center justify-between">
+      <Text className="text-xs text-muted-foreground">{label}</Text>
+      <Text
+        className={`text-xs font-semibold ${
+          highlight ? "text-destructive font-bold" : "text-foreground"
+        }`}
+      >
+        {value}
+      </Text>
     </View>
   );
 }

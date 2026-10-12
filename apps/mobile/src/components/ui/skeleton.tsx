@@ -20,6 +20,8 @@ export interface SkeletonProps {
   height?: number;
   borderRadius?: number;
   style?: ViewStyle;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 export function Skeleton({
@@ -27,6 +29,8 @@ export function Skeleton({
   height = 20,
   borderRadius = 6,
   style,
+  className,
+  children,
 }: SkeletonProps) {
   const opacity = useSharedValue(0.35);
 
@@ -44,9 +48,11 @@ export function Skeleton({
 
   return (
     <Animated.View
-      className="bg-background-selected"
+      className={`bg-background-selected ${className ?? ""}`}
       style={[{ width, height, borderRadius }, animatedStyle, style]}
-    />
+    >
+      {children}
+    </Animated.View>
   );
 }
 

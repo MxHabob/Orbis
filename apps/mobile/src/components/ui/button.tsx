@@ -49,6 +49,7 @@ export interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
+  className?: string;
   children?: React.ReactNode;
 }
 
@@ -164,6 +165,7 @@ export const Button = React.memo<ButtonProps>(
     style,
     textStyle,
     fullWidth = false,
+    className,
     children,
   }) => {
     const theme = useTheme();
@@ -191,9 +193,11 @@ export const Button = React.memo<ButtonProps>(
 
     return (
       <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
         onPress={isDisabled ? undefined : onPress}
         disabled={isDisabled}
-        className={`flex-row items-center justify-center ${sizeStyle.container} ${variantStyle.container} ${fullWidth ? "w-full" : ""}`}
+        className={`flex-row items-center justify-center ${sizeStyle.container} ${variantStyle.container} ${fullWidth ? "w-full" : ""} ${className ?? ""}`}
         style={({ pressed }) => [
           {
             opacity: isDisabled ? 0.45 : 1,
@@ -204,8 +208,17 @@ export const Button = React.memo<ButtonProps>(
       >
         {loading ? (
           <ActivityIndicator size="small" color={indicatorColor} />
-        ) : children ? (
-          children
+        ) : children !== undefined ? (
+          typeof children === "string" || typeof children === "number" ? (
+            <Text
+              className={`text-center ${sizeStyle.text} ${variantStyle.text}`}
+              style={textStyle}
+            >
+              {children}
+            </Text>
+          ) : (
+            children
+          )
         ) : (
           <View
             className={`flex-row items-center justify-center ${sizeStyle.contentGap}`}

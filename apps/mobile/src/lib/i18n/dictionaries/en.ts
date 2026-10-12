@@ -407,4 +407,18 @@ export const en: Record<TranslationKey, string> = {
   common_unknown: "Unknown",
   common_now: "Just now",
   common_you_teacher: "You (Teacher)",
+  common_retry_hint: "Please check your network connection and try again.",
+
+  // Brand & Auth
+  app_name: "Orbis",
+  app_tagline: "School Management & Learning Platform",
+  auth_email: "Email Address",
+
+  // Academic & Student Record
+  exams_scheduled: "Scheduled Exams",
+  student_no_exams_description: "No upcoming or scheduled exams found for this student.",
+  classroom_label: "Room {room}",
+  academic_average_label: "Academic Average",
+  assessments_count: "Assessments",
+  schedule_day_off_hint: "No scheduled classes for this day.",
 };
