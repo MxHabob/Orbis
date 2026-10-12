@@ -75,7 +75,7 @@ fn teacher_assigned_to_class(
 ) -> bool {
     homeroom_teacher_id == Some(teacher_id)
         || assignments.iter().any(|assignment| {
-            assignment.section_id == class_id
+            assignment.section_id == section_id
                 && (assignment.instructor_id == teacher_id
                     || assignment.assistant_instructor_id == Some(teacher_id)
                     || assignment.substitute_instructor_id == Some(teacher_id))
@@ -163,8 +163,8 @@ impl AiOrchestrationService {
                 .await?;
             if teacher_assigned_to_class(
                 employee.id,
-                section_id,
-                class.homeroom_instructor_id,
+                class_id,
+                None, // Section no longer has homeroom_instructor_id
                 &assignments,
             ) {
                 return Ok(());

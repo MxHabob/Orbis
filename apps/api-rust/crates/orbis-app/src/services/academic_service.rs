@@ -108,7 +108,7 @@ impl AcademicService {
             description: None,
             is_core,
             is_elective: !is_core,
-            credit_units: credit_units,
+            credit_units: credit_hours,
             workload_units: None,
             theory_hours: None,
             practical_hours: None,
@@ -209,7 +209,7 @@ impl AcademicService {
         }
 
         let now = Utc::now();
-        let class_id = Uuid::new_v4();
+        let section_id = Uuid::new_v4();
 
         let section = Section {
             id: section_id,
@@ -282,10 +282,10 @@ impl AcademicService {
         let cs = SectionSubject {
             id: cs_id,
             org_id: Uuid::nil(), // TODO: pass org_id through
-            section_id: section_id,
+            section_id,
             subject_id,
             period_id,
-            instructor_id: Some(primary_teacher_id),
+            instructor_id: Some(instructor_id),
             assistant_instructor_id: None,
             scheme_id: None,
             weekly_hours,
