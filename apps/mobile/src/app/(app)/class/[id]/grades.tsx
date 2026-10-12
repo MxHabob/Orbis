@@ -21,7 +21,7 @@ export default function ClassGradesScreen() {
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [scores, setScores] = useState<Record<string, string>>({});
   const classQuery = useTeacherClassDataQuery(classId);
-  const classSubjects = classQuery.data?.classSubjects ?? [];
+  const classSubjects = classQuery.data?.SectionSubject ?? [];
   const selectedClassSubject =
     classSubjects.find((item) => item.id === selectedSubjectId) ??
     classSubjects[0];
@@ -78,7 +78,7 @@ export default function ClassGradesScreen() {
             period_id: classItem.period_id,
             student_id: student.id,
             enrollment_id: enrollment.id,
-            class_subject_id: selectedClassSubject.id,
+            section_subject_id: selectedClassSubject.id,
             score: String(numericScore),
             max_score: "100",
           },

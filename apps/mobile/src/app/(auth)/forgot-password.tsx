@@ -111,7 +111,7 @@ export default function ForgotPasswordScreen() {
             {/* Title Block */}
             <View className="mb-6">
               <Text
-                className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground"
+                className="font-sans text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground"
               >
                 {t("auth_forgot_title")}
               </Text>
@@ -162,7 +162,7 @@ export default function ForgotPasswordScreen() {
               <Pressable
                 onPress={handleSend}
                 disabled={isLoading}
-                className="h-[38px] w-[38px] items-center justify-center rounded-full bg-foreground"
+                className="h-9.5 w-9.5 items-center justify-center rounded-full bg-foreground"
                 style={({ pressed }) => ({
                   transform: [{ scale: pressed ? 0.9 : 1 }],
                   opacity: isLoading ? 0.6 : 1,
@@ -185,13 +185,13 @@ export default function ForgotPasswordScreen() {
             </View>
 
             <Text
-              className="mb-two text-center font-sans text-2xl leading-[30px] font-extrabold text-foreground"
+              className="mb-two text-center font-sans text-2xl leading-7.5 font-extrabold text-foreground"
             >
               {t("auth_forgot_success_title")}
             </Text>
 
             <Text
-              className="mb-eight text-center font-sans text-sm leading-[22px] text-muted-foreground"
+              className="mb-eight text-center font-sans text-sm leading-5.5 text-muted-foreground"
             >
               {t("auth_forgot_success_msg")}
             </Text>
@@ -199,7 +199,7 @@ export default function ForgotPasswordScreen() {
             <View className="w-full">
               <Pressable
                 onPress={() => router.replace("/(auth)/sign-in")}
-                className="h-[54px] items-center justify-center rounded-full bg-foreground shadow-md"
+                className="h-13.5 items-center justify-center rounded-full bg-foreground shadow-md"
                 style={({ pressed }) => ({
                   transform: [{ scale: pressed ? 0.98 : 1 }],
                 })}

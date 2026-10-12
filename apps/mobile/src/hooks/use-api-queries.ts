@@ -14,7 +14,7 @@ import type {
   DashboardCountsDto,
   AcademicContextResponse,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   EnrollmentDto,
   GradeDto,
   AttendanceDto,
@@ -173,7 +173,8 @@ export interface TeacherRosterEntry {
 export interface TeacherClassData {
   classItem: ClassDto;
   roster: TeacherRosterEntry[];
-  classSubjects: ClassSubjectDto[];
+  classSubjects: SectionSubjectDto[];
+  SectionSubject?: SectionSubjectDto[];
   subjects: SubjectDto[];
 }
 
@@ -199,14 +200,14 @@ export function useTeacherClassDataQuery(classId?: string) {
           query: { class_id: classId },
           throwOnError: true,
         }),
-        api.listClassSubjects({
+        api.listSectionSubjects({
           query: { class_id: classId, period_id: classItem.period_id },
           throwOnError: true,
         }),
         api.listSubjects({ throwOnError: true }),
       ]);
       const enrollments = extractData<EnrollmentDto[]>(enrollmentsResponse);
-      const classSubjects = extractData<ClassSubjectDto[]>(classSubjectsResponse);
+      const classSubjects = extractData<SectionSubjectDto[]>(classSubjectsResponse);
       const subjects = extractData<SubjectDto[]>(subjectsResponse);
       if (
         !Array.isArray(enrollments) ||
@@ -258,6 +259,7 @@ export function useTeacherClassDataQuery(classId?: string) {
           return student ? [{ student, enrollment }] : [];
         }),
         classSubjects: classSubjects.filter((item) => item.is_active),
+        SectionSubject: classSubjects.filter((item) => item.is_active),
         subjects,
       };
     },
@@ -333,11 +335,11 @@ export function useClassScheduleQuery(classId?: string) {
       if (!classItem || !Array.isArray(subjects)) {
         throw new Error("The class schedule response was invalid.");
       }
-      const classSubjectsResponse = await api.listClassSubjects({
+      const classSubjectsResponse = await api.listSectionSubjects({
         query: { class_id: classId, period_id: classItem.period_id },
         throwOnError: true,
       });
-      const classSubjects = extractData<ClassSubjectDto[]>(classSubjectsResponse);
+      const classSubjects = extractData<SectionSubjectDto[]>(classSubjectsResponse);
       if (!Array.isArray(classSubjects)) {
         throw new Error("The class subject response was not a list.");
       }
@@ -377,7 +379,7 @@ export function useClassScheduleQuery(classId?: string) {
       return lessons
         .flatMap((lesson) => {
           const timeSlot = timeSlotsById.get(lesson.time_slot_id);
-          const classSubject = classSubjectsById.get(lesson.class_subject_id);
+          const classSubject = classSubjectsById.get(lesson.section_subject_id);
           if (!timeSlot || !classSubject) return [];
           return [
             {
@@ -662,7 +664,7 @@ export function useStudentExamsQuery(studentId?: string) {
           if (!enrollment.class_id) {
             throw new Error("An active enrollment is missing its class.");
           }
-          return api.listClassSubjects({
+          return api.listSectionSubjects({
             query: {
               class_id: enrollment.class_id,
               period_id: enrollment.period_id,
@@ -672,7 +674,7 @@ export function useStudentExamsQuery(studentId?: string) {
         }),
       );
       const classSubjects = classSubjectLists.flatMap((response) => {
-        const items = extractData<ClassSubjectDto[]>(response);
+        const items = extractData<SectionSubjectDto[]>(response);
         if (!Array.isArray(items)) {
           throw new Error("The class subjects response was not a list.");
         }
@@ -730,7 +732,7 @@ export function useStudentExamsQuery(studentId?: string) {
       return schedules
         .flatMap((schedule) => {
           const session = sessionById.get(schedule.exam_session_id);
-          const classSubject = classSubjectById.get(schedule.class_subject_id);
+          const classSubject = classSubjectById.get(schedule.section_subject_id);
           if (!session || !classSubject) return [];
           return [
             {
@@ -779,11 +781,11 @@ export function useStudentScheduleQuery(studentId?: string) {
       );
       const classSubjectsByEnrollment = await Promise.all(
         activeClasses.map(async ({ classId, periodId }) => {
-          const response = await api.listClassSubjects({
+          const response = await api.listSectionSubjects({
             query: { class_id: classId, period_id: periodId },
             throwOnError: true,
           });
-          const classSubjects = extractData<ClassSubjectDto[]>(response);
+          const classSubjects = extractData<SectionSubjectDto[]>(response);
           if (!Array.isArray(classSubjects)) {
             throw new Error("The class subjects response was not a list.");
           }
@@ -853,7 +855,7 @@ export function useStudentScheduleQuery(studentId?: string) {
       return lessons.flatMap((lesson) => {
           const timeSlot = timeSlotsById.get(lesson.time_slot_id);
           if (!timeSlot) return [];
-          const classSubject = classSubjectsById.get(lesson.class_subject_id);
+          const classSubject = classSubjectsById.get(lesson.section_subject_id);
           return [
             {
               lesson,

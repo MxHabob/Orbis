@@ -195,7 +195,7 @@ export default function MFAChallengeScreen() {
         {/* Main Content Area */}
         <View className="flex-1 justify-center">
           <Text
-            className="mb-one text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground"
+            className="mb-one text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground"
           >
             {isBackupMode ? t("auth_mfa_backup_code") : t("auth_setup_step_recovery")}
           </Text>
@@ -245,7 +245,7 @@ export default function MFAChallengeScreen() {
                     ref={(el) => {
                       inputRefs.current[idx] = el;
                     }}
-                    className={`h-[58px] w-12 rounded-xl border-[1.5px] bg-background-element text-center text-[22px] font-extrabold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
+                    className={`h-14.5 w-12 rounded-xl border-[1.5px] bg-background-element text-center text-[22px] font-extrabold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
                     style={{
                       shadowColor: digit ? theme.primary : "#000000",
                       shadowOffset: { width: 0, height: 2 },
@@ -303,7 +303,7 @@ export default function MFAChallengeScreen() {
           <Pressable
             onPress={handleManualSubmit}
             disabled={isSubmitting}
-            className="h-[54px] items-center justify-center rounded-full bg-foreground shadow-md"
+            className="h-13.5 items-center justify-center rounded-full bg-foreground shadow-md"
             style={({ pressed }) => ({
               transform: [{ scale: pressed ? 0.98 : 1 }],
               opacity: isSubmitting ? 0.7 : 1,

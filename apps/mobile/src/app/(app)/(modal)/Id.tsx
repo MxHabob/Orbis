@@ -8,7 +8,6 @@ import {
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
-import { useRouter } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { useState } from "react";
 
@@ -24,7 +23,6 @@ const studentStatusKeys: Partial<Record<string, TranslationKey>> = {
 };
 
 export default function DigitalIdModalScreen() {
-  const router = useRouter();
   const { user, effectiveContext } = useAuth();
   const { t, isArabic, formatDate } = useI18n();
   const [selectedDependentId, setSelectedDependentId] = useState<string>();

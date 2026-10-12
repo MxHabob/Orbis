@@ -18,7 +18,7 @@ export type {
   BatchMarkAttendanceRequest,
   BatchRecordGradesRequest,
   ClassDto,
-  ClassSubjectDto,
+  SectionSubjectDto,
   DashboardCountsDto,
   EnrollmentDto,
   ExamScheduleDto,
