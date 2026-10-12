@@ -173,17 +173,6 @@ export default function SecurityScreen() {
                         </Text>
                       </View>
                     </View>
-
-                    {!isCurrent ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => confirmRevoke(device.id)}
-                        disabled={isRevoking}
-                        className="rounded-xl bg-destructive/10 p-two ml-two active:opacity-70"
-                      >
-                        <Trash size={16} color={theme.destructive} />
-                      </Pressable>
-                    ) : null}
                   </View>
                 );
               })}

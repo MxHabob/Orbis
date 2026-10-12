@@ -11,23 +11,21 @@ import {
   Text,
   View,
   Pressable,
-  TextInput,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
-import {
-  ArrowLeft,
-  ArrowRight,
-} from "@orbis/icons/native";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, ArrowRight } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t, isArabic } = useI18n();
   const toast = useToast();
@@ -37,7 +35,6 @@ export default function RegisterScreen() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -91,12 +88,14 @@ export default function RegisterScreen() {
 
   const handleBack = () => {
     setErrorMsg(null);
-    if (step === 2) setStep(2);
-    else if (step === 1) setStep(1);
-    else router.back();
+    if (step === 2) {
+      setStep(1);
+      return;
+    }
+    router.back();
   };
 
-  const BackIcon = isArabic ? ArrowLeft : ArrowRight;
+  const BackIcon = isArabic ? ArrowRight : ArrowLeft;
 
   return (
     <View
@@ -108,9 +107,9 @@ export default function RegisterScreen() {
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingTop: Platform.OS === "ios" ? 54 : 36,
-          paddingBottom: 32,
+          paddingHorizontal: 24,
+          paddingTop: insets.top + 12,
+          paddingBottom: Math.max(insets.bottom, 20) + 12,
         }}
       >
         {/* Minimal Nav Bar */}
@@ -124,7 +123,7 @@ export default function RegisterScreen() {
 
           {/* Minimal Step Dots Indicator */}
           <View className="flex-row items-center gap-[6px]">
-            {[1, 2, 3].map((s) => (
+            {[1, 2].map((s) => (
               <View
                 key={s}
                 className={`h-[6px] rounded-[3px] ${s <= step ? "bg-primary" : "bg-border"}`}
@@ -149,7 +148,7 @@ export default function RegisterScreen() {
         <View className="flex-1 justify-center">
           {/* STEP 1: NAME */}
           {step === 1 && (
-            <View className="w-full items-end">
+            <View className="w-full">
               <View className="mb-6">
                 <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground">
                   {t("auth_full_name")}
@@ -157,15 +156,15 @@ export default function RegisterScreen() {
               </View>
 
               <View>
-                <TextInput
-                  className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
+                <Input
                   placeholder={t("auth_full_name_ph")}
-                  placeholderTextColor={theme.textMuted}
                   value={fullName}
                   onChangeText={setFullName}
                   autoFocus
                   onSubmitEditing={handleNextStep1}
                   returnKeyType="next"
+                  autoComplete="name"
+                  textContentType="name"
                 />
               </View>
             </View>
@@ -173,39 +172,47 @@ export default function RegisterScreen() {
 
           {/* STEP 2: CREDENTIALS */}
           {step === 2 && (
-            <View className="w-full items-end">
+            <View className="w-full">
               <View className="mb-6">
                 <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground">
                   {t("auth_email_label")}
                 </Text>
               </View>
 
-              <View className="gap-3">
-                  <TextInput
-                    className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
+              <View className="gap-three">
+                  <Input
                     placeholder={t("auth_email_placeholder")}
-                    placeholderTextColor={theme.textMuted}
+                    label={t("auth_email_label")}
                     value={email}
                     onChangeText={setEmail}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoFocus
-                    />
+                    autoComplete="email"
+                    textContentType="emailAddress"
+                  />
    
-                  <TextInput
-                    className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
+                  <Input
                     placeholder="••••••••"
-                    placeholderTextColor={theme.textMuted}
+                    label={t("auth_password")}
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
+                    secureTextEntry
                     onSubmitEditing={handleFinalSubmit}
                     returnKeyType="go"
+                    autoComplete="new-password"
+                    textContentType="newPassword"
                   />
 
               </View>
             </View>
           )}
+
+          {errorMsg ? (
+            <Text className="mt-three text-sm font-medium text-destructive">
+              {errorMsg}
+            </Text>
+          ) : null}
         </View>
 
         {/* Bottom Tactile Pill Button */}
@@ -219,7 +226,7 @@ export default function RegisterScreen() {
             disabled={isSubmitting}
           >
             <Text
-              className="font-sans text-base leading-5 font-bold"
+              className="font-sans text-base leading-5 font-bold text-primary-foreground"
             >
               {step === 2
                 ? t("auth_create_account_btn")

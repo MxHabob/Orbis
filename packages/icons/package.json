@@ -25,6 +25,15 @@
     "./native": {
       "import": "./src/native/index.ts",
       "default": "./src/native/index.ts"
+    },
+    "./native/drawings": {
+      "import": "./src/native/drawings/index.ts",
+      "default": "./src/native/drawings/index.ts"
+    },
+    "./svelte/drawings": {
+      "svelte": "./src/svelte/drawings/index.ts",
+      "import": "./src/svelte/drawings/index.ts",
+      "default": "./src/svelte/drawings/index.ts"
     }
   },
   "peerDependencies": {

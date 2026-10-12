@@ -1,43 +1,55 @@
 /**
  * @module @orbis/mobile/app/(auth)/sign-in
  *
- * Professional Sign In screen for Orbis Mobile.
- * Clean enterprise authentication with email/password, Google sign-in,
- * bilingual language toggle, and fluid keyboard avoidance.
+ * Sign in with email/password, optional MFA, and supported account links.
  */
 
 import React, { useState } from "react";
-import { View, Text, Pressable, Platform } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import {
-  AcademicCap,
-  Eye,
-  EyeSlash,
-  ArrowRight,
-  ArrowLeft,
-  Language,
-} from "@orbis/icons/native";
+import { AcademicCap, Language } from "@orbis/icons/native";
+
+function getMfaUserId(response: unknown): string | undefined {
+  if (typeof response !== "object" || response === null) return undefined;
+
+  const value = response as {
+    mfa_required?: unknown;
+    user_id?: unknown;
+    user?: unknown;
+  };
+  if (value.mfa_required !== true) return undefined;
+
+  const nestedUserId =
+    typeof value.user === "object" &&
+    value.user !== null &&
+    "id" in value.user &&
+    typeof value.user.id === "string"
+      ? value.user.id
+      : undefined;
+
+  return typeof value.user_id === "string" ? value.user_id : nestedUserId;
+}
 
 export default function SignInScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { t, isArabic, locale, setLocale } = useI18n();
+  const insets = useSafeAreaInsets();
+  const { t, locale, setLocale } = useI18n();
   const toast = useToast();
   const { login, loginWithGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
 
   const handleSignIn = async () => {
     const trimmedEmail = email.trim();
@@ -48,18 +60,20 @@ export default function SignInScreen() {
 
     setIsSubmitting(true);
     try {
-      const res: any = await login(trimmedEmail, password);
-      if (res?.mfa_required && (res?.user_id || res?.user?.id)) {
+      const response = await login(trimmedEmail, password);
+      const mfaUserId = getMfaUserId(response);
+      if (mfaUserId) {
         router.push({
           pathname: "/(auth)/mfa-challenge",
-          params: { userId: res.user_id || res.user.id },
+          params: { userId: mfaUserId },
         });
         return;
       }
       router.replace("/(app)/(tabs)");
-    } catch (err: any) {
-      const msg = err?.message || t("auth_error_invalid_credentials");
-      toast.error(msg);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : t("auth_error_invalid_credentials");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -70,153 +84,174 @@ export default function SignInScreen() {
     try {
       await loginWithGoogle("google-token");
       router.replace("/(app)/(tabs)");
-    } catch (err: any) {
-      toast.error(err?.message || t("auth_error_google"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t("auth_error_google");
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const toggleLanguage = () => {
-    const next = locale === "ar" ? "en" : "ar";
-    void setLocale(next);
+    void setLocale(locale === "ar" ? "en" : "ar");
   };
 
   return (
-    <View className="flex-1 bg-background">
+    <View className="flex-1 bg-primary-dark">
       <KeyboardAwareView
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
-          justifyContent: "space-between",
-          paddingHorizontal: 24,
-          paddingTop: Platform.OS === "ios" ? 64 : 44,
-          paddingBottom: 36,
+          paddingTop: insets.top,
         }}
       >
-        {/* Top Bar: Language Switcher */}
-        <View className="flex-row items-center justify-between">
-          <View />
-          <Pressable
-            accessibilityRole="button"
-            onPress={toggleLanguage}
-            className="flex-row items-center gap-one rounded-full border border-border bg-card px-three py-one active:opacity-70"
-          >
-            <Language size={14} color={theme.primary} />
-            <Text className="text-xs font-bold text-foreground">
-              {locale === "ar" ? "English" : "العربية"}
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Center: Brand Identity & Form */}
-        <View className="gap-eight py-four">
-          {/* Brand Header */}
-          <View className="items-center gap-two">
-            <View className="h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-md">
-              <AcademicCap size={36} color="#FFFFFF" />
+        <ThemedStatusBar
+          backgroundColor={theme.brandPurpleDark}
+          style="light"
+        />
+        <View className="flex-1">
+          <View className="min-h-[320px] flex-1 justify-between overflow-hidden bg-brand-purple-dark px-six pb-eight pt-four">
+            <View
+              pointerEvents="none"
+              className="absolute -right-16 top-10 h-[280px] w-[280px] items-center justify-center rounded-full border border-white/15"
+            >
+              <View className="h-[218px] w-[218px] items-center justify-center rounded-full border border-white/15">
+                <AcademicCap size={120} color="#FFFFFF" />
+              </View>
             </View>
-            <View className="items-center gap-half">
-              <Text className="text-3xl font-extrabold tracking-tight text-foreground">
-                Orbis
+
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-two">
+                <View className="h-10 w-10 items-center justify-center rounded-md border border-white/25 bg-white/10">
+                  <AcademicCap size={23} color="#FFFFFF" />
+                </View>
+                <Text className="text-lg font-bold tracking-tight text-white">
+                  Orbis
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={locale === "ar" ? "Switch to English" : "التبديل إلى العربية"}
+                onPress={toggleLanguage}
+                hitSlop={8}
+                className="min-h-11 flex-row items-center gap-two rounded-full border border-white/20 px-three"
+              >
+                <Language size={16} color="#FFFFFF" />
+                <Text className="text-sm font-medium text-white">
+                  {locale === "ar" ? "English" : "العربية"}
+                </Text>
+              </Pressable>
+            </View>
+
+            <View className="max-w-[520px] gap-three">
+              <Text className="text-[34px] leading-[40px] font-semibold tracking-tight text-white">
+                {t("visitor_title")}
               </Text>
-              <Text className="text-sm font-medium text-muted-foreground text-center">
-                {t("auth_sign_in_subtitle")}
+              <Text className="text-base leading-6 text-white/80">
+                {t("visitor_description")}
               </Text>
             </View>
           </View>
 
-          {/* Form Inputs */}
-          <View className="gap-four">
+          <View
+            className="gap-four rounded-t-3xl bg-card px-six pb-eight pt-six"
+            style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+          >
             <View className="gap-one">
-              <Text className="text-xs font-semibold text-foreground">
-                {t("auth_username_or_email")}
+              <Text className="text-xl font-semibold tracking-tight text-foreground">
+                {t("auth_sign_in")}
               </Text>
-              <Input
-                placeholder="name@school.org"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                returnKeyType="next"
-              />
+              <Text className="text-sm text-muted-foreground">
+                {t("auth_sign_in_subtitle")}
+              </Text>
             </View>
+
+            <Input
+              label={t("auth_username_or_email")}
+              placeholder="name@school.org"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoComplete="email"
+              textContentType="username"
+              returnKeyType="next"
+            />
 
             <View className="gap-one">
               <View className="flex-row items-center justify-between">
-                <Text className="text-xs font-semibold text-foreground">
+                <Text className="text-sm font-semibold text-foreground">
                   {t("auth_password")}
                 </Text>
-                <Pressable onPress={() => router.push("/(auth)/forgot-password")}>
-                  <Text className="text-xs font-semibold text-primary">
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                  hitSlop={8}
+                  className="min-h-11 justify-center"
+                >
+                  <Text className="text-sm font-semibold text-primary">
                     {t("auth_forgot_password")}
                   </Text>
                 </Pressable>
               </View>
-
-              <View className="relative justify-center">
-                <Input
-                  placeholder="••••••••"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  returnKeyType="go"
-                  onSubmitEditing={handleSignIn}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setShowPassword(!showPassword)}
-                  className={`absolute top-0 bottom-0 justify-center px-three ${
-                    isArabic ? "left-0" : "right-0"
-                  }`}
-                >
-                  {showPassword ? (
-                    <EyeSlash size={18} color={theme.mutedForeground} />
-                  ) : (
-                    <Eye size={18} color={theme.mutedForeground} />
-                  )}
-                </Pressable>
-              </View>
+              <Input
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoComplete="current-password"
+                textContentType="password"
+                returnKeyType="go"
+                onSubmitEditing={() => void handleSignIn()}
+              />
             </View>
 
-            {/* Primary Sign In Button */}
-            <Button
-              title={t("auth_sign_in")}
-              onPress={handleSignIn}
-              disabled={isSubmitting}
-              loading={isSubmitting}
-              fullWidth
-            />
+            <View className="gap-three pt-one">
+              <Button
+                title={t("auth_sign_in")}
+                onPress={() => void handleSignIn()}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                fullWidth
+                size="lg"
+              />
+              <Button
+                title={t("auth_continue_google")}
+                onPress={() => void handleGoogleSignIn()}
+                disabled={isSubmitting}
+                variant="outline"
+                fullWidth
+                size="lg"
+              />
+            </View>
 
-            {/* Google Sign In Option */}
-            <Button
-              title={t("auth_continue_google")}
-              onPress={handleGoogleSignIn}
-              disabled={isSubmitting}
-              variant="outline"
-              fullWidth
-            />
+            <View className="items-center gap-two pt-two">
+              <View className="flex-row items-center gap-one">
+                <Text className="text-sm text-muted-foreground">
+                  {t("auth_no_account")}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(auth)/register")}
+                  hitSlop={8}
+                >
+                  <Text className="text-sm font-semibold text-primary">
+                    {t("auth_register_title")}
+                  </Text>
+                </Pressable>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/(auth)/explore")}
+                hitSlop={8}
+                className="min-h-11 justify-center"
+              >
+                <Text className="text-sm text-muted-foreground">
+                  {t("visitor_explore")}
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-
-        {/* Bottom Actions: Register & Explore */}
-        <View className="items-center gap-three pt-four">
-          <View className="flex-row items-center gap-one">
-            <Text className="text-xs text-muted-foreground">
-              {t("auth_no_account")}
-            </Text>
-            <Pressable onPress={() => router.push("/(auth)/register")}>
-              <Text className="text-xs font-bold text-primary">
-                {t("auth_register_title")}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable onPress={() => router.push("/(auth)/explore")}>
-            <Text className="text-xs font-medium text-muted-foreground underline">
-              {t("visitor_explore")}
-            </Text>
-          </Pressable>
         </View>
       </KeyboardAwareView>
     </View>

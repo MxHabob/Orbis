@@ -10,15 +10,14 @@ import {
   View,
   Pressable,
   TextInput,
-  Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import {
   ArrowLeft,
   ArrowRight,
@@ -28,8 +27,6 @@ import {
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { t, isArabic } = useI18n();
   const toast = useToast();
 
@@ -62,28 +59,14 @@ export default function ForgotPasswordScreen() {
   const ArrowIcon = isArabic ? ArrowLeft : ArrowRight;
 
   return (
-    <View
-      className="flex-1 bg-background"
-    >
-      <LinearGradient
-        colors={
-          isDark
-            ? (["#3B0764", "#1E1035", "rgba(9,9,11,0)"] as const)
-            : (["#DDD6FE", "#EDE9FE", "rgba(248,250,252,0)"] as const)
-        }
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.5 }}
-        className="absolute inset-0"
-        pointerEvents="none"
-      />
-
+    <View className="flex-1 bg-background">
       <KeyboardAwareView
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingTop: Platform.OS === "ios" ? 54 : 36,
+          paddingHorizontal: 24,
+          paddingTop: 48,
           paddingBottom: 32,
         }}
       >
@@ -91,18 +74,10 @@ export default function ForgotPasswordScreen() {
         <View className="mb-6 flex-row items-center">
           <Pressable
             onPress={() => router.back()}
-            className="h-10 w-10 items-center justify-center rounded-full border"
-            style={{
-              backgroundColor: isDark
-                ? "rgba(255, 255, 255, 0.08)"
-                : "rgba(255, 255, 255, 0.8)",
-              borderColor: isDark
-                ? "rgba(255, 255, 255, 0.12)"
-                : "rgba(0, 0, 0, 0.06)",
-            }}
+            className="h-11 w-11 items-center justify-center"
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <BackIcon size={18} color={isDark ? "#FFFFFF" : "#0F172A"} />
+            <BackIcon size={20} color={theme.foreground} />
           </Pressable>
         </View>
 
@@ -134,17 +109,17 @@ export default function ForgotPasswordScreen() {
 
             {/* Large Pill Input with embedded arrow */}
             <View
-              className="h-14 flex-row items-center rounded-full border border-border bg-background-element px-four"
+              className="min-h-12 flex-row items-center rounded-md border border-border bg-card px-four"
               style={{
                 shadowColor: "#000000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.06,
-                shadowRadius: 6,
+                shadowRadius: 4,
                 elevation: 2,
               }}
             >
               <TextInput
-                className="flex-1 px-2 font-sans text-base text-foreground"
+                className="flex-1 px-two font-sans text-base text-foreground"
                 style={{
                   textAlign: isArabic ? "right" : "left",
                 }}
@@ -159,27 +134,21 @@ export default function ForgotPasswordScreen() {
                 returnKeyType="go"
               />
 
-              <Pressable
-                onPress={handleSend}
+              <IconButton
+                icon={<ArrowIcon size={16} color={theme.primaryForeground} />}
+                onPress={() => void handleSend()}
+                accessibilityLabel={t("auth_forgot_title")}
                 disabled={isLoading}
-                className="h-9.5 w-9.5 items-center justify-center rounded-full bg-foreground"
-                style={({ pressed }) => ({
-                  transform: [{ scale: pressed ? 0.9 : 1 }],
-                  opacity: isLoading ? 0.6 : 1,
-                })}
-              >
-                <ArrowIcon
-                  size={16}
-                  color={theme.background}
-                />
-              </Pressable>
+                loading={isLoading}
+                size="md"
+              />
             </View>
           </View>
         ) : (
           /* Confirmation State */
           <View className="flex-1 items-center justify-center px-4">
             <View
-              className="mb-five h-20 w-20 items-center justify-center rounded-full bg-success/10"
+              className="mb-five h-16 w-16 items-center justify-center rounded-full bg-success/10"
             >
               <CheckCircle size={44} color={theme.success} />
             </View>
@@ -197,19 +166,12 @@ export default function ForgotPasswordScreen() {
             </Text>
 
             <View className="w-full">
-              <Pressable
+              <Button
+                title={t("auth_back_to_sign_in")}
                 onPress={() => router.replace("/(auth)/sign-in")}
-                className="h-13.5 items-center justify-center rounded-full bg-foreground shadow-md"
-                style={({ pressed }) => ({
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                })}
-              >
-                <Text
-                  className="font-sans text-base leading-5 font-bold text-background"
-                >
-                  {t("auth_back_to_sign_in")}
-                </Text>
-              </Pressable>
+                fullWidth
+                size="lg"
+              />
             </View>
           </View>
         )}

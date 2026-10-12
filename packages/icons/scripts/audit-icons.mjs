@@ -355,12 +355,12 @@ if (process.argv.includes('--self-test')) {
 const svelteFiles = new Set(
 	listFiles(svelteRoot)
 		.filter((file) => file.endsWith('.svelte'))
-		.map((file) => path.basename(file, '.svelte')),
+		.map((file) => path.relative(svelteRoot, file).replace(/\.svelte$/, '').replaceAll(path.sep, '/')),
 );
 const nativeFiles = new Set(
 	listFiles(nativeRoot)
 		.filter((file) => file.endsWith('.tsx'))
-		.map((file) => path.basename(file, '.tsx')),
+		.map((file) => path.relative(nativeRoot, file).replace(/\.tsx$/, '').replaceAll(path.sep, '/')),
 );
 const allNames = new Set([...svelteExports.keys(), ...nativeExports.keys()]);
 errors.push(...validateExports(svelteExports, nativeExports, svelteFiles, nativeFiles));

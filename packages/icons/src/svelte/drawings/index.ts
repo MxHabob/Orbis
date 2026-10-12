@@ -1,0 +1,14 @@
+export { default as AttendancePeople } from './attendance-people.svelte';
+export { default as BookStack } from './book-stack.svelte';
+export { default as CalculatorWarning } from './calculator-warning.svelte';
+export { default as ClassroomScene } from './classroom-scene.svelte';
+export { default as MathBoard } from './math-board.svelte';
+export { default as NotebookCheck } from './notebook-check.svelte';
+export { default as ReadingBook } from './reading-book.svelte';
+export { default as ScienceExperiment } from './science-experiment.svelte';
+export { default as StudentBackpack } from './student-backpack.svelte';
+export { default as StudentBoy } from './student-boy.svelte';
+export { default as StudentGirl } from './student-girl.svelte';
+export { default as StudyMaterials } from './study-materials.svelte';
+export { default as SunSolid } from './sun-solid.svelte';
+export { default as TaskCalendar } from './task-calendar.svelte';

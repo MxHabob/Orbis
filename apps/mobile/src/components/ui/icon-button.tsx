@@ -6,12 +6,12 @@
 
 import React from "react";
 import {
-  Pressable,
   type ViewStyle,
   ActivityIndicator,
   View,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
+import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 export type IconButtonVariant =
   | "default"
@@ -87,24 +87,37 @@ export const IconButton = React.memo<IconButtonProps>(
     };
 
     const variantStyle = variantClasses[variant];
+    const shadowColor =
+      variant === "destructive"
+        ? theme.btnShadowDestructive
+        : variant === "secondary" || variant === "outline"
+          ? theme.btnShadowSecondary
+          : theme.btnShadowPrimary;
+    const tactilePress = useTactilePress(
+      variant !== "ghost",
+      isDisabled,
+      shadowColor,
+    );
 
     // Hit slop expands smaller buttons to minimum 44px touch area
     const hitSlopAmount = Math.max(0, (44 - dimensions.size) / 2);
 
     return (
-      <Pressable
+      <AnimatedPressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         disabled={isDisabled}
         hitSlop={hitSlopAmount}
         onPress={isDisabled ? undefined : onPress}
+        onPressIn={tactilePress.onPressIn}
+        onPressOut={tactilePress.onPressOut}
         className={`items-center justify-center ${rounded ? "rounded-full" : "rounded-md"} ${variantStyle.container}`}
-        style={({ pressed }) => [
+        style={[
+          tactilePress.style,
           {
             width: dimensions.size,
             height: dimensions.size,
             opacity: isDisabled ? 0.45 : 1,
-            transform: [{ scale: pressed && !isDisabled ? 0.94 : 1 }],
           },
           style,
         ]}
@@ -114,7 +127,7 @@ export const IconButton = React.memo<IconButtonProps>(
         ) : (
           <View className="items-center justify-center">{icon}</View>
         )}
-      </Pressable>
+      </AnimatedPressable>
     );
   },
 );

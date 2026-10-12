@@ -6,7 +6,6 @@
 
 import React from "react";
 import {
-  Pressable,
   Text,
   ActivityIndicator,
   type ViewStyle,
@@ -14,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
+import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 export type ButtonVariant =
   | "default"
@@ -178,6 +178,16 @@ export const Button = React.memo<ButtonProps>(
     const variantStyle = variantClasses[normalizedVariant];
     const sizeStyle = sizeClasses[size];
     const isDisabled = disabled || loading;
+    const isTactile = normalizedVariant !== "ghost" && normalizedVariant !== "link";
+    const shadowColor =
+      normalizedVariant === "destructive"
+        ? theme.btnShadowDestructive
+        : normalizedVariant === "lime"
+          ? theme.btnShadowLime
+          : normalizedVariant === "secondary" || normalizedVariant === "outline"
+            ? theme.btnShadowSecondary
+            : theme.btnShadowPrimary;
+    const tactilePress = useTactilePress(isTactile, isDisabled, shadowColor);
     const indicatorColor =
       normalizedVariant === "secondary"
         ? theme.secondaryForeground
@@ -192,17 +202,19 @@ export const Button = React.memo<ButtonProps>(
                 : theme.primaryForeground;
 
     return (
-      <Pressable
+      <AnimatedPressable
         accessibilityRole="button"
         accessibilityState={{ disabled: isDisabled, busy: loading }}
         onPress={isDisabled ? undefined : onPress}
+        onPressIn={tactilePress.onPressIn}
+        onPressOut={tactilePress.onPressOut}
         disabled={isDisabled}
         className={`flex-row items-center justify-center ${sizeStyle.container} ${variantStyle.container} ${fullWidth ? "w-full" : ""} ${className ?? ""}`}
-        style={({ pressed }) => [
+        style={[
           {
             opacity: isDisabled ? 0.45 : 1,
-            transform: [{ translateY: pressed && !isDisabled ? 1 : 0 }],
           },
+          tactilePress.style,
           style,
         ]}
       >
@@ -239,7 +251,7 @@ export const Button = React.memo<ButtonProps>(
             )}
           </View>
         )}
-      </Pressable>
+      </AnimatedPressable>
     );
   },
 );
