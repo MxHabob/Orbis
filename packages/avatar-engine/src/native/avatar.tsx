@@ -8,14 +8,14 @@ import {
 import {
   AccessibilityInfo,
   Animated,
+  Pressable,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { AvatarController } from "../core/avatar-controller";
 import { renderAvatarSvg } from "../core/avatar-svg";
-import type { AvatarState } from "../core/avatar-state-machine";
-import { resolveAvatarHat, type AvatarHat } from "../core/types";
+import { type AvatarHat, resolveAvatarHat } from "../core/types";
 
 export interface NativeAvatarProps {
   controller?: AvatarController;
@@ -27,6 +27,8 @@ export interface NativeAvatarProps {
   faceColor?: string;
   featureColor?: string;
   autoBlink?: boolean;
+  onPress?: () => void;
+  accessibilityHint?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -40,6 +42,8 @@ export function Avatar({
   faceColor = "#f1f5f9",
   featureColor = "#18181b",
   autoBlink = true,
+  onPress,
+  accessibilityHint,
   style,
 }: NativeAvatarProps) {
   const [ownedController] = useState(
@@ -68,8 +72,8 @@ export function Avatar({
   );
 
   useEffect(() => {
-    ownedController.setAutoBlink(autoBlink);
-  }, [autoBlink, ownedController]);
+    activeController.setAutoBlink(autoBlink && !reduceMotion);
+  }, [activeController, autoBlink, reduceMotion]);
 
   useEffect(() => () => ownedController.destroy(), [ownedController]);
 
@@ -150,12 +154,12 @@ export function Avatar({
     return () => animation?.stop();
   }, [reduceMotion, scale, state, translateX, translateY]);
 
-  return (
+  const avatar = (
     <Animated.View
       accessibilityRole="image"
-      accessibilityLabel={label}
-      accessible
-      importantForAccessibility="yes"
+      accessibilityLabel={onPress ? undefined : label}
+      accessible={!onPress}
+      importantForAccessibility={onPress ? "no" : "yes"}
       style={[
         { width: width ?? size, height: height ?? size, overflow: "visible" },
         style,
@@ -164,5 +168,20 @@ export function Avatar({
     >
       <SvgXml xml={markup} width="100%" height="100%" />
     </Animated.View>
+  );
+
+  if (!onPress) return avatar;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+      onPress={onPress}
+      hitSlop={8}
+      style={{ width: width ?? size, height: height ?? size }}
+    >
+      {avatar}
+    </Pressable>
   );
 }

@@ -1,6 +1,6 @@
 import {
-  AvatarStateMachine,
   type AvatarState,
+  AvatarStateMachine,
 } from "./avatar-state-machine.js";
 
 export interface AvatarControllerOptions {
@@ -13,7 +13,9 @@ type Timer = ReturnType<typeof setTimeout>;
 export class AvatarController {
   private readonly machine: AvatarStateMachine;
   private readonly listeners = new Set<StateListener>();
-  private readonly timers = new Set<Timer>();
+  private readonly recoveryTimers = new Set<Timer>();
+  private blinkSchedulerTimer: Timer | null = null;
+  private doubleBlinkTimer: Timer | null = null;
   private autoBlink: boolean;
   private destroyed = false;
 
@@ -51,7 +53,8 @@ export class AvatarController {
     if (enabled && this.listeners.size > 0 && this.state === "idle") {
       this.startBlinkScheduler();
     } else if (!enabled) {
-      this.clearTimers();
+      this.clearBlinkScheduler();
+      this.clearDoubleBlink();
     }
   }
 
@@ -111,18 +114,20 @@ export class AvatarController {
       this.destroyed ||
       this.listeners.size === 0 ||
       this.state !== "idle" ||
-      this.timers.size > 0
+      this.blinkSchedulerTimer !== null
     ) {
       return;
     }
 
     const delay = 3000 + Math.random() * 4500;
-    this.schedule(() => {
+    this.blinkSchedulerTimer = setTimeout(() => {
+      this.blinkSchedulerTimer = null;
       if (this.state !== "idle") return;
       const doubleBlink = Math.random() < 0.25;
       this.blink();
       if (doubleBlink) {
-        this.schedule(() => {
+        this.doubleBlinkTimer = setTimeout(() => {
+          this.doubleBlinkTimer = null;
           if (this.state === "idle") this.blink();
         }, 320);
       }
@@ -131,14 +136,28 @@ export class AvatarController {
 
   private schedule(callback: () => void, delay: number): void {
     const timer = setTimeout(() => {
-      this.timers.delete(timer);
+      this.recoveryTimers.delete(timer);
       callback();
     }, delay);
-    this.timers.add(timer);
+    this.recoveryTimers.add(timer);
   }
 
   private clearTimers(): void {
-    for (const timer of this.timers) clearTimeout(timer);
-    this.timers.clear();
+    this.clearBlinkScheduler();
+    this.clearDoubleBlink();
+    for (const timer of this.recoveryTimers) clearTimeout(timer);
+    this.recoveryTimers.clear();
+  }
+
+  private clearBlinkScheduler(): void {
+    if (!this.blinkSchedulerTimer) return;
+    clearTimeout(this.blinkSchedulerTimer);
+    this.blinkSchedulerTimer = null;
+  }
+
+  private clearDoubleBlink(): void {
+    if (!this.doubleBlinkTimer) return;
+    clearTimeout(this.doubleBlinkTimer);
+    this.doubleBlinkTimer = null;
   }
 }

@@ -24,10 +24,16 @@ export const ar = {
   tab_behavior_ai: "السلوك والذكاء",
   tab_profile: "حسابي",
   digital_id_title: "الهوية الرقمية",
-  digital_id_context_required: "الهوية الرقمية متاحة للطالب أو لولي الأمر المرتبط بملف طالب.",
+  digital_id_context_required:
+    "الهوية الرقمية متاحة للطالب أو لولي الأمر المرتبط بملف طالب.",
   digital_id_privacy_notice:
     "اعرض هذه البطاقة عند الحاجة للتحقق من بيانات الطالب، ولا تشارك صورة منها علناً.",
   home_welcome: "مرحباً بعودتك",
+  home_greeting_morning: "صباح الخير",
+  home_greeting_afternoon: "نهارك سعيد",
+  home_greeting_evening: "مساء الخير",
+  home_avatar_change_hat: "تغيير قبعة أوربس",
+  home_avatar_hint: "انقر على أوربس لتبديل القبعة",
   home_parent_description: "تابع الأبناء وتفاصيل يومهم الدراسي من مكان واحد.",
   home_student_description: "تابع جدولك وواجباتك ونتائجك الدراسية بسهولة.",
   home_teacher_description: "أدر فصولك وتابع الحضور والدرجات بسرعة.",
@@ -41,6 +47,9 @@ export const ar = {
   home_no_dependents: "لا توجد ملفات أبناء مرتبطة بهذا الحساب حالياً.",
   home_classes: "فصولي",
   home_classes_error: "تعذر تحميل الفصول. تحقق من الاتصال ثم أعد المحاولة.",
+  home_student_load_error:
+    "تعذر تحميل بيانات الطالب. تحقق من الاتصال ثم أعد المحاولة.",
+  home_class_students_count: "{count} طالب",
   home_retry: "إعادة المحاولة",
   home_no_classes: "لا توجد فصول متاحة لهذا الحساب.",
   home_class_level: "المرحلة",
@@ -140,13 +149,16 @@ export const ar = {
   home_notifications_description: "تابع التنبيهات الأكاديمية والإدارية.",
   home_profile_description: "إدارة الحساب والتفضيلات.",
   visitor_title: "منصة أوربس التعليمية",
-  visitor_description: "استكشف الخدمات المتاحة للطلاب والأسر والمعلمين قبل تسجيل الدخول.",
+  visitor_description:
+    "استكشف الخدمات المتاحة للطلاب والأسر والمعلمين قبل تسجيل الدخول.",
   visitor_academic_title: "المتابعة الأكاديمية",
-  visitor_academic_description: "الدرجات والنتائج والجداول والحضور في مكان واحد.",
+  visitor_academic_description:
+    "الدرجات والنتائج والجداول والحضور في مكان واحد.",
   visitor_family_title: "خدمات الأسرة",
   visitor_family_description: "متابعة الأبناء والاطلاع على مستجداتهم المدرسية.",
   visitor_teacher_title: "أدوات المعلم",
-  visitor_teacher_description: "متابعة الفصول والطلاب وإدارة الأعمال الأكاديمية وفق الصلاحيات.",
+  visitor_teacher_description:
+    "متابعة الفصول والطلاب وإدارة الأعمال الأكاديمية وفق الصلاحيات.",
   visitor_sign_in: "تسجيل الدخول",
   visitor_register: "إنشاء حساب",
   visitor_explore: "استكشاف التطبيق كزائر",
@@ -247,7 +259,8 @@ export const ar = {
   profile_verified: "موثّق",
   profile_not_verified: "غير موثّق",
   profile_account_created: "تاريخ إنشاء الحساب",
-  profile_account_read_only: "هذه البيانات للعرض فقط. لتعديلها، تواصل مع إدارة المؤسسة.",
+  profile_account_read_only:
+    "هذه البيانات للعرض فقط. لتعديلها، تواصل مع إدارة المؤسسة.",
   profile_account_unavailable: "تعذر تحميل بيانات الحساب.",
   profile_logout_error: "تعذر تسجيل الخروج. حاول مرة أخرى.",
   profile_preference_save_error: "تعذر حفظ التفضيل. حاول مرة أخرى.",
@@ -292,11 +305,13 @@ export const ar = {
   profile_about_version: "إصدار التطبيق",
   profile_open_company_website: "زيارة موقع Mulverse",
   profile_organization_website: "موقع المؤسسة",
-  profile_organization_website_description: "زيارة الموقع الإلكتروني الرسمي للمؤسسة.",
+  profile_organization_website_description:
+    "زيارة الموقع الإلكتروني الرسمي للمؤسسة.",
   webviewer_invalid_url: "رابط الصفحة غير صالح أو غير آمن.",
   webviewer_load_error: "تعذر تحميل الصفحة. تحقق من اتصالك وحاول مجدداً.",
   webviewer_retry: "إعادة المحاولة",
-  security_description: "راجع الأجهزة التي استخدمت حسابك وألغِ الجلسات غير المعروفة.",
+  security_description:
+    "راجع الأجهزة التي استخدمت حسابك وألغِ الجلسات غير المعروفة.",
   security_mfa_title: "التحقق متعدد العوامل",
   security_mfa_enabled: "التحقق متعدد العوامل مفعّل لهذا الحساب.",
   security_mfa_disabled: "التحقق متعدد العوامل غير مفعّل لهذا الحساب.",
@@ -411,7 +426,8 @@ export const ar = {
   auth_forgot_subtitle: "أدخل بريدك الإلكتروني المسجل لإرسال رابط الاستعادة",
   auth_forgot_send_btn: "إرسال رابط الاستعادة",
   auth_forgot_success_title: "تم إرسال التعليمات",
-  auth_forgot_success_msg: "لقد قمنا بإرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+  auth_forgot_success_msg:
+    "لقد قمنا بإرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
   auth_back_to_sign_in: "العودة لتسجيل الدخول",
 
   // Security & Device Setup Flow (Reference 1)

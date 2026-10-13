@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onDestroy } from "svelte";
+import { createSubscriber } from "svelte/reactivity";
 import { AvatarController } from "../core/avatar-controller.js";
 import { getAvatarDrawing } from "../core/avatar-svg.js";
-import type { AvatarState } from "../core/avatar-state-machine.js";
 import { resolveAvatarHat, type AvatarHat } from "../core/types.js";
 import AvatarDrawing from "./avatar-drawing.svelte";
 
@@ -25,17 +25,19 @@ const {
 } = $props();
 
 const fallbackController = new AvatarController();
-let state = $state<AvatarState>("idle");
+const activeController = $derived(controller ?? fallbackController);
+const subscribeToState = createSubscriber((update) =>
+  activeController.subscribe(() => update()),
+);
+const state = $derived.by(() => {
+  subscribeToState();
+  return activeController.state;
+});
 const resolvedHat = $derived(resolveAvatarHat(hat));
 const drawing = $derived(getAvatarDrawing({ hat: resolvedHat, state }));
 
 $effect(() => {
-  const activeController = controller ?? fallbackController;
   if (!controller) fallbackController.setAutoBlink(autoBlink);
-  state = activeController.state;
-  return activeController.subscribe((nextState) => {
-    state = nextState;
-  });
 });
 
 onDestroy(() => fallbackController.destroy());

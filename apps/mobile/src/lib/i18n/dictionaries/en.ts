@@ -4,7 +4,7 @@
  * English canonical dictionary for Orbis Mobile.
  */
 
-import { TranslationKey } from "./ar";
+import type { TranslationKey } from "./ar";
 
 export const en: Record<TranslationKey, string> = {
   // Navigation & Tabs
@@ -31,9 +31,17 @@ export const en: Record<TranslationKey, string> = {
   digital_id_privacy_notice:
     "Show this card when student details need to be verified. Do not share screenshots publicly.",
   home_welcome: "Welcome back",
-  home_parent_description: "Keep up with your children's school day in one place.",
-  home_student_description: "Stay on top of your schedule, assignments, and grades.",
-  home_teacher_description: "Manage your classes and follow attendance and grades.",
+  home_greeting_morning: "Good morning",
+  home_greeting_afternoon: "Good afternoon",
+  home_greeting_evening: "Good evening",
+  home_avatar_change_hat: "Change Orbis's hat",
+  home_avatar_hint: "Tap Orbis to change the hat",
+  home_parent_description:
+    "Keep up with your children's school day in one place.",
+  home_student_description:
+    "Stay on top of your schedule, assignments, and grades.",
+  home_teacher_description:
+    "Manage your classes and follow attendance and grades.",
   home_child_omar: "Omar",
   home_child_lina: "Lina",
   home_class_seven_math: "Grade 7 · Math",
@@ -43,7 +51,11 @@ export const en: Record<TranslationKey, string> = {
   home_dependents: "Linked children",
   home_no_dependents: "No child profiles are currently linked to this account.",
   home_classes: "My classes",
-  home_classes_error: "Could not load classes. Check your connection and try again.",
+  home_classes_error:
+    "Could not load classes. Check your connection and try again.",
+  home_student_load_error:
+    "Could not load student details. Check your connection and try again.",
+  home_class_students_count: "{count} students",
   home_retry: "Try again",
   home_no_classes: "No classes are available for this account.",
   home_class_level: "Level",
@@ -113,7 +125,8 @@ export const en: Record<TranslationKey, string> = {
   student_fee_cancelled: "Cancelled",
   student_fee_refunded: "Refunded",
   student_no_grades: "No grades have been recorded for this student yet.",
-  student_no_attendance: "No attendance records are available for this student yet.",
+  student_no_attendance:
+    "No attendance records are available for this student yet.",
   student_no_schedule: "No class schedule is available for this student yet.",
   student_grade_date: "Recorded",
   student_grade_score: "Score",
@@ -136,20 +149,26 @@ export const en: Record<TranslationKey, string> = {
   behavior_record_merit: "Positive point",
   behavior_record_violation: "Behavior note",
   behavior_record_other: "Behavior record",
-  notifications_inbox_unavailable_title: "In-app notifications are not available yet",
+  notifications_inbox_unavailable_title:
+    "In-app notifications are not available yet",
   notifications_inbox_unavailable_description:
     "The app does not currently provide an in-app notification history. Your institution may still deliver alerts through its configured channels.",
   home_notifications: "Notifications",
-  home_notifications_description: "Keep up with academic and administrative updates.",
+  home_notifications_description:
+    "Keep up with academic and administrative updates.",
   home_profile_description: "Manage your account and preferences.",
   visitor_title: "Orbis Education Platform",
-  visitor_description: "Explore services for students, families, and teachers before signing in.",
+  visitor_description:
+    "Explore services for students, families, and teachers before signing in.",
   visitor_academic_title: "Academic progress",
-  visitor_academic_description: "Grades, results, schedules, and attendance in one place.",
+  visitor_academic_description:
+    "Grades, results, schedules, and attendance in one place.",
   visitor_family_title: "Family services",
-  visitor_family_description: "Follow your children's school progress and updates.",
+  visitor_family_description:
+    "Follow your children's school progress and updates.",
   visitor_teacher_title: "Teacher tools",
-  visitor_teacher_description: "Follow classes and students and manage academic work according to your permissions.",
+  visitor_teacher_description:
+    "Follow classes and students and manage academic work according to your permissions.",
   visitor_sign_in: "Sign in",
   visitor_register: "Create account",
   visitor_explore: "Explore as a visitor",
@@ -239,7 +258,8 @@ export const en: Record<TranslationKey, string> = {
   profile_menu_linked: "Linked Accounts",
   profile_menu_preferences: "Preferences & Notifications",
   profile_account_description: "View account details, role, and status.",
-  profile_security_description: "Manage active sessions and registered devices.",
+  profile_security_description:
+    "Manage active sessions and registered devices.",
   profile_preferences_description: "Update the app language and appearance.",
   profile_phone: "Phone Number",
   profile_email: "Email Address",
@@ -255,7 +275,8 @@ export const en: Record<TranslationKey, string> = {
     "These details are read-only. Contact your institution to request changes.",
   profile_account_unavailable: "Could not load account information.",
   profile_logout_error: "Could not sign out. Please try again.",
-  profile_preference_save_error: "Could not save this preference. Please try again.",
+  profile_preference_save_error:
+    "Could not save this preference. Please try again.",
   profile_theme_load_error: "Could not load the saved app appearance.",
   profile_branch: "Branch / School",
   profile_settings: "Settings & Preferences",
@@ -284,9 +305,11 @@ export const en: Record<TranslationKey, string> = {
   support_subject_placeholder: "Enter a short subject",
   support_contact_email: "Contact email (optional)",
   support_details_label: "Description and details *",
-  support_details_placeholder: "Describe what happened and the steps you took...",
+  support_details_placeholder:
+    "Describe what happened and the steps you took...",
   support_required_fields: "Enter a subject and details to continue.",
-  support_invalid_email: "Enter a valid email address or leave this field empty.",
+  support_invalid_email:
+    "Enter a valid email address or leave this field empty.",
   support_diagnostics_label: "App and device information",
   support_send_report: "Open email to support",
   support_mail_review_note:
@@ -297,19 +320,24 @@ export const en: Record<TranslationKey, string> = {
   profile_about_version: "App version",
   profile_open_company_website: "Visit Mulverse website",
   profile_organization_website: "Organization website",
-  profile_organization_website_description: "Visit your organization's official website.",
+  profile_organization_website_description:
+    "Visit your organization's official website.",
   webviewer_invalid_url: "This page link is invalid or unsafe.",
-  webviewer_load_error: "Could not load this page. Check your connection and try again.",
+  webviewer_load_error:
+    "Could not load this page. Check your connection and try again.",
   webviewer_retry: "Try again",
   security_description:
     "Review devices that have accessed your account and revoke unfamiliar sessions.",
   security_mfa_title: "Multi-factor authentication",
-  security_mfa_enabled: "Multi-factor authentication is enabled for this account.",
-  security_mfa_disabled: "Multi-factor authentication is not enabled for this account.",
+  security_mfa_enabled:
+    "Multi-factor authentication is enabled for this account.",
+  security_mfa_disabled:
+    "Multi-factor authentication is not enabled for this account.",
   security_mfa_management_note:
     "Multi-factor authentication settings are currently managed by your institution administrator.",
   security_devices_title: "Devices and sessions",
-  security_devices_error: "Could not load devices associated with this account.",
+  security_devices_error:
+    "Could not load devices associated with this account.",
   security_no_devices: "There are no registered devices for this account.",
   security_last_active: "Last active",
   security_device_trusted: "Trusted device",
@@ -347,13 +375,17 @@ export const en: Record<TranslationKey, string> = {
   updates_app_version: "Installed version",
   updates_check_button: "Check for a new version",
   updates_checking: "Checking for updates...",
-  updates_none_available: "The app is up to date. No new updates are available.",
+  updates_none_available:
+    "The app is up to date. No new updates are available.",
   updates_not_configured:
     "Update checks are not enabled for this build. Configure EAS and create a new build.",
-  updates_check_error: "Could not check for updates. Check your connection and try again.",
-  updates_download_error: "Could not download the update. Check your connection and try again.",
+  updates_check_error:
+    "Could not check for updates. Check your connection and try again.",
+  updates_download_error:
+    "Could not download the update. Check your connection and try again.",
   updates_available_title: "An update is available",
-  updates_available_message: "The update was downloaded. Restart the app to apply it.",
+  updates_available_message:
+    "The update was downloaded. Restart the app to apply it.",
   updates_restart_now: "Restart now",
   updates_install_error: "Could not restart the app to apply the update.",
 
@@ -418,10 +450,12 @@ export const en: Record<TranslationKey, string> = {
 
   // Forgot Password
   auth_forgot_title: "Reset Password",
-  auth_forgot_subtitle: "Enter your email to receive password reset instructions",
+  auth_forgot_subtitle:
+    "Enter your email to receive password reset instructions",
   auth_forgot_send_btn: "Send Recovery Link",
   auth_forgot_success_title: "Instructions Sent",
-  auth_forgot_success_msg: "We have sent password reset instructions to your email address.",
+  auth_forgot_success_msg:
+    "We have sent password reset instructions to your email address.",
   auth_back_to_sign_in: "Back to Sign In",
 
   // Security & Device Setup Flow (Reference 1)
@@ -477,7 +511,8 @@ export const en: Record<TranslationKey, string> = {
 
   // Academic & Student Record
   exams_scheduled: "Scheduled Exams",
-  student_no_exams_description: "No upcoming or scheduled exams found for this student.",
+  student_no_exams_description:
+    "No upcoming or scheduled exams found for this student.",
   classroom_label: "Room {room}",
   academic_average_label: "Academic Average",
   assessments_count: "Assessments",
