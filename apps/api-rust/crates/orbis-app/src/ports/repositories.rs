@@ -389,7 +389,7 @@ pub trait EnrollmentRepository: Send + Sync {
         filter: EnrollmentFilter,
     ) -> Result<PaginatedList<Enrollment>, DomainError>;
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
-    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
+    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Enrollment>, DomainError>;
     async fn save(&self, enrollment: &Enrollment) -> Result<(), DomainError>;
     async fn save_batch(&self, enrollments: &[Enrollment]) -> Result<(), DomainError>;
@@ -447,14 +447,14 @@ pub trait SubjectRepository: Send + Sync {
 }
 
 #[async_trait]
-pub trait ClassRepository: Send + Sync {
+pub trait SectionRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Section>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Section>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Section>, DomainError>;
     async fn list(
         &self,
         org_id: Uuid,
-        filter: orbis_domain::queries::filters::ClassFilter,
+        filter: orbis_domain::queries::filters::SectionFilter,
     ) -> Result<PaginatedList<Section>, DomainError>;
     async fn save(&self, section: &Section) -> Result<(), DomainError>;
 }
@@ -462,8 +462,8 @@ pub trait ClassRepository: Send + Sync {
 #[async_trait]
 pub trait SectionSubjectRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<SectionSubject>, DomainError>;
-    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<SectionSubject>, DomainError>;
-    async fn find_by_class_and_period(
+    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<SectionSubject>, DomainError>;
+    async fn find_by_section_and_period(
         &self,
         section_id: Uuid,
         period_id: Uuid,
@@ -536,7 +536,7 @@ pub trait GradeRepository: Send + Sync {
 #[async_trait]
 pub trait AttendanceRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Attendance>, DomainError>;
-    async fn find_by_class_and_date(
+    async fn find_by_section_and_date(
         &self,
         section_id: Uuid,
         date: NaiveDate,
@@ -586,7 +586,7 @@ pub trait TimeSlotRepository: Send + Sync {
 #[async_trait]
 pub trait ScheduledLessonRepository: Send + Sync {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ScheduledLesson>, DomainError>;
-    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
+    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_teacher(&self, teacher_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_section_subject(
         &self,

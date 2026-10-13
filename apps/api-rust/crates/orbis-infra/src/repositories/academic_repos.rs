@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::{ClassRepository, SectionSubjectRepository, SubjectRepository};
+use orbis_app::ports::repositories::{SectionRepository, SectionSubjectRepository, SubjectRepository};
 use orbis_domain::entities::section::Section as DomainSection;
 use orbis_domain::entities::section_subject::SectionSubject as DomainSectionSubject;
 use orbis_domain::entities::subject::Subject as DomainSubject;
