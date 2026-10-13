@@ -318,7 +318,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
     AttendanceDto {
         id: a.id.to_string(),
         student_id: a.student_id.to_string(),
-        class_id: a.class_id.map(|c| c.to_string()),
+        class_id: a.section_id.map(|c| c.to_string()),
         section_subject_id: a.section_subject_id.map(|c| c.to_string()),
         scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
         date: a.attendance_date.to_string(),

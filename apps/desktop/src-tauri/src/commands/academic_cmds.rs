@@ -115,7 +115,7 @@ fn subject_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
         name: s.name,
         name_ar: s.name_ar,
         description: s.description,
-        credit_hours: s.credit_hours,
+        credit_hours: s.credit_units,
         is_core: s.is_core,
         is_elective: s.is_elective,
         is_active: s.is_active,
@@ -124,20 +124,20 @@ fn subject_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
     }
 }
 
-fn class_dto(c: orbis_domain::entities::class::Class) -> ClassDto {
+fn class_dto(c: orbis_domain::entities::section::Section) -> ClassDto {
     ClassDto {
         id: c.id.to_string(),
         org_id: c.org_id.to_string(),
-        unit_id: c.unit_id.to_string(),
-        period_id: c.period_id.to_string(),
+        unit_id: c.org_unit_id.map(|u| u.to_string()).unwrap_or_default(),
+        period_id: String::new(),
         name: c.name,
         name_ar: c.name_ar,
-        level: c.level,
-        division: c.division,
-        homeroom_teacher_id: c.homeroom_teacher_id.map(|h| h.to_string()),
+        level: c.level.unwrap_or_default(),
+        division: c.track,
+        homeroom_teacher_id: None,
         capacity: c.capacity,
-        current_students: c.current_students,
-        room_id: c.room_id.map(|r| r.to_string()),
+        current_students: None,
+        room_id: None,
         color: c.color,
         is_active: c.is_active,
         created_at: c.created_at.to_rfc3339(),
@@ -148,14 +148,14 @@ fn class_dto(c: orbis_domain::entities::class::Class) -> ClassDto {
 fn section_subject_dto(cs: orbis_domain::entities::section_subject::SectionSubject) -> SectionSubjectDto {
     SectionSubjectDto {
         id: cs.id.to_string(),
-        class_id: cs.class_id.to_string(),
+        class_id: cs.section_id.to_string(),
         subject_id: cs.subject_id.to_string(),
         period_id: cs.period_id.to_string(),
-        primary_teacher_id: cs.primary_teacher_id.to_string(),
+        primary_teacher_id: cs.instructor_id.map(|t| t.to_string()).unwrap_or_default(),
         weekly_hours: cs.weekly_hours,
         is_active: cs.is_active,
-        created_at: cs.created_at.to_rfc3339(),
-        updated_at: cs.updated_at.to_rfc3339(),
+        created_at: cs.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
+        updated_at: cs.updated_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
     }
 }
 
@@ -305,7 +305,7 @@ pub async fn academic_list_section_subjects(
     let cid = Uuid::parse_str(&class_id).map_err(|_| "Invalid class ID")?;
     let pid = Uuid::parse_str(&period_id).map_err(|_| "Invalid period ID")?;
     let filter = SectionSubjectFilter {
-        class_id: Some(cid),
+        section_id: Some(cid),
         period_id: Some(pid),
         ..Default::default()
     };

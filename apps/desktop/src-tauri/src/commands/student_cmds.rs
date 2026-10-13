@@ -156,7 +156,7 @@ pub fn enrollment_to_dto(e: Enrollment) -> EnrollmentDto {
     EnrollmentDto {
         id: e.id.to_string(),
         student_id: e.student_id.to_string(),
-        class_id: e.class_id.map(|c| c.to_string()),
+        class_id: e.section_id.map(|c| c.to_string()),
         period_id: e.period_id.to_string(),
         org_id: e.org_id.to_string(),
         student_number: e.student_number,
@@ -470,7 +470,7 @@ pub async fn student_register_student(
         address: request.address,
         avatar_url: request.avatar_url,
         initial_period_id,
-        initial_class_id,
+        initial_section_id: initial_class_id,
         study_mode,
         bypass_capacity_check: None,
     };
@@ -493,7 +493,7 @@ pub async fn student_list_students(
     let f = filter.unwrap_or_default();
     let domain_filter = StudentFilter {
         period_id: f.period_id.and_then(|s| Uuid::parse_str(&s).ok()),
-        class_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
+        section_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
         status: f.status.as_deref().and_then(parse_student_status),
         standing: f.standing.as_deref().and_then(parse_academic_standing),
         search: f.search.filter(|s| !s.trim().is_empty()),
@@ -675,7 +675,7 @@ pub async fn student_list_enrollments(
     let f = filter.unwrap_or_default();
     let domain_filter = EnrollmentFilter {
         period_id: f.period_id.and_then(|s| Uuid::parse_str(&s).ok()),
-        class_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
+        section_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
         student_id: f.student_id.and_then(|s| Uuid::parse_str(&s).ok()),
         study_mode: f.study_mode.as_deref().map(|s| parse_study_mode(Some(s))),
         status: f.status.as_deref().and_then(parse_enrollment_status),
@@ -911,7 +911,7 @@ pub async fn student_bulk_register(
                 .initial_period_id
                 .as_deref()
                 .and_then(|id| Uuid::parse_str(id).ok()),
-            initial_class_id: item
+            initial_section_id: item
                 .registration
                 .initial_class_id
                 .as_deref()

@@ -108,8 +108,8 @@ pub async fn progression_promote_cohort(
         items.push(StudentProgressionItem {
             student_id,
             enrollment_id,
-            source_class_id,
-            target_class_id,
+            source_section_id: source_class_id,
+            target_section_id: target_class_id,
             decision: parse_decision(&item.decision),
             reason: item.reason,
         });
@@ -149,8 +149,8 @@ pub async fn progression_evaluate_cohort(
         .map(|i| StudentProgressionItemInput {
             student_id: i.student_id.to_string(),
             enrollment_id: i.enrollment_id.to_string(),
-            source_class_id: i.source_class_id.map(|c| c.to_string()),
-            target_class_id: i.target_class_id.map(|c| c.to_string()),
+            source_class_id: i.source_section_id.map(|c| c.to_string()),
+            target_class_id: i.target_section_id.map(|c| c.to_string()),
             decision: i.decision.to_string(),
             reason: i.reason,
         })

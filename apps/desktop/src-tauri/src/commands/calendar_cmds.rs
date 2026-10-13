@@ -98,11 +98,11 @@ pub struct AcademicContextResponse {
 #[derive(Serialize)]
 pub struct PeriodTypeDto {
     pub id: String,
+    pub org_id: String,
+    pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
-    pub institution_type: String,
-    pub structure: serde_json::Value,
-    pub is_default: bool,
+    pub sort_order: i32,
 }
 
 fn year_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> AcademicCalendarDto {
@@ -115,7 +115,7 @@ fn year_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> A
         start_date: y.start_date.to_rfc3339(),
         end_date: y.end_date.to_rfc3339(),
         is_active,
-        status: y.status,
+        status: y.status.to_string(),
         current_period_id: y.current_period_id.map(|u| u.to_string()),
         notes: y.notes,
         created_at: y.created_at.to_rfc3339(),
@@ -525,11 +525,11 @@ pub async fn calendar_list_period_types(
         .into_iter()
         .map(|t| PeriodTypeDto {
             id: t.id.to_string(),
+            org_id: t.org_id.to_string(),
+            code: t.code,
             name: t.name,
             name_ar: t.name_ar,
-            institution_type: t.institution_type,
-            structure: t.structure,
-            is_default: t.is_default,
+            sort_order: t.sort_order,
         })
         .collect();
     Ok(ok(dtos))
