@@ -26,8 +26,18 @@ export const en: Record<TranslationKey, string> = {
   tab_behavior_ai: "Behavior & AI",
   tab_profile: "My Account",
   digital_id_title: "Digital ID",
+  digital_id_close: "Close",
   digital_id_context_required:
     "The digital ID is available to a student or a guardian linked to a student profile.",
+  digital_id_student_error: "Student details could not be loaded.",
+  digital_id_template_error:
+    "The organization ID template could not be loaded.",
+  digital_id_template_missing:
+    "The organization has not published a digital ID template.",
+  digital_id_template_invalid: "The digital ID template cannot be displayed.",
+  digital_id_assets_error: "A digital ID template asset could not be loaded.",
+  digital_id_unsupported_elements:
+    "Some elements in this template may not appear in the mobile preview.",
   digital_id_privacy_notice:
     "Show this card when student details need to be verified. Do not share screenshots publicly.",
   home_welcome: "Welcome back",

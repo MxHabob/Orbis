@@ -6,19 +6,18 @@
  */
 
 import type {
-  ValidationResultDto,
-  ValidationIssueDto,
   IntegrationDto,
+  ValidationIssueDto,
+  ValidationResultDto,
 } from "@orbis/sdk";
 
 export type {
   AcademicContextResponse,
   AttendanceDto,
-  BehaviorRecordDto,
   BatchMarkAttendanceRequest,
   BatchRecordGradesRequest,
+  BehaviorRecordDto,
   ClassDto,
-  SectionSubjectDto,
   DashboardCountsDto,
   EnrollmentDto,
   ExamScheduleDto,
@@ -26,17 +25,19 @@ export type {
   GradeDto,
   GuardianDto,
   MarkAttendanceRequest,
-  OrgDto,
   OrganizationSettingsDto,
-  RecordGradeRequest,
+  OrgDto,
   RecordGradeItemRequest,
+  RecordGradeRequest,
   ScheduledLessonDto,
-  StudentFeeDto,
+  SectionSubjectDto,
   StudentDto,
+  StudentFeeDto,
   SubjectDto,
+  TemplateDto,
   TimeSlotDto,
-  UserDto,
   UserDeviceDto,
+  UserDto,
 } from "@orbis/sdk";
 
 export type ValidationResult = ValidationResultDto;

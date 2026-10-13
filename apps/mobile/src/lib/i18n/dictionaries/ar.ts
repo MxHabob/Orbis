@@ -24,8 +24,16 @@ export const ar = {
   tab_behavior_ai: "السلوك والذكاء",
   tab_profile: "حسابي",
   digital_id_title: "الهوية الرقمية",
+  digital_id_close: "إغلاق",
   digital_id_context_required:
     "الهوية الرقمية متاحة للطالب أو لولي الأمر المرتبط بملف طالب.",
+  digital_id_student_error: "تعذر تحميل بيانات الطالب.",
+  digital_id_template_error: "تعذر تحميل قالب الهوية من المؤسسة.",
+  digital_id_template_missing: "لم توفر المؤسسة قالب هوية رقمية منشوراً.",
+  digital_id_template_invalid: "قالب الهوية الرقمية غير صالح للعرض.",
+  digital_id_assets_error: "تعذر تحميل أحد عناصر قالب الهوية.",
+  digital_id_unsupported_elements:
+    "قد لا تظهر بعض عناصر القالب في معاينة الهاتف.",
   digital_id_privacy_notice:
     "اعرض هذه البطاقة عند الحاجة للتحقق من بيانات الطالب، ولا تشارك صورة منها علناً.",
   home_welcome: "مرحباً بعودتك",
