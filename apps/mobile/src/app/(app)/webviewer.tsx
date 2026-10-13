@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
-import { Header } from "@/components/header";
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { Screen } from "@/components/layout/screen";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
@@ -18,6 +19,7 @@ function getParam(value: string | string[] | undefined): string | undefined {
 
 export default function WebViewerScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t } = useI18n();
   const params = useLocalSearchParams<{
@@ -27,6 +29,7 @@ export default function WebViewerScreen() {
   }>();
   const [retryKey, setRetryKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [loadFailed, setLoadFailed] = useState(false);
 
   const page = getParam(params.page);
@@ -68,15 +71,27 @@ export default function WebViewerScreen() {
             source={{ uri: url }}
             onLoadStart={() => {
               setIsLoading(true);
+              setLoadProgress(0.05);
               setLoadFailed(false);
             }}
-            onLoadEnd={() => setIsLoading(false)}
+            onLoadProgress={({ nativeEvent }) => {
+              setLoadProgress(nativeEvent.progress);
+            }}
+            onLoadEnd={() => {
+              setLoadProgress(1);
+              setIsLoading(false);
+            }}
             onError={() => {
               setIsLoading(false);
+              setLoadProgress(0);
               setLoadFailed(true);
             }}
             onHttpError={(event) => {
-              if (event.nativeEvent.statusCode >= 400) setLoadFailed(true);
+              if (event.nativeEvent.statusCode >= 400) {
+                setIsLoading(false);
+                setLoadProgress(0);
+                setLoadFailed(true);
+              }
             }}
             onShouldStartLoadWithRequest={(request) =>
               normalizeWebUrl(request.url) !== null
@@ -84,6 +99,30 @@ export default function WebViewerScreen() {
             className="flex-1 bg-background"
             style={{ backgroundColor: theme.background }}
           />
+          {isLoading && !loadFailed ? (
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              pointerEvents="none"
+              style={[
+                styles.progressTrack,
+                {
+                  top: insets.top + HEADER_CONTENT_OFFSET - 2,
+                  backgroundColor: theme.borderSubtle,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${Math.max(loadProgress, 0.04) * 100}%`,
+                    backgroundColor: theme.info,
+                  },
+                ]}
+              />
+            </View>
+          ) : null}
           {isLoading && !loadFailed ? (
             <View className="absolute inset-0 items-center justify-center bg-background">
               <ActivityIndicator size="large" color={theme.primary} />
@@ -117,3 +156,17 @@ export default function WebViewerScreen() {
     </Screen>
   );
 }
+
+const styles = {
+  progressTrack: {
+    position: "absolute" as const,
+    left: 0,
+    right: 0,
+    height: 2,
+    zIndex: 101,
+    overflow: "hidden" as const,
+  },
+  progressFill: {
+    height: "100%" as const,
+  },
+};

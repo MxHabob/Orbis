@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { SupportDrawer } from "@/components/support-drawer";
 import { Avatar } from "@/components/ui/avatar";
@@ -190,10 +191,16 @@ export default function ProfileScreen() {
 
   return (
     <>
+      <Header
+        title={t("profile_settings_title")}
+        showBack
+        onBack={() => router.back()}
+      />
       <ScreenScrollView
         edges={["top", "bottom", "left", "right"]}
+        contentContainerStyle={{ paddingTop: HEADER_CONTENT_OFFSET }}
         scrollViewProps={{
-          contentContainerClassName: "gap-six px-four pb-eight pt-four",
+          contentContainerClassName: "gap-six px-four pb-eight",
         }}
       >
       <Card variant="default" padding="none">

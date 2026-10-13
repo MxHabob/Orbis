@@ -29,6 +29,7 @@ export default function TabsLayout() {
             title={t(
               route.name === "behavior" ? "tab_behavior_ai" : "tab_home",
             )}
+            showCrown
           />
         ),
         tabBarShowLabel: false,

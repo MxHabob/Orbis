@@ -5,21 +5,28 @@
  *
  * Orbis screen header.
  *
- * A left floating control (back / profile), an optional centered floating
- * title pill, and a right floating control (custom action / crown).
+ * A minimal safe-area-aware bar with a centered title and optional circular
+ * actions. The container itself is transparent so content can scroll beneath.
  */
 
-import { ChevronLeft, ChevronRight, User, AppNotification } from "@orbis/icons/native";
+import {
+  AppNotification,
+  ChevronLeft,
+  ChevronRight,
+  User,
+} from "@orbis/icons/native";
 import { useRouter } from "expo-router";
+import {
+  GlassView,
+  isLiquidGlassAvailable,
+} from "expo-glass-effect";
 import React from "react";
 import {
-  Animated,
-  Easing,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
@@ -27,7 +34,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 
-export const HEADER_CONTENT_OFFSET = 64;
+export const HEADER_CONTENT_OFFSET = 36;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -86,7 +93,7 @@ export function Header({
   largeTitle = false,
 
   showTitle = true,
-  showCrown = true,
+  showCrown = false,
 
   style,
   children,
@@ -95,52 +102,15 @@ export function Header({
   const router = useRouter();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const { t, isArabic } = useI18n();
+  const useNativeGlass =
+    Platform.OS === "ios" && isLiquidGlassAvailable();
 
-  const sideSize = 48;
-  const titleWidth = Math.min(Math.max(width * 0.42, 128), 160);
+  const sideSize = 44;
   const headerHeight =
     insets.top +
     HEADER_CONTENT_OFFSET +
     (largeTitle && title ? 58 : 0);
-
-  const marqueeX = React.useRef(new Animated.Value(0)).current;
-  const estimatedTitleWidth = Math.max((title?.length ?? 0) * 8.6, 0);
-  const shouldAnimateTitle = Boolean(title) && estimatedTitleWidth > titleWidth;
-
-  React.useEffect(() => {
-    if (!shouldAnimateTitle) {
-      marqueeX.stopAnimation();
-      marqueeX.setValue(0);
-      return;
-    }
-
-    const distance = Math.max(estimatedTitleWidth - titleWidth + 18, 20);
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(marqueeX, {
-          toValue: -distance,
-          duration: 3800 + distance * 14,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-        Animated.delay(800),
-        Animated.timing(marqueeX, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-
-    return () => {
-      animation.stop();
-    };
-  }, [estimatedTitleWidth, marqueeX, shouldAnimateTitle, titleWidth]);
 
   const handleBack = () => {
     if (onBack) {
@@ -174,24 +144,20 @@ export function Header({
   return (
     <View
       pointerEvents="box-none"
-      className="w-full bg-transparent"
+      className="w-full bg-background"
       style={[
         {
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: headerHeight,
-          paddingTop: insets.top + 8,
+          position: "relative",
+          paddingTop: insets.top + 4,
           paddingHorizontal: 16,
-          zIndex: 100,
+          paddingBottom: 4,
         },
         style,
       ]}
     >
       <View
         pointerEvents="box-none"
-        className="min-h-12 w-full flex-row items-center justify-between gap-2"
+        className="min-h-11 w-full flex-row items-center justify-between"
       >
         {/* LEFT */}
         <View
@@ -212,14 +178,41 @@ export function Header({
                 {
                   width: sideSize,
                   height: sideSize,
+                  minWidth: sideSize,
+                  minHeight: sideSize,
                   flexShrink: 0,
-                  borderRadius: 9999,
-                  backgroundColor: theme.cardElevated,
+                  aspectRatio: 1,
+                  borderRadius: sideSize / 2,
+                  overflow: "hidden",
                 },
                 pressed && styles.pressed,
               ]}
-              className="items-center justify-center"
             >
+              {showBack && useNativeGlass ? (
+                <GlassView
+                  pointerEvents="none"
+                  glassEffectStyle="regular"
+                  tintColor={theme.cardElevated}
+                  style={[
+                    StyleSheet.absoluteFill,
+                    styles.glassSurface,
+                    { borderColor: theme.cardBorder },
+                  ]}
+                />
+              ) : showBack ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    StyleSheet.absoluteFill,
+                    styles.glassSurface,
+                    {
+                      backgroundColor: theme.cardElevated,
+                      borderColor: theme.cardBorder,
+                      opacity: 0.76,
+                    },
+                  ]}
+                />
+              ) : null}
               {showBack ? (
                 isArabic ? (
                   <ChevronRight
@@ -245,52 +238,31 @@ export function Header({
         {/* CENTER — PAGE TITLE */}
         <View
           pointerEvents="none"
-          className="mx-three h-12 flex-1 items-center justify-center"
+          style={[
+            styles.titleContainer,
+            { top: insets.top + 4, height: sideSize },
+          ]}
         >
           {showTitle && title && !largeTitle ? (
-            <View
-              className="h-11 items-center justify-center overflow-hidden rounded-full px-3"
-              style={[
-                styles.floatingSurface,
-                {
-                  width: titleWidth,
-                  backgroundColor: theme.cardElevated,
-                  borderWidth: StyleSheet.hairlineWidth,
-                  borderColor: theme.cardBorder,
-                },
-              ]}
-            >
-              <View className="max-w-full items-center justify-center overflow-hidden">
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    {
-                      width: shouldAnimateTitle ? estimatedTitleWidth + 28 : "100%",
-                      transform: [{ translateX: shouldAnimateTitle ? marqueeX : 0 }],
-                    },
-                  ]}
+            <View className="max-w-full items-center justify-center">
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className="text-center font-semibold"
+                style={[styles.pageTitle, { color: theme.foreground }]}
+              >
+                {title}
+              </Text>
+              {subtitle ? (
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  className="text-center"
+                  style={[styles.pageSubtitle, { color: theme.mutedForeground }]}
                 >
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    className="text-center font-semibold"
-                    style={{ color: theme.foreground }}
-                  >
-                    {title}
-                  </Text>
-                </Animated.View>
-
-                {subtitle ? (
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    className="mt-px text-center"
-                    style={{ color: theme.mutedForeground }}
-                  >
-                    {subtitle}
-                  </Text>
-                ) : null}
-              </View>
+                  {subtitle}
+                </Text>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -315,7 +287,7 @@ export function Header({
                   width: sideSize,
                   height: sideSize,
                   flexShrink: 0,
-                  borderRadius: 9999,
+                  borderRadius: sideSize / 2,
                   backgroundColor: theme.cardElevated,
                 },
                 pressed && styles.pressed,
@@ -369,14 +341,30 @@ export function Header({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
+  glassSurface: {
+    borderRadius: 9999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   floatingSurface: {
     alignItems: "center",
     justifyContent: "center",
-    elevation: 4,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
+  },
+  titleContainer: {
+    position: "absolute",
+    left: 56,
+    right: 56,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageTitle: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: "700",
+    maxWidth: "100%",
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   pressed: {
     transform: [{ scale: 0.96 }],

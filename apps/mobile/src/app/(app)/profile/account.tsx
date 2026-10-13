@@ -40,7 +40,10 @@ export default function AccountScreen() {
           showBack
           onBack={() => router.back()}
         />
-        <View className="flex-1 items-center justify-center p-four">
+        <View
+          className="flex-1 items-center justify-center p-four"
+          style={{ paddingTop: insets.top + HEADER_CONTENT_OFFSET }}
+        >
           <EmptyState
             title={t("common_error")}
             description={t("profile_account_unavailable")}
