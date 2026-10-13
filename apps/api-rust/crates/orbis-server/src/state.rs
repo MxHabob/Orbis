@@ -7,7 +7,7 @@ use orbis_app::ports::reporting::{
 use orbis_app::ports::repositories::{
     AcademicCalendarRepository, AcademicFrameworkRepository, AcademicPeriodRepository,
     AccountRepository, AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
-    ClassRepository, SectionSubjectRepository, CurrencyRepository, DashboardRepository,
+    SectionRepository, SectionSubjectRepository, CurrencyRepository, DashboardRepository,
     DocumentRepository, EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository,
     ExamSessionRepository, FeeTemplateRepository, GradeRepository, IntegrationRepository,
     JournalEntryRepository, OrgUnitRepository, OrganizationRepository, PaymentRepository,
@@ -35,7 +35,7 @@ pub struct AppState {
     pub period_type_repo: Arc<dyn PeriodTypeRepository>,
     pub academic_framework_repo: Arc<dyn AcademicFrameworkRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
-    pub class_repo: Arc<dyn ClassRepository>,
+    pub section_repo: Arc<dyn SectionRepository>,
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
     pub student_repo: Arc<dyn orbis_app::ports::repositories::StudentRepository>,

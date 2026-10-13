@@ -770,7 +770,7 @@ pub async fn list_enrollments(
     Query(q): Query<EnrollmentQuery>,
 ) -> Result<Json<ApiResponse<Vec<EnrollmentDto>>>, ApiError> {
     let enrollments = if let Some(class_id) = q.section_id {
-        state.enrollment_repo.find_by_class(class_id).await?
+        state.enrollment_repo.find_by_section(class_id).await?
     } else if let Some(student_id) = q.student_id {
         state.enrollment_repo.find_by_student(student_id).await?
     } else {

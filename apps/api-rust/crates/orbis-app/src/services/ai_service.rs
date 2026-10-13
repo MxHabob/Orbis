@@ -151,7 +151,7 @@ impl AiOrchestrationService {
             };
             let class = self
                 .academic_service
-                .class_repo
+                .section_repo
                 .find_by_id(class_id)
                 .await?;
             let Some(_class) = class.filter(|class| class.org_id == ctx.tenant_id) else {
@@ -225,7 +225,7 @@ impl AiOrchestrationService {
         for assignment in assignments.items {
             let Some(class) = self
                 .academic_service
-                .class_repo
+                .section_repo
                 .find_by_id(assignment.section_id)
                 .await?
             else {
@@ -264,7 +264,7 @@ impl AiOrchestrationService {
     ) -> Result<(), DomainError> {
         let class = self
             .academic_service
-            .class_repo
+            .section_repo
             .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
@@ -333,7 +333,7 @@ impl AiOrchestrationService {
         } else {
             self.academic_service
                 .section_subject_repo
-                .find_by_class(section_id)
+                .find_by_section(section_id)
                 .await?
                 .into_iter()
                 .filter(|assignment| {
@@ -344,7 +344,7 @@ impl AiOrchestrationService {
         };
         let _class = self
             .academic_service
-            .class_repo
+            .section_repo
             .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
@@ -885,7 +885,7 @@ impl AiOrchestrationService {
         if let Some(cid) = actx.section_id {
             let class = self
                 .academic_service
-                .class_repo
+                .section_repo
                 .find_by_id(cid)
                 .await?
                 .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;

@@ -872,7 +872,7 @@ pub async fn assessment_list_attendance(
         .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
     let items = state
         .attendance_repo
-        .find_by_class_and_date(cid, parsed_date)
+        .find_by_section_and_date(cid, parsed_date)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(attendance_to_dto).collect()))

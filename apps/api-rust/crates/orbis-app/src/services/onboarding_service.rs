@@ -39,7 +39,7 @@ use orbis_domain::entities::time_slot::TimeSlot;
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    ClassFilter, SectionSubjectFilter, PaginationParams, SubjectFilter,
+    SectionFilter, SectionSubjectFilter, PaginationParams, SubjectFilter,
 };
 
 use crate::context::RequestContext;
@@ -47,7 +47,7 @@ use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::reporting::{ReportDefinitionRepository, ReportTemplateRepository};
 use crate::ports::repositories::{
     AcademicPeriodRepository, AcademicCalendarRepository, AccountRepository,
-    AssessmentSchemeRepository, ClassRepository, SectionSubjectRepository,
+    AssessmentSchemeRepository, SectionRepository, SectionSubjectRepository,
     DiscountTemplateRepository, DocumentRequirementRepository, FeeTemplateRepository,
     IntegrationRepository, OrgUnitRepository, OrganizationRepository, RoomRepository,
     SettingsRepository, SubjectRepository, TimeSlotRepository,
@@ -254,7 +254,7 @@ pub struct OnboardingService {
     pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
-    pub class_repo: Arc<dyn ClassRepository>,
+    pub section_repo: Arc<dyn SectionRepository>,
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
@@ -277,7 +277,7 @@ impl OnboardingService {
         year_repo: Arc<dyn AcademicCalendarRepository>,
         period_repo: Arc<dyn AcademicPeriodRepository>,
         subject_repo: Arc<dyn SubjectRepository>,
-        class_repo: Arc<dyn ClassRepository>,
+        section_repo: Arc<dyn SectionRepository>,
         section_subject_repo: Arc<dyn SectionSubjectRepository>,
         assessment_scheme_repo: Arc<dyn AssessmentSchemeRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
@@ -298,7 +298,7 @@ impl OnboardingService {
             year_repo,
             period_repo,
             subject_repo,
-            class_repo,
+            section_repo,
             section_subject_repo,
             assessment_scheme_repo,
             settings_repo,
@@ -719,7 +719,7 @@ impl OnboardingService {
             .subject_repo
             .list(org_id, SubjectFilter::default())
             .await?;
-        let classes_res = self.class_repo.list(org_id, ClassFilter::default()).await?;
+        let classes_res = self.section_repo.list(org_id, SectionFilter::default()).await?;
         let section_subjects_res = self
             .section_subject_repo
             .list(org_id, SectionSubjectFilter::default())
@@ -2252,10 +2252,10 @@ impl OnboardingService {
 
         // 4. Provision Starter Classes if requested & empty
         let existing_classes = self
-            .class_repo
+            .section_repo
             .list(
                 org_id,
-                ClassFilter {
+                SectionFilter {
                     pagination: Some(PaginationParams {
                         page_size: Some(100),
                         ..Default::default()
@@ -2315,7 +2315,7 @@ impl OnboardingService {
                     created_at: now,
                     updated_at: now,
                 };
-                self.class_repo.save(&cls).await?;
+                self.section_repo.save(&cls).await?;
             }
             created_items.push("Starter Learning Groups".to_string());
         }

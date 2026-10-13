@@ -310,7 +310,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
         Ok(model.map(map_attendance_model_to_domain))
     }
 
-    async fn find_by_class_and_date(
+    async fn find_by_section_and_date(
         &self,
         section_id: Uuid,
         date: chrono::NaiveDate,

@@ -47,6 +47,9 @@ import type {
   UpdateSubjectRequest,
   CreateClassRequest,
   UpdateClassRequest,
+  SectionDto,
+  CreateSectionRequest,
+  UpdateSectionRequest,
   AssignSectionSubjectRequest,
   UpdateSectionSubjectRequest,
   EnrollmentDto,
@@ -567,6 +570,40 @@ export class RemoteClient implements OrbisApiClient {
 
   async updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto> {
     return this.call(sdk.updateSubject({ client: this.client, path: { id }, body: req }));
+  }
+
+  async listSections(orgId?: string): Promise<SectionDto[]> {
+    const res = await this.call(sdk.listSections({ client: this.client }));
+    return res ?? [];
+  }
+
+  async getSection(id: string): Promise<SectionDto> {
+    const res = await this.call(sdk.getSection({ client: this.client, path: { id } }));
+    return res as SectionDto;
+  }
+
+  async createSection(req: CreateSectionRequest): Promise<SectionDto> {
+    return this.call(sdk.createSection({ client: this.client, body: req }));
+  }
+
+  async updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto> {
+    return this.call(sdk.updateSection({ client: this.client, path: { id }, body: req }));
+  }
+
+  async listClasses(): Promise<ClassDto[]> {
+    return this.listSections();
+  }
+
+  async getClass(id: string): Promise<ClassDto> {
+    return this.getSection(id);
+  }
+
+  async createClass(req: CreateClassRequest): Promise<ClassDto> {
+    return this.createSection(req);
+  }
+
+  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
+    return this.updateSection(id, req);
   }
 
   async listSubjects(): Promise<SubjectDto[]> {

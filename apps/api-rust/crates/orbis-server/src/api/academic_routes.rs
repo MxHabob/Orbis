@@ -13,10 +13,10 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::academic_service::{
-    AssignSectionSubjectInput, CreateClassInput, CreateSubjectInput, UpdateClassInput,
+    AssignSectionSubjectInput, CreateSectionInput, CreateSubjectInput, UpdateSectionInput,
     UpdateSectionSubjectInput, UpdateSubjectInput,
 };
-use orbis_domain::queries::filters::{ClassFilter, SectionSubjectFilter, SubjectFilter};
+use orbis_domain::queries::filters::{SectionFilter, SectionSubjectFilter, SubjectFilter};
 
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
@@ -93,7 +93,7 @@ pub struct UpdateSubjectRequest {
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
-pub struct ClassDto {
+pub struct SectionDto {
     pub id: Uuid,
     pub org_id: Uuid,
     pub unit_id: Option<Uuid>,
@@ -116,7 +116,7 @@ pub struct ClassDto {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct CreateClassRequest {
+pub struct CreateSectionRequest {
     pub unit_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
     pub section_type: Option<String>,
@@ -130,7 +130,7 @@ pub struct CreateClassRequest {
 }
 
 #[derive(Deserialize, ToSchema)]
-pub struct UpdateClassRequest {
+pub struct UpdateSectionRequest {
     pub unit_id: Option<Uuid>,
     pub section_type: Option<String>,
     pub code: Option<String>,
@@ -229,8 +229,8 @@ fn subject_to_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
     }
 }
 
-fn section_to_dto(c: orbis_domain::entities::section::Section) -> ClassDto {
-    ClassDto {
+fn section_to_dto(c: orbis_domain::entities::section::Section) -> SectionDto {
+    SectionDto {
         id: c.id,
         org_id: c.org_id,
         unit_id: c.org_unit_id,
@@ -391,20 +391,20 @@ async fn get_subject(
     Ok(ApiResponse::ok(subject_to_dto(s)))
 }
 
-#[utoipa::path(post, path = "/api/v1/classes", request_body = CreateClassRequest,
-    responses((status = 201, body = ClassDto)),
+#[utoipa::path(post, path = "/api/v1/sections", request_body = CreateSectionRequest,
+    responses((status = 201, body = SectionDto)),
     security(("bearer" = [])), tag = "Academic")]
-async fn create_class(
+async fn create_section(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Json(p): Json<CreateClassRequest>,
-) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
+    Json(p): Json<CreateSectionRequest>,
+) -> Result<Json<ApiResponse<SectionDto>>, ApiError> {
     let c = state
         .academic_service
-        .create_class(
+        .create_section(
             &ctx,
             ctx.tenant_id,
-            CreateClassInput {
+            CreateSectionInput {
                 unit_id: p.unit_id,
                 period_id: p.period_id,
                 section_type: p.section_type,
@@ -421,23 +421,23 @@ async fn create_class(
     Ok(ApiResponse::ok(section_to_dto(c)))
 }
 
-#[utoipa::path(put, path = "/api/v1/classes/{id}",
-    params(("id" = Uuid, Path, description = "Class ID")),
-    request_body = UpdateClassRequest,
-    responses((status = 200, body = ClassDto)),
+#[utoipa::path(put, path = "/api/v1/sections/{id}",
+    params(("id" = Uuid, Path, description = "Section ID")),
+    request_body = UpdateSectionRequest,
+    responses((status = 200, body = SectionDto)),
     security(("bearer" = [])), tag = "Academic")]
-async fn update_class(
+async fn update_section(
     ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-    Json(p): Json<UpdateClassRequest>,
-) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
+    Json(p): Json<UpdateSectionRequest>,
+) -> Result<Json<ApiResponse<SectionDto>>, ApiError> {
     let c = state
         .academic_service
-        .update_class(
+        .update_section(
             &ctx,
             id,
-            UpdateClassInput {
+            UpdateSectionInput {
                 unit_id: p.unit_id,
                 section_type: p.section_type,
                 code: p.code,
@@ -454,33 +454,33 @@ async fn update_class(
     Ok(ApiResponse::ok(section_to_dto(c)))
 }
 
-#[utoipa::path(get, path = "/api/v1/classes",
-    responses((status = 200, body = Vec<ClassDto>)),
+#[utoipa::path(get, path = "/api/v1/sections",
+    responses((status = 200, body = Vec<SectionDto>)),
     security(("bearer" = [])), tag = "Academic")]
-async fn list_classes(
+async fn list_sections(
     ctx: AuthContext,
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
+) -> Result<Json<ApiResponse<Vec<SectionDto>>>, ApiError> {
     let classes = state
         .academic_service
-        .list_classes(ctx.tenant_id, ClassFilter::default())
+        .list_sections(ctx.tenant_id, SectionFilter::default())
         .await?;
     let dtos = classes.items.into_iter().map(section_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(get, path = "/api/v1/classes/{id}",
+#[utoipa::path(get, path = "/api/v1/sections/{id}",
     params(("id" = Uuid, Path, description = "Section ID")),
-    responses((status = 200, body = ClassDto)),
+    responses((status = 200, body = SectionDto)),
     security(("bearer" = [])), tag = "Academic")]
-async fn get_class(
+async fn get_section(
     _ctx: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
-) -> Result<Json<ApiResponse<ClassDto>>, ApiError> {
+) -> Result<Json<ApiResponse<SectionDto>>, ApiError> {
     let c = state
         .academic_service
-        .get_class(id)
+        .get_section(id)
         .await?
         .ok_or_else(|| ApiError::not_found(format!("Section {} not found", id)))?;
     Ok(ApiResponse::ok(section_to_dto(c)))
@@ -608,8 +608,8 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/subjects/:id",
             get(get_subject).put(update_subject),
         )
-        .route("/api/v1/classes", post(create_class).get(list_classes))
-        .route("/api/v1/classes/:id", get(get_class).put(update_class))
+        .route("/api/v1/sections", post(create_section).get(list_sections))
+        .route("/api/v1/sections/:id", get(get_section).put(update_section))
         .route(
             "/api/v1/section-subjects",
             post(assign_section_subject).get(list_section_subjects),

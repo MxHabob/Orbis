@@ -45,12 +45,12 @@ import type {
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
-  ClassDto,
+  SectionDto,
   SectionSubjectDto,
+  CreateSectionRequest,
+  UpdateSectionRequest,
   CreateSubjectRequest,
   UpdateSubjectRequest,
-  CreateClassRequest,
-  UpdateClassRequest,
   AssignSectionSubjectRequest,
   UpdateSectionSubjectRequest,
   EnrollmentDto,
@@ -189,6 +189,12 @@ import type {
 // ═══════════════════════════════════════════════════════════════
 // SHARED ENVELOPES & ALIASES
 // ═══════════════════════════════════════════════════════════════
+
+export type ClassDto = SectionDto;
+export type CreateClassRequest = CreateSectionRequest;
+export type UpdateClassRequest = UpdateSectionRequest;
+export type academicCalendarDto = AcademicCalendarDto;
+export type progressionJobDto = ProgressionJobDto;
 
 export interface ApiResponse<T> {
   data: T;
@@ -1580,6 +1586,10 @@ export interface OrbisApiClient {
   updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto>;
   listSubjects(): Promise<SubjectDto[]>;
   getSubject(id: string): Promise<SubjectDto>;
+  createSection(req: CreateSectionRequest): Promise<SectionDto>;
+  updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
+  listSections(): Promise<SectionDto[]>;
+  getSection(id: string): Promise<SectionDto>;
   createClass(req: CreateClassRequest): Promise<ClassDto>;
   updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto>;
   listClasses(): Promise<ClassDto[]>;

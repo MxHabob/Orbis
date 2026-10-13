@@ -277,19 +277,19 @@ pub trait AcademicFrameworkRepository: Send + Sync {
         &self,
         org_id: Uuid,
         id: Uuid,
-    ) -> Result<Option<orbis_domain::entities::subject::Course>, DomainError>;
+    ) -> Result<Option<orbis_domain::entities::subject::Subject>, DomainError>;
     async fn list_courses(
         &self,
         org_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::subject::Course>, DomainError>;
+    ) -> Result<Vec<orbis_domain::entities::subject::Subject>, DomainError>;
     async fn find_course_by_code(
         &self,
         org_id: Uuid,
         code: &str,
-    ) -> Result<Option<orbis_domain::entities::subject::Course>, DomainError>;
+    ) -> Result<Option<orbis_domain::entities::subject::Subject>, DomainError>;
     async fn save_course(
         &self,
-        course: &orbis_domain::entities::subject::Course,
+        course: &orbis_domain::entities::subject::Subject,
     ) -> Result<(), DomainError>;
     async fn find_section_subject(
         &self,

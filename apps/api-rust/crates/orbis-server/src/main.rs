@@ -498,7 +498,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         period_type_repo: calendar_repo,
         academic_framework_repo,
         subject_repo: academic_repo.clone(),
-        class_repo: academic_repo.clone(),
+        section_repo: academic_repo.clone(),
         section_subject_repo: academic_repo.clone(),
         enrollment_repo: student_repo.clone(),
         student_repo: student_repo.clone(),

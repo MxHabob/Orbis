@@ -18,7 +18,7 @@ use orbis_domain::entities::{
     academic_calendar::{
         AcademicCalendar, AcademicPeriod, PeriodType,
     },
-    subject::Course,
+    subject::Subject,
     enrollment::Enrollment,
     section_subject::SectionSubject,
 };
@@ -227,7 +227,7 @@ fn calendar_period_dto(item: AcademicPeriod) -> AcademicPeriodDto {
     }
 }
 
-fn course_dto(item: Course) -> CourseDto {
+fn course_dto(item: Subject) -> CourseDto {
     CourseDto {
         id: item.id,
         org_id: item.org_id,

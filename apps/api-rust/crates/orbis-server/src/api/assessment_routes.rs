@@ -834,7 +834,7 @@ pub async fn list_attendance(
 ) -> Result<Json<ApiResponse<Vec<AttendanceDto>>>, ApiError> {
     let list = state
         .attendance_repo
-        .find_by_class_and_date(q.section_id, q.date)
+        .find_by_section_and_date(q.section_id, q.date)
         .await?;
     let dtos = list.into_iter().map(attendance_to_dto).collect();
     Ok(ApiResponse::ok(dtos))

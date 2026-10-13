@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{SectionRepository, SectionSubjectRepository, SubjectRepository};
-use orbis_domain::entities::section::Section as DomainSection;
-use orbis_domain::entities::section_subject::SectionSubject as DomainSectionSubject;
-use orbis_domain::entities::subject::Subject as DomainSubject;
+use orbis_domain::entities::{
+    section::Section,
+    section_subject::SectionSubject,
+    subject::Subject,
+};
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -22,7 +24,7 @@ pub struct AcademicRepoImpl {
 
 #[async_trait]
 impl SubjectRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSubject>, DomainError> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subject>, DomainError> {
         let model = SubjectEntity::find_by_id(id)
             .one(&self.db)
             .await
@@ -30,7 +32,7 @@ impl SubjectRepository for AcademicRepoImpl {
         Ok(model.map(map_subject_model_to_domain))
     }
 
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSubject>, DomainError> {
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Subject>, DomainError> {
         let models = SubjectEntity::find()
             .filter(subject::Column::OrgId.eq(org_id))
             .all(&self.db)
@@ -46,7 +48,7 @@ impl SubjectRepository for AcademicRepoImpl {
         &self,
         org_id: Uuid,
         filter: orbis_domain::queries::filters::SubjectFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSubject>, DomainError> {
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<Subject>, DomainError> {
         let mut query = SubjectEntity::find().filter(subject::Column::OrgId.eq(org_id));
         if let Some(is_active) = filter.is_active {
             query = query.filter(subject::Column::IsActive.eq(is_active));
@@ -82,7 +84,7 @@ impl SubjectRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, subject: &DomainSubject) -> Result<(), DomainError> {
+    async fn save(&self, subject: &Subject) -> Result<(), DomainError> {
         let active = subject::ActiveModel {
             id: Set(subject.id),
             org_id: Set(subject.org_id),
@@ -129,16 +131,16 @@ impl SubjectRepository for AcademicRepoImpl {
 }
 
 #[async_trait]
-impl ClassRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSection>, DomainError> {
+impl SectionRepository for AcademicRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Section>, DomainError> {
         let model = SectionEntity::find_by_id(id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(map_class_model_to_domain))
+        Ok(model.map(map_section_model_to_domain))
     }
 
-    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Section>, DomainError> {
         let section_subjects = SectionSubjectEntity::find()
             .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
@@ -151,24 +153,24 @@ impl ClassRepository for AcademicRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_class_model_to_domain).collect())
+        Ok(models.into_iter().map(map_section_model_to_domain).collect())
     }
 
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Section>, DomainError> {
         let models = SectionEntity::find()
             .filter(section::Column::OrgId.eq(org_id))
             .filter(section::Column::IsDeleted.eq(false))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_class_model_to_domain).collect())
+        Ok(models.into_iter().map(map_section_model_to_domain).collect())
     }
 
     async fn list(
         &self,
         org_id: Uuid,
-        filter: orbis_domain::queries::filters::ClassFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSection>, DomainError> {
+        filter: orbis_domain::queries::filters::SectionFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<Section>, DomainError> {
         let mut query = SectionEntity::find()
             .filter(section::Column::OrgId.eq(org_id))
             .filter(section::Column::IsDeleted.eq(false));
@@ -196,7 +198,7 @@ impl ClassRepository for AcademicRepoImpl {
             .fetch_page(page - 1)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        let items = rows.into_iter().map(map_class_model_to_domain).collect();
+        let items = rows.into_iter().map(map_section_model_to_domain).collect();
         Ok(orbis_domain::queries::filters::PaginatedList::new(
             items,
             total_count,
@@ -205,27 +207,27 @@ impl ClassRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, class: &DomainSection) -> Result<(), DomainError> {
+    async fn save(&self, section: &Section) -> Result<(), DomainError> {
         let active = section::ActiveModel {
-            id: Set(class.id),
-            org_id: Set(class.org_id),
-            org_unit_id: Set(class.org_unit_id),
-            section_type: Set(class.section_type.clone()),
-            code: Set(class.code.clone()),
-            name: Set(class.name.clone()),
-            name_ar: Set(class.name_ar.clone()),
-            level: Set(class.level.clone()),
-            track: Set(class.track.clone()),
-            capacity: Set(class.capacity),
-            color: Set(class.color.clone()),
-            is_active: Set(class.is_active),
-            is_deleted: Set(class.is_deleted),
-            deleted_at: Set(class.deleted_at),
-            created_at: Set(class.created_at),
-            updated_at: Set(class.updated_at),
+            id: Set(section.id),
+            org_id: Set(section.org_id),
+            org_unit_id: Set(section.org_unit_id),
+            section_type: Set(section.section_type.clone()),
+            code: Set(section.code.clone()),
+            name: Set(section.name.clone()),
+            name_ar: Set(section.name_ar.clone()),
+            level: Set(section.level.clone()),
+            track: Set(section.track.clone()),
+            capacity: Set(section.capacity),
+            color: Set(section.color.clone()),
+            is_active: Set(section.is_active),
+            is_deleted: Set(section.is_deleted),
+            deleted_at: Set(section.deleted_at),
+            created_at: Set(section.created_at),
+            updated_at: Set(section.updated_at),
         };
 
-        if SectionEntity::find_by_id(class.id)
+        if SectionEntity::find_by_id(section.id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
@@ -247,7 +249,7 @@ impl ClassRepository for AcademicRepoImpl {
 
 #[async_trait]
 impl SectionSubjectRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSectionSubject>, DomainError> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<SectionSubject>, DomainError> {
         let model = SectionSubjectEntity::find_by_id(id)
             .one(&self.db)
             .await
@@ -255,7 +257,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         Ok(model.map(map_section_subject_model_to_domain))
     }
 
-    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<SectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
             .filter(section_subject::Column::SectionId.eq(section_id))
             .all(&self.db)
@@ -267,11 +269,11 @@ impl SectionSubjectRepository for AcademicRepoImpl {
             .collect())
     }
 
-    async fn find_by_class_and_period(
+    async fn find_by_section_and_period(
         &self,
         section_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    ) -> Result<Vec<SectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
             .filter(section_subject::Column::SectionId.eq(section_id))
             .filter(section_subject::Column::PeriodId.eq(period_id))
@@ -288,7 +290,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         &self,
         teacher_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    ) -> Result<Vec<SectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
             .filter(
                 section_subject::Column::InstructorId
@@ -310,7 +312,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         &self,
         _org_id: Uuid,
         filter: orbis_domain::queries::filters::SectionSubjectFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSectionSubject>, DomainError>
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<SectionSubject>, DomainError>
     {
         let mut query = SectionSubjectEntity::find();
         if let Some(class_id) = filter.section_id {
@@ -354,7 +356,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, section_subject: &DomainSectionSubject) -> Result<(), DomainError> {
+    async fn save(&self, section_subject: &SectionSubject) -> Result<(), DomainError> {
         let now = chrono::Utc::now();
         let active = section_subject::ActiveModel {
             id: Set(section_subject.id),
@@ -398,8 +400,8 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     }
 }
 
-fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
-    DomainSubject {
+fn map_subject_model_to_domain(m: subject::Model) -> Subject {
+    Subject {
         id: m.id,
         org_id: m.org_id,
         unit_id: m.unit_id,
@@ -425,8 +427,8 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
     }
 }
 
-fn map_class_model_to_domain(m: section::Model) -> DomainSection {
-    DomainSection {
+fn map_section_model_to_domain(m: section::Model) -> Section {
+    Section {
         id: m.id,
         org_id: m.org_id,
         org_unit_id: m.org_unit_id,
@@ -446,8 +448,8 @@ fn map_class_model_to_domain(m: section::Model) -> DomainSection {
     }
 }
 
-fn map_section_subject_model_to_domain(m: section_subject::Model) -> DomainSectionSubject {
-    DomainSectionSubject {
+fn map_section_subject_model_to_domain(m: section_subject::Model) -> SectionSubject {
+    SectionSubject {
         id: m.id,
         org_id: m.org_id,
         section_id: m.section_id,

@@ -39,6 +39,9 @@ import type {
   UpdateSubjectRequest,
   CreateClassRequest,
   UpdateClassRequest,
+  SectionDto,
+  CreateSectionRequest,
+  UpdateSectionRequest,
   AssignSectionSubjectRequest,
   UpdateSectionSubjectRequest,
   EnrollmentDto,
@@ -436,6 +439,38 @@ export class LocalClient implements OrbisApiClient {
   async updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto> {
     return unwrap(await invoke("academic_update_subject", { request: { ...req, id } }));
   }
+  async listSections(): Promise<SectionDto[]> {
+    return this.invoke<SectionDto[]>("academic_list_sections");
+  }
+
+  async getSection(id: string): Promise<SectionDto> {
+    return this.invoke<SectionDto>("academic_get_section", { id });
+  }
+
+  async createSection(req: CreateSectionRequest): Promise<SectionDto> {
+    return this.invoke<SectionDto>("academic_create_section", { request: req });
+  }
+
+  async updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto> {
+    return this.invoke<SectionDto>("academic_update_section", { request: { ...req, id } });
+  }
+
+  async listClasses(): Promise<ClassDto[]> {
+    return this.listSections();
+  }
+
+  async getClass(id: string): Promise<ClassDto> {
+    return this.getSection(id);
+  }
+
+  async createClass(req: CreateClassRequest): Promise<ClassDto> {
+    return this.createSection(req);
+  }
+
+  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
+    return this.updateSection(id, req);
+  }
+
   async listSubjects(): Promise<SubjectDto[]> {
     return unwrap(await invoke("academic_list_subjects"));
   }

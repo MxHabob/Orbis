@@ -2,7 +2,7 @@ use chrono::Utc;
 use orbis_domain::entities::academic_calendar::{
     AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
 };
-use orbis_domain::entities::subject::Course;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::entities::enrollment::Enrollment;
 use orbis_domain::entities::section_subject::SectionSubject;
 use orbis_domain::errors::DomainError;
@@ -83,7 +83,7 @@ impl AcademicFrameworkService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-    ) -> Result<Vec<Course>, DomainError> {
+    ) -> Result<Vec<Subject>, DomainError> {
         self.require_org_permission(ctx, org_id, Permission::SubjectRead)
             .await?;
         self.framework_repo.list_courses(org_id).await
@@ -316,7 +316,7 @@ impl AcademicFrameworkService {
         description: Option<String>,
         credit_units: Option<rust_decimal::Decimal>,
         workload_units: Option<rust_decimal::Decimal>,
-    ) -> Result<Course, DomainError> {
+    ) -> Result<Subject, DomainError> {
         self.require_org_permission(ctx, org_id, Permission::SubjectWrite)
             .await?;
         validate_name(&name, "Course")?;
@@ -353,7 +353,7 @@ impl AcademicFrameworkService {
         }
 
         let now = Utc::now();
-        let course = Course {
+        let course = Subject {
             id: Uuid::new_v4(),
             org_id,
             unit_id,

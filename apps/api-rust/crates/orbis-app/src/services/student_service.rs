@@ -3,7 +3,7 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::license::LicenseRuntime;
 use crate::ports::repositories::{
-    ClassRepository, EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository,
+    SectionRepository, EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository,
     PersonRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
     StudentGuardianRepository, StudentRepository,
 };
@@ -31,7 +31,7 @@ pub struct StudentService {
     pub guardian_repo: Arc<dyn StudentGuardianRepository>,
     pub settings_repo: Arc<dyn SettingsRepository>,
     pub sequence_repo: Arc<dyn SequenceCounterRepository>,
-    pub class_repo: Arc<dyn ClassRepository>,
+    pub section_repo: Arc<dyn SectionRepository>,
     pub fee_template_repo: Arc<dyn FeeTemplateRepository>,
     pub student_fee_repo: Arc<dyn StudentFeeRepository>,
     pub override_repo: Arc<dyn OverrideRequestRepository>,
@@ -170,7 +170,7 @@ impl StudentService {
         guardian_repo: Arc<dyn StudentGuardianRepository>,
         settings_repo: Arc<dyn SettingsRepository>,
         sequence_repo: Arc<dyn SequenceCounterRepository>,
-        class_repo: Arc<dyn ClassRepository>,
+        section_repo: Arc<dyn SectionRepository>,
         fee_template_repo: Arc<dyn FeeTemplateRepository>,
         student_fee_repo: Arc<dyn StudentFeeRepository>,
         override_repo: Arc<dyn OverrideRequestRepository>,
@@ -184,7 +184,7 @@ impl StudentService {
             guardian_repo,
             settings_repo,
             sequence_repo,
-            class_repo,
+            section_repo,
             fee_template_repo,
             student_fee_repo,
             override_repo,
@@ -444,13 +444,13 @@ impl StudentService {
 
             // Check capacity invariant
             if let Some(class_id) = input.initial_section_id {
-                let current_enrollments = self.enrollment_repo.find_by_class(class_id).await?;
+                let current_enrollments = self.enrollment_repo.find_by_section(class_id).await?;
                 let active_count = current_enrollments
                     .iter()
                     .filter(|e| e.status == EnrollmentStatus::Active)
                     .count() as i32;
 
-                let max_cap = if let Ok(Some(cls)) = self.class_repo.find_by_id(class_id).await {
+                let max_cap = if let Ok(Some(cls)) = self.section_repo.find_by_id(class_id).await {
                     cls.capacity.unwrap_or(admission_policy.max_class_capacity)
                 } else {
                     admission_policy.max_class_capacity
@@ -1233,7 +1233,7 @@ impl StudentService {
                 } else {
                     let active = self
                         .enrollment_repo
-                        .find_by_class(class_id)
+                        .find_by_section(class_id)
                         .await
                         .map(|list| {
                             list.into_iter()
@@ -1241,7 +1241,7 @@ impl StudentService {
                                 .count() as i32
                         })
                         .unwrap_or(0);
-                    let max_c = if let Ok(Some(cls)) = self.class_repo.find_by_id(class_id).await {
+                    let max_c = if let Ok(Some(cls)) = self.section_repo.find_by_id(class_id).await {
                         cls.capacity.unwrap_or(admission_policy.max_class_capacity)
                     } else {
                         admission_policy.max_class_capacity

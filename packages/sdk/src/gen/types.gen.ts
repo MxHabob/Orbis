@@ -787,28 +787,6 @@ export type ChangeStudyModeRequest = {
     reason?: string | null;
 };
 
-export type ClassDto = {
-    capacity?: number | null;
-    code: string;
-    color?: string | null;
-    created_at: string;
-    current_students?: number | null;
-    division?: string | null;
-    homeroom_teacher_id?: string | null;
-    id: string;
-    is_active: boolean;
-    level?: string | null;
-    name: string;
-    name_ar?: string | null;
-    org_id: string;
-    period_id?: string | null;
-    room_id?: string | null;
-    section_type: string;
-    track?: string | null;
-    unit_id?: string | null;
-    updated_at: string;
-};
-
 export type ConnectAppRequest = {
     category: string;
     env: string;
@@ -861,19 +839,6 @@ export type CreateAccountRequest = {
     name_ar?: string | null;
     parent_id?: string | null;
     sub_type?: string | null;
-};
-
-export type CreateClassRequest = {
-    capacity?: number | null;
-    code?: string | null;
-    color?: string | null;
-    level?: string | null;
-    name: string;
-    name_ar?: string | null;
-    period_id?: string | null;
-    section_type?: string | null;
-    track?: string | null;
-    unit_id?: string | null;
 };
 
 export type CreateCourseRequest = {
@@ -1048,6 +1013,19 @@ export type CreateSchemeRequest = {
     max_score: string;
     name: string;
     name_ar?: string | null;
+};
+
+export type CreateSectionRequest = {
+    capacity?: number | null;
+    code?: string | null;
+    color?: string | null;
+    level?: string | null;
+    name: string;
+    name_ar?: string | null;
+    period_id?: string | null;
+    section_type?: string | null;
+    track?: string | null;
+    unit_id?: string | null;
 };
 
 export type CreateSectionSubjectRequest = {
@@ -2339,6 +2317,28 @@ export type SecretDto = {
     updated_at: string;
 };
 
+export type SectionDto = {
+    capacity?: number | null;
+    code: string;
+    color?: string | null;
+    created_at: string;
+    current_students?: number | null;
+    division?: string | null;
+    homeroom_teacher_id?: string | null;
+    id: string;
+    is_active: boolean;
+    level?: string | null;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    period_id?: string | null;
+    room_id?: string | null;
+    section_type: string;
+    track?: string | null;
+    unit_id?: string | null;
+    updated_at: string;
+};
+
 export type SectionSubjectDto = {
     assessment_config?: unknown;
     assistant_instructor_id?: string | null;
@@ -2618,19 +2618,6 @@ export type UpdateAccountRequest = {
     sub_type?: string | null;
 };
 
-export type UpdateClassRequest = {
-    capacity?: number | null;
-    code?: string | null;
-    color?: string | null;
-    is_active?: boolean | null;
-    level?: string | null;
-    name?: string | null;
-    name_ar?: string | null;
-    section_type?: string | null;
-    track?: string | null;
-    unit_id?: string | null;
-};
-
 export type UpdateDocumentRequest = {
     asset_type?: string | null;
     calendar_id?: string | null;
@@ -2792,6 +2779,19 @@ export type UpdateSchemeRequest = {
     max_score?: string | null;
     name?: string | null;
     name_ar?: string | null;
+};
+
+export type UpdateSectionRequest = {
+    capacity?: number | null;
+    code?: string | null;
+    color?: string | null;
+    is_active?: boolean | null;
+    level?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    section_type?: string | null;
+    track?: string | null;
+    unit_id?: string | null;
 };
 
 export type UpdateSectionSubjectRequest = {
@@ -4206,68 +4206,6 @@ export type GetBootstrapStatusResponses = {
 };
 
 export type GetBootstrapStatusResponse = GetBootstrapStatusResponses[keyof GetBootstrapStatusResponses];
-
-export type ListClassesData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/v1/classes';
-};
-
-export type ListClassesResponses = {
-    200: Array<ClassDto>;
-};
-
-export type ListClassesResponse = ListClassesResponses[keyof ListClassesResponses];
-
-export type CreateClassData = {
-    body: CreateClassRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/classes';
-};
-
-export type CreateClassResponses = {
-    201: ClassDto;
-};
-
-export type CreateClassResponse = CreateClassResponses[keyof CreateClassResponses];
-
-export type GetClassData = {
-    body?: never;
-    path: {
-        /**
-         * Section ID
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/classes/{id}';
-};
-
-export type GetClassResponses = {
-    200: ClassDto;
-};
-
-export type GetClassResponse = GetClassResponses[keyof GetClassResponses];
-
-export type UpdateClassData = {
-    body: UpdateClassRequest;
-    path: {
-        /**
-         * Class ID
-         */
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/classes/{id}';
-};
-
-export type UpdateClassResponses = {
-    200: ClassDto;
-};
-
-export type UpdateClassResponse = UpdateClassResponses[keyof UpdateClassResponses];
 
 export type ListCurrenciesData = {
     body?: never;
@@ -6781,6 +6719,68 @@ export type UpdateSectionSubjectResponses = {
 };
 
 export type UpdateSectionSubjectResponse = UpdateSectionSubjectResponses[keyof UpdateSectionSubjectResponses];
+
+export type ListSectionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/sections';
+};
+
+export type ListSectionsResponses = {
+    200: Array<SectionDto>;
+};
+
+export type ListSectionsResponse = ListSectionsResponses[keyof ListSectionsResponses];
+
+export type CreateSectionData = {
+    body: CreateSectionRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/sections';
+};
+
+export type CreateSectionResponses = {
+    201: SectionDto;
+};
+
+export type CreateSectionResponse = CreateSectionResponses[keyof CreateSectionResponses];
+
+export type GetSectionData = {
+    body?: never;
+    path: {
+        /**
+         * Section ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/sections/{id}';
+};
+
+export type GetSectionResponses = {
+    200: SectionDto;
+};
+
+export type GetSectionResponse = GetSectionResponses[keyof GetSectionResponses];
+
+export type UpdateSectionData = {
+    body: UpdateSectionRequest;
+    path: {
+        /**
+         * Section ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/sections/{id}';
+};
+
+export type UpdateSectionResponses = {
+    200: SectionDto;
+};
+
+export type UpdateSectionResponse = UpdateSectionResponses[keyof UpdateSectionResponses];
 
 export type ListArchivedDocumentsData = {
     body?: never;

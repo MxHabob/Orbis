@@ -25,13 +25,10 @@ pub enum Permission {
     OrgUnitWrite,
     OrgUnitDelete,
 
-    // --- Sections, Classes & Subjects ---
+    // --- Sections & Subjects ---
     SectionRead,
     SectionWrite,
     SectionDelete,
-    ClassRead,
-    ClassWrite,
-    ClassDelete,
     SubjectRead,
     SubjectWrite,
     SubjectDelete,

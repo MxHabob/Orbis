@@ -12,13 +12,13 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
 
 use orbis_app::services::academic_service::{
     AssignSectionSubjectInput as ServiceAssignSectionSubjectInput,
-    CreateClassInput as ServiceCreateClassInput,
+    CreateSectionInput as ServiceCreateSectionInput,
     CreateSubjectInput as ServiceCreateSubjectInput,
-    UpdateClassInput as ServiceUpdateClassInput,
+    UpdateSectionInput as ServiceUpdateSectionInput,
     UpdateSectionSubjectInput as ServiceUpdateSectionSubjectInput,
     UpdateSubjectInput as ServiceUpdateSubjectInput,
 };
-use orbis_domain::queries::filters::{ClassFilter, SectionSubjectFilter, SubjectFilter};
+use orbis_domain::queries::filters::{SectionFilter, SectionSubjectFilter, SubjectFilter};
 use rust_decimal::Decimal;
 
 #[derive(Serialize)]
@@ -93,7 +93,7 @@ pub struct UpdateSubjectInput {
 }
 
 #[derive(Serialize)]
-pub struct ClassDto {
+pub struct SectionDto {
     pub id: String,
     pub org_id: String,
     pub unit_id: String,
@@ -116,7 +116,7 @@ pub struct ClassDto {
 }
 
 #[derive(Deserialize)]
-pub struct CreateClassInput {
+pub struct CreateSectionInput {
     pub unit_id: Option<String>,
     pub period_id: Option<String>,
     pub section_type: Option<String>,
@@ -130,7 +130,7 @@ pub struct CreateClassInput {
 }
 
 #[derive(Deserialize)]
-pub struct UpdateClassInput {
+pub struct UpdateSectionInput {
     pub id: String,
     pub unit_id: Option<String>,
     pub section_type: Option<String>,
@@ -246,8 +246,8 @@ fn subject_dto(s: orbis_domain::entities::subject::Subject) -> SubjectDto {
     }
 }
 
-fn class_dto(c: orbis_domain::entities::section::Section) -> ClassDto {
-    ClassDto {
+fn section_dto(c: orbis_domain::entities::section::Section) -> SectionDto {
+    SectionDto {
         id: c.id.to_string(),
         org_id: c.org_id.to_string(),
         unit_id: c.org_unit_id.map(|u| u.to_string()).unwrap_or_default(),
@@ -408,20 +408,20 @@ pub async fn academic_get_subject(
 }
 
 #[tauri::command]
-pub async fn academic_create_class(
-    request: CreateClassInput,
+pub async fn academic_create_section(
+    request: CreateSectionInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<ClassDto>, String> {
+) -> Result<ApiResponse<SectionDto>, String> {
     let ctx = make_ctx(&state);
     let unit_id = request.unit_id.and_then(|u| Uuid::parse_str(&u).ok());
     let period_id = request.period_id.and_then(|p| Uuid::parse_str(&p).ok());
 
     let c = state
         .academic_service
-        .create_class(
+        .create_section(
             &ctx,
             ctx.tenant_id,
-            ServiceCreateClassInput {
+            ServiceCreateSectionInput {
                 unit_id,
                 period_id,
                 section_type: request.section_type,
@@ -437,24 +437,24 @@ pub async fn academic_create_class(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(class_dto(c)))
+    Ok(ok(section_dto(c)))
 }
 
 #[tauri::command]
-pub async fn academic_update_class(
-    request: UpdateClassInput,
+pub async fn academic_update_section(
+    request: UpdateSectionInput,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<ClassDto>, String> {
+) -> Result<ApiResponse<SectionDto>, String> {
     let ctx = make_ctx(&state);
-    let id = Uuid::parse_str(&request.id).map_err(|_| "Invalid class ID")?;
+    let id = Uuid::parse_str(&request.id).map_err(|_| "Invalid section ID")?;
     let unit_id = request.unit_id.and_then(|u| Uuid::parse_str(&u).ok());
 
     let c = state
         .academic_service
-        .update_class(
+        .update_section(
             &ctx,
             id,
-            ServiceUpdateClassInput {
+            ServiceUpdateSectionInput {
                 unit_id,
                 section_type: request.section_type,
                 code: request.code,
@@ -470,35 +470,35 @@ pub async fn academic_update_class(
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(ok(class_dto(c)))
+    Ok(ok(section_dto(c)))
 }
 
 #[tauri::command]
-pub async fn academic_list_classes(
+pub async fn academic_list_sections(
     state: State<'_, AppState>,
-) -> Result<ApiResponse<Vec<ClassDto>>, String> {
+) -> Result<ApiResponse<Vec<SectionDto>>, String> {
     let ctx = make_ctx(&state);
     let items = state
         .academic_service
-        .list_classes(ctx.tenant_id, ClassFilter::default())
+        .list_sections(ctx.tenant_id, SectionFilter::default())
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(class_dto).collect()))
+    Ok(ok(items.items.into_iter().map(section_dto).collect()))
 }
 
 #[tauri::command]
-pub async fn academic_get_class(
+pub async fn academic_get_section(
     id: String,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<ClassDto>, String> {
+) -> Result<ApiResponse<SectionDto>, String> {
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid ID")?;
     let c = state
         .academic_service
-        .get_class(uid)
+        .get_section(uid)
         .await
         .map_err(|e| e.to_string())?
-        .ok_or("Class not found")?;
-    Ok(ok(class_dto(c)))
+        .ok_or("Section not found")?;
+    Ok(ok(section_dto(c)))
 }
 
 #[tauri::command]

@@ -5,6 +5,7 @@ import {
   type CalculateRankingsRequest,
   type RankingItemDto,
   type ClassDto,
+  type SectionDto,
   type SubjectDto,
   type AcademicPeriodDto,
   type academicCalendarDto,
@@ -241,5 +242,69 @@ export function createGenerateReportMutation() {
         params.parameters || {},
       );
     },
+  }));
+}
+
+
+/** Sections for an organization (unified concept). */
+export function createSectionsQuery(orgId: () => string) {
+  return createQuery<SectionDto[]>(() => ({
+    queryKey: queryKeys.academic.classes(orgId()),
+    queryFn: () => api.listSections(),
+    enabled: !!orgId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Single section by ID. */
+export function createSectionQuery(sectionId: () => string | undefined) {
+  return createQuery<SectionDto>(() => ({
+    queryKey: queryKeys.academic.class(sectionId() ?? ""),
+    queryFn: () => api.getSection(sectionId()!),
+    enabled: !!sectionId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+}
+
+/** Students enrolled in a specific section. */
+export function createSectionStudentsQuery(sectionId: () => string | undefined) {
+  return createQuery<any[]>(() => ({
+    queryKey: [...queryKeys.student.all, "section-students", sectionId() ?? ""],
+    queryFn: async () => {
+      const res = await api.listStudents();
+      const currentSectionId = sectionId();
+      return (res.items || []).filter(
+        (s: any) => String(s.current_class_id) === String(currentSectionId) || String(s.section_id) === String(currentSectionId),
+      );
+    },
+    enabled: !!sectionId(),
+    staleTime: 3 * 60 * 1000,
+  }));
+}
+
+/** Attendance records for a section on a specific date. */
+export function createSectionAttendanceQuery(
+  sectionId: () => string | undefined,
+  date: () => string | undefined,
+) {
+  return createQuery<AttendanceDto[]>(() => ({
+    queryKey: queryKeys.assessment.attendance(sectionId() ?? "", date() ?? ""),
+    queryFn: () => api.listAttendance(sectionId()!, date()!),
+    enabled: !!sectionId() && !!date(),
+    staleTime: 2 * 60 * 1000,
+  }));
+}
+
+/** Section schedule lessons. */
+export function createSectionScheduleQuery(
+  orgId: () => string | undefined,
+  periodId: () => string | undefined,
+  sectionId: () => string | undefined,
+) {
+  return createQuery<ScheduledLessonDto[]>(() => ({
+    queryKey: queryKeys.scheduling.lessons({ periodId: periodId() }),
+    queryFn: () => api.listScheduledLessons({ periodId: periodId() }),
+    enabled: !!orgId() && !!periodId() && !!sectionId(),
+    staleTime: 2 * 60 * 1000,
   }));
 }

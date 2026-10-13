@@ -3,7 +3,7 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     AcademicPeriodRepository, AcademicCalendarRepository, AssessmentSchemeRepository,
-    AttendanceRepository, BehaviorRecordRepository, ClassRepository, SectionSubjectRepository,
+    AttendanceRepository, BehaviorRecordRepository, SectionRepository, SectionSubjectRepository,
     EnrollmentRepository, GpaRecordRepository, GradeRepository, SettingsRepository,
     StudentRepository, SubjectRepository,
 };
@@ -63,7 +63,7 @@ pub struct AssessmentService {
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
-    pub class_repo: Option<Arc<dyn ClassRepository>>,
+    pub section_repo: Option<Arc<dyn SectionRepository>>,
     pub student_repo: Option<Arc<dyn StudentRepository>>,
     pub year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
@@ -93,7 +93,7 @@ impl AssessmentService {
             section_subject_repo,
             subject_repo,
             period_repo: None,
-            class_repo: None,
+            section_repo: None,
             student_repo: None,
             year_repo: None,
             enrollment_repo: None,
@@ -107,14 +107,14 @@ impl AssessmentService {
     pub fn with_academic_repos(
         mut self,
         period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
-        class_repo: Option<Arc<dyn ClassRepository>>,
+        section_repo: Option<Arc<dyn SectionRepository>>,
         student_repo: Option<Arc<dyn StudentRepository>>,
         year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
         enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
         settings_repo: Option<Arc<dyn SettingsRepository>>,
     ) -> Self {
         self.period_repo = period_repo;
-        self.class_repo = class_repo;
+        self.section_repo = section_repo;
         self.student_repo = student_repo;
         self.year_repo = year_repo;
         self.enrollment_repo = enrollment_repo;
@@ -1012,7 +1012,7 @@ impl AssessmentService {
             Uuid::nil()
         };
 
-        let class_name = if let Some(cr) = &self.class_repo {
+        let class_name = if let Some(cr) = &self.section_repo {
             if let Some(cls) = cr.find_by_id(resolved_section_id).await? {
                 cls.name
             } else {
@@ -1026,11 +1026,11 @@ impl AssessmentService {
         let section_subjects = if resolved_section_id != Uuid::nil() {
             let cs_list = self
                 .section_subject_repo
-                .find_by_class_and_period(resolved_section_id, period_id)
+                .find_by_section_and_period(resolved_section_id, period_id)
                 .await?;
             if cs_list.is_empty() {
                 self.section_subject_repo
-                    .find_by_class(resolved_section_id)
+                    .find_by_section(resolved_section_id)
                     .await?
             } else {
                 cs_list
@@ -1430,7 +1430,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_class(section_id).await?
+            er.find_by_section(section_id).await?
         } else {
             vec![]
         };
@@ -1493,7 +1493,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_class(section_id).await?
+            er.find_by_section(section_id).await?
         } else {
             vec![]
         };

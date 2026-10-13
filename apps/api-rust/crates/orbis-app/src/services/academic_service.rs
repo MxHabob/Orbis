@@ -2,7 +2,7 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    ClassRepository, SectionSubjectRepository, PrerequisiteRepository, GradeRepository,
+    SectionRepository, SectionSubjectRepository, PrerequisiteRepository, GradeRepository,
     SubjectRepository,
 };
 use chrono::Utc;
@@ -14,7 +14,7 @@ use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    ClassFilter, SectionSubjectFilter, PaginatedList, SubjectFilter,
+    SectionFilter, SectionSubjectFilter, PaginatedList, SubjectFilter,
 };
 use rust_decimal::Decimal;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 pub struct AcademicService {
     pub subject_repo: Arc<dyn SubjectRepository>,
-    pub class_repo: Arc<dyn ClassRepository>,
+    pub section_repo: Arc<dyn SectionRepository>,
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub prereq_repo: Arc<dyn PrerequisiteRepository>,
     pub grade_repo: Arc<dyn GradeRepository>,
@@ -74,7 +74,7 @@ pub struct UpdateSubjectInput {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct CreateClassInput {
+pub struct CreateSectionInput {
     pub unit_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
     pub section_type: Option<String>,
@@ -88,7 +88,7 @@ pub struct CreateClassInput {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct UpdateClassInput {
+pub struct UpdateSectionInput {
     pub unit_id: Option<Uuid>,
     pub section_type: Option<String>,
     pub code: Option<String>,
@@ -149,7 +149,7 @@ pub struct PrerequisiteCheckResult {
 impl AcademicService {
     pub fn new(
         subject_repo: Arc<dyn SubjectRepository>,
-        class_repo: Arc<dyn ClassRepository>,
+        section_repo: Arc<dyn SectionRepository>,
         section_subject_repo: Arc<dyn SectionSubjectRepository>,
         prereq_repo: Arc<dyn PrerequisiteRepository>,
         grade_repo: Arc<dyn GradeRepository>,
@@ -158,7 +158,7 @@ impl AcademicService {
     ) -> Self {
         Self {
             subject_repo,
-            class_repo,
+            section_repo,
             section_subject_repo,
             prereq_repo,
             grade_repo,
@@ -354,14 +354,14 @@ impl AcademicService {
     }
 
     /// Create Section (Class)
-    pub async fn create_class(
+    pub async fn create_section(
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        input: CreateClassInput,
+        input: CreateSectionInput,
     ) -> Result<Section, DomainError> {
         self.permission_checker
-            .check(ctx, Permission::ClassWrite)
+            .check(ctx, Permission::SectionWrite)
             .await?;
 
         let normalized_name = input.name.trim().to_lowercase();
@@ -377,7 +377,7 @@ impl AcademicService {
             ));
         }
         if self
-            .class_repo
+            .section_repo
             .find_by_org(org_id)
             .await?
             .iter()
@@ -424,13 +424,13 @@ impl AcademicService {
             updated_at: now,
         };
 
-        self.class_repo.save(&section).await?;
+        self.section_repo.save(&section).await?;
 
         let _ = self
             .event_bus
             .publish(
                 ctx,
-                &DomainEvent::ClassCreated {
+                &DomainEvent::SectionCreated {
                     section_id,
                     org_id,
                     period_id: input.period_id.unwrap_or_default(),
@@ -443,18 +443,18 @@ impl AcademicService {
     }
 
     /// Update Section (Class)
-    pub async fn update_class(
+    pub async fn update_section(
         &self,
         ctx: &RequestContext,
         id: Uuid,
-        input: UpdateClassInput,
+        input: UpdateSectionInput,
     ) -> Result<Section, DomainError> {
         self.permission_checker
-            .check(ctx, Permission::ClassWrite)
+            .check(ctx, Permission::SectionWrite)
             .await?;
 
         let mut section = self
-            .class_repo
+            .section_repo
             .find_by_id(id)
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Section {} not found", id)))?;
@@ -496,22 +496,22 @@ impl AcademicService {
         }
 
         section.updated_at = Utc::now();
-        self.class_repo.save(&section).await?;
+        self.section_repo.save(&section).await?;
         Ok(section)
     }
 
     /// List classes
-    pub async fn list_classes(
+    pub async fn list_sections(
         &self,
         org_id: Uuid,
-        filter: ClassFilter,
+        filter: SectionFilter,
     ) -> Result<PaginatedList<Section>, DomainError> {
-        self.class_repo.list(org_id, filter).await
+        self.section_repo.list(org_id, filter).await
     }
 
     /// Get Section by ID
-    pub async fn get_class(&self, id: Uuid) -> Result<Option<Section>, DomainError> {
-        self.class_repo.find_by_id(id).await
+    pub async fn get_section(&self, id: Uuid) -> Result<Option<Section>, DomainError> {
+        self.section_repo.find_by_id(id).await
     }
 
     /// Assign teaching of a subject to a Section (SectionSubject)
@@ -521,7 +521,7 @@ impl AcademicService {
         input: AssignSectionSubjectInput,
     ) -> Result<SectionSubject, DomainError> {
         self.permission_checker
-            .check(ctx, Permission::ClassWrite)
+            .check(ctx, Permission::SectionWrite)
             .await?;
 
         let now = Utc::now();
@@ -580,7 +580,7 @@ impl AcademicService {
         input: UpdateSectionSubjectInput,
     ) -> Result<SectionSubject, DomainError> {
         self.permission_checker
-            .check(ctx, Permission::ClassWrite)
+            .check(ctx, Permission::SectionWrite)
             .await?;
 
         let mut cs = self

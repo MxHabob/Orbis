@@ -254,7 +254,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .collect())
     }
 
-    async fn find_by_class(
+    async fn find_by_section(
         &self,
         section_id: Uuid,
     ) -> Result<Vec<DomainScheduledLesson>, DomainError> {

@@ -477,7 +477,7 @@ impl EnrollmentRepository for StudentRepoImpl {
             .collect())
     }
 
-    async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
         let models = EnrollmentEntity::find()
             .filter(enrollment::Column::SectionId.eq(section_id))
             .all(&self.db)

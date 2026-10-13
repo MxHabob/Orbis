@@ -16,7 +16,7 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, ClassRepository, EmployeeRepository, EnrollmentRepository,
+    AcademicPeriodRepository, SectionRepository, EmployeeRepository, EnrollmentRepository,
     IntegrationRepository, MfaFactorRepository, MfaRecoveryCodeRepository, PersonRepository,
     SectionSubjectRepository, SessionRepository, StudentGuardianRepository, StudentRepository,
     UserDeviceRepository, UserIdentityRepository, UserRepository,
@@ -105,7 +105,7 @@ pub struct AuthService {
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
     pub employee_repo: Option<Arc<dyn EmployeeRepository>>,
     pub section_subject_repo: Option<Arc<dyn SectionSubjectRepository>>,
-    pub class_repo: Option<Arc<dyn ClassRepository>>,
+    pub section_repo: Option<Arc<dyn SectionRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -146,7 +146,7 @@ impl AuthService {
             enrollment_repo: None,
             employee_repo: None,
             section_subject_repo: None,
-            class_repo: None,
+            section_repo: None,
             event_bus,
             permission_checker,
         }
@@ -170,11 +170,11 @@ impl AuthService {
         mut self,
         employee_repo: Arc<dyn EmployeeRepository>,
         section_subject_repo: Arc<dyn SectionSubjectRepository>,
-        class_repo: Arc<dyn ClassRepository>,
+        section_repo: Arc<dyn SectionRepository>,
     ) -> Self {
         self.employee_repo = Some(employee_repo);
         self.section_subject_repo = Some(section_subject_repo);
-        self.class_repo = Some(class_repo);
+        self.section_repo = Some(section_repo);
         self
     }
 
@@ -276,12 +276,12 @@ impl AuthService {
                 Some(period_id),
                 Some(employee_repo),
                 Some(section_subject_repo),
-                Some(class_repo),
+                Some(section_repo),
             ) = (
                 active_period_id,
                 self.employee_repo.as_ref(),
                 self.section_subject_repo.as_ref(),
-                self.class_repo.as_ref(),
+                self.section_repo.as_ref(),
             ) {
                 if let Some(employee) = employee_repo.find_by_user_id(user.org_id, user.id).await? {
                     let assignments = section_subject_repo
@@ -292,7 +292,7 @@ impl AuthService {
                         if !seen_class_ids.insert(assignment.section_id) {
                             continue;
                         }
-                        if let Some(section) = class_repo.find_by_id(assignment.section_id).await? {
+                        if let Some(section) = section_repo.find_by_id(assignment.section_id).await? {
                             if section.org_id == user.org_id
                                 && section.is_active
                                 && !section.is_deleted

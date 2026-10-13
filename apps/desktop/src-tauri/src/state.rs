@@ -7,7 +7,7 @@ use orbis_app::ports::reporting::{
 };
 use orbis_app::ports::repositories::{
     AcademicPeriodRepository, AcademicCalendarRepository, AccountRepository,
-    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, ClassRepository,
+    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, SectionRepository,
     SectionSubjectRepository, PrerequisiteRepository, CurrencyRepository, DashboardRepository,
     DiscountTemplateRepository, DocumentRepository, EnrollmentRepository, ExamProctorRepository,
     ExamScheduleRepository, ExamSessionRepository, FeeTemplateRepository, GpaRecordRepository,
@@ -48,7 +48,7 @@ pub struct AppState {
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub period_type_repo: Arc<dyn PeriodTypeRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
-    pub class_repo: Arc<dyn ClassRepository>,
+    pub section_repo: Arc<dyn SectionRepository>,
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub student_repo: Arc<dyn orbis_app::ports::repositories::StudentRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
@@ -648,7 +648,7 @@ impl AppState {
             period_repo: calendar_repo.clone(),
             period_type_repo: calendar_repo,
             subject_repo: academic_repo.clone(),
-            class_repo: academic_repo.clone(),
+            section_repo: academic_repo.clone(),
             section_subject_repo: academic_repo.clone(),
             student_repo: student_repo.clone(),
             enrollment_repo: student_repo.clone(),

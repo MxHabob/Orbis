@@ -3,7 +3,7 @@ use orbis_app::ports::repositories::AcademicFrameworkRepository;
 use orbis_domain::entities::academic_calendar::{
     AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
 };
-use orbis_domain::entities::subject::Course;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::entities::enrollment::Enrollment;
 use orbis_domain::entities::section_subject::SectionSubject;
 use orbis_domain::errors::DomainError;
@@ -120,8 +120,8 @@ fn map_calendar_period(m: academic_period::Model) -> AcademicPeriod {
     }
 }
 
-fn map_course(m: subject::Model) -> Course {
-    Course {
+fn map_course(m: subject::Model) -> Subject {
+    Subject {
         id: m.id,
         org_id: m.org_id,
         unit_id: m.unit_id,
@@ -400,7 +400,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             .map(|models| models.into_iter().map(map_calendar_period).collect())
     }
 
-    async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Course>, DomainError> {
+    async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Subject>, DomainError> {
         let model = SubjectEntity::find_by_id(id)
             .filter(subject::Column::OrgId.eq(org_id))
             .one(&self.db)
@@ -409,7 +409,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         Ok(model.map(map_course))
     }
 
-    async fn list_courses(&self, org_id: Uuid) -> Result<Vec<Course>, DomainError> {
+    async fn list_courses(&self, org_id: Uuid) -> Result<Vec<Subject>, DomainError> {
         SubjectEntity::find()
             .filter(subject::Column::OrgId.eq(org_id))
             .order_by_asc(subject::Column::Code)
@@ -423,7 +423,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         &self,
         org_id: Uuid,
         code: &str,
-    ) -> Result<Option<Course>, DomainError> {
+    ) -> Result<Option<Subject>, DomainError> {
         let model = SubjectEntity::find()
             .filter(subject::Column::OrgId.eq(org_id))
             .filter(subject::Column::Code.eq(code))
@@ -433,7 +433,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         Ok(model.map(map_course))
     }
 
-    async fn save_course(&self, course: &Course) -> Result<(), DomainError> {
+    async fn save_course(&self, course: &Subject) -> Result<(), DomainError> {
         let active = subject::ActiveModel {
             id: Set(course.id),
             org_id: Set(course.org_id),
