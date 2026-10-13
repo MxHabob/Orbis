@@ -18,12 +18,13 @@ use orbis_domain::entities::{
     academic_calendar::{
         AcademicCalendar, AcademicPeriod, PeriodType,
     },
-    course::Course,
+    subject::Course,
     enrollment::Enrollment,
     section_subject::SectionSubject,
 };
 
 #[derive(Serialize, ToSchema)]
+#[schema(as = FrameworkAcademicCalendarDto)]
 pub struct AcademicCalendarDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -38,6 +39,7 @@ pub struct AcademicCalendarDto {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(as = FrameworkPeriodTypeDto)]
 pub struct PeriodTypeDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -50,6 +52,7 @@ pub struct PeriodTypeDto {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(as = FrameworkAcademicPeriodDto)]
 pub struct AcademicPeriodDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -83,6 +86,7 @@ pub struct CourseDto {
 }
 
 #[derive(Serialize, ToSchema)]
+#[schema(as = FrameworkSectionSubjectDto)]
 pub struct SectionSubjectDto {
     pub id: Uuid,
     pub org_id: Uuid,
@@ -227,7 +231,7 @@ fn course_dto(item: Course) -> CourseDto {
     CourseDto {
         id: item.id,
         org_id: item.org_id,
-        unit_id: item.org_unit_id,
+        unit_id: item.unit_id,
         code: item.code,
         name: item.name,
         name_ar: item.name_ar,
@@ -244,16 +248,16 @@ fn offering_dto(item: SectionSubject) -> SectionSubjectDto {
     SectionSubjectDto {
         id: item.id,
         org_id: item.org_id,
-        course_id: item.course_id,
-        period_id: item.period_id,
-        section_code: item.section_code,
-        name: item.name,
-        status: item.status.to_string(),
-        capacity: item.capacity,
-        starts_at: item.starts_at,
-        ends_at: item.ends_at,
-        created_at: item.created_at,
-        updated_at: item.updated_at,
+        course_id: item.subject_id,
+        period_id: Some(item.period_id),
+        section_code: Some(item.section_id.to_string()),
+        name: None,
+        status: item.status,
+        capacity: item.capacity.map(|c| c as u32),
+        starts_at: None,
+        ends_at: None,
+        created_at: item.created_at.unwrap_or_else(Utc::now),
+        updated_at: item.updated_at.unwrap_or_else(Utc::now),
     }
 }
 
@@ -261,9 +265,9 @@ fn enrollment_dto(item: Enrollment) -> EnrollmentDto {
     EnrollmentDto {
         id: item.id,
         org_id: item.org_id,
-        offering_id: item.offering_id,
+        offering_id: item.section_id.unwrap_or(item.id),
         student_id: item.student_id,
-        attempt_number: item.attempt_number,
+        attempt_number: item.attempt_number as u32,
         status: item.status.to_string(),
         enrolled_at: item.enrolled_at,
         withdrawn_at: item.withdrawn_at,
@@ -414,7 +418,7 @@ pub async fn create_course(
         .create_course(
             &ctx,
             ctx.tenant_id,
-            request.org_unit_id,
+            request.unit_id,
             request.code,
             request.name,
             request.name_ar,

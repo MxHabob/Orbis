@@ -140,6 +140,7 @@ impl AcademicCalendarRepository for CalendarRepoImpl {
             archived_at: Set(year.archived_at),
             archived_by: Set(year.archived_by),
             notes: Set(year.notes.clone()),
+            metadata: Set(None),
             created_at: Set(year.created_at),
             updated_at: Set(year.updated_at),
         };
@@ -190,16 +191,16 @@ fn map_period_model_to_domain(m: academic_period::Model) -> DomainPeriod {
     DomainPeriod {
         id: m.id,
         org_id: m.org_id,
-        year_id: m.year_id,
+        year_id: m.calendar_id,
         parent_id: m.parent_id,
         name: m.name,
         name_ar: m.name_ar,
         code: m.code,
-        period_type: PeriodType::from_str(&m.period_type),
+        period_type: PeriodType::from_str(&m.period_kind),
         period_kind: PeriodKind::from_str(&m.period_kind),
         state: str_to_period_state(&m.status),
-        start_date: m.start_date,
-        end_date: m.end_date,
+        start_date: m.start_date.unwrap_or(m.created_at),
+        end_date: m.end_date.unwrap_or(m.created_at),
         hijri_start: m.hijri_start,
         hijri_end: m.hijri_end,
         enrollment_starts_at: m.enrollment_starts_at,
@@ -232,7 +233,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
 
     async fn find_by_year(&self, year_id: Uuid) -> Result<Vec<DomainPeriod>, DomainError> {
         let models = PeriodEntity::find()
-            .filter(academic_period::Column::YearId.eq(year_id))
+            .filter(academic_period::Column::CalendarId.eq(year_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -266,15 +267,15 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
         let active = academic_period::ActiveModel {
             id: Set(period.id),
             org_id: Set(period.org_id),
-            year_id: Set(period.year_id),
+            calendar_id: Set(period.year_id),
             parent_id: Set(period.parent_id),
+            period_type_id: Set(period.id),
             name: Set(period.name.clone()),
             name_ar: Set(period.name_ar.clone()),
             code: Set(period.code.clone()),
-            period_type: Set(period.period_type.to_string()),
             period_kind: Set(period.period_kind.to_string()),
-            start_date: Set(period.start_date),
-            end_date: Set(period.end_date),
+            start_date: Set(Some(period.start_date)),
+            end_date: Set(Some(period.end_date)),
             hijri_start: Set(period.hijri_start.clone()),
             hijri_end: Set(period.hijri_end.clone()),
             enrollment_starts_at: Set(period.enrollment_starts_at),
@@ -333,13 +334,10 @@ impl PeriodTypeRepository for CalendarRepoImpl {
         Ok(model.map(|m| DomainTemplate {
             id: m.id,
             org_id: m.org_id,
+            code: m.code,
             name: m.name,
             name_ar: m.name_ar,
-            institution_type: m.institution_type,
-            structure: m.structure,
-            is_default: m.is_default,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
+            sort_order: m.sort_order,
         }))
     }
 
@@ -354,28 +352,25 @@ impl PeriodTypeRepository for CalendarRepoImpl {
             .map(|m| DomainTemplate {
                 id: m.id,
                 org_id: m.org_id,
+                code: m.code,
                 name: m.name,
                 name_ar: m.name_ar,
-                institution_type: m.institution_type,
-                structure: m.structure,
-                is_default: m.is_default,
-                created_at: m.created_at,
-                updated_at: m.updated_at,
+                sort_order: m.sort_order,
             })
             .collect())
     }
 
     async fn save(&self, template: &DomainTemplate) -> Result<(), DomainError> {
+        let now = chrono::Utc::now();
         let active = period_type::ActiveModel {
             id: Set(template.id),
             org_id: Set(template.org_id),
+            code: Set(template.code.clone()),
             name: Set(template.name.clone()),
             name_ar: Set(template.name_ar.clone()),
-            institution_type: Set(template.institution_type.clone()),
-            structure: Set(template.structure.clone()),
-            is_default: Set(template.is_default),
-            created_at: Set(template.created_at),
-            updated_at: Set(template.updated_at),
+            sort_order: Set(template.sort_order),
+            created_at: Set(now),
+            updated_at: Set(now),
         };
 
         if TemplateEntity::find_by_id(template.id)

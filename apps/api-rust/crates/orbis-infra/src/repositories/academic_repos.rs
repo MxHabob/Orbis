@@ -257,7 +257,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
 
     async fn find_by_class(&self, section_id: Uuid) -> Result<Vec<DomainSectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
-            .filter(section_subject::Column::ClassId.eq(class_id))
+            .filter(section_subject::Column::SectionId.eq(section_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -273,7 +273,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         period_id: Uuid,
     ) -> Result<Vec<DomainSectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
-            .filter(section_subject::Column::ClassId.eq(class_id))
+            .filter(section_subject::Column::SectionId.eq(section_id))
             .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
@@ -291,10 +291,10 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     ) -> Result<Vec<DomainSectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
             .filter(
-                section_subject::Column::PrimaryTeacherId
+                section_subject::Column::InstructorId
                     .eq(teacher_id)
-                    .or(section_subject::Column::AssistantTeacherId.eq(teacher_id))
-                    .or(section_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+                    .or(section_subject::Column::AssistantInstructorId.eq(teacher_id))
+                    .or(section_subject::Column::SubstituteInstructorId.eq(teacher_id)),
             )
             .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
@@ -488,15 +488,9 @@ impl orbis_app::ports::repositories::PrerequisiteRepository for AcademicRepoImpl
             org_id: m.org_id,
             subject_id: m.subject_id,
             prerequisite_subject_id: m.prerequisite_subject_id,
-            requirement_type: match m.requirement_type.as_str() {
-                "recommended" => orbis_domain::entities::prerequisite::PrerequisiteType::Recommended,
-                "corequisite" => orbis_domain::entities::prerequisite::PrerequisiteType::Corequisite,
-                _ => orbis_domain::entities::prerequisite::PrerequisiteType::Enforce,
-            },
+            requirement_type: m.requirement_type,
             min_grade: m.min_grade,
             min_score: m.min_score,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
         }).collect())
     }
 
@@ -516,15 +510,9 @@ impl orbis_app::ports::repositories::PrerequisiteRepository for AcademicRepoImpl
             org_id: m.org_id,
             subject_id: m.subject_id,
             prerequisite_subject_id: m.prerequisite_subject_id,
-            requirement_type: match m.requirement_type.as_str() {
-                "recommended" => orbis_domain::entities::prerequisite::PrerequisiteType::Recommended,
-                "corequisite" => orbis_domain::entities::prerequisite::PrerequisiteType::Corequisite,
-                _ => orbis_domain::entities::prerequisite::PrerequisiteType::Enforce,
-            },
+            requirement_type: m.requirement_type,
             min_grade: m.min_grade,
             min_score: m.min_score,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
         }).collect())
     }
 
@@ -532,16 +520,17 @@ impl orbis_app::ports::repositories::PrerequisiteRepository for AcademicRepoImpl
         &self,
         prereq: &orbis_domain::entities::prerequisite::Prerequisite,
     ) -> Result<(), DomainError> {
+        let now = chrono::Utc::now();
         let active = crate::models::prerequisite::ActiveModel {
             id: Set(prereq.id),
             org_id: Set(prereq.org_id),
             subject_id: Set(prereq.subject_id),
             prerequisite_subject_id: Set(prereq.prerequisite_subject_id),
-            requirement_type: Set(prereq.requirement_type.to_string()),
+            requirement_type: Set(prereq.requirement_type.clone()),
             min_grade: Set(prereq.min_grade.clone()),
             min_score: Set(prereq.min_score),
-            created_at: Set(prereq.created_at),
-            updated_at: Set(prereq.updated_at),
+            created_at: Set(now),
+            updated_at: Set(now),
         };
 
         if crate::models::prerequisite::Entity::find_by_id(prereq.id)

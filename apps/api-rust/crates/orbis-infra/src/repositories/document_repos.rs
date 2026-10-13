@@ -26,7 +26,7 @@ fn map_document_model_to_domain(m: document::Model) -> DomainDocument {
         category: m.category,
         asset_type: m.asset_type,
         calendar_id: m.calendar_id,
-        term_id: m.term_id,
+        term_id: m.period_id,
         tags: m.tags,
         visibility: m.visibility,
         file_size_bytes: m.file_size_bytes,
@@ -129,7 +129,7 @@ impl DocumentRepository for DocumentRepoImpl {
             query = query.filter(document::Column::CalendarId.eq(Some(ay)));
         }
         if let Some(t) = term_id {
-            query = query.filter(document::Column::TermId.eq(Some(t)));
+            query = query.filter(document::Column::PeriodId.eq(Some(t)));
         }
 
         let models = query
@@ -183,7 +183,7 @@ impl DocumentRepository for DocumentRepoImpl {
             category: Set(document.category.clone()),
             asset_type: Set(document.asset_type.clone()),
             calendar_id: Set(document.calendar_id),
-            term_id: Set(document.term_id),
+            period_id: Set(document.term_id),
             tags: Set(document.tags.clone()),
             visibility: Set(document.visibility.clone()),
             file_size_bytes: Set(document.file_size_bytes),

@@ -75,9 +75,7 @@ impl EmployeeRepoImpl {
             national_id: m.national_id,
             passport_number: m.passport_number,
             gender: m.gender,
-            birth_date: m
-                .birth_date
-                .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+            birth_date: m.birth_date,
             place_of_birth: m.place_of_birth,
             nationality: m.nationality,
             blood_type: m.blood_type,

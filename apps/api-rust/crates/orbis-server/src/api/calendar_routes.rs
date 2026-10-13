@@ -102,11 +102,11 @@ pub struct UpdatePeriodRequest {
 #[derive(Serialize, ToSchema)]
 pub struct PeriodTypeDto {
     pub id: Uuid,
+    pub org_id: Uuid,
+    pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
-    pub institution_type: String,
-    pub structure: serde_json::Value,
-    pub is_default: bool,
+    pub sort_order: i32,
 }
 
 // ── Helpers ─────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ fn year_to_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -
         start_date: y.start_date,
         end_date: y.end_date,
         is_active: y.status == "active",
-        status: y.status,
+        status: y.status.to_string(),
         current_period_id: y.current_period_id,
         notes: y.notes,
         created_at: y.created_at,
@@ -461,11 +461,11 @@ async fn list_period_types(
         .into_iter()
         .map(|t| PeriodTypeDto {
             id: t.id,
+            org_id: t.org_id,
+            code: t.code,
             name: t.name,
             name_ar: t.name_ar,
-            institution_type: t.institution_type,
-            structure: t.structure,
-            is_default: t.is_default,
+            sort_order: t.sort_order,
         })
         .collect();
     Ok(ApiResponse::ok(dtos))

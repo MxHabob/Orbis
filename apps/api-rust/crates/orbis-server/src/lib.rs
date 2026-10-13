@@ -394,7 +394,7 @@ use api::{
             api::org_routes::AutopilotSettingsDto,
             api::org_routes::DashboardCountsDto,
             // Calendar
-            api::calendar_routes::AcademicYearDto,
+            api::calendar_routes::AcademicCalendarDto,
             api::calendar_routes::AcademicPeriodDto,
             orbis_domain::entities::academic_period::PeriodKind,
             orbis_domain::entities::academic_period::PeriodType,

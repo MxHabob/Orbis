@@ -1043,7 +1043,7 @@ pub async fn get_student_annual_results(
 pub async fn get_class_term_results(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Path(class_id): Path<Uuid>,
+    Path(section_id): Path<Uuid>,
     Query(q): Query<ClassTermResultQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentTermReportCard>>>, ApiError> {
     let reports = state
@@ -1062,7 +1062,7 @@ pub async fn get_class_term_results(
 pub async fn get_class_annual_results(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Path(class_id): Path<Uuid>,
+    Path(section_id): Path<Uuid>,
     Query(q): Query<ClassAnnualResultQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentAnnualReportCard>>>, ApiError> {
     let reports = state

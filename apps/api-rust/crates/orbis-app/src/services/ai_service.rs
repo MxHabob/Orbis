@@ -154,7 +154,7 @@ impl AiOrchestrationService {
                 .class_repo
                 .find_by_id(class_id)
                 .await?;
-            let Some(class) = class.filter(|class| class.org_id == ctx.tenant_id) else {
+            let Some(_class) = class.filter(|class| class.org_id == ctx.tenant_id) else {
                 continue;
             };
             let assignments = self
@@ -342,7 +342,7 @@ impl AiOrchestrationService {
                 })
                 .collect()
         };
-        let class = self
+        let _class = self
             .academic_service
             .class_repo
             .find_by_id(section_id)

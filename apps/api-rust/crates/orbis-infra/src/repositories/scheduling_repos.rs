@@ -259,7 +259,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
         section_id: Uuid,
     ) -> Result<Vec<DomainScheduledLesson>, DomainError> {
         let section_subjects = crate::models::section_subject::Entity::find()
-            .filter(crate::models::section_subject::Column::ClassId.eq(class_id))
+            .filter(crate::models::section_subject::Column::SectionId.eq(section_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;

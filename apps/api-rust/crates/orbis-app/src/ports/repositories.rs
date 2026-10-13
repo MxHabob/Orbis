@@ -456,7 +456,7 @@ pub trait ClassRepository: Send + Sync {
         org_id: Uuid,
         filter: orbis_domain::queries::filters::ClassFilter,
     ) -> Result<PaginatedList<Section>, DomainError>;
-    async fn save(&self, Section: &Section) -> Result<(), DomainError>;
+    async fn save(&self, section: &Section) -> Result<(), DomainError>;
 }
 
 #[async_trait]

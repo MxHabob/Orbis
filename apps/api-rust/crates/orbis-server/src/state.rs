@@ -5,7 +5,7 @@ use orbis_app::ports::reporting::{
     ReportJobRepository, ReportTemplateRepository,
 };
 use orbis_app::ports::repositories::{
-    AcademicFrameworkRepository, AcademicPeriodRepository, AcademicYearRepository,
+    AcademicCalendarRepository, AcademicFrameworkRepository, AcademicPeriodRepository,
     AccountRepository, AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
     ClassRepository, SectionSubjectRepository, CurrencyRepository, DashboardRepository,
     DocumentRepository, EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository,
@@ -30,7 +30,7 @@ pub struct AppState {
     pub user_repo: Arc<dyn UserRepository>,
     pub person_repo: Arc<dyn PersonRepository>,
     pub session_repo: Arc<dyn SessionRepository>,
-    pub year_repo: Arc<dyn AcademicYearRepository>,
+    pub year_repo: Arc<dyn AcademicCalendarRepository>,
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub period_type_repo: Arc<dyn PeriodTypeRepository>,
     pub academic_framework_repo: Arc<dyn AcademicFrameworkRepository>,

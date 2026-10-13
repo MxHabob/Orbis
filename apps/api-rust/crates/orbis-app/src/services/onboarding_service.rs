@@ -2226,7 +2226,7 @@ impl OnboardingService {
                         .into(),
                 )
             })?;
-            let active_period = self
+            let _active_period = self
                 .period_repo
                 .find_by_year(active_year_id)
                 .await?
