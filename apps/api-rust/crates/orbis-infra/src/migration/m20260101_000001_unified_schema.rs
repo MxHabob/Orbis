@@ -286,7 +286,7 @@ impl MigrationTrait for Migration {
 
         // Sequence counter
         db.execute_unprepared(
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_sequence_counters_unique ON sequence_counters (org_id, sequence_type, year)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_sequence_counters_unique ON sequence_counters (org_id, sequence_type, academic_calendar)",
         ).await?;
 
         Ok(())
