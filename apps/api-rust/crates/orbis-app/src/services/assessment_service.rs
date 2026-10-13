@@ -379,7 +379,14 @@ impl AssessmentService {
         let mut term_earned = Decimal::ZERO;
         let mut term_points = Decimal::ZERO;
 
+        let policy = self.resolve_policy(org_id, None).await;
+        let pass_threshold = policy.passing_threshold_percentage;
+
         for g in &term_grades {
+            if g.is_exempt || g.is_excused {
+                continue;
+            }
+
             // Resolve actual subject credit hours
             let credit = if let Some(cs) = self
                 .section_subject_repo
@@ -395,12 +402,18 @@ impl AssessmentService {
                 Decimal::from(3)
             };
 
+            let pct = if g.max_score > Decimal::ZERO {
+                (g.score / g.max_score) * Decimal::from(100)
+            } else {
+                g.score
+            };
+
             term_attempted += credit;
-            if g.score >= Decimal::from(60) {
+            if pct >= pass_threshold {
                 term_earned += credit;
             }
-            let course_gpa_point = (g.score / Decimal::from(100)) * Decimal::from(4);
-            term_points += course_gpa_point * credit;
+            let eval = policy.evaluate_percentage(pct);
+            term_points += eval.grade_points * credit;
         }
 
         let term_gpa = if term_attempted > Decimal::ZERO {
@@ -1158,7 +1171,7 @@ impl AssessmentService {
 
         // 6. Aggregate student term report card
         let total_score: Decimal = subject_results.iter().map(|s| s.term_total).sum();
-        let max_possible_score = Decimal::from(subject_results.len() * 50);
+        let max_possible_score = Decimal::from(subject_results.len()) * policy.term_max_score;
         let raw_pct = if max_possible_score > Decimal::ZERO {
             (total_score / max_possible_score) * Decimal::from(100)
         } else {
@@ -1167,10 +1180,26 @@ impl AssessmentService {
         let overall_percentage =
             apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
 
-        let status = if overall_percentage >= policy.honors_threshold_percentage {
-            AcademicStatus::PassedWithHonors
-        } else if overall_percentage >= policy.passing_threshold_percentage {
-            AcademicStatus::Passed
+        let failed_count = subject_results
+            .iter()
+            .filter(|s| s.status == AcademicStatus::Failed)
+            .count();
+        let any_incomplete = subject_results
+            .iter()
+            .any(|s| s.status == AcademicStatus::Incomplete);
+
+        let status = if any_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_count == 0 {
+            if overall_percentage >= policy.honors_threshold_percentage {
+                AcademicStatus::PassedWithHonors
+            } else if overall_percentage >= policy.passing_threshold_percentage {
+                AcademicStatus::Passed
+            } else {
+                AcademicStatus::Failed
+            }
+        } else if failed_count <= policy.max_failed_subjects_for_conditional_pass {
+            AcademicStatus::ConditionalPass
         } else {
             AcademicStatus::Failed
         };
@@ -1330,7 +1359,7 @@ impl AssessmentService {
         }
 
         let total_score: Decimal = annual_subjects.iter().map(|s| s.annual_total).sum();
-        let max_possible_score = Decimal::from(annual_subjects.len() * 100);
+        let max_possible_score = Decimal::from(annual_subjects.len()) * policy.annual_max_score;
         let raw_pct = if max_possible_score > Decimal::ZERO {
             (total_score / max_possible_score) * Decimal::from(100)
         } else {
@@ -1339,10 +1368,26 @@ impl AssessmentService {
         let overall_percentage =
             apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
 
-        let status = if overall_percentage >= policy.honors_threshold_percentage {
-            AcademicStatus::PassedWithHonors
-        } else if overall_percentage >= policy.passing_threshold_percentage {
-            AcademicStatus::Passed
+        let failed_count = annual_subjects
+            .iter()
+            .filter(|s| s.status == AcademicStatus::Failed)
+            .count();
+        let any_incomplete = annual_subjects
+            .iter()
+            .any(|s| s.status == AcademicStatus::Incomplete);
+
+        let status = if any_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_count == 0 {
+            if overall_percentage >= policy.honors_threshold_percentage {
+                AcademicStatus::PassedWithHonors
+            } else if overall_percentage >= policy.passing_threshold_percentage {
+                AcademicStatus::Passed
+            } else {
+                AcademicStatus::Failed
+            }
+        } else if failed_count <= policy.max_failed_subjects_for_conditional_pass {
+            AcademicStatus::ConditionalPass
         } else {
             AcademicStatus::Failed
         };

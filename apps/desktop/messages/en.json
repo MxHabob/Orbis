@@ -3552,7 +3552,7 @@
   "settings_general_time_format_12_hour": "12-hour (AM / PM)",
   "settings_general_time_format_24_hour": "24-hour",
   "academics_nav_calendar": "Academic calendar",
-  "settings_nav_academic_years": "Academic years",
+  "settings_nav_academic_calendars": "Academic years",
   "academic_years_title": "Academic years",
   "academic_years_add_btn": "New academic year",
   "academic_years_search_placeholder": "Search academic years...",

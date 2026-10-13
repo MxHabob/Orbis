@@ -10,6 +10,7 @@ pub mod assessment_scheme;
 pub mod attendance;
 pub mod audit;
 pub mod behavior_record;
+pub mod country_profile;
 pub mod currency;
 pub mod device;
 pub mod discount_template;

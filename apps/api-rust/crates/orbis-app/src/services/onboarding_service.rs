@@ -1402,7 +1402,7 @@ impl OnboardingService {
     // Optional Helper: Provision Blueprint Defaults Scaffolding
     // ─────────────────────────────────────────────────────────
 
-    fn generic_subject_templates() -> Vec<(&'static str, &'static str, Option<&'static str>, bool, i32)> {
+    pub fn generic_subject_templates() -> Vec<(&'static str, &'static str, Option<&'static str>, bool, i32)> {
         vec![
             ("SUBJ-01", "Core Learning Subject", Some("موضوع تعليمي أساسي"), true, 3),
             (
@@ -1422,12 +1422,79 @@ impl OnboardingService {
         ]
     }
 
-    fn generic_class_templates() -> Vec<(&'static str, Option<&'static str>, &'static str, &'static str)> {
+    pub fn generic_class_templates() -> Vec<(&'static str, Option<&'static str>, &'static str, &'static str)> {
         vec![
             ("Learning Group 01", Some("مجموعة تعليمية 01"), "Study Track", "A"),
             ("Learning Group 02", Some("مجموعة تعليمية 02"), "Study Track", "B"),
             ("Learning Group 03", Some("مجموعة تعليمية 03"), "Study Track", "C"),
         ]
+    }
+
+    /// Resolve educational subjects adapted to country profile and institution type
+    pub fn subjects_for_profile_and_type(
+        _country_profile: &orbis_domain::entities::country_profile::CountryProfile,
+        inst_type: &InstitutionType,
+    ) -> Vec<(String, String, Option<String>, bool, i32)> {
+        match inst_type {
+            InstitutionType::School => vec![
+                ("ISL-01".into(), "Islamic Studies".into(), Some("القرآن الكريم والتربية الإسلامية".into()), true, 4),
+                ("ARB-01".into(), "Arabic Language".into(), Some("اللغة العربية".into()), true, 5),
+                ("MATH-01".into(), "Mathematics".into(), Some("الرياضيات".into()), true, 5),
+                ("SCI-01".into(), "Science".into(), Some("العلوم العامة".into()), true, 4),
+                ("ENG-01".into(), "English Language".into(), Some("اللغة الإنجليزية".into()), true, 4),
+                ("SOC-01".into(), "Social Studies".into(), Some("الدراسات الاجتماعية".into()), true, 3),
+                ("COMP-01".into(), "Computer & IT".into(), Some("الحاسوب وتكنولوجيا المعلومات".into()), false, 2),
+            ],
+            InstitutionType::University => vec![
+                ("CS101".into(), "Introduction to Computer Science".into(), Some("مقدمة في علوم الحاسوب".into()), true, 3),
+                ("MATH101".into(), "Calculus I".into(), Some("تفاضل وتكامل 1".into()), true, 3),
+                ("ENG101".into(), "Academic English".into(), Some("لغة إنجليزية أكاديمية".into()), true, 2),
+                ("ISL101".into(), "Islamic Culture".into(), Some("الثقافة الإسلامية".into()), true, 2),
+                ("PHYS101".into(), "General Physics".into(), Some("فيزياء عامة".into()), true, 3),
+            ],
+            InstitutionType::Institute => vec![
+                ("VOC-SAF".into(), "Industrial Safety & Hazards".into(), Some("السلامة المهنية والصناعية".into()), true, 2),
+                ("VOC-ELEC".into(), "Principles of Electrical Circuits".into(), Some("مبادئ الدوائر الكهربائية".into()), true, 3),
+                ("VOC-PRAC".into(), "Applied Workshop Practice".into(), Some("التطبيقات والورش العملية".into()), true, 4),
+                ("VOC-DRAW".into(), "Technical Drawing & CAD".into(), Some("الرسم الهندسي والتقني".into()), false, 2),
+            ],
+        }
+    }
+
+    /// Resolve educational sections/grades adapted to country profile and institution type
+    pub fn sections_for_profile_and_type(
+        country_profile: &orbis_domain::entities::country_profile::CountryProfile,
+        inst_type: &InstitutionType,
+    ) -> Vec<(String, Option<String>, String, String)> {
+        match inst_type {
+            InstitutionType::School => {
+                let stages = country_profile.stages_for("school");
+                let mut sections = Vec::new();
+                for stage in stages {
+                    for level in &stage.levels {
+                        sections.push((
+                            format!("{} - Section A", level.name),
+                            Some(format!("{} - شعبة أ", level.name_ar)),
+                            level.code.clone(),
+                            "A".to_string(),
+                        ));
+                    }
+                }
+                if sections.is_empty() {
+                    sections.push(("First Grade Basic - A".into(), Some("الصف الأول الأساسي - شعبة أ".into()), "G01".into(), "A".into()));
+                }
+                sections
+            }
+            InstitutionType::University => vec![
+                ("CS101 - Section 01".into(), Some("مقدمة الحاسوب - شعبة 01".into()), "UG_Y1".into(), "01".into()),
+                ("MATH101 - Section 01".into(), Some("تفاضل وتكامل 1 - شعبة 01".into()), "UG_Y1".into(), "01".into()),
+                ("ENG101 - Section 01".into(), Some("لغة إنجليزية - شعبة 01".into()), "UG_Y1".into(), "01".into()),
+            ],
+            InstitutionType::Institute => vec![
+                ("Cohort 2026-A Group 1".into(), Some("الدفعة 2026-أ مجموعة 1".into()), "VOC_Y1".into(), "G1".into()),
+                ("Cohort 2026-A Group 2".into(), Some("الدفعة 2026-أ مجموعة 2".into()), "VOC_Y1".into(), "G2".into()),
+            ],
+        }
     }
 
     /// Idempotently provisions standard blueprint defaults (Year, Terms, Stages, Classes, Schemes, Fees)
@@ -1442,35 +1509,6 @@ impl OnboardingService {
             .check(ctx, Permission::OrganizationWrite)
             .await?;
 
-        if req.provision_default_academic_periods.unwrap_or(false) {
-            return Err(DomainError::Validation(
-                "Fixed academic-period presets are no longer provisioned automatically. Configure period types and dates explicitly."
-                    .into(),
-            ));
-        }
-        if req.provision_assessment_scheme.unwrap_or(false) {
-            return Err(DomainError::Validation(
-                "Assessment schemes must be configured with the institution's calculation policy; fixed onboarding schemes are not supported."
-                    .into(),
-            ));
-        }
-        if req.provision_time_slots.unwrap_or(false) {
-            return Err(DomainError::Validation(
-                "Preset timetables are not provisioned. Configure time slots explicitly."
-                    .into(),
-            ));
-        }
-        if req.provision_stages_and_grades.unwrap_or(false)
-            || req.provision_subjects.unwrap_or(false)
-            || req.provision_tuition_fee_template.unwrap_or(false)
-            || req.provision_discount_templates.unwrap_or(false)
-        {
-            return Err(DomainError::Validation(
-                "Onboarding does not create sample academic or financial records. Configure institution-specific records explicitly."
-                    .into(),
-            ));
-        }
-
         let org =
             self.org_repo.find_by_id(org_id).await?.ok_or_else(|| {
                 DomainError::NotFound(format!("Organization {} not found", org_id))
@@ -1482,6 +1520,12 @@ impl OnboardingService {
             .and_then(|v| v.as_str())
             .unwrap_or("school");
         let inst_type = InstitutionType::from_str_loose(institution_type_str);
+        let country_code = org
+            .metadata
+            .as_ref()
+            .and_then(|m| m.get("country_code"))
+            .and_then(|v| v.as_str());
+        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(country_code);
 
         let now = Utc::now();
         let mut created_items = Vec::new();
@@ -2159,7 +2203,7 @@ impl OnboardingService {
             )
             .await?;
         if req.provision_subjects.unwrap_or(false) {
-            let subject_templates = Self::generic_subject_templates();
+            let subject_templates = Self::subjects_for_profile_and_type(&country_profile, &inst_type);
 
             let mut created_subjects = 0;
             for (code, name, name_ar, is_core, hours) in subject_templates {
@@ -2176,7 +2220,7 @@ impl OnboardingService {
                     unit_id: main_unit_id,
                     code: code.to_string(),
                     name: name.to_string(),
-                    name_ar: name_ar.map(|s| s.to_string()),
+                    name_ar: name_ar,
                     description: None,
                     subject_type: "subject".to_string(),
                     is_core,
@@ -2237,13 +2281,13 @@ impl OnboardingService {
                         "Create a teaching period before provisioning learning groups.".into(),
                     )
                 })?;
-            let generic_class_templates = Self::generic_class_templates();
+            let generic_class_templates = Self::sections_for_profile_and_type(&country_profile, &inst_type);
 
             for (name, name_ar, level, div) in generic_class_templates {
                 if existing_classes
                     .items
                     .iter()
-                    .any(|section| section.level.as_deref() == Some(level))
+                    .any(|section| section.level.as_deref() == Some(level.as_str()))
                 {
                     continue;
                 }

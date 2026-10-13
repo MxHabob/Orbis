@@ -264,6 +264,7 @@ pub enum ResultLifecycleState {
     Submitted,
     Reviewed,
     Approved,
+    Published,
     Revised,
     Archived,
 }
@@ -377,10 +378,24 @@ impl ResultSnapshot {
         matches!(self.state, ResultLifecycleState::Approved)
     }
 
+    pub fn is_published(&self) -> bool {
+        matches!(self.state, ResultLifecycleState::Published)
+    }
+
+    pub fn is_finalized(&self) -> bool {
+        matches!(
+            self.state,
+            ResultLifecycleState::Approved | ResultLifecycleState::Published
+        )
+    }
+
     pub fn ensure_mutation_allowed(&self) -> Result<(), String> {
-        if self.is_approved() || matches!(self.state, ResultLifecycleState::Archived) {
+        if self.is_approved()
+            || self.is_published()
+            || matches!(self.state, ResultLifecycleState::Archived)
+        {
             return Err(
-                "Approved or archived result snapshots cannot be directly modified; create a revision with a correction reason.".into(),
+                "Approved, published, or archived result snapshots cannot be directly modified; create a revision with a correction reason.".into(),
             );
         }
         Ok(())
@@ -399,9 +414,12 @@ impl ResultSnapshot {
             (ResultLifecycleState::Calculated, ResultLifecycleState::Submitted) => true,
             (ResultLifecycleState::Submitted, ResultLifecycleState::Reviewed) => true,
             (ResultLifecycleState::Reviewed, ResultLifecycleState::Approved) => true,
+            (ResultLifecycleState::Approved, ResultLifecycleState::Published) => true,
             (ResultLifecycleState::Submitted, ResultLifecycleState::Archived) => true,
             (ResultLifecycleState::Approved, ResultLifecycleState::Revised) => true,
             (ResultLifecycleState::Approved, ResultLifecycleState::Archived) => true,
+            (ResultLifecycleState::Published, ResultLifecycleState::Revised) => true,
+            (ResultLifecycleState::Published, ResultLifecycleState::Archived) => true,
             _ => false,
         };
 
@@ -412,14 +430,14 @@ impl ResultSnapshot {
             ));
         }
 
-        if matches!(to_state, ResultLifecycleState::Approved) && reason.is_none() {
-            return Err("Approval requires a recorded reason.".into());
+        if matches!(to_state, ResultLifecycleState::Approved | ResultLifecycleState::Published) && reason.is_none() {
+            return Err("Approval and publication require a recorded reason.".into());
         }
 
-        if matches!(from_state, ResultLifecycleState::Approved)
-            && !matches!(to_state, ResultLifecycleState::Archived | ResultLifecycleState::Revised)
+        if (from_state == ResultLifecycleState::Approved || from_state == ResultLifecycleState::Published)
+            && !matches!(to_state, ResultLifecycleState::Published | ResultLifecycleState::Archived | ResultLifecycleState::Revised)
         {
-            return Err("Approved results must move through a recorded revision or archival action.".into());
+            return Err("Finalized results must move through a recorded publication, revision, or archival action.".into());
         }
 
         self.state = to_state;
@@ -451,6 +469,20 @@ impl ResultSnapshot {
         )
     }
 
+    pub fn publish(
+        &mut self,
+        published_by: Uuid,
+        published_at: DateTime<Utc>,
+        reason: Option<&str>,
+    ) -> Result<ResultApprovalTransition, String> {
+        self.transition_to(
+            published_by,
+            ResultLifecycleState::Published,
+            published_at,
+            reason,
+        )
+    }
+
     pub fn audit_entry(
         &self,
         actor_id: Uuid,
@@ -478,8 +510,10 @@ impl ResultSnapshot {
         next_payload: JsonValue,
         correction_reason: Option<&str>,
     ) -> Result<Self, String> {
-        if self.state == ResultLifecycleState::Approved && correction_reason.is_none() {
-            return Err("Approved results require a correction reason for a new revision.".into());
+        if (self.state == ResultLifecycleState::Approved || self.state == ResultLifecycleState::Published)
+            && correction_reason.is_none()
+        {
+            return Err("Approved or published results require a correction reason for a new revision.".into());
         }
 
         Ok(Self {
@@ -651,6 +685,16 @@ impl From<ResultSnapshot> for AcademicResultView {
     }
 }
 
+/// Evaluated letter and qualitative grade detail.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+pub struct GradeEvaluationDetail {
+    pub letter_grade: String,
+    pub letter_grade_ar: String,
+    pub grade_points: Decimal,
+    pub is_passed: bool,
+    pub is_honors: bool,
+}
+
 /// Organization-wide or class-level Academic Policy.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct AcademicPolicy {
@@ -669,10 +713,38 @@ pub struct AcademicPolicy {
     /// Maximum rank to display on reports/certificates (None = show all).
     #[serde(default)]
     pub max_displayed_rank: Option<u32>,
+    /// Configurable maximum coursework/continuous assessment score for a term (default 20 in Yemen schools, 40 in universities).
+    #[serde(default = "default_twenty")]
+    pub coursework_max_score: Decimal,
+    /// Configurable maximum term exam score (default 30 in Yemen schools, 60 in universities).
+    #[serde(default = "default_thirty")]
+    pub exam_max_score: Decimal,
+    /// Configurable maximum term total score (default 50 in Yemen schools, 100 in universities).
+    #[serde(default = "default_fifty")]
+    pub term_max_score: Decimal,
+    /// Configurable maximum annual total score (default 100).
+    #[serde(default = "default_annual_hundred")]
+    pub annual_max_score: Decimal,
 }
 
 fn default_true() -> bool {
     true
+}
+
+fn default_twenty() -> Decimal {
+    Decimal::from(20)
+}
+
+fn default_thirty() -> Decimal {
+    Decimal::from(30)
+}
+
+fn default_fifty() -> Decimal {
+    Decimal::from(50)
+}
+
+fn default_annual_hundred() -> Decimal {
+    Decimal::from(100)
 }
 
 impl Default for AcademicPolicy {
@@ -689,6 +761,82 @@ impl Default for AcademicPolicy {
             tie_policy: TiePolicy::StandardCompetition,
             ranking_enabled: true,
             max_displayed_rank: None,
+            coursework_max_score: Decimal::from(20),
+            exam_max_score: Decimal::from(30),
+            term_max_score: Decimal::from(50),
+            annual_max_score: Decimal::from(100),
+        }
+    }
+}
+
+impl AcademicPolicy {
+    /// University default policy: 40 coursework + 60 exam = 100, cohort ranking.
+    pub fn university_default(org_id: Uuid) -> Self {
+        Self {
+            org_id,
+            passing_threshold_percentage: Decimal::from(50),
+            honors_threshold_percentage: Decimal::from(85),
+            minimum_final_exam_score: Some(Decimal::from(20)),
+            max_failed_subjects_for_conditional_pass: 0,
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            ranking_scope: RankingScope::Cohort,
+            tie_policy: TiePolicy::StandardCompetition,
+            ranking_enabled: true,
+            max_displayed_rank: None,
+            coursework_max_score: Decimal::from(40),
+            exam_max_score: Decimal::from(60),
+            term_max_score: Decimal::from(100),
+            annual_max_score: Decimal::from(100),
+        }
+    }
+
+    /// Institute / vocational default policy: 40 theory + 60 practical = 100.
+    pub fn institute_default(org_id: Uuid) -> Self {
+        Self {
+            org_id,
+            passing_threshold_percentage: Decimal::from(60),
+            honors_threshold_percentage: Decimal::from(85),
+            minimum_final_exam_score: Some(Decimal::from(35)),
+            max_failed_subjects_for_conditional_pass: 1,
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            ranking_scope: RankingScope::Class,
+            tie_policy: TiePolicy::StandardCompetition,
+            ranking_enabled: true,
+            max_displayed_rank: None,
+            coursework_max_score: Decimal::from(40),
+            exam_max_score: Decimal::from(60),
+            term_max_score: Decimal::from(100),
+            annual_max_score: Decimal::from(100),
+        }
+    }
+
+    /// Evaluates a percentage mark and returns full evaluation details (letter, Arabic appreciation, grade points, pass/honors).
+    pub fn evaluate_percentage(&self, percentage: Decimal) -> GradeEvaluationDetail {
+        let is_honors = percentage >= self.honors_threshold_percentage;
+        let is_passed = percentage >= self.passing_threshold_percentage;
+
+        let (letter, letter_ar, points) = if percentage >= Decimal::from(90) {
+            ("A", "ممتاز", Decimal::from(4))
+        } else if percentage >= Decimal::from(80) {
+            ("B", "جيد جداً", Decimal::from(3))
+        } else if percentage >= Decimal::from(70) {
+            ("C", "جيد", Decimal::from(2))
+        } else if percentage >= Decimal::from(65) {
+            ("D+", "مقبول مرتفع", Decimal::from_str_exact("1.5").unwrap_or(Decimal::ONE))
+        } else if percentage >= Decimal::from(50) {
+            ("D", "مقبول", Decimal::ONE)
+        } else {
+            ("F", "راسب", Decimal::ZERO)
+        };
+
+        GradeEvaluationDetail {
+            letter_grade: letter.to_string(),
+            letter_grade_ar: letter_ar.to_string(),
+            grade_points: points,
+            is_passed,
+            is_honors,
         }
     }
 }

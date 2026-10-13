@@ -8,7 +8,27 @@ use uuid::Uuid;
 // Assessment Component — a single gradable element within a scheme
 // ═══════════════════════════════════════════════════════════════
 
-/// A single assessment component (e.g., Assignments, Oral, Attendance, Written Test).
+/// The semantic kind of an assessment component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AssessmentComponentKind {
+    Coursework,
+    Assignment,
+    Quiz,
+    Oral,
+    Attendance,
+    Participation,
+    Midterm,
+    FinalExam,
+    Practical,
+    Lab,
+    Project,
+    Competency,
+    Fieldwork,
+    Other,
+}
+
+/// A single assessment component (e.g., Assignments, Oral, Attendance, Written Test, Practical Exam).
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AssessmentComponent {
@@ -28,6 +48,12 @@ pub struct AssessmentComponent {
     pub sort_order: i32,
     /// Whether this component is required (vs. optional/bonus).
     pub is_required: bool,
+    /// Semantic kind of this assessment component.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_type: Option<AssessmentComponentKind>,
+    /// Minimum required score to pass this component (if component-level gatekeeping applies).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_score: Option<Decimal>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -219,6 +245,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 1,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Assignment),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "oral".to_string(),
@@ -228,6 +256,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 2,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Oral),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "attendance".to_string(),
@@ -237,6 +267,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 3,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Attendance),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "written_test".to_string(),
@@ -246,6 +278,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 4,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Quiz),
+                    min_score: None,
                 },
             ],
             is_default: true,
@@ -284,6 +318,8 @@ impl AssessmentScheme {
                 weight: Decimal::ONE,
                 sort_order: 1,
                 is_required: true,
+                component_type: Some(AssessmentComponentKind::FinalExam),
+                min_score: Some(Decimal::from(10)),
             }],
             is_default: true,
             is_system: true,
@@ -317,6 +353,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 1,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Quiz),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "participation".to_string(),
@@ -326,6 +364,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 2,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Participation),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "project".to_string(),
@@ -335,6 +375,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 3,
                     is_required: false,
+                    component_type: Some(AssessmentComponentKind::Project),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "midterm".to_string(),
@@ -344,6 +386,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 4,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Midterm),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "final_exam".to_string(),
@@ -353,6 +397,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 5,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: Some(Decimal::from(20)),
                 },
             ],
             is_default: true,
@@ -387,6 +433,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 1,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: Some(Decimal::from(20)),
                 },
                 AssessmentComponent {
                     code: "practical".to_string(),
@@ -396,6 +444,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 2,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Practical),
+                    min_score: Some(Decimal::from(24)),
                 },
                 AssessmentComponent {
                     code: "attendance".to_string(),
@@ -405,6 +455,182 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 3,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Attendance),
+                    min_score: None,
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create a vocational competency assessment scheme (100 points, practical mastery gate).
+    pub fn default_competency_vocational(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "Vocational Competency Assessment".to_string(),
+            name_ar: Some("تقييم الجدارات المهنية والتدريب العملي".to_string()),
+            description: Some(
+                "Competency-based evaluation: Theory(30) + Practical Skills(50, min 35) + Safety & Standards(20, min 15) = 100"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::ModuleAssessment,
+            institution_scope: InstitutionScope::Institute,
+            components: vec![
+                AssessmentComponent {
+                    code: "theory".to_string(),
+                    name: "Theory Knowledge".to_string(),
+                    name_ar: Some("المعارف النظرية".to_string()),
+                    max_score: Decimal::from(30),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: Some(Decimal::from(15)),
+                },
+                AssessmentComponent {
+                    code: "practical_skills".to_string(),
+                    name: "Practical Skill Execution".to_string(),
+                    name_ar: Some("التطبيق العملي والمهاري".to_string()),
+                    max_score: Decimal::from(50),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Practical),
+                    min_score: Some(Decimal::from(35)),
+                },
+                AssessmentComponent {
+                    code: "safety_standards".to_string(),
+                    name: "Safety & Professional Standards".to_string(),
+                    name_ar: Some("معايير السلامة المهنية والانضباط".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 3,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Competency),
+                    min_score: Some(Decimal::from(15)),
+                },
+            ],
+            is_default: false,
+            is_system: true,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create standard Yemeni school term aggregation scheme (20 coursework + 30 exam = 50).
+    pub fn default_yemen_school_term_aggregation(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "School Term Evaluation (50 pts)".to_string(),
+            name_ar: Some("محصلة الفصل الدراسي المدرسي (50 درجة)".to_string()),
+            description: Some(
+                "Yemeni standard school term: Monthly Coursework Average(20) + Term Exam(30) = 50"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(50),
+            formula: None,
+            level: AssessmentLevel::Term,
+            institution_scope: InstitutionScope::School,
+            components: vec![
+                AssessmentComponent {
+                    code: "coursework_contribution".to_string(),
+                    name: "Monthly Coursework Contribution".to_string(),
+                    name_ar: Some("محصلة الأعمال الشهرية".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "term_exam".to_string(),
+                    name: "Term Final Examination".to_string(),
+                    name_ar: Some("اختبار نهاية الفصل".to_string()),
+                    max_score: Decimal::from(30),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: Some(Decimal::from(10)),
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create credit-hour university course assessment scheme (100 points).
+    pub fn default_university_credit(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "University Credit-Hour Course Assessment".to_string(),
+            name_ar: Some("تقييم المقرر بالساعات المعتمدة (100 درجة)".to_string()),
+            description: Some(
+                "University assessment: Coursework(20) + Midterm(20) + Practical/Project(20) + Final Exam(40) = 100"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::Coursework,
+            institution_scope: InstitutionScope::University,
+            components: vec![
+                AssessmentComponent {
+                    code: "coursework".to_string(),
+                    name: "Assignments & Quizzes".to_string(),
+                    name_ar: Some("الواجبات والاختبارات القصيرة".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "midterm".to_string(),
+                    name: "Midterm Examination".to_string(),
+                    name_ar: Some("الاختبار النصفي".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Midterm),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "project_lab".to_string(),
+                    name: "Project / Laboratory Work".to_string(),
+                    name_ar: Some("المشروع / التطبيق العملي".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 3,
+                    is_required: false,
+                    component_type: Some(AssessmentComponentKind::Lab),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "final_exam".to_string(),
+                    name: "Comprehensive Final Examination".to_string(),
+                    name_ar: Some("الاختبار النهائي الشامل".to_string()),
+                    max_score: Decimal::from(40),
+                    weight: Decimal::ONE,
+                    sort_order: 4,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: Some(Decimal::from(20)),
                 },
             ],
             is_default: true,

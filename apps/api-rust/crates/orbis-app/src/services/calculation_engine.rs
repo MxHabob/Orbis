@@ -817,6 +817,14 @@ impl AcademicCalculationEngine {
         });
         values.insert("term_exam".into(), term_final_exam.unwrap_or(Decimal::ZERO));
 
+        let coursework_max = policy.coursework_max_score;
+        let exam_max = policy.exam_max_score;
+        let term_max = if policy.term_max_score > Decimal::ZERO {
+            policy.term_max_score
+        } else {
+            coursework_max + exam_max
+        };
+
         let monthly_average_expression = if month_nodes.is_empty() {
             AstNode::MeasureLiteral {
                 value: Decimal::ZERO,
@@ -836,7 +844,7 @@ impl AcademicCalculationEngine {
                     }),
                 },
                 AstNode::MeasureLiteral {
-                    value: Decimal::from(20),
+                    value: coursework_max,
                     unit: term_unit.clone(),
                 },
             ],
@@ -849,7 +857,7 @@ impl AcademicCalculationEngine {
                     name: "term_exam".into(),
                 },
                 AstNode::MeasureLiteral {
-                    value: Decimal::from(30),
+                    value: exam_max,
                     unit: exam_unit.clone(),
                 },
             ],
@@ -871,7 +879,7 @@ impl AcademicCalculationEngine {
                 AstNode::Divide {
                     left: Box::new(raw_term_total.clone()),
                     right: Box::new(AstNode::MeasureLiteral {
-                        value: Decimal::from(50),
+                        value: term_max,
                         unit: term_unit.clone(),
                     }),
                 },
@@ -918,7 +926,18 @@ impl AcademicCalculationEngine {
         let term_total = output_value(&calculated, "term_total")?;
         let percentage = output_value(&calculated, "percentage")?;
 
-        let status = if percentage >= policy.honors_threshold_percentage {
+        let is_incomplete = term_final_exam.is_none();
+        let failed_min_exam = if let (Some(min_exam), Some(exam_score)) = (policy.minimum_final_exam_score, term_final_exam) {
+            exam_score < min_exam
+        } else {
+            false
+        };
+
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_min_exam {
+            AcademicStatus::Failed
+        } else if percentage >= policy.honors_threshold_percentage {
             AcademicStatus::PassedWithHonors
         } else if percentage >= policy.passing_threshold_percentage {
             AcademicStatus::Passed
@@ -937,11 +956,11 @@ impl AcademicCalculationEngine {
             monthly_results,
             monthly_average: monthly_avg,
             monthly_contribution,
-            monthly_contribution_max: Decimal::from(20),
+            monthly_contribution_max: coursework_max,
             term_final_exam,
-            term_final_exam_max: Decimal::from(30),
+            term_final_exam_max: exam_max,
             term_total,
-            term_max: Decimal::from(50),
+            term_max,
             percentage,
             letter_grade: Some(letter_grade),
             status,
@@ -1032,7 +1051,7 @@ impl AcademicCalculationEngine {
                                     name: "annual_total".into(),
                                 }),
                                 right: Box::new(AstNode::MeasureLiteral {
-                                    value: Decimal::from(100),
+                                    value: policy.annual_max_score,
                                     unit: annual_unit.clone(),
                                 }),
                             },
@@ -1051,7 +1070,11 @@ impl AcademicCalculationEngine {
         let result = Self::calculate_plan(&plan, &values)?;
         let annual_total = output_value(&result, "annual_total")?;
         let percentage = output_value(&result, "percentage")?;
-        let status = if percentage >= policy.honors_threshold_percentage {
+
+        let is_incomplete = term_1_result.is_none() && term_2_result.is_none();
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if percentage >= policy.honors_threshold_percentage {
             AcademicStatus::PassedWithHonors
         } else if percentage >= policy.passing_threshold_percentage {
             AcademicStatus::Passed
@@ -1070,7 +1093,76 @@ impl AcademicCalculationEngine {
             term_1_result,
             term_2_result,
             annual_total,
-            annual_max: Decimal::from(100),
+            annual_max: policy.annual_max_score,
+            percentage,
+            letter_grade: Some(letter_grade),
+            status,
+        })
+    }
+
+    /// Calculates a vocational training module result combining theory, practical skills, and mandatory competency gate.
+    pub fn calculate_vocational_module_result(
+        subject_id: uuid::Uuid,
+        subject_code: String,
+        subject_name: String,
+        subject_name_ar: Option<String>,
+        theory_score: Option<Decimal>,
+        practical_score: Option<Decimal>,
+        competency_mastered: bool,
+        policy: &AcademicPolicy,
+    ) -> Result<SubjectTermResult, DomainError> {
+        let theory = theory_score.unwrap_or(Decimal::ZERO);
+        let practical = practical_score.unwrap_or(Decimal::ZERO);
+        let theory_max = policy.coursework_max_score; // e.g. 40
+        let practical_max = policy.exam_max_score;     // e.g. 60
+        let total_max = theory_max + practical_max;
+
+        let total_score = theory.min(theory_max) + practical.min(practical_max);
+        let percentage = if total_max > Decimal::ZERO {
+            apply_rounding(
+                (total_score / total_max) * Decimal::from(100),
+                policy.rounding_mode,
+                policy.decimal_places,
+            )
+        } else {
+            Decimal::ZERO
+        };
+
+        let is_incomplete = theory_score.is_none() || practical_score.is_none();
+        let min_practical_met = if let Some(min_p) = policy.minimum_final_exam_score {
+            practical >= min_p
+        } else {
+            true
+        };
+
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if !competency_mastered || !min_practical_met {
+            AcademicStatus::Failed
+        } else if percentage >= policy.honors_threshold_percentage {
+            AcademicStatus::PassedWithHonors
+        } else if percentage >= policy.passing_threshold_percentage {
+            AcademicStatus::Passed
+        } else {
+            AcademicStatus::Failed
+        };
+
+        let letter_grade = Self::resolve_letter_grade(percentage);
+
+        Ok(SubjectTermResult {
+            subject_id,
+            subject_code,
+            subject_name,
+            subject_name_ar,
+            credit_hours: Decimal::from(3),
+            monthly_results: vec![],
+            monthly_average: theory,
+            monthly_contribution: theory,
+            monthly_contribution_max: theory_max,
+            term_final_exam: practical_score,
+            term_final_exam_max: practical_max,
+            term_total: total_score,
+            term_max: total_max,
             percentage,
             letter_grade: Some(letter_grade),
             status,
