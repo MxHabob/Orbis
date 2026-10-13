@@ -17,10 +17,10 @@ import {
   useLinkedStudentId,
   useStudentBehaviorQuery,
 } from "@/hooks/use-api-queries";
-import { useAuth } from "@/lib/api";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
+import { useEffectiveContext } from "@/providers/effective-context";
 import {
   Sparkles,
   CheckCircle,
@@ -35,31 +35,22 @@ const behaviorTypeKeys: Record<string, TranslationKey> = {
 };
 
 export default function BehaviorTabScreen() {
-  const { user, effectiveContext } = useAuth();
+  const {
+    activeRole,
+    dependents,
+    selectedDependent,
+    setSelectedDependentId,
+  } = useEffectiveContext();
   const theme = useTheme();
   const { t, isArabic, formatDate } = useI18n();
 
-  const [selectedDependentId, setSelectedDependentId] = useState<string>();
   const [filterType, setFilterType] = useState<"all" | "merit" | "violation">("all");
 
-  const dependents = effectiveContext?.dependents ?? [];
-  const roles = [
-    ...(user?.roles ?? []),
-    effectiveContext?.effective_role ?? "",
-    ...(effectiveContext?.roles ?? []),
-  ].map((role) => role.toLowerCase().replace(/[^a-z]/g, ""));
-
-  const isStudent = roles.some((role) => role.includes("student"));
-  const isGuardian = roles.some(
-    (role) =>
-      role.includes("parent") ||
-      role.includes("guardian") ||
-      role.includes("family"),
+  const normalizedActiveRole = activeRole.toLowerCase();
+  const isStudent = normalizedActiveRole.includes("student");
+  const isGuardian = ["parent", "guardian", "family"].includes(
+    normalizedActiveRole,
   );
-
-  const selectedDependent =
-    dependents.find((dep) => dep.student_id === selectedDependentId) ??
-    dependents[0];
 
   const requestedStudentId = isStudent
     ? "me"
@@ -71,7 +62,6 @@ export default function BehaviorTabScreen() {
     studentId,
     isLinked,
     isResolving,
-    identityError,
     identityMissing,
     retryIdentity,
   } = useLinkedStudentId(requestedStudentId);
@@ -116,7 +106,7 @@ export default function BehaviorTabScreen() {
       canRetry={
         !missingDependent &&
         !missingStudentProfile &&
-        (isLinked || identityError || behaviorQuery.isError)
+        (isLinked || behaviorQuery.isError)
       }
       errorTitle={
         missingDependent
@@ -133,9 +123,7 @@ export default function BehaviorTabScreen() {
             : hasStudentContext
           ? isLinked
             ? undefined
-            : identityError
-              ? t("home_student_load_error")
-              : t("student_access_denied")
+            : t("student_access_denied")
           : t("behavior_student_context_required")
       }
       onRetry={() =>

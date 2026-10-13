@@ -1,7 +1,7 @@
 import { getPages, type TemplateDocument } from "@docforge/core";
 import { XMark } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { DigitalIdTemplate } from "@/components/digital-id/digital-id-template";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
@@ -14,39 +14,36 @@ import {
   useStudentQuery,
 } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
-import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useEffectiveContext } from "@/providers/effective-context";
 
 export default function DigitalIdModalScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { user, effectiveContext } = useAuth();
+  const {
+    activeRole,
+    dependents,
+    selectedDependent,
+    setSelectedDependentId,
+  } = useEffectiveContext();
   const { t, isArabic } = useI18n();
-  const [selectedDependentId, setSelectedDependentId] = useState<string>();
-  const dependents = effectiveContext?.dependents ?? [];
-
-  const roles = [
-    ...(user?.roles ?? []),
-    effectiveContext?.effective_role ?? "",
-    ...(effectiveContext?.roles ?? []),
-  ].map((role) => role.toLowerCase().replace(/[^a-z]/g, ""));
-  const isStudent = roles.some((role) => role.includes("student"));
-  const isGuardian = roles.some(
-    (role) =>
-      role.includes("parent") ||
-      role.includes("guardian") ||
-      role.includes("family"),
+  const normalizedActiveRole = activeRole.toLowerCase();
+  const isStudent = normalizedActiveRole.includes("student");
+  const isGuardian = ["parent", "guardian", "family"].includes(
+    normalizedActiveRole,
   );
-  const selectedDependent =
-    dependents.find((dep) => dep.student_id === selectedDependentId) ??
-    dependents[0];
   const requestedStudentId = isStudent
     ? "me"
     : isGuardian
       ? selectedDependent?.student_id
       : undefined;
-  const { studentId, isLinked, isResolving, identityError, retryIdentity } =
-    useLinkedStudentId(requestedStudentId);
+  const {
+    studentId,
+    isLinked,
+    isResolving,
+    identityMissing,
+    retryIdentity,
+  } = useLinkedStudentId(requestedStudentId);
   const studentQuery = useStudentQuery(studentId);
   const student = studentQuery.data;
   const organizationQuery = useCurrentOrgQuery();
@@ -136,11 +133,9 @@ export default function DigitalIdModalScreen() {
             className="w-full max-w-[420px] rounded-xl"
             style={{ aspectRatio: 85.6 / 53.98 }}
           />
-        ) : identityError ? (
+        ) : identityMissing ? (
           <EmptyState
-            title={t("digital_id_student_error")}
-            actionTitle={t("home_retry")}
-            onAction={() => void retryIdentity()}
+            title={t("student_profile_missing")}
             fullScreen
           />
         ) : isLinked && studentQuery.isError ? (

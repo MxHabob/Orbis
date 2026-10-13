@@ -6,7 +6,6 @@ use axum::{
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -237,59 +236,6 @@ async fn list_classes(
     Ok(ApiResponse::ok(dtos))
 }
 
-#[utoipa::path(get, path = "/api/v1/teachers/me/classes",
-    params(("period_id" = Option<Uuid>, Query, description = "Active academic period ID")),
-    responses((status = 200, body = Vec<ClassDto>)),
-    security(("bearer" = [])), tag = "Academic")]
-async fn list_my_teaching_classes(
-    ctx: AuthContext,
-    State(state): State<AppState>,
-    axum::extract::Query(query): axum::extract::Query<TeacherClassesQuery>,
-) -> Result<Json<ApiResponse<Vec<ClassDto>>>, ApiError> {
-    let Some(user_id) = ctx.user_id() else {
-        return Err(ApiError::unauthorized("No user identity in token"));
-    };
-    let Some(period_id) = query.period_id else {
-        return Ok(ApiResponse::ok(Vec::new()));
-    };
-    let Some(employee) = state
-        .employee_service
-        .employee_repo
-        .find_by_user_id(ctx.tenant_id, user_id)
-        .await?
-    else {
-        return Ok(ApiResponse::ok(Vec::new()));
-    };
-
-    let assignments = state
-        .section_subject_repo
-        .find_by_teacher(employee.id, period_id)
-        .await?;
-    let mut seen_section_ids = HashSet::new();
-    let mut classes = Vec::new();
-
-    for assignment in assignments
-        .into_iter()
-        .filter(|assignment| assignment.is_active)
-    {
-        if !seen_section_ids.insert(assignment.section_id) {
-            continue;
-        }
-        if let Some(section) = state.class_repo.find_by_id(assignment.section_id).await? {
-            if section.org_id == ctx.tenant_id {
-                classes.push(section_to_dto(section));
-            }
-        }
-    }
-
-    Ok(ApiResponse::ok(classes))
-}
-
-#[derive(Deserialize)]
-struct TeacherClassesQuery {
-    period_id: Option<Uuid>,
-}
-
 #[utoipa::path(get, path = "/api/v1/classes/{id}",
     params(("id" = Uuid, Path, description = "Section ID")),
     responses((status = 200, body = ClassDto)),
@@ -388,10 +334,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/subjects", post(create_subject).get(list_subjects))
         .route("/api/v1/subjects/:id", get(get_subject))
         .route("/api/v1/classes", post(create_class).get(list_classes))
-        .route(
-            "/api/v1/teachers/me/classes",
-            get(list_my_teaching_classes),
-        )
         .route("/api/v1/classes/:id", get(get_class))
         .route(
             "/api/v1/Section-subjects",

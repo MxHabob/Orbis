@@ -16,9 +16,10 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, EnrollmentRepository, IntegrationRepository, MfaFactorRepository,
-    MfaRecoveryCodeRepository, PersonRepository, SessionRepository, StudentGuardianRepository,
-    StudentRepository, UserDeviceRepository, UserIdentityRepository, UserRepository,
+    AcademicPeriodRepository, ClassRepository, EmployeeRepository, EnrollmentRepository,
+    IntegrationRepository, MfaFactorRepository, MfaRecoveryCodeRepository, PersonRepository,
+    SectionSubjectRepository, SessionRepository, StudentGuardianRepository, StudentRepository,
+    UserDeviceRepository, UserIdentityRepository, UserRepository,
 };
 use crate::ports::security::{OidcService, PasswordHasher, TokenService, TotpService};
 
@@ -41,7 +42,17 @@ pub struct EffectiveContextDto {
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
     pub active_period_id: Option<Uuid>,
+    pub student_id: Option<Uuid>,
     pub dependents: Vec<LinkedDependentDto>,
+    pub teaching_classes: Vec<TeachingClassDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TeachingClassDto {
+    pub class_id: Uuid,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub level: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,6 +103,9 @@ pub struct AuthService {
     pub student_guardian_repo: Option<Arc<dyn StudentGuardianRepository>>,
     pub student_repo: Option<Arc<dyn StudentRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
+    pub employee_repo: Option<Arc<dyn EmployeeRepository>>,
+    pub section_subject_repo: Option<Arc<dyn SectionSubjectRepository>>,
+    pub class_repo: Option<Arc<dyn ClassRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -130,6 +144,9 @@ impl AuthService {
             student_guardian_repo: None,
             student_repo: None,
             enrollment_repo: None,
+            employee_repo: None,
+            section_subject_repo: None,
+            class_repo: None,
             event_bus,
             permission_checker,
         }
@@ -149,6 +166,18 @@ impl AuthService {
         self
     }
 
+    pub fn with_teaching_scope_repos(
+        mut self,
+        employee_repo: Arc<dyn EmployeeRepository>,
+        section_subject_repo: Arc<dyn SectionSubjectRepository>,
+        class_repo: Arc<dyn ClassRepository>,
+    ) -> Self {
+        self.employee_repo = Some(employee_repo);
+        self.section_subject_repo = Some(section_subject_repo);
+        self.class_repo = Some(class_repo);
+        self
+    }
+
     /// Build effective context (roles, permissions, active period, linked dependents)
     pub async fn build_effective_context(
         &self,
@@ -158,13 +187,11 @@ impl AuthService {
         let permissions = self
             .permission_checker
             .get_user_permissions(user.id, user.org_id)
-            .await
-            .unwrap_or_default();
+            .await?;
         let roles = self
             .permission_checker
             .get_user_roles(user.id, user.org_id)
-            .await
-            .unwrap_or_default();
+            .await?;
 
         let effective_role = if roles.contains(&"super_admin".to_string()) {
             "super_admin".to_string()
@@ -181,19 +208,21 @@ impl AuthService {
         } else if let Some(first) = roles.first() {
             first.clone()
         } else {
-            "org_admin".to_string()
+            "guest".to_string()
         };
 
         let active_period_id = if let Some(ref pr) = self.academic_period_repo {
-            pr.find_by_org(user.org_id).await.ok().and_then(|periods| {
-                periods.into_iter().find(|p| {
+            pr.find_by_org(user.org_id)
+                .await?
+                .into_iter()
+                .find(|p| {
                     matches!(
                         p.state,
                         orbis_domain::entities::academic_period::AcademicPeriodState::ActiveTeaching
                             | orbis_domain::entities::academic_period::AcademicPeriodState::EnrollmentOpen
                     )
-                }).map(|p| p.id)
-            })
+                })
+                .map(|p| p.id)
         } else {
             None
         };
@@ -204,28 +233,78 @@ impl AuthService {
             self.student_guardian_repo.as_ref(),
             self.student_repo.as_ref(),
         ) {
-            if let Ok(guardianships) = gr.find_by_guardian(person.id).await {
-                for g in guardianships {
-                    if let Ok(Some(student)) = sr.find_by_id(g.student_id).await {
-                        let (full_name, full_name_ar) = if let Ok(Some(st_person)) =
-                            self.person_repo.find_by_id(student.person_id).await
-                        {
-                            (st_person.full_name(), st_person.full_name_ar())
-                        } else {
-                            (format!("Student {}", student.student_number), None)
-                        };
+            for guardianship in gr.find_by_guardian(person.id).await? {
+                if let Some(student) = sr.find_by_id(guardianship.student_id).await? {
+                    let student_person = self.person_repo.find_by_id(student.person_id).await?;
+                    let (full_name, full_name_ar) = student_person
+                        .map(|student_person| {
+                            (student_person.full_name(), student_person.full_name_ar())
+                        })
+                        .unwrap_or_else(|| (format!("Student {}", student.student_number), None));
 
-                        dependents.push(LinkedDependentDto {
-                            student_id: student.id,
-                            full_name,
-                            full_name_ar,
-                            relationship: g.relationship,
-                            is_primary_contact: g.is_primary,
-                            is_emergency_contact: g.is_emergency_contact,
-                            is_fee_payer: g.is_payer,
-                            current_grade_level: None,
-                            current_section_name: None,
-                        });
+                    dependents.push(LinkedDependentDto {
+                        student_id: student.id,
+                        full_name,
+                        full_name_ar,
+                        relationship: guardianship.relationship,
+                        is_primary_contact: guardianship.is_primary,
+                        is_emergency_contact: guardianship.is_emergency_contact,
+                        is_fee_payer: guardianship.is_payer,
+                        current_grade_level: None,
+                        current_section_name: None,
+                    });
+                }
+            }
+        }
+
+        let student_id = if roles.iter().any(|role| role == "student") {
+            if let Some(student_repo) = self.student_repo.as_ref() {
+                student_repo
+                    .find_by_user_id(user.org_id, user.id)
+                    .await?
+                    .map(|student| student.id)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let mut teaching_classes = Vec::new();
+        if roles.iter().any(|role| role == "teacher") {
+            if let (
+                Some(period_id),
+                Some(employee_repo),
+                Some(section_subject_repo),
+                Some(class_repo),
+            ) = (
+                active_period_id,
+                self.employee_repo.as_ref(),
+                self.section_subject_repo.as_ref(),
+                self.class_repo.as_ref(),
+            ) {
+                if let Some(employee) = employee_repo.find_by_user_id(user.org_id, user.id).await? {
+                    let assignments = section_subject_repo
+                        .find_by_teacher(employee.id, period_id)
+                        .await?;
+                    let mut seen_class_ids = std::collections::HashSet::new();
+                    for assignment in assignments.into_iter().filter(|item| item.is_active) {
+                        if !seen_class_ids.insert(assignment.section_id) {
+                            continue;
+                        }
+                        if let Some(section) = class_repo.find_by_id(assignment.section_id).await? {
+                            if section.org_id == user.org_id
+                                && section.is_active
+                                && !section.is_deleted
+                            {
+                                teaching_classes.push(TeachingClassDto {
+                                    class_id: section.id,
+                                    name: section.name,
+                                    name_ar: section.name_ar,
+                                    level: section.level,
+                                });
+                            }
+                        }
                     }
                 }
             }
@@ -236,7 +315,9 @@ impl AuthService {
             roles,
             permissions,
             active_period_id,
+            student_id,
             dependents,
+            teaching_classes,
         })
     }
 

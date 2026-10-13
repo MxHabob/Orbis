@@ -47,7 +47,11 @@ export default function ClassAttendanceScreen() {
     Record<string, string>
   >({});
   const classQuery = useTeacherClassDataQuery(classId);
-  const attendanceQuery = useClassAttendanceQuery(classId, date);
+  const attendanceQuery = useClassAttendanceQuery(
+    classId,
+    date,
+    classQuery.isInScope,
+  );
   const mutation = useBatchMarkAttendanceMutation();
   const { hasPermission } = useEffectiveContext();
   const { t, isArabic, formatDate } = useI18n();
@@ -68,8 +72,11 @@ export default function ClassAttendanceScreen() {
     ({ student }) =>
       !recordedByStudent.has(student.id) && selectedStatuses[student.id],
   ).length;
-  const isPending = classQuery.isPending || attendanceQuery.isPending;
-  const isError = classQuery.isError || attendanceQuery.isError;
+  const isPending =
+    classQuery.isInScope &&
+    (classQuery.isPending || attendanceQuery.isPending);
+  const isError =
+    !classQuery.isInScope || classQuery.isError || attendanceQuery.isError;
 
   const saveAttendance = async () => {
     if (!classId || !canRecord) return;
@@ -96,6 +103,10 @@ export default function ClassAttendanceScreen() {
       title={t("teacher_mark_attendance")}
       isPending={isPending}
       isError={!classId || isError}
+      canRetry={classQuery.isInScope}
+      errorDescription={
+        classQuery.isInScope ? undefined : t("class_access_denied")
+      }
       onRetry={() => {
         void classQuery.refetch();
         void attendanceQuery.refetch();

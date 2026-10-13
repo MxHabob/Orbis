@@ -35,7 +35,6 @@ export default function StudentExamsScreen() {
     studentId,
     isLinked,
     isResolving,
-    identityError,
     identityMissing,
     retryIdentity,
   } = useLinkedStudentId(requestedStudentId);
@@ -49,14 +48,12 @@ export default function StudentExamsScreen() {
       showBack={true}
       isPending={isResolving || (isLinked && examsQuery.isPending)}
       isError={!isResolving && (!isLinked || examsQuery.isError)}
-      canRetry={isLinked || identityError}
+      canRetry={isLinked}
       errorTitle={identityMissing ? t("student_profile_missing") : undefined}
       errorDescription={
         isLinked || isResolving || identityMissing
           ? undefined
-          : identityError
-            ? t("home_student_load_error")
-            : t("student_access_denied")
+          : t("student_access_denied")
       }
       onRetry={() =>
         void (isLinked ? examsQuery.refetch() : retryIdentity())

@@ -63,6 +63,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let student_repo =
         Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
+    let employee_repo =
+        Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
     let scheduling_repo = Arc::new(
         orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() },
     );
@@ -275,6 +277,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(student_repo.clone()),
             Some(student_repo.clone()),
             Some(student_repo.clone()),
+        )
+        .with_teaching_scope_repos(
+            employee_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
         ),
     );
 
@@ -386,8 +393,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_notification_port(notification_adapter.clone()),
     );
 
-    let employee_repo =
-        Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
     let ai_service = Arc::new(
         orbis_app::services::AiOrchestrationService::new(
             integration_resolver.clone(),

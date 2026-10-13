@@ -26,6 +26,9 @@ import { LinkedDependentDto } from "@orbis/sdk";
 export interface EffectiveContextType {
   // ── Authoritative IAM / RBAC Matrix ──────────────────────────────
   effectiveRole: string;
+  activeRole: string;
+  setActiveRole: (role: string) => void;
+  studentId: string | null;
   roles: string[];
   permissions: string[];
   hasRole: (role: string) => boolean;
@@ -68,7 +71,7 @@ export function EffectiveContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, effectiveContext: authCtx } = useAuth();
+  const { effectiveContext: authCtx } = useAuth();
 
   // Authoritative data streams derived directly from session state
   const effectiveRole = useMemo<string>(
@@ -85,6 +88,26 @@ export function EffectiveContextProvider({
     () => authCtx?.permissions ?? [],
     [authCtx?.permissions],
   );
+  const [activeRoleOverride, setActiveRoleOverride] = useState<string | null>(
+    null,
+  );
+  const activeRole =
+    (activeRoleOverride &&
+    (roles.includes(activeRoleOverride) ||
+      activeRoleOverride === effectiveRole)
+      ? activeRoleOverride
+      : null) ??
+    (roles.includes(effectiveRole) ? effectiveRole : roles[0]) ??
+    "guest";
+  const setActiveRole = useCallback(
+    (role: string) => {
+      if (roles.includes(role) || role === effectiveRole) {
+        setActiveRoleOverride(role);
+      }
+    },
+    [effectiveRole, roles],
+  );
+  const studentId = authCtx?.student_id ?? null;
 
   const dependents = useMemo<LinkedDependentDto[]>(
     () => authCtx?.dependents ?? [],
@@ -120,11 +143,11 @@ export function EffectiveContextProvider({
 
   // Target student identifier for academic & student-specific queries
   const targetStudentId = useMemo<string | null>(() => {
-    if (dependents.length > 0) {
+    if (["guardian", "parent", "family"].includes(activeRole.toLowerCase())) {
       return selectedDependent?.student_id ?? null;
     }
-    return user?.id ?? null;
-  }, [dependents, selectedDependent, user?.id]);
+    return activeRole.toLowerCase().includes("student") ? studentId : null;
+  }, [activeRole, selectedDependent, studentId]);
 
   // Setters with persistent caching
   const setSelectedDependentId = useCallback((id: string | null) => {
@@ -209,6 +232,9 @@ export function EffectiveContextProvider({
   const contextValue = useMemo<EffectiveContextType>(
     () => ({
       effectiveRole,
+      activeRole,
+      setActiveRole,
+      studentId,
       roles,
       permissions,
       hasRole,
@@ -231,6 +257,9 @@ export function EffectiveContextProvider({
     }),
     [
       effectiveRole,
+      activeRole,
+      setActiveRole,
+      studentId,
       roles,
       permissions,
       hasRole,

@@ -1140,6 +1140,8 @@ export type EffectiveContextDto = {
     effective_role: string;
     permissions: Array<string>;
     roles: Array<string>;
+    student_id?: string | null;
+    teaching_classes: Array<TeachingClassDto>;
 };
 
 export type EmployeeDetailDto = {
@@ -2286,6 +2288,13 @@ export type TeachingAssignmentInfo = {
     period_id?: string | null;
     subject_id: string;
     subject_name: string;
+};
+
+export type TeachingClassDto = {
+    class_id: string;
+    level?: string | null;
+    name: string;
+    name_ar?: string | null;
 };
 
 export type TemplateBindingDto = {

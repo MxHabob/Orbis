@@ -25,7 +25,10 @@ export default function ClassGradesScreen() {
   const selectedClassSubject =
     classSubjects.find((item) => item.id === selectedSubjectId) ??
     classSubjects[0];
-  const gradesQuery = useClassGradesQuery(selectedClassSubject?.id);
+  const gradesQuery = useClassGradesQuery(
+    selectedClassSubject?.id,
+    classQuery.isInScope,
+  );
   const mutation = useBatchRecordGradesMutation();
   const { hasPermission } = useEffectiveContext();
   const { t, isArabic, formatDate } = useI18n();
@@ -46,9 +49,11 @@ export default function ClassGradesScreen() {
 
 
   const isPending =
-    classQuery.isPending ||
-    Boolean(selectedClassSubject) && gradesQuery.isPending;
+    classQuery.isInScope &&
+    (classQuery.isPending ||
+      Boolean(selectedClassSubject) && gradesQuery.isPending);
   const isError =
+    !classQuery.isInScope ||
     classQuery.isError ||
     Boolean(selectedClassSubject) && gradesQuery.isError;
 
@@ -99,6 +104,10 @@ export default function ClassGradesScreen() {
       title={t("teacher_record_grades")}
       isPending={isPending}
       isError={!classId || isError}
+      canRetry={classQuery.isInScope}
+      errorDescription={
+        classQuery.isInScope ? undefined : t("class_access_denied")
+      }
       onRetry={() => {
         void classQuery.refetch();
         void gradesQuery.refetch();

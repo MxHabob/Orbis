@@ -43,7 +43,6 @@ export default function StudentScheduleScreen() {
     studentId,
     isLinked,
     isResolving,
-    identityError,
     identityMissing,
     retryIdentity,
   } = useLinkedStudentId(requestedStudentId);
@@ -65,14 +64,12 @@ export default function StudentScheduleScreen() {
       showBack={true}
       isPending={isResolving || (isLinked && scheduleQuery.isPending)}
       isError={!isResolving && (!isLinked || scheduleQuery.isError)}
-      canRetry={isLinked || identityError}
+      canRetry={isLinked}
       errorTitle={identityMissing ? t("student_profile_missing") : undefined}
       errorDescription={
         isLinked || isResolving || identityMissing
           ? undefined
-          : identityError
-            ? t("home_student_load_error")
-            : t("student_access_denied")
+          : t("student_access_denied")
       }
       onRetry={() =>
         void (isLinked ? scheduleQuery.refetch() : retryIdentity())

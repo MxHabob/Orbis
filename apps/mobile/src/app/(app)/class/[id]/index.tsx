@@ -45,8 +45,12 @@ export default function ClassIndexScreen() {
     <StudentRecordLayout
       title={className}
       showBack={true}
-      isPending={Boolean(classId) && classQuery.isPending}
-      isError={!classId || classQuery.isError}
+      isPending={classQuery.isInScope && classQuery.isPending}
+      isError={!classQuery.isInScope || classQuery.isError}
+      canRetry={classQuery.isInScope}
+      errorDescription={
+        classQuery.isInScope ? undefined : t("class_access_denied")
+      }
       onRetry={() => void classQuery.refetch()}
     >
       {classQuery.data ? (

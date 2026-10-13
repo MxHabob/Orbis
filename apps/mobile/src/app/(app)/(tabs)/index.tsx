@@ -1,7 +1,6 @@
 import { BookOpen, ChatBubbles } from "@orbis/icons/native";
 import {
   AssignmentChecklist,
-  Assignments,
   Attendance,
   Grades,
   Schedule,
@@ -26,12 +25,11 @@ import { useToast } from "@/components/ui/toast";
 import {
   isApiNotFoundError,
   useMyStudentQuery,
-  useTeacherClassesQuery,
 } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
-import type { ClassDto } from "@/lib/api/types";
 import { useI18n } from "@/lib/i18n";
+import { useEffectiveContext } from "@/providers/effective-context";
 
 type RoleMode = "parent" | "student" | "teacher";
 
@@ -54,13 +52,23 @@ export default function HomeTabScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t, isArabic, l } = useI18n();
-  const { user, effectiveContext, refreshSessionData } = useAuth();
+  const {
+    user,
+    effectiveContext,
+    refreshSessionData,
+    isLoading: isAuthLoading,
+  } = useAuth();
+  const {
+    activeRole: contextRole,
+    setActiveRole: setContextRole,
+    selectedDependent,
+    setSelectedDependentId,
+  } = useEffectiveContext();
   const toast = useToast();
 
   const availableRoles = useMemo(() => {
     const detected = new Set(
       [
-        ...(user?.roles ?? []),
         effectiveContext?.effective_role ?? "",
         ...(effectiveContext?.roles ?? []),
       ]
@@ -70,35 +78,43 @@ export default function HomeTabScreen() {
     return (["parent", "student", "teacher"] as const).filter((role) =>
       detected.has(role),
     );
-  }, [effectiveContext?.effective_role, effectiveContext?.roles, user?.roles]);
+  }, [effectiveContext?.effective_role, effectiveContext?.roles]);
   const initialRole: RoleMode | null = availableRoles.includes("teacher")
     ? "teacher"
     : availableRoles.includes("student")
       ? "student"
       : (availableRoles[0] ?? null);
-  const [selectedRole, setSelectedRole] = useState<RoleMode | null>(initialRole);
+  const contextRoleMode = getRoleMode(contextRole);
   const activeRole =
-    selectedRole && availableRoles.includes(selectedRole)
-      ? selectedRole
+    contextRoleMode && availableRoles.includes(contextRoleMode)
+      ? contextRoleMode
       : initialRole;
-  const activePeriodId = effectiveContext?.active_period_id ?? null;
-  const classesQuery = useTeacherClassesQuery(
-    activeRole === "teacher",
-    activePeriodId,
+  const selectRole = useCallback(
+    (role: RoleMode) => {
+      const roleName = [
+        effectiveContext?.effective_role,
+        ...(effectiveContext?.roles ?? []),
+      ].find(
+        (candidate) => candidate !== undefined && getRoleMode(candidate) === role,
+      );
+      if (roleName) setContextRole(roleName);
+    },
+    [effectiveContext?.effective_role, effectiveContext?.roles, setContextRole],
   );
-  const studentQuery = useMyStudentQuery(activeRole === "student");
+  const studentQuery = useMyStudentQuery(
+    activeRole === "student" && Boolean(effectiveContext?.student_id),
+    effectiveContext?.student_id,
+  );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dependents = effectiveContext?.dependents ?? [];
+  const permissions = effectiveContext?.permissions ?? [];
 
   const refreshHome = useCallback(async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
     try {
       const refreshTasks: Promise<unknown>[] = [refreshSessionData()];
-      if (activeRole === "teacher") {
-        refreshTasks.push(classesQuery.refetch({ throwOnError: true }));
-      }
-      if (activeRole === "student") {
+      if (activeRole === "student" && effectiveContext?.student_id) {
         refreshTasks.push(studentQuery.refetch({ throwOnError: true }));
       }
       const results = await Promise.allSettled(refreshTasks);
@@ -115,7 +131,7 @@ export default function HomeTabScreen() {
     }
   }, [
     activeRole,
-    classesQuery.refetch,
+    effectiveContext?.student_id,
     isRefreshing,
     refreshSessionData,
     studentQuery.refetch,
@@ -146,32 +162,28 @@ export default function HomeTabScreen() {
       dependent.current_section_name ??
       undefined,
     icon: <StudentBoy size={38} />,
-    onPress: () =>
+    onPress: () => {
+      setSelectedDependentId(dependent.student_id);
       router.push({
         pathname: "/(app)/student/[id]",
         params: { id: dependent.student_id },
+      });
+    },
+  }));
+  const teacherClasses: HomeTileData[] = (
+    effectiveContext?.teaching_classes ?? []
+  ).map((classItem) => ({
+    id: classItem.class_id,
+    title: l(classItem.name_ar, classItem.name) ?? classItem.name,
+    subtitle: classItem.level ?? undefined,
+    icon: <BookOpen size={30} color={theme.primary} />,
+    onPress: () =>
+      router.push({
+        pathname: "/(app)/class/[id]",
+        params: { id: classItem.class_id },
       }),
   }));
-  const teacherClasses: HomeTileData[] = (classesQuery.data ?? []).map(
-    (classItem: ClassDto) => ({
-      id: classItem.id,
-      title: l(classItem.name_ar, classItem.name) ?? classItem.name,
-      subtitle:
-        classItem.current_students !== null &&
-        classItem.current_students !== undefined
-          ? t("home_class_students_count", {
-              count: classItem.current_students,
-            })
-          : classItem.level,
-      icon: <BookOpen size={30} color={theme.primary} />,
-      onPress: () =>
-        router.push({
-          pathname: "/(app)/class/[id]",
-          params: { id: classItem.id },
-        }),
-    }),
-  );
-  const firstDependentId = dependents[0]?.student_id;
+  const firstDependentId = selectedDependent?.student_id;
 
   const serviceTiles: HomeTileData[] =
     activeRole === "parent"
@@ -208,6 +220,7 @@ export default function HomeTabScreen() {
           },
         ]
       : activeRole === "student" &&
+          Boolean(effectiveContext?.student_id) &&
           !isApiNotFoundError(studentQuery.error)
         ? [
             {
@@ -237,31 +250,42 @@ export default function HomeTabScreen() {
           ]
         : activeRole === "teacher"
           ? [
+              ...(teacherClasses[0] && permissions.includes("attendance:write")
+                ? [
+                    {
+                      id: "attendance",
+                      title: t("teacher_mark_attendance"),
+                      icon: <Attendance size={38} />,
+                      onPress: () =>
+                        router.push({
+                          pathname: "/(app)/class/[id]/attendance",
+                          params: { id: teacherClasses[0].id },
+                        }),
+                    },
+                    ...(permissions.includes("grade:write") ||
+                    permissions.includes("grade:entry_manage")
+                      ? [
+                          {
+                            id: "grades",
+                            title: t("teacher_record_grades"),
+                            icon: <Grades size={38} />,
+                            onPress: () =>
+                              router.push({
+                                pathname: "/(app)/class/[id]/grades",
+                                params: { id: teacherClasses[0].id },
+                              }),
+                          },
+                        ]
+                      : []),
+                  ]
+                : []),
               {
-                id: "attendance",
-              title: t("teacher_mark_attendance"),
-              icon: <Attendance size={38} />,
-              onPress: () => router.push("/(app)/class/attendance"),
-            },
-            {
-              id: "grades",
-              title: t("teacher_record_grades"),
-              icon: <Grades size={38} />,
-              onPress: () => router.push("/(app)/class/grades"),
-            },
-            {
-              id: "notifications",
-              title: t("home_notifications"),
-              icon: <ChatBubbles size={28} color={theme.primary} />,
-              onPress: () => router.push("/(app)/notifications"),
-            },
-            {
-              id: "assignments",
-              title: t("student_exams"),
-              icon: <Assignments size={38} />,
-              onPress: () => router.push("/(app)/class/homework"),
-            },
-          ]
+                id: "notifications",
+                title: t("home_notifications"),
+                icon: <ChatBubbles size={28} color={theme.primary} />,
+                onPress: () => router.push("/(app)/notifications"),
+              },
+            ]
         : [];
 
   return (
@@ -286,18 +310,18 @@ export default function HomeTabScreen() {
       {roleOptions.length > 1 ? (
         <SegmentedControl
           options={roleOptions}
-          value={activeRole}
-          onChange={setSelectedRole}
+          value={activeRole ?? roleOptions[0].value}
+          onChange={selectRole}
         />
       ) : null}
 
-      {activeRole ? (
+      {activeRole && serviceTiles.length > 0 ? (
         <HomeSection title={t("dashboard_quick_actions")}>
           <QuickActionRow items={serviceTiles} />
         </HomeSection>
       ) : null}
 
-      {!activeRole ? (
+      {!activeRole && !isAuthLoading ? (
         <EmptyState
           title={t("home_role_unavailable")}
           icon={<StudentBoy size={36} color={theme.textSecondary} />}
@@ -319,14 +343,8 @@ export default function HomeTabScreen() {
 
       {activeRole === "teacher" ? (
         <HomeSection title={t("home_classes")}>
-          {classesQuery.isLoading ? (
+          {isAuthLoading ? (
             <HomeTileSkeletonGrid />
-          ) : classesQuery.isError ? (
-            <EmptyState
-              title={t("home_classes_error")}
-              actionTitle={t("home_retry")}
-              onAction={() => void classesQuery.refetch()}
-            />
           ) : teacherClasses.length > 0 ? (
             <HomeTileGrid items={teacherClasses} />
           ) : (
@@ -337,7 +355,14 @@ export default function HomeTabScreen() {
 
       {activeRole === "student" ? (
         <HomeSection title={t("student_profile")}>
-          {studentQuery.isLoading ? (
+          {isAuthLoading ? (
+            <HomeTileSkeletonGrid />
+          ) : !effectiveContext?.student_id ? (
+            <EmptyState
+              title={t("home_no_student_profile")}
+              icon={<StudentBoy size={36} color={theme.textSecondary} />}
+            />
+          ) : studentQuery.isLoading ? (
             <HomeTileSkeletonGrid />
           ) : studentQuery.isError && isApiNotFoundError(studentQuery.error) ? (
             <EmptyState

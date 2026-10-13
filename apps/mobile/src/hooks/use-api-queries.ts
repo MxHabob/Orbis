@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/api";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/api/query-keys";
 import { ApiRequestError } from "@/lib/api/types";
+import { useEffectiveContext } from "@/providers/effective-context";
 import type {
   AcademicContextResponse,
   AttendanceDto,
@@ -60,12 +61,8 @@ export function useCurrentOrgQuery() {
   return useQuery({
     queryKey: queryKeys.org.current(),
     queryFn: async (): Promise<OrgDto | null> => {
-      try {
-        const res = await api.getCurrentOrg({ throwOnError: true });
-        return extractData<OrgDto>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getCurrentOrg({ throwOnError: true });
+      return extractData<OrgDto>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -112,12 +109,8 @@ export function useDashboardQuery() {
   return useQuery({
     queryKey: queryKeys.org.dashboard(),
     queryFn: async (): Promise<DashboardCountsDto | null> => {
-      try {
-        const res = await api.getDashboard({ throwOnError: true });
-        return extractData<DashboardCountsDto>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getDashboard({ throwOnError: true });
+      return extractData<DashboardCountsDto>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -131,12 +124,8 @@ export function useAcademicContextQuery() {
   return useQuery({
     queryKey: queryKeys.calendar.context(),
     queryFn: async (): Promise<AcademicContextResponse | null> => {
-      try {
-        const res = await api.getCurrentContext({ throwOnError: true });
-        return extractData<AcademicContextResponse>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getCurrentContext({ throwOnError: true });
+      return extractData<AcademicContextResponse>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -163,32 +152,6 @@ export function useClassesQuery(enabled = true) {
   });
 }
 
-export function useTeacherClassesQuery(enabled = true, periodId?: string | null) {
-  return useQuery({
-    queryKey: queryKeys.academic.teacherClasses(periodId ?? ""),
-    queryFn: async (): Promise<ClassDto[]> => {
-      if (!periodId) return [];
-      const response = await api.client.get<
-        { 200: ClassDto[] },
-        unknown,
-        true
-      >({
-        url: "/api/v1/teachers/me/classes",
-        query: { period_id: periodId },
-        throwOnError: true,
-      });
-      const classes = extractData<ClassDto[]>(response);
-      if (!Array.isArray(classes)) {
-        throw new Error("The teacher classes response was not a list.");
-      }
-      return classes;
-    },
-    enabled: enabled && Boolean(periodId),
-    staleTime: STALE_TIME,
-    gcTime: GC_TIME,
-  });
-}
-
 export interface TeacherRosterEntry {
   student: StudentDto;
   enrollment: EnrollmentDto;
@@ -203,7 +166,16 @@ export interface TeacherClassData {
 }
 
 export function useTeacherClassDataQuery(classId?: string) {
-  return useQuery({
+  const { activeRole } = useEffectiveContext();
+  const { effectiveContext } = useAuth();
+  const isInScope = Boolean(
+    activeRole.toLowerCase().includes("teacher") &&
+      classId &&
+      effectiveContext?.teaching_classes.some(
+        (classItem) => classItem.class_id === classId,
+      ),
+  );
+  const query = useQuery({
     queryKey: queryKeys.academic.classRoster(classId ?? ""),
     queryFn: async (): Promise<TeacherClassData> => {
       if (!classId) throw new Error("A class ID is required.");
@@ -286,13 +258,18 @@ export function useTeacherClassDataQuery(classId?: string) {
         subjects,
       };
     },
-    enabled: Boolean(classId),
+    enabled: Boolean(classId && isInScope),
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });
+  return { ...query, isInScope };
 }
 
-export function useClassAttendanceQuery(classId?: string, date?: string) {
+export function useClassAttendanceQuery(
+  classId?: string,
+  date?: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.assessment.attendance(classId ?? "", date ?? ""),
     queryFn: async (): Promise<AttendanceDto[]> => {
@@ -312,13 +289,13 @@ export function useClassAttendanceQuery(classId?: string, date?: string) {
       }
       return attendance;
     },
-    enabled: Boolean(classId && date),
+    enabled: enabled && Boolean(classId && date),
     staleTime: 30_000,
     gcTime: GC_TIME,
   });
 }
 
-export function useClassGradesQuery(classSubjectId?: string) {
+export function useClassGradesQuery(classSubjectId?: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.assessment.classGrades(classSubjectId ?? ""),
     queryFn: async (): Promise<GradeDto[]> => {
@@ -336,7 +313,7 @@ export function useClassGradesQuery(classSubjectId?: string) {
       }
       return grades;
     },
-    enabled: Boolean(classSubjectId),
+    enabled: enabled && Boolean(classSubjectId),
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });
@@ -590,9 +567,12 @@ export function useDigitalIdTemplateQuery(organizationId?: string) {
   });
 }
 
-export function useMyStudentQuery(enabled: boolean) {
+export function useMyStudentQuery(
+  enabled: boolean,
+  expectedStudentId?: string | null,
+) {
   return useQuery({
-    queryKey: queryKeys.student.detail("me"),
+    queryKey: queryKeys.student.detail(expectedStudentId ?? "me"),
     queryFn: async (): Promise<StudentDto> => {
       const response = await api.client.get<{ 200: StudentDto }, unknown, true>(
         {
@@ -604,6 +584,9 @@ export function useMyStudentQuery(enabled: boolean) {
       if (!student || typeof student.id !== "string") {
         throw new Error("The student profile response was invalid.");
       }
+      if (expectedStudentId && student.id !== expectedStudentId) {
+        throw new Error("The student profile does not match the active context.");
+      }
       return student;
     },
     enabled,
@@ -613,43 +596,48 @@ export function useMyStudentQuery(enabled: boolean) {
 }
 
 export function useLinkedStudentId(requestedId?: string) {
-  const { effectiveContext, user } = useAuth();
-  const roles = [
-    ...(user?.roles ?? []),
-    effectiveContext?.effective_role ?? "",
-    ...(effectiveContext?.roles ?? []),
-  ].map((role) => role.toLowerCase().replace(/[^a-z]/g, ""));
-  const isStudentRole = roles.some((role) => role.includes("student"));
-  const ownStudentQuery = useMyStudentQuery(isStudentRole);
-  const requestedStudentId =
-    requestedId === "me" ? ownStudentQuery.data?.id : requestedId;
+  const {
+    effectiveContext,
+    isLoading: isAuthLoading,
+    refreshSessionData,
+  } = useAuth();
+  const { activeRole } = useEffectiveContext();
+  const normalizedActiveRole = activeRole.toLowerCase();
+  const isStudentRole = normalizedActiveRole.includes("student");
+  const isGuardianRole = ["parent", "guardian", "family"].includes(
+    normalizedActiveRole,
+  );
+  const ownStudentId = isStudentRole
+    ? (effectiveContext?.student_id ?? undefined)
+    : undefined;
+  const resolvedRequestedId = requestedId === "me" ? ownStudentId : requestedId;
   const isDependent = Boolean(
-    requestedStudentId &&
+    isGuardianRole &&
+      resolvedRequestedId &&
       effectiveContext?.dependents.some(
-        (dependent) => dependent.student_id === requestedStudentId,
+        (dependent) => dependent.student_id === resolvedRequestedId,
       ),
   );
   const isOwnStudent =
-    Boolean(requestedStudentId) &&
-    ownStudentQuery.data?.id === requestedStudentId;
-  const isLinked = Boolean(requestedStudentId) && (isDependent || isOwnStudent);
-  const isResolving =
     isStudentRole &&
-    ownStudentQuery.isPending &&
-    (requestedId === "me" || Boolean(requestedId));
+    Boolean(resolvedRequestedId) &&
+    ownStudentId === resolvedRequestedId;
+  const isLinked =
+    Boolean(resolvedRequestedId) && (isDependent || isOwnStudent);
+  const isResolving = isAuthLoading && Boolean(requestedId);
+  const identityMissing =
+    isStudentRole &&
+    !isAuthLoading &&
+    requestedId === "me" &&
+    !ownStudentId;
 
   return {
-    studentId: isLinked ? requestedStudentId : undefined,
+    studentId: isLinked ? resolvedRequestedId : undefined,
     isLinked,
     isResolving,
     isStudentRole,
-    identityError:
-      isStudentRole &&
-      ownStudentQuery.isError &&
-      !isApiNotFoundError(ownStudentQuery.error),
-    identityMissing:
-      isStudentRole && isApiNotFoundError(ownStudentQuery.error),
-    retryIdentity: ownStudentQuery.refetch,
+    identityMissing,
+    retryIdentity: refreshSessionData,
   };
 }
 
@@ -1053,16 +1041,12 @@ export function useUserQuery(userId?: string) {
   return useQuery({
     queryKey: queryKeys.auth.user(userId || ""),
     queryFn: async (): Promise<UserDto | null> => {
-      if (!userId) return null;
-      try {
-        const res = await api.getUser({
-          path: { id: userId },
-          throwOnError: true,
-        });
-        return extractData<UserDto>(res);
-      } catch {
-        return null;
-      }
+      if (!userId) throw new Error("A user ID is required.");
+      const res = await api.getUser({
+        path: { id: userId },
+        throwOnError: true,
+      });
+      return extractData<UserDto>(res);
     },
     enabled: Boolean(userId),
     staleTime: STALE_TIME,
@@ -1074,12 +1058,8 @@ export function useSystemSettingsQuery() {
   return useQuery({
     queryKey: queryKeys.org.settings(),
     queryFn: async (): Promise<OrganizationSettingsDto | null> => {
-      try {
-        const res = await api.getSettings({ throwOnError: true });
-        return extractData<OrganizationSettingsDto>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getSettings({ throwOnError: true });
+      return extractData<OrganizationSettingsDto>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
