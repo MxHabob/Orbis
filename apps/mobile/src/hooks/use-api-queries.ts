@@ -163,6 +163,32 @@ export function useClassesQuery(enabled = true) {
   });
 }
 
+export function useTeacherClassesQuery(enabled = true, periodId?: string | null) {
+  return useQuery({
+    queryKey: queryKeys.academic.teacherClasses(periodId ?? ""),
+    queryFn: async (): Promise<ClassDto[]> => {
+      if (!periodId) return [];
+      const response = await api.client.get<
+        { 200: ClassDto[] },
+        unknown,
+        true
+      >({
+        url: "/api/v1/teachers/me/classes",
+        query: { period_id: periodId },
+        throwOnError: true,
+      });
+      const classes = extractData<ClassDto[]>(response);
+      if (!Array.isArray(classes)) {
+        throw new Error("The teacher classes response was not a list.");
+      }
+      return classes;
+    },
+    enabled: enabled && Boolean(periodId),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
 export interface TeacherRosterEntry {
   student: StudentDto;
   enrollment: EnrollmentDto;
@@ -628,7 +654,22 @@ export function useLinkedStudentId(requestedId?: string) {
 }
 
 export function isApiNotFoundError(error: unknown): boolean {
-  return error instanceof ApiRequestError && error.status === 404;
+  if (error instanceof ApiRequestError) return error.status === 404;
+  if (typeof error !== "object" || error === null) return false;
+
+  const candidate = error as Record<string, unknown>;
+  if (
+    candidate.status === 404 ||
+    candidate.statusCode === 404 ||
+    candidate.code === "NOT_FOUND"
+  ) {
+    return true;
+  }
+  if (typeof candidate.error === "object" && candidate.error !== null) {
+    const nestedError = candidate.error as Record<string, unknown>;
+    return nestedError.code === "NOT_FOUND";
+  }
+  return false;
 }
 
 export function useStudentAttendanceQuery(studentId?: string) {

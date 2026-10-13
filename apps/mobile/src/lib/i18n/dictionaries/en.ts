@@ -54,6 +54,9 @@ export const en: Record<TranslationKey, string> = {
   home_class_ten_math: "Grade 10 · Math",
   home_dependents: "Linked children",
   home_no_dependents: "No child profiles are currently linked to this account.",
+  home_role_unavailable:
+    "We couldn't identify an account context to show the home page.",
+  home_no_student_profile: "No student profile is linked to this account.",
   home_classes: "My classes",
   home_classes_error:
     "Could not load classes. Check your connection and try again.",
@@ -62,7 +65,7 @@ export const en: Record<TranslationKey, string> = {
   home_class_students_count: "{count} students",
   home_retry: "Try again",
   home_refresh_error: "Couldn't refresh the home page. Please try again.",
-  home_no_classes: "No classes are available for this account.",
+  home_no_classes: "No classes or subjects are assigned to you for this period.",
   home_class_level: "Level",
   teacher_class_roster: "Class roster",
   teacher_class_schedule: "Class schedule",
@@ -89,6 +92,7 @@ export const en: Record<TranslationKey, string> = {
   home_services: "Your services",
   student_profile: "Academic profile",
   student_access_denied: "This account cannot access this student's profile.",
+  student_profile_missing: "No student profile is linked to this account.",
   student_number: "Student number",
   student_status: "Status",
   student_status_active: "Active",

@@ -51,7 +51,10 @@ export default function BehaviorTabScreen() {
 
   const isStudent = roles.some((role) => role.includes("student"));
   const isGuardian = roles.some(
-    (role) => role.includes("parent") || role.includes("guardian"),
+    (role) =>
+      role.includes("parent") ||
+      role.includes("guardian") ||
+      role.includes("family"),
   );
 
   const selectedDependent =
@@ -68,6 +71,8 @@ export default function BehaviorTabScreen() {
     studentId,
     isLinked,
     isResolving,
+    identityError,
+    identityMissing,
     retryIdentity,
   } = useLinkedStudentId(requestedStudentId);
 
@@ -89,6 +94,8 @@ export default function BehaviorTabScreen() {
 
   const hasStudentContext = isStudent || isGuardian;
   const hasSelectedStudent = isStudent || Boolean(selectedDependent);
+  const missingDependent = isGuardian && dependents.length === 0;
+  const missingStudentProfile = isStudent && identityMissing;
 
   return (
     <StudentRecordLayout
@@ -101,15 +108,34 @@ export default function BehaviorTabScreen() {
       }
       isError={
         !hasStudentContext ||
+        missingDependent ||
+        missingStudentProfile ||
         (hasSelectedStudent && !isResolving && !isLinked) ||
         behaviorQuery.isError
       }
-      canRetry={hasStudentContext}
+      canRetry={
+        !missingDependent &&
+        !missingStudentProfile &&
+        (isLinked || identityError || behaviorQuery.isError)
+      }
+      errorTitle={
+        missingDependent
+          ? t("home_no_dependents")
+          : missingStudentProfile
+            ? t("student_profile_missing")
+            : undefined
+      }
       errorDescription={
-        hasStudentContext
+        missingDependent
+          ? undefined
+          : missingStudentProfile
+            ? undefined
+            : hasStudentContext
           ? isLinked
             ? undefined
-            : t("student_access_denied")
+            : identityError
+              ? t("home_student_load_error")
+              : t("student_access_denied")
           : t("behavior_student_context_required")
       }
       onRetry={() =>

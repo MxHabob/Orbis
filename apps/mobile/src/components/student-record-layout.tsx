@@ -86,7 +86,7 @@ export function StudentRecordLayout({
           <View className="flex-1 items-center justify-center py-twelve">
             <EmptyState
               title={errorTitle ?? t("common_error")}
-              description={errorDescription || t("common_retry")}
+              description={errorDescription ?? (canRetry ? t("common_retry") : undefined)}
               actionTitle={canRetry ? t("common_retry") : undefined}
               onAction={canRetry ? onRetry : undefined}
             />

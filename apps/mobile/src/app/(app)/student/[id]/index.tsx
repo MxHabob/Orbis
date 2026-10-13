@@ -59,6 +59,7 @@ export default function StudentIndexScreen() {
     isLinked,
     isResolving,
     identityError,
+    identityMissing,
     retryIdentity,
   } = useLinkedStudentId(requestedStudentId);
 
@@ -84,11 +85,14 @@ export default function StudentIndexScreen() {
       showBack={true}
       isPending={isResolving || (isLinked && studentQuery.isPending)}
       isError={!isResolving && (!isLinked || studentQuery.isError)}
-      canRetry
+      canRetry={isLinked || identityError}
+      errorTitle={identityMissing ? t("student_profile_missing") : undefined}
       errorDescription={
-        isLinked || isResolving || identityError
+        isLinked || isResolving || identityMissing
           ? undefined
-          : t("student_access_denied")
+          : identityError
+            ? t("home_student_load_error")
+            : t("student_access_denied")
       }
       onRetry={() =>
         void (isLinked ? studentQuery.refetch() : retryIdentity())

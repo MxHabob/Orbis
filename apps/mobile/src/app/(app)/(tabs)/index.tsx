@@ -23,8 +23,11 @@ import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useToast } from "@/components/ui/toast";
-import { useClassesQuery, useMyStudentQuery } from "@/hooks/use-api-queries";
-import { isApiNotFoundError } from "@/hooks/use-api-queries";
+import {
+  isApiNotFoundError,
+  useMyStudentQuery,
+  useTeacherClassesQuery,
+} from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import type { ClassDto } from "@/lib/api/types";
@@ -78,7 +81,11 @@ export default function HomeTabScreen() {
     selectedRole && availableRoles.includes(selectedRole)
       ? selectedRole
       : initialRole;
-  const classesQuery = useClassesQuery(activeRole === "teacher");
+  const activePeriodId = effectiveContext?.active_period_id ?? null;
+  const classesQuery = useTeacherClassesQuery(
+    activeRole === "teacher",
+    activePeriodId,
+  );
   const studentQuery = useMyStudentQuery(activeRole === "student");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const dependents = effectiveContext?.dependents ?? [];
@@ -200,7 +207,8 @@ export default function HomeTabScreen() {
             onPress: () => router.push("/(app)/notifications"),
           },
         ]
-      : activeRole === "student"
+      : activeRole === "student" &&
+          !isApiNotFoundError(studentQuery.error)
         ? [
             {
               id: "schedule",
@@ -283,9 +291,11 @@ export default function HomeTabScreen() {
         />
       ) : null}
 
-      <HomeSection title={t("dashboard_quick_actions")}>
-        <QuickActionRow items={serviceTiles} />
-      </HomeSection>
+      {activeRole ? (
+        <HomeSection title={t("dashboard_quick_actions")}>
+          <QuickActionRow items={serviceTiles} />
+        </HomeSection>
+      ) : null}
 
       {!activeRole ? (
         <EmptyState

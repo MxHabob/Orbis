@@ -32,7 +32,10 @@ export default function DigitalIdModalScreen() {
   ].map((role) => role.toLowerCase().replace(/[^a-z]/g, ""));
   const isStudent = roles.some((role) => role.includes("student"));
   const isGuardian = roles.some(
-    (role) => role.includes("parent") || role.includes("guardian"),
+    (role) =>
+      role.includes("parent") ||
+      role.includes("guardian") ||
+      role.includes("family"),
   );
   const selectedDependent =
     dependents.find((dep) => dep.student_id === selectedDependentId) ??
