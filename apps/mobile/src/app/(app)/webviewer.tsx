@@ -1,11 +1,12 @@
-import React, { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
 import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { Screen } from "@/components/layout/screen";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
 import { normalizeWebUrl } from "@/lib/web-urls";
@@ -125,7 +126,7 @@ export default function WebViewerScreen() {
           ) : null}
           {isLoading && !loadFailed ? (
             <View className="absolute inset-0 items-center justify-center bg-background">
-              <ActivityIndicator size="large" color={theme.primary} />
+              <LoadingIndicator size="lg" />
             </View>
           ) : null}
           {loadFailed ? (

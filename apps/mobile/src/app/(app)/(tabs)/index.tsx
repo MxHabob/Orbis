@@ -8,7 +8,7 @@ import {
   StudentBoy,
 } from "@orbis/icons/native/Illustrations";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_OFFSET } from "@/components/header";
 import { HomeHero } from "@/components/home/home-hero";
@@ -22,6 +22,7 @@ import type { HomeTileData } from "@/components/home/types";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useToast } from "@/components/ui/toast";
 import { useClassesQuery, useMyStudentQuery } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
@@ -49,7 +50,8 @@ export default function HomeTabScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t, isArabic, l } = useI18n();
-  const { user, effectiveContext } = useAuth();
+  const { user, effectiveContext, refreshSessionData } = useAuth();
+  const toast = useToast();
 
   const availableRoles = useMemo(() => {
     const detected = new Set(
@@ -77,7 +79,41 @@ export default function HomeTabScreen() {
     : initialRole;
   const classesQuery = useClassesQuery(activeRole === "teacher");
   const studentQuery = useMyStudentQuery(activeRole === "student");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const dependents = effectiveContext?.dependents ?? [];
+
+  const refreshHome = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      const refreshTasks: Promise<unknown>[] = [refreshSessionData()];
+      if (activeRole === "teacher") {
+        refreshTasks.push(classesQuery.refetch({ throwOnError: true }));
+      }
+      if (activeRole === "student") {
+        refreshTasks.push(studentQuery.refetch({ throwOnError: true }));
+      }
+      const results = await Promise.allSettled(refreshTasks);
+      const failedRefresh = results.find(
+        (result): result is PromiseRejectedResult =>
+          result.status === "rejected",
+      );
+      if (failedRefresh) throw failedRefresh.reason;
+    } catch (error) {
+      console.warn("[Home] Pull-to-refresh failed:", error);
+      toast.error(t("home_refresh_error"));
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    activeRole,
+    classesQuery.refetch,
+    isRefreshing,
+    refreshSessionData,
+    studentQuery.refetch,
+    t,
+    toast,
+  ]);
 
   const displayName = isArabic
     ? user?.full_name_ar || user?.full_name
@@ -220,6 +256,13 @@ export default function HomeTabScreen() {
   return (
     <ScreenScrollView
       edges={["bottom", "left", "right"]}
+      refreshing={isRefreshing}
+      onRefresh={refreshHome}
+      refreshControlProps={{
+        tintColor: theme.primary,
+        colors: [theme.primary],
+        progressBackgroundColor: theme.backgroundElement,
+      }}
       contentContainerStyle={{
         paddingTop: insets.top + HEADER_CONTENT_OFFSET + 12,
       }}

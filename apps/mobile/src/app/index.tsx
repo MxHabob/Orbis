@@ -5,21 +5,18 @@
  * the public visitor experience when signed out.
  */
 
-import { View, ActivityIndicator } from "react-native";
 import { Redirect } from "expo-router";
+import { View } from "react-native";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/lib/api";
-import { useTheme } from "@/hooks/use-theme";
 
 export default function IndexGate() {
   const { isAuthenticated, isLoading } = useAuth();
-  const theme = useTheme();
 
   if (isLoading) {
     return (
-      <View
-        className="flex-1 items-center justify-center bg-background"
-      >
-        <ActivityIndicator size="large" color={theme.primary} />
+      <View className="flex-1 items-center justify-center bg-background">
+        <LoadingIndicator size="lg" />
       </View>
     );
   }

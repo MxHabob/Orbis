@@ -4,17 +4,16 @@
  * Search Input with debouncing support, search icon, clear button, and theme support.
  */
 
-import React from "react";
+import { Search } from "@orbis/icons/native";
 import {
-  View,
+  Pressable,
   TextInput,
   type TextInputProps,
-  Pressable,
-  ActivityIndicator,
+  View,
   type ViewStyle,
 } from "react-native";
-import { Search, ChevronRight } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
+import { LoadingIndicator } from "./loading-indicator";
 
 export interface SearchInputProps extends Omit<TextInputProps, "style"> {
   value: string;
@@ -65,7 +64,11 @@ export function SearchInput({
 
       {loading ? (
         <View className="ms-two items-center justify-center">
-          <ActivityIndicator size="small" color={theme.primary} />
+          <LoadingIndicator
+            size="sm"
+            color={theme.primary}
+            containerColor="transparent"
+          />
         </View>
       ) : value ? (
         <Pressable
@@ -75,9 +78,7 @@ export function SearchInput({
           hitSlop={8}
           className="ms-two items-center justify-center"
         >
-          <View
-            className="relative h-[18px] w-[18px] items-center justify-center rounded-full bg-muted-foreground"
-          >
+          <View className="relative h-[18px] w-[18px] items-center justify-center rounded-full bg-muted-foreground">
             <View className="absolute h-[1.5px] w-2.5 rotate-45 bg-white" />
             <View className="absolute h-[1.5px] w-2.5 -rotate-45 bg-white" />
           </View>

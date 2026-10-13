@@ -56,6 +56,7 @@ export const ar = {
     "تعذر تحميل بيانات الطالب. تحقق من الاتصال ثم أعد المحاولة.",
   home_class_students_count: "{count} طالب",
   home_retry: "إعادة المحاولة",
+  home_refresh_error: "تعذر تحديث الصفحة الرئيسية. حاول مرة أخرى.",
   home_no_classes: "لا توجد فصول متاحة لهذا الحساب.",
   home_class_level: "المرحلة",
   teacher_class_roster: "طلاب الفصل",

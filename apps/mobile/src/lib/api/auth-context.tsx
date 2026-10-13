@@ -5,21 +5,6 @@
  * and user state management in the Orbis Mobile Application.
  */
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
-import { api } from "./client";
-import {
-  getSecureItem,
-  setSecureItem,
-  deleteSecureItem,
-  STORAGE_KEYS,
-} from "./storage";
 import type {
   EffectiveContextDto,
   LoginResponse,
@@ -27,8 +12,23 @@ import type {
   MfaVerifyEnrollmentRequest,
   UserDto,
 } from "@orbis/sdk";
-import { OrbisError, ApiRequestError } from "./types";
-
+import type React from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { api } from "./client";
+import {
+  deleteSecureItem,
+  getSecureItem,
+  STORAGE_KEYS,
+  setSecureItem,
+} from "./storage";
+import { ApiRequestError, OrbisError } from "./types";
 
 export interface AuthState {
   user: UserDto | null;
@@ -43,8 +43,6 @@ export interface AuthState {
   needsOnboarding: boolean;
 }
 
-
-
 export interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<LoginResponse>;
   loginWithGoogle: (idToken: string) => Promise<LoginResponse>;
@@ -57,6 +55,7 @@ export interface AuthContextType extends AuthState {
   }) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
+  refreshSessionData: () => Promise<void>;
   checkSetupStatus: () => Promise<boolean>;
   clearError: () => void;
 }
@@ -149,7 +148,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await api.login({ body: { email, password }, throwOnError: true });
+        const res = await api.login({
+          body: { email, password },
+          throwOnError: true,
+        });
         const data = unwrapApiData<LoginResponse>(res);
         if (data?.token && data?.user) {
           await setSession({
@@ -175,7 +177,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await api.googleLogin({ body: { id_token: idToken }, throwOnError: true });
+        const res = await api.googleLogin({
+          body: { id_token: idToken },
+          throwOnError: true,
+        });
         const data = unwrapApiData<LoginResponse>(res);
         if (data?.token && data?.user) {
           await setSession({
@@ -201,7 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await api.mfaChallenge({ body: req as any, throwOnError: true });
+        const res = await api.mfaChallenge({
+          body: req as any,
+          throwOnError: true,
+        });
         const data = unwrapApiData<LoginResponse>(res);
         if (data?.token && data?.user) {
           await setSession({
@@ -224,7 +232,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const mfaVerifyEnrollment = useCallback(
     async (req: MfaVerifyEnrollmentRequest): Promise<boolean> => {
-      const res = await api.mfaVerifyEnrollment({ body: req, throwOnError: true });
+      const res = await api.mfaVerifyEnrollment({
+        body: req,
+        throwOnError: true,
+      });
       return unwrapApiData<boolean>(res);
     },
     [],
@@ -281,7 +292,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const res = await api.getSession({ throwOnError: true });
-          const session = unwrapApiData<{ user?: UserDto; effective_context?: EffectiveContextDto }>(res);
+          const session = unwrapApiData<{
+            user?: UserDto;
+            effective_context?: EffectiveContextDto;
+          }>(res);
           if (session?.user) {
             setUser(session.user);
             await setSecureItem(
@@ -320,6 +334,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logout]);
 
+  const refreshSessionData = useCallback(async () => {
+    const res = await api.getSession({ throwOnError: true });
+    const session = unwrapApiData<{
+      user?: UserDto;
+      effective_context?: EffectiveContextDto | null;
+    }>(res);
+    if (!session?.user) {
+      throw new Error("The session response did not include a user.");
+    }
+
+    setUser(session.user);
+    const writes = [
+      setSecureItem(STORAGE_KEYS.USER, JSON.stringify(session.user)),
+    ];
+    if ("effective_context" in session) {
+      setEffectiveContext(session.effective_context ?? null);
+      writes.push(
+        session.effective_context
+          ? setSecureItem(
+              STORAGE_KEYS.EFFECTIVE_CONTEXT,
+              JSON.stringify(session.effective_context),
+            )
+          : deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
+      );
+    }
+    await Promise.all(writes);
+  }, []);
+
   useEffect(() => {
     restoreSession();
   }, [restoreSession]);
@@ -343,6 +385,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession,
       logout,
       restoreSession,
+      refreshSessionData,
       checkSetupStatus,
       clearError,
     }),
@@ -364,6 +407,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession,
       logout,
       restoreSession,
+      refreshSessionData,
       checkSetupStatus,
       clearError,
     ],

@@ -5,14 +5,9 @@
  */
 
 import React from "react";
-import {
-  Text,
-  ActivityIndicator,
-  type ViewStyle,
-  type TextStyle,
-  View,
-} from "react-native";
+import { Text, type TextStyle, View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
+import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 export type ButtonVariant =
@@ -68,8 +63,7 @@ const variantClasses: Record<
     text: "font-semibold text-secondary-foreground",
   },
   outline: {
-    container:
-      "border border-border border-b-[2.5px] border-b-border bg-card",
+    container: "border border-border border-b-[2.5px] border-b-border bg-card",
     text: "font-semibold text-foreground",
   },
   destructive: {
@@ -178,7 +172,8 @@ export const Button = React.memo<ButtonProps>(
     const variantStyle = variantClasses[normalizedVariant];
     const sizeStyle = sizeClasses[size];
     const isDisabled = disabled || loading;
-    const isTactile = normalizedVariant !== "ghost" && normalizedVariant !== "link";
+    const isTactile =
+      normalizedVariant !== "ghost" && normalizedVariant !== "link";
     const shadowColor =
       normalizedVariant === "destructive"
         ? theme.btnShadowDestructive
@@ -219,7 +214,11 @@ export const Button = React.memo<ButtonProps>(
         ]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={indicatorColor} />
+          <LoadingIndicator
+            size="sm"
+            color={indicatorColor}
+            containerColor="transparent"
+          />
         ) : children !== undefined ? (
           typeof children === "string" || typeof children === "number" ? (
             <Text

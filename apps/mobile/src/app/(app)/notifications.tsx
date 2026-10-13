@@ -1,42 +1,29 @@
 /**
  * @module @orbis/mobile/app/(app)/notifications
  *
- * Notification Center for Orbis Mobile.
- * Features categorized notifications, unread badges, and clear back navigation.
+ * Notification center empty state for the currently unavailable inbox.
  */
 
-import React, { useState } from "react";
-import { View, Text, Pressable } from "react-native";
-import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
-import { EmptyState } from "@/components/ui/empty-state";
-import { Chip } from "@/components/ui/chip";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { useI18n } from "@/lib/i18n";
+import { Bell } from "@orbis/icons/native";
 import { useRouter } from "expo-router";
+import { Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
-import {
-  Bell,
-  AcademicCap,
-  Calendar,
-  Document,
-  Sparkles,
-} from "@orbis/icons/native";
-
-type FilterTab = "all" | "academic" | "attendance" | "system";
+import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
+import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 
 export default function NotificationsScreen() {
-  const { t, isArabic } = useI18n();
+  const { t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
+  const theme = useTheme();
 
   return (
     <View className="flex-1 bg-background">
       <Header
         title={t("home_notifications")}
-        showBack={true}
+        showBack
         onBack={() => router.back()}
       />
 
@@ -46,35 +33,19 @@ export default function NotificationsScreen() {
           paddingTop: insets.top + HEADER_CONTENT_OFFSET,
         }}
         scrollViewProps={{
-          contentContainerClassName: "gap-four px-four pb-[100px]",
+          contentContainerClassName: "flex-grow px-four pb-eight",
         }}
       >
-        {/* Category Filters */}
-        <View className="flex-row items-center gap-two pb-one">
-          <Chip
-            label={t("filter_all") || "All"}
-            selected={activeFilter === "all"}
-            onPress={() => setActiveFilter("all")}
-          />
-          <Chip
-            label={t("domain_academic") || "Academic"}
-            selected={activeFilter === "academic"}
-            onPress={() => setActiveFilter("academic")}
-          />
-          <Chip
-            label={t("domain_attendance") || "Attendance"}
-            selected={activeFilter === "attendance"}
-            onPress={() => setActiveFilter("attendance")}
-          />
-        </View>
-
-        {/* Empty State */}
-        <View className="flex-1 items-center justify-center py-sixteen">
-          <EmptyState
-            title={t("notifications_empty_title") || "All Caught Up"}
-            description={t("notifications_inbox_unavailable_description")}
-            icon={<Bell size={36} className="text-muted-foreground" />}
-          />
+        <View className="flex-1 items-center justify-center px-two">
+          <View className="mb-six h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+            <Bell size={36} color={theme.primary} />
+          </View>
+          <Text className="mb-two text-center text-lg leading-6 font-bold text-foreground">
+            {t("notifications_inbox_unavailable_title")}
+          </Text>
+          <Text className="max-w-[340px] text-center text-sm leading-6 text-muted-foreground">
+            {t("notifications_inbox_unavailable_description")}
+          </Text>
         </View>
       </ScreenScrollView>
     </View>

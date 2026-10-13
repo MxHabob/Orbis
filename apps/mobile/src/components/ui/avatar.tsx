@@ -31,10 +31,10 @@ function getInitials(name?: string | null, fallback?: string) {
 
 export const Avatar = React.memo<AvatarProps>(
   ({ name, fallback, imageUrl, size = 32, className, style, children }) => {
-    const [imageError, setImageError] = useState(false);
-    const pixelSize = typeof size === "number" ? size : sizeMap[size] ?? 36;
+    const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+    const pixelSize = typeof size === "number" ? size : (sizeMap[size] ?? 36);
     const initials = getInitials(name, fallback);
-    const showImage = Boolean(imageUrl) && !imageError;
+    const showImage = Boolean(imageUrl) && imageUrl !== failedImageUrl;
 
     return (
       <View
@@ -54,9 +54,13 @@ export const Avatar = React.memo<AvatarProps>(
           <Image
             source={{ uri: imageUrl! }}
             className="rounded-full"
-            style={{ width: pixelSize, height: pixelSize, borderRadius: pixelSize / 2 }}
+            style={{
+              width: pixelSize,
+              height: pixelSize,
+              borderRadius: pixelSize / 2,
+            }}
             resizeMode="cover"
-            onError={() => setImageError(true)}
+            onError={() => setFailedImageUrl(imageUrl ?? null)}
           />
         ) : (
           <Text

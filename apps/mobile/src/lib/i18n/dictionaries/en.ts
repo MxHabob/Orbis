@@ -61,6 +61,7 @@ export const en: Record<TranslationKey, string> = {
     "Could not load student details. Check your connection and try again.",
   home_class_students_count: "{count} students",
   home_retry: "Try again",
+  home_refresh_error: "Couldn't refresh the home page. Please try again.",
   home_no_classes: "No classes are available for this account.",
   home_class_level: "Level",
   teacher_class_roster: "Class roster",

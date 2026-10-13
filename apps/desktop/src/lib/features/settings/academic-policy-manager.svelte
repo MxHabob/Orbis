@@ -6,14 +6,14 @@
   import { Input } from "@orbis/ui/input";
   import { Label } from "@orbis/ui/label";
   import { Switch } from "@orbis/ui/switch";
+  import { Card, CardContent } from "@orbis/ui/card";
   import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-  } from "@orbis/ui/card";
-  import { Calculator, Plus, Trash, Refresh } from "@orbis/icons";
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+  } from "@orbis/ui/select";
+  import { Plus, Trash, Refresh } from "@orbis/icons";
   import {
     createOrgAcademicPolicyQuery,
     useUpdateAcademicPolicy,
@@ -30,6 +30,7 @@
     CalculationUnit,
   } from "$lib/api";
   import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+  import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
   interface InputEditor {
     name: string;
@@ -146,7 +147,7 @@
         normalize: expression.normalize,
         roundingMode: output.rounding?.mode ?? "round_half_up",
         decimalPlaces: output.rounding?.decimal_places ?? 2,
-        inputs: inputs.map((input, index) => ({
+        inputs: inputs.map((input) => ({
           name: input.name,
           weight: weights.get(input.name) ?? "1",
           minimum: input.minimum == null ? "" : String(input.minimum),
@@ -168,6 +169,13 @@
             label: band.label,
             minimum: String(band.minimum_score),
           })) ?? [],
+        rankingEnabled: settings.ranking_enabled,
+        rankingScope: settings.ranking_scope,
+        tiePolicy: settings.tie_policy,
+        maxDisplayedRank:
+          settings.max_displayed_rank == null
+            ? ""
+            : String(settings.max_displayed_rank),
       };
       customPlanReadOnly = false;
     } else if (plan) {
@@ -189,6 +197,47 @@
   const isDirty = $derived(
     initialSnapshot !== "" && formSnapshot() !== initialSnapshot,
   );
+
+  function roundingLabel(mode: CalculationRoundingMode): string {
+    switch (mode) {
+      case "round_half_up":
+        return m.settings_academic_policy_round_half_up();
+      case "round_up":
+        return m.settings_academic_policy_round_up();
+      case "round_down":
+        return m.settings_academic_policy_round_down();
+      case "truncate":
+        return m.settings_academic_policy_truncate();
+    }
+  }
+
+  function scopeLabel(
+    scope: "class" | "grade_level" | "org_unit" | "cohort",
+  ): string {
+    switch (scope) {
+      case "class":
+        return m.settings_academic_policy_scope_class();
+      case "grade_level":
+        return m.settings_academic_policy_scope_grade();
+      case "org_unit":
+        return m.settings_academic_policy_scope_org();
+      case "cohort":
+        return m.settings_academic_policy_scope_cohort();
+    }
+  }
+
+  function tieLabel(
+    policy: "standard_competition" | "dense" | "fractional",
+  ): string {
+    switch (policy) {
+      case "standard_competition":
+        return m.settings_academic_policy_tie_standard();
+      case "dense":
+        return m.settings_academic_policy_tie_dense();
+      case "fractional":
+        return m.settings_academic_policy_tie_fractional();
+    }
+  }
 
   function buildPlan(): CalculationPlan {
     const unit: CalculationUnit = { type: "score", scale: form.scale.trim() };
@@ -243,17 +292,20 @@
 
   function getValidationError(): string | null {
     if (customPlanReadOnly) return null;
-    if (!form.scale.trim()) return "Specify a measurement scale before saving.";
-    if (!form.outputName.trim()) return "Specify an output name before saving.";
-    if (!form.inputs.length) return "Add at least one calculation input.";
+    if (!form.scale.trim()) return `${m.settings_calc_scale()}: Required`;
+    if (!form.outputName.trim())
+      return `${m.settings_calc_output_name()}: Required`;
+    if (!form.inputs.length) return `${m.settings_calc_inputs()}: Required`;
     const names = form.inputs.map((input) => input.name.trim());
-    if (names.some((name) => !name)) return "Every calculation input needs a name.";
+    if (names.some((name) => !name))
+      return "Every calculation input needs a name.";
     if (new Set(names).size !== names.length) {
       return "Calculation input names must be unique.";
     }
     if (
       form.inputs.some(
-        (input) => !Number.isFinite(Number(input.weight)) || Number(input.weight) < 0,
+        (input) =>
+          !Number.isFinite(Number(input.weight)) || Number(input.weight) < 0,
       )
     ) {
       return "Input weights must be non-negative numbers.";
@@ -261,7 +313,11 @@
     if (!form.inputs.some((input) => Number(input.weight) > 0)) {
       return "At least one input must have a positive weight.";
     }
-    if (!Number.isInteger(Number(form.decimalPlaces)) || form.decimalPlaces < 0 || form.decimalPlaces > 28) {
+    if (
+      !Number.isInteger(Number(form.decimalPlaces)) ||
+      form.decimalPlaces < 0 ||
+      form.decimalPlaces > 28
+    ) {
       return "Decimal places must be between 0 and 28.";
     }
     if (
@@ -295,10 +351,10 @@
     try {
       const saved = await updateMutation.mutateAsync({
         calculation_plan: customPlanReadOnly
-          ? policyQuery.data?.calculation_plan ?? null
+          ? (policyQuery.data?.calculation_plan ?? null)
           : buildPlan(),
         outcome_policy: customPlanReadOnly
-          ? policyQuery.data?.outcome_policy ?? null
+          ? (policyQuery.data?.outcome_policy ?? null)
           : buildOutcomePolicy(),
         ranking_enabled: form.rankingEnabled,
         ranking_scope: form.rankingScope,
@@ -310,7 +366,7 @@
       });
       hydrateFromSettings(saved);
       previewResult = null;
-      toast.success("Calculation policy saved.");
+      toast.success(m.settings_calc_saved());
       await onSaved?.();
     } catch (error: unknown) {
       toast.error(extractErrorMessage(error));
@@ -361,375 +417,530 @@
   }
 </script>
 
-<div class="flex h-full w-full flex-col gap-6 overflow-y-auto p-6 scrollbar-hide">
-  {#if policyQuery.isLoading}
-    <div class="w-full"><SettingsFormSkeleton /></div>
-  {:else if policyQuery.error}
-    <div class="w-full py-12 text-center text-destructive">
-      <p>{m.ui_failed_to_load_academic_policies_838a32()}</p>
-      <Button
-        variant="outline"
-        class="mt-4 cursor-pointer"
-        onclick={() => policyQuery.refetch()}
-      >
-        {m.common_retry()}
-      </Button>
-    </div>
-  {:else}
-    <div class="flex w-full max-w-5xl flex-col gap-5">
-      <header class="flex items-center gap-3 border-b border-border pb-3">
-        <Calculator size={18} class="text-primary" />
-        <div>
-          <h1 class="text-sm font-semibold text-foreground">{m.settings_nav_calculation_engine()}</h1>
-          <p class="mt-1 text-xs text-muted-foreground">
-            Configure this organization’s typed measure, aggregation, rounding, and outcome rules.
+<div class="h-full w-full flex flex-col overflow-hidden bg-background">
+  <main class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide pb-28">
+    <div class="mx-auto w-full max-w-5xl flex flex-col gap-6">
+      {#if policyQuery.isLoading}
+        <SettingsFormSkeleton />
+      {:else if policyQuery.error}
+        <div class="rounded-xl border border-destructive/30 bg-card p-6 text-center">
+          <p class="text-sm font-semibold text-destructive">
+            {m.ui_failed_to_load_academic_policies_838a32()}
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            class="mt-4 h-8 text-xs cursor-pointer"
+            onclick={() => policyQuery.refetch()}
+          >
+            {m.common_retry()}
+          </Button>
         </div>
-      </header>
-
-      {#if customPlanReadOnly}
-        <Card>
-          <CardHeader>
-            <CardTitle>Existing calculation policy</CardTitle>
-            <CardDescription>
-              This policy uses formula nodes not represented by the visual weighted-aggregation editor. It remains unchanged until you explicitly replace it.
-            </CardDescription>
-          </CardHeader>
-          <CardContent class="flex flex-wrap items-center gap-3">
-            <span class="text-xs text-muted-foreground">
-              Version {policyQuery.data?.calculation_plan?.version}
-            </span>
-            <Button variant="outline" onclick={replaceCustomPlan}>
-              Replace with weighted aggregation
-            </Button>
-          </CardContent>
-        </Card>
       {:else}
-        <Card>
-          <CardHeader>
-            <CardTitle>Calculation plan</CardTitle>
-            <CardDescription>
-              Inputs share one configured score scale. Choose a weighted sum or normalized weighted average; the engine validates units and ranges before saving.
-            </CardDescription>
-          </CardHeader>
-          <CardContent class="flex flex-col gap-5">
-            <div class="grid gap-4 sm:grid-cols-2">
+        {#if customPlanReadOnly}
+          <Card class="overflow-hidden border-border/70 shadow-xs">
+            <CardContent class="flex items-center justify-between gap-4 p-5">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex items-center rounded bg-muted px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
+                  v{policyQuery.data?.calculation_plan?.version}
+                </span>
+                <span class="text-xs font-medium text-foreground">
+                  {m.settings_calc_custom_plan_badge()}
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                class="h-8 text-xs cursor-pointer"
+                onclick={replaceCustomPlan}
+              >
+                {m.settings_calc_replace_custom()}
+              </Button>
+            </CardContent>
+          </Card>
+        {:else}
+          <!-- Core Calculation Parameters -->
+          <Card class="overflow-hidden border-border/70 shadow-xs">
+            <CardContent class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2 lg:grid-cols-4">
               <div class="flex flex-col gap-1.5">
-                <Label for="calculation-scale">Measure scale</Label>
+                <Label for="calc-scale" class="text-xs font-medium text-foreground">
+                  {m.settings_calc_scale()}
+                </Label>
                 <Input
-                  id="calculation-scale"
+                  id="calc-scale"
+                  class="h-9 text-xs"
+                  placeholder={m.settings_calc_scale_placeholder()}
                   bind:value={form.scale}
-                  placeholder="For example: points, percentage, GPA"
                   disabled={isSaving}
                 />
               </div>
+
               <div class="flex flex-col gap-1.5">
-                <Label for="calculation-output">Output name</Label>
+                <Label for="calc-output" class="text-xs font-medium text-foreground">
+                  {m.settings_calc_output_name()}
+                </Label>
                 <Input
-                  id="calculation-output"
+                  id="calc-output"
+                  class="h-9 text-xs"
                   bind:value={form.outputName}
                   disabled={isSaving}
                 />
               </div>
-            </div>
 
-            <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border p-3">
-              <div>
-                <Label for="normalize-weights">Normalize weighted result</Label>
-                <p class="mt-1 text-[11px] text-muted-foreground">
-                  Enabled calculates a weighted average; disabled returns the weighted sum.
-                </p>
-              </div>
-              <Switch
-                id="normalize-weights"
-                checked={form.normalize}
-                onCheckedChange={(checked) => (form.normalize = checked)}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div class="flex flex-col gap-3">
-              <div class="flex items-center justify-between gap-3">
-                <h2 class="text-xs font-semibold">Calculation inputs</h2>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  class="gap-1.5"
-                  onclick={() => form.inputs.push(newInput(form.inputs.length))}
+              <div class="flex flex-col gap-1.5">
+                <Label class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_rounding()}
+                </Label>
+                <Select
+                  type="single"
+                  value={form.roundingMode}
+                  onValueChange={(val) => {
+                    if (val) form.roundingMode = val as CalculationRoundingMode;
+                  }}
                   disabled={isSaving}
                 >
-                  <Plus size={13} /> Add input
-                </Button>
+                  <SelectTrigger class="h-9 w-full text-xs">
+                    {roundingLabel(form.roundingMode)}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="round_half_up">{m.settings_academic_policy_round_half_up()}</SelectItem>
+                    <SelectItem value="round_up">{m.settings_academic_policy_round_up()}</SelectItem>
+                    <SelectItem value="round_down">{m.settings_academic_policy_round_down()}</SelectItem>
+                    <SelectItem value="truncate">{m.settings_academic_policy_truncate()}</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {#each form.inputs as input, index (index)}
-                <div class="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-6">
-                  <div class="flex flex-col gap-1.5 sm:col-span-2">
-                    <Label for={`input-name-${index}`}>Input name</Label>
-                    <Input id={`input-name-${index}`} bind:value={input.name} disabled={isSaving} />
-                  </div>
-                  <div class="flex flex-col gap-1.5">
-                    <Label for={`input-weight-${index}`}>Weight</Label>
-                    <Input id={`input-weight-${index}`} type="number" min="0" step="any" bind:value={input.weight} disabled={isSaving} />
-                  </div>
-                  <div class="flex flex-col gap-1.5">
-                    <Label for={`input-minimum-${index}`}>Minimum</Label>
-                    <Input id={`input-minimum-${index}`} type="number" step="any" bind:value={input.minimum} disabled={isSaving} />
-                  </div>
-                  <div class="flex flex-col gap-1.5">
-                    <Label for={`input-maximum-${index}`}>Maximum</Label>
-                    <Input id={`input-maximum-${index}`} type="number" step="any" bind:value={input.maximum} disabled={isSaving} />
-                  </div>
-                  <div class="flex flex-col gap-1.5">
-                    <Label for={`input-sample-${index}`}>Preview value</Label>
-                    <Input id={`input-sample-${index}`} type="number" step="any" bind:value={input.sample} disabled={isSaving} />
-                  </div>
-                  {#if form.inputs.length > 1}
-                    <div class="flex items-end sm:col-span-6 sm:justify-end">
-                      <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label="Remove input"
-                        onclick={() => form.inputs.splice(index, 1)}
-                        disabled={isSaving}
-                      >
-                        <Trash size={14} />
-                      </Button>
-                    </div>
-                  {/if}
-                </div>
-              {/each}
-            </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
               <div class="flex flex-col gap-1.5">
-                <Label for="rounding-mode">Rounding mode</Label>
-                <select
-                  id="rounding-mode"
-                  class="h-9 rounded-md border border-input bg-background px-3 text-xs"
-                  bind:value={form.roundingMode}
-                  disabled={isSaving}
-                >
-                  <option value="round_half_up">Round half up</option>
-                  <option value="round_up">Round away from zero</option>
-                  <option value="round_down">Round toward zero</option>
-                  <option value="truncate">Truncate</option>
-                </select>
-              </div>
-              <div class="flex flex-col gap-1.5">
-                <Label for="decimal-places">Decimal places</Label>
+                <Label for="calc-decimals" class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_decimal_places()}
+                </Label>
                 <Input
-                  id="decimal-places"
+                  id="calc-decimals"
                   type="number"
                   min="0"
                   max="28"
                   step="1"
+                  class="h-9 text-xs"
                   bind:value={form.decimalPlaces}
                   disabled={isSaving}
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Outcome policy</CardTitle>
-            <CardDescription>
-              Pass thresholds and grade bands are optional and use the configured output scale.
-            </CardDescription>
-          </CardHeader>
-          <CardContent class="flex flex-col gap-4">
-            <div class="flex items-center justify-between gap-3">
-              <Label for="outcome-policy-enabled">Evaluate outcome thresholds</Label>
-              <Switch
-                id="outcome-policy-enabled"
-                checked={form.outcomeEnabled}
-                onCheckedChange={(checked) => (form.outcomeEnabled = checked)}
-                disabled={isSaving}
-              />
-            </div>
-            {#if form.outcomeEnabled}
-              <div class="grid gap-4 sm:grid-cols-2">
-                <div class="flex flex-col gap-1.5">
-                  <Label for="passing-threshold">Passing threshold</Label>
-                  <Input id="passing-threshold" type="number" step="any" bind:value={form.passThreshold} disabled={isSaving} />
+              <div class="flex items-center justify-between border-t border-border/40 pt-4 sm:col-span-2 lg:col-span-4">
+                <span class="text-xs font-medium text-foreground">
+                  {m.settings_calc_normalize()}
+                </span>
+                <Switch
+                  id="normalize-weights"
+                  checked={form.normalize}
+                  onCheckedChange={(checked) => (form.normalize = checked)}
+                  disabled={isSaving}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- Calculation Measures / Inputs -->
+          <Card class="overflow-hidden border-border/70 shadow-xs">
+            <CardContent class="flex flex-col gap-4 p-6">
+              <div class="flex items-center justify-between border-b border-border/40 pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-foreground">
+                    {m.settings_calc_inputs()}
+                  </span>
+                  <span class="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {form.inputs.length}
+                  </span>
                 </div>
-                <div class="flex flex-col gap-1.5">
-                  <Label for="honors-threshold">Honors threshold</Label>
-                  <Input id="honors-threshold" type="number" step="any" bind:value={form.honorsThreshold} disabled={isSaving} />
-                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  class="h-8 gap-1.5 text-xs cursor-pointer"
+                  onclick={() => form.inputs.push(newInput(form.inputs.length))}
+                  disabled={isSaving}
+                >
+                  <Plus size={13} /> {m.settings_calc_add_input()}
+                </Button>
               </div>
 
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center justify-between gap-3">
-                  <h3 class="text-xs font-semibold">Grade bands</h3>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    class="gap-1.5"
-                    onclick={() =>
-                      form.gradeBands.push({
-                        code: `band_${form.gradeBands.length + 1}`,
-                        label: "",
-                        minimum: "",
-                      })}
-                    disabled={isSaving}
-                  >
-                    <Plus size={13} /> Add band
-                  </Button>
-                </div>
-                {#each form.gradeBands as band, index (index)}
-                  <div class="grid gap-3 rounded-md border border-border p-3 sm:grid-cols-4">
-                    <div class="flex flex-col gap-1.5">
-                      <Label for={`band-code-${index}`}>Code</Label>
-                      <Input id={`band-code-${index}`} bind:value={band.code} disabled={isSaving} />
-                    </div>
-                    <div class="flex flex-col gap-1.5 sm:col-span-2">
-                      <Label for={`band-label-${index}`}>Label</Label>
-                      <Input id={`band-label-${index}`} bind:value={band.label} disabled={isSaving} />
-                    </div>
-                    <div class="flex flex-col gap-1.5">
-                      <Label for={`band-minimum-${index}`}>Minimum score</Label>
-                      <Input id={`band-minimum-${index}`} type="number" step="any" bind:value={band.minimum} disabled={isSaving} />
-                    </div>
-                    <div class="sm:col-span-4 sm:flex sm:justify-end">
-                      <Button
-                        type="button"
-                        size="icon-sm"
-                        variant="ghost"
-                        aria-label="Remove grade band"
-                        onclick={() => form.gradeBands.splice(index, 1)}
+              <!-- Column Header (Desktop) -->
+              <div class="hidden grid-cols-12 gap-3 px-1 text-[11px] font-medium text-muted-foreground sm:grid">
+                <span class="col-span-3">{m.settings_calc_input_name()}</span>
+                <span class="col-span-2">{m.settings_calc_weight()}</span>
+                <span class="col-span-2">{m.settings_calc_min()}</span>
+                <span class="col-span-2">{m.settings_calc_max()}</span>
+                <span class="col-span-2">{m.settings_calc_sample()}</span>
+                <span class="col-span-1 text-center"></span>
+              </div>
+
+              <div class="flex flex-col gap-2.5">
+                {#each form.inputs as input, index (index)}
+                  <div class="grid grid-cols-1 items-center gap-2.5 rounded-lg border border-border/50 bg-card/40 p-3 sm:grid-cols-12 sm:border-0 sm:bg-transparent sm:p-0">
+                    <div class="sm:col-span-3">
+                      <Input
+                        class="h-8 text-xs"
+                        placeholder={m.settings_calc_input_name()}
+                        bind:value={input.name}
                         disabled={isSaving}
-                      >
-                        <Trash size={14} />
-                      </Button>
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="any"
+                        class="h-8 text-xs"
+                        placeholder={m.settings_calc_weight()}
+                        bind:value={input.weight}
+                        disabled={isSaving}
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <Input
+                        type="number"
+                        step="any"
+                        class="h-8 text-xs"
+                        placeholder={m.settings_calc_min()}
+                        bind:value={input.minimum}
+                        disabled={isSaving}
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <Input
+                        type="number"
+                        step="any"
+                        class="h-8 text-xs"
+                        placeholder={m.settings_calc_max()}
+                        bind:value={input.maximum}
+                        disabled={isSaving}
+                      />
+                    </div>
+                    <div class="sm:col-span-2">
+                      <Input
+                        type="number"
+                        step="any"
+                        class="h-8 text-xs"
+                        placeholder={m.settings_calc_sample()}
+                        bind:value={input.sample}
+                        disabled={isSaving}
+                      />
+                    </div>
+                    <div class="flex justify-end sm:col-span-1 sm:justify-center">
+                      {#if form.inputs.length > 1}
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          class="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
+                          aria-label="Remove input"
+                          onclick={() => form.inputs.splice(index, 1)}
+                          disabled={isSaving}
+                        >
+                          <Trash size={14} />
+                        </Button>
+                      {/if}
                     </div>
                   </div>
                 {/each}
               </div>
+            </CardContent>
+          </Card>
+
+          <!-- Outcome Evaluation & Grade Bands -->
+          <Card class="overflow-hidden border-border/70 shadow-xs">
+            <CardContent class="flex flex-col gap-5 p-6">
+              <div class="flex items-center justify-between {form.outcomeEnabled ? 'border-b border-border/40 pb-4' : ''}">
+                <span class="text-xs font-semibold text-foreground">
+                  {m.settings_calc_outcome_eval()}
+                </span>
+                <Switch
+                  id="outcome-policy-enabled"
+                  checked={form.outcomeEnabled}
+                  onCheckedChange={(checked) => (form.outcomeEnabled = checked)}
+                  disabled={isSaving}
+                />
+              </div>
+
+              {#if form.outcomeEnabled}
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div class="flex flex-col gap-1.5">
+                    <Label for="passing-threshold" class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_passing_threshold()}
+                    </Label>
+                    <Input
+                      id="passing-threshold"
+                      type="number"
+                      step="any"
+                      class="h-9 text-xs"
+                      bind:value={form.passThreshold}
+                      disabled={isSaving}
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <Label for="honors-threshold" class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_honors_threshold()}
+                    </Label>
+                    <Input
+                      id="honors-threshold"
+                      type="number"
+                      step="any"
+                      class="h-9 text-xs"
+                      bind:value={form.honorsThreshold}
+                      disabled={isSaving}
+                    />
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-4 border-t border-border/40 pt-4">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="text-xs font-semibold text-foreground">
+                        {m.settings_calc_grade_bands()}
+                      </span>
+                      <span class="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        {form.gradeBands.length}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      class="h-8 gap-1.5 text-xs cursor-pointer"
+                      onclick={() =>
+                        form.gradeBands.push({
+                          code: `band_${form.gradeBands.length + 1}`,
+                          label: "",
+                          minimum: "",
+                        })}
+                      disabled={isSaving}
+                    >
+                      <Plus size={13} /> {m.settings_calc_add_band()}
+                    </Button>
+                  </div>
+
+                  {#if form.gradeBands.length > 0}
+                    <div class="hidden grid-cols-12 gap-3 px-1 text-[11px] font-medium text-muted-foreground sm:grid">
+                      <span class="col-span-3">{m.settings_calc_band_code()}</span>
+                      <span class="col-span-5">{m.settings_calc_band_label()}</span>
+                      <span class="col-span-3">{m.settings_calc_band_min()}</span>
+                      <span class="col-span-1 text-center"></span>
+                    </div>
+
+                    <div class="flex flex-col gap-2.5">
+                      {#each form.gradeBands as band, index (index)}
+                        <div class="grid grid-cols-1 items-center gap-2.5 rounded-lg border border-border/50 bg-card/40 p-3 sm:grid-cols-12 sm:border-0 sm:bg-transparent sm:p-0">
+                          <div class="sm:col-span-3">
+                            <Input
+                              class="h-8 text-xs"
+                              placeholder={m.settings_calc_band_code()}
+                              bind:value={band.code}
+                              disabled={isSaving}
+                            />
+                          </div>
+                          <div class="sm:col-span-5">
+                            <Input
+                              class="h-8 text-xs"
+                              placeholder={m.settings_calc_band_label()}
+                              bind:value={band.label}
+                              disabled={isSaving}
+                            />
+                          </div>
+                          <div class="sm:col-span-3">
+                            <Input
+                              type="number"
+                              step="any"
+                              class="h-8 text-xs"
+                              placeholder={m.settings_calc_band_min()}
+                              bind:value={band.minimum}
+                              disabled={isSaving}
+                            />
+                          </div>
+                          <div class="flex justify-end sm:col-span-1 sm:justify-center">
+                            <Button
+                              type="button"
+                              size="icon-sm"
+                              variant="ghost"
+                              class="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
+                              aria-label="Remove grade band"
+                              onclick={() => form.gradeBands.splice(index, 1)}
+                              disabled={isSaving}
+                            >
+                              <Trash size={14} />
+                            </Button>
+                          </div>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </CardContent>
+          </Card>
+        {/if}
+
+        <!-- Ranking Policy -->
+        <Card class="overflow-hidden border-border/70 shadow-xs">
+          <CardContent class="flex flex-col gap-5 p-6">
+            <div class="flex items-center justify-between {form.rankingEnabled ? 'border-b border-border/40 pb-4' : ''}">
+              <span class="text-xs font-semibold text-foreground">
+                {m.settings_academic_policy_ranking_enabled()}
+              </span>
+              <Switch
+                id="ranking-enabled"
+                checked={form.rankingEnabled}
+                onCheckedChange={(checked) => (form.rankingEnabled = checked)}
+                disabled={isSaving}
+              />
+            </div>
+
+            {#if form.rankingEnabled}
+              <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                <div class="flex flex-col gap-1.5">
+                  <Label class="text-xs font-medium text-foreground">
+                    {m.settings_academic_policy_ranking_scope()}
+                  </Label>
+                  <Select
+                    type="single"
+                    value={form.rankingScope}
+                    onValueChange={(val) => {
+                      if (val)
+                        form.rankingScope = val as
+                          | "class"
+                          | "grade_level"
+                          | "org_unit"
+                          | "cohort";
+                    }}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger class="h-9 w-full text-xs">
+                      {scopeLabel(form.rankingScope)}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="class">{m.settings_academic_policy_scope_class()}</SelectItem>
+                      <SelectItem value="grade_level">{m.settings_academic_policy_scope_grade()}</SelectItem>
+                      <SelectItem value="org_unit">{m.settings_academic_policy_scope_org()}</SelectItem>
+                      <SelectItem value="cohort">{m.settings_academic_policy_scope_cohort()}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <Label class="text-xs font-medium text-foreground">
+                    {m.settings_academic_policy_tie_policy()}
+                  </Label>
+                  <Select
+                    type="single"
+                    value={form.tiePolicy}
+                    onValueChange={(val) => {
+                      if (val)
+                        form.tiePolicy = val as
+                          | "standard_competition"
+                          | "dense"
+                          | "fractional";
+                    }}
+                    disabled={isSaving}
+                  >
+                    <SelectTrigger class="h-9 w-full text-xs">
+                      {tieLabel(form.tiePolicy)}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard_competition">{m.settings_academic_policy_tie_standard()}</SelectItem>
+                      <SelectItem value="dense">{m.settings_academic_policy_tie_dense()}</SelectItem>
+                      <SelectItem value="fractional">{m.settings_academic_policy_tie_fractional()}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="flex flex-col gap-1.5">
+                  <Label for="calc-max-rank" class="text-xs font-medium text-foreground">
+                    {m.settings_academic_policy_max_rank()}
+                  </Label>
+                  <Input
+                    id="calc-max-rank"
+                    type="number"
+                    min="1"
+                    step="1"
+                    class="h-9 text-xs"
+                    bind:value={form.maxDisplayedRank}
+                    disabled={isSaving}
+                  />
+                </div>
+              </div>
             {/if}
           </CardContent>
         </Card>
-      {/if}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ranking policy</CardTitle>
-          <CardDescription>
-            Rankings use this organization-level tie rule and comparison scope when requested.
-          </CardDescription>
-        </CardHeader>
-        <CardContent class="flex flex-col gap-4">
-          <div class="flex items-center justify-between gap-3">
-            <Label for="ranking-enabled">Enable ranking calculations</Label>
-            <Switch
-              id="ranking-enabled"
-              checked={form.rankingEnabled}
-              onCheckedChange={(checked) => (form.rankingEnabled = checked)}
-              disabled={isSaving}
-            />
-          </div>
-          <div class="grid gap-4 sm:grid-cols-3">
-            <div class="flex flex-col gap-1.5">
-              <Label for="ranking-scope">Comparison scope</Label>
-              <select
-                id="ranking-scope"
-                class="h-9 rounded-md border border-input bg-background px-3 text-xs"
-                bind:value={form.rankingScope}
-                disabled={isSaving || !form.rankingEnabled}
-              >
-                <option value="class">Class or group</option>
-                <option value="grade_level">Level</option>
-                <option value="org_unit">Organization unit</option>
-                <option value="cohort">Cohort</option>
-              </select>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="tie-policy">Tie handling</Label>
-              <select
-                id="tie-policy"
-                class="h-9 rounded-md border border-input bg-background px-3 text-xs"
-                bind:value={form.tiePolicy}
-                disabled={isSaving || !form.rankingEnabled}
-              >
-                <option value="standard_competition">Standard competition</option>
-                <option value="dense">Dense</option>
-                <option value="fractional">Fractional</option>
-              </select>
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <Label for="max-displayed-rank">Display rank limit (blank means no limit)</Label>
-              <Input
-                id="max-displayed-rank"
-                type="number"
-                min="1"
-                step="1"
-                bind:value={form.maxDisplayedRank}
-                disabled={isSaving || !form.rankingEnabled}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {#if previewResult}
-        <Card>
-          <CardHeader>
-            <CardTitle>Calculation preview</CardTitle>
-            <CardDescription>
-              Policy version {previewResult.result.policy_version}
-            </CardDescription>
-          </CardHeader>
-          <CardContent class="flex flex-wrap gap-3">
-            {#each previewResult.result.outputs as output (output.name)}
-              <div class="rounded-md border border-border px-3 py-2">
-                <p class="text-[11px] text-muted-foreground">{output.name}</p>
-                <p class="font-mono text-sm font-semibold">{output.value}</p>
-              </div>
-            {/each}
-            {#each previewResult.outcomes as result (result.output_name)}
-              <div class="rounded-md border border-border px-3 py-2">
-                <p class="text-[11px] text-muted-foreground">{result.output_name} outcome</p>
-                <p class="text-xs font-semibold">
-                  {result.outcome.grade_code ?? (result.outcome.is_passed == null
-                    ? "No grade band"
-                    : result.outcome.is_passed
-                      ? "Passed"
-                      : "Not passed")}
-                </p>
-              </div>
-            {/each}
-          </CardContent>
-        </Card>
-      {/if}
-
-      <div class="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+        <!-- Preview Trigger & Results -->
         {#if !customPlanReadOnly}
-          <Button
-            variant="outline"
-            class="gap-1.5"
-            onclick={handlePreview}
-            disabled={isSaving || isPreviewing}
-          >
-            <Refresh size={14} /> Preview with sample values
-          </Button>
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between rounded-xl border border-border/70 bg-card/60 p-4">
+              <span class="text-xs font-medium text-muted-foreground">
+                {m.settings_calc_preview()}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 text-xs cursor-pointer"
+                onclick={handlePreview}
+                disabled={isSaving || isPreviewing}
+              >
+                <Refresh size={13} class={isPreviewing ? "animate-spin" : ""} />
+                {m.settings_calc_preview()}
+              </Button>
+            </div>
+
+            {#if previewResult}
+              <Card class="overflow-hidden border-border/70 shadow-xs">
+                <CardContent class="flex flex-col gap-3 p-5">
+                  <div class="flex items-center justify-between border-b border-border/40 pb-2">
+                    <span class="text-xs font-semibold text-foreground">
+                      {m.settings_calc_preview_result()}
+                    </span>
+                    <span class="font-mono text-[11px] text-muted-foreground">
+                      v{previewResult.result.policy_version}
+                    </span>
+                  </div>
+
+                  <div class="flex flex-wrap gap-3 pt-1">
+                    {#each previewResult.result.outputs as output (output.name)}
+                      <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
+                        <span class="text-[11px] text-muted-foreground">{output.name}:</span>
+                        <span class="font-mono text-xs font-semibold text-foreground">{output.value}</span>
+                      </div>
+                    {/each}
+
+                    {#each previewResult.outcomes as result (result.output_name)}
+                      <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
+                        <span class="text-[11px] text-muted-foreground">{result.output_name}:</span>
+                        <span class="text-xs font-semibold text-foreground">
+                          {result.outcome.grade_code ?? (result.outcome.is_passed == null
+                            ? "—"
+                            : result.outcome.is_passed
+                              ? "Pass"
+                              : "Fail")}
+                        </span>
+                      </div>
+                    {/each}
+                  </div>
+                </CardContent>
+              </Card>
+            {/if}
+          </div>
         {/if}
-        {#if !customPlanReadOnly}
-          <Button
-            variant="outline"
-            onclick={resetForm}
-            disabled={!isDirty || isSaving}
-          >
-            Reset
-          </Button>
-        {/if}
-        <Button onclick={handleSave} disabled={isSaving || !isDirty}>
-          {isSaving ? "Saving…" : "Save calculation policy"}
-        </Button>
-      </div>
+      {/if}
     </div>
-  {/if}
+  </main>
+
+  <SettingsBottomBar
+    visible={isDirty}
+    {isDirty}
+    {isSaving}
+    onsave={handleSave}
+    onreset={resetForm}
+  />
 </div>

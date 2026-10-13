@@ -138,15 +138,17 @@ export default function DigitalIdModalScreen() {
             title={t("digital_id_student_error")}
             actionTitle={t("home_retry")}
             onAction={() => void retryIdentity()}
+            fullScreen
           />
         ) : isLinked && studentQuery.isError ? (
           <EmptyState
             title={t("digital_id_student_error")}
             actionTitle={t("home_retry")}
             onAction={() => void studentQuery.refetch()}
+            fullScreen
           />
         ) : !studentId || !student ? (
-          <EmptyState title={t("digital_id_context_required")} />
+          <EmptyState title={t("digital_id_context_required")} fullScreen />
         ) : templateQuery.isPending ? (
           <Skeleton
             className="w-full max-w-[420px] rounded-xl"
@@ -157,11 +159,12 @@ export default function DigitalIdModalScreen() {
             title={t("digital_id_template_error")}
             actionTitle={t("home_retry")}
             onAction={() => void templateQuery.refetch()}
+            fullScreen
           />
         ) : !template ? (
-          <EmptyState title={t("digital_id_template_missing")} />
+          <EmptyState title={t("digital_id_template_missing")} fullScreen />
         ) : documentResult.error || !documentResult.document ? (
-          <EmptyState title={t("digital_id_template_invalid")} />
+          <EmptyState title={t("digital_id_template_invalid")} fullScreen />
         ) : (
           <DigitalIdTemplate
             template={template}

@@ -5,14 +5,9 @@
  */
 
 import React from "react";
-import {
-  StyleSheet,
-  type ViewStyle,
-  Text,
-  View,
-  ActivityIndicator,
-} from "react-native";
+import { StyleSheet, Text, View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
+import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 export interface FloatingActionButtonProps {
@@ -54,9 +49,7 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
       bottom: offsetBottom,
       ...(position === "bottom-right" ? { right: offsetHorizontal } : {}),
       ...(position === "bottom-left" ? { left: offsetHorizontal } : {}),
-      ...(position === "bottom-center"
-        ? { left: "50%", marginLeft: -28 }
-        : {}),
+      ...(position === "bottom-center" ? { left: "50%", marginLeft: -28 } : {}),
     };
 
     return (
@@ -79,7 +72,11 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
         ]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={theme.primaryForeground} />
+          <LoadingIndicator
+            size="sm"
+            color={theme.primaryForeground}
+            containerColor="transparent"
+          />
         ) : (
           <View className="flex-row items-center justify-center gap-two">
             {icon}
@@ -99,6 +96,12 @@ FloatingActionButton.displayName = "FloatingActionButton";
 
 const styles = StyleSheet.create({
   elevation: {
-    ...{"shadowColor":"#000000","shadowOffset":{"width":0,"height":4},"shadowOpacity":0.12,"shadowRadius":8,"elevation":6},
+    ...{
+      shadowColor: "#000000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      elevation: 6,
+    },
   },
 });

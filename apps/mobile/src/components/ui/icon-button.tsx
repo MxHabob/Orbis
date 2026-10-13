@@ -5,12 +5,9 @@
  */
 
 import React from "react";
-import {
-  type ViewStyle,
-  ActivityIndicator,
-  View,
-} from "react-native";
+import { View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
+import { LoadingIndicator } from "./loading-indicator";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 export type IconButtonVariant =
@@ -123,7 +120,11 @@ export const IconButton = React.memo<IconButtonProps>(
         ]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={variantStyle.indicatorColor} />
+          <LoadingIndicator
+            size="sm"
+            color={variantStyle.indicatorColor}
+            containerColor="transparent"
+          />
         ) : (
           <View className="items-center justify-center">{icon}</View>
         )}

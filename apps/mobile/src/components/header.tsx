@@ -13,25 +13,23 @@ import {
   AppNotification,
   ChevronLeft,
   ChevronRight,
-  User,
 } from "@orbis/icons/native";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useRouter } from "expo-router";
-import {
-  GlassView,
-  isLiquidGlassAvailable,
-} from "expo-glass-effect";
-import React from "react";
+import type React from "react";
 import {
   Platform,
   Pressable,
+  type StyleProp,
   StyleSheet,
   Text,
   View,
-  type StyleProp,
   type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Avatar } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
 export const HEADER_CONTENT_OFFSET = 36;
@@ -98,19 +96,16 @@ export function Header({
   style,
   children,
 }: HeaderProps) {
-
   const router = useRouter();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { t, isArabic } = useI18n();
-  const useNativeGlass =
-    Platform.OS === "ios" && isLiquidGlassAvailable();
+  const useNativeGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
 
   const sideSize = 44;
   const headerHeight =
-    insets.top +
-    HEADER_CONTENT_OFFSET +
-    (largeTitle && title ? 58 : 0);
+    insets.top + HEADER_CONTENT_OFFSET + (largeTitle && title ? 58 : 0);
 
   const handleBack = () => {
     if (onBack) {
@@ -215,20 +210,19 @@ export function Header({
               ) : null}
               {showBack ? (
                 isArabic ? (
-                  <ChevronRight
-                    size={21}
-                    color={theme.foreground}
-                  />
+                  <ChevronRight size={21} color={theme.foreground} />
                 ) : (
-                  <ChevronLeft
-                    size={21}
-                    color={theme.foreground}
-                  />
+                  <ChevronLeft size={21} color={theme.foreground} />
                 )
               ) : (
-                <User
-                  size={21}
-                  color={theme.foreground}
+                <Avatar
+                  name={
+                    isArabic
+                      ? user?.full_name_ar || user?.full_name
+                      : user?.full_name
+                  }
+                  imageUrl={user?.avatar_url}
+                  size={32}
                 />
               )}
             </Pressable>
@@ -258,7 +252,10 @@ export function Header({
                   numberOfLines={1}
                   ellipsizeMode="tail"
                   className="text-center"
-                  style={[styles.pageSubtitle, { color: theme.mutedForeground }]}
+                  style={[
+                    styles.pageSubtitle,
+                    { color: theme.mutedForeground },
+                  ]}
                 >
                   {subtitle}
                 </Text>
@@ -294,13 +291,13 @@ export function Header({
               ]}
               className="items-center justify-center"
             >
-              <AppNotification
-                size={20}
-                color={theme.foreground}
-              />
+              <AppNotification size={20} color={theme.foreground} />
             </Pressable>
           ) : (
-            <View className="shrink-0" style={{ width: sideSize, height: sideSize }} />
+            <View
+              className="shrink-0"
+              style={{ width: sideSize, height: sideSize }}
+            />
           )}
         </View>
       </View>
@@ -309,7 +306,10 @@ export function Header({
         <View pointerEvents="none" className="mt-3 px-1">
           <Text
             style={[
-              { color: theme.foreground, ...{"fontSize":24,"lineHeight":30,"fontWeight":"800"} },
+              {
+                color: theme.foreground,
+                ...{ fontSize: 24, lineHeight: 30, fontWeight: "800" },
+              },
             ]}
           >
             {title}
@@ -319,7 +319,7 @@ export function Header({
               style={[
                 {
                   color: theme.mutedForeground,
-                  ...{"fontSize":13,"lineHeight":18,"fontWeight":"400"},
+                  ...{ fontSize: 13, lineHeight: 18, fontWeight: "400" },
                   marginTop: 2,
                 },
               ]}
@@ -333,7 +333,6 @@ export function Header({
       {children}
     </View>
   );
-
 }
 
 // ---------------------------------------------------------------------------
