@@ -25,7 +25,6 @@ import {
   Calendar,
   ChartBar,
   Document,
-  Sparkles,
   User,
   ChevronLeft,
   ChevronRight,

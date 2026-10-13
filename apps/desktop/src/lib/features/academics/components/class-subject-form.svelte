@@ -29,7 +29,7 @@ import SubjectSelect from "$lib/features/academics/components/subject-select.sve
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 import TeacherSelect from "$lib/features/academics/components/teacher-select.svelte";
 import { createAssessmentSchemesQuery } from "$lib/features/academics/queries-assessment";
-import { SectionSubjectFormInputSchema } from "@orbis/schemas";
+import { classSubjectFormInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
 
@@ -73,7 +73,7 @@ const form = new FormController({
     period_id: "",
     weekly_hours: 4,
   },
-  schema: SectionSubjectFormInputSchema,
+  schema: classSubjectFormInputSchema,
 });
 const isSaving = $derived(form.isSubmitting);
 
