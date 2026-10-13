@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "dependencies": {
     "@expo/ui": "~57.0.19",
+    "@orbis/avatar-engine": "workspace:*",
     "@orbis/icons": "workspace:*",
     "@orbis/sdk": "workspace:*",
     "@tanstack/react-query": "^5.102.8",

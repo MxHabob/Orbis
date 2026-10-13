@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -9,7 +9,8 @@ import { Card } from "@/components/ui/card";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { ChatBubbles, Logo } from "@orbis/icons/native";
+import { Avatar as CompanionAvatar } from "@orbis/avatar-engine/native";
+import { ChatBubbles } from "@orbis/icons/native";
 import {
   AssignmentChecklist,
   Assignments,
@@ -37,7 +38,7 @@ export default function HomeTabScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const { t } = useI18n();
+  const { t, isArabic } = useI18n();
   const { user, effectiveContext } = useAuth();
 
   const roles = new Set(
@@ -58,18 +59,16 @@ export default function HomeTabScreen() {
 
   const [activeRole, setActiveRole] = useState<RoleMode>(initialRole);
 
-  const roleTitle =
-    activeRole === "parent"
-      ? t("auth_role_parent")
-      : activeRole === "student"
-        ? t("auth_role_student")
-        : t("auth_role_teacher");
   const roleDescription =
     activeRole === "parent"
       ? t("home_parent_description")
       : activeRole === "student"
         ? t("home_student_description")
         : t("home_teacher_description");
+  const displayName = isArabic
+    ? user?.full_name_ar || user?.full_name
+    : user?.full_name || user?.full_name_ar;
+  const firstName = displayName?.trim().split(/\s+/)[0];
 
   const parentChildren: HomeTileData[] = [
     {
@@ -120,8 +119,7 @@ export default function HomeTabScreen() {
             id: "attendance",
             title: t("student_attendance"),
             icon: <Attendance size={38} />,
-            onPress: () =>
-              router.push("/(app)/student/omar/attendance"),
+            onPress: () => router.push("/(app)/student/omar/attendance"),
           },
           {
             id: "grades",
@@ -200,9 +198,29 @@ export default function HomeTabScreen() {
         contentContainerClassName: "gap-six px-four pb-[130px]",
       }}
     >
+      <View className="items-center gap-two px-two pt-one">
+        <CompanionAvatar size={58} hat="random" label={t("nav_app_name")} />
+        <View className="items-center gap-one">
+          <Text className="text-sm font-medium text-muted-foreground">
+            {t("home_welcome")}
+          </Text>
+          {firstName ? (
+            <Text
+              numberOfLines={1}
+              className="text-2xl font-bold tracking-tight text-foreground"
+            >
+              {firstName}
+            </Text>
+          ) : null}
+          <Text className="max-w-[320px] text-center text-sm leading-5 text-muted-foreground">
+            {roleDescription}
+          </Text>
+        </View>
+      </View>
+
       <View
         accessibilityRole="tablist"
-        className="flex-row rounded-2xl border border-border bg-secondary p-one"
+        className="flex-row rounded-lg border border-border bg-background-element p-half"
       >
         {(
           [
@@ -218,16 +236,14 @@ export default function HomeTabScreen() {
               accessibilityRole="tab"
               accessibilityState={{ selected }}
               onPress={() => setActiveRole(role)}
-              className={`min-h-11 flex-1 items-center justify-center rounded-xl px-two ${
-                selected ? "bg-primary" : "bg-transparent"
+              className={`min-h-11 flex-1 items-center justify-center rounded-md px-two ${
+                selected ? "border border-card-border bg-card-elevated" : ""
               }`}
             >
               <Text
                 numberOfLines={1}
                 className={`text-xs font-semibold ${
-                  selected
-                    ? "text-primary-foreground"
-                    : "text-muted-foreground"
+                  selected ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
                 {t(labelKey)}
@@ -237,24 +253,9 @@ export default function HomeTabScreen() {
         })}
       </View>
 
-      <View className="flex-row items-center gap-three rounded-3xl bg-primary px-five py-five">
-        <View className="flex-1 gap-one">
-          <Text className="text-sm font-medium text-primary-foreground/80">
-            {t("home_welcome")}
-          </Text>
-          <Text className="text-2xl font-bold tracking-tight text-primary-foreground">
-            {roleTitle}
-          </Text>
-          <Text className="text-sm leading-5 text-primary-foreground/80">
-            {roleDescription}
-          </Text>
-        </View>
-        <Logo
-          size={42}
-          color={theme.primaryForeground}
-          dotColor={theme.brandLime}
-        />
-      </View>
+      <HomeSection title={t("dashboard_quick_actions")}>
+        <QuickActionRow items={serviceTiles} />
+      </HomeSection>
 
       {activeRole === "parent" ? (
         <HomeSection title={t("home_dependents")}>
@@ -267,11 +268,6 @@ export default function HomeTabScreen() {
           <HomeTileGrid items={teacherClasses} />
         </HomeSection>
       ) : null}
-
-      <HomeSection title={t("home_services")}>
-        <HomeTileGrid items={serviceTiles} />
-      </HomeSection>
-
     </ScreenScrollView>
   );
 }
@@ -285,11 +281,46 @@ function HomeSection({
 }) {
   return (
     <View className="gap-three">
-      <Text className="text-lg font-semibold tracking-tight text-foreground">
+      <Text className="text-base font-semibold tracking-tight text-foreground">
         {title}
       </Text>
       {children}
     </View>
+  );
+}
+
+function QuickActionRow({ items }: { items: HomeTileData[] }) {
+  return (
+    <ScrollView
+      horizontal
+      nestedScrollEnabled
+      showsHorizontalScrollIndicator={false}
+      contentContainerClassName="gap-three px-one"
+    >
+      {items.map((item) => (
+        <Card
+          key={item.id}
+          variant="interactive"
+          padding="three"
+          onPress={item.onPress}
+          accessibilityRole="button"
+          accessibilityLabel={item.title}
+          style={{ width: 176, minHeight: 72 }}
+        >
+          <View className="flex-1 flex-row items-center gap-three">
+            <View className="h-10 w-10 items-center justify-center rounded-md bg-accent-light">
+              {item.icon}
+            </View>
+            <Text
+              numberOfLines={2}
+              className="flex-1 text-sm font-semibold leading-5 text-foreground"
+            >
+              {item.title}
+            </Text>
+          </View>
+        </Card>
+      ))}
+    </ScrollView>
   );
 }
 
@@ -304,10 +335,10 @@ function HomeTileGrid({ items }: { items: HomeTileData[] }) {
           onPress={item.onPress}
           accessibilityRole="button"
           accessibilityLabel={item.title}
-          style={{ width: "48%", minHeight: 120, borderRadius: 20 }}
+          style={{ width: "48%", minHeight: 112 }}
         >
           <View className="flex-1 justify-between gap-three">
-            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
+            <View className="h-11 w-11 items-center justify-center rounded-md bg-accent-light">
               {item.icon}
             </View>
             <Text

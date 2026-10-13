@@ -18,8 +18,8 @@ export type AvatarHat =
   | "santa"
   | "random";
 
-/** Single Source of Truth for available hats array */
-export const ALL_AVATAR_HATS: AvatarHat[] = [
+/** Single source of truth for available hats. */
+export const ALL_AVATAR_HATS: readonly Exclude<AvatarHat, "random">[] = [
   "graduation",
   "crown",
   "wizard",
@@ -37,3 +37,11 @@ export const ALL_AVATAR_HATS: AvatarHat[] = [
   "chef",
   "firefighter",
 ];
+
+export function resolveAvatarHat(
+  hat: AvatarHat = "random",
+): Exclude<AvatarHat, "random"> {
+  if (hat !== "random") return hat;
+  const index = Math.floor(Math.random() * ALL_AVATAR_HATS.length);
+  return ALL_AVATAR_HATS[index] ?? "graduation";
+}

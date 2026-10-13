@@ -11,8 +11,14 @@
   },
   "exports": {
     ".": {
+      "types": "./src/index.ts",
       "svelte": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./native": {
+      "types": "./src/native/index.ts",
+      "react-native": "./src/native/index.ts",
+      "default": "./src/native/index.ts"
     },
     "./avatar.svelte": {
       "svelte": "./src/components/avatar.svelte",
@@ -20,10 +26,31 @@
     }
   },
   "peerDependencies": {
+    "react": ">=19",
+    "react-native": ">=0.80",
+    "react-native-svg": ">=15",
     "svelte": "^5"
   },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-native": {
+      "optional": true
+    },
+    "react-native-svg": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    }
+  },
   "devDependencies": {
+    "@types/react": "~19.2.2",
     "@orbis/tsconfig": "workspace:*",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-svg": "15.15.4",
     "svelte": "^5.56.1",
     "typescript": "^7.0.2"
   }
