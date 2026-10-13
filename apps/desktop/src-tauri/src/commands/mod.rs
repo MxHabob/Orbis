@@ -171,12 +171,16 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         calendar_cmds::calendar_list_period_types,
         // ── Academic ────────────────────────────────────────────
         academic_cmds::academic_create_subject,
+        academic_cmds::academic_update_subject,
         academic_cmds::academic_list_subjects,
         academic_cmds::academic_get_subject,
         academic_cmds::academic_create_class,
+        academic_cmds::academic_update_class,
         academic_cmds::academic_list_classes,
         academic_cmds::academic_get_class,
         academic_cmds::academic_assign_section_subject,
+        academic_cmds::academic_get_section_subject,
+        academic_cmds::academic_update_section_subject,
         academic_cmds::academic_list_section_subjects,
         academic_cmds::academic_check_prerequisites,
         // ── Student ─────────────────────────────────────────────

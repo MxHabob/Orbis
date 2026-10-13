@@ -6,7 +6,6 @@
  */
 
 import * as Localization from "expo-localization";
-import { I18nManager } from "react-native";
 import { SupportedLocale } from "./types";
 import { ar, TranslationKey } from "./dictionaries/ar";
 import { en } from "./dictionaries/en";
@@ -19,26 +18,25 @@ const dictionaries: Record<SupportedLocale, Record<string, string>> = {
   en,
 };
 
-// Internal active locale state (defaults to device language or 'ar')
-let currentLocale: SupportedLocale = "ar";
-
-// Initialize default from device
-try {
-  const deviceLocales = Localization.getLocales();
-  const primaryLang = deviceLocales[0]?.languageCode?.toLowerCase();
-  if (primaryLang && (primaryLang === "ar" || primaryLang.startsWith("ar"))) {
-    currentLocale = "ar";
-  } else if (
-    primaryLang &&
-    (primaryLang === "en" || primaryLang.startsWith("en"))
-  ) {
-    currentLocale = "en";
-  } else {
-    currentLocale = "ar";
+function getDeviceLocale(): SupportedLocale {
+  try {
+    for (const deviceLocale of Localization.getLocales()) {
+      const languageCode = deviceLocale.languageCode?.toLowerCase();
+      if (languageCode?.startsWith("ar")) return "ar";
+      if (languageCode?.startsWith("en")) return "en";
+    }
+  } catch (error) {
+    console.error(
+      "[Orbis Mobile I18n] Failed to read the device locale.",
+      error,
+    );
+    return "ar";
   }
-} catch {
-  currentLocale = "ar";
+
+  return "ar";
 }
+
+let currentLocale: SupportedLocale = getDeviceLocale();
 
 /**
  * Returns the currently active locale ('ar' | 'en').
@@ -120,8 +118,8 @@ export async function loadPersistedLocale(): Promise<SupportedLocale> {
       currentLocale = saved;
       return saved;
     }
-  } catch {
-    // Keep currentLocale
+  } catch (error) {
+    console.error("[Orbis Mobile I18n] Failed to read the saved locale.", error);
   }
   return currentLocale;
 }

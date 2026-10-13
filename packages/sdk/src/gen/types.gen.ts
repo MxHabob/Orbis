@@ -5,16 +5,31 @@ export type ClientOptions = {
 };
 
 export type AcademicAiContext = {
-    calendar_id?: string | null;
     academic_calendar_name?: string | null;
-    class_id?: string | null;
+    calendar_id?: string | null;
     class_name?: string | null;
-    section_subject_id?: string | null;
     period_id?: string | null;
     period_name?: string | null;
     period_state?: string | null;
+    section_id?: string | null;
+    section_subject_id?: string | null;
     subject_id?: string | null;
     subject_name?: string | null;
+};
+
+export type AcademicCalendarDto = {
+    created_at: string;
+    current_period_id?: string | null;
+    end_date: string;
+    id: string;
+    is_active: boolean;
+    name: string;
+    name_ar?: string | null;
+    notes?: string | null;
+    org_id: string;
+    start_date: string;
+    status: string;
+    updated_at: string;
 };
 
 export type AcademicContextResponse = {
@@ -44,44 +59,73 @@ export type AcademicPeriodDto = {
 
 export type AcademicPeriodState = 'planning' | 'enrollment_open' | 'active_teaching' | 'final_exams' | 'grade_submission' | 'closed' | 'archived';
 
-export type AcademicSettingsDto = {
-    default_grading_system: string;
-    default_passing_score?: number;
-    default_max_score?: number;
-    passing_threshold_percentage?: number;
-    honors_threshold_percentage?: number;
-    minimum_final_exam_score?: number | null;
-    max_failed_subjects_for_conditional_pass?: number;
-    min_attendance_rate?: number;
-    ranking_enabled?: boolean;
+export type AcademicPolicyDto = {
+    decimal_places: number;
+    honors_threshold_percentage: string;
     max_displayed_rank?: number | null;
-    ranking_scope?: string;
-    tie_policy?: string;
-    rounding_mode?: string;
-    decimal_places?: number;
-    enrollment_auto_close?: boolean;
-    allow_late_enrollment?: boolean;
-    late_enrollment_approval?: boolean;
-    grade_entry_auto_close?: boolean;
-    allow_grade_edit_after_close?: boolean;
-    grade_edit_approval?: boolean;
-    auto_graduate_final_level?: boolean;
-    exclude_withdrawn?: boolean;
+    max_failed_subjects_for_conditional_pass: number;
+    minimum_final_exam_score?: string | null;
+    org_id: string;
+    passing_threshold_percentage: string;
+    ranking_enabled: boolean;
+    ranking_scope: string;
+    rounding_mode: string;
+    tie_policy: string;
 };
 
-export type AcademicCalendarDto = {
-    created_at: string;
-    current_period_id?: string | null;
-    end_date: string;
-    id: string;
-    is_active: boolean;
-    name: string;
-    name_ar?: string | null;
-    notes?: string | null;
+export type AcademicResultPreviewRequest = {
+    calendar_id?: string | null;
+    learner_id: string;
+    payload: unknown;
+    period_id?: string | null;
+    result_key: string;
+    result_type: string;
+    subject_id?: string | null;
+};
+
+export type AcademicResultViewDto = {
+    approved_at?: string | null;
+    approved_by?: string | null;
+    calendar_id?: string | null;
+    learner_id: string;
     org_id: string;
-    start_date: string;
-    status: string;
-    updated_at: string;
+    payload: unknown;
+    period_id?: string | null;
+    policy_version: number;
+    produced_at: string;
+    result_key: string;
+    result_type: string;
+    revision: number;
+    snapshot_id: string;
+    state: string;
+    subject_id?: string | null;
+};
+
+export type AcademicSettingsDto = {
+    allow_grade_edit_after_close?: boolean;
+    allow_late_enrollment?: boolean;
+    auto_graduate_final_level?: boolean;
+    calculation_plan?: unknown | null;
+    decimal_places?: number;
+    default_grading_system?: string;
+    default_max_score?: string;
+    default_passing_score?: string;
+    enrollment_auto_close?: boolean;
+    exclude_withdrawn?: boolean;
+    grade_edit_approval?: boolean;
+    grade_entry_auto_close?: boolean;
+    honors_threshold_percentage?: string;
+    late_enrollment_approval?: boolean;
+    max_displayed_rank?: number | null;
+    max_failed_subjects_for_conditional_pass?: number;
+    min_attendance_rate?: string;
+    minimum_final_exam_score?: string | null;
+    outcome_policy?: unknown | null;
+    passing_threshold_percentage?: string;
+    ranking_enabled?: boolean;
+    ranking_scope?: unknown;
+    rounding_mode?: unknown;
+    tie_policy?: unknown;
 };
 
 export type AccountDto = {
@@ -94,8 +138,8 @@ export type AccountDto = {
     id: string;
     is_active: boolean;
     is_control_account: boolean;
-    is_system_account: boolean;
     is_finance_default: boolean;
+    is_system_account: boolean;
     name: string;
     name_ar?: string | null;
     org_id: string;
@@ -235,13 +279,14 @@ export type ArchiveRequest = {
 };
 
 /**
- * A single assessment component (e.g., Assignments, Oral, Attendance, Written Test).
+ * A single assessment component (e.g., Assignments, Oral, Attendance, Written Test, Practical Exam).
  */
 export type AssessmentComponent = {
     /**
      * Stable identifier for this component within the scheme.
      */
     code: string;
+    componentType?: unknown | null;
     /**
      * Whether this component is required (vs. optional/bonus).
      */
@@ -250,6 +295,10 @@ export type AssessmentComponent = {
      * Maximum possible score for this component.
      */
     maxScore: string;
+    /**
+     * Minimum required score to pass this component (if component-level gatekeeping applies).
+     */
+    minScore?: string | null;
     /**
      * Display name (English).
      */
@@ -292,14 +341,6 @@ export type AssessmentSchemeDto = {
     updated_at: string;
 };
 
-export type AssignSectionSubjectRequest = {
-    class_id: string;
-    period_id: string;
-    primary_teacher_id: string;
-    subject_id: string;
-    weekly_hours?: number | null;
-};
-
 export type AssignEmployeeGroupsRequest = {
     group_ids: Array<string>;
 };
@@ -340,15 +381,32 @@ export type AssignSecretRequest = {
     student_id: string;
 };
 
+export type AssignSectionSubjectRequest = {
+    assessment_config?: unknown;
+    assistant_instructor_id?: string | null;
+    capacity?: number | null;
+    grade_groups?: unknown;
+    instructor_id?: string | null;
+    period_id: string;
+    practical_hours?: number | null;
+    scheme_id?: string | null;
+    section_id: string;
+    status?: string | null;
+    subject_id: string;
+    substitute_instructor_id?: string | null;
+    theory_hours?: number | null;
+    weekly_hours?: number | null;
+};
+
 export type AttendanceDto = {
-    class_id?: string | null;
-    section_subject_id?: string | null;
     created_at: string;
     date: string;
     id: string;
     marked_by?: string | null;
     notes?: string | null;
     scheduled_lesson_id?: string | null;
+    section_id?: string | null;
+    section_subject_id?: string | null;
     status: string;
     student_id: string;
     updated_at: string;
@@ -427,9 +485,9 @@ export type BatchCreateTimeSlotsRequest = {
 };
 
 export type BatchMarkAttendanceRequest = {
-    class_id: string;
     date: string;
     items: Array<MarkAttendanceItemRequest>;
+    section_id: string;
 };
 
 export type BatchMarkAttendanceResponseDto = {
@@ -506,23 +564,26 @@ export type BootstrapRequest = {
      * City / Province
      */
     city?: string | null;
-    country_name?: string | null;
     /**
      * ISO Country Code (e.g. SA, YE, AE)
      */
     country_code?: string | null;
     /**
+     * Country label printed in organization documents
+     */
+    country_name?: string | null;
+    /**
      * Date format pattern
      */
     date_format?: string | null;
     /**
-     * Locale used for formatting dates, numbers, and currency independently from the UI language
-     */
-    format_locale?: string | null;
-    /**
      * Educational curriculum track
      */
     educational_track?: string | null;
+    /**
+     * BCP-47 locale used only for formatting dates, numbers, and currency
+     */
+    format_locale?: string | null;
     /**
      * Institution type: "school", "university", "institute"
      */
@@ -539,6 +600,9 @@ export type BootstrapRequest = {
      * BCP-47 locale
      */
     locale: string;
+    /**
+     * Ministry label printed in organization documents
+     */
     ministry_name?: string | null;
     /**
      * Mulverse Autonomous Node UUID
@@ -564,7 +628,6 @@ export type BootstrapRequest = {
      * URL-safe slug (optional — auto-generated from name if omitted)
      */
     organization_slug?: string | null;
-    region_name?: string | null;
     /**
      * Contact phone
      */
@@ -574,17 +637,21 @@ export type BootstrapRequest = {
      */
     primary_color?: string | null;
     /**
+     * Regional authority label printed in organization documents
+     */
+    region_name?: string | null;
+    /**
      * Tax registration / VAT number
      */
     tax_id?: string | null;
     /**
-     * IANA timezone
-     */
-    timezone: string;
-    /**
      * Time display preference: locale, 12-hour, or 24-hour
      */
     time_format?: string | null;
+    /**
+     * IANA timezone
+     */
+    timezone: string;
     /**
      * Official website URL
      */
@@ -686,19 +753,24 @@ export type CalculateGpaRequest = {
 };
 
 export type CalculateGradesRequest = {
-    section_subject_id?: string | null;
     scheme_id: string;
+    section_subject_id?: string | null;
     student_id: string;
 };
 
 export type CalculateRankingsRequest = {
     items: Array<ScoreItemRequest>;
-    tie_policy?: string | null;
+    tie_policy?: unknown | null;
 };
 
 export type CalculationResultDto = {
     final_score: string;
     message: string;
+};
+
+export type CancelReportResponse = {
+    cancel_requested: boolean;
+    job_id: string;
 };
 
 export type CategoryProgressDto = {
@@ -717,6 +789,7 @@ export type ChangeStudyModeRequest = {
 
 export type ClassDto = {
     capacity?: number | null;
+    code: string;
     color?: string | null;
     created_at: string;
     current_students?: number | null;
@@ -724,26 +797,16 @@ export type ClassDto = {
     homeroom_teacher_id?: string | null;
     id: string;
     is_active: boolean;
-    level: string;
+    level?: string | null;
     name: string;
     name_ar?: string | null;
     org_id: string;
-    period_id: string;
+    period_id?: string | null;
     room_id?: string | null;
-    unit_id: string;
+    section_type: string;
+    track?: string | null;
+    unit_id?: string | null;
     updated_at: string;
-};
-
-export type SectionSubjectDto = {
-    class_id: string;
-    created_at: string;
-    id: string;
-    is_active: boolean;
-    period_id: string;
-    primary_teacher_id: string;
-    subject_id: string;
-    updated_at: string;
-    weekly_hours?: number | null;
 };
 
 export type ConnectAppRequest = {
@@ -754,6 +817,40 @@ export type ConnectAppRequest = {
         [key: string]: string;
     };
     settings: unknown;
+};
+
+export type CourseDto = {
+    code: string;
+    created_at: string;
+    credit_units?: string | null;
+    description?: string | null;
+    id: string;
+    is_active: boolean;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    unit_id?: string | null;
+    updated_at: string;
+    workload_units?: string | null;
+};
+
+export type CreateAcademicCalendarRequest = {
+    code?: string | null;
+    ends_at?: string | null;
+    name: string;
+    name_ar?: string | null;
+    starts_at?: string | null;
+};
+
+export type CreateAcademicPeriodRequest = {
+    code?: string | null;
+    ends_at?: string | null;
+    name: string;
+    name_ar?: string | null;
+    parent_id?: string | null;
+    period_type_id: string;
+    sort_order?: number | null;
+    starts_at?: string | null;
 };
 
 export type CreateAccountRequest = {
@@ -768,11 +865,25 @@ export type CreateAccountRequest = {
 
 export type CreateClassRequest = {
     capacity?: number | null;
-    level: string;
+    code?: string | null;
+    color?: string | null;
+    level?: string | null;
     name: string;
     name_ar?: string | null;
-    period_id: string;
-    unit_id: string;
+    period_id?: string | null;
+    section_type?: string | null;
+    track?: string | null;
+    unit_id?: string | null;
+};
+
+export type CreateCourseRequest = {
+    code: string;
+    credit_units?: string | null;
+    description?: string | null;
+    name: string;
+    name_ar?: string | null;
+    unit_id?: string | null;
+    workload_units?: string | null;
 };
 
 export type CreateCurriculumFolderRequest = {
@@ -804,6 +915,11 @@ export type CreateDocumentRequirementRequest = {
     name_en?: string | null;
     target_id?: string | null;
     target_type: string;
+};
+
+export type CreateEnrollmentRequest = {
+    attempt_number: number;
+    student_id: string;
 };
 
 export type CreateExamSessionRequest = {
@@ -906,13 +1022,11 @@ export type CreatePeriodRequest = {
     year_id: string;
 };
 
-export type UpdatePeriodRequest = {
-    code?: string | null;
-    end_date?: string | null;
-    name?: string | null;
+export type CreatePeriodTypeRequest = {
+    code: string;
+    name: string;
     name_ar?: string | null;
-    period_kind?: string | null;
-    start_date?: string | null;
+    sort_order?: number | null;
 };
 
 export type CreateRoomRequest = {
@@ -936,13 +1050,34 @@ export type CreateSchemeRequest = {
     name_ar?: string | null;
 };
 
+export type CreateSectionSubjectRequest = {
+    capacity?: number | null;
+    course_id: string;
+    ends_at?: string | null;
+    name?: string | null;
+    period_id?: string | null;
+    section_code?: string | null;
+    starts_at?: string | null;
+};
+
 export type CreateSubjectRequest = {
     code: string;
+    color?: string | null;
     credit_hours?: string | null;
+    description?: string | null;
+    icon?: string | null;
     is_core?: boolean | null;
+    is_elective?: boolean | null;
+    is_lab_required?: boolean | null;
+    max_students_per_section?: number | null;
     name: string;
     name_ar?: string | null;
+    practical_hours?: string | null;
+    sort_order?: number | null;
+    subject_type?: string | null;
+    theory_hours?: string | null;
     unit_id?: string | null;
+    workload_units?: string | null;
 };
 
 export type CreateTemplateBindingRequest = {
@@ -1001,14 +1136,6 @@ export type CreateYearRequest = {
     start_date: string;
 };
 
-export type UpdateYearRequest = {
-    end_date?: string | null;
-    name?: string | null;
-    name_ar?: string | null;
-    notes?: string | null;
-    start_date?: string | null;
-};
-
 export type CumulativeGpaRecordDto = {
     calculated_at: string;
     cumulative_attempted_credits: string;
@@ -1062,11 +1189,11 @@ export type DiscountTemplateDto = {
 };
 
 export type DocumentDto = {
-    calendar_id?: string | null;
     archive_reason?: string | null;
     archived_at?: string | null;
     archived_by?: string | null;
     asset_type: string;
+    calendar_id?: string | null;
     category: string;
     checksum_sha256?: string | null;
     created_at: string;
@@ -1141,7 +1268,7 @@ export type EffectiveContextDto = {
     permissions: Array<string>;
     roles: Array<string>;
     student_id?: string | null;
-    teaching_classes: Array<TeachingClassDto>;
+    teaching_classes: Array<unknown>;
 };
 
 export type EmployeeDetailDto = {
@@ -1195,15 +1322,14 @@ export type EmployeeDetailDto = {
 };
 
 export type EnrollStudentRequest = {
-    class_id?: string | null;
     period_id: string;
+    section_id?: string | null;
     student_id: string;
     student_number: string;
     study_mode?: string | null;
 };
 
 export type EnrollmentDto = {
-    class_id?: string | null;
     created_at: string;
     created_by?: string | null;
     enrollment_date: string;
@@ -1212,6 +1338,7 @@ export type EnrollmentDto = {
     is_grade_exempt: boolean;
     org_id: string;
     period_id: string;
+    section_id?: string | null;
     status: string;
     student_id: string;
     student_number: string;
@@ -1225,7 +1352,7 @@ export type EnrollmentDto = {
 export type EnrollmentSettingsDto = {
     allow_late_enrollment: boolean;
     allow_waitlist: boolean;
-    is_configured: boolean;
+    is_configured?: boolean;
     max_class_size_default: number;
     registration_enabled: boolean;
     require_admin_approval: boolean;
@@ -1237,12 +1364,12 @@ export type EvaluateCohortRequest = {
 };
 
 export type ExamScheduleDto = {
-    section_subject_id: string;
     created_at: string;
     end_time: string;
     exam_date: string;
     exam_session_id: string;
     id: string;
+    section_subject_id: string;
     start_time: string;
     updated_at: string;
 };
@@ -1325,6 +1452,61 @@ export type FormFieldConfigDto = {
     supports_duplicate: boolean;
 };
 
+export type FrameworkAcademicCalendarDto = {
+    code?: string | null;
+    created_at: string;
+    ends_at?: string | null;
+    id: string;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    starts_at?: string | null;
+    status: string;
+    updated_at: string;
+};
+
+export type FrameworkAcademicPeriodDto = {
+    calendar_id: string;
+    code?: string | null;
+    created_at: string;
+    ends_at?: string | null;
+    id: string;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    parent_id?: string | null;
+    period_type_id: string;
+    sort_order: number;
+    starts_at?: string | null;
+    updated_at: string;
+};
+
+export type FrameworkPeriodTypeDto = {
+    code: string;
+    created_at: string;
+    id: string;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    sort_order: number;
+    updated_at: string;
+};
+
+export type FrameworkSectionSubjectDto = {
+    capacity?: number | null;
+    course_id: string;
+    created_at: string;
+    ends_at?: string | null;
+    id: string;
+    name?: string | null;
+    org_id: string;
+    period_id?: string | null;
+    section_code?: string | null;
+    starts_at?: string | null;
+    status: string;
+    updated_at: string;
+};
+
 export type GenerateFeeRequest = {
     discount_amount?: string | null;
     due_date: string;
@@ -1365,7 +1547,6 @@ export type GoogleAuthRequest = {
 
 export type GradeDto = {
     change_reason?: string | null;
-    section_subject_id: string;
     component_id?: string | null;
     created_at: string;
     enrollment_id?: string | null;
@@ -1380,6 +1561,7 @@ export type GradeDto = {
     period_id: string;
     recorded_by?: string | null;
     score: string;
+    section_subject_id: string;
     student_id: string;
     updated_at: string;
     updated_by?: string | null;
@@ -1450,8 +1632,8 @@ export type IntegrationStatusDto = {
     config?: IntegrationDto | null;
     connected: boolean;
     health_error?: string | null;
-    is_healthy?: boolean | null;
     is_enabled: boolean;
+    is_healthy?: boolean | null;
 };
 
 export type JournalEntryDto = {
@@ -1522,17 +1704,17 @@ export type LoginResponse = {
 };
 
 export type MarkAttendanceItemRequest = {
-    section_subject_id?: string | null;
     notes?: string | null;
     scheduled_lesson_id?: string | null;
+    section_subject_id?: string | null;
     status: string;
     student_id: string;
 };
 
 export type MarkAttendanceRequest = {
-    class_id: string;
     date: string;
     notes?: string | null;
+    section_id: string;
     status: string;
     student_id: string;
 };
@@ -1560,8 +1742,25 @@ export type MfaVerifyEnrollmentRequest = {
     factor_id: string;
 };
 
+export type NotificationIntegrationCheckDto = {
+    channel: string;
+    id: string;
+    is_eligible: boolean;
+    is_enabled: boolean;
+    is_healthy?: boolean | null;
+    is_supported: boolean;
+    provider_name: string;
+    reason?: string | null;
+};
+
+export type NotificationIntegrationQuery = {
+    channel: string;
+};
+
 export type NotificationSettingsDto = {
-    default_integration_ids?: Record<string, string>;
+    default_integration_ids?: {
+        [key: string]: string;
+    };
     email_integration_id?: string | null;
     finance_reminder_days: Array<number>;
     notify_parents_on_absence: boolean;
@@ -1615,23 +1814,23 @@ export type OrgDto = {
     current_period_id?: string | null;
     date_format?: string | null;
     favicon?: string | null;
-    format_locale?: string | null;
     features?: unknown;
+    format_locale?: string | null;
     id: string;
-    institution_type?: "school" | "university" | "institute" | string;
+    institution_type: string;
     is_active: boolean;
     is_hijri_enabled: boolean;
     is_verified: boolean;
     locale: string;
     logo?: string | null;
-    metadata?: Record<string, unknown> | null;
+    metadata?: unknown;
     name: string;
     name_ar?: string | null;
     primary_color?: string | null;
     settings?: unknown;
     slug: string;
-    timezone: string;
     time_format?: string | null;
+    timezone: string;
     updated_at: string;
     updated_by?: string | null;
     version: number;
@@ -1739,15 +1938,6 @@ export type PaymentDto = {
  */
 export type PeriodKind = 'teaching' | 'examination' | 'break' | 'registration' | 'preparatory';
 
-export type PeriodTypeDto = {
-    id: string;
-    institution_type: string;
-    is_default: boolean;
-    name: string;
-    name_ar?: string | null;
-    structure: unknown;
-};
-
 /**
  * The structural type of a period in the academic hierarchy.
  *
@@ -1758,6 +1948,15 @@ export type PeriodTypeDto = {
  * - `Custom` — institution-defined
  */
 export type PeriodType = 'semester' | 'trimester' | 'quarter' | 'month' | 'module' | 'block' | 'custom';
+
+export type PeriodTypeDto = {
+    code: string;
+    id: string;
+    name: string;
+    name_ar?: string | null;
+    org_id: string;
+    sort_order: number;
+};
 
 export type PermissionRuleDto = {
     actions: Array<string>;
@@ -1810,13 +2009,6 @@ export type ProctorDto = {
     updated_at: string;
 };
 
-export type PromoteCohortRequest = {
-    items: Array<StudentProgressionItemInput>;
-    job_name: string;
-    source_period_id: string;
-    target_period_id: string;
-};
-
 export type ProgressionJobDto = {
     created_at: string;
     excluded_count: number;
@@ -1835,6 +2027,13 @@ export type ProgressionJobDto = {
     updated_at: string;
 };
 
+export type PromoteCohortRequest = {
+    items: Array<StudentProgressionItemInput>;
+    job_name: string;
+    source_period_id: string;
+    target_period_id: string;
+};
+
 export type ProviderSchemaField = {
     data_type: string;
     key: string;
@@ -1850,12 +2049,12 @@ export type ProviderSchemaResponse = {
 };
 
 export type ProvisionDefaultsReqDto = {
-    calendar_id?: string | null;
     academic_calendar_name?: string | null;
     academic_calendar_name_ar?: string | null;
+    calendar_id?: string | null;
     enable_period_autopilot?: boolean | null;
     end_date?: string | null;
-    hijri_month_lengths?: Array<number> | null;
+    hijri_month_lengths?: Blob | File | null;
     hijri_start_year?: number | null;
     provision_academic_calendar?: boolean | null;
     provision_assessment_scheme?: boolean | null;
@@ -1864,8 +2063,8 @@ export type ProvisionDefaultsReqDto = {
     provision_hijri_school_calendar?: boolean | null;
     provision_stages_and_grades?: boolean | null;
     provision_subjects?: boolean | null;
-    provision_tuition_fee_template?: boolean | null;
     provision_time_slots?: boolean | null;
+    provision_tuition_fee_template?: boolean | null;
     start_date?: string | null;
 };
 
@@ -1901,7 +2100,7 @@ export type ProvisionUserRequest = {
 
 export type RankingItemDto = {
     id: string;
-    rank: number;
+    rank: string;
 };
 
 export type RecordBehaviorRequest = {
@@ -1912,7 +2111,6 @@ export type RecordBehaviorRequest = {
 };
 
 export type RecordGradeItemRequest = {
-    section_subject_id: string;
     component_id?: string | null;
     enrollment_id?: string | null;
     is_excused?: boolean | null;
@@ -1921,11 +2119,11 @@ export type RecordGradeItemRequest = {
     notes?: string | null;
     period_id: string;
     score: string;
+    section_subject_id: string;
     student_id: string;
 };
 
 export type RecordGradeRequest = {
-    section_subject_id: string;
     component_id?: string | null;
     enrollment_id?: string | null;
     is_excused?: boolean | null;
@@ -1934,6 +2132,7 @@ export type RecordGradeRequest = {
     notes?: string | null;
     period_id: string;
     score: string;
+    section_subject_id: string;
     student_id: string;
 };
 
@@ -1995,8 +2194,8 @@ export type RegisterStudentRequest = {
     first_name: string;
     first_name_ar?: string | null;
     gender?: string | null;
-    initial_class_id?: string | null;
     initial_period_id?: string | null;
+    initial_section_id?: string | null;
     last_name: string;
     last_name_ar?: string | null;
     medical_notes?: string | null;
@@ -2092,25 +2291,25 @@ export type SaveRoleRequest = {
 };
 
 export type ScheduleExamRequest = {
-    section_subject_id: string;
     end_time: string;
     exam_date: string;
     exam_session_id: string;
+    section_subject_id: string;
     start_time: string;
 };
 
 export type ScheduleLessonRequest = {
-    section_subject_id: string;
     room_id?: string | null;
+    section_subject_id: string;
     teacher_id?: string | null;
     time_slot_id: string;
 };
 
 export type ScheduledLessonDto = {
-    section_subject_id: string;
     created_at: string;
     id: string;
     room_id?: string | null;
+    section_subject_id: string;
     teacher_id?: string | null;
     time_slot_id: string;
     updated_at: string;
@@ -2138,6 +2337,28 @@ export type SecretDto = {
     secret_number: string;
     student_id: string;
     updated_at: string;
+};
+
+export type SectionSubjectDto = {
+    assessment_config?: unknown;
+    assistant_instructor_id?: string | null;
+    capacity?: number | null;
+    created_at?: string | null;
+    grade_groups?: unknown;
+    id: string;
+    instructor_id?: string | null;
+    is_active: boolean;
+    org_id: string;
+    period_id: string;
+    practical_hours?: number | null;
+    scheme_id?: string | null;
+    section_id: string;
+    status: string;
+    subject_id: string;
+    substitute_instructor_id?: string | null;
+    theory_hours?: number | null;
+    updated_at?: string | null;
+    weekly_hours?: number | null;
 };
 
 export type SessionResponse = {
@@ -2248,25 +2469,34 @@ export type StudentProgressionItemInput = {
     decision: string;
     enrollment_id: string;
     reason?: string;
-    source_class_id?: string | null;
+    source_section_id?: string | null;
     student_id: string;
-    target_class_id?: string | null;
+    target_section_id?: string | null;
 };
 
 export type SubjectDto = {
     code: string;
+    color?: string | null;
     created_at: string;
     credit_hours?: string | null;
     description?: string | null;
+    icon?: string | null;
     id: string;
     is_active: boolean;
     is_core: boolean;
     is_elective: boolean;
+    is_lab_required: boolean;
+    max_students_per_section?: number | null;
     name: string;
     name_ar?: string | null;
     org_id: string;
+    practical_hours?: string | null;
+    sort_order?: number | null;
+    subject_type: string;
+    theory_hours?: string | null;
     unit_id?: string | null;
     updated_at: string;
+    workload_units?: string | null;
 };
 
 export type SubmitOverrideRequest = {
@@ -2282,19 +2512,12 @@ export type SubmitOverrideRequest = {
 };
 
 export type TeachingAssignmentInfo = {
-    class_id: string;
     class_name: string;
-    section_subject_id: string;
     period_id?: string | null;
+    section_id: string;
+    section_subject_id: string;
     subject_id: string;
     subject_name: string;
-};
-
-export type TeachingClassDto = {
-    class_id: string;
-    level?: string | null;
-    name: string;
-    name_ar?: string | null;
 };
 
 export type TemplateBindingDto = {
@@ -2366,13 +2589,11 @@ export type ToolCategory = 'read' | 'analysis' | 'generation' | 'action';
 
 export type TransferClassRequest = {
     reason?: string | null;
-    target_class_id: string;
+    target_section_id: string;
 };
 
 export type UiContext = {
     active_filters?: unknown;
-    class_id?: string | null;
-    section_subject_id?: string | null;
     domain?: string | null;
     entity_id?: string | null;
     entity_type?: string | null;
@@ -2380,6 +2601,8 @@ export type UiContext = {
     period_id?: string | null;
     route?: string | null;
     screen?: string | null;
+    section_id?: string | null;
+    section_subject_id?: string | null;
     selected_entity_ids?: Array<string>;
     subject_id?: string | null;
 };
@@ -2395,9 +2618,22 @@ export type UpdateAccountRequest = {
     sub_type?: string | null;
 };
 
+export type UpdateClassRequest = {
+    capacity?: number | null;
+    code?: string | null;
+    color?: string | null;
+    is_active?: boolean | null;
+    level?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    section_type?: string | null;
+    track?: string | null;
+    unit_id?: string | null;
+};
+
 export type UpdateDocumentRequest = {
-    calendar_id?: string | null;
     asset_type?: string | null;
+    calendar_id?: string | null;
     category?: string | null;
     description?: string | null;
     folder_id?: string | null;
@@ -2506,8 +2742,8 @@ export type UpdateOrgRequest = {
     name?: string | null;
     name_ar?: string | null;
     primary_color?: string | null;
-    timezone?: string | null;
     time_format?: string | null;
+    timezone?: string | null;
 };
 
 export type UpdateOrgUnitRequest = {
@@ -2526,6 +2762,15 @@ export type UpdateOrgUnitRequest = {
     settings?: unknown;
     sort_order?: number | null;
     unit_type?: string | null;
+};
+
+export type UpdatePeriodRequest = {
+    code?: string | null;
+    end_date?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    period_kind?: string | null;
+    start_date?: string | null;
 };
 
 export type UpdateRoomRequest = {
@@ -2547,6 +2792,21 @@ export type UpdateSchemeRequest = {
     max_score?: string | null;
     name?: string | null;
     name_ar?: string | null;
+};
+
+export type UpdateSectionSubjectRequest = {
+    assessment_config?: unknown;
+    assistant_instructor_id?: string | null;
+    capacity?: number | null;
+    grade_groups?: unknown;
+    instructor_id?: string | null;
+    is_active?: boolean | null;
+    practical_hours?: number | null;
+    scheme_id?: string | null;
+    status?: string | null;
+    substitute_instructor_id?: string | null;
+    theory_hours?: number | null;
+    weekly_hours?: number | null;
 };
 
 export type UpdateStudentProfileRequest = {
@@ -2575,6 +2835,27 @@ export type UpdateStudentProfileRequest = {
 export type UpdateStudentStatusRequest = {
     reason?: string | null;
     status: string;
+};
+
+export type UpdateSubjectRequest = {
+    code?: string | null;
+    color?: string | null;
+    credit_hours?: string | null;
+    description?: string | null;
+    icon?: string | null;
+    is_active?: boolean | null;
+    is_core?: boolean | null;
+    is_elective?: boolean | null;
+    is_lab_required?: boolean | null;
+    max_students_per_section?: number | null;
+    name?: string | null;
+    name_ar?: string | null;
+    practical_hours?: string | null;
+    sort_order?: number | null;
+    subject_type?: string | null;
+    theory_hours?: string | null;
+    unit_id?: string | null;
+    workload_units?: string | null;
 };
 
 export type UpdateTemplateRequest = {
@@ -2614,9 +2895,17 @@ export type UpdateUserRequest = {
     status?: string | null;
 };
 
+export type UpdateYearRequest = {
+    end_date?: string | null;
+    name?: string | null;
+    name_ar?: string | null;
+    notes?: string | null;
+    start_date?: string | null;
+};
+
 export type UploadDocumentRequest = {
-    calendar_id?: string | null;
     asset_type?: string | null;
+    calendar_id?: string | null;
     category?: string | null;
     checksum_sha256?: string | null;
     description?: string | null;
@@ -2644,6 +2933,7 @@ export type UserAiContext = {
     effective_role?: string | null;
     employee_id?: string | null;
     is_parent: boolean;
+    is_student: boolean;
     is_teacher: boolean;
     org_id: string;
     org_name?: string | null;
@@ -2651,6 +2941,7 @@ export type UserAiContext = {
     org_unit_path?: string | null;
     permissions: Array<string>;
     roles: Array<string>;
+    student_id?: string | null;
     teaching_assignments: Array<TeachingAssignmentInfo>;
     user_id?: string | null;
     user_name?: string | null;
@@ -2717,6 +3008,187 @@ export type ValidationResultDto = {
     warnings: Array<ValidationIssueDto>;
 };
 
+export type ListCalendarsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/calendars';
+};
+
+export type ListCalendarsResponses = {
+    200: Array<AcademicCalendarDto>;
+};
+
+export type ListCalendarsResponse = ListCalendarsResponses[keyof ListCalendarsResponses];
+
+export type CreateCalendarData = {
+    body: CreateAcademicCalendarRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/calendars';
+};
+
+export type CreateCalendarResponses = {
+    200: AcademicCalendarDto;
+};
+
+export type CreateCalendarResponse = CreateCalendarResponses[keyof CreateCalendarResponses];
+
+export type ListCalendarPeriodsData = {
+    body?: never;
+    path: {
+        /**
+         * Academic calendar ID
+         */
+        calendar_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-framework/calendars/{calendar_id}/periods';
+};
+
+export type ListCalendarPeriodsResponses = {
+    200: Array<AcademicPeriodDto>;
+};
+
+export type ListCalendarPeriodsResponse = ListCalendarPeriodsResponses[keyof ListCalendarPeriodsResponses];
+
+export type CreateCalendarPeriodData = {
+    body: CreateAcademicPeriodRequest;
+    path: {
+        /**
+         * Academic calendar ID
+         */
+        calendar_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-framework/calendars/{calendar_id}/periods';
+};
+
+export type CreateCalendarPeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type CreateCalendarPeriodResponse = CreateCalendarPeriodResponses[keyof CreateCalendarPeriodResponses];
+
+export type ListSectionSubjectsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Optional course ID
+         */
+        course_id?: string | null;
+    };
+    url: '/api/v1/academic-framework/course-offerings';
+};
+
+export type ListSectionSubjectsResponses = {
+    200: Array<SectionSubjectDto>;
+};
+
+export type ListSectionSubjectsResponse = ListSectionSubjectsResponses[keyof ListSectionSubjectsResponses];
+
+export type CreateSectionSubjectData = {
+    body: CreateSectionSubjectRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/course-offerings';
+};
+
+export type CreateSectionSubjectResponses = {
+    200: SectionSubjectDto;
+};
+
+export type CreateSectionSubjectResponse = CreateSectionSubjectResponses[keyof CreateSectionSubjectResponses];
+
+export type ListEnrollmentsData = {
+    body?: never;
+    path: {
+        /**
+         * Course offering ID
+         */
+        offering_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-framework/course-offerings/{offering_id}/enrollments';
+};
+
+export type ListEnrollmentsResponses = {
+    200: Array<EnrollmentDto>;
+};
+
+export type ListEnrollmentsResponse = ListEnrollmentsResponses[keyof ListEnrollmentsResponses];
+
+export type EnrollStudentData = {
+    body: CreateEnrollmentRequest;
+    path: {
+        /**
+         * Course offering ID
+         */
+        offering_id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-framework/course-offerings/{offering_id}/enrollments';
+};
+
+export type EnrollStudentResponses = {
+    200: EnrollmentDto;
+};
+
+export type EnrollStudentResponse = EnrollStudentResponses[keyof EnrollStudentResponses];
+
+export type ListCoursesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/courses';
+};
+
+export type ListCoursesResponses = {
+    200: Array<CourseDto>;
+};
+
+export type ListCoursesResponse = ListCoursesResponses[keyof ListCoursesResponses];
+
+export type CreateCourseData = {
+    body: CreateCourseRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/courses';
+};
+
+export type CreateCourseResponses = {
+    200: CourseDto;
+};
+
+export type CreateCourseResponse = CreateCourseResponses[keyof CreateCourseResponses];
+
+export type ListPeriodTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/period-types';
+};
+
+export type ListPeriodTypesResponses = {
+    200: Array<PeriodTypeDto>;
+};
+
+export type ListPeriodTypesResponse = ListPeriodTypesResponses[keyof ListPeriodTypesResponses];
+
+export type CreatePeriodTypeData = {
+    body: CreatePeriodTypeRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-framework/period-types';
+};
+
+export type CreatePeriodTypeResponses = {
+    200: PeriodTypeDto;
+};
+
+export type CreatePeriodTypeResponse = CreatePeriodTypeResponses[keyof CreatePeriodTypeResponses];
+
 export type ListPeriodsData = {
     body?: never;
     path?: never;
@@ -2743,6 +3215,24 @@ export type CreatePeriodResponses = {
 
 export type CreatePeriodResponse = CreatePeriodResponses[keyof CreatePeriodResponses];
 
+export type DeletePeriodHandlerData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type DeletePeriodHandlerResponses = {
+    200: boolean;
+};
+
+export type DeletePeriodHandlerResponse = DeletePeriodHandlerResponses[keyof DeletePeriodHandlerResponses];
+
 export type GetPeriodData = {
     body?: never;
     path: {
@@ -2760,6 +3250,24 @@ export type GetPeriodResponses = {
 };
 
 export type GetPeriodResponse = GetPeriodResponses[keyof GetPeriodResponses];
+
+export type UpdatePeriodData = {
+    body: UpdatePeriodRequest;
+    path: {
+        /**
+         * Academic Period ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-periods/{id}';
+};
+
+export type UpdatePeriodResponses = {
+    200: AcademicPeriodDto;
+};
+
+export type UpdatePeriodResponse = UpdatePeriodResponses[keyof UpdatePeriodResponses];
 
 export type ClosePeriodData = {
     body?: never;
@@ -2815,35 +3323,31 @@ export type UnlockPeriodResponses = {
 
 export type UnlockPeriodResponse = UnlockPeriodResponses[keyof UnlockPeriodResponses];
 
-export type UpdatePeriodData = {
-    body: UpdatePeriodRequest;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/academic-periods/{id}';
-};
-
-export type UpdatePeriodResponses = {
-    200: AcademicPeriodDto;
-};
-
-export type UpdatePeriodResponse = UpdatePeriodResponses[keyof UpdatePeriodResponses];
-
-export type DeletePeriodData = {
+export type GetCurrentAcademicPolicyData = {
     body?: never;
-    path: {
-        id: string;
-    };
+    path?: never;
     query?: never;
-    url: '/api/v1/academic-periods/{id}';
+    url: '/api/v1/academic-policy';
 };
 
-export type DeletePeriodResponses = {
-    200: boolean;
+export type GetCurrentAcademicPolicyResponses = {
+    200: AcademicPolicyDto;
 };
 
-export type DeletePeriodResponse = DeletePeriodResponses[keyof DeletePeriodResponses];
+export type GetCurrentAcademicPolicyResponse = GetCurrentAcademicPolicyResponses[keyof GetCurrentAcademicPolicyResponses];
+
+export type PreviewAcademicResultData = {
+    body: AcademicResultPreviewRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/academic-results/preview';
+};
+
+export type PreviewAcademicResultResponses = {
+    200: AcademicResultViewDto;
+};
+
+export type PreviewAcademicResultResponse = PreviewAcademicResultResponses[keyof PreviewAcademicResultResponses];
 
 export type ListYearsData = {
     body?: never;
@@ -2884,6 +3388,24 @@ export type GetCurrentContextResponses = {
 
 export type GetCurrentContextResponse = GetCurrentContextResponses[keyof GetCurrentContextResponses];
 
+export type DeleteYearData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Year ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}';
+};
+
+export type DeleteYearResponses = {
+    200: boolean;
+};
+
+export type DeleteYearResponse = DeleteYearResponses[keyof DeleteYearResponses];
+
 export type GetYearData = {
     body?: never;
     path: {
@@ -2905,6 +3427,9 @@ export type GetYearResponse = GetYearResponses[keyof GetYearResponses];
 export type UpdateYearData = {
     body: UpdateYearRequest;
     path: {
+        /**
+         * Academic Year ID
+         */
         id: string;
     };
     query?: never;
@@ -2920,6 +3445,9 @@ export type UpdateYearResponse = UpdateYearResponses[keyof UpdateYearResponses];
 export type ActivateYearData = {
     body?: never;
     path: {
+        /**
+         * Academic Year ID
+         */
         id: string;
     };
     query?: never;
@@ -2932,35 +3460,41 @@ export type ActivateYearResponses = {
 
 export type ActivateYearResponse = ActivateYearResponses[keyof ActivateYearResponses];
 
-export type CloseYearData = {
+export type ArchiveYearHandlerData = {
     body?: never;
     path: {
-        id: string;
-    };
-    query?: never;
-    url: '/api/v1/academic-years/{id}/close';
-};
-
-export type CloseYearResponses = {
-    200: AcademicCalendarDto;
-};
-
-export type CloseYearResponse = CloseYearResponses[keyof CloseYearResponses];
-
-export type ArchiveYearData = {
-    body?: never;
-    path: {
+        /**
+         * Academic Year ID
+         */
         id: string;
     };
     query?: never;
     url: '/api/v1/academic-years/{id}/archive';
 };
 
-export type ArchiveYearResponses = {
+export type ArchiveYearHandlerResponses = {
     200: AcademicCalendarDto;
 };
 
-export type ArchiveYearResponse = ArchiveYearResponses[keyof ArchiveYearResponses];
+export type ArchiveYearHandlerResponse = ArchiveYearHandlerResponses[keyof ArchiveYearHandlerResponses];
+
+export type CloseYearHandlerData = {
+    body?: never;
+    path: {
+        /**
+         * Academic Year ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/academic-years/{id}/close';
+};
+
+export type CloseYearHandlerResponses = {
+    200: AcademicCalendarDto;
+};
+
+export type CloseYearHandlerResponse = CloseYearHandlerResponses[keyof CloseYearHandlerResponses];
 
 export type ListAccountsData = {
     body?: never;
@@ -3673,41 +4207,6 @@ export type GetBootstrapStatusResponses = {
 
 export type GetBootstrapStatusResponse = GetBootstrapStatusResponses[keyof GetBootstrapStatusResponses];
 
-export type ListSectionSubjectsData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Class ID
-         */
-        class_id: string;
-        /**
-         * Period ID
-         */
-        period_id: string;
-    };
-    url: '/api/v1/class-subjects';
-};
-
-export type ListSectionSubjectsResponses = {
-    200: Array<SectionSubjectDto>;
-};
-
-export type ListSectionSubjectsResponse = ListSectionSubjectsResponses[keyof ListSectionSubjectsResponses];
-
-export type AssignSectionSubjectData = {
-    body: AssignSectionSubjectRequest;
-    path?: never;
-    query?: never;
-    url: '/api/v1/class-subjects';
-};
-
-export type AssignSectionSubjectResponses = {
-    201: SectionSubjectDto;
-};
-
-export type AssignSectionSubjectResponse = AssignSectionSubjectResponses[keyof AssignSectionSubjectResponses];
-
 export type ListClassesData = {
     body?: never;
     path?: never;
@@ -3738,7 +4237,7 @@ export type GetClassData = {
     body?: never;
     path: {
         /**
-         * Class ID
+         * Section ID
          */
         id: string;
     };
@@ -3751,6 +4250,24 @@ export type GetClassResponses = {
 };
 
 export type GetClassResponse = GetClassResponses[keyof GetClassResponses];
+
+export type UpdateClassData = {
+    body: UpdateClassRequest;
+    path: {
+        /**
+         * Class ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/classes/{id}';
+};
+
+export type UpdateClassResponses = {
+    200: ClassDto;
+};
+
+export type UpdateClassResponse = UpdateClassResponses[keyof UpdateClassResponses];
 
 export type ListCurrenciesData = {
     body?: never;
@@ -4159,34 +4676,34 @@ export type UpdateEmployeeStatusResponses = {
 
 export type UpdateEmployeeStatusResponse = UpdateEmployeeStatusResponses[keyof UpdateEmployeeStatusResponses];
 
-export type ListEnrollmentsData = {
+export type ListEnrollments2Data = {
     body?: never;
     path?: never;
     query?: {
-        class_id?: string | null;
+        section_id?: string | null;
         student_id?: string | null;
     };
     url: '/api/v1/enrollments';
 };
 
-export type ListEnrollmentsResponses = {
+export type ListEnrollments2Responses = {
     200: Array<EnrollmentDto>;
 };
 
-export type ListEnrollmentsResponse = ListEnrollmentsResponses[keyof ListEnrollmentsResponses];
+export type ListEnrollments2Response = ListEnrollments2Responses[keyof ListEnrollments2Responses];
 
-export type EnrollStudentData = {
+export type EnrollStudent2Data = {
     body: EnrollStudentRequest;
     path?: never;
     query?: never;
     url: '/api/v1/enrollments';
 };
 
-export type EnrollStudentResponses = {
+export type EnrollStudent2Responses = {
     201: EnrollmentDto;
 };
 
-export type EnrollStudentResponse = EnrollStudentResponses[keyof EnrollStudentResponses];
+export type EnrollStudent2Response = EnrollStudent2Responses[keyof EnrollStudent2Responses];
 
 export type GetEnrollmentData = {
     body?: never;
@@ -5287,6 +5804,21 @@ export type ConnectAppResponses = {
 
 export type ConnectAppResponse = ConnectAppResponses[keyof ConnectAppResponses];
 
+export type ListNotificationIntegrationsData = {
+    body?: never;
+    path?: never;
+    query: {
+        channel: string;
+    };
+    url: '/api/v1/integrations/notifications';
+};
+
+export type ListNotificationIntegrationsResponses = {
+    200: Array<NotificationIntegrationCheckDto>;
+};
+
+export type ListNotificationIntegrationsResponse = ListNotificationIntegrationsResponses[keyof ListNotificationIntegrationsResponses];
+
 export type DisconnectAppData = {
     body?: never;
     path: {
@@ -5739,10 +6271,8 @@ export type ListPaymentsData = {
 };
 
 export type ListPaymentsResponses = {
-    200: Array<PaymentDto>;
+    200: unknown;
 };
-
-export type ListPaymentsResponse = ListPaymentsResponses[keyof ListPaymentsResponses];
 
 export type ProcessPaymentData = {
     body: ProcessPaymentRequest;
@@ -5775,18 +6305,18 @@ export type DeletePaymentResponses = {
 
 export type DeletePaymentResponse = DeletePaymentResponses[keyof DeletePaymentResponses];
 
-export type ListPeriodTypesData = {
+export type ListPeriodTypes2Data = {
     body?: never;
     path?: never;
     query?: never;
     url: '/api/v1/period-templates';
 };
 
-export type ListPeriodTypesResponses = {
+export type ListPeriodTypes2Responses = {
     200: Array<PeriodTypeDto>;
 };
 
-export type ListPeriodTypesResponse = ListPeriodTypesResponses[keyof ListPeriodTypesResponses];
+export type ListPeriodTypes2Response = ListPeriodTypes2Responses[keyof ListPeriodTypes2Responses];
 
 export type EvaluateCohortData = {
     body: EvaluateCohortRequest;
@@ -5948,7 +6478,7 @@ export type BatchPrintResponses = {
     /**
      * Multi-up PDF
      */
-    200: Blob;
+    200: Blob | File;
 };
 
 export type BatchPrintResponse = BatchPrintResponses[keyof BatchPrintResponses];
@@ -5968,6 +6498,24 @@ export type GenerateReportResponses = {
 };
 
 export type GenerateReportResponse2 = GenerateReportResponses[keyof GenerateReportResponses];
+
+export type CancelReportJobData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/reports/jobs/{id}/cancel';
+};
+
+export type CancelReportJobResponses = {
+    /**
+     * Request report cancellation
+     */
+    200: CancelReportResponse;
+};
+
+export type CancelReportJobResponse = CancelReportJobResponses[keyof CancelReportJobResponses];
 
 export type DownloadReportFileData = {
     body?: never;
@@ -6162,6 +6710,77 @@ export type DeleteLessonResponses = {
 };
 
 export type DeleteLessonResponse = DeleteLessonResponses[keyof DeleteLessonResponses];
+
+export type ListSectionSubjects2Data = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Section ID
+         */
+        section_id: string;
+        /**
+         * Period ID
+         */
+        period_id: string;
+    };
+    url: '/api/v1/section-subjects';
+};
+
+export type ListSectionSubjects2Responses = {
+    200: Array<SectionSubjectDto>;
+};
+
+export type ListSectionSubjects2Response = ListSectionSubjects2Responses[keyof ListSectionSubjects2Responses];
+
+export type AssignSectionSubjectData = {
+    body: AssignSectionSubjectRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/section-subjects';
+};
+
+export type AssignSectionSubjectResponses = {
+    201: SectionSubjectDto;
+};
+
+export type AssignSectionSubjectResponse = AssignSectionSubjectResponses[keyof AssignSectionSubjectResponses];
+
+export type GetSectionSubjectData = {
+    body?: never;
+    path: {
+        /**
+         * SectionSubject ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/section-subjects/{id}';
+};
+
+export type GetSectionSubjectResponses = {
+    200: SectionSubjectDto;
+};
+
+export type GetSectionSubjectResponse = GetSectionSubjectResponses[keyof GetSectionSubjectResponses];
+
+export type UpdateSectionSubjectData = {
+    body: UpdateSectionSubjectRequest;
+    path: {
+        /**
+         * SectionSubject ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/section-subjects/{id}';
+};
+
+export type UpdateSectionSubjectResponses = {
+    200: SectionSubjectDto;
+};
+
+export type UpdateSectionSubjectResponse = UpdateSectionSubjectResponses[keyof UpdateSectionSubjectResponses];
 
 export type ListArchivedDocumentsData = {
     body?: never;
@@ -6396,10 +7015,8 @@ export type ListFeesData = {
 };
 
 export type ListFeesResponses = {
-    200: Array<StudentFeeDto>;
+    200: unknown;
 };
-
-export type ListFeesResponse = ListFeesResponses[keyof ListFeesResponses];
 
 export type GenerateFeeData = {
     body: GenerateFeeRequest;
@@ -6501,7 +7118,7 @@ export type ListStudentsData = {
     path?: never;
     query?: {
         period_id?: string | null;
-        class_id?: string | null;
+        section_id?: string | null;
         status?: string | null;
         standing?: string | null;
         search?: string | null;
@@ -6557,6 +7174,19 @@ export type CheckDuplicateResponses = {
 };
 
 export type CheckDuplicateResponse = CheckDuplicateResponses[keyof CheckDuplicateResponses];
+
+export type GetMyStudentData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/students/me';
+};
+
+export type GetMyStudentResponses = {
+    200: StudentDto;
+};
+
+export type GetMyStudentResponse = GetMyStudentResponses[keyof GetMyStudentResponses];
 
 export type DeleteStudentData = {
     body?: never;
@@ -6641,8 +7271,8 @@ export type EvaluateStudentRequirementsData = {
     query?: {
         grade_level_id?: string | null;
         is_national?: boolean | null;
-        is_special_needs?: boolean | null;
         is_transfer?: boolean | null;
+        is_special_needs?: boolean | null;
     };
     url: '/api/v1/students/{id}/document-requirements';
 };
@@ -6772,6 +7402,24 @@ export type GetSubjectResponses = {
 };
 
 export type GetSubjectResponse = GetSubjectResponses[keyof GetSubjectResponses];
+
+export type UpdateSubjectData = {
+    body: UpdateSubjectRequest;
+    path: {
+        /**
+         * Subject ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/subjects/{id}';
+};
+
+export type UpdateSubjectResponses = {
+    200: SubjectDto;
+};
+
+export type UpdateSubjectResponse = UpdateSubjectResponses[keyof UpdateSubjectResponses];
 
 export type GetSystemHasOrgEndpointData = {
     body?: never;

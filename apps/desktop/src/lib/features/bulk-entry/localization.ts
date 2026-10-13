@@ -116,7 +116,7 @@ export function getBulkEntryGridColumns<T>(
     const policy = column.id ? registrationFields?.[normalizeRegistrationFieldKey(column.id)] : undefined;
     const header =
       (column.id
-        ? getBulkEntryColumnHeader(profile.id, column.id, column.header, policy?.required)
+        ? getBulkEntryColumnHeader(profile.id, column.id, column.header ?? "", policy?.required)
         : undefined) ??
       (column.id ? gridHeaders[column.id]?.() : undefined) ??
       column.header;

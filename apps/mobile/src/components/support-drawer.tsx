@@ -137,7 +137,7 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             contentContainerClassName="gap-four pb-four"
-            style={{ maxHeight: height * 0.58, flexShrink: 1 }}
+            style={{ flex: 1, maxHeight: height * 0.58, flexShrink: 1 }}
           >
             <View className="gap-two px-five">
               <Text className="text-start text-xs font-semibold text-foreground">

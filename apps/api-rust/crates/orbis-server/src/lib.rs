@@ -123,12 +123,16 @@ use api::{
         api::academic_framework_routes::enroll_student,
         // Academic
         api::academic_routes::create_subject,
+        api::academic_routes::update_subject,
         api::academic_routes::list_subjects,
         api::academic_routes::get_subject,
         api::academic_routes::create_class,
+        api::academic_routes::update_class,
         api::academic_routes::list_classes,
         api::academic_routes::get_class,
         api::academic_routes::assign_section_subject,
+        api::academic_routes::get_section_subject,
+        api::academic_routes::update_section_subject,
         api::academic_routes::list_section_subjects,
         // Student
         api::student_routes::register_student,
@@ -420,10 +424,13 @@ use api::{
             // Academic
             api::academic_routes::SubjectDto,
             api::academic_routes::CreateSubjectRequest,
+            api::academic_routes::UpdateSubjectRequest,
             api::academic_routes::ClassDto,
             api::academic_routes::CreateClassRequest,
+            api::academic_routes::UpdateClassRequest,
             api::academic_routes::SectionSubjectDto,
             api::academic_routes::AssignSectionSubjectRequest,
+            api::academic_routes::UpdateSectionSubjectRequest,
             // Student
             api::student_routes::StudentDto,
             api::student_routes::RegisterStudentRequest,

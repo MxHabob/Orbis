@@ -144,8 +144,8 @@ export function createStudentDirectoryQuery(orgId: () => string) {
           {
             header: m.operations_ui_class(),
             accessor: (student) =>
-              classNames.get(student.enrollment?.class_id ?? "") ||
-              student.enrollment?.class_id ||
+              classNames.get(student.enrollment?.section_id ?? "") ||
+              student.enrollment?.section_id ||
               "—",
           },
           { header: m.operations_ui_status(), accessor: (student) => student.student?.status || "active" },

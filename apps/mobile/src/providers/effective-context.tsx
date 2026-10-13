@@ -4,8 +4,8 @@
  * High-Performance, Declarative Effective Context Provider for Orbis Mobile.
  *
  * Architectural Principles:
- * 1. Zero `useEffect` — state is derived purely and declaratively from the authoritative
- *    backend IAM session (`authCtx`), eliminating cascading renders and state lag.
+ * 1. Effective permissions and scopes are derived from the authoritative backend session;
+ *    only user-selected scope preferences are restored asynchronously.
  * 2. Dynamic RBAC / ABAC — role and permission verification is evaluated dynamically
  *    via `hasRole`, `hasAnyRole`, `hasPermission`, and `can`, avoiding hardcoded role assumptions.
  * 3. Reactive Context Scopes — instantaneous resolution of active period, dependents,
@@ -18,12 +18,18 @@ import React, {
   useState,
   useMemo,
   useCallback,
+  useEffect,
 } from "react";
 import { useAuth } from "@/lib/api";
-import { setSecureItem } from "@/lib/api/storage";
+import {
+  deleteSecureItem,
+  getSecureItem,
+  setSecureItem,
+} from "@/lib/api/storage";
 import { LinkedDependentDto } from "@orbis/sdk";
 
 export interface EffectiveContextType {
+  isReady: boolean;
   // ── Authoritative IAM / RBAC Matrix ──────────────────────────────
   effectiveRole: string;
   activeRole: string;
@@ -64,14 +70,24 @@ const STORAGE_KEYS_CONTEXT = {
   SELECTED_DEPENDENT_ID: "orbis_selected_dependent_id",
   SELECTED_CLASS_ID: "orbis_selected_class_id",
   SELECTED_SUBJECT_ID: "orbis_selected_subject_id",
+  ACTIVE_PERIOD_ID: "orbis_active_period_id",
 } as const;
+
+function getScopedStorageKey(key: string, scopeId: string): string {
+  return `${key}_${scopeId.replace(/:/g, "_")}`;
+}
 
 export function EffectiveContextProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { effectiveContext: authCtx } = useAuth();
+  const {
+    effectiveContext: authCtx,
+    isInitializing,
+    orgId,
+    userId,
+  } = useAuth();
 
   // Authoritative data streams derived directly from session state
   const effectiveRole = useMemo<string>(
@@ -99,14 +115,6 @@ export function EffectiveContextProvider({
       : null) ??
     (roles.includes(effectiveRole) ? effectiveRole : roles[0]) ??
     "guest";
-  const setActiveRole = useCallback(
-    (role: string) => {
-      if (roles.includes(role) || role === effectiveRole) {
-        setActiveRoleOverride(role);
-      }
-    },
-    [effectiveRole, roles],
-  );
   const studentId = authCtx?.student_id ?? null;
 
   const dependents = useMemo<LinkedDependentDto[]>(
@@ -114,11 +122,14 @@ export function EffectiveContextProvider({
     [authCtx?.dependents],
   );
 
-  // User-selected operational scopes (declarative initial states without useEffect)
+  // Persisted scope choices are restored after the authenticated session resolves.
   const [activePeriodOverride, setActivePeriodOverride] = useState<string | null>(null);
   const [selectedDependentIdState, setSelectedDependentIdState] = useState<string | null>(null);
   const [selectedClassId, setSelectedClassIdState] = useState<string | null>(null);
   const [selectedSubjectId, setSelectedSubjectIdState] = useState<string | null>(null);
+  const [loadedScope, setLoadedScope] = useState<string | null>(null);
+  const scopeId = userId ? `${orgId}:${userId}` : "guest";
+  const isReady = !isInitializing && loadedScope === scopeId;
 
   // Active period resolution (override or backend default)
   const activePeriodId = useMemo<string | null>(
@@ -141,6 +152,123 @@ export function EffectiveContextProvider({
     [selectedDependent],
   );
 
+  useEffect(() => {
+    if (isInitializing) return;
+
+    let cancelled = false;
+    if (!userId) {
+      setActiveRoleOverride(null);
+      setActivePeriodOverride(null);
+      setSelectedDependentIdState(null);
+      setSelectedClassIdState(null);
+      setSelectedSubjectIdState(null);
+      setLoadedScope("guest");
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const restoreScope = async () => {
+      const scopedKey = (key: string) => getScopedStorageKey(key, scopeId);
+      const [
+        savedRole,
+        savedPeriod,
+        savedDependent,
+        savedClass,
+        savedSubject,
+      ] = await Promise.all([
+        getSecureItem(scopedKey("orbis_active_role")),
+        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.ACTIVE_PERIOD_ID)),
+        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_DEPENDENT_ID)),
+        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_CLASS_ID)),
+        getSecureItem(scopedKey(STORAGE_KEYS_CONTEXT.SELECTED_SUBJECT_ID)),
+      ]);
+
+      if (cancelled) return;
+
+      setActiveRoleOverride(
+        savedRole &&
+          (roles.includes(savedRole) || savedRole === effectiveRole)
+          ? savedRole
+          : null,
+      );
+      setActivePeriodOverride(savedPeriod);
+      setSelectedDependentIdState(
+        savedDependent &&
+          dependents.some((dependent) => dependent.student_id === savedDependent)
+          ? savedDependent
+          : null,
+      );
+      const restoredClass =
+        savedClass &&
+        authCtx?.teaching_classes?.some(
+          (classItem) => classItem.class_id === savedClass,
+        )
+          ? savedClass
+          : null;
+      setSelectedClassIdState(restoredClass);
+      setSelectedSubjectIdState(restoredClass ? savedSubject : null);
+      setLoadedScope(scopeId);
+    };
+
+    void restoreScope().catch((error: unknown) => {
+      console.error(
+        "[Orbis Mobile Context] Failed to restore saved scopes.",
+        error,
+      );
+      if (!cancelled) setLoadedScope(scopeId);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authCtx?.teaching_classes,
+    dependents,
+    effectiveRole,
+    isInitializing,
+    orgId,
+    roles,
+    scopeId,
+    userId,
+  ]);
+
+  const persistScopeValue = useCallback(
+    (key: string, value: string | null) => {
+      if (!userId) return;
+
+      const keyForUser = getScopedStorageKey(key, scopeId);
+      const write = value
+        ? setSecureItem(keyForUser, value)
+        : deleteSecureItem(keyForUser);
+      void write.catch((error: unknown) => {
+        console.error(
+          "[Orbis Mobile Context] Failed to save selected scope.",
+          error,
+        );
+      });
+    },
+    [scopeId, userId],
+  );
+
+  const setActivePeriodId = useCallback(
+    (periodId: string | null) => {
+      setActivePeriodOverride(periodId);
+      persistScopeValue(STORAGE_KEYS_CONTEXT.ACTIVE_PERIOD_ID, periodId);
+    },
+    [persistScopeValue],
+  );
+
+  const setActiveRole = useCallback(
+    (role: string) => {
+      if (roles.includes(role) || role === effectiveRole) {
+        setActiveRoleOverride(role);
+        persistScopeValue("orbis_active_role", role);
+      }
+    },
+    [effectiveRole, persistScopeValue, roles],
+  );
+
   // Target student identifier for academic & student-specific queries
   const targetStudentId = useMemo<string | null>(() => {
     if (["guardian", "parent", "family"].includes(activeRole.toLowerCase())) {
@@ -150,26 +278,44 @@ export function EffectiveContextProvider({
   }, [activeRole, selectedDependent, studentId]);
 
   // Setters with persistent caching
-  const setSelectedDependentId = useCallback((id: string | null) => {
-    setSelectedDependentIdState(id);
-    if (id) {
-      setSecureItem(STORAGE_KEYS_CONTEXT.SELECTED_DEPENDENT_ID, id).catch(() => {});
-    }
-  }, []);
+  const setSelectedDependentId = useCallback(
+    (id: string | null) => {
+      const validId =
+        id && dependents.some((dependent) => dependent.student_id === id)
+          ? id
+          : null;
+      setSelectedDependentIdState(validId);
+      persistScopeValue(STORAGE_KEYS_CONTEXT.SELECTED_DEPENDENT_ID, validId);
+    },
+    [dependents, persistScopeValue],
+  );
 
-  const setSelectedClassId = useCallback((id: string | null) => {
-    setSelectedClassIdState(id);
-    if (id) {
-      setSecureItem(STORAGE_KEYS_CONTEXT.SELECTED_CLASS_ID, id).catch(() => {});
-    }
-  }, []);
+  const setSelectedClassId = useCallback(
+    (id: string | null) => {
+      const validId =
+        id &&
+        authCtx?.teaching_classes?.some(
+          (classItem) => classItem.class_id === id,
+        )
+          ? id
+          : null;
+      setSelectedClassIdState(validId);
+      persistScopeValue(STORAGE_KEYS_CONTEXT.SELECTED_CLASS_ID, validId);
+      if (validId !== selectedClassId) {
+        setSelectedSubjectIdState(null);
+        persistScopeValue(STORAGE_KEYS_CONTEXT.SELECTED_SUBJECT_ID, null);
+      }
+    },
+    [authCtx?.teaching_classes, persistScopeValue, selectedClassId],
+  );
 
-  const setSelectedSubjectId = useCallback((id: string | null) => {
-    setSelectedSubjectIdState(id);
-    if (id) {
-      setSecureItem(STORAGE_KEYS_CONTEXT.SELECTED_SUBJECT_ID, id).catch(() => {});
-    }
-  }, []);
+  const setSelectedSubjectId = useCallback(
+    (id: string | null) => {
+      setSelectedSubjectIdState(id);
+      persistScopeValue(STORAGE_KEYS_CONTEXT.SELECTED_SUBJECT_ID, id);
+    },
+    [persistScopeValue],
+  );
 
   // Dynamic IAM evaluation engines
   const hasRole = useCallback(
@@ -231,6 +377,7 @@ export function EffectiveContextProvider({
 
   const contextValue = useMemo<EffectiveContextType>(
     () => ({
+      isReady,
       effectiveRole,
       activeRole,
       setActiveRole,
@@ -244,7 +391,7 @@ export function EffectiveContextProvider({
       hasAllPermissions,
       can,
       activePeriodId,
-      setActivePeriodId: setActivePeriodOverride,
+      setActivePeriodId,
       dependents,
       selectedDependentId,
       selectedDependent,
@@ -256,6 +403,7 @@ export function EffectiveContextProvider({
       targetStudentId,
     }),
     [
+      isReady,
       effectiveRole,
       activeRole,
       setActiveRole,
@@ -269,6 +417,7 @@ export function EffectiveContextProvider({
       hasAllPermissions,
       can,
       activePeriodId,
+      setActivePeriodId,
       dependents,
       selectedDependentId,
       selectedDependent,

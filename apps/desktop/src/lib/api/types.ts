@@ -36,7 +36,7 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  academicCalendarDto,
+  AcademicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
   PeriodTypeDto,
@@ -48,8 +48,11 @@ import type {
   ClassDto,
   SectionSubjectDto,
   CreateSubjectRequest,
+  UpdateSubjectRequest,
   CreateClassRequest,
+  UpdateClassRequest,
   AssignSectionSubjectRequest,
+  UpdateSectionSubjectRequest,
   EnrollmentDto,
   StudentDto,
   EnrollStudentRequest,
@@ -80,7 +83,7 @@ import type {
   ResolveOverrideRequest,
   ApprovalStepDto,
   StudentProgressionItemInput,
-  progressionJobDto,
+  ProgressionJobDto,
   PromoteCohortRequest,
   EvaluateCohortRequest,
   RoomDto,
@@ -1553,14 +1556,14 @@ export interface OrbisApiClient {
   selectOrgUnit(id?: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
-  createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto>;
-  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<academicCalendarDto>;
-  listacademicCalendars(): Promise<academicCalendarDto[]>;
+  createacademicCalendar(req: CreateYearRequest): Promise<AcademicCalendarDto>;
+  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<AcademicCalendarDto>;
+  listacademicCalendars(): Promise<AcademicCalendarDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
-  getacademicCalendar(id: string): Promise<academicCalendarDto>;
-  activateacademicCalendar(id: string): Promise<academicCalendarDto>;
-  closeacademicCalendar(id: string): Promise<academicCalendarDto>;
-  archiveacademicCalendar(id: string): Promise<academicCalendarDto>;
+  getacademicCalendar(id: string): Promise<AcademicCalendarDto>;
+  activateacademicCalendar(id: string): Promise<AcademicCalendarDto>;
+  closeacademicCalendar(id: string): Promise<AcademicCalendarDto>;
+  archiveacademicCalendar(id: string): Promise<AcademicCalendarDto>;
   deleteacademicCalendar(id: string): Promise<boolean>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
@@ -1574,12 +1577,19 @@ export interface OrbisApiClient {
 
   // ── Academic ────────────────────────────────────────────────
   createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;
+  updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto>;
   listSubjects(): Promise<SubjectDto[]>;
   getSubject(id: string): Promise<SubjectDto>;
   createClass(req: CreateClassRequest): Promise<ClassDto>;
+  updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto>;
   listClasses(): Promise<ClassDto[]>;
   getClass(id: string): Promise<ClassDto>;
   assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto>;
+  getSectionSubject(id: string): Promise<SectionSubjectDto>;
+  updateSectionSubject(
+    id: string,
+    req: UpdateSectionSubjectRequest,
+  ): Promise<SectionSubjectDto>;
   listSectionSubjects(
     classId: string,
     periodId: string,
@@ -1720,9 +1730,9 @@ export interface OrbisApiClient {
 
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;
-  promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto>;
-  listprogressionJobs(): Promise<progressionJobDto[]>;
-  getprogressionJob(id: string): Promise<progressionJobDto>;
+  promoteCohort(req: PromoteCohortInput): Promise<ProgressionJobDto>;
+  listprogressionJobs(): Promise<ProgressionJobDto[]>;
+  getprogressionJob(id: string): Promise<ProgressionJobDto>;
 
   // ── Workflow & Academic Overrides ───────────────────────────
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;

@@ -19,6 +19,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { api } from "./client";
@@ -29,11 +30,17 @@ import {
   setSecureItem,
 } from "./storage";
 import { ApiRequestError, OrbisError } from "./types";
+import {
+  notifySessionEnded,
+  subscribeToSessionInvalidation,
+} from "./session-events";
+import { onlineManager } from "@/lib/network/online-manager";
 
 export interface AuthState {
   user: UserDto | null;
   effectiveContext: EffectiveContextDto | null;
   token: string | null;
+  isInitializing: boolean;
   isLoading: boolean;
   error: string | null;
   isSetupComplete: boolean | null;
@@ -56,7 +63,7 @@ export interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   refreshSessionData: () => Promise<void>;
-  checkSetupStatus: () => Promise<boolean>;
+  checkSetupStatus: () => Promise<boolean | null>;
   clearError: () => void;
 }
 
@@ -72,12 +79,63 @@ function unwrapApiData<T>(response: unknown): T {
   return apiData as T;
 }
 
+function isUserDto(value: unknown): value is UserDto {
+  if (typeof value !== "object" || value === null) return false;
+
+  const user = value as Record<string, unknown>;
+  return (
+    typeof user.id === "string" &&
+    typeof user.org_id === "string" &&
+    typeof user.person_id === "string" &&
+    typeof user.full_name === "string" &&
+    typeof user.status === "string" &&
+    typeof user.created_at === "string" &&
+    typeof user.updated_at === "string" &&
+    typeof user.is_active === "boolean" &&
+    typeof user.is_email_verified === "boolean" &&
+    typeof user.is_mfa_enabled === "boolean" &&
+    typeof user.is_phone_verified === "boolean"
+  );
+}
+
+function isEffectiveContextDto(value: unknown): value is EffectiveContextDto {
+  if (typeof value !== "object" || value === null) return false;
+
+  const context = value as Record<string, unknown>;
+  return (
+    typeof context.effective_role === "string" &&
+    Array.isArray(context.roles) &&
+    context.roles.every((role) => typeof role === "string") &&
+    Array.isArray(context.permissions) &&
+    context.permissions.every((permission) => typeof permission === "string") &&
+    Array.isArray(context.dependents) &&
+    context.dependents.every(
+      (dependent) =>
+        typeof dependent === "object" &&
+        dependent !== null &&
+        "student_id" in dependent &&
+        typeof dependent.student_id === "string",
+    ) &&
+    Array.isArray(context.teaching_classes) &&
+    context.teaching_classes.every(
+      (teachingClass) =>
+        typeof teachingClass === "object" &&
+        teachingClass !== null &&
+        "class_id" in teachingClass &&
+        typeof teachingClass.class_id === "string",
+    )
+  );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
+  const userRef = useRef(user);
+  userRef.current = user;
   const [effectiveContext, setEffectiveContext] =
     useState<EffectiveContextDto | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
 
@@ -91,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearError = useCallback(() => setError(null), []);
 
-  const checkSetupStatus = useCallback(async (): Promise<boolean> => {
+  const checkSetupStatus = useCallback(async (): Promise<boolean | null> => {
     try {
       const res = await api.getCurrentOrg({ throwOnError: true });
       const org = unwrapApiData<{ id?: string } | null>(res);
@@ -102,11 +160,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         complete ? "true" : "false",
       );
       return complete;
-    } catch {
-      // If unable to fetch org, retain existing or default to true
-      const complete = true;
-      setIsSetupComplete(complete);
-      return complete;
+    } catch (error) {
+      console.warn("[Auth] Unable to determine organization setup status.", error);
+      return null;
     }
   }, []);
 
@@ -116,11 +172,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: UserDto;
       effective_context?: EffectiveContextDto | null;
     }) => {
+      if (
+        res.effective_context &&
+        !isEffectiveContextDto(res.effective_context)
+      ) {
+        throw new Error("The login response included an invalid effective context.");
+      }
+
+      if (user && (user.id !== res.user.id || user.org_id !== res.user.org_id)) {
+        notifySessionEnded({ orgId: user.org_id, userId: user.id });
+      }
+
       setToken(res.token);
       setUser(res.user);
-      if (res.effective_context) {
-        setEffectiveContext(res.effective_context);
-      }
+      setEffectiveContext(res.effective_context ?? null);
+      setIsSetupComplete(null);
       setError(null);
 
       const writes: Promise<void>[] = [
@@ -135,12 +201,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             JSON.stringify(res.effective_context),
           ),
         );
+      } else {
+        writes.push(deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT));
       }
 
       await Promise.all(writes);
       await checkSetupStatus();
     },
-    [checkSetupStatus],
+    [checkSetupStatus, user],
   );
 
   const login = useCallback(
@@ -242,6 +310,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    const currentUser = userRef.current;
+    if (currentUser) {
+      notifySessionEnded({
+        orgId: currentUser.org_id,
+        userId: currentUser.id,
+      });
+    }
+
     setUser(null);
     setEffectiveContext(null);
     setToken(null);
@@ -256,7 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restoreSession = useCallback(async () => {
-    setIsLoading(true);
+    setIsInitializing(true);
     try {
       const [savedToken, savedUserStr, savedCtxStr, savedSetup] =
         await Promise.all([
@@ -268,9 +344,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (savedToken) {
         setToken(savedToken);
+        let restoredUser: UserDto | null = null;
+
         if (savedUserStr) {
           try {
-            setUser(JSON.parse(savedUserStr) as UserDto);
+            const cachedUser: unknown = JSON.parse(savedUserStr);
+            if (!isUserDto(cachedUser)) {
+              throw new Error("Cached user data has an invalid shape.");
+            }
+            restoredUser = cachedUser;
+            setUser(cachedUser);
           } catch (error) {
             console.warn("[Auth] Discarding invalid cached user:", error);
             await deleteSecureItem(STORAGE_KEYS.USER);
@@ -279,7 +362,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (savedCtxStr) {
           try {
-            setEffectiveContext(JSON.parse(savedCtxStr) as EffectiveContextDto);
+            const cachedContext: unknown = JSON.parse(savedCtxStr);
+            if (!isEffectiveContextDto(cachedContext)) {
+              throw new Error("Cached effective context has an invalid shape.");
+            }
+            setEffectiveContext(cachedContext);
           } catch (error) {
             console.warn("[Auth] Discarding invalid cached context:", error);
             await deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT);
@@ -287,50 +374,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (savedSetup !== null) {
-          setIsSetupComplete(savedSetup === "true");
+          if (savedSetup === "true" || savedSetup === "false") {
+            setIsSetupComplete(savedSetup === "true");
+          }
         }
 
-        try {
-          const res = await api.getSession({ throwOnError: true });
-          const session = unwrapApiData<{
-            user?: UserDto;
-            effective_context?: EffectiveContextDto;
-          }>(res);
-          if (session?.user) {
-            setUser(session.user);
-            await setSecureItem(
-              STORAGE_KEYS.USER,
-              JSON.stringify(session.user),
-            );
-          }
-          if (session?.effective_context) {
-            setEffectiveContext(session.effective_context);
-            await setSecureItem(
-              STORAGE_KEYS.EFFECTIVE_CONTEXT,
-              JSON.stringify(session.effective_context),
-            );
-          }
-        } catch (sessionErr) {
-          console.warn("[Auth] Session validation notice:", sessionErr);
-          const isInvalidToken =
-            (sessionErr instanceof ApiRequestError &&
-              (sessionErr.status === 401 || sessionErr.status === 403)) ||
-            (sessionErr instanceof Error &&
-              (sessionErr.message.toLowerCase().includes("unauthorized") ||
-                sessionErr.message
-                  .toLowerCase()
-                  .includes("invalid or expired token") ||
-                sessionErr.message.toLowerCase().includes("invalidsignature")));
+        if (onlineManager.isOnline()) {
+          try {
+            const res = await api.getSession({ throwOnError: true });
+            const session = unwrapApiData<{
+              user?: UserDto;
+              effective_context?: EffectiveContextDto;
+            }>(res);
+            if (isUserDto(session?.user)) {
+              restoredUser = session.user;
+              setUser(session.user);
+              await setSecureItem(
+                STORAGE_KEYS.USER,
+                JSON.stringify(session.user),
+              );
+            } else if (!restoredUser) {
+              console.warn("[Auth] Session response did not contain a valid user.");
+              await logout();
+            }
+            if (isEffectiveContextDto(session?.effective_context)) {
+              setEffectiveContext(session.effective_context);
+              await setSecureItem(
+                STORAGE_KEYS.EFFECTIVE_CONTEXT,
+                JSON.stringify(session.effective_context),
+              );
+            }
+          } catch (sessionErr) {
+            console.warn("[Auth] Session validation notice:", sessionErr);
+            const isInvalidToken =
+              (sessionErr instanceof ApiRequestError &&
+                (sessionErr.status === 401 || sessionErr.status === 403)) ||
+              (sessionErr instanceof Error &&
+                (sessionErr.message.toLowerCase().includes("unauthorized") ||
+                  sessionErr.message
+                    .toLowerCase()
+                    .includes("invalid or expired token") ||
+                  sessionErr.message.toLowerCase().includes("invalidsignature")));
 
-          if (isInvalidToken) {
-            await logout();
+            if (isInvalidToken || !restoredUser) {
+              await logout();
+            }
           }
+        } else if (!restoredUser) {
+          await logout();
         }
       }
     } catch (err) {
       console.warn("[Auth] Restore session error:", err);
     } finally {
-      setIsLoading(false);
+      setIsInitializing(false);
     }
   }, [logout]);
 
@@ -340,7 +437,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user?: UserDto;
       effective_context?: EffectiveContextDto | null;
     }>(res);
-    if (!session?.user) {
+    if (!isUserDto(session?.user)) {
       throw new Error("The session response did not include a user.");
     }
 
@@ -349,18 +446,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSecureItem(STORAGE_KEYS.USER, JSON.stringify(session.user)),
     ];
     if ("effective_context" in session) {
-      setEffectiveContext(session.effective_context ?? null);
+      const nextContext = session.effective_context ?? null;
+      if (nextContext && !isEffectiveContextDto(nextContext)) {
+        throw new Error("The session response included an invalid effective context.");
+      }
+      setEffectiveContext(nextContext);
       writes.push(
-        session.effective_context
+        nextContext
           ? setSecureItem(
               STORAGE_KEYS.EFFECTIVE_CONTEXT,
-              JSON.stringify(session.effective_context),
+              JSON.stringify(nextContext),
             )
           : deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
       );
     }
     await Promise.all(writes);
   }, []);
+
+  useEffect(() => {
+    return subscribeToSessionInvalidation(() => {
+      void logout().catch((error: unknown) => {
+        console.error("[Auth] Failed to clear an invalidated session.", error);
+      });
+    });
+  }, [logout]);
 
   useEffect(() => {
     restoreSession();
@@ -371,6 +480,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       effectiveContext,
       token,
+      isInitializing,
       isLoading,
       error,
       isSetupComplete,
@@ -393,6 +503,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       effectiveContext,
       token,
+      isInitializing,
       isLoading,
       error,
       isSetupComplete,

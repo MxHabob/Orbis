@@ -22,6 +22,3 @@ pub struct Section {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
-
-/// Type alias for backward compat
-pub type Class = Section;

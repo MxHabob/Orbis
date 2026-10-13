@@ -27,8 +27,8 @@ class StudentsStore {
 
       const isStudentDetail = "student" in item;
       const classId = isStudentDetail
-        ? (item as StudentDetailDto).enrollment?.class_id
-        : (item as EnrollmentDto).class_id;
+        ? (item as StudentDetailDto).enrollment?.section_id
+        : (item as EnrollmentDto).section_id;
 
       // 2. Class Match
       if (this.selectedClassId) {

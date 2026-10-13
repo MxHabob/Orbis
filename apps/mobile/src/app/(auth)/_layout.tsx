@@ -6,12 +6,21 @@
 
 import { useAuth } from "@/lib/api";
 import { Redirect, Stack } from "expo-router";
+import { View } from "react-native";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export default function AuthLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
 
-  // If already authenticated and not loading, redirect into app
-  if (!isLoading && isAuthenticated) {
+  if (isInitializing) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <LoadingIndicator size="lg" />
+      </View>
+    );
+  }
+
+  if (isAuthenticated) {
     return <Redirect href="/(app)/(tabs)" />;
   }
 

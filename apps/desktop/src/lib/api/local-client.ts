@@ -36,8 +36,11 @@ import type {
   ClassDto,
   SectionSubjectDto,
   CreateSubjectRequest,
+  UpdateSubjectRequest,
   CreateClassRequest,
+  UpdateClassRequest,
   AssignSectionSubjectRequest,
+  UpdateSectionSubjectRequest,
   EnrollmentDto,
   GuardianDto,
   EnrollStudentRequest,
@@ -430,6 +433,9 @@ export class LocalClient implements OrbisApiClient {
   async createSubject(req: CreateSubjectRequest): Promise<SubjectDto> {
     return unwrap(await invoke("academic_create_subject", { request: req }));
   }
+  async updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto> {
+    return unwrap(await invoke("academic_update_subject", { request: { ...req, id } }));
+  }
   async listSubjects(): Promise<SubjectDto[]> {
     return unwrap(await invoke("academic_list_subjects"));
   }
@@ -438,6 +444,9 @@ export class LocalClient implements OrbisApiClient {
   }
   async createClass(req: CreateClassRequest): Promise<ClassDto> {
     return unwrap(await invoke("academic_create_class", { request: req }));
+  }
+  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
+    return unwrap(await invoke("academic_update_class", { request: { ...req, id } }));
   }
   async listClasses(): Promise<ClassDto[]> {
     return unwrap(await invoke("academic_list_classes"));
@@ -450,6 +459,17 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<SectionSubjectDto> {
     return unwrap(
       await invoke("academic_assign_section_subject", { request: req }),
+    );
+  }
+  async getSectionSubject(id: string): Promise<SectionSubjectDto> {
+    return unwrap(await invoke("academic_get_section_subject", { id }));
+  }
+  async updateSectionSubject(
+    id: string,
+    req: UpdateSectionSubjectRequest,
+  ): Promise<SectionSubjectDto> {
+    return unwrap(
+      await invoke("academic_update_section_subject", { request: { ...req, id } }),
     );
   }
   async listSectionSubjects(

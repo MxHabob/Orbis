@@ -76,7 +76,7 @@ pub enum DomainEvent {
         org_id: Uuid,
         timestamp: DateTime<Utc>,
     },
-    ClassCreated {
+    SectionCreated {
         section_id: Uuid,
         org_id: Uuid,
         period_id: Uuid,
@@ -656,7 +656,7 @@ impl DomainEvent {
             DomainEvent::SubjectCreated { subject_id, .. } => {
                 Some(("subject.created", "subject", *subject_id))
             }
-            DomainEvent::ClassCreated { section_id, .. } => {
+            DomainEvent::SectionCreated { section_id, .. } => {
                 Some(("section.created", "section", *section_id))
             }
             DomainEvent::SectionSubjectAssigned {

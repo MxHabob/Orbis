@@ -100,10 +100,11 @@ pub struct SubjectFilter {
 }
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize, utoipa::ToSchema)]
-pub struct ClassFilter {
+pub struct SectionFilter {
     pub unit_id: Option<Uuid>,
     pub period_id: Option<Uuid>,
     pub level: Option<String>,
+    pub section_type: Option<String>,
     pub search: Option<String>,
     pub pagination: Option<PaginationParams>,
 }

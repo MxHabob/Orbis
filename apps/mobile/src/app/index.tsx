@@ -11,9 +11,9 @@ import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/lib/api";
 
 export default function IndexGate() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <LoadingIndicator size="lg" />

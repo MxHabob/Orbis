@@ -6,28 +6,50 @@
  * and declares root Stack navigation with synchronized StatusBar background and SystemUI window color.
  */
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import "../global.css";
 import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { useColorScheme } from "react-native";
+import { useIsRestoring } from "@tanstack/react-query";
 
 import { useTheme } from "@/hooks/use-theme";
-import { AuthProvider } from "@/lib/api";
-import { AppQueryProvider } from "@/providers/query-provider";
-import { EffectiveContextProvider } from "@/providers/effective-context";
-import { I18nProvider } from "@/lib/i18n";
+import { useAuth } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+import { useEffectiveContext } from "@/providers/effective-context";
+import { AppProviders } from "@/providers/app-providers";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
-import { applyThemePreference, loadThemePreference } from "@/lib/theme-preference";
+import {
+  applyThemePreference,
+  loadThemePreference,
+} from "@/lib/theme-preference";
 import { ToastProvider } from "@/components/ui/toast";
 import { AppErrorBoundary } from "@/components/ui/error-boundary";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { OfflineStatusBanner } from "@/components/ui/offline-status-banner";
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+void SplashScreen.preventAutoHideAsync().catch((error: unknown) => {
+  console.error(
+    "[Orbis Mobile Startup] Failed to retain the native splash screen.",
+    error,
+  );
+});
 
 export default function RootLayout() {
+  return (
+    <AppProviders>
+      <RootLayoutContent />
+    </AppProviders>
+  );
+}
+
+function RootLayoutContent() {
+  const { isInitializing } = useAuth();
+  const { isReady: isI18nReady } = useI18n();
+  const { isReady: isContextReady } = useEffectiveContext();
+  const isQueryCacheRestoring = useIsRestoring();
+  const [isThemeReady, setIsThemeReady] = useState(false);
+  const hasHiddenSplash = useRef(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const currentColors = useTheme();
@@ -55,66 +77,80 @@ export default function RootLayout() {
   ]);
 
   useEffect(() => {
-    // Hide native splash screen after mount
-    SplashScreen.hideAsync().catch(() => {});
-  }, []);
-
-  useEffect(() => {
     loadThemePreference()
       .then(applyThemePreference)
       .catch((error: unknown) => {
         console.error("[Orbis Mobile Theme] Failed to load saved theme.", error);
+      })
+      .finally(() => {
+        setIsThemeReady(true);
       });
   }, []);
 
   useEffect(() => {
-    // Dynamically synchronize the root OS window background color with active theme
-    SystemUI.setBackgroundColorAsync(currentColors.background).catch(() => {});
-  }, [currentColors.background]);
+    if (
+      isInitializing ||
+      isQueryCacheRestoring ||
+      !isContextReady ||
+      !isI18nReady ||
+      !isThemeReady ||
+      hasHiddenSplash.current
+    ) {
+      return;
+    }
+
+    hasHiddenSplash.current = true;
+    void SplashScreen.hideAsync().catch((error: unknown) => {
+      console.error(
+        "[Orbis Mobile Startup] Failed to hide the native splash screen.",
+        error,
+      );
+    });
+  }, [
+    isContextReady,
+    isI18nReady,
+    isInitializing,
+    isQueryCacheRestoring,
+    isThemeReady,
+  ]);
+
+  useEffect(() => {
+    if (!isThemeReady) return;
+
+    SystemUI.setBackgroundColorAsync(currentColors.background).catch(
+      (error: unknown) => {
+        console.error(
+          "[Orbis Mobile Theme] Failed to synchronize the system background.",
+          error,
+        );
+      },
+    );
+  }, [currentColors.background, isThemeReady]);
 
   return (
-    <GestureHandlerRootView className="flex-1">
-      <SafeAreaProvider>
-        <I18nProvider>
-          <AuthProvider>
-            <AppQueryProvider>
-              <EffectiveContextProvider>
-                <ThemeProvider value={navigationTheme}>
-                  <ToastProvider>
-                    <AppErrorBoundary>
-                      <ThemedStatusBar
-                        backgroundColor={currentColors.background}
-                      />
-                      <Stack
-                        screenOptions={{
-                          headerShown: false,
-                          animation: "slide_from_right",
-                          contentStyle: {
-                            backgroundColor: currentColors.background,
-                          },
-                        }}
-                      >
-                        <Stack.Screen
-                          name="(auth)"
-                          options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                          name="(app)"
-                          options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                          name="+not-found"
-                          options={{ title: "Oops!", headerShown: true }}
-                        />
-                      </Stack>
-                    </AppErrorBoundary>
-                  </ToastProvider>
-                </ThemeProvider>
-              </EffectiveContextProvider>
-            </AppQueryProvider>
-          </AuthProvider>
-        </I18nProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ThemeProvider value={navigationTheme}>
+      <ToastProvider>
+        <AppErrorBoundary>
+          <ThemedStatusBar backgroundColor={currentColors.background} />
+          <OfflineStatusBanner />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "slide_from_right",
+              contentStyle: {
+                backgroundColor: currentColors.background,
+              },
+            }}
+          >
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="+not-found"
+              options={{ title: "Oops!", headerShown: true }}
+            />
+          </Stack>
+        </AppErrorBoundary>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

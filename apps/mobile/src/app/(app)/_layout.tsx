@@ -9,11 +9,13 @@ import { Redirect, Stack } from "expo-router";
 import { View } from "react-native";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/lib/api";
+import { useEffectiveContext } from "@/providers/effective-context";
 
 export default function AppProtectedLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isInitializing } = useAuth();
+  const { isReady: isContextReady } = useEffectiveContext();
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
         <LoadingIndicator size="lg" />
@@ -21,9 +23,16 @@ export default function AppProtectedLayout() {
     );
   }
 
-  // Route protection: If unauthenticated, redirect to Sign In
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  if (!isContextReady) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <LoadingIndicator size="lg" />
+      </View>
+    );
   }
 
   return (

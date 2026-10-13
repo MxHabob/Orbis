@@ -17,6 +17,10 @@ export default ({ config }: { config: ExpoConfig }): ExpoConfig => {
 
   return {
     ...config,
+    plugins: [
+      ...(config.plugins ?? []),
+      ["expo-sqlite", { useSQLCipher: true }],
+    ],
     ...(updatesEnabled
       ? { runtimeVersion: { policy: "appVersion" as const } }
       : {}),

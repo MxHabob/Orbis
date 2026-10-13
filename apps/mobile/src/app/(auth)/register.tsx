@@ -73,7 +73,6 @@ export default function RegisterScreen() {
 
       try {
         await login(trimmedEmail, password);
-        router.replace("/(app)/(tabs)");
       } catch {
         router.replace("/(auth)/sign-in");
       }

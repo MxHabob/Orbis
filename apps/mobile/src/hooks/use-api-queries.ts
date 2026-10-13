@@ -41,7 +41,7 @@ import type {
 } from "@/lib/api/types";
 
 const STALE_TIME = 1000 * 60 * 5; // 5 minutes cache
-const GC_TIME = 1000 * 60 * 15; // 15 minutes garbage collection
+const GC_TIME = 1000 * 60 * 60 * 24 * 7;
 
 /**
  * Helper to safely extract response data from SDK calls

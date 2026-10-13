@@ -44,8 +44,11 @@ import type {
   ClassDto,
   SectionSubjectDto,
   CreateSubjectRequest,
+  UpdateSubjectRequest,
   CreateClassRequest,
+  UpdateClassRequest,
   AssignSectionSubjectRequest,
+  UpdateSectionSubjectRequest,
   EnrollmentDto,
   GuardianDto,
   EnrollStudentRequest,
@@ -562,6 +565,10 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.createSubject({ client: this.client, body: req }));
   }
 
+  async updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto> {
+    return this.call(sdk.updateSubject({ client: this.client, path: { id }, body: req }));
+  }
+
   async listSubjects(): Promise<SubjectDto[]> {
     return this.call(sdk.listSubjects({ client: this.client })) ?? [];
   }
@@ -572,6 +579,10 @@ export class RemoteClient implements OrbisApiClient {
 
   async createClass(req: CreateClassRequest): Promise<ClassDto> {
     return this.call(sdk.createClass({ client: this.client, body: req }));
+  }
+
+  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
+    return this.call(sdk.updateClass({ client: this.client, path: { id }, body: req }));
   }
 
   async listClasses(): Promise<ClassDto[]> {
@@ -586,11 +597,22 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.assignSectionSubject({ client: this.client, body: req }));
   }
 
+  async getSectionSubject(id: string): Promise<SectionSubjectDto> {
+    return this.call(sdk.getSectionSubject({ client: this.client, path: { id } }));
+  }
+
+  async updateSectionSubject(
+    id: string,
+    req: UpdateSectionSubjectRequest,
+  ): Promise<SectionSubjectDto> {
+    return this.call(sdk.updateSectionSubject({ client: this.client, path: { id }, body: req }));
+  }
+
   async listSectionSubjects(classId: string, periodId: string): Promise<SectionSubjectDto[]> {
     return this.call(
       sdk.listSectionSubjects({
         client: this.client,
-        query: { class_id: classId, period_id: periodId },
+        query: { section_id: classId, period_id: periodId },
       }),
     ) ?? [];
   }

@@ -74,7 +74,6 @@ export default function SignInScreen() {
         });
         return;
       }
-      router.replace("/(app)/(tabs)");
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : t("auth_error_invalid_credentials");
@@ -88,7 +87,6 @@ export default function SignInScreen() {
     setIsSubmitting(true);
     try {
       await loginWithGoogle("google-token");
-      router.replace("/(app)/(tabs)");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t("auth_error_google");
       toast.error(message);
