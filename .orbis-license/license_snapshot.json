@@ -1,0 +1,24 @@
+{
+  "state": "unavailable",
+  "signed_entitlement": null,
+  "trial_started_at": null,
+  "trial_policy": {
+    "duration_days": 30,
+    "max_staff": 25,
+    "max_students": 100,
+    "trial_features": [
+      "students",
+      "ai_grading",
+      "multi_branch",
+      "offline_sync",
+      "parent_portal",
+      "campus_analytics",
+      "sso",
+      "exam_tools"
+    ]
+  },
+  "last_sync_at": null,
+  "last_known_time": "2026-10-13T08:31:53.953226200Z",
+  "installation_id": "inst_windows_f278f392d5eb4",
+  "app_version": "0.1.0"
+}

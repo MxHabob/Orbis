@@ -26,7 +26,8 @@ use orbis_domain::entities::academic_period::{
 };
 use orbis_domain::entities::academic_calendar::{AcademicCalendar, AcademicCalendarStatus};
 use orbis_domain::entities::assessment_scheme::{
-    AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
+    AssessmentComponent, AssessmentComponentKind, AssessmentLevel, AssessmentScheme,
+    InstitutionScope,
 };
 use orbis_domain::entities::section::Section;
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
@@ -2349,6 +2350,8 @@ impl OnboardingService {
                                 weight: Decimal::from(20),
                                 sort_order: 1,
                                 is_required: true,
+                                component_type: Some(AssessmentComponentKind::Assignment),
+                                min_score: None,
                             },
                             AssessmentComponent {
                                 code: "ORAL".to_string(),
@@ -2358,6 +2361,8 @@ impl OnboardingService {
                                 weight: Decimal::from(20),
                                 sort_order: 2,
                                 is_required: true,
+                                component_type: Some(AssessmentComponentKind::Participation),
+                                min_score: None,
                             },
                             AssessmentComponent {
                                 code: "ATT".to_string(),
@@ -2367,6 +2372,8 @@ impl OnboardingService {
                                 weight: Decimal::from(20),
                                 sort_order: 3,
                                 is_required: true,
+                                component_type: Some(AssessmentComponentKind::Attendance),
+                                min_score: None,
                             },
                             AssessmentComponent {
                                 code: "EXAM_M".to_string(),
@@ -2376,6 +2383,8 @@ impl OnboardingService {
                                 weight: Decimal::from(40),
                                 sort_order: 4,
                                 is_required: true,
+                                component_type: Some(AssessmentComponentKind::FinalExam),
+                                min_score: None,
                             },
                         ],
                         is_default: true,
@@ -2403,6 +2412,8 @@ impl OnboardingService {
                             weight: Decimal::from(50),
                             sort_order: 1,
                             is_required: true,
+                            component_type: Some(AssessmentComponentKind::Coursework),
+                            min_score: Some(Decimal::from(50)),
                         },
                         AssessmentComponent {
                             code: "FINAL".to_string(),
@@ -2412,6 +2423,8 @@ impl OnboardingService {
                             weight: Decimal::from(50),
                             sort_order: 2,
                             is_required: true,
+                            component_type: Some(AssessmentComponentKind::FinalExam),
+                            min_score: Some(Decimal::from(50)),
                         },
                     ],
                     is_default: true,

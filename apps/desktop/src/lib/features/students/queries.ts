@@ -2,10 +2,19 @@
  * Students domain queries & mutations — students, enrollments, guardians, attendance, behavior, documents, and finance.
  * Wraps OrbisApiClient with TanStack Query and queryKeys factory.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createInfiniteQuery,
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
+import * as m from "$lib/paraglide/messages";
 import {
   api,
+  extractErrorMessage,
   queryKeys,
+  type ClassDto,
+  type StudentDetailDto,
   type StudentFilterParams,
   type EnrollmentFilterParams,
   type RegisterStudentInput,
@@ -18,6 +27,178 @@ import {
   type RecordBehaviorRequest,
   type UploadDocumentRequest,
 } from "$lib/api";
+import { studentsStore } from "./store.svelte";
+import { debounce } from "$lib/shared/utils/debounce";
+import { exportToCsv } from "$lib/shared/utils/export";
+import { formatDate } from "$lib/core/i18n";
+import { toast } from "@orbis/ui";
+
+/** Query and actions for the students directory screen. */
+export function createStudentDirectoryQuery(orgId: () => string) {
+  const getStudentFilter = () => ({
+    class_id: studentsStore.selectedClassId ?? undefined,
+    status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
+    search: studentsStore.searchQuery.trim() || undefined,
+  });
+
+  const studentsQuery = createInfiniteQuery(() => ({
+    queryKey: queryKeys.student.list(
+      orgId(),
+      getStudentFilter() as Record<string, unknown>,
+    ),
+    queryFn: ({ pageParam }) =>
+      api.listStudents({
+        ...getStudentFilter(),
+        page: pageParam,
+        page_size: 50,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+    enabled: !!orgId(),
+    staleTime: 2 * 60 * 1000,
+  }));
+  const classesQuery = createQuery<ClassDto[]>(() => ({
+    queryKey: queryKeys.academic.classes(orgId()),
+    queryFn: () => api.listClasses(),
+    enabled: !!orgId(),
+    staleTime: 5 * 60 * 1000,
+  }));
+
+  const updateSearch = debounce((query: string) => {
+    studentsStore.searchQuery = query;
+  }, 150);
+
+  function setStatusFilter(status: string) {
+    studentsStore.statusFilter = status;
+  }
+
+  function setClassFilter(classId: string | null) {
+    studentsStore.selectedClassId = classId;
+  }
+
+  function clearFilters() {
+    studentsStore.selectedClassId = null;
+    studentsStore.statusFilter = "active";
+    studentsStore.searchQuery = "";
+  }
+
+  async function loadMoreStudents() {
+    const result = await studentsQuery.fetchNextPage();
+    if (result.isError) throw result.error;
+  }
+
+  function retry() {
+    void Promise.all([studentsQuery.refetch(), classesQuery.refetch()]);
+  }
+
+  async function exportStudents(selectedStudentIds: Set<string>) {
+    try {
+      let dataset: StudentDetailDto[];
+      if (selectedStudentIds.size > 0) {
+        const studentIds = [...selectedStudentIds];
+        dataset = [];
+        for (let index = 0; index < studentIds.length; index += 5) {
+          const batch = studentIds.slice(index, index + 5);
+          dataset.push(...await Promise.all(batch.map((id) => api.getStudent(id))));
+        }
+      } else {
+        const filter = {
+          ...getStudentFilter(),
+          page_size: 100,
+        };
+        const firstPage = await api.listStudents({ ...filter, page: 1 });
+        dataset = [...firstPage.items];
+
+        for (let page = 2; page <= firstPage.total_pages; page += 5) {
+          const pageNumbers = Array.from(
+            { length: Math.min(5, firstPage.total_pages - page + 1) },
+            (_, index) => page + index,
+          );
+          const pages = await Promise.all(
+            pageNumbers.map((pageNumber) =>
+              api.listStudents({ ...filter, page: pageNumber }),
+            ),
+          );
+          dataset.push(...pages.flatMap((result) => result.items));
+        }
+      }
+
+      const classNames = new Map(
+        (classesQuery.data ?? []).map((classItem) => [classItem.id, classItem.name]),
+      );
+      exportToCsv(
+        `Students_Roster_${orgId()}`,
+        dataset,
+        [
+          { header: m.operations_ui_student_number(), accessor: (student) => student.student?.student_number || "—" },
+          {
+            header: m.operations_ui_student_name(),
+            accessor: (student) =>
+              (student.person?.first_name && student.person?.last_name
+                ? `${student.person.first_name} ${student.person.last_name}`
+                : "") ||
+              student.person?.full_name ||
+              m.operations_ui_student_fallback(),
+          },
+          {
+            header: m.operations_ui_class(),
+            accessor: (student) =>
+              classNames.get(student.enrollment?.class_id ?? "") ||
+              student.enrollment?.class_id ||
+              "—",
+          },
+          { header: m.operations_ui_status(), accessor: (student) => student.student?.status || "active" },
+          {
+            header: m.operations_ui_admission_date(),
+            accessor: (student) =>
+              student.student?.admitted_at ? formatDate(student.student.admitted_at, "date") : "—",
+          },
+        ],
+      );
+      toast.success(m.operations_ui_student_export_success());
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
+  }
+
+  return {
+    studentsQuery,
+    classesQuery,
+    get error() {
+      return (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
+        classesQuery.error;
+    },
+    get errorMessage() {
+      const error = (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
+        classesQuery.error;
+      return error
+        ? m.students_load_error({ error: extractErrorMessage(error) })
+        : "";
+    },
+    get statusFilter() {
+      return studentsStore.statusFilter;
+    },
+    get selectedClassId() {
+      return studentsStore.selectedClassId;
+    },
+    get hasActiveFilters() {
+      return studentsStore.selectedClassId !== null ||
+        studentsStore.statusFilter !== "active" ||
+        studentsStore.searchQuery !== "";
+    },
+    get hasMore() {
+      return studentsQuery.hasNextPage ?? false;
+    },
+    updateSearch,
+    setStatusFilter,
+    setClassFilter,
+    clearFilters,
+    loadMoreStudents,
+    retry,
+    exportStudents,
+  };
+}
 
 /** Paginated and filtered students query (StudentDetail items). */
 export function createStudentsQuery(
@@ -303,4 +484,3 @@ export function createDeleteDocumentMutation() {
     },
   }));
 }
-
