@@ -1,9 +1,3 @@
-import {
-  ALL_AVATAR_HATS,
-  AvatarController,
-  type AvatarHat,
-  Avatar as CompanionAvatar,
-} from "@orbis/avatar-engine/native";
 import { BookOpen, ChatBubbles } from "@orbis/icons/native";
 import {
   AssignmentChecklist,
@@ -14,15 +8,20 @@ import {
   StudentBoy,
 } from "@orbis/icons/native/Illustrations";
 import { useRouter } from "expo-router";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useMemo, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_OFFSET } from "@/components/header";
+import { HomeHero } from "@/components/home/home-hero";
+import {
+  HomeSection,
+  HomeTileGrid,
+  HomeTileSkeletonGrid,
+  QuickActionRow,
+} from "@/components/home/home-sections";
+import type { HomeTileData } from "@/components/home/types";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
-import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useClassesQuery, useMyStudentQuery } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
@@ -30,14 +29,6 @@ import type { ClassDto } from "@/lib/api/types";
 import { useI18n } from "@/lib/i18n";
 
 type RoleMode = "parent" | "student" | "teacher";
-
-type HomeTileData = {
-  id: string;
-  title: string;
-  subtitle?: string;
-  icon: ReactNode;
-  onPress: () => void;
-};
 
 function getRoleMode(role: string): RoleMode | null {
   const normalizedRole = role.toLowerCase().replace(/[^a-z]/g, "");
@@ -51,18 +42,6 @@ function getRoleMode(role: string): RoleMode | null {
     return "parent";
   }
   return null;
-}
-
-function pickNextHat(
-  currentHat?: AvatarHat,
-): Exclude<AvatarHat, "random" | "none"> {
-  const candidates = ALL_AVATAR_HATS.filter(
-    (hat): hat is Exclude<AvatarHat, "random" | "none"> =>
-      hat !== currentHat && hat !== "none",
-  );
-  return (
-    candidates[Math.floor(Math.random() * candidates.length)] ?? "graduation"
-  );
 }
 
 export default function HomeTabScreen() {
@@ -96,32 +75,14 @@ export default function HomeTabScreen() {
   const activeRole = availableRoles.includes(selectedRole)
     ? selectedRole
     : initialRole;
-  const [currentHour, setCurrentHour] = useState(() => new Date().getHours());
-  const [avatarHat, setAvatarHat] = useState<AvatarHat>(() => pickNextHat());
-  const [avatarController] = useState(() => new AvatarController());
   const classesQuery = useClassesQuery(activeRole === "teacher");
   const studentQuery = useMyStudentQuery(activeRole === "student");
   const dependents = effectiveContext?.dependents ?? [];
 
-  const roleDescription =
-    activeRole === "parent"
-      ? t("home_parent_description")
-      : activeRole === "student"
-        ? t("home_student_description")
-        : t("home_teacher_description");
   const displayName = isArabic
     ? user?.full_name_ar || user?.full_name
     : user?.full_name || user?.full_name_ar;
   const firstName = displayName?.trim().split(/\s+/)[0];
-  const greetingKey =
-    currentHour >= 4 && currentHour < 12
-      ? "home_greeting_morning"
-      : currentHour >= 12 && currentHour < 17
-        ? "home_greeting_afternoon"
-        : "home_greeting_evening";
-  const greeting = `${t(greetingKey)}${
-    firstName ? `${isArabic ? "، " : ", "}${firstName}` : ""
-  }`;
   const roleOptions = availableRoles.map((role) => ({
     value: role,
     label: t(
@@ -256,63 +217,17 @@ export default function HomeTabScreen() {
             },
           ];
 
-  useEffect(() => {
-    const interval = setInterval(
-      () => setCurrentHour(new Date().getHours()),
-      60_000,
-    );
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(
-    () => () => {
-      avatarController.destroy();
-    },
-    [avatarController],
-  );
-
-  const handleAvatarPress = () => {
-    setAvatarHat((current) => pickNextHat(current));
-    const mood = Math.random();
-    if (mood < 0.34) avatarController.happy();
-    else if (mood < 0.67) avatarController.think();
-    else avatarController.blink();
-  };
-
   return (
     <ScreenScrollView
       edges={["bottom", "left", "right"]}
       contentContainerStyle={{
-        paddingTop: insets.top + HEADER_CONTENT_OFFSET,
+        paddingTop: insets.top + HEADER_CONTENT_OFFSET + 12,
       }}
       scrollViewProps={{
         contentContainerClassName: "gap-six px-four pb-[130px]",
       }}
     >
-      <View className="items-center gap-three px-two pb-one pt-one">
-        <CompanionAvatar
-          size={112}
-          controller={avatarController}
-          hat={avatarHat}
-          label={t("home_avatar_change_hat")}
-          accessibilityHint={t("home_avatar_hint")}
-          onPress={handleAvatarPress}
-        />
-        <Text className="text-xs font-medium text-muted-foreground">
-          {t("home_avatar_hint")}
-        </Text>
-        <View className="items-center gap-two">
-          <Text
-            numberOfLines={2}
-            className="text-center text-[26px] font-bold tracking-tight text-foreground"
-          >
-            {greeting}
-          </Text>
-          <Text className="max-w-[320px] text-center text-sm leading-5 text-muted-foreground">
-            {roleDescription}
-          </Text>
-        </View>
-      </View>
+      <HomeHero firstName={firstName} />
 
       {roleOptions.length > 1 ? (
         <SegmentedControl
@@ -395,105 +310,5 @@ export default function HomeTabScreen() {
         </HomeSection>
       ) : null}
     </ScreenScrollView>
-  );
-}
-
-function HomeSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <View className="gap-three">
-      <Text className="text-base font-semibold tracking-tight text-foreground">
-        {title}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
-function QuickActionRow({ items }: { items: HomeTileData[] }) {
-  return (
-    <ScrollView
-      horizontal
-      nestedScrollEnabled
-      showsHorizontalScrollIndicator={false}
-      contentContainerClassName="gap-three px-one"
-    >
-      {items.map((item) => (
-        <Card
-          key={item.id}
-          variant="interactive"
-          padding="three"
-          onPress={item.onPress}
-          accessibilityRole="button"
-          accessibilityLabel={item.title}
-          style={{ width: 168, minHeight: 76 }}
-        >
-          <View className="flex-1 flex-row items-center gap-three">
-            <View className="h-10 w-10 items-center justify-center rounded-md bg-primary/10">
-              {item.icon}
-            </View>
-            <Text
-              numberOfLines={2}
-              className="flex-1 text-sm font-semibold leading-5 text-foreground"
-            >
-              {item.title}
-            </Text>
-          </View>
-        </Card>
-      ))}
-    </ScrollView>
-  );
-}
-
-function HomeTileGrid({ items }: { items: HomeTileData[] }) {
-  return (
-    <View className="flex-row flex-wrap justify-between gap-y-three">
-      {items.map((item) => (
-        <Card
-          key={item.id}
-          variant="interactive"
-          padding="four"
-          onPress={item.onPress}
-          accessibilityRole="button"
-          accessibilityLabel={item.title}
-          style={{ width: "48%", minHeight: 108 }}
-        >
-          <View className="flex-1 justify-between gap-three">
-            <View className="h-11 w-11 items-center justify-center rounded-md bg-primary/10">
-              {item.icon}
-            </View>
-            <Text
-              numberOfLines={1}
-              className="text-sm font-semibold leading-5 text-foreground"
-            >
-              {item.title}
-            </Text>
-            {item.subtitle ? (
-              <Text
-                numberOfLines={1}
-                className="text-xs leading-4 text-muted-foreground"
-              >
-                {item.subtitle}
-              </Text>
-            ) : null}
-          </View>
-        </Card>
-      ))}
-    </View>
-  );
-}
-
-function HomeTileSkeletonGrid() {
-  return (
-    <View className="flex-row flex-wrap justify-between gap-y-three">
-      {["first", "second"].map((key) => (
-        <Skeleton key={key} width="48%" height={108} borderRadius={8} />
-      ))}
-    </View>
   );
 }

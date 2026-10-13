@@ -36,12 +36,6 @@ export const en: Record<TranslationKey, string> = {
   home_greeting_evening: "Good evening",
   home_avatar_change_hat: "Change Orbis's hat",
   home_avatar_hint: "Tap Orbis to change the hat",
-  home_parent_description:
-    "Keep up with your children's school day in one place.",
-  home_student_description:
-    "Stay on top of your schedule, assignments, and grades.",
-  home_teacher_description:
-    "Manage your classes and follow attendance and grades.",
   home_child_omar: "Omar",
   home_child_lina: "Lina",
   home_class_seven_math: "Grade 7 · Math",
