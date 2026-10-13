@@ -56,7 +56,8 @@
           "supportsRTL": true
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,

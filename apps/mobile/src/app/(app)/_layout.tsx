@@ -41,6 +41,7 @@ export default function AppProtectedLayout() {
       <Stack.Screen name="student/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="class/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
+      <Stack.Screen name="webviewer" options={{ headerShown: false }} />
     </Stack>
   );
 }

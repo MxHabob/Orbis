@@ -8,13 +8,14 @@
 
 import React, { type ReactNode } from "react";
 import { View, Text } from "react-native";
-import { Header } from "@/components/header";
+import { Header, HEADER_CONTENT_OFFSET } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface StudentRecordLayoutProps {
   title: string;
@@ -43,10 +44,11 @@ export function StudentRecordLayout({
   errorDescription,
   onRetry,
   children,
-  contentContainerClassName = "gap-five pb-[120px] px-four pt-two",
+  contentContainerClassName = "gap-five pb-[120px] px-four",
 }: StudentRecordLayoutProps) {
   const { t } = useI18n();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const handleBack = onBack ?? (() => router.back());
 
@@ -64,6 +66,10 @@ export function StudentRecordLayout({
 
       <ScreenScrollView
         edges={showBack ? ["bottom", "left", "right"] : ["top", "bottom", "left", "right"]}
+        contentContainerStyle={{
+          paddingTop:
+            (showBack ? insets.top : 0) + HEADER_CONTENT_OFFSET,
+        }}
         scrollViewProps={{
           contentContainerClassName,
         }}

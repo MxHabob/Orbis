@@ -25,3 +25,13 @@ The Expo 57 NativeWind RC documents an upstream Android Reanimated limitation:
 cancelling an animation can leave the final transform applied. See the
 [NativeWind Expo 57 compatibility notes](https://github.com/nativewind/nativewind/blob/main/docs/rc-compatibility.md)
 before relying on cancellation behavior.
+
+## Over-the-air updates
+
+The version row in Preferences uses `expo-updates` to check and download an
+EAS Update for the installed app runtime. Set `EAS_PROJECT_ID` to the Expo
+project UUID when resolving the app config for native builds and update
+publishes. This enables the `https://u.expo.dev/<project-id>` update URL and
+the `appVersion` runtime policy. Without that ID, OTA updates remain disabled
+and the manual check reports that setup is required. A new native build is
+required after enabling the Expo Updates native module.

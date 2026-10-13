@@ -94,7 +94,7 @@ export default function BehaviorTabScreen() {
     <StudentRecordLayout
       title={t("behavior_title")}
       showBack={false}
-      contentContainerClassName="gap-five px-four pb-[130px] pt-one"
+      contentContainerClassName="gap-five px-four pb-[130px]"
       isPending={
         hasSelectedStudent &&
         (isResolving || (isLinked && behaviorQuery.isPending))

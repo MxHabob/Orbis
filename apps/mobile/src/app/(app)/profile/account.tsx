@@ -1,31 +1,22 @@
 /**
  * @module @orbis/mobile/app/(app)/profile/account
  *
- * Account Profile details for Orbis Mobile.
- * Displays authoritative user attributes, organization affiliation, and roles.
+ * Read-only account details displayed in the shared settings-panel style.
  */
 
 import React from "react";
-import { View, Text } from "react-native";
+import { Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Header } from "@/components/header";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
-import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
-import {
-  User,
-  Envelope,
-  Phone,
-  ShieldCheck,
-  BuildingLibrary,
-  Calendar,
-} from "@orbis/icons/native";
 
 const roleKeys: Record<string, TranslationKey> = {
   teacher: "auth_role_teacher",
@@ -37,16 +28,16 @@ const roleKeys: Record<string, TranslationKey> = {
 
 export default function AccountScreen() {
   const router = useRouter();
-  const theme = useTheme();
-  const { user, effectiveContext } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const { t, isArabic, formatDate } = useI18n();
 
   if (!user) {
     return (
       <View className="flex-1 bg-background">
         <Header
-          title={t("profile_menu_account") || "Account"}
-          showBack={true}
+          title={t("profile_menu_account")}
+          showBack
           onBack={() => router.back()}
         />
         <View className="flex-1 items-center justify-center p-four">
@@ -62,7 +53,6 @@ export default function AccountScreen() {
   const displayName = isArabic
     ? user.full_name_ar || user.full_name
     : user.full_name;
-
   const roles = (user.roles ?? []).map((role) => {
     const key = roleKeys[role.toLowerCase()];
     return key ? t(key) : role;
@@ -71,112 +61,147 @@ export default function AccountScreen() {
   return (
     <View className="flex-1 bg-background">
       <Header
-        title={t("profile_menu_account") || "Account Details"}
-        showBack={true}
+        title={t("profile_menu_account")}
+        showBack
         onBack={() => router.back()}
       />
-
       <ScreenScrollView
         edges={["bottom", "left", "right"]}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_CONTENT_OFFSET,
+        }}
         scrollViewProps={{
-          contentContainerClassName: "gap-six px-four pb-[100px] pt-two",
+          contentContainerClassName: "gap-six px-four pb-eight",
         }}
       >
-        {/* Identity Snapshot Card */}
-        <View className="flex-row items-center gap-four rounded-2xl border border-border/80 bg-card p-four shadow-xs">
-          <Avatar
-            fallback={(displayName || "U").charAt(0)}
-            size="lg"
-            className="h-16 w-16 border border-primary/20 bg-primary/10"
-          />
-          <View className="flex-1 gap-half">
-            <Text className="text-lg font-extrabold text-foreground">
-              {displayName}
-            </Text>
-            <View className="flex-row items-center gap-two">
-              <Badge variant="secondary" className="px-two py-half">
-                <Text className="text-xs font-bold text-primary">
-                  {user.is_active ? t("profile_account_active") || "Active" : t("profile_account_inactive") || "Inactive"}
-                </Text>
-              </Badge>
-              {user.is_email_verified ? (
-                <Badge variant="outline" className="px-two py-half">
-                  <Text className="text-[10px] font-semibold text-muted-foreground">
-                    {t("profile_verified") || "Verified"}
-                  </Text>
-                </Badge>
-              ) : null}
+        <Card variant="default" padding="none">
+          <PanelTitle title={t("profile_title")} />
+          <View
+            className={`min-h-24 flex-row items-center gap-four px-four py-three ${
+              isArabic ? "flex-row-reverse" : ""
+            }`}
+          >
+            <Avatar
+              name={displayName}
+              imageUrl={user.avatar_url}
+              size="xl"
+            />
+            <View className="min-w-0 flex-1 gap-half">
+              <Text
+                numberOfLines={2}
+                className="text-start text-base font-semibold text-foreground"
+              >
+                {displayName}
+              </Text>
+              <Text
+                numberOfLines={2}
+                className="text-start text-xs text-muted-foreground"
+              >
+                {roles.length > 0
+                  ? roles.join(isArabic ? "، " : ", ")
+                  : t("common_unknown")}
+              </Text>
             </View>
           </View>
-        </View>
-
-        {/* Detailed Attributes Inset Group */}
-        <View className="gap-two">
-          <Text className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-one">
-            {t("profile_title") || "General Information"}
-          </Text>
-
-          <View className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xs divide-y divide-border/60">
-            <InfoFieldRow
-              icon={<User size={16} color={theme.primary} />}
-              label={t("auth_full_name") || "Full Name"}
-              value={displayName}
-            />
-            <InfoFieldRow
-              icon={<Envelope size={16} color={theme.primary} />}
-              label={t("profile_email") || "Email Address"}
-              value={user.email || t("common_unknown")}
-            />
-            <InfoFieldRow
-              icon={<Phone size={16} color={theme.primary} />}
-              label={t("profile_phone") || "Phone Number"}
-              value={user.phone || t("common_unknown")}
-            />
-            <InfoFieldRow
-              icon={<ShieldCheck size={16} color={theme.primary} />}
-              label={t("profile_roles") || "Roles"}
-              value={
-                roles.length > 0
-                  ? roles.join(isArabic ? "، " : ", ")
-                  : t("common_unknown")
-              }
-            />
-            {user.created_at ? (
-              <InfoFieldRow
-                icon={<Calendar size={16} color={theme.primary} />}
-                label={t("profile_account_created") || "Member Since"}
+          <PanelDivider />
+          <AccountRow
+            label={t("auth_full_name")}
+            description={t("profile_account_description")}
+            value={displayName}
+          />
+          <PanelDivider />
+          <AccountRow
+            label={t("profile_email")}
+            description={
+              user.is_email_verified
+                ? t("profile_verified")
+                : t("profile_not_verified")
+            }
+            value={user.email || t("common_unknown")}
+          />
+          <PanelDivider />
+          <AccountRow
+            label={t("profile_phone")}
+            description={t("profile_phone")}
+            value={user.phone || t("common_unknown")}
+          />
+          <PanelDivider />
+          <AccountRow
+            label={t("profile_roles")}
+            description={t("profile_role")}
+            value={
+              roles.length > 0
+                ? roles.join(isArabic ? "، " : ", ")
+                : t("common_unknown")
+            }
+          />
+          {user.created_at ? (
+            <>
+              <PanelDivider />
+              <AccountRow
+                label={t("profile_account_created")}
+                description={t("profile_account_read_only")}
                 value={formatDate(user.created_at)}
               />
-            ) : null}
-          </View>
-        </View>
-
-        <Text className="text-center text-xs text-muted-foreground px-four">
-          {t("profile_account_read_only") || "To change institutional credentials or official legal name, please contact school administration."}
-        </Text>
+            </>
+          ) : null}
+          <PanelDivider />
+          <AccountRow
+            label={t("profile_account_status")}
+            description={t("profile_account_status")}
+            value={
+              user.is_active
+                ? t("profile_account_active")
+                : t("profile_account_inactive")
+            }
+          />
+        </Card>
       </ScreenScrollView>
     </View>
   );
 }
 
-function InfoFieldRow({
-  icon,
+function PanelTitle({ title }: { title: string }) {
+  return (
+    <View className="border-b border-border bg-secondary/50 px-four py-three">
+      <Text className="text-sm font-medium text-foreground">{title}</Text>
+    </View>
+  );
+}
+
+function PanelDivider() {
+  return <View className="h-px bg-border" />;
+}
+
+function AccountRow({
   label,
+  description,
   value,
 }: {
-  icon: React.ReactNode;
   label: string;
+  description: string;
   value: string;
 }) {
   return (
-    <View className="flex-row items-center justify-between p-four">
-      <View className="flex-row items-center gap-three">
-        <View className="h-8 w-8 items-center justify-center rounded-lg bg-secondary">
-          {icon}
-        </View>
-        <Text className="text-xs font-medium text-muted-foreground">{label}</Text>
+    <View className="min-h-16 flex-row items-center justify-between gap-four px-four py-three">
+      <View className="min-w-0 flex-1 items-start gap-half">
+        <Text
+          numberOfLines={2}
+          className="text-start text-xs font-medium text-foreground"
+        >
+          {label}
+        </Text>
+        <Text
+          numberOfLines={2}
+          className="text-start text-xs leading-4 text-muted-foreground"
+        >
+          {description}
+        </Text>
       </View>
-      <Text className="text-xs font-bold text-foreground text-end max-w-[50%]">
+      <Text
+        numberOfLines={2}
+        className="min-w-0 flex-1 text-sm text-foreground"
+      >
         {value}
       </Text>
     </View>

@@ -1,19 +1,21 @@
 /**
  * @module @orbis/mobile/components/ui/card
  *
- * S.C.R.A.P.S. Tactile Card Component for Orbis Mobile.
- * 100% synchronized with @orbis/ui (packages/ui/globals.css .card-tactile & .card-tactile-interactive).
+ * Native counterpart to the @orbis/ui Card root: a compact, bordered surface
+ * with an optional tactile press affordance for interactive cards.
  */
 
 import React from "react";
 import {
   View,
+  type PressableStateCallbackType,
   type ViewProps,
 } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 type SpacingScale =
+  | "none"
   | "half"
   | "one"
   | "two"
@@ -27,6 +29,7 @@ type SpacingScale =
   | "sixteen";
 
 const paddingClasses: Record<SpacingScale, string> = {
+  none: "p-0",
   half: "p-half",
   one: "p-one",
   two: "p-two",
@@ -57,12 +60,14 @@ export const Card = React.memo<CardProps>(
     ...props
   }) => {
     const variantClasses: Record<NonNullable<CardProps["variant"]>, string> = {
-      default: "bg-card",
-      elevated: "bg-card",
-      outline: "border border-border bg-transparent",
+      default: "flex-col overflow-hidden rounded-md border border-border bg-card",
+      elevated:
+        "flex-col overflow-hidden rounded-md border border-border bg-card shadow-sm",
+      outline:
+        "flex-col overflow-hidden rounded-md border border-border bg-transparent",
       flat: "bg-transparent",
       interactive:
-        "border border-border border-b-2 border-b-btn-shadow-secondary bg-card",
+        "flex-col overflow-hidden rounded-md border border-border border-b-2 border-b-btn-shadow-secondary bg-card",
     };
     const theme = useTheme();
     const tactilePress = useTactilePress(
@@ -74,7 +79,7 @@ export const Card = React.memo<CardProps>(
       onPress && variant !== "interactive"
         ? "border border-border border-b-2 border-b-btn-shadow-secondary"
         : "";
-    const className = `rounded-lg ${paddingClasses[padding]} ${variantClasses[variant]} ${tactileClass}`;
+    const className = `${paddingClasses[padding]} ${variantClasses[variant]} ${tactileClass}`;
 
     if (onPress) {
       return (
@@ -83,7 +88,7 @@ export const Card = React.memo<CardProps>(
           onPress={onPress}
           onPressIn={tactilePress.onPressIn}
           onPressOut={tactilePress.onPressOut}
-          style={({ pressed }) => [
+          style={({ pressed }: PressableStateCallbackType) => [
             tactilePress.style,
             style,
             pressed && { opacity: 0.92 },

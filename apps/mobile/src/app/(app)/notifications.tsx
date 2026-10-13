@@ -7,7 +7,6 @@
 
 import React, { useState } from "react";
 import { View, Text, Pressable } from "react-native";
-import { Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Chip } from "@/components/ui/chip";
@@ -15,6 +14,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import {
   Bell,
   AcademicCap,
@@ -28,6 +29,7 @@ type FilterTab = "all" | "academic" | "attendance" | "system";
 export default function NotificationsScreen() {
   const { t, isArabic } = useI18n();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
 
   return (
@@ -40,8 +42,11 @@ export default function NotificationsScreen() {
 
       <ScreenScrollView
         edges={["bottom", "left", "right"]}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_CONTENT_OFFSET,
+        }}
         scrollViewProps={{
-          contentContainerClassName: "gap-four px-four pb-[100px] pt-two",
+          contentContainerClassName: "gap-four px-four pb-[100px]",
         }}
       >
         {/* Category Filters */}

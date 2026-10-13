@@ -1,52 +1,71 @@
 /**
  * @module @orbis/mobile/app/(app)/profile/preferences
  *
- * System Preferences & Appearance settings for Orbis Mobile.
- * Configures application language (Arabic / English), dynamic theme
- * (Light / Dark / System), and alert preferences.
+ * Language, appearance, and notification settings.
  */
 
-import React, { useState } from "react";
-import { View, Text, Pressable, Appearance } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Header } from "@/components/header";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
-import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 import {
+  loadThemePreference,
   saveThemePreference,
   type ThemePreference,
 } from "@/lib/theme-preference";
-import {
-  Language,
-  Sparkles,
-  Bell,
-  Check,
-  Sun,
-  Moon,
-  Computer,
-} from "@orbis/icons/native";
+import { Check, ChevronLeft, ChevronRight } from "@orbis/icons/native";
 
 const themeOptions: ThemePreference[] = ["system", "light", "dark"];
 
 export default function PreferencesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const toast = useToast();
-  const { t, locale, setLocale } = useI18n();
-  const [themePreference, setThemePreference] = useState<ThemePreference>(() => {
-    const current = Appearance.getColorScheme();
-    return current ? (current as ThemePreference) : "system";
-  });
+  const { t, locale, setLocale, isArabic } = useI18n();
+  const [themePreference, setThemePreference] =
+    useState<ThemePreference>("system");
+  const [isThemeLoading, setIsThemeLoading] = useState(true);
+  const DirectionChevron = isArabic ? ChevronLeft : ChevronRight;
+
+  useEffect(() => {
+    let isMounted = true;
+    loadThemePreference()
+      .then((preference) => {
+        if (isMounted) setThemePreference(preference);
+      })
+      .catch((error: unknown) => {
+        console.error(
+          "[Orbis Mobile Preferences] Failed to load theme preference.",
+          error,
+        );
+        toast.error(t("profile_theme_load_error"));
+      })
+      .finally(() => {
+        if (isMounted) setIsThemeLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t, toast]);
 
   const handleLocaleChange = async (nextLocale: "ar" | "en") => {
     try {
       await setLocale(nextLocale);
     } catch (error) {
-      console.error("[Orbis Mobile Preferences] Failed to save language.", error);
-      toast.error(t("profile_preference_save_error") || "Failed to update language.");
+      console.error(
+        "[Orbis Mobile Preferences] Failed to save language.",
+        error,
+      );
+      toast.error(t("profile_preference_save_error"));
     }
   };
 
@@ -56,129 +75,141 @@ export default function PreferencesScreen() {
       setThemePreference(preference);
     } catch (error) {
       console.error("[Orbis Mobile Theme] Failed to save theme.", error);
-      toast.error(t("profile_preference_save_error") || "Failed to update theme.");
+      toast.error(t("profile_preference_save_error"));
     }
   };
 
   return (
     <View className="flex-1 bg-background">
       <Header
-        title={t("pref_title") || "Preferences"}
-        showBack={true}
+        title={t("pref_title")}
+        showBack
         onBack={() => router.back()}
       />
-
       <ScreenScrollView
         edges={["bottom", "left", "right"]}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_CONTENT_OFFSET,
+        }}
         scrollViewProps={{
-          contentContainerClassName: "gap-six px-four pb-[100px] pt-two",
+          contentContainerClassName: "gap-six px-four pb-eight",
         }}
       >
-        {/* 1. Language Preference */}
-        <View className="gap-two">
-          <View className="flex-row items-center gap-two px-one">
-            <Language size={16} color={theme.primary} />
-            <Text className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {t("pref_language") || "Language"}
-            </Text>
-          </View>
+        <Card variant="default" padding="none">
+          <PanelTitle title={t("pref_language")} />
+          <PreferenceRow
+            label={t("pref_language_ar")}
+            description={t("pref_language_ar_sub")}
+            selected={locale === "ar"}
+            checkColor={theme.primaryForeground}
+            onPress={() => void handleLocaleChange("ar")}
+          />
+          <PanelDivider />
+          <PreferenceRow
+            label={t("pref_language_en")}
+            description={t("pref_language_en_sub")}
+            selected={locale === "en"}
+            checkColor={theme.primaryForeground}
+            onPress={() => void handleLocaleChange("en")}
+          />
+        </Card>
 
-          <View className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xs divide-y divide-border/60">
-            <OptionRow
-              label="العربية"
-              subtitle="Arabic (RTL)"
-              selected={locale === "ar"}
-              onPress={() => void handleLocaleChange("ar")}
-            />
-            <OptionRow
-              label="English"
-              subtitle="English (LTR)"
-              selected={locale === "en"}
-              onPress={() => void handleLocaleChange("en")}
-            />
-          </View>
-        </View>
-
-        {/* 2. Theme Preference */}
-        <View className="gap-two">
-          <View className="flex-row items-center gap-two px-one">
-            <Sparkles size={16} color={theme.primary} />
-            <Text className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {t("pref_theme") || "Appearance"}
-            </Text>
-          </View>
-
-          <View className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-2xs divide-y divide-border/60">
-            {themeOptions.map((option) => (
-              <OptionRow
-                key={option}
-                label={t(`pref_theme_${option}`) || option}
+        <Card variant="default" padding="none">
+          <PanelTitle title={t("pref_theme")} />
+          {themeOptions.map((option, index) => (
+            <React.Fragment key={option}>
+              {index > 0 ? <PanelDivider /> : null}
+              <PreferenceRow
+                label={t(`pref_theme_${option}`)}
                 selected={themePreference === option}
+                disabled={isThemeLoading}
+                checkColor={theme.primaryForeground}
                 onPress={() => void handleThemeChange(option)}
               />
-            ))}
-          </View>
-        </View>
+            </React.Fragment>
+          ))}
+        </Card>
 
-        {/* 3. Notification Shortcut */}
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push("/(app)/notifications")}
-          className="flex-row items-center justify-between rounded-2xl border border-border/80 bg-card p-four shadow-xs active:bg-secondary/40"
-        >
-          <View className="flex-row items-center gap-three">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-              <Bell size={18} color={theme.primary} />
-            </View>
-            <View className="gap-half">
-              <Text className="text-sm font-bold text-foreground">
-                {t("pref_notifications") || "Notification Settings"}
+        <Card variant="default" padding="none">
+          <PanelTitle title={t("pref_notifications")} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("pref_notifications")}
+            onPress={() => router.push("/(app)/notifications")}
+            className="min-h-16 flex-row items-center justify-between gap-four px-four py-three active:bg-secondary/50"
+          >
+            <View className="min-w-0 flex-1 gap-half">
+              <Text className="text-sm font-medium text-foreground">
+                {t("pref_notifications")}
               </Text>
-              <Text className="text-xs text-muted-foreground">
-                {t("notifications_inbox_unavailable_description")}
+              <Text className="text-[11px] leading-4 text-muted-foreground">
+                {t("home_notifications_description")}
               </Text>
             </View>
-          </View>
-        </Pressable>
+            <DirectionChevron size={17} color={theme.mutedForeground} />
+          </Pressable>
+        </Card>
+
       </ScreenScrollView>
     </View>
   );
 }
 
-function OptionRow({
+function PanelTitle({ title }: { title: string }) {
+  return (
+    <View className="border-b border-border bg-secondary/50 px-four py-three">
+      <Text className="text-sm font-medium text-foreground">{title}</Text>
+    </View>
+  );
+}
+
+function PanelDivider() {
+  return <View className="h-px bg-border" />;
+}
+
+function PreferenceRow({
   label,
-  subtitle,
+  description,
   selected,
+  disabled = false,
+  checkColor,
   onPress,
 }: {
   label: string;
-  subtitle?: string;
+  description?: string;
   selected: boolean;
+  disabled?: boolean;
+  checkColor: string;
   onPress: () => void;
 }) {
-  const theme = useTheme();
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
+      accessibilityState={{ checked: selected, disabled }}
+      disabled={disabled}
       onPress={onPress}
-      className="flex-row items-center justify-between p-four active:bg-secondary/40"
+      className={`min-h-16 flex-row items-center justify-between gap-four px-four py-three ${
+        disabled ? "opacity-60" : "active:bg-secondary/50"
+      }`}
     >
-      <View className="gap-half">
-        <Text className="text-sm font-bold text-foreground">{label}</Text>
-        {subtitle ? (
-          <Text className="text-xs text-muted-foreground">{subtitle}</Text>
+      <View className="min-w-0 flex-1 items-start gap-half">
+        <Text className="text-start text-sm font-medium text-foreground">
+          {label}
+        </Text>
+        {description ? (
+          <Text className="text-start text-xs leading-4 text-muted-foreground">
+            {description}
+          </Text>
         ) : null}
       </View>
-
       <View
-        className={`h-6 w-6 items-center justify-center rounded-full border ${
+        className={`h-6 w-6 items-center justify-center rounded-sm border ${
           selected
             ? "border-primary bg-primary"
-            : "border-muted-foreground/30 bg-transparent"
+            : "border-input bg-background"
         }`}
       >
-        {selected ? <Check size={14} color="#FFFFFF" /> : null}
+        {selected ? <Check size={14} color={checkColor} /> : null}
       </View>
     </Pressable>
   );

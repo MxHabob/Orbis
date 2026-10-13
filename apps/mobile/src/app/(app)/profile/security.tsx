@@ -1,19 +1,17 @@
 /**
  * @module @orbis/mobile/app/(app)/profile/security
  *
- * Security & Active Sessions Management for Orbis Mobile.
- * Lists authorized devices, active logins, and enables session revocation.
+ * Device sessions and account protection in the shared settings-panel style.
  */
 
 import React, { useState } from "react";
-import { View, Text, Pressable, Alert } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Header } from "@/components/header";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -22,22 +20,13 @@ import {
 } from "@/hooks/use-api-queries";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { useTheme } from "@/hooks/use-theme";
-import {
-  ShieldCheck,
-  Phone,
-  Computer,
-  Trash,
-  LockClosed,
-} from "@orbis/icons/native";
 
 export default function SecurityScreen() {
   const router = useRouter();
-  const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t, formatDate } = useI18n();
   const toast = useToast();
-
   const devicesQuery = useDevicesQuery();
   const revokeMutation = useRevokeDeviceMutation();
   const [revokingId, setRevokingId] = useState<string>();
@@ -47,139 +36,176 @@ export default function SecurityScreen() {
     setRevokingId(deviceId);
     try {
       await revokeMutation.mutateAsync(deviceId);
-      toast.success(t("security_device_revoked") || "Device access revoked.");
+      toast.success(t("security_device_revoked"));
     } catch (error) {
       console.error("[Orbis Mobile Security] Failed to revoke device.", error);
-      toast.error(t("security_device_revoke_error") || "Failed to revoke device.");
+      toast.error(t("security_device_revoke_error"));
     } finally {
       setRevokingId(undefined);
     }
   };
 
   const confirmRevoke = (deviceId: string) => {
-    Alert.alert(
-      t("security_revoke_device") || "Revoke Device",
-      t("security_revoke_confirm") || "Are you sure you want to sign out this device?",
-      [
-        { text: t("common_cancel") || "Cancel", style: "cancel" },
-        {
-          text: t("security_revoke_device") || "Revoke",
-          style: "destructive",
-          onPress: () => void revokeDevice(deviceId),
-        },
-      ],
-    );
+    Alert.alert(t("security_revoke_device"), t("security_revoke_confirm"), [
+      { text: t("common_cancel"), style: "cancel" },
+      {
+        text: t("security_revoke_device"),
+        style: "destructive",
+        onPress: () => void revokeDevice(deviceId),
+      },
+    ]);
   };
 
   return (
     <View className="flex-1 bg-background">
       <Header
-        title={t("profile_menu_security") || "Security"}
-        showBack={true}
+        title={t("profile_menu_security")}
+        showBack
         onBack={() => router.back()}
       />
-
       <ScreenScrollView
         edges={["bottom", "left", "right"]}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_CONTENT_OFFSET,
+        }}
         scrollViewProps={{
-          contentContainerClassName: "gap-six px-four pb-[100px] pt-two",
+          contentContainerClassName: "gap-six px-four pb-eight",
         }}
         refreshing={devicesQuery.isRefetching}
         onRefresh={() => void devicesQuery.refetch()}
       >
-        {/* Security Overview Banner */}
-        <Card
-          variant="default"
-          padding="four"
-          className="bg-card border border-border/80 shadow-sm"
-        >
-          <View className="flex-row items-center gap-three">
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
-              <ShieldCheck size={28} color={theme.primary} />
-            </View>
-            <View className="flex-1 gap-half">
-              <Text className="text-base font-bold text-foreground">
-                {t("security_account_status") || "Account Protection"}
-              </Text>
-              <Text className="text-xs text-muted-foreground">
-                {user?.is_active
-                  ? t("security_protected_active") || "Multi-device synchronization active"
-                  : t("profile_account_inactive")}
-              </Text>
-            </View>
-          </View>
+        <Card variant="default" padding="none">
+          <PanelTitle title={t("security_account_status")} />
+          <SecurityRow
+            label={t("security_description")}
+            value={
+              user?.is_active
+                ? t("security_protected_active")
+                : t("profile_account_inactive")
+            }
+          />
         </Card>
 
-        {/* Active Devices & Logins */}
-        <View className="gap-three">
-          <View className="flex-row items-center justify-between px-one">
-            <Text className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {t("security_devices_title") || "Authorized Devices"}
-            </Text>
-            {devices.length > 0 ? (
-              <Badge variant="secondary" className="px-two py-half">
-                <Text className="text-xs font-bold text-primary">
-                  {devices.length} {t("security_active_sessions") || "Active"}
-                </Text>
-              </Badge>
-            ) : null}
-          </View>
-
+        <Card variant="default" padding="none">
+          <PanelTitle
+            title={t("security_devices_title")}
+            trailing={
+              devices.length > 0
+                ? `${devices.length} ${t("security_active_sessions")}`
+                : undefined
+            }
+          />
           {devicesQuery.isPending ? (
-            <View className="gap-two">
-              <Skeleton className="h-20 w-full rounded-2xl" />
-              <Skeleton className="h-20 w-full rounded-2xl" />
+            <View className="gap-three px-four py-three">
+              <Skeleton className="h-9 w-full rounded-sm" />
+              <PanelDivider />
+              <Skeleton className="h-9 w-full rounded-sm" />
+            </View>
+          ) : devicesQuery.isError && devices.length === 0 ? (
+            <View className="min-h-16 flex-row items-center justify-between gap-four px-four py-three">
+              <Text className="flex-1 text-start text-xs text-muted-foreground">
+                {t("security_devices_error")}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void devicesQuery.refetch()}
+                className="min-h-11 justify-center rounded-sm border border-border px-three active:bg-secondary/50"
+              >
+                <Text className="text-xs font-medium text-foreground">
+                  {t("common_retry")}
+                </Text>
+              </Pressable>
             </View>
           ) : devices.length === 0 ? (
-            <Card variant="outline" padding="four">
-              <Text className="text-center text-xs text-muted-foreground">
-                {t("security_no_devices") || "No additional active devices."}
+            <View className="min-h-16 justify-center px-four py-three">
+              <Text className="text-end text-xs text-muted-foreground">
+                {t("security_no_devices")}
               </Text>
-            </Card>
-          ) : (
-            <View className="gap-two">
-              {devices.map((device) => {
-                const isPhone = device.device_type?.toLowerCase().includes("mobile") || device.device_type?.toLowerCase().includes("phone");
-                const isRevoking = revokingId === device.id;
-
-                return (
-                  <View
-                    key={device.id}
-                    className="flex-row items-center justify-between rounded-2xl border border-border/80 bg-card p-four shadow-2xs"
-                  >
-                    <View className="flex-row items-center gap-three flex-1">
-                      <View className="h-10 w-10 items-center justify-center rounded-xl bg-secondary">
-                        {isPhone ? (
-                          <Phone size={20} color={theme.foreground} />
-                        ) : (
-                          <Computer size={20} color={theme.foreground} />
-                        )}
-                      </View>
-                      <View className="flex-1 gap-half">
-                        <View className="flex-row items-center gap-two">
-                          <Text className="text-sm font-bold text-foreground" numberOfLines={1}>
-                            {device.device_name || "Device"}
-                          </Text>
-                          {device.is_trusted ? (
-                            <Badge variant="default" className="bg-primary/20 px-two py-half">
-                              <Text className="text-[10px] font-bold text-primary">
-                                {t("security_current_device") || "Trusted"}
-                              </Text>
-                            </Badge>
-                          ) : null}
-                        </View>
-                        <Text className="text-xs text-muted-foreground">
-                          {device.os || device.browser || "Active"} · {formatDate(device.last_active_at)}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
             </View>
+          ) : (
+            devices.map((device, index) => {
+              const isRevoking = revokingId === device.id;
+              const deviceDescription = [
+                device.os || device.browser || t("common_unknown"),
+                t("security_last_active"),
+                formatDate(device.last_active_at),
+                device.is_trusted ? t("security_device_trusted") : undefined,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+
+              return (
+                <React.Fragment key={device.id}>
+                  {index > 0 ? <PanelDivider /> : null}
+                  <View className="min-h-16 flex-row items-center justify-between gap-four px-four py-three">
+                    <View className="min-w-0 flex-1 items-start gap-half">
+                      <Text
+                        numberOfLines={1}
+                        className="text-start text-sm font-medium text-foreground"
+                      >
+                        {device.device_name || t("common_unknown")}
+                      </Text>
+                      <Text
+                        numberOfLines={2}
+                        className="text-start text-xs leading-4 text-muted-foreground"
+                      >
+                        {deviceDescription}
+                      </Text>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t("security_revoke_device")}: ${device.device_name || t("common_unknown")}`}
+                      disabled={isRevoking}
+                      onPress={() => confirmRevoke(device.id)}
+                      className={`min-h-11 justify-center rounded-sm border border-destructive px-three ${
+                        isRevoking ? "opacity-50" : "active:bg-destructive/10"
+                      }`}
+                    >
+                      <Text className="text-xs font-medium text-destructive">
+                        {isRevoking
+                          ? t("common_loading")
+                          : t("security_revoke_device")}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </React.Fragment>
+              );
+            })
           )}
-        </View>
+        </Card>
       </ScreenScrollView>
+    </View>
+  );
+}
+
+function PanelTitle({
+  title,
+  trailing,
+}: {
+  title: string;
+  trailing?: string;
+}) {
+  return (
+    <View className="min-h-11 flex-row items-center justify-between gap-three border-b border-border bg-secondary/50 px-four py-three">
+      <Text className="text-sm font-medium text-foreground">{title}</Text>
+      {trailing ? (
+        <Text className="text-xs text-muted-foreground">{trailing}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function PanelDivider() {
+  return <View className="h-px bg-border" />;
+}
+
+function SecurityRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="min-h-16 flex-row items-center justify-between gap-four px-four py-three">
+      <Text className="min-w-0 flex-1 text-start text-xs text-muted-foreground">
+        {label}
+      </Text>
+      <Text className="min-w-0 flex-1 text-sm text-foreground">{value}</Text>
     </View>
   );
 }
