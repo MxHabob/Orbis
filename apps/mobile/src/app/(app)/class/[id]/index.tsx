@@ -6,13 +6,14 @@
  * and roster directory.
  */
 
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ListItem } from "@/components/ui/list-item";
 import { useTeacherClassDataQuery } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
@@ -21,9 +22,6 @@ import {
   ClipboardDocumentCheck,
   ChartBar,
   Calendar,
-  ChevronLeft,
-  ChevronRight,
-  AcademicCap,
 } from "@orbis/icons/native";
 
 export default function ClassIndexScreen() {
@@ -33,8 +31,6 @@ export default function ClassIndexScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { t, isArabic } = useI18n();
-
-  const DirectionChevron = isArabic ? ChevronLeft : ChevronRight;
 
   const classItem = classQuery.data?.classItem;
   const className = classItem
@@ -59,7 +55,6 @@ export default function ClassIndexScreen() {
           <Card
             variant="default"
             padding="four"
-            className="bg-card border border-border/80 shadow-sm"
           >
             <View className="flex-row items-center justify-between">
               <View className="gap-half">
@@ -87,53 +82,62 @@ export default function ClassIndexScreen() {
             </Text>
 
             <View className="flex-row gap-three">
-              <Pressable
+              <Card
+                variant="interactive"
+                padding="four"
                 accessibilityRole="button"
+                accessibilityLabel={t("teacher_mark_attendance")}
                 onPress={() =>
                   router.push({
                     pathname: "/(app)/class/[id]/attendance",
                     params: { id: classQuery.data.classItem.id },
                   })
                 }
-                className="flex-1 items-center gap-two rounded-2xl border border-primary/20 bg-primary/10 p-four shadow-xs active:opacity-70"
+                className="min-h-24 flex-1 items-center justify-center gap-two"
               >
                 <ClipboardDocumentCheck size={24} color={theme.primary} />
                 <Text className="text-center text-xs font-bold text-primary">
                   {t("teacher_mark_attendance")}
                 </Text>
-              </Pressable>
+              </Card>
 
-              <Pressable
+              <Card
+                variant="interactive"
+                padding="four"
                 accessibilityRole="button"
+                accessibilityLabel={t("teacher_record_grades")}
                 onPress={() =>
                   router.push({
                     pathname: "/(app)/class/[id]/grades",
                     params: { id: classQuery.data.classItem.id },
                   })
                 }
-                className="flex-1 items-center gap-two rounded-2xl border border-border/80 bg-card p-four shadow-xs active:opacity-70"
+                className="min-h-24 flex-1 items-center justify-center gap-two"
               >
                 <ChartBar size={24} color={theme.foreground} />
                 <Text className="text-center text-xs font-bold text-foreground">
                   {t("teacher_record_grades")}
                 </Text>
-              </Pressable>
+              </Card>
 
-              <Pressable
+              <Card
+                variant="interactive"
+                padding="four"
                 accessibilityRole="button"
+                accessibilityLabel={t("teacher_class_schedule")}
                 onPress={() =>
                   router.push({
                     pathname: "/(app)/class/[id]/schedule",
                     params: { id: classQuery.data.classItem.id },
                   })
                 }
-                className="flex-1 items-center gap-two rounded-2xl border border-border/80 bg-card p-four shadow-xs active:opacity-70"
+                className="min-h-24 flex-1 items-center justify-center gap-two"
               >
                 <Calendar size={24} color={theme.foreground} />
                 <Text className="text-center text-xs font-bold text-foreground">
                   {t("teacher_class_schedule")}
                 </Text>
-              </Pressable>
+              </Card>
             </View>
           </View>
 
@@ -151,45 +155,42 @@ export default function ClassIndexScreen() {
             {roster.length === 0 ? (
               <EmptyState title={t("teacher_no_students")} />
             ) : (
-              <View className="gap-two">
-                {roster.map(({ student, enrollment }) => {
+              <Card variant="default" padding="one">
+                {roster.map(({ student, enrollment }, index) => {
                   const studentName = isArabic
                     ? student.name_ar || student.full_name
                     : student.display_name || student.full_name;
 
                   return (
-                    <Pressable
-                      key={student.id}
-                      accessibilityRole="button"
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(app)/student/[id]",
-                          params: { id: student.id },
-                        })
-                      }
-                      className="flex-row items-center justify-between rounded-xl border border-border/70 bg-card p-three shadow-2xs active:bg-secondary/40"
-                    >
-                      <View className="flex-row items-center gap-three">
-                        <Avatar
-                          fallback={(studentName || "S").charAt(0)}
-                          size="sm"
-                          className="bg-primary/10"
-                        />
-                        <View className="gap-half">
-                          <Text className="text-sm font-bold text-foreground">
-                            {studentName}
-                          </Text>
-                          <Text className="text-xs text-muted-foreground">
-                            {enrollment.student_number || `ID: #${student.id.slice(0, 6)}`}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <DirectionChevron size={16} color={theme.mutedForeground} />
-                    </Pressable>
+                    <View key={student.id}>
+                      {index > 0 ? (
+                        <View className="mx-three h-px bg-border" />
+                      ) : null}
+                      <ListItem
+                        title={studentName}
+                        subtitle={
+                          enrollment.student_number ||
+                          `ID: #${student.id.slice(0, 6)}`
+                        }
+                        left={
+                          <Avatar
+                            fallback={(studentName || "S").charAt(0)}
+                            size="sm"
+                            className="bg-primary/10"
+                          />
+                        }
+                        chevron
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(app)/student/[id]",
+                            params: { id: student.id },
+                          })
+                        }
+                      />
+                    </View>
                   );
                 })}
-              </View>
+              </Card>
             )}
           </View>
         </>

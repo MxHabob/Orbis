@@ -13,6 +13,10 @@ import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  SettingsPanelDivider,
+  SettingsPanelTitle,
+} from "@/components/ui/settings-panel";
 import { useToast } from "@/components/ui/toast";
 import {
   useDevicesQuery,
@@ -75,7 +79,7 @@ export default function SecurityScreen() {
         onRefresh={() => void devicesQuery.refetch()}
       >
         <Card variant="default" padding="none">
-          <PanelTitle title={t("security_account_status")} />
+          <SettingsPanelTitle title={t("security_account_status")} />
           <SecurityRow
             label={t("security_description")}
             value={
@@ -87,7 +91,7 @@ export default function SecurityScreen() {
         </Card>
 
         <Card variant="default" padding="none">
-          <PanelTitle
+          <SettingsPanelTitle
             title={t("security_devices_title")}
             trailing={
               devices.length > 0
@@ -98,7 +102,7 @@ export default function SecurityScreen() {
           {devicesQuery.isPending ? (
             <View className="gap-three px-four py-three">
               <Skeleton className="h-9 w-full rounded-sm" />
-              <PanelDivider />
+              <SettingsPanelDivider />
               <Skeleton className="h-9 w-full rounded-sm" />
             </View>
           ) : devicesQuery.isError && devices.length === 0 ? (
@@ -136,7 +140,7 @@ export default function SecurityScreen() {
 
               return (
                 <React.Fragment key={device.id}>
-                  {index > 0 ? <PanelDivider /> : null}
+                  {index > 0 ? <SettingsPanelDivider /> : null}
                   <View className="min-h-16 flex-row items-center justify-between gap-four px-four py-three">
                     <View className="min-w-0 flex-1 items-start gap-half">
                       <Text
@@ -176,27 +180,6 @@ export default function SecurityScreen() {
       </ScreenScrollView>
     </View>
   );
-}
-
-function PanelTitle({
-  title,
-  trailing,
-}: {
-  title: string;
-  trailing?: string;
-}) {
-  return (
-    <View className="min-h-11 flex-row items-center justify-between gap-three border-b border-border bg-secondary/50 px-four py-three">
-      <Text className="text-sm font-medium text-foreground">{title}</Text>
-      {trailing ? (
-        <Text className="text-xs text-muted-foreground">{trailing}</Text>
-      ) : null}
-    </View>
-  );
-}
-
-function PanelDivider() {
-  return <View className="h-px bg-border" />;
 }
 
 function SecurityRow({ label, value }: { label: string; value: string }) {

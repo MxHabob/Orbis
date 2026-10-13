@@ -81,7 +81,6 @@ export default function StudentGradesScreen() {
         <Card
           variant="default"
           padding="four"
-          className="bg-card border border-border/80 shadow-sm"
         >
           <View className="flex-row items-center justify-between">
             <View className="gap-half">
@@ -98,7 +97,7 @@ export default function StudentGradesScreen() {
               </View>
             </View>
 
-            <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+            <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/10">
               <AcademicCap size={28} color={theme.primary} />
             </View>
           </View>
@@ -135,7 +134,7 @@ export default function StudentGradesScreen() {
                 key={grade.id}
                 variant="outline"
                 padding="four"
-                className="bg-card border-border/80 shadow-2xs gap-two"
+                className="gap-two"
               >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-two">

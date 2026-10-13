@@ -110,7 +110,7 @@ export default function ClassAttendanceScreen() {
               setDate((current) => shiftDate(current, -1));
               setSelectedStatuses({});
             }}
-            className="rounded-lg border border-border bg-card px-three py-two"
+            className="rounded-md border border-border bg-card px-three py-two"
           >
             <Text className="text-sm font-semibold text-foreground">‹</Text>
           </Pressable>
@@ -131,7 +131,7 @@ export default function ClassAttendanceScreen() {
               setDate((current) => shiftDate(current, 1));
               setSelectedStatuses({});
             }}
-            className="rounded-lg border border-border bg-card px-three py-two"
+            className="rounded-md border border-border bg-card px-three py-two"
           >
             <Text className="text-sm font-semibold text-foreground">›</Text>
           </Pressable>
@@ -192,7 +192,7 @@ export default function ClassAttendanceScreen() {
                                     [student.id]: option.value,
                                   }))
                                 }
-                                className={`min-h-10 items-center justify-center rounded-lg border px-three py-two ${
+                                className={`min-h-10 items-center justify-center rounded-md border px-three py-two ${
                                   isSelected
                                     ? "border-primary bg-primary/10"
                                     : "border-border bg-card"

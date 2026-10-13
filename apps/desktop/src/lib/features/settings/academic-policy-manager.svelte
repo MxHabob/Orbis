@@ -419,7 +419,7 @@
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
   <main class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide pb-28">
-    <div class="mx-auto w-full max-w-5xl flex flex-col gap-6">
+    <div class="w-full flex flex-col gap-6">
       {#if policyQuery.isLoading}
         <SettingsFormSkeleton />
       {:else if policyQuery.error}
@@ -648,290 +648,298 @@
               </div>
             </CardContent>
           </Card>
-
-          <!-- Outcome Evaluation & Grade Bands -->
-          <Card class="overflow-hidden border-border/70 shadow-xs">
-            <CardContent class="flex flex-col gap-5 p-6">
-              <div class="flex items-center justify-between {form.outcomeEnabled ? 'border-b border-border/40 pb-4' : ''}">
-                <span class="text-xs font-semibold text-foreground">
-                  {m.settings_calc_outcome_eval()}
-                </span>
-                <Switch
-                  id="outcome-policy-enabled"
-                  checked={form.outcomeEnabled}
-                  onCheckedChange={(checked) => (form.outcomeEnabled = checked)}
-                  disabled={isSaving}
-                />
-              </div>
-
-              {#if form.outcomeEnabled}
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                  <div class="flex flex-col gap-1.5">
-                    <Label for="passing-threshold" class="text-xs font-medium text-foreground">
-                      {m.settings_academic_policy_passing_threshold()}
-                    </Label>
-                    <Input
-                      id="passing-threshold"
-                      type="number"
-                      step="any"
-                      class="h-9 text-xs"
-                      bind:value={form.passThreshold}
-                      disabled={isSaving}
-                    />
-                  </div>
-
-                  <div class="flex flex-col gap-1.5">
-                    <Label for="honors-threshold" class="text-xs font-medium text-foreground">
-                      {m.settings_academic_policy_honors_threshold()}
-                    </Label>
-                    <Input
-                      id="honors-threshold"
-                      type="number"
-                      step="any"
-                      class="h-9 text-xs"
-                      bind:value={form.honorsThreshold}
-                      disabled={isSaving}
-                    />
-                  </div>
-                </div>
-
-                <div class="flex flex-col gap-4 border-t border-border/40 pt-4">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-foreground">
-                        {m.settings_calc_grade_bands()}
-                      </span>
-                      <span class="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        {form.gradeBands.length}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      class="h-8 gap-1.5 text-xs cursor-pointer"
-                      onclick={() =>
-                        form.gradeBands.push({
-                          code: `band_${form.gradeBands.length + 1}`,
-                          label: "",
-                          minimum: "",
-                        })}
-                      disabled={isSaving}
-                    >
-                      <Plus size={13} /> {m.settings_calc_add_band()}
-                    </Button>
-                  </div>
-
-                  {#if form.gradeBands.length > 0}
-                    <div class="hidden grid-cols-12 gap-3 px-1 text-[11px] font-medium text-muted-foreground sm:grid">
-                      <span class="col-span-3">{m.settings_calc_band_code()}</span>
-                      <span class="col-span-5">{m.settings_calc_band_label()}</span>
-                      <span class="col-span-3">{m.settings_calc_band_min()}</span>
-                      <span class="col-span-1 text-center"></span>
-                    </div>
-
-                    <div class="flex flex-col gap-2.5">
-                      {#each form.gradeBands as band, index (index)}
-                        <div class="grid grid-cols-1 items-center gap-2.5 rounded-lg border border-border/50 bg-card/40 p-3 sm:grid-cols-12 sm:border-0 sm:bg-transparent sm:p-0">
-                          <div class="sm:col-span-3">
-                            <Input
-                              class="h-8 text-xs"
-                              placeholder={m.settings_calc_band_code()}
-                              bind:value={band.code}
-                              disabled={isSaving}
-                            />
-                          </div>
-                          <div class="sm:col-span-5">
-                            <Input
-                              class="h-8 text-xs"
-                              placeholder={m.settings_calc_band_label()}
-                              bind:value={band.label}
-                              disabled={isSaving}
-                            />
-                          </div>
-                          <div class="sm:col-span-3">
-                            <Input
-                              type="number"
-                              step="any"
-                              class="h-8 text-xs"
-                              placeholder={m.settings_calc_band_min()}
-                              bind:value={band.minimum}
-                              disabled={isSaving}
-                            />
-                          </div>
-                          <div class="flex justify-end sm:col-span-1 sm:justify-center">
-                            <Button
-                              type="button"
-                              size="icon-sm"
-                              variant="ghost"
-                              class="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
-                              aria-label="Remove grade band"
-                              onclick={() => form.gradeBands.splice(index, 1)}
-                              disabled={isSaving}
-                            >
-                              <Trash size={14} />
-                            </Button>
-                          </div>
-                        </div>
-                      {/each}
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </CardContent>
-          </Card>
         {/if}
 
-        <!-- Ranking Policy -->
-        <Card class="overflow-hidden border-border/70 shadow-xs">
-          <CardContent class="flex flex-col gap-5 p-6">
-            <div class="flex items-center justify-between {form.rankingEnabled ? 'border-b border-border/40 pb-4' : ''}">
-              <span class="text-xs font-semibold text-foreground">
-                {m.settings_academic_policy_ranking_enabled()}
-              </span>
-              <Switch
-                id="ranking-enabled"
-                checked={form.rankingEnabled}
-                onCheckedChange={(checked) => (form.rankingEnabled = checked)}
-                disabled={isSaving}
-              />
-            </div>
-
-            {#if form.rankingEnabled}
-              <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_ranking_scope()}
-                  </Label>
-                  <Select
-                    type="single"
-                    value={form.rankingScope}
-                    onValueChange={(val) => {
-                      if (val)
-                        form.rankingScope = val as
-                          | "class"
-                          | "grade_level"
-                          | "org_unit"
-                          | "cohort";
-                    }}
-                    disabled={isSaving}
-                  >
-                    <SelectTrigger class="h-9 w-full text-xs">
-                      {scopeLabel(form.rankingScope)}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="class">{m.settings_academic_policy_scope_class()}</SelectItem>
-                      <SelectItem value="grade_level">{m.settings_academic_policy_scope_grade()}</SelectItem>
-                      <SelectItem value="org_unit">{m.settings_academic_policy_scope_org()}</SelectItem>
-                      <SelectItem value="cohort">{m.settings_academic_policy_scope_cohort()}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_tie_policy()}
-                  </Label>
-                  <Select
-                    type="single"
-                    value={form.tiePolicy}
-                    onValueChange={(val) => {
-                      if (val)
-                        form.tiePolicy = val as
-                          | "standard_competition"
-                          | "dense"
-                          | "fractional";
-                    }}
-                    disabled={isSaving}
-                  >
-                    <SelectTrigger class="h-9 w-full text-xs">
-                      {tieLabel(form.tiePolicy)}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard_competition">{m.settings_academic_policy_tie_standard()}</SelectItem>
-                      <SelectItem value="dense">{m.settings_academic_policy_tie_dense()}</SelectItem>
-                      <SelectItem value="fractional">{m.settings_academic_policy_tie_fractional()}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <Label for="calc-max-rank" class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_max_rank()}
-                  </Label>
-                  <Input
-                    id="calc-max-rank"
-                    type="number"
-                    min="1"
-                    step="1"
-                    class="h-9 text-xs"
-                    bind:value={form.maxDisplayedRank}
+        <!-- Dual Column Grid on Widescreen: Outcomes & Ranking/Preview -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full items-start">
+          <!-- Outcome Evaluation & Grade Bands -->
+          {#if !customPlanReadOnly}
+            <Card class="overflow-hidden border-border/70 shadow-xs">
+              <CardContent class="flex flex-col gap-5 p-6">
+                <div class="flex items-center justify-between {form.outcomeEnabled ? 'border-b border-border/40 pb-4' : ''}">
+                  <span class="text-xs font-semibold text-foreground">
+                    {m.settings_calc_outcome_eval()}
+                  </span>
+                  <Switch
+                    id="outcome-policy-enabled"
+                    checked={form.outcomeEnabled}
+                    onCheckedChange={(checked) => (form.outcomeEnabled = checked)}
                     disabled={isSaving}
                   />
                 </div>
-              </div>
-            {/if}
-          </CardContent>
-        </Card>
 
-        <!-- Preview Trigger & Results -->
-        {#if !customPlanReadOnly}
-          <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between rounded-xl border border-border/70 bg-card/60 p-4">
-              <span class="text-xs font-medium text-muted-foreground">
-                {m.settings_calc_preview()}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                class="h-8 gap-1.5 text-xs cursor-pointer"
-                onclick={handlePreview}
-                disabled={isSaving || isPreviewing}
-              >
-                <Refresh size={13} class={isPreviewing ? "animate-spin" : ""} />
-                {m.settings_calc_preview()}
-              </Button>
-            </div>
+                {#if form.outcomeEnabled}
+                  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div class="flex flex-col gap-1.5">
+                      <Label for="passing-threshold" class="text-xs font-medium text-foreground">
+                        {m.settings_academic_policy_passing_threshold()}
+                      </Label>
+                      <Input
+                        id="passing-threshold"
+                        type="number"
+                        step="any"
+                        class="h-9 text-xs"
+                        bind:value={form.passThreshold}
+                        disabled={isSaving}
+                      />
+                    </div>
 
-            {#if previewResult}
-              <Card class="overflow-hidden border-border/70 shadow-xs">
-                <CardContent class="flex flex-col gap-3 p-5">
-                  <div class="flex items-center justify-between border-b border-border/40 pb-2">
-                    <span class="text-xs font-semibold text-foreground">
-                      {m.settings_calc_preview_result()}
-                    </span>
-                    <span class="font-mono text-[11px] text-muted-foreground">
-                      v{previewResult.result.policy_version}
-                    </span>
+                    <div class="flex flex-col gap-1.5">
+                      <Label for="honors-threshold" class="text-xs font-medium text-foreground">
+                        {m.settings_academic_policy_honors_threshold()}
+                      </Label>
+                      <Input
+                        id="honors-threshold"
+                        type="number"
+                        step="any"
+                        class="h-9 text-xs"
+                        bind:value={form.honorsThreshold}
+                        disabled={isSaving}
+                      />
+                    </div>
                   </div>
 
-                  <div class="flex flex-wrap gap-3 pt-1">
-                    {#each previewResult.result.outputs as output (output.name)}
-                      <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
-                        <span class="text-[11px] text-muted-foreground">{output.name}:</span>
-                        <span class="font-mono text-xs font-semibold text-foreground">{output.value}</span>
-                      </div>
-                    {/each}
-
-                    {#each previewResult.outcomes as result (result.output_name)}
-                      <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
-                        <span class="text-[11px] text-muted-foreground">{result.output_name}:</span>
+                  <div class="flex flex-col gap-4 border-t border-border/40 pt-4">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
                         <span class="text-xs font-semibold text-foreground">
-                          {result.outcome.grade_code ?? (result.outcome.is_passed == null
-                            ? "—"
-                            : result.outcome.is_passed
-                              ? "Pass"
-                              : "Fail")}
+                          {m.settings_calc_grade_bands()}
+                        </span>
+                        <span class="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          {form.gradeBands.length}
                         </span>
                       </div>
-                    {/each}
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        class="h-8 gap-1.5 text-xs cursor-pointer"
+                        onclick={() =>
+                          form.gradeBands.push({
+                            code: `band_${form.gradeBands.length + 1}`,
+                            label: "",
+                            minimum: "",
+                          })}
+                        disabled={isSaving}
+                      >
+                        <Plus size={13} /> {m.settings_calc_add_band()}
+                      </Button>
+                    </div>
+
+                    {#if form.gradeBands.length > 0}
+                      <div class="hidden grid-cols-12 gap-3 px-1 text-[11px] font-medium text-muted-foreground sm:grid">
+                        <span class="col-span-3">{m.settings_calc_band_code()}</span>
+                        <span class="col-span-5">{m.settings_calc_band_label()}</span>
+                        <span class="col-span-3">{m.settings_calc_band_min()}</span>
+                        <span class="col-span-1 text-center"></span>
+                      </div>
+
+                      <div class="flex flex-col gap-2.5">
+                        {#each form.gradeBands as band, index (index)}
+                          <div class="grid grid-cols-1 items-center gap-2.5 rounded-lg border border-border/50 bg-card/40 p-3 sm:grid-cols-12 sm:border-0 sm:bg-transparent sm:p-0">
+                            <div class="sm:col-span-3">
+                              <Input
+                                class="h-8 text-xs"
+                                placeholder={m.settings_calc_band_code()}
+                                bind:value={band.code}
+                                disabled={isSaving}
+                              />
+                            </div>
+                            <div class="sm:col-span-5">
+                              <Input
+                                class="h-8 text-xs"
+                                placeholder={m.settings_calc_band_label()}
+                                bind:value={band.label}
+                                disabled={isSaving}
+                              />
+                            </div>
+                            <div class="sm:col-span-3">
+                              <Input
+                                type="number"
+                                step="any"
+                                class="h-8 text-xs"
+                                placeholder={m.settings_calc_band_min()}
+                                bind:value={band.minimum}
+                                disabled={isSaving}
+                              />
+                            </div>
+                            <div class="flex justify-end sm:col-span-1 sm:justify-center">
+                              <Button
+                                type="button"
+                                size="icon-sm"
+                                variant="ghost"
+                                class="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer"
+                                aria-label="Remove grade band"
+                                onclick={() => form.gradeBands.splice(index, 1)}
+                                disabled={isSaving}
+                              >
+                                <Trash size={14} />
+                              </Button>
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                    {/if}
                   </div>
-                </CardContent>
-              </Card>
+                {/if}
+              </CardContent>
+            </Card>
+          {/if}
+
+          <!-- Ranking Rules & Preview Column -->
+          <div class="flex flex-col gap-6">
+            <!-- Ranking Policy Card -->
+            <Card class="overflow-hidden border-border/70 shadow-xs">
+              <CardContent class="flex flex-col gap-5 p-6">
+                <div class="flex items-center justify-between {form.rankingEnabled ? 'border-b border-border/40 pb-4' : ''}">
+                  <span class="text-xs font-semibold text-foreground">
+                    {m.settings_academic_policy_ranking_enabled()}
+                  </span>
+                  <Switch
+                    id="ranking-enabled"
+                    checked={form.rankingEnabled}
+                    onCheckedChange={(checked) => (form.rankingEnabled = checked)}
+                    disabled={isSaving}
+                  />
+                </div>
+
+                {#if form.rankingEnabled}
+                  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <div class="flex flex-col gap-1.5">
+                      <Label class="text-xs font-medium text-foreground">
+                        {m.settings_academic_policy_ranking_scope()}
+                      </Label>
+                      <Select
+                        type="single"
+                        value={form.rankingScope}
+                        onValueChange={(val) => {
+                          if (val)
+                            form.rankingScope = val as
+                              | "class"
+                              | "grade_level"
+                              | "org_unit"
+                              | "cohort";
+                        }}
+                        disabled={isSaving}
+                      >
+                        <SelectTrigger class="h-9 w-full text-xs">
+                          {scopeLabel(form.rankingScope)}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="class">{m.settings_academic_policy_scope_class()}</SelectItem>
+                          <SelectItem value="grade_level">{m.settings_academic_policy_scope_grade()}</SelectItem>
+                          <SelectItem value="org_unit">{m.settings_academic_policy_scope_org()}</SelectItem>
+                          <SelectItem value="cohort">{m.settings_academic_policy_scope_cohort()}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5">
+                      <Label class="text-xs font-medium text-foreground">
+                        {m.settings_academic_policy_tie_policy()}
+                      </Label>
+                      <Select
+                        type="single"
+                        value={form.tiePolicy}
+                        onValueChange={(val) => {
+                          if (val)
+                            form.tiePolicy = val as
+                              | "standard_competition"
+                              | "dense"
+                              | "fractional";
+                        }}
+                        disabled={isSaving}
+                      >
+                        <SelectTrigger class="h-9 w-full text-xs">
+                          {tieLabel(form.tiePolicy)}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard_competition">{m.settings_academic_policy_tie_standard()}</SelectItem>
+                          <SelectItem value="dense">{m.settings_academic_policy_tie_dense()}</SelectItem>
+                          <SelectItem value="fractional">{m.settings_academic_policy_tie_fractional()}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div class="flex flex-col gap-1.5 sm:col-span-2">
+                      <Label for="calc-max-rank" class="text-xs font-medium text-foreground">
+                        {m.settings_academic_policy_max_rank()}
+                      </Label>
+                      <Input
+                        id="calc-max-rank"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="h-9 text-xs"
+                        bind:value={form.maxDisplayedRank}
+                        disabled={isSaving}
+                      />
+                    </div>
+                  </div>
+                {/if}
+              </CardContent>
+            </Card>
+
+            <!-- Preview Trigger & Results -->
+            {#if !customPlanReadOnly}
+              <div class="flex flex-col gap-4">
+                <div class="flex items-center justify-between rounded-xl border border-border/70 bg-card/60 p-4">
+                  <span class="text-xs font-medium text-muted-foreground">
+                    {m.settings_calc_preview()}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-8 gap-1.5 text-xs cursor-pointer"
+                    onclick={handlePreview}
+                    disabled={isSaving || isPreviewing}
+                  >
+                    <Refresh size={13} class={isPreviewing ? "animate-spin" : ""} />
+                    {m.settings_calc_preview()}
+                  </Button>
+                </div>
+
+                {#if previewResult}
+                  <Card class="overflow-hidden border-border/70 shadow-xs">
+                    <CardContent class="flex flex-col gap-3 p-5">
+                      <div class="flex items-center justify-between border-b border-border/40 pb-2">
+                        <span class="text-xs font-semibold text-foreground">
+                          {m.settings_calc_preview_result()}
+                        </span>
+                        <span class="font-mono text-[11px] text-muted-foreground">
+                          v{previewResult.result.policy_version}
+                        </span>
+                      </div>
+
+                      <div class="flex flex-wrap gap-3 pt-1">
+                        {#each previewResult.result.outputs as output (output.name)}
+                          <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
+                            <span class="text-[11px] text-muted-foreground">{output.name}:</span>
+                            <span class="font-mono text-xs font-semibold text-foreground">{output.value}</span>
+                          </div>
+                        {/each}
+
+                        {#each previewResult.outcomes as result (result.output_name)}
+                          <div class="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-1.5">
+                            <span class="text-[11px] text-muted-foreground">{result.output_name}:</span>
+                            <span class="text-xs font-semibold text-foreground">
+                              {result.outcome.grade_code ?? (result.outcome.is_passed == null
+                                ? "—"
+                                : result.outcome.is_passed
+                                  ? "Pass"
+                                  : "Fail")}
+                            </span>
+                          </div>
+                        {/each}
+                      </div>
+                    </CardContent>
+                  </Card>
+                {/if}
+              </div>
             {/if}
           </div>
-        {/if}
+        </div>
       {/if}
     </div>
   </main>

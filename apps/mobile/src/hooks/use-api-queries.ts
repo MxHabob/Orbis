@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/api";
 import { api } from "@/lib/api/client";
 import { queryKeys } from "@/lib/api/query-keys";
+import { ApiRequestError } from "@/lib/api/types";
 import type {
   AcademicContextResponse,
   AttendanceDto,
@@ -408,16 +409,12 @@ export function useClassQuery(classId?: string) {
   return useQuery({
     queryKey: queryKeys.academic.class(classId || ""),
     queryFn: async (): Promise<ClassDto | null> => {
-      if (!classId) return null;
-      try {
-        const res = await api.getClass({
-          path: { id: classId },
-          throwOnError: true,
-        });
-        return extractData<ClassDto>(res);
-      } catch {
-        return null;
-      }
+      if (!classId) throw new Error("A class ID is required.");
+      const res = await api.getClass({
+        path: { id: classId },
+        throwOnError: true,
+      });
+      return extractData<ClassDto>(res);
     },
     enabled: Boolean(classId),
     staleTime: STALE_TIME,
@@ -498,19 +495,19 @@ export function useAttendanceQuery(filter?: {
       filter?.date || "",
     ),
     queryFn: async (): Promise<AttendanceDto[]> => {
-      try {
-        const res = await api.listAttendance({
-          query: {
-            class_id: filter?.classId,
-            student_id: filter?.studentId,
-            date: filter?.date,
-          } as any,
-          throwOnError: true,
-        });
-        return extractData<AttendanceDto[]>(res) ?? [];
-      } catch {
-        return [];
+      const res = await api.listAttendance({
+        query: {
+          class_id: filter?.classId,
+          student_id: filter?.studentId,
+          date: filter?.date,
+        } as any,
+        throwOnError: true,
+      });
+      const attendance = extractData<AttendanceDto[]>(res);
+      if (!Array.isArray(attendance)) {
+        throw new Error("The attendance response was not a list.");
       }
+      return attendance;
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -620,9 +617,18 @@ export function useLinkedStudentId(requestedId?: string) {
     isLinked,
     isResolving,
     isStudentRole,
-    identityError: isStudentRole && ownStudentQuery.isError,
+    identityError:
+      isStudentRole &&
+      ownStudentQuery.isError &&
+      !isApiNotFoundError(ownStudentQuery.error),
+    identityMissing:
+      isStudentRole && isApiNotFoundError(ownStudentQuery.error),
     retryIdentity: ownStudentQuery.refetch,
   };
+}
+
+export function isApiNotFoundError(error: unknown): boolean {
+  return error instanceof ApiRequestError && error.status === 404;
 }
 
 export function useStudentAttendanceQuery(studentId?: string) {
@@ -931,15 +937,15 @@ export function useSchedulesQuery(sessionId?: string) {
   return useQuery({
     queryKey: queryKeys.scheduling.lessons({ periodId: sessionId }),
     queryFn: async (): Promise<ScheduledLessonDto[]> => {
-      try {
-        const res = await api.listLessons({
-          query: { period_id: sessionId } as any,
-          throwOnError: true,
-        });
-        return extractData<ScheduledLessonDto[]>(res) ?? [];
-      } catch {
-        return [];
+      const res = await api.listLessons({
+        query: { period_id: sessionId } as any,
+        throwOnError: true,
+      });
+      const lessons = extractData<ScheduledLessonDto[]>(res);
+      if (!Array.isArray(lessons)) {
+        throw new Error("The lessons response was not a list.");
       }
+      return lessons;
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -982,16 +988,16 @@ export function useGuardiansQuery(studentId?: string) {
   return useQuery({
     queryKey: queryKeys.student.guardians(studentId || ""),
     queryFn: async (): Promise<GuardianDto[]> => {
-      if (!studentId) return [];
-      try {
-        const res = await api.listGuardians({
-          query: { student_id: studentId },
-          throwOnError: true,
-        });
-        return extractData<GuardianDto[]>(res) ?? [];
-      } catch {
-        return [];
+      if (!studentId) throw new Error("A student ID is required.");
+      const res = await api.listGuardians({
+        query: { student_id: studentId },
+        throwOnError: true,
+      });
+      const guardians = extractData<GuardianDto[]>(res);
+      if (!Array.isArray(guardians)) {
+        throw new Error("The guardians response was not a list.");
       }
+      return guardians;
     },
     enabled: Boolean(studentId),
     staleTime: STALE_TIME,

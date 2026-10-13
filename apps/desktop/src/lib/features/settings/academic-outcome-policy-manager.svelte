@@ -258,213 +258,215 @@
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
   <main class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide pb-28">
-    <div class="mx-auto w-full max-w-4xl flex flex-col gap-6">
+    <div class="w-full flex flex-col gap-6">
       {#if isLoading}
         <SettingsFormSkeleton />
       {:else if form}
-        <!-- Outcomes & Thresholds -->
-        <Card class="overflow-hidden border-border/70 shadow-xs">
-          <CardContent class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div class="flex flex-col gap-1.5">
-              <Label for="policy-passing" class="text-xs font-medium text-foreground">
-                {m.settings_academic_policy_passing_threshold()}
-              </Label>
-              <Input
-                id="policy-passing"
-                type="number"
-                min="0"
-                max="100"
-                class="h-9 text-xs"
-                bind:value={form.passingThreshold}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <Label for="policy-honors" class="text-xs font-medium text-foreground">
-                {m.settings_academic_policy_honors_threshold()}
-              </Label>
-              <Input
-                id="policy-honors"
-                type="number"
-                min="0"
-                max="100"
-                class="h-9 text-xs"
-                bind:value={form.honorsThreshold}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <Label for="policy-final-exam" class="text-xs font-medium text-foreground">
-                {m.settings_academic_policy_minimum_exam()}
-              </Label>
-              <Input
-                id="policy-final-exam"
-                type="number"
-                min="0"
-                class="h-9 text-xs"
-                bind:value={form.minimumFinalExamScore}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <Label for="policy-failed-subjects" class="text-xs font-medium text-foreground">
-                {m.settings_academic_policy_max_failed()}
-              </Label>
-              <Input
-                id="policy-failed-subjects"
-                type="number"
-                min="0"
-                step="1"
-                class="h-9 text-xs"
-                bind:value={form.maxFailedSubjects}
-                disabled={isSaving}
-              />
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-              <Label for="policy-attendance" class="text-xs font-medium text-foreground">
-                {m.settings_academic_policy_min_attendance()}
-              </Label>
-              <Input
-                id="policy-attendance"
-                type="number"
-                min="0"
-                max="100"
-                class="h-9 text-xs"
-                bind:value={form.minimumAttendance}
-                disabled={isSaving}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- Ranking & Precision -->
-        <Card class="overflow-hidden border-border/70 shadow-xs">
-          <CardContent class="flex flex-col gap-5 p-6">
-            <div class="flex items-center justify-between {form.rankingEnabled ? 'border-b border-border/40 pb-4' : ''}">
-              <span class="text-xs font-semibold text-foreground">
-                {m.settings_academic_policy_ranking_enabled()}
-              </span>
-              <Switch
-                id="policy-ranking"
-                checked={form.rankingEnabled}
-                onCheckedChange={(checked) => {
-                  if (form) form.rankingEnabled = checked;
-                }}
-                disabled={isSaving}
-              />
-            </div>
-
-            {#if form.rankingEnabled}
-              <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_ranking_scope()}
-                  </Label>
-                  <Select
-                    type="single"
-                    value={form.rankingScope}
-                    onValueChange={(val) => {
-                      if (form && val) form.rankingScope = val as RankingScope;
-                    }}
-                    disabled={isSaving}
-                  >
-                    <SelectTrigger class="h-9 w-full text-xs">
-                      {scopeLabel(form.rankingScope)}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="class">{m.settings_academic_policy_scope_class()}</SelectItem>
-                      <SelectItem value="grade_level">{m.settings_academic_policy_scope_grade()}</SelectItem>
-                      <SelectItem value="org_unit">{m.settings_academic_policy_scope_org()}</SelectItem>
-                      <SelectItem value="cohort">{m.settings_academic_policy_scope_cohort()}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_tie_policy()}
-                  </Label>
-                  <Select
-                    type="single"
-                    value={form.tiePolicy}
-                    onValueChange={(val) => {
-                      if (form && val) form.tiePolicy = val as TiePolicy;
-                    }}
-                    disabled={isSaving}
-                  >
-                    <SelectTrigger class="h-9 w-full text-xs">
-                      {tieLabel(form.tiePolicy)}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="standard_competition">{m.settings_academic_policy_tie_standard()}</SelectItem>
-                      <SelectItem value="dense">{m.settings_academic_policy_tie_dense()}</SelectItem>
-                      <SelectItem value="fractional">{m.settings_academic_policy_tie_fractional()}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <Label class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_rounding()}
-                  </Label>
-                  <Select
-                    type="single"
-                    value={form.roundingMode}
-                    onValueChange={(val) => {
-                      if (form && val) form.roundingMode = val as RoundingMode;
-                    }}
-                    disabled={isSaving}
-                  >
-                    <SelectTrigger class="h-9 w-full text-xs">
-                      {roundingLabel(form.roundingMode)}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="round_half_up">{m.settings_academic_policy_round_half_up()}</SelectItem>
-                      <SelectItem value="round_up">{m.settings_academic_policy_round_up()}</SelectItem>
-                      <SelectItem value="round_down">{m.settings_academic_policy_round_down()}</SelectItem>
-                      <SelectItem value="truncate">{m.settings_academic_policy_truncate()}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div class="flex flex-col gap-1.5">
-                  <Label for="policy-decimals" class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_decimal_places()}
-                  </Label>
-                  <Input
-                    id="policy-decimals"
-                    type="number"
-                    min="0"
-                    max="28"
-                    step="1"
-                    class="h-9 text-xs"
-                    bind:value={form.decimalPlaces}
-                    disabled={isSaving}
-                  />
-                </div>
-
-                <div class="flex flex-col gap-1.5 sm:col-span-2">
-                  <Label for="policy-max-rank" class="text-xs font-medium text-foreground">
-                    {m.settings_academic_policy_max_rank()}
-                  </Label>
-                  <Input
-                    id="policy-max-rank"
-                    type="number"
-                    min="1"
-                    step="1"
-                    class="h-9 text-xs"
-                    bind:value={form.maxDisplayedRank}
-                    disabled={isSaving}
-                  />
-                </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 w-full items-start">
+          <!-- Outcomes & Thresholds -->
+          <Card class="overflow-hidden border-border/70 shadow-xs">
+            <CardContent class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2">
+              <div class="flex flex-col gap-1.5">
+                <Label for="policy-passing" class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_passing_threshold()}
+                </Label>
+                <Input
+                  id="policy-passing"
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="h-9 text-xs"
+                  bind:value={form.passingThreshold}
+                  disabled={isSaving}
+                />
               </div>
-            {/if}
-          </CardContent>
-        </Card>
+
+              <div class="flex flex-col gap-1.5">
+                <Label for="policy-honors" class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_honors_threshold()}
+                </Label>
+                <Input
+                  id="policy-honors"
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="h-9 text-xs"
+                  bind:value={form.honorsThreshold}
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label for="policy-final-exam" class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_minimum_exam()}
+                </Label>
+                <Input
+                  id="policy-final-exam"
+                  type="number"
+                  min="0"
+                  class="h-9 text-xs"
+                  bind:value={form.minimumFinalExamScore}
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5">
+                <Label for="policy-failed-subjects" class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_max_failed()}
+                </Label>
+                <Input
+                  id="policy-failed-subjects"
+                  type="number"
+                  min="0"
+                  step="1"
+                  class="h-9 text-xs"
+                  bind:value={form.maxFailedSubjects}
+                  disabled={isSaving}
+                />
+              </div>
+
+              <div class="flex flex-col gap-1.5 sm:col-span-2">
+                <Label for="policy-attendance" class="text-xs font-medium text-foreground">
+                  {m.settings_academic_policy_min_attendance()}
+                </Label>
+                <Input
+                  id="policy-attendance"
+                  type="number"
+                  min="0"
+                  max="100"
+                  class="h-9 text-xs"
+                  bind:value={form.minimumAttendance}
+                  disabled={isSaving}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- Ranking & Precision -->
+          <Card class="overflow-hidden border-border/70 shadow-xs">
+            <CardContent class="flex flex-col gap-5 p-6">
+              <div class="flex items-center justify-between {form.rankingEnabled ? 'border-b border-border/40 pb-4' : ''}">
+                <span class="text-xs font-semibold text-foreground">
+                  {m.settings_academic_policy_ranking_enabled()}
+                </span>
+                <Switch
+                  id="policy-ranking"
+                  checked={form.rankingEnabled}
+                  onCheckedChange={(checked) => {
+                    if (form) form.rankingEnabled = checked;
+                  }}
+                  disabled={isSaving}
+                />
+              </div>
+
+              {#if form.rankingEnabled}
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div class="flex flex-col gap-1.5">
+                    <Label class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_ranking_scope()}
+                    </Label>
+                    <Select
+                      type="single"
+                      value={form.rankingScope}
+                      onValueChange={(val) => {
+                        if (form && val) form.rankingScope = val as RankingScope;
+                      }}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger class="h-9 w-full text-xs">
+                        {scopeLabel(form.rankingScope)}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="class">{m.settings_academic_policy_scope_class()}</SelectItem>
+                        <SelectItem value="grade_level">{m.settings_academic_policy_scope_grade()}</SelectItem>
+                        <SelectItem value="org_unit">{m.settings_academic_policy_scope_org()}</SelectItem>
+                        <SelectItem value="cohort">{m.settings_academic_policy_scope_cohort()}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <Label class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_tie_policy()}
+                    </Label>
+                    <Select
+                      type="single"
+                      value={form.tiePolicy}
+                      onValueChange={(val) => {
+                        if (form && val) form.tiePolicy = val as TiePolicy;
+                      }}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger class="h-9 w-full text-xs">
+                        {tieLabel(form.tiePolicy)}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard_competition">{m.settings_academic_policy_tie_standard()}</SelectItem>
+                        <SelectItem value="dense">{m.settings_academic_policy_tie_dense()}</SelectItem>
+                        <SelectItem value="fractional">{m.settings_academic_policy_tie_fractional()}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <Label class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_rounding()}
+                    </Label>
+                    <Select
+                      type="single"
+                      value={form.roundingMode}
+                      onValueChange={(val) => {
+                        if (form && val) form.roundingMode = val as RoundingMode;
+                      }}
+                      disabled={isSaving}
+                    >
+                      <SelectTrigger class="h-9 w-full text-xs">
+                        {roundingLabel(form.roundingMode)}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="round_half_up">{m.settings_academic_policy_round_half_up()}</SelectItem>
+                        <SelectItem value="round_up">{m.settings_academic_policy_round_up()}</SelectItem>
+                        <SelectItem value="round_down">{m.settings_academic_policy_round_down()}</SelectItem>
+                        <SelectItem value="truncate">{m.settings_academic_policy_truncate()}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <Label for="policy-decimals" class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_decimal_places()}
+                    </Label>
+                    <Input
+                      id="policy-decimals"
+                      type="number"
+                      min="0"
+                      max="28"
+                      step="1"
+                      class="h-9 text-xs"
+                      bind:value={form.decimalPlaces}
+                      disabled={isSaving}
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-1.5 sm:col-span-2">
+                    <Label for="policy-max-rank" class="text-xs font-medium text-foreground">
+                      {m.settings_academic_policy_max_rank()}
+                    </Label>
+                    <Input
+                      id="policy-max-rank"
+                      type="number"
+                      min="1"
+                      step="1"
+                      class="h-9 text-xs"
+                      bind:value={form.maxDisplayedRank}
+                      disabled={isSaving}
+                    />
+                  </div>
+                </div>
+              {/if}
+            </CardContent>
+          </Card>
+        </div>
       {:else}
         <div class="rounded-xl border border-destructive/30 bg-card p-6 text-center">
           <p class="text-sm font-semibold text-destructive">

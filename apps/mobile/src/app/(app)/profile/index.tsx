@@ -9,6 +9,10 @@ import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { SupportDrawer } from "@/components/support-drawer";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import {
+  SettingsPanelDivider,
+  SettingsPanelTitle,
+} from "@/components/ui/settings-panel";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
 import { useCurrentOrgQuery } from "@/hooks/use-api-queries";
@@ -204,7 +208,7 @@ export default function ProfileScreen() {
         }}
       >
       <Card variant="default" padding="none">
-        <PanelTitle title={t("profile_title")} />
+        <SettingsPanelTitle title={t("profile_title")} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${displayName}. ${roleSummary}. ${t("profile_menu_account")}`}
@@ -227,7 +231,7 @@ export default function ProfileScreen() {
             </Text>
         </View>
         </Pressable>
-        <PanelDivider />
+        <SettingsPanelDivider />
         <ProfileDataRow
           label={t("profile_email")}
           description={
@@ -247,7 +251,7 @@ export default function ProfileScreen() {
       />
 
       <Card variant="default" padding="none">
-        <PanelTitle title={t("updates_title")} />
+        <SettingsPanelTitle title={t("updates_title")} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t("updates_app_version")}: ${appVersion}. ${t("updates_check_button")}`}
@@ -305,18 +309,6 @@ export default function ProfileScreen() {
   );
 }
 
-function PanelTitle({ title }: { title: string }) {
-  return (
-    <View className="border-b border-border bg-secondary/50 px-four py-three">
-      <Text className="text-sm font-medium text-foreground">{title}</Text>
-    </View>
-  );
-}
-
-function PanelDivider() {
-  return <View className="h-px bg-border" />;
-}
-
 function ProfileDataRow({
   label,
   description,
@@ -362,10 +354,10 @@ function ProfileMenuGroup({
 }) {
   return (
     <Card variant="default" padding="none">
-      <PanelTitle title={title} />
+      <SettingsPanelTitle title={title} />
       {items.map((item, index) => (
         <React.Fragment key={item.id}>
-          {index > 0 ? <PanelDivider /> : null}
+          {index > 0 ? <SettingsPanelDivider /> : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${item.title}. ${item.subtitle}`}

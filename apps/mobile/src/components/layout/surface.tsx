@@ -60,7 +60,7 @@ export interface SurfaceProps extends ViewProps {
 
 export function Surface({
   variant = "flat",
-  radius = "xl",
+  radius = "md",
   padding,
   style,
   children,

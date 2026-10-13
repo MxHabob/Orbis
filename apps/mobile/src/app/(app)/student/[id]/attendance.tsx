@@ -85,7 +85,6 @@ export default function StudentAttendanceScreen() {
       <Card
         variant="default"
         padding="four"
-        className="bg-card border border-border/80 shadow-sm"
       >
         <View className="flex-row items-center justify-between pb-three">
           <View className="gap-half">
@@ -97,7 +96,7 @@ export default function StudentAttendanceScreen() {
             </Text>
           </View>
 
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+          <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/10">
             <ClipboardDocumentCheck size={28} color={theme.primary} />
           </View>
         </View>
@@ -106,7 +105,7 @@ export default function StudentAttendanceScreen() {
         <View className="flex-row items-center justify-between border-t border-border/60 pt-three">
           <View className="flex-row items-center gap-two">
             <View className="h-7 w-7 items-center justify-center rounded-full bg-success/15">
-              <CheckCircle size={15} color="#16A34A" />
+              <CheckCircle size={15} color={theme.success} />
             </View>
             <View>
               <Text className="text-xs font-bold text-foreground">{formatNumber(presentCount)}</Text>
@@ -126,7 +125,7 @@ export default function StudentAttendanceScreen() {
 
           <View className="flex-row items-center gap-two">
             <View className="h-7 w-7 items-center justify-center rounded-full bg-warning/15">
-              <Clock size={15} color="#F59E0B" />
+              <Clock size={15} color={theme.warning} />
             </View>
             <View>
               <Text className="text-xs font-bold text-foreground">{formatNumber(lateCount)}</Text>
@@ -181,7 +180,6 @@ export default function StudentAttendanceScreen() {
                 key={record.id}
                 variant="outline"
                 padding="four"
-                className="bg-card border-border/80 shadow-2xs"
               >
                 <View className="flex-row items-center justify-between pb-two">
                   <Text className="text-sm font-bold text-foreground">

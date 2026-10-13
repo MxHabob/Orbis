@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useToast } from "@/components/ui/toast";
 import { useClassesQuery, useMyStudentQuery } from "@/hooks/use-api-queries";
+import { isApiNotFoundError } from "@/hooks/use-api-queries";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import type { ClassDto } from "@/lib/api/types";
@@ -63,20 +64,20 @@ export default function HomeTabScreen() {
         .map(getRoleMode)
         .filter((role): role is RoleMode => role !== null),
     );
-    if (detected.size === 0) detected.add("parent");
     return (["parent", "student", "teacher"] as const).filter((role) =>
       detected.has(role),
     );
   }, [effectiveContext?.effective_role, effectiveContext?.roles, user?.roles]);
-  const initialRole = availableRoles.includes("teacher")
+  const initialRole: RoleMode | null = availableRoles.includes("teacher")
     ? "teacher"
     : availableRoles.includes("student")
       ? "student"
-      : "parent";
-  const [selectedRole, setSelectedRole] = useState<RoleMode>(initialRole);
-  const activeRole = availableRoles.includes(selectedRole)
-    ? selectedRole
-    : initialRole;
+      : (availableRoles[0] ?? null);
+  const [selectedRole, setSelectedRole] = useState<RoleMode | null>(initialRole);
+  const activeRole =
+    selectedRole && availableRoles.includes(selectedRole)
+      ? selectedRole
+      : initialRole;
   const classesQuery = useClassesQuery(activeRole === "teacher");
   const studentQuery = useMyStudentQuery(activeRole === "student");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -226,9 +227,10 @@ export default function HomeTabScreen() {
               onPress: () => router.push("/(app)/student/me/attendance"),
             },
           ]
-        : [
-            {
-              id: "attendance",
+        : activeRole === "teacher"
+          ? [
+              {
+                id: "attendance",
               title: t("teacher_mark_attendance"),
               icon: <Attendance size={38} />,
               onPress: () => router.push("/(app)/class/attendance"),
@@ -251,7 +253,8 @@ export default function HomeTabScreen() {
               icon: <Assignments size={38} />,
               onPress: () => router.push("/(app)/class/homework"),
             },
-          ];
+          ]
+        : [];
 
   return (
     <ScreenScrollView
@@ -283,6 +286,13 @@ export default function HomeTabScreen() {
       <HomeSection title={t("dashboard_quick_actions")}>
         <QuickActionRow items={serviceTiles} />
       </HomeSection>
+
+      {!activeRole ? (
+        <EmptyState
+          title={t("home_role_unavailable")}
+          icon={<StudentBoy size={36} color={theme.textSecondary} />}
+        />
+      ) : null}
 
       {activeRole === "parent" ? (
         <HomeSection title={t("home_dependents")}>
@@ -319,6 +329,11 @@ export default function HomeTabScreen() {
         <HomeSection title={t("student_profile")}>
           {studentQuery.isLoading ? (
             <HomeTileSkeletonGrid />
+          ) : studentQuery.isError && isApiNotFoundError(studentQuery.error) ? (
+            <EmptyState
+              title={t("home_no_student_profile")}
+              icon={<StudentBoy size={36} color={theme.textSecondary} />}
+            />
           ) : studentQuery.isError ? (
             <EmptyState
               title={t("home_student_load_error")}

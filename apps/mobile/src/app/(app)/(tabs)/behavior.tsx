@@ -158,7 +158,6 @@ export default function BehaviorTabScreen() {
       <Card
         variant="default"
         padding="four"
-        className="bg-card border border-border/80 shadow-sm"
       >
         <View className="flex-row items-center justify-between pb-three">
           <View className="gap-half">
@@ -179,7 +178,7 @@ export default function BehaviorTabScreen() {
             </View>
           </View>
 
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+          <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/10">
             <ShieldCheck size={28} color={theme.primary} />
           </View>
         </View>
@@ -188,7 +187,7 @@ export default function BehaviorTabScreen() {
         <View className="flex-row items-center justify-between border-t border-border/60 pt-three">
           <View className="flex-row items-center gap-two">
             <View className="h-7 w-7 items-center justify-center rounded-full bg-success/15">
-              <CheckCircle size={16} color={theme.chart3 || "#22C55E"} />
+              <CheckCircle size={16} color={theme.success} />
             </View>
             <View>
               <Text className="text-xs font-bold text-foreground">
@@ -255,7 +254,6 @@ export default function BehaviorTabScreen() {
                 key={record.id}
                 variant="outline"
                 padding="four"
-                className="bg-card border-border/80 shadow-2xs"
               >
                 <View className="flex-row items-center justify-between pb-two">
                   <View className="flex-row items-center gap-two">

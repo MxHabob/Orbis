@@ -133,7 +133,7 @@ export default function ClassGradesScreen() {
                     setSelectedSubjectId(classSubject.id);
                     setScores({});
                   }}
-                  className={`min-h-10 items-center justify-center rounded-lg border px-three py-two ${
+                  className={`min-h-10 items-center justify-center rounded-md border px-three py-two ${
                     isSelected
                       ? "border-primary bg-primary/10"
                       : "border-border bg-card"

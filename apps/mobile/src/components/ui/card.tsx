@@ -47,6 +47,7 @@ export interface CardProps extends ViewProps {
   variant?: "default" | "elevated" | "outline" | "flat" | "interactive";
   onPress?: () => void;
   padding?: SpacingScale;
+  className?: string;
   children?: React.ReactNode;
 }
 
@@ -55,19 +56,20 @@ export const Card = React.memo<CardProps>(
     variant = "default",
     onPress,
     padding = "four",
+    className: customClassName,
     style,
     children,
     ...props
   }) => {
     const variantClasses: Record<NonNullable<CardProps["variant"]>, string> = {
-      default: "flex-col overflow-hidden rounded-md border border-border bg-card",
+      default: "overflow-hidden rounded-md border border-border bg-card",
       elevated:
-        "flex-col overflow-hidden rounded-md border border-border bg-card shadow-sm",
+        "overflow-hidden rounded-md border border-border bg-card shadow-sm",
       outline:
-        "flex-col overflow-hidden rounded-md border border-border bg-transparent",
+        "overflow-hidden rounded-md border border-border bg-transparent",
       flat: "bg-transparent",
       interactive:
-        "flex-col overflow-hidden rounded-md border border-border border-b-2 border-b-btn-shadow-secondary bg-card",
+        "overflow-hidden rounded-md border border-border border-b-2 border-b-btn-shadow-secondary bg-card",
     };
     const theme = useTheme();
     const tactilePress = useTactilePress(
@@ -79,7 +81,14 @@ export const Card = React.memo<CardProps>(
       onPress && variant !== "interactive"
         ? "border border-border border-b-2 border-b-btn-shadow-secondary"
         : "";
-    const className = `${paddingClasses[padding]} ${variantClasses[variant]} ${tactileClass}`;
+    const className = [
+      paddingClasses[padding],
+      variantClasses[variant],
+      tactileClass,
+      customClassName,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     if (onPress) {
       return (

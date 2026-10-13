@@ -26,6 +26,7 @@ interface StudentRecordLayoutProps {
   isPending: boolean;
   isError: boolean;
   canRetry?: boolean;
+  errorTitle?: string;
   errorDescription?: string;
   onRetry: () => void;
   children: ReactNode;
@@ -41,6 +42,7 @@ export function StudentRecordLayout({
   isPending,
   isError,
   canRetry = true,
+  errorTitle,
   errorDescription,
   onRetry,
   children,
@@ -76,14 +78,14 @@ export function StudentRecordLayout({
       >
         {isPending ? (
           <View className="gap-four pt-two">
-            <Skeleton width="100%" height={112} borderRadius={16} />
-            <Skeleton width="100%" height={176} borderRadius={16} />
-            <Skeleton width="100%" height={128} borderRadius={16} />
+            <Skeleton width="100%" height={112} borderRadius={6} />
+            <Skeleton width="100%" height={176} borderRadius={6} />
+            <Skeleton width="100%" height={128} borderRadius={6} />
           </View>
         ) : isError ? (
           <View className="flex-1 items-center justify-center py-twelve">
             <EmptyState
-              title={t("common_error")}
+              title={errorTitle ?? t("common_error")}
               description={errorDescription || t("common_retry")}
               actionTitle={canRetry ? t("common_retry") : undefined}
               onAction={canRetry ? onRetry : undefined}

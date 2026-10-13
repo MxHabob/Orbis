@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
@@ -100,7 +100,6 @@ export default function StudentIndexScreen() {
           <Card
             variant="default"
             padding="four"
-            className="bg-card border border-border/80 shadow-sm"
           >
             <View className="flex-row items-center gap-four">
               <Avatar
@@ -205,7 +204,7 @@ export default function StudentIndexScreen() {
               {t("profile_title") || "Student Information"}
             </Text>
 
-            <Card variant="outline" padding="four" className="bg-card gap-three border-border/80">
+            <Card variant="default" padding="four" className="gap-three">
               {student.date_of_birth ? (
                 <DetailRow
                   label={t("student_birth_date")}
@@ -250,12 +249,15 @@ function ModuleGridCard({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <Card
+      variant="interactive"
+      padding="four"
       accessibilityRole="button"
+      accessibilityLabel={`${title}. ${subtitle}`}
       onPress={onPress}
-      className="flex-1 rounded-2xl border border-border/80 bg-card p-four shadow-xs active:bg-secondary/40 gap-two"
+      className="min-h-28 flex-1 gap-three"
     >
-      <View className="h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+      <View className="h-10 w-10 items-center justify-center rounded-md bg-primary/10">
         {icon}
       </View>
       <View className="gap-half">
@@ -264,7 +266,7 @@ function ModuleGridCard({
           {subtitle}
         </Text>
       </View>
-    </Pressable>
+    </Card>
   );
 }
 

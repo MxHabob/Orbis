@@ -82,7 +82,6 @@ export default function StudentFeesScreen() {
       <Card
         variant="default"
         padding="four"
-        className="bg-card border border-border/80 shadow-sm"
       >
         <View className="flex-row items-center justify-between">
           <View className="gap-half">
@@ -98,7 +97,7 @@ export default function StudentFeesScreen() {
             </Text>
           </View>
 
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+          <View className="h-12 w-12 items-center justify-center rounded-md bg-primary/10">
             <CreditCard size={28} color={theme.primary} />
           </View>
         </View>
@@ -129,7 +128,7 @@ export default function StudentFeesScreen() {
                 key={fee.id}
                 variant="outline"
                 padding="four"
-                className="bg-card border-border/80 shadow-2xs gap-two"
+                className="gap-two"
               >
                 <View className="flex-row items-center justify-between pb-one">
                   <Text className="text-base font-bold text-foreground">

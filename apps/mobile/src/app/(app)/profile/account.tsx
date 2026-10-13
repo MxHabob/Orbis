@@ -14,6 +14,10 @@ import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  SettingsPanelDivider,
+  SettingsPanelTitle,
+} from "@/components/ui/settings-panel";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
@@ -78,7 +82,7 @@ export default function AccountScreen() {
         }}
       >
         <Card variant="default" padding="none">
-          <PanelTitle title={t("profile_title")} />
+          <SettingsPanelTitle title={t("profile_title")} />
           <View
             className={`min-h-24 flex-row items-center gap-four px-four py-three ${
               isArabic ? "flex-row-reverse" : ""
@@ -106,13 +110,13 @@ export default function AccountScreen() {
               </Text>
             </View>
           </View>
-          <PanelDivider />
+          <SettingsPanelDivider />
           <AccountRow
             label={t("auth_full_name")}
             description={t("profile_account_description")}
             value={displayName}
           />
-          <PanelDivider />
+          <SettingsPanelDivider />
           <AccountRow
             label={t("profile_email")}
             description={
@@ -122,13 +126,13 @@ export default function AccountScreen() {
             }
             value={user.email || t("common_unknown")}
           />
-          <PanelDivider />
+          <SettingsPanelDivider />
           <AccountRow
             label={t("profile_phone")}
             description={t("profile_phone")}
             value={user.phone || t("common_unknown")}
           />
-          <PanelDivider />
+          <SettingsPanelDivider />
           <AccountRow
             label={t("profile_roles")}
             description={t("profile_role")}
@@ -140,7 +144,7 @@ export default function AccountScreen() {
           />
           {user.created_at ? (
             <>
-              <PanelDivider />
+              <SettingsPanelDivider />
               <AccountRow
                 label={t("profile_account_created")}
                 description={t("profile_account_read_only")}
@@ -148,7 +152,7 @@ export default function AccountScreen() {
               />
             </>
           ) : null}
-          <PanelDivider />
+          <SettingsPanelDivider />
           <AccountRow
             label={t("profile_account_status")}
             description={t("profile_account_status")}
@@ -162,18 +166,6 @@ export default function AccountScreen() {
       </ScreenScrollView>
     </View>
   );
-}
-
-function PanelTitle({ title }: { title: string }) {
-  return (
-    <View className="border-b border-border bg-secondary/50 px-four py-three">
-      <Text className="text-sm font-medium text-foreground">{title}</Text>
-    </View>
-  );
-}
-
-function PanelDivider() {
-  return <View className="h-px bg-border" />;
 }
 
 function AccountRow({

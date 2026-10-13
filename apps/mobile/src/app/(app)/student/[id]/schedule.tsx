@@ -84,7 +84,7 @@ export default function StudentScheduleScreen() {
               accessibilityRole="tab"
               accessibilityState={{ selected: isSelected }}
               onPress={() => setSelectedDayIndex(index)}
-              className={`flex-1 items-center justify-center rounded-xl py-two ${
+              className={`flex-1 items-center justify-center rounded-md py-two ${
                 isSelected
                   ? "bg-primary shadow-xs"
                   : "border border-border/80 bg-card"
@@ -125,7 +125,6 @@ export default function StudentScheduleScreen() {
                 key={lesson.id}
                 variant="outline"
                 padding="four"
-                className="bg-card border-border/80 shadow-2xs"
               >
                 <View className="flex-row items-center justify-between pb-two">
                   <View className="gap-half flex-1">

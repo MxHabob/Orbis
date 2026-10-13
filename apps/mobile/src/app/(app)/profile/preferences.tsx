@@ -12,6 +12,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Card } from "@/components/ui/card";
+import {
+  SettingsPanelDivider,
+  SettingsPanelTitle,
+} from "@/components/ui/settings-panel";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
 import { useI18n } from "@/lib/i18n";
@@ -96,7 +100,7 @@ export default function PreferencesScreen() {
         }}
       >
         <Card variant="default" padding="none">
-          <PanelTitle title={t("pref_language")} />
+          <SettingsPanelTitle title={t("pref_language")} />
           <PreferenceRow
             label={t("pref_language_ar")}
             description={t("pref_language_ar_sub")}
@@ -104,7 +108,7 @@ export default function PreferencesScreen() {
             checkColor={theme.primaryForeground}
             onPress={() => void handleLocaleChange("ar")}
           />
-          <PanelDivider />
+          <SettingsPanelDivider />
           <PreferenceRow
             label={t("pref_language_en")}
             description={t("pref_language_en_sub")}
@@ -115,10 +119,10 @@ export default function PreferencesScreen() {
         </Card>
 
         <Card variant="default" padding="none">
-          <PanelTitle title={t("pref_theme")} />
+          <SettingsPanelTitle title={t("pref_theme")} />
           {themeOptions.map((option, index) => (
             <React.Fragment key={option}>
-              {index > 0 ? <PanelDivider /> : null}
+              {index > 0 ? <SettingsPanelDivider /> : null}
               <PreferenceRow
                 label={t(`pref_theme_${option}`)}
                 selected={themePreference === option}
@@ -131,7 +135,7 @@ export default function PreferencesScreen() {
         </Card>
 
         <Card variant="default" padding="none">
-          <PanelTitle title={t("pref_notifications")} />
+          <SettingsPanelTitle title={t("pref_notifications")} />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("pref_notifications")}
@@ -153,18 +157,6 @@ export default function PreferencesScreen() {
       </ScreenScrollView>
     </View>
   );
-}
-
-function PanelTitle({ title }: { title: string }) {
-  return (
-    <View className="border-b border-border bg-secondary/50 px-four py-three">
-      <Text className="text-sm font-medium text-foreground">{title}</Text>
-    </View>
-  );
-}
-
-function PanelDivider() {
-  return <View className="h-px bg-border" />;
 }
 
 function PreferenceRow({
