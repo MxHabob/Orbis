@@ -16,9 +16,17 @@ import { Bold, Component, DocumentPage, Grid, H1, Photo, SettingsAlt, Wrench } f
 
 let {
   store,
+  onopen,
 }: {
   store: EditorStore;
+  onopen?: () => void;
 } = $props();
+
+function togglePanel(id: string) {
+  const isOpening = store.activeRailPanel !== id;
+  store.toggleRailPanel(id);
+  if (isOpening) onopen?.();
+}
 
 type RailItem = {
   id: string;
@@ -49,7 +57,7 @@ const topItems: RailItem[] = [
             type="button"
             class="rail-btn"
             class:active={isActive}
-            onclick={() => store.toggleRailPanel(item.id)}
+            onclick={() => togglePanel(item.id)}
             aria-pressed={isActive}
           >
             <RailIcon size={20} strokeWidth={isActive ? 2.2 : 1.6} />

@@ -7,7 +7,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { Button } from "@orbis/ui/button";
-import { ClockRotateRight, Code, Keyframes, Search, XMark } from "@orbis/icons";
+import { ClockRotateRight, Code, Keyframes, XMark } from "@orbis/icons";
 
 // Panels
 import AssetPanel from "../panels/asset-panel.svelte";
@@ -17,14 +17,15 @@ import HistoryPanel from "../panels/history-panel.svelte";
 import ElementsPanel from "../panels/elements-panel.svelte";
 import TextPresetsPanel from "../panels/text-presets-panel.svelte";
 import PageSetupPanel from "../panels/page-setup-panel.svelte";
+import ReadyTemplatesPanel from "../panels/ready-templates-panel.svelte";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
-
-import { Input } from "@orbis/ui/input";
 
 let {
   store,
+  orgId,
 }: {
   store: EditorStore;
+  orgId: string;
 } = $props();
 
 const isOpen = $derived(store.activeRailPanel !== null);
@@ -123,19 +124,7 @@ function stopResize() {
         </Tabs>
 
       {:else if panel === "templates"}
-        <div class="flyout-placeholder">
-          <div class="px-3 py-2">
-            <div class="relative">
-              <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type="text" placeholder={m.template_search_templates()} bind:value={searchQuery} class="h-9 text-xs ps-8" />
-            </div>
-          </div>
-          <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
-            <p class="text-xs text-muted-foreground text-center">
-              {m.template_msg_soon_templates()}
-            </p>
-          </div>
-        </div>
+        <ReadyTemplatesPanel {orgId} />
 
       {:else if panel === "elements"}
         <ElementsPanel {store} />

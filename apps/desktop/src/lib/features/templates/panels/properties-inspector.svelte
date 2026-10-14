@@ -28,7 +28,7 @@ import {
 let {
   store,
   onclose,
-  width = $bindable(320),
+  width = $bindable(300),
 }: {
   store: EditorStore;
   onclose?: () => void;
@@ -160,7 +160,7 @@ function startResize(event: PointerEvent) {
     const delta = direction === "rtl"
       ? moveEvent.clientX - startX
       : startX - moveEvent.clientX;
-    width = Math.min(440, Math.max(260, startWidth + delta));
+    width = Math.min(400, Math.max(260, startWidth + delta));
   };
   const stopResize = () => {
     window.removeEventListener("pointermove", handleMove);
@@ -177,7 +177,7 @@ function resizeWithKeyboard(event: KeyboardEvent) {
   event.preventDefault();
   const direction = getComputedStyle(document.documentElement).direction;
   const expands = direction === "rtl" ? event.key === "ArrowRight" : event.key === "ArrowLeft";
-  width = Math.min(440, Math.max(260, width + (expands ? 16 : -16)));
+  width = Math.min(400, Math.max(260, width + (expands ? 16 : -16)));
 }
 
 // ── Table Column Helpers ─────────────────────────────────────
@@ -286,7 +286,10 @@ function applyYemeniCertificateColumnsPreset() {
             variant="outline"
             size="sm"
             class="w-full"
-            onclick={() => store.activeRailPanel = "page-setup"}
+            onclick={() => {
+              onclose?.();
+              store.activeRailPanel = "page-setup";
+            }}
           >
             <AdjustmentsHorizontal class="size-4" />
             إعداد الصفحة
@@ -1226,7 +1229,7 @@ function applyYemeniCertificateColumnsPreset() {
 <style>
   .properties-inspector {
     position: relative;
-    width: 320px;
+    width: 300px;
     height: 100%;
     max-width: min(440px, 40vw);
     background: var(--color-card);

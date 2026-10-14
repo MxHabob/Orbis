@@ -62,7 +62,7 @@ let store = createEditorStore({
   pages: [{ type: "Page", id: "page-root", children: [] }],
 });
 
-let propertiesWidth = $state(320);
+let propertiesWidth = $state(300);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
 let unregisterTemplateAiEditor: (() => void) | null = null;
@@ -70,8 +70,15 @@ let unregisterTemplateAiEditor: (() => void) | null = null;
 $effect(() => {
   if (store.selectedIds.length > 0) {
     isPropertiesOpen = true;
+    store.activeRailPanel = null;
   }
 });
+
+function toggleProperties() {
+  const shouldOpen = !isPropertiesOpen;
+  isPropertiesOpen = shouldOpen;
+  if (shouldOpen) store.activeRailPanel = null;
+}
 
 // Initialize
 async function initEditor() {
@@ -461,13 +468,13 @@ onMount(() => {
     </div>
   {:else}
     <div class="editor-main">
-      <SideRail {store} />
+      <SideRail {store} onopen={() => isPropertiesOpen = false} />
 
       <div class="canvas-area">
         <ContextToolbar
           {store}
           isPropertiesVisible={isPropertiesOpen}
-          ontoggleproperties={() => isPropertiesOpen = !isPropertiesOpen}
+          ontoggleproperties={toggleProperties}
           templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
           onback={goBack}
           onsave={saveTemplate}
@@ -488,7 +495,7 @@ onMount(() => {
           <CanvasRoot {store} />
         {/if}
 
-        <FlyoutPanel {store} />
+        <FlyoutPanel {store} {orgId} />
       </div>
       {#if store.editorMode === "design" && isPropertiesOpen}
         <PropertiesInspector
