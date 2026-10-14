@@ -203,6 +203,8 @@ pub struct ProvisionDefaultsRequest {
     pub provision_discount_templates: Option<bool>,
     pub provision_hijri_school_calendar: Option<bool>,
     pub hijri_start_year: Option<i32>,
+    pub hijri_start_month: Option<u8>,
+    pub hijri_start_day: Option<u8>,
     pub hijri_month_lengths: Option<Vec<u8>>,
     pub provision_time_slots: Option<bool>,
     pub enable_period_autopilot: Option<bool>,
@@ -223,6 +225,14 @@ fn at_day_end(date: NaiveDate) -> DateTime<Utc> {
     date.and_hms_opt(23, 59, 59)
         .expect("valid end-of-day time")
         .and_utc()
+}
+
+fn hijri_month_position(start_year: i32, start_month: u8, offset: usize) -> (i32, usize) {
+    let absolute_month = usize::from(start_month - 1) + offset;
+    (
+        start_year + (absolute_month / 12) as i32,
+        absolute_month % 12,
+    )
 }
 
 fn calendar_period_state(
@@ -320,6 +330,8 @@ impl OnboardingService {
         org_id: Uuid,
         year_id: Uuid,
         hijri_start_year: i32,
+        hijri_start_month: u8,
+        hijri_start_day: u8,
         month_lengths: Option<Vec<u8>>,
         now: DateTime<Utc>,
     ) -> Result<Vec<AcademicPeriod>, DomainError> {
@@ -329,24 +341,39 @@ impl OnboardingService {
                 "The Hijri start year is outside the supported range.".into(),
             ));
         }
+        if !(1..=12).contains(&hijri_start_month) || !(1..=30).contains(&hijri_start_day) {
+            return Err(DomainError::Validation(
+                "The Hijri start month or day is invalid.".into(),
+            ));
+        }
         let lengths = month_lengths.ok_or_else(|| {
             DomainError::Validation(
                 "Umm al-Qura month lengths are required to provision the Hijri school calendar."
                     .into(),
             )
         })?;
-        if lengths.len() != 8 || lengths.iter().any(|days| !(29..=30).contains(days)) {
+        if lengths.len() != 8
+            || lengths
+                .iter()
+                .enumerate()
+                .any(|(index, days)| {
+                    !(if index == 0 { 1..=30 } else { 29..=30 }).contains(days)
+                })
+        {
             return Err(DomainError::Validation(
-                "The Hijri calendar requires eight month lengths, each 29 or 30 days.".into(),
+                "The Hijri calendar requires eight valid month lengths.".into(),
             ));
         }
         let mut expected_codes = vec!["T1".to_string(), "T2".to_string()];
-        for month_number in 1..=8 {
-            expected_codes.push(format!("H{}-M{:02}", hijri_start_year, month_number));
-            expected_codes.push(if month_number % 4 == 0 {
-                format!("T{}-FINAL", month_number / 4)
+        for index in 0..8 {
+            let (month_year, month_index) =
+                hijri_month_position(hijri_start_year, hijri_start_month, index);
+            let month_number = month_index + 1;
+            expected_codes.push(format!("H{}-M{:02}", month_year, month_number));
+            expected_codes.push(if index % 4 == 3 {
+                format!("T{}-FINAL", index / 4 + 1)
             } else {
-                format!("H{}-M{:02}-EXAM", hijri_start_year, month_number)
+                format!("H{}-M{:02}-EXAM", month_year, month_number)
             });
         }
         if existing_periods.iter().any(|period| {
@@ -375,6 +402,10 @@ impl OnboardingService {
             "Jumada al-Thani",
             "Rajab",
             "Sha'ban",
+            "Ramadan",
+            "Shawwal",
+            "Dhu al-Qi'dah",
+            "Dhu al-Hijjah",
         ];
         let month_names_ar = [
             "محرم",
@@ -385,13 +416,18 @@ impl OnboardingService {
             "جمادى الآخرة",
             "رجب",
             "شعبان",
+            "رمضان",
+            "شوال",
+            "ذو القعدة",
+            "ذو الحجة",
         ];
         let start_date = year.start_date.date_naive();
         let calendar_end_date = start_date
             + Duration::days(lengths.iter().map(|days| i64::from(*days)).sum::<i64>() - 1);
         if year.end_date.date_naive() < calendar_end_date {
             return Err(DomainError::Validation(
-                "The academic year must end on or after the final Sha'ban examination.".into(),
+                "The academic year must include all eight generated Hijri months and their exams."
+                    .into(),
             ));
         }
         let mut periods = existing_periods;
@@ -401,8 +437,13 @@ impl OnboardingService {
         for (index, days) in lengths.iter().enumerate() {
             let month_start = next_month_start;
             let month_end = month_start + Duration::days(i64::from(*days) - 1);
-            let exam_start_date = month_end - Duration::days(2);
-            let month_number = index + 1;
+            let exam_start_offset = i64::from((*days).min(3) - 1);
+            let exam_start_date = month_end - Duration::days(exam_start_offset);
+            let (month_year, month_index) =
+                hijri_month_position(hijri_start_year, hijri_start_month, index);
+            let month_number = month_index + 1;
+            let hijri_day_start = if index == 0 { hijri_start_day } else { 1 };
+            let hijri_day_end = hijri_day_start + days - 1;
             month_ranges.push((month_start, month_end));
 
             let term_index = index / 4;
@@ -425,6 +466,9 @@ impl OnboardingService {
                     .map(|month_index| i64::from(lengths[month_index]))
                     .sum::<i64>();
                 let term_last_date = term_start + Duration::days(term_end - 1);
+                let term_end_index = index + 3;
+                let (term_end_year, term_end_month_index) =
+                    hijri_month_position(hijri_start_year, hijri_start_month, term_end_index);
                 let id = Uuid::new_v4();
                 let term = AcademicPeriod {
                     id,
@@ -444,12 +488,15 @@ impl OnboardingService {
                     ),
                     start_date: at_day_start(term_start),
                     end_date: at_day_end(term_last_date),
-                    hijri_start: Some(format!("1 {} {}", month_names_en[index], hijri_start_year)),
+                    hijri_start: Some(format!(
+                        "{} {} {}",
+                        hijri_day_start, month_names_en[month_index], month_year
+                    )),
                     hijri_end: Some(format!(
                         "{} {} {}",
-                        lengths[index + 3],
-                        month_names_en[index + 3],
-                        hijri_start_year
+                        lengths[term_end_index],
+                        month_names_en[term_end_month_index],
+                        term_end_year
                     )),
                     enrollment_starts_at: None,
                     enrollment_ends_at: None,
@@ -482,53 +529,58 @@ impl OnboardingService {
                     })?
             };
 
-            let teaching_start = at_day_start(month_start);
             let exam_start = at_day_start(exam_start_date);
-            let teaching_end = exam_start - Duration::seconds(1);
-            let teaching = AcademicPeriod {
-                id: Uuid::new_v4(),
-                org_id,
-                year_id,
-                parent_id: Some(term_id),
-                name: format!("{} {}", month_names_en[index], hijri_start_year),
-                name_ar: Some(format!("{} {}", month_names_ar[index], hijri_start_year)),
-                code: Some(format!("H{}-M{:02}", hijri_start_year, month_number)),
-                period_type: PeriodType::Month,
-                period_kind: PeriodKind::Teaching,
-                state: calendar_period_state(teaching_start, teaching_end, now, false),
-                start_date: teaching_start,
-                end_date: teaching_end,
-                hijri_start: Some(format!("1 {} {}", month_names_en[index], hijri_start_year)),
-                hijri_end: Some(format!(
-                    "{} {} {}",
-                    days - 3,
-                    month_names_en[index],
-                    hijri_start_year
-                )),
-                enrollment_starts_at: None,
-                enrollment_ends_at: None,
-                is_enrollment_open: false,
-                grade_entry_starts_at: None,
-                grade_entry_ends_at: None,
-                is_grade_entry_open: calendar_period_state(
-                    teaching_start,
-                    teaching_end,
-                    now,
-                    false,
-                ) == AcademicPeriodState::ActiveTeaching,
-                exam_starts_at: None,
-                exam_ends_at: None,
-                is_locked: false,
-                locked_at: None,
-                locked_by: None,
-                sort_order: Some(month_number as i32),
-                metadata: None,
-                created_at: now,
-                updated_at: now,
-            };
-            if !periods.iter().any(|period| period.code == teaching.code) {
-                self.period_repo.save(&teaching).await?;
-                periods.push(teaching);
+            if index > 0 || *days > 3 {
+                let teaching_start = at_day_start(month_start);
+                let teaching_end = exam_start - Duration::seconds(1);
+                let teaching = AcademicPeriod {
+                    id: Uuid::new_v4(),
+                    org_id,
+                    year_id,
+                    parent_id: Some(term_id),
+                    name: format!("{} {}", month_names_en[month_index], month_year),
+                    name_ar: Some(format!("{} {}", month_names_ar[month_index], month_year)),
+                    code: Some(format!("H{}-M{:02}", month_year, month_number)),
+                    period_type: PeriodType::Month,
+                    period_kind: PeriodKind::Teaching,
+                    state: calendar_period_state(teaching_start, teaching_end, now, false),
+                    start_date: teaching_start,
+                    end_date: teaching_end,
+                    hijri_start: Some(format!(
+                        "{} {} {}",
+                        hijri_day_start, month_names_en[month_index], month_year
+                    )),
+                    hijri_end: Some(format!(
+                        "{} {} {}",
+                        hijri_day_end - 3,
+                        month_names_en[month_index],
+                        month_year
+                    )),
+                    enrollment_starts_at: None,
+                    enrollment_ends_at: None,
+                    is_enrollment_open: false,
+                    grade_entry_starts_at: None,
+                    grade_entry_ends_at: None,
+                    is_grade_entry_open: calendar_period_state(
+                        teaching_start,
+                        teaching_end,
+                        now,
+                        false,
+                    ) == AcademicPeriodState::ActiveTeaching,
+                    exam_starts_at: None,
+                    exam_ends_at: None,
+                    is_locked: false,
+                    locked_at: None,
+                    locked_by: None,
+                    sort_order: Some(month_number as i32),
+                    metadata: None,
+                    created_at: now,
+                    updated_at: now,
+                };
+                if !periods.iter().any(|period| period.code == teaching.code) {
+                    self.period_repo.save(&teaching).await?;
+                    periods.push(teaching);
+                }
             }
 
             let exam_is_final = index % 4 == 3;
@@ -551,7 +603,7 @@ impl OnboardingService {
                 code: Some(if exam_is_final {
                     format!("{}-FINAL", term_name.2)
                 } else {
-                    format!("H{}-M{:02}-EXAM", hijri_start_year, month_number)
+                    format!("H{}-M{:02}-EXAM", month_year, month_number)
                 }),
                 period_type: PeriodType::Month,
                 period_kind: PeriodKind::Examination,
@@ -560,13 +612,13 @@ impl OnboardingService {
                 end_date: exam_end,
                 hijri_start: Some(format!(
                     "{} {} {}",
-                    days - 2,
-                    month_names_en[index],
-                    hijri_start_year
+                    hijri_day_end - 2,
+                    month_names_en[month_index],
+                    month_year
                 )),
                 hijri_end: Some(format!(
                     "{} {} {}",
-                    days, month_names_en[index], hijri_start_year
+                    hijri_day_end, month_names_en[month_index], month_year
                 )),
                 enrollment_starts_at: None,
                 enrollment_ends_at: None,
@@ -596,8 +648,18 @@ impl OnboardingService {
         if year.end_date.date_naive() == calendar_end_date {
             year.end_date = at_day_end(calendar_end_date);
         }
-        year.hijri_start = Some(format!("1 Muharram {}", hijri_start_year));
-        year.hijri_end = Some(format!("{} Sha'ban {}", lengths[7], hijri_start_year));
+        let (end_year, end_month_index) =
+            hijri_month_position(hijri_start_year, hijri_start_month, 7);
+        year.hijri_start = Some(format!(
+            "{} {} {}",
+            hijri_start_day, month_names_en[usize::from(hijri_start_month - 1)], hijri_start_year
+        ));
+        year.hijri_end = Some(format!(
+            "{} {} {}",
+            lengths[7],
+            month_names_en[end_month_index],
+            end_year
+        ));
         year.updated_at = now;
         self.year_repo.save(&year).await?;
 
@@ -2139,6 +2201,8 @@ impl OnboardingService {
                     org_id,
                     active_year_id,
                     hijri_start_year,
+                    req.hijri_start_month.unwrap_or(1),
+                    req.hijri_start_day.unwrap_or(1),
                     req.hijri_month_lengths,
                     now,
                 )
@@ -2573,7 +2637,16 @@ impl OnboardingService {
 
 #[cfg(test)]
 mod tests {
-    use super::{OnboardingTaskStatus, resolve_task_status, OnboardingService};
+    use super::{
+        OnboardingTaskStatus, hijri_month_position, resolve_task_status, OnboardingService,
+    };
+
+    #[test]
+    fn hijri_month_position_rolls_over_to_the_next_year() {
+        assert_eq!(hijri_month_position(1448, 10, 0), (1448, 9));
+        assert_eq!(hijri_month_position(1448, 10, 2), (1448, 11));
+        assert_eq!(hijri_month_position(1448, 10, 3), (1449, 0));
+    }
 
     #[test]
     fn task_with_default_data_is_blocked_until_its_dependencies_are_complete() {

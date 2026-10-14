@@ -9,6 +9,12 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
@@ -190,14 +196,12 @@ function getHijriCalendarDefaults(startDate: string) {
   };
 
   const start = getParts(new Date(cursorTime));
-  if (start.month !== 1 || start.day !== 1) {
-    throw new Error(m.onboarding_step3_default_periods_start_error());
-  }
 
   const monthLengths: number[] = [];
   for (let index = 0; index < 8; index += 1) {
-    const targetYear = start.year + Math.floor(index / 12);
-    const targetMonth = (index % 12) + 1;
+    const currentMonth = getParts(new Date(cursorTime));
+    const targetYear = currentMonth.year;
+    const targetMonth = currentMonth.month;
     let days = 0;
     while (true) {
       const current = getParts(new Date(cursorTime));
@@ -208,13 +212,18 @@ function getHijriCalendarDefaults(startDate: string) {
       }
       cursorTime += 24 * 60 * 60 * 1000;
     }
-    if (days < 29 || days > 30) {
+    if (days < (index === 0 ? 1 : 29) || days > 30) {
       throw new Error(m.onboarding_step3_default_periods_calendar_error());
     }
     monthLengths.push(days);
   }
 
-  return { hijriStartYear: start.year, monthLengths };
+  return {
+    hijriStartYear: start.year,
+    hijriStartMonth: start.month,
+    hijriStartDay: start.day,
+    monthLengths,
+  };
 }
 
 function validateDateRange(start: string, end: string, message: string) {
@@ -350,6 +359,8 @@ async function handleGenerateDefaultPeriods() {
         calendar_id: String(selectedYear.id),
         provision_hijri_school_calendar: true,
         hijri_start_year: calendarDefaults.hijriStartYear,
+        hijri_start_month: calendarDefaults.hijriStartMonth,
+        hijri_start_day: calendarDefaults.hijriStartDay,
         hijri_month_lengths: calendarDefaults.monthLengths,
       },
       orgId,
@@ -586,37 +597,51 @@ async function deleteYear(year: academicCalendarDto) {
               <Label for="onboarding-period-type" class="text-xs font-medium">
                 Period type
               </Label>
-              <select
-                id="onboarding-period-type"
-                class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                bind:value={periodType}
+              <Select
+                type="single"
+                value={periodType}
+                onValueChange={(value) => {
+                  if (value) periodType = value;
+                }}
                 disabled={isSubmittingPeriod}
               >
-                <option value="custom">Custom</option>
-                <option value="semester">Semester</option>
-                <option value="trimester">Trimester</option>
-                <option value="quarter">Quarter</option>
-                <option value="month">Month</option>
-                <option value="module">Module</option>
-                <option value="block">Block</option>
-              </select>
+                <SelectTrigger id="onboarding-period-type" class="h-10 w-full">
+                  <span>{periodType}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="semester">Semester</SelectItem>
+                  <SelectItem value="trimester">Trimester</SelectItem>
+                  <SelectItem value="quarter">Quarter</SelectItem>
+                  <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="module">Module</SelectItem>
+                  <SelectItem value="block">Block</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-1.5">
               <Label for="onboarding-period-kind" class="text-xs font-medium">
                 Period role
               </Label>
-              <select
-                id="onboarding-period-kind"
-                class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                bind:value={periodKind}
+              <Select
+                type="single"
+                value={periodKind}
+                onValueChange={(value) => {
+                  if (value) periodKind = value;
+                }}
                 disabled={isSubmittingPeriod}
               >
-                <option value="teaching">Teaching</option>
-                <option value="examination">Examination</option>
-                <option value="break">Break</option>
-                <option value="registration">Registration</option>
-                <option value="preparatory">Preparatory</option>
-              </select>
+                <SelectTrigger id="onboarding-period-kind" class="h-10 w-full">
+                  <span>{periodKind}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teaching">Teaching</SelectItem>
+                  <SelectItem value="examination">Examination</SelectItem>
+                  <SelectItem value="break">Break</SelectItem>
+                  <SelectItem value="registration">Registration</SelectItem>
+                  <SelectItem value="preparatory">Preparatory</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-1.5">
               <Label for="onboarding-period-start" class="text-xs font-medium">
@@ -635,17 +660,32 @@ async function deleteYear(year: academicCalendarDto) {
                 <Label for="onboarding-period-parent" class="text-xs font-medium">
                   Parent period (optional)
                 </Label>
-                <select
-                  id="onboarding-period-parent"
-                  class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  bind:value={periodParentId}
+                <Select
+                  type="single"
+                  value={periodParentId || "none"}
+                  onValueChange={(value) => {
+                    if (value) periodParentId = value === "none" ? "" : value;
+                  }}
                   disabled={isSubmittingPeriod}
                 >
-                  <option value="">No parent</option>
-                  {#each periods.filter((period) => period.year_id === selectedYearId) as period (period.id)}
-                    <option value={String(period.id)}>{period.name_ar || period.name}</option>
-                  {/each}
-                </select>
+                  <SelectTrigger id="onboarding-period-parent" class="h-10 w-full">
+                    <span>
+                      {periodParentId
+                        ? periods.find((period) => String(period.id) === periodParentId)
+                            ?.name_ar ||
+                          periods.find((period) => String(period.id) === periodParentId)?.name
+                        : "No parent"}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No parent</SelectItem>
+                    {#each periods.filter((period) => period.year_id === selectedYearId) as period (period.id)}
+                      <SelectItem value={String(period.id)}>
+                        {period.name_ar || period.name}
+                      </SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
               </div>
             {/if}
           </div>

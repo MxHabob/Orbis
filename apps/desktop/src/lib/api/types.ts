@@ -1199,6 +1199,8 @@ export interface ProvisionDefaultsReqDto {
   provision_discount_templates?: boolean;
   provision_hijri_school_calendar?: boolean;
   hijri_start_year?: number;
+  hijri_start_month?: number;
+  hijri_start_day?: number;
   hijri_month_lengths?: number[];
   provision_time_slots?: boolean;
   enable_period_autopilot?: boolean;
