@@ -28,19 +28,14 @@ export const en: Record<TranslationKey, string> = {
   tab_profile: "My Account",
   digital_id_title: "Digital ID",
   digital_id_close: "Close",
-  digital_id_context_required:
-    "The digital ID is available to a student or a guardian linked to a student profile.",
+  digital_id_context_required: "The digital ID is available to a student or a guardian linked to a student profile.",
   digital_id_student_error: "Student details could not be loaded.",
-  digital_id_template_error:
-    "The organization ID template could not be loaded.",
-  digital_id_template_missing:
-    "The organization has not published a digital ID template.",
+  digital_id_template_error: "The organization ID template could not be loaded.",
+  digital_id_template_missing: "The organization has not published a digital ID template.",
   digital_id_template_invalid: "The digital ID template cannot be displayed.",
   digital_id_assets_error: "A digital ID template asset could not be loaded.",
-  digital_id_unsupported_elements:
-    "Some elements in this template may not appear in the mobile preview.",
-  digital_id_privacy_notice:
-    "Show this card when student details need to be verified. Do not share screenshots publicly.",
+  digital_id_unsupported_elements: "Some elements in this template may not appear in the mobile preview.",
+  digital_id_privacy_notice: "Show this card when student details need to be verified. Do not share screenshots publicly.",
   home_welcome: "Welcome back",
   home_greeting_morning: "Good morning",
   home_greeting_afternoon: "Good afternoon",
@@ -55,26 +50,23 @@ export const en: Record<TranslationKey, string> = {
   home_class_ten_math: "Grade 10 · Math",
   home_dependents: "Linked children",
   home_no_dependents: "No child profiles are currently linked to this account.",
-  home_role_unavailable:
-    "We couldn't identify an account context to show the home page.",
+  home_role_unavailable: "We couldn't identify an account context to show the home page.",
   home_no_student_profile: "No student profile is linked to this account.",
-  home_classes: "My classes",
-  home_classes_error:
-    "Could not load classes. Check your connection and try again.",
-  home_student_load_error:
-    "Could not load student details. Check your connection and try again.",
+  home_classes: "My sections",
+  home_classes_error: "Could not load classes. Check your connection and try again.",
+  home_student_load_error: "Could not load student details. Check your connection and try again.",
   home_class_students_count: "{count} students",
   home_retry: "Try again",
   home_refresh_error: "Couldn't refresh the home page. Please try again.",
   home_no_classes: "No classes or subjects are assigned to you for this period.",
   home_class_level: "Level",
-  class_access_denied: "This account is not assigned to or allowed to view this class.",
-  teacher_class_roster: "Class roster",
-  teacher_class_schedule: "Class schedule",
+  class_access_denied: "This account is not assigned to or allowed to view this section.",
+  teacher_class_roster: "Section roster",
+  teacher_class_schedule: "Section schedule",
   teacher_mark_attendance: "Record attendance",
   teacher_record_grades: "Record grades",
-  teacher_no_students: "There are no students enrolled in this class yet.",
-  teacher_no_subjects: "There are no active subjects for this class.",
+  teacher_no_students: "There are no students enrolled in this section yet.",
+  teacher_no_subjects: "There are no active subjects for this section.",
   teacher_no_permission: "You do not have permission to perform this action.",
   teacher_select_subject: "Select subject",
   teacher_select_status: "Choose an attendance status",
@@ -113,7 +105,7 @@ export const en: Record<TranslationKey, string> = {
   student_phone: "Phone",
   student_grades: "Grades and results",
   student_attendance: "Attendance record",
-  student_schedule: "Class schedule",
+  student_schedule: "Section schedule",
   student_exams: "Exams",
   student_exams_description: "Upcoming exam dates by subject and term.",
   student_no_exams: "There are no exams scheduled for this student yet.",
@@ -136,9 +128,8 @@ export const en: Record<TranslationKey, string> = {
   student_fee_cancelled: "Cancelled",
   student_fee_refunded: "Refunded",
   student_no_grades: "No grades have been recorded for this student yet.",
-  student_no_attendance:
-    "No attendance records are available for this student yet.",
-  student_no_schedule: "No class schedule is available for this student yet.",
+  student_no_attendance: "No attendance records are available for this student yet.",
+  student_no_schedule: "No Section schedule is available for this student yet.",
   student_grade_date: "Recorded",
   student_grade_score: "Score",
   student_attendance_date: "Date",
@@ -155,31 +146,23 @@ export const en: Record<TranslationKey, string> = {
   student_schedule_day_6: "Friday",
   student_schedule_day_7: "Saturday",
   student_schedule_time: "Time",
-  behavior_student_context_required:
-    "Behavior records are available to students and guardians linked to a student profile.",
+  behavior_student_context_required: "Behavior records are available to students and guardians linked to a student profile.",
   behavior_record_merit: "Positive point",
   behavior_record_violation: "Behavior note",
   behavior_record_other: "Behavior record",
-  notifications_inbox_unavailable_title:
-    "In-app notifications are not available yet",
-  notifications_inbox_unavailable_description:
-    "The app does not currently provide an in-app notification history. Your institution may still deliver alerts through its configured channels.",
+  notifications_inbox_unavailable_title: "In-app notifications are not available yet",
+  notifications_inbox_unavailable_description: "The app does not currently provide an in-app notification history. Your institution may still deliver alerts through its configured channels.",
   home_notifications: "Notifications",
-  home_notifications_description:
-    "Keep up with academic and administrative updates.",
+  home_notifications_description: "Keep up with academic and administrative updates.",
   home_profile_description: "Manage your account and preferences.",
   visitor_title: "Orbis Education Platform",
-  visitor_description:
-    "Explore services for students, families, and teachers before signing in.",
+  visitor_description: "Explore services for students, families, and Academic staff members before signing in.",
   visitor_academic_title: "Academic progress",
-  visitor_academic_description:
-    "Grades, results, schedules, and attendance in one place.",
+  visitor_academic_description: "Grades, results, schedules, and attendance in one place.",
   visitor_family_title: "Family services",
-  visitor_family_description:
-    "Follow your children's school progress and updates.",
-  visitor_teacher_title: "Teacher tools",
-  visitor_teacher_description:
-    "Follow classes and students and manage academic work according to your permissions.",
+  visitor_family_description: "Follow your children's school progress and updates.",
+  visitor_teacher_title: "Academic tools",
+  visitor_teacher_description: "Follow classes and students and manage academic work according to your permissions.",
   visitor_sign_in: "Sign in",
   visitor_register: "Create account",
   visitor_explore: "Explore as a visitor",
@@ -201,7 +184,7 @@ export const en: Record<TranslationKey, string> = {
   // Hub & Switcher
   hub_all_students: "All",
   hub_title: "Students & Classes Hub",
-  hub_switch_prompt: "Select a student or class to view reports",
+  hub_switch_prompt: "Select a student or section to view reports",
 
   // Dashboard Overview
   dashboard_greeting: "Welcome back, {name}",
@@ -212,8 +195,7 @@ export const en: Record<TranslationKey, string> = {
   dashboard_active_schedules: "Today's Classes",
   dashboard_recent_activity: "Recent Activity",
   dashboard_no_activity: "No recorded activity currently",
-  dashboard_no_students:
-    "No registered students or classes found in this account",
+  dashboard_no_students: "No registered students or classes found in this account",
   dashboard_quick_actions: "Quick Actions",
   dashboard_view_all: "View All",
 
@@ -230,16 +212,13 @@ export const en: Record<TranslationKey, string> = {
   behavior_status_regular: "Overall Discipline: Outstanding & Regular",
   behavior_ai_title: "AI Insight Analysis",
   behavior_badge_live: "Live Update",
-  behavior_ai_summary_active:
-    "The student demonstrates high commitment to schedule and collaborative class activities. Encouraging leadership in team projects is recommended.",
-  behavior_ai_summary_empty:
-    "Behavior and interaction are tracked regularly. AI reports will be generated once attendance and participation indicators are recorded.",
+  behavior_ai_summary_active: "The student demonstrates high commitment to schedule and collaborative section activities. Encouraging leadership in team projects is recommended.",
+  behavior_ai_summary_empty: "Behavior and interaction are tracked regularly. AI reports will be generated once attendance and participation indicators are recorded.",
   behavior_filter_all: "All",
   behavior_filter_merit: "Merits",
   behavior_filter_violation: "Notes",
   behavior_empty_title: "No behavioral notes recorded",
-  behavior_empty_desc:
-    "Positive notes and points will be listed here once recorded by the faculty.",
+  behavior_empty_desc: "Positive notes and points will be listed here once recorded by the Academic staff.",
   behavior_modal_title: "Log Behavioral Note",
   behavior_modal_student_label: "Student Name or ID",
   behavior_modal_student_placeholder: "Omar Mansoor",
@@ -261,7 +240,7 @@ export const en: Record<TranslationKey, string> = {
   profile_role: "System Role",
   profile_role_student: "Student",
   profile_role_parent: "Parent",
-  profile_role_teacher: "Teacher",
+  profile_role_teacher: "Academic staff member",
   profile_role_admin: "Supervisor",
   profile_linked_children: "Linked Children",
   profile_settings_title: "Account & System Settings",
@@ -270,8 +249,7 @@ export const en: Record<TranslationKey, string> = {
   profile_menu_linked: "Linked Accounts",
   profile_menu_preferences: "Preferences & Notifications",
   profile_account_description: "View account details, role, and status.",
-  profile_security_description:
-    "Manage active sessions and registered devices.",
+  profile_security_description: "Manage active sessions and registered devices.",
   profile_preferences_description: "Update the app language and appearance.",
   profile_phone: "Phone Number",
   profile_email: "Email Address",
@@ -283,12 +261,10 @@ export const en: Record<TranslationKey, string> = {
   profile_verified: "Verified",
   profile_not_verified: "Not verified",
   profile_account_created: "Account created",
-  profile_account_read_only:
-    "These details are read-only. Contact your institution to request changes.",
+  profile_account_read_only: "These details are read-only. Contact your institution to request changes.",
   profile_account_unavailable: "Could not load account information.",
   profile_logout_error: "Could not sign out. Please try again.",
-  profile_preference_save_error:
-    "Could not save this preference. Please try again.",
+  profile_preference_save_error: "Could not save this preference. Please try again.",
   profile_theme_load_error: "Could not load the saved app appearance.",
   profile_branch: "Branch / School",
   profile_settings: "Settings & Preferences",
@@ -297,13 +273,11 @@ export const en: Record<TranslationKey, string> = {
   profile_sign_out_confirm: "Are you sure you want to sign out from the app?",
   profile_sign_out_button: "Sign Out from Account",
   profile_help_title: "Help & Support",
-  profile_help_description:
-    "Contact Mulverse for technical support, or your institution for account issues.",
+  profile_help_description: "Contact Mulverse for technical support, or your institution for account issues.",
   profile_about_title: "About Orbis",
   profile_about_mulverse: "About Mulverse",
   profile_about_mulverse_description: "The company behind the Orbis platform.",
-  profile_support_page_description:
-    "Complete the request details and review the email draft before sending it to our support team.",
+  profile_support_page_description: "Complete the request details and review the email draft before sending it to our support team.",
   profile_support_email: "support@mulverse.com",
   profile_support_email_error: "Could not open an email app.",
   support_category_label: "Request category",
@@ -317,46 +291,34 @@ export const en: Record<TranslationKey, string> = {
   support_subject_placeholder: "Enter a short subject",
   support_contact_email: "Contact email (optional)",
   support_details_label: "Description and details *",
-  support_details_placeholder:
-    "Describe what happened and the steps you took...",
+  support_details_placeholder: "Describe what happened and the steps you took...",
   support_required_fields: "Enter a subject and details to continue.",
-  support_invalid_email:
-    "Enter a valid email address or leave this field empty.",
+  support_invalid_email: "Enter a valid email address or leave this field empty.",
   support_diagnostics_label: "App and device information",
   support_send_report: "Open email to support",
-  support_mail_review_note:
-    "App and device information will be added to an email draft. Review and send it yourself; nothing is sent automatically.",
-  profile_about_orbis_description:
-    "Orbis is an integrated platform for managing educational institutions and their academic and administrative operations.",
+  support_mail_review_note: "App and device information will be added to an email draft. Review and send it yourself; nothing is sent automatically.",
+  profile_about_orbis_description: "Orbis is an integrated platform for managing educational institutions and their academic and administrative operations.",
   profile_about_company: "Developed by Mulverse Inc.",
   profile_about_version: "App version",
   profile_open_company_website: "Visit Mulverse website",
   profile_organization_website: "Organization website",
-  profile_organization_website_description:
-    "Visit your organization's official website.",
+  profile_organization_website_description: "Visit your organization's official website.",
   webviewer_invalid_url: "This page link is invalid or unsafe.",
-  webviewer_load_error:
-    "Could not load this page. Check your connection and try again.",
+  webviewer_load_error: "Could not load this page. Check your connection and try again.",
   webviewer_retry: "Try again",
-  security_description:
-    "Review devices that have accessed your account and revoke unfamiliar sessions.",
+  security_description: "Review devices that have accessed your account and revoke unfamiliar sessions.",
   security_mfa_title: "Multi-factor authentication",
-  security_mfa_enabled:
-    "Multi-factor authentication is enabled for this account.",
-  security_mfa_disabled:
-    "Multi-factor authentication is not enabled for this account.",
-  security_mfa_management_note:
-    "Multi-factor authentication settings are currently managed by your institution administrator.",
+  security_mfa_enabled: "Multi-factor authentication is enabled for this account.",
+  security_mfa_disabled: "Multi-factor authentication is not enabled for this account.",
+  security_mfa_management_note: "Multi-factor authentication settings are currently managed by your institution administrator.",
   security_devices_title: "Devices and sessions",
-  security_devices_error:
-    "Could not load devices associated with this account.",
+  security_devices_error: "Could not load devices associated with this account.",
   security_no_devices: "There are no registered devices for this account.",
   security_last_active: "Last active",
   security_device_trusted: "Trusted device",
   security_device_untrusted: "Untrusted device",
   security_revoke_device: "Revoke session",
-  security_revoke_confirm:
-    "This will end the session for this device. Do you want to continue?",
+  security_revoke_confirm: "This will end the session for this device. Do you want to continue?",
   security_device_revoked: "Device session revoked.",
   security_device_revoke_error: "Could not revoke the device session.",
 
@@ -373,31 +335,23 @@ export const en: Record<TranslationKey, string> = {
   pref_theme_light: "Light Mode",
   pref_notifications: "System Notifications & Alerts",
   pref_notify_absence: "Absence & Tardy Alerts",
-  pref_notify_absence_desc:
-    "Instant push alert when absence or tardiness is recorded",
+  pref_notify_absence_desc: "Instant push alert when absence or tardiness is recorded",
   pref_notify_grades: "Grades & Assessment Releases",
-  pref_notify_grades_desc:
-    "Alert when new exam results or assessments are published",
+  pref_notify_grades_desc: "Alert when new exam results or assessments are published",
   pref_notify_exams: "Exam Schedule Reminders",
   pref_notify_exams_desc: "Reminder 24 hours prior to scheduled exams",
   pref_notify_announcements: "Circulars & General Announcements",
-  pref_notify_announcements_desc:
-    "Updates for school activities, holidays, and news",
+  pref_notify_announcements_desc: "Updates for school activities, holidays, and news",
   updates_title: "App updates",
   updates_app_version: "Installed version",
   updates_check_button: "Check for a new version",
   updates_checking: "Checking for updates...",
-  updates_none_available:
-    "The app is up to date. No new updates are available.",
-  updates_not_configured:
-    "Update checks are not enabled for this build. Configure EAS and create a new build.",
-  updates_check_error:
-    "Could not check for updates. Check your connection and try again.",
-  updates_download_error:
-    "Could not download the update. Check your connection and try again.",
+  updates_none_available: "The app is up to date. No new updates are available.",
+  updates_not_configured: "Update checks are not enabled for this build. Configure EAS and create a new build.",
+  updates_check_error: "Could not check for updates. Check your connection and try again.",
+  updates_download_error: "Could not download the update. Check your connection and try again.",
   updates_available_title: "An update is available",
-  updates_available_message:
-    "The update was downloaded. Restart the app to apply it.",
+  updates_available_message: "The update was downloaded. Restart the app to apply it.",
   updates_restart_now: "Restart now",
   updates_install_error: "Could not restart the app to apply the update.",
 
@@ -430,8 +384,7 @@ export const en: Record<TranslationKey, string> = {
   auth_password_label: "Password",
   auth_error_required: "Please enter email and password",
   auth_error_failed: "Sign in failed. Please verify credentials.",
-  auth_error_network:
-    "Cannot connect to the server. Please verify your network and server status.",
+  auth_error_network: "Cannot connect to the server. Please verify your network and server status.",
   auth_error_invalid_credentials: "Invalid email address or password.",
   auth_error_google: "Google sign-in failed",
   auth_capability_teach: "Teach",
@@ -451,7 +404,7 @@ export const en: Record<TranslationKey, string> = {
   auth_confirm_password: "Confirm Password",
   auth_password_mismatch: "Passwords do not match",
   auth_role_label: "Account Role",
-  auth_role_teacher: "Teacher",
+  auth_role_teacher: "Academic staff member",
   auth_role_student: "Student",
   auth_role_parent: "Parent",
   auth_role_admin: "Administrator",
@@ -462,12 +415,10 @@ export const en: Record<TranslationKey, string> = {
 
   // Forgot Password
   auth_forgot_title: "Reset Password",
-  auth_forgot_subtitle:
-    "Enter your email to receive password reset instructions",
+  auth_forgot_subtitle: "Enter your email to receive password reset instructions",
   auth_forgot_send_btn: "Send Recovery Link",
   auth_forgot_success_title: "Instructions Sent",
-  auth_forgot_success_msg:
-    "We have sent password reset instructions to your email address.",
+  auth_forgot_success_msg: "We have sent password reset instructions to your email address.",
   auth_back_to_sign_in: "Back to Sign In",
 
   // Security & Device Setup Flow (Reference 1)
@@ -513,7 +464,7 @@ export const en: Record<TranslationKey, string> = {
   common_inactive: "Inactive",
   common_unknown: "Unknown",
   common_now: "Just now",
-  common_you_teacher: "You (Teacher)",
+  common_you_teacher: "You (Academic staff member)",
   common_retry_hint: "Please check your network connection and try again.",
 
   // Brand & Auth
@@ -523,8 +474,7 @@ export const en: Record<TranslationKey, string> = {
 
   // Academic & Student Record
   exams_scheduled: "Scheduled Exams",
-  student_no_exams_description:
-    "No upcoming or scheduled exams found for this student.",
+  student_no_exams_description: "No upcoming or scheduled exams found for this student.",
   classroom_label: "Room {room}",
   academic_average_label: "Academic Average",
   assessments_count: "Assessments",

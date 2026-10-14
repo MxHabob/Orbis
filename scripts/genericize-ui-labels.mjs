@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 const root = process.cwd();
 const messagesDir = join(root, "apps", "desktop", "messages");
+const mobileDictDir = join(root, "apps", "mobile", "src", "lib", "i18n", "dictionaries");
 
 const englishPatterns = [
   { from: /\bTeacher\/ Faculty\b/gi, to: "Academic staff" },
@@ -69,6 +70,29 @@ const arabicPatterns = [
   { from: /Teacher/gi, to: "عضو أكاديمي" },
 ];
 
+const mobileTextPatterns = [
+  { from: /Teacher tools/gi, to: "Academic tools" },
+  { from: /Teacher/i, to: "Academic staff member" },
+  { from: /Teachers/gi, to: "Academic staff" },
+  { from: /Professor/gi, to: "Academic staff member" },
+  { from: /Instructor/gi, to: "Academic staff member" },
+  { from: /Lecturer/gi, to: "Academic staff member" },
+  { from: /Faculty/gi, to: "Academic staff" },
+  { from: /Doctor/gi, to: "Staff member" },
+  { from: /معلّم|معلم|مدرس|أستاذ|دكتور|عضو هيئة التدريس/gi, to: "عضو أكاديمي" },
+  { from: /المعلمون|المعلمين|أعضاء هيئة التدريس/gi, to: "الأعضاء الأكاديميون" },
+  { from: /Teacher Notes/gi, to: "Notes" },
+  { from: /Teacher Schedule/gi, to: "Schedule" },
+  { from: /Class roster/gi, to: "Section roster" },
+  { from: /Class schedule/gi, to: "Section schedule" },
+  { from: /My classes/gi, to: "My sections" },
+  { from: /class\b/gi, to: "section" },
+  { from: /فصل/gi, to: "شعبة" },
+  { from: /الفصل/gi, to: "الشعبة" },
+  { from: /فصولي/gi, to: "شعبتي" },
+  { from: /المعلم|الدكتور|الأستاذ/gi, to: "عضو أكاديمي" },
+];
+
 function transformString(value, language) {
   const patterns = language === "ar" ? arabicPatterns : englishPatterns;
   let result = value;
@@ -107,5 +131,29 @@ async function rewriteLanguageFile(language) {
   console.log(`Updated ${language}.json`);
 }
 
+async function rewriteMobileDictionary(language) {
+  const filePath = join(mobileDictDir, `${language}.ts`);
+  const fileContent = await readFile(filePath, "utf8");
+  const transformed = fileContent.replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (_, value) => {
+    const next = value.replace(/\\["\\nrtbf]/g, (match) => {
+      if (match === '\\n') return "\n";
+      if (match === '\\r') return "\r";
+      if (match === '\\t') return "\t";
+      if (match === '\\b') return "\b";
+      if (match === '\\f') return "\f";
+      return match;
+    });
+    const normalized = mobileTextPatterns.reduce(
+      (acc, { from, to }) => acc.replace(from, to),
+      next,
+    );
+    return `: "${normalized.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  });
+  await writeFile(filePath, transformed, "utf8");
+  console.log(`Updated mobile ${language}.ts`);
+}
+
 await rewriteLanguageFile("en");
 await rewriteLanguageFile("ar");
+await rewriteMobileDictionary("en");
+await rewriteMobileDictionary("ar");
