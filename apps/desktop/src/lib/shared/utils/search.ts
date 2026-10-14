@@ -52,34 +52,56 @@ export function matchStudent(student: any, query: string): boolean {
   const e = student?.enrollment || student;
 
   // Gather and normalize student fields
-  const fullName = normalizeArabic(
-    String(
-      (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "") ||
-      p.full_name ||
-      p.name_ar ||
-      p.name_en ||
-      s.student_name ||
-      ""
-    ).toLowerCase(),
-  );
-  const nameAr = normalizeArabic(String(p.name_ar || "").toLowerCase());
-  const nameEn = String(p.name_en || "").toLowerCase();
-  const email = String(p.email || "").toLowerCase();
-  const phone = String(p.phone || "").toLowerCase();
-  const nationalId = String(p.national_id || "").toLowerCase();
+  const fullName = String(
+    p.full_name ||
+      s.full_name ||
+      [
+        p.first_name || s.first_name,
+        p.middle_name || s.middle_name,
+        p.last_name || s.last_name,
+      ]
+        .filter(Boolean)
+        .join(" "),
+  ).toLowerCase();
+  const searchableFields = [
+    fullName,
+    p.full_name_ar,
+    p.display_name || s.display_name,
+    p.first_name,
+    p.middle_name,
+    p.last_name,
+    p.first_name_ar || s.first_name_ar,
+    p.middle_name_ar || s.middle_name_ar,
+    p.last_name_ar || s.last_name_ar,
+    s.name_ar,
+    p.email || s.email,
+    p.phone || s.phone,
+    p.national_id || s.national_id,
+    p.passport_number || s.passport_number,
+    p.address || s.address,
+  ]
+    .filter(Boolean)
+    .map((value) => normalizeArabic(normalizeDigits(String(value).toLowerCase())));
 
-  // Student numbers might contain dashes/dots/slashes, we normalize digits and also keep clean version
-  const rawStudentNumber = String(s.student_number || student.student_number || "").toLowerCase();
+  // Student numbers may contain punctuation or Arabic-Indic digits.
+  const rawStudentNumber = String(
+    s.student_number || student.student_number || "",
+  ).toLowerCase();
   const normalizedStudentNumber = normalizeDigits(rawStudentNumber);
   const cleanStudentNumber = normalizedStudentNumber.replace(/[^a-z0-9]/g, "");
 
   const rawId = String(s.id || student.id || "").toLowerCase();
   const cleanId = rawId.replace(/[^a-z0-9]/g, "");
+  const rawNationalId = String(
+    p.national_id || s.national_id || "",
+  ).toLowerCase();
+  const cleanNationalId = normalizeDigits(rawNationalId).replace(
+    /[^a-z0-9]/g,
+    "",
+  );
 
   // Construct search pool for word-based matching
-  const searchPool = `${fullName} ${nameAr} ${nameEn} ${email} ${phone} ${nationalId}`;
-
-  // Check if all query words are present in the search pool
+  const searchPool = searchableFields.join(" ");
   const nameMatch = queryWords.every((word) => searchPool.includes(word));
 
   // For academic number, ID, or national ID matching
@@ -89,7 +111,7 @@ export function matchStudent(student: any, query: string): boolean {
     (cleanStudentNumber.includes(cleanQueryForNumber) ||
       rawStudentNumber.includes(cleanQuery) ||
       cleanId.includes(cleanQueryForNumber) ||
-      nationalId.includes(cleanQueryForNumber));
+      cleanNationalId.includes(cleanQueryForNumber));
 
   return nameMatch || numberMatch;
 }

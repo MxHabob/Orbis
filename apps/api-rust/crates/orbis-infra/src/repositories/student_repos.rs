@@ -13,8 +13,8 @@ use orbis_domain::entities::student_guardian::StudentGuardian as DomainStudentGu
 use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, Set, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -103,15 +103,31 @@ impl StudentRepository for StudentRepoImpl {
         }
 
         if let Some(ref s) = filter.search {
-            if !s.is_empty() {
-                let search_pat = format!("%{}%", s);
-                query = query.filter(
-                    student::Column::StudentNumber
-                        .like(&search_pat)
-                        .or(person::Column::FirstName.like(&search_pat))
-                        .or(person::Column::LastName.like(&search_pat))
-                        .or(person::Column::NationalId.like(&search_pat)),
-                );
+            let terms: Vec<_> = s
+                .split_whitespace()
+                .filter(|term| !term.is_empty())
+                .collect();
+            if !terms.is_empty() {
+                let mut all_terms = Condition::all();
+                for term in terms {
+                    let search_pat = format!("%{term}%");
+                    all_terms = all_terms.add(
+                        Condition::any()
+                            .add(student::Column::StudentNumber.like(&search_pat))
+                            .add(person::Column::FirstName.like(&search_pat))
+                            .add(person::Column::MiddleName.like(&search_pat))
+                            .add(person::Column::LastName.like(&search_pat))
+                            .add(person::Column::FirstNameAr.like(&search_pat))
+                            .add(person::Column::MiddleNameAr.like(&search_pat))
+                            .add(person::Column::LastNameAr.like(&search_pat))
+                            .add(person::Column::DisplayName.like(&search_pat))
+                            .add(person::Column::NationalId.like(&search_pat))
+                            .add(person::Column::PassportNumber.like(&search_pat))
+                            .add(person::Column::Email.like(&search_pat))
+                            .add(person::Column::Phone.like(&search_pat)),
+                    );
+                }
+                query = query.filter(all_terms);
             }
         }
 
@@ -477,7 +493,10 @@ impl EnrollmentRepository for StudentRepoImpl {
             .collect())
     }
 
-    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+    async fn find_by_section(
+        &self,
+        section_id: Uuid,
+    ) -> Result<Vec<DomainEnrollment>, DomainError> {
         let models = EnrollmentEntity::find()
             .filter(enrollment::Column::SectionId.eq(section_id))
             .all(&self.db)
