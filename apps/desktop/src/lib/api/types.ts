@@ -1212,6 +1212,25 @@ export interface ProvisionDefaultsResultDto {
   state: OnboardingStateDto;
 }
 
+export interface OfficialCalendarTemplateDto {
+  code: string;
+  name: string;
+  name_ar: string;
+  country: string;
+  country_name: string;
+  country_name_ar: string;
+  hijri_year: number;
+  gregorian_years: string;
+  decision_number?: string;
+  decision_date?: string;
+  authority: string;
+  authority_ar: string;
+}
+
+export interface ApplyCalendarTemplateRequest {
+  template_code: string;
+}
+
 export type RoundingMode = 'round_half_up' | 'round_up' | 'round_down' | 'truncate';
 export type RankingScope = 'class' | 'grade_level' | 'org_unit' | 'cohort';
 export type TiePolicy = 'standard_competition' | 'dense' | 'fractional';
@@ -1586,6 +1605,8 @@ export interface OrbisApiClient {
   unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
+  listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
+  applyCalendarTemplate(yearId: string, req: ApplyCalendarTemplateRequest): Promise<AcademicPeriodDto[]>;
 
   // ── Academic ────────────────────────────────────────────────
   createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;

@@ -41,6 +41,8 @@ import type {
   UpdateYearRequest,
   CreatePeriodRequest,
   UpdatePeriodRequest,
+  OfficialCalendarTemplateDto,
+  ApplyCalendarTemplateRequest,
   SubjectDto,
   ClassDto,
   SectionSubjectDto,
@@ -564,6 +566,27 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.listPeriodTypes({ client: this.client })) ?? [];
   }
 
+  async listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]> {
+    return this.call<OfficialCalendarTemplateDto[]>(
+      this.client.get<OfficialCalendarTemplateDto[]>({
+        url: "/api/v1/official-calendar-templates",
+      }),
+    ) ?? [];
+  }
+
+  async applyCalendarTemplate(
+    yearId: string,
+    req: ApplyCalendarTemplateRequest,
+  ): Promise<AcademicPeriodDto[]> {
+    return this.call<AcademicPeriodDto[]>(
+      this.client.post<AcademicPeriodDto[]>({
+        url: `/api/v1/academic-years/${encodeURIComponent(yearId)}/apply-template`,
+        body: JSON.stringify(req),
+        headers: { "Content-Type": "application/json" },
+      }),
+    ) ?? [];
+  }
+
   // ── Academic ────────────────────────────────────────────────
   async createSubject(req: CreateSubjectRequest): Promise<SubjectDto> {
     return this.call(sdk.createSubject({ client: this.client, body: req }));
@@ -591,21 +614,8 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.updateSection({ client: this.client, path: { id }, body: req }));
   }
 
-  async listClasses(): Promise<ClassDto[]> {
-    return this.listSections();
-  }
 
-  async getClass(id: string): Promise<ClassDto> {
-    return this.getSection(id);
-  }
 
-  async createClass(req: CreateClassRequest): Promise<ClassDto> {
-    return this.createSection(req);
-  }
-
-  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
-    return this.updateSection(id, req);
-  }
 
   async listSubjects(): Promise<SubjectDto[]> {
     return this.call(sdk.listSubjects({ client: this.client })) ?? [];
@@ -615,21 +625,8 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.getSubject({ client: this.client, path: { id } }));
   }
 
-  async createClass(req: CreateClassRequest): Promise<ClassDto> {
-    return this.call(sdk.createClass({ client: this.client, body: req }));
-  }
 
-  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
-    return this.call(sdk.updateClass({ client: this.client, path: { id }, body: req }));
-  }
 
-  async listClasses(): Promise<ClassDto[]> {
-    return this.call(sdk.listClasses({ client: this.client })) ?? [];
-  }
-
-  async getClass(id: string): Promise<ClassDto> {
-    return this.call(sdk.getClass({ client: this.client, path: { id } }));
-  }
 
   async assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto> {
     return this.call(sdk.assignSectionSubject({ client: this.client, body: req }));

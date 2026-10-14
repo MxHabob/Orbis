@@ -471,6 +471,76 @@ async fn list_period_types(
     Ok(ApiResponse::ok(dtos))
 }
 
+// ── Official Calendar Template Handlers ─────────────────────────
+
+#[derive(Serialize, ToSchema)]
+pub struct OfficialCalendarTemplateDto {
+    pub code: String,
+    pub name: String,
+    pub name_ar: String,
+    pub country: String,
+    pub country_name: String,
+    pub country_name_ar: String,
+    pub hijri_year: i32,
+    pub gregorian_years: String,
+    pub decision_number: Option<String>,
+    pub decision_date: Option<String>,
+    pub authority: String,
+    pub authority_ar: String,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct ApplyCalendarTemplateRequest {
+    pub template_code: String,
+}
+
+#[utoipa::path(get, path = "/api/v1/official-calendar-templates",
+    responses((status = 200, body = Vec<OfficialCalendarTemplateDto>)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn list_official_templates(
+    _ctx: AuthContext,
+    State(state): State<AppState>,
+) -> Result<Json<ApiResponse<Vec<OfficialCalendarTemplateDto>>>, ApiError> {
+    let templates = state.calendar_service.list_official_templates();
+    let dtos = templates
+        .into_iter()
+        .map(|t| OfficialCalendarTemplateDto {
+            code: t.code,
+            name: t.name,
+            name_ar: t.name_ar,
+            country: t.country,
+            country_name: t.country_name,
+            country_name_ar: t.country_name_ar,
+            hijri_year: t.hijri_year,
+            gregorian_years: t.gregorian_years,
+            decision_number: t.decision_number,
+            decision_date: t.decision_date,
+            authority: t.authority,
+            authority_ar: t.authority_ar,
+        })
+        .collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(post, path = "/api/v1/academic-years/{id}/apply-template",
+    params(("id" = Uuid, Path, description = "Academic Year ID")),
+    request_body = ApplyCalendarTemplateRequest,
+    responses((status = 200, body = Vec<AcademicPeriodDto>)),
+    security(("bearer" = [])), tag = "Calendar")]
+async fn apply_calendar_template(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(payload): Json<ApplyCalendarTemplateRequest>,
+) -> Result<Json<ApiResponse<Vec<AcademicPeriodDto>>>, ApiError> {
+    let periods = state
+        .calendar_service
+        .apply_official_calendar_template(&ctx, id, &payload.template_code)
+        .await?;
+    let dtos = periods.into_iter().map(period_to_dto).collect();
+    Ok(ApiResponse::ok(dtos))
+}
+
 // ── Router ──────────────────────────────────────────────────────
 
 pub fn routes() -> Router<AppState> {
@@ -488,6 +558,10 @@ pub fn routes() -> Router<AppState> {
             post(archive_year_handler),
         )
         .route(
+            "/api/v1/academic-years/:id/apply-template",
+            post(apply_calendar_template),
+        )
+        .route(
             "/api/v1/academic-periods",
             post(create_period).get(list_periods),
         )
@@ -501,4 +575,8 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/academic-periods/:id/unlock", post(unlock_period))
         .route("/api/v1/academic-periods/:id/close", post(close_period))
         .route("/api/v1/period-templates", get(list_period_types))
+        .route(
+            "/api/v1/official-calendar-templates",
+            get(list_official_templates),
+        )
 }

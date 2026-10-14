@@ -195,6 +195,21 @@ close completed years, archive historical years, and view period structure.
     }
   }
 
+  let isApplyingTemplate = $state(false);
+
+  async function handleApplyTemplate(year: academicCalendarDto) {
+    isApplyingTemplate = true;
+    try {
+      await api.applyCalendarTemplate(year.id, { template_code: "YE-1447-1448" });
+      toast.success("Official calendar template applied successfully.");
+      await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+    } catch (e: unknown) {
+      toast.error(extractErrorMessage(e));
+    } finally {
+      isApplyingTemplate = false;
+    }
+  }
+
   const relatedActionGroups = $derived<ActionGroup[]>([
     {
       id: "academic_calendar_navigation",
@@ -407,6 +422,20 @@ close completed years, archive historical years, and view period structure.
                 </Button>
               {/if}
 
+              {#if !isArchived}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  class="h-7 gap-1 px-2 text-[11px] font-medium text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-400"
+                  disabled={isApplyingTemplate}
+                  onclick={() => handleApplyTemplate(year)}
+                  title="Apply Official Yemen Calendar Template"
+                >
+                  <Calendar size={12} />
+                  <span>{isApplyingTemplate ? "Applying…" : "🇾🇪 Apply Template"}</span>
+                </Button>
+              {/if}
+
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -451,7 +480,7 @@ close completed years, archive historical years, and view period structure.
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {#each yearPeriods as period (period.id)}
                     {@const isPeriodActive = period.status === "active"}
-                    {@const isPeriodLocked = period.is_locked === 1}
+                    {@const isPeriodLocked = period.is_locked === true}
                     <div class="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background p-2.5 text-xs">
                       <div class="flex flex-col min-w-0">
                         <span class="font-medium text-foreground truncate text-[11px]">

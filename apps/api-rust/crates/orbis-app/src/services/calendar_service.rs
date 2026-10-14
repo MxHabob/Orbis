@@ -760,4 +760,104 @@ impl CalendarService {
         self.period_repo.delete(period_id).await?;
         Ok(())
     }
+
+    // ── Official Calendar Templates ─────────────────────────────
+
+    /// Returns the list of available official calendar templates.
+    pub fn list_official_templates(
+        &self,
+    ) -> Vec<super::calendar_templates::CalendarTemplateInfo> {
+        super::calendar_templates::list_all_templates()
+    }
+
+    /// Apply an official calendar template to an academic year.
+    ///
+    /// This creates the supplementary periods defined by the template
+    /// (prep, breaks, public exams) alongside the core teaching structure.
+    /// Periods with matching codes that already exist are skipped (idempotent).
+    ///
+    /// The core 8-month Hijri teaching structure should be provisioned
+    /// separately via `OnboardingService::provision_hijri_school_calendar`.
+    /// This method adds the supplementary periods that complete the
+    /// official calendar.
+    pub async fn apply_official_calendar_template(
+        &self,
+        ctx: &RequestContext,
+        year_id: Uuid,
+        template_code: &str,
+    ) -> Result<Vec<AcademicPeriod>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::PeriodWrite)
+            .await?;
+
+        // Validate template exists
+        let _template =
+            super::calendar_templates::find_template(template_code).ok_or_else(|| {
+                DomainError::NotFound(format!(
+                    "Official calendar template '{}' not found",
+                    template_code
+                ))
+            })?;
+
+        // Load the year
+        let year = self
+            .year_repo
+            .find_by_id(year_id)
+            .await?
+            .ok_or_else(|| {
+                DomainError::NotFound(format!("Academic year {} not found", year_id))
+            })?;
+
+        // Load existing periods for idempotency check
+        let existing_periods = self.period_repo.find_by_year(year_id).await?;
+        let existing_codes: Vec<String> = existing_periods
+            .iter()
+            .filter_map(|p| p.code.clone())
+            .collect();
+
+        // Find term boundaries for placing mid-year break and public exams
+        let term1_end = existing_periods
+            .iter()
+            .find(|p| p.code.as_deref() == Some("T1") && p.parent_id.is_none())
+            .map(|p| p.end_date.date_naive());
+
+        let term2_end = existing_periods
+            .iter()
+            .find(|p| p.code.as_deref() == Some("T2") && p.parent_id.is_none())
+            .map(|p| p.end_date.date_naive());
+
+        let now = Utc::now();
+        let year_start = year.start_date.date_naive();
+
+        // Build supplementary periods using the template
+        let new_periods =
+            super::calendar_templates::yemen_1447_1448::build_supplementary_periods(
+                year.org_id,
+                year_id,
+                year_start,
+                term1_end,
+                term2_end,
+                &existing_codes,
+                now,
+            );
+
+        // Persist the new periods
+        let mut created = Vec::new();
+        for period in new_periods {
+            self.period_repo.save(&period).await?;
+            created.push(period);
+        }
+
+        // Update year metadata with provenance
+        let mut updated_year = year;
+        updated_year.notes = Some(format!(
+            "Official calendar: Ministerial Decision No. {} — {}",
+            super::calendar_templates::yemen_1447_1448::DECISION_NUMBER,
+            super::calendar_templates::yemen_1447_1448::DECISION_AUTHORITY,
+        ));
+        updated_year.updated_at = now;
+        self.year_repo.save(&updated_year).await?;
+
+        Ok(created)
+    }
 }

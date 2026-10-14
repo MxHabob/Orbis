@@ -238,6 +238,8 @@ import type {
   ProvisionDefaultsResultDto,
   LicenseStateDto,
   ActivateKeyRequest,
+  OfficialCalendarTemplateDto,
+  ApplyCalendarTemplateRequest,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -431,6 +433,15 @@ export class LocalClient implements OrbisApiClient {
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
     return unwrap(await invoke("calendar_list_period_types"));
   }
+  async listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]> {
+    return unwrap(await invoke("calendar_list_official_templates"));
+  }
+  async applyCalendarTemplate(
+    yearId: string,
+    req: ApplyCalendarTemplateRequest,
+  ): Promise<AcademicPeriodDto[]> {
+    return unwrap(await invoke("calendar_apply_template", { yearId, request: req }));
+  }
 
   // ── Academic ────────────────────────────────────────────────
   async createSubject(req: CreateSubjectRequest): Promise<SubjectDto> {
@@ -455,40 +466,13 @@ export class LocalClient implements OrbisApiClient {
     return this.invoke<SectionDto>("academic_update_section", { request: { ...req, id } });
   }
 
-  async listClasses(): Promise<ClassDto[]> {
-    return this.listSections();
-  }
-
-  async getClass(id: string): Promise<ClassDto> {
-    return this.getSection(id);
-  }
-
-  async createClass(req: CreateClassRequest): Promise<ClassDto> {
-    return this.createSection(req);
-  }
-
-  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
-    return this.updateSection(id, req);
-  }
-
   async listSubjects(): Promise<SubjectDto[]> {
     return unwrap(await invoke("academic_list_subjects"));
   }
   async getSubject(id: string): Promise<SubjectDto> {
     return unwrap(await invoke("academic_get_subject", { id }));
   }
-  async createClass(req: CreateClassRequest): Promise<ClassDto> {
-    return unwrap(await invoke("academic_create_class", { request: req }));
-  }
-  async updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto> {
-    return unwrap(await invoke("academic_update_class", { request: { ...req, id } }));
-  }
-  async listClasses(): Promise<ClassDto[]> {
-    return unwrap(await invoke("academic_list_sections"));
-  }
-  async getClass(id: string): Promise<ClassDto> {
-    return unwrap(await invoke("academic_get_class", { id }));
-  }
+
   async assignSectionSubject(
     req: AssignSectionSubjectRequest,
   ): Promise<SectionSubjectDto> {

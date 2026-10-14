@@ -410,6 +410,31 @@ async function handleGenerateDefaultPeriods() {
   }
 }
 
+let isApplyingTemplate = $state(false);
+
+async function handleApplyOfficialTemplate(templateCode: string) {
+  if (!selectedYear) {
+    toast.error(m.onboarding_step3_period_err_year());
+    return;
+  }
+
+  isApplyingTemplate = true;
+  successMessage = null;
+  try {
+    await api.applyCalendarTemplate(String(selectedYear.id), {
+      template_code: templateCode,
+    });
+    periods = await api.listAcademicPeriods();
+    await refreshOnboardingState(orgId, m.common_action_failed());
+    successMessage = "Official calendar template applied successfully.";
+  } catch (err: unknown) {
+    console.error("Failed to apply official calendar template:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isApplyingTemplate = false;
+  }
+}
+
 function startYearEdit(year: academicCalendarDto) {
   editingYearId = String(year.id);
   editingYearName = year.name;
@@ -784,6 +809,31 @@ async function deleteYear(year: academicCalendarDto) {
                 : m.onboarding_step3_default_periods_btn()}
             </Button>
           </div>
+
+          <!-- Official Calendar Template -->
+          {#if periods.length > 0}
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
+              <div class="space-y-1">
+                <p class="text-xs font-semibold text-foreground">
+                  🇾🇪 Official Yemen School Calendar (1448 AH / 2026-2027)
+                </p>
+                <p class="text-xs text-muted-foreground">
+                  Apply supplementary periods from Ministerial Decision No. 100:
+                  admin opening, teacher prep, mid-year break, and public examination windows.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isApplyingTemplate || !selectedYearId}
+                onclick={() => handleApplyOfficialTemplate("YE-1447-1448")}
+                class="text-xs font-semibold"
+              >
+                {isApplyingTemplate ? "Applying…" : "Apply Official Calendar"}
+              </Button>
+            </div>
+          {/if}
         {/if}
 
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">

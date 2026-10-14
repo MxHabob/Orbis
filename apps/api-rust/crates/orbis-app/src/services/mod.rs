@@ -7,6 +7,7 @@ pub mod autopilot_service;
 pub mod bootstrap_service;
 pub mod calculation_engine;
 pub mod calendar_service;
+pub mod calendar_templates;
 pub mod coa_loader;
 pub mod document_service;
 pub mod employee_service;
