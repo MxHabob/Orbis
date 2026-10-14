@@ -5,21 +5,20 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import { api } from "$lib/api/client";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { FormField } from "@orbis/ui";
-import { Logo } from "@orbis/icons";
-import { Badge } from "@orbis/ui/badge";
-import type { ConnectionMode, RemoteHealthResult } from "$lib/api/types";
-import { ArrowLeft, ArrowPath, ArrowRight, ChartBar, CheckCircle, Computer, Database, GlobeAlt, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
+import SettingsRow from "$lib/shared/components/settings-row.svelte";
+import type { RemoteHealthResult } from "$lib/api/types";
+import { ArrowLeft, ArrowRight, ChartBar, CheckCircle, Computer, Database, GlobeAlt, InfoCircle } from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { onMount } from "svelte";
 import { configureApiClient } from "$lib/api";
-import { l } from "$lib/core/i18n";
 
 
 const isRTL = $derived(getLocale().startsWith("ar"));
@@ -55,7 +54,7 @@ const connectionSchema = z.object({
       if (!value.trim()) {
         context.addIssue({
           code: "custom",
-          message: l("هذا الحقل مطلوب", "This field is required"),
+          message: m.setup_connection_required_field(),
           path: [field],
         });
       }
@@ -115,7 +114,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
 
   await form.submit(async (values) => {
     await api.connectionSetConfig({
-      mode: values.mode as ConnectionMode,
+      mode: values.mode,
       serverUrl: values.mode === "api" ? values.serverUrl.trim() : undefined,
       databaseEngine: values.mode === "direct" ? "postgres" : undefined,
       host: values.mode === "direct" ? values.host.trim() : undefined,
@@ -135,9 +134,9 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
     if (result.connected) {
       const hasOrg = await api.systemHasOrganization();
       if (hasOrg) {
-        goto(localizeHref("/login"), { replaceState: true });
+        goto(resolve(localizeHref("/login")), { replaceState: true });
       } else {
-        goto(localizeHref("/onboarding"), { replaceState: true });
+        goto(resolve(localizeHref("/onboarding")), { replaceState: true });
       }
     } else {
       throw new Error(result.message || m.setup_connection_failed());
@@ -146,249 +145,214 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
 }
 </script>
 
-<div class="min-h-full w-full bg-[#191e28] px-4 py-6 sm:px-6 lg:px-8">
-  <div class="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl items-center justify-center">
-    <div class="w-full max-w-5xl overflow-hidden rounded-[26px] border border-border/80 bg-[#1e232d]/90 shadow-[0_20px_80px_rgba(0,0,0,0.38)] backdrop-blur-xl">
-      <header class="flex items-center justify-between border-b border-border/70 bg-[#1a1f2a]/80 px-5 py-3.5 sm:px-6">
-        <div class="flex items-center gap-3">
-          <div class="flex size-8 items-center justify-center rounded-xl border border-primary/30 bg-primary/10 text-primary">
-            <Logo class="size-4" dotClass="fill-primary" />
-          </div>
-          <div class="text-left">
-            <h1 class="text-sm font-semibold text-foreground sm:text-base">{m.setup_connection_title()}</h1>
-            <p class="text-[11px] text-muted-foreground">{m.setup_connection_subtitle()}</p>
-          </div>
+<div class="flex h-full w-full flex-col gap-6 overflow-y-auto p-4 sm:p-6">
+  <form onsubmit={handleConnect} class="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <Card>
+      <CardHeader>
+        <CardTitle>{m.setup_connection_title()}</CardTitle>
+        <p class="text-xs text-muted-foreground">{m.setup_connection_subtitle()}</p>
+      </CardHeader>
+      <CardContent class="p-0">
+        <div role="group" aria-label={m.setup_connection_mode_title()}>
+          <button
+            type="button"
+            aria-pressed={form.values.mode === "local"}
+            class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            onclick={() => { form.values.mode = "local"; form.clearError(); healthResult = null; }}
+          >
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <Computer size={16} />
+            </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="text-xs font-semibold text-foreground">{m.setup_connection_local_title()}</span>
+              <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_local_desc()}</span>
+            </span>
+            {#if form.values.mode === "local"}
+              <CheckCircle class="size-4 shrink-0 text-primary" />
+            {/if}
+          </button>
+
+          <button
+            type="button"
+            aria-pressed={form.values.mode === "direct"}
+            class="flex w-full items-center gap-4 border-t border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            onclick={() => { form.values.mode = "direct"; form.clearError(); healthResult = null; }}
+          >
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <Database size={16} />
+            </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="text-xs font-semibold text-foreground">{m.setup_connection_direct_title()}</span>
+              <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_direct_desc()}</span>
+            </span>
+            {#if form.values.mode === "direct"}
+              <CheckCircle class="size-4 shrink-0 text-primary" />
+            {/if}
+          </button>
+
+          <button
+            type="button"
+            aria-pressed={form.values.mode === "api"}
+            class="flex w-full items-center gap-4 border-y border-border px-6 py-4 text-start transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+            onclick={() => { form.values.mode = "api"; form.clearError(); healthResult = null; }}
+          >
+            <span class="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <GlobeAlt size={16} />
+            </span>
+            <span class="flex min-w-0 flex-1 flex-col gap-1">
+              <span class="text-xs font-semibold text-foreground">{m.setup_connection_remote_title()}</span>
+              <span class="text-[11px] leading-relaxed text-muted-foreground">{m.setup_connection_remote_desc()}</span>
+            </span>
+            {#if form.values.mode === "api"}
+              <CheckCircle class="size-4 shrink-0 text-primary" />
+            {/if}
+          </button>
         </div>
+        <p class="px-6 py-4 text-[11px] leading-relaxed text-muted-foreground">{m.ui_copy_all_connections_and_data_are_strictly_isol_e420944a()}</p>
+      </CardContent>
+    </Card>
 
-        <Badge variant="outline" class="gap-1.5 border-border/60 bg-background/40 px-2.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-          <ChartBar size={10} class="text-emerald-500" />
-          <span>{m.auth_ui_connection_engine_label()}</span>
-        </Badge>
-      </header>
-
-      <form onsubmit={handleConnect} class="p-4 sm:p-6 lg:p-8">
+    <Card>
+      <CardHeader>
+        <CardTitle>{m.setup_connection_configuration_title()}</CardTitle>
+      </CardHeader>
+      <CardContent class="p-0">
         {#if form.formError}
-          <div class="mb-5 flex items-center gap-2.5 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+          <div class="mx-6 mt-5 flex items-center gap-2.5 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
             <InfoCircle class="size-4 shrink-0" />
             <span>{form.formError}</span>
           </div>
         {/if}
 
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.08fr_1.72fr]">
-          <aside class="rounded-2xl border border-border/60 bg-muted/10 p-4 text-left shadow-inner shadow-black/10 sm:p-5">
-            <div class="mb-4 flex items-center gap-2 border-b border-border/40 pb-2">
-              <Database size={15} class="text-primary" />
-              <h2 class="text-xs font-bold text-foreground sm:text-sm">{m.ui_copy_system_architecture_c18b3d52()}</h2>
-            </div>
-
-            <p class="text-xs leading-relaxed text-muted-foreground">
-              {l("يدعم Orbis ثلاثة أنماط اتصال لتناسب بيئات المؤسسات المختلفة:", "Orbis supports three connection modes for different institutional environments:")}
-            </p>
-
-            <div class="mt-4 space-y-3">
-              <div class="rounded-xl border border-border/50 bg-card/60 p-3">
-                <div class="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <Computer size={13} class="text-primary" />
-                  <span>{m.ui_copy_local_embedded_mode_9a445d7e()}</span>
-                </div>
-                <p class="mt-1 text-[11px] leading-normal text-muted-foreground">
-                  {m.ui_copy_operates_completely_offline_with_an_embedd_6b260871()}
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-border/50 bg-card/60 p-3">
-                <div class="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <Database size={13} class="text-primary" />
-                  <span>{l("اتصال مباشر بـ PostgreSQL", "Direct PostgreSQL")}</span>
-                </div>
-                <p class="mt-1 text-[11px] leading-normal text-muted-foreground">
-                  {l("يتصل التطبيق مباشرةً بقاعدة PostgreSQL عبر الشبكة المحلية.", "The application connects directly to PostgreSQL over the network.")}
-                </p>
-              </div>
-
-              <div class="rounded-xl border border-border/50 bg-card/60 p-3">
-                <div class="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <GlobeAlt size={13} class="text-primary" />
-                  <span>{m.ui_copy_remote_cloud_mode_0bab5a3e()}</span>
-                </div>
-                <p class="mt-1 text-[11px] leading-normal text-muted-foreground">
-                  {m.ui_copy_connects_to_a_central_orbis_api_server_for_ed966b7f()}
-                </p>
-              </div>
-            </div>
-
-            <div class="mt-5 flex items-center gap-2 border-t border-border/30 pt-3 text-[11px] text-muted-foreground">
-              <UserBadgeCheck size={12} class="shrink-0 text-primary" />
-              <span>{m.ui_copy_all_connections_and_data_are_strictly_isol_e420944a()}</span>
-            </div>
-          </aside>
-
-          <section class="space-y-5">
-            <div class="text-center lg:text-left">
-              <p class="text-xs font-bold text-foreground">{m.ui_copy_select_connection_mode_acd68c8e()}</p>
-            </div>
-
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <button
-                type="button"
-                class="cursor-pointer rounded-2xl border-2 p-4 text-left transition-all {form.values.mode === 'local' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/60 bg-muted/5 hover:border-border hover:bg-muted/15'}"
-                onclick={() => { form.values.mode = 'local'; form.clearError(); healthResult = null; }}
-              >
-                <div class="mb-3 flex items-center justify-between">
-                  <div class="flex size-9 items-center justify-center rounded-xl {form.values.mode === 'local' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                    <Database size={16} />
-                  </div>
-                  {#if form.values.mode === 'local'}
-                    <div class="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <CheckCircle size={12} />
-                    </div>
-                  {/if}
-                </div>
-                <h3 class="text-xs font-bold text-foreground">{m.setup_connection_local_title()}</h3>
-                <p class="mt-1 text-[11px] leading-normal text-muted-foreground">{m.setup_connection_local_desc()}</p>
-              </button>
-
-              <button
-                type="button"
-                class="cursor-pointer rounded-2xl border-2 p-4 text-left transition-all {form.values.mode === 'direct' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/60 bg-muted/5 hover:border-border hover:bg-muted/15'}"
-                onclick={() => { form.values.mode = 'direct'; form.clearError(); healthResult = null; }}
-              >
-                <div class="mb-3 flex items-center justify-between">
-                  <div class="flex size-9 items-center justify-center rounded-xl {form.values.mode === 'direct' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                    <Database size={16} />
-                  </div>
-                  {#if form.values.mode === 'direct'}
-                    <div class="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <CheckCircle size={12} />
-                    </div>
-                  {/if}
-                </div>
-                <h3 class="text-xs font-bold text-foreground">{l("اتصال PostgreSQL مباشر", "Direct PostgreSQL")}</h3>
-                <p class="mt-1 text-[11px] leading-normal text-muted-foreground">
-                  {l("اتصال مباشر بقاعدة PostgreSQL عبر الشبكة دون وسيط API.", "Direct network connection to PostgreSQL without an API intermediary.")}
-                </p>
-              </button>
-
-              <button
-                type="button"
-                class="cursor-pointer rounded-2xl border-2 p-4 text-left transition-all {form.values.mode === 'api' ? 'border-primary bg-primary/5 shadow-sm' : 'border-border/60 bg-muted/5 hover:border-border hover:bg-muted/15'}"
-                onclick={() => { form.values.mode = 'api'; form.clearError(); healthResult = null; }}
-              >
-                <div class="mb-3 flex items-center justify-between">
-                  <div class="flex size-9 items-center justify-center rounded-xl {form.values.mode === 'api' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
-                    <GlobeAlt size={16} />
-                  </div>
-                  {#if form.values.mode === 'api'}
-                    <div class="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <CheckCircle size={12} />
-                    </div>
-                  {/if}
-                </div>
-                <h3 class="text-xs font-bold text-foreground">{m.setup_connection_remote_title()}</h3>
-                <p class="mt-1 text-[11px] leading-normal text-muted-foreground">{m.setup_connection_remote_desc()}</p>
-              </button>
-            </div>
-
-            <div class="rounded-2xl border border-border/60 bg-muted/10 p-4 sm:p-5">
-              {#if form.values.mode === 'local'}
-                <div class="space-y-3">
-                  <FormField id="dbFilename" label={m.setup_connection_db_file_label()} error={fieldError('dbFilename')} required>
-                    {#snippet children()}
-                      <Input id="dbFilename" type="text" bind:value={form.values.dbFilename} disabled={form.isSubmitting} class="h-9 border-input bg-background text-xs font-mono" placeholder="orbis.db" />
-                    {/snippet}
-                  </FormField>
-                  <p class="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                    <Computer size={12} class="shrink-0 text-muted-foreground/80" />
-                    <span>{m.setup_connection_db_file_hint()}</span>
-                  </p>
-                </div>
-              {:else if form.values.mode === 'api'}
-                <div class="space-y-3">
-                  <FormField id="serverUrl" label={m.setup_connection_server_url_label()} error={fieldError('serverUrl')} required>
-                    {#snippet children()}
-                      <div class="flex gap-2">
-                        <Input id="serverUrl" type="url" bind:value={form.values.serverUrl} disabled={form.isSubmitting} class="h-9 flex-1 border-input bg-background text-xs font-mono" placeholder="http://localhost:3000" />
-                        <Button type="button" variant="outline" size="sm" class="h-9 shrink-0 border-border px-3 text-xs" onclick={checkHealth} disabled={isCheckingHealth || !form.values.serverUrl.trim()}>
-                          {#if isCheckingHealth}
-                            <LoadingIndicator class="size-3.5" size={14} />
-                          {:else}
-                            <ChartBar class="size-3.5 text-primary" />
-                          {/if}
-                          <span>{m.setup_connection_test_btn()}</span>
-                        </Button>
-                      </div>
-                    {/snippet}
-                  </FormField>
-
-                  {#if healthResult}
-                    <div class="flex items-center gap-2 rounded-xl border p-2.5 text-xs {healthResult.reachable ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'border-destructive/20 bg-destructive/10 text-destructive'}">
-                      {#if healthResult.reachable}
-                        <CheckCircle class="size-4 shrink-0" />
-                        <span>{m.setup_connection_connected_status({ status: healthResult.status ?? 'ok', version: healthResult.version ?? '1.0' })}</span>
-                      {:else}
-                        <InfoCircle class="size-4 shrink-0" />
-                        <span>{healthResult.error ?? m.setup_connection_unreachable()}</span>
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
-              {:else}
-                <div class="space-y-4">
-                  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <FormField id="host" label={m.ui_copy_database_host_218c7a89()} error={fieldError('host')} required>
-                      {#snippet children()}
-                        <Input id="host" bind:value={form.values.host} disabled={form.isSubmitting} placeholder="localhost" />
-                      {/snippet}
-                    </FormField>
-
-                    <FormField id="port" label={m.ui_copy_port_966ae516()} error={fieldError('port')} required>
-                      {#snippet children()}
-                        <Input id="port" type="number" bind:value={form.values.port} disabled={form.isSubmitting} />
-                      {/snippet}
-                    </FormField>
-
-                    <FormField id="databaseName" label={m.ui_copy_database_name_72beaf93()} error={fieldError('databaseName')} required>
-                      {#snippet children()}
-                        <Input id="databaseName" bind:value={form.values.databaseName} disabled={form.isSubmitting} placeholder="orbis_db" />
-                      {/snippet}
-                    </FormField>
-
-                    <FormField id="username" label={m.ui_copy_username_f733f5b3()} error={fieldError('username')} required>
-                      {#snippet children()}
-                        <Input id="username" bind:value={form.values.username} disabled={form.isSubmitting} />
-                      {/snippet}
-                    </FormField>
-                  </div>
-
-                  <FormField id="password" label={m.common_user_form_password()} error={fieldError('password')} required>
-                    {#snippet children()}
-                      <Input id="password" type="password" bind:value={form.values.password} disabled={form.isSubmitting} />
-                    {/snippet}
-                  </FormField>
-
-                  <p class="text-[11px] text-muted-foreground">
-                    {l("يتصل هذا الجهاز مباشرةً بقاعدة البيانات. استخدم حسابًا محدود الصلاحيات وعلى شبكة موثوقة.", "This device connects directly to the database. Use a least-privilege account on a trusted network.")}
-                  </p>
-                </div>
-              {/if}
-            </div>
-
-            <Button type="submit" variant="default" class="h-11 w-full text-xs font-bold shadow-sm shadow-primary/20" disabled={form.isSubmitting || (form.values.mode === 'api' && healthResult !== null && !healthResult.reachable)}>
-              {#if form.isSubmitting}
-                <LoadingIndicator class="size-4" size={16} />
-                <span>{m.setup_connection_connecting()}</span>
-              {:else}
-                <span>{m.setup_connection_connect_btn()}</span>
-                {#if isRTL}
-                  <ArrowLeft class="size-4" />
-                {:else}
-                  <ArrowRight class="size-4" />
+        {#if form.values.mode === "local"}
+          <SettingsRow
+            title={m.setup_connection_db_file_label()}
+            description={m.setup_connection_db_file_hint()}
+            labelFor="dbFilename"
+            required
+            last
+          >
+            {#snippet children()}
+              <div class="w-full space-y-1">
+                <Input id="dbFilename" bind:value={form.values.dbFilename} disabled={form.isSubmitting} class="h-9 bg-background font-mono" placeholder="orbis.db" aria-invalid={!!fieldError("dbFilename")} />
+                {#if fieldError("dbFilename")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("dbFilename")}</p>
                 {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+        {:else if form.values.mode === "api"}
+          <SettingsRow
+            title={m.setup_connection_server_url_label()}
+            description={m.setup_connection_server_url_description()}
+            labelFor="serverUrl"
+            required
+            last={!healthResult}
+          >
+            {#snippet children()}
+              <div class="w-full space-y-2">
+                <div class="flex gap-2">
+                  <Input id="serverUrl" type="url" bind:value={form.values.serverUrl} disabled={form.isSubmitting} class="h-9 min-w-0 flex-1 bg-background font-mono" placeholder="https://school.example.com" aria-invalid={!!fieldError("serverUrl")} />
+                  <Button type="button" variant="outline" size="sm" class="h-9 shrink-0" onclick={checkHealth} disabled={isCheckingHealth || !form.values.serverUrl.trim()}>
+                    {#if isCheckingHealth}
+                      <LoadingIndicator class="size-3.5" size={14} />
+                    {:else}
+                      <ChartBar class="size-3.5" />
+                    {/if}
+                    <span>{m.setup_connection_test_btn()}</span>
+                  </Button>
+                </div>
+                {#if fieldError("serverUrl")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("serverUrl")}</p>
+                {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          {#if healthResult}
+            <div class="mx-6 mb-4 flex items-center gap-2 rounded-md border px-3 py-2 text-xs {healthResult.reachable ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'border-destructive/30 bg-destructive/10 text-destructive'}">
+              {#if healthResult.reachable}
+                <CheckCircle class="size-4 shrink-0" />
+                <span>{m.setup_connection_connected_status({ version: healthResult.version ?? "1.0", latency: healthResult.latency_ms })}</span>
+              {:else}
+                <InfoCircle class="size-4 shrink-0" />
+                <span>{healthResult.error ?? m.setup_connection_unreachable()}</span>
               {/if}
-            </Button>
-          </section>
+            </div>
+          {/if}
+        {:else}
+          <SettingsRow title={m.ui_copy_database_host_218c7a89()} labelFor="host" required>
+            {#snippet children()}
+              <div class="w-full space-y-1">
+                <Input id="host" bind:value={form.values.host} disabled={form.isSubmitting} placeholder="localhost" aria-invalid={!!fieldError("host")} />
+                {#if fieldError("host")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("host")}</p>
+                {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          <SettingsRow title={m.ui_copy_port_966ae516()} labelFor="port" required>
+            {#snippet children()}
+              <div class="w-full space-y-1">
+                <Input id="port" type="number" bind:value={form.values.port} disabled={form.isSubmitting} aria-invalid={!!fieldError("port")} />
+                {#if fieldError("port")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("port")}</p>
+                {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          <SettingsRow title={m.ui_copy_database_name_72beaf93()} labelFor="databaseName" required>
+            {#snippet children()}
+              <div class="w-full space-y-1">
+                <Input id="databaseName" bind:value={form.values.databaseName} disabled={form.isSubmitting} placeholder="orbis_db" aria-invalid={!!fieldError("databaseName")} />
+                {#if fieldError("databaseName")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("databaseName")}</p>
+                {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          <SettingsRow title={m.ui_copy_username_f733f5b3()} labelFor="username" required>
+            {#snippet children()}
+              <div class="w-full space-y-1">
+                <Input id="username" bind:value={form.values.username} disabled={form.isSubmitting} aria-invalid={!!fieldError("username")} />
+                {#if fieldError("username")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("username")}</p>
+                {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          <SettingsRow title={m.common_user_form_password()} labelFor="password" required>
+            {#snippet children()}
+              <div class="w-full space-y-1">
+                <Input id="password" type="password" bind:value={form.values.password} disabled={form.isSubmitting} aria-invalid={!!fieldError("password")} />
+                {#if fieldError("password")}
+                  <p class="text-[11px] text-destructive" role="alert">{fieldError("password")}</p>
+                {/if}
+              </div>
+            {/snippet}
+          </SettingsRow>
+          <SettingsRow
+            title={m.setup_connection_direct_security_title()}
+            description={m.setup_connection_direct_security_hint()}
+            last
+          />
+        {/if}
+
+        <div class="flex justify-end border-t border-border px-6 py-4">
+          <Button type="submit" variant="default" class="min-w-40" disabled={form.isSubmitting || (form.values.mode === "api" && healthResult !== null && !healthResult.reachable)}>
+            {#if form.isSubmitting}
+              <LoadingIndicator class="size-4" size={16} />
+              <span>{m.setup_connection_connecting()}</span>
+            {:else}
+              <span>{m.setup_connection_connect_btn()}</span>
+              {#if isRTL}
+                <ArrowLeft class="size-4" />
+              {:else}
+                <ArrowRight class="size-4" />
+              {/if}
+            {/if}
+          </Button>
         </div>
-      </form>
-    </div>
-  </div>
+      </CardContent>
+    </Card>
+  </form>
 </div>
