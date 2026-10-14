@@ -16,8 +16,8 @@ import { localeState } from "$lib/core/i18n/locale-state.svelte";
 
 let { children } = $props();
 
-// Apply lang & dir to documentElement
-$effect(() => {
+// Keep document metadata in sync before the next DOM update after locale changes.
+$effect.pre(() => {
   localeState.revision;
   const currentLocale = getLocale();
   const dir = getTextDirection(currentLocale);
