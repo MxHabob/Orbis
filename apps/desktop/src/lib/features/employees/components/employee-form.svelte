@@ -329,18 +329,22 @@ function handleCancelClick() {
   </Sheet.Header>
 
   <!-- Scrollable Form Body with Accordion Layout -->
-  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    <Accordion type="multiple" value={["personal", "employment", "payroll"]} class="flex flex-col gap-4">
+  <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-5 scrollbar-hide">
+    <Accordion
+      type="multiple"
+      value={["personal", "employment", "payroll"]}
+      class="flex flex-col"
+    >
       
       <!-- 1. PERSONAL INFORMATION -->
-      <AccordionItem value="personal" class="rounded-lg border border-border/40 bg-card/60">
-        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+      <AccordionItem value="personal" class="border-b border-border/50">
+        <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <User size={16} class="text-primary" />
             <span>{m.employees_tab_personal()}</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+        <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
           
           <BilingualNameFields
             arId="employee-full-name-ar"
@@ -360,7 +364,7 @@ function handleCancelClick() {
           />
 
           <!-- ID & Demographic Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_national_id()}>
               {#snippet children()}
               <Input
@@ -433,7 +437,7 @@ function handleCancelClick() {
           </div>
 
           <!-- Contact & Nationality -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_phone()}>
               {#snippet children()}
               <Input
@@ -499,7 +503,7 @@ function handleCancelClick() {
           </FormField>
 
           {#if mode === "create"}
-            <div class="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+            <div class="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-3 sm:p-4">
               <Checkbox
                 id="employee-create-login-account"
                 checked={createLoginAccount}
@@ -516,14 +520,14 @@ function handleCancelClick() {
       </AccordionItem>
 
       <!-- 2. EMPLOYMENT DETAILS -->
-      <AccordionItem value="employment" class="rounded-lg border border-border/40 bg-card/60">
-        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+      <AccordionItem value="employment" class="border-b border-border/50">
+        <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <BuildingOffice size={16} class="text-primary" />
             <span>{m.employees_tab_employment()}</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+        <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
           
           <div class="grid grid-cols-2 gap-3">
             <FormField label={m.employees_employee_number()}>
@@ -583,7 +587,7 @@ function handleCancelClick() {
             </FormField>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_employment_type()}>
               {#snippet children()}
               <Select type="single" value={employmentType} onValueChange={(v) => { if (v) employmentType = v; }} disabled={isSaving}>
@@ -652,17 +656,17 @@ function handleCancelClick() {
       </AccordionItem>
 
       <!-- 3. PAYROLL & COMPENSATION -->
-      <AccordionItem value="payroll" class="rounded-lg border border-border/40 bg-card/60">
-        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+      <AccordionItem value="payroll" class="border-b border-border/50">
+        <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <Banknotes size={16} class="text-emerald-500" />
             <span>{m.ui_copy_payroll_compensation_93b1d7a4()}</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+        <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
           
           <!-- Salary & Allowances Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.ui_copy_basic_salary_0385806d()}>
               {#snippet children()}
               <Input
@@ -768,7 +772,7 @@ function handleCancelClick() {
           </div>
 
           <!-- Bank & Routing Details -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <FormField label={m.ui_copy_payment_method_f140647a()}>
               {#snippet children()}
               <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) paymentMethod = v; }} disabled={isSaving}>
@@ -830,7 +834,7 @@ function handleCancelClick() {
   </div>
 
   <!-- Sticky Bottom Actions -->
-  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/80 backdrop-blur-xs">
+  <div class="px-4 py-3 sm:px-5 border-t border-border/40 flex gap-3 shrink-0 bg-background/95">
     <Button
       type="button"
       variant="ghost"
