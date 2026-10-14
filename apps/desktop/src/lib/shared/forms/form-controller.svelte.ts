@@ -157,22 +157,24 @@ export class FormController<Values, Payload = Values> {
   async submit(
     submit: (payload: Payload) => Promise<unknown>,
   ): Promise<boolean> {
+    if (this.isSubmitting) return false;
+
     this.formError = undefined;
     this.touched = { ...this.touched, __form: true };
-    if (!this.validate()) return false;
-    if (!(await this.validateAsync())) return false;
-
-    const candidate = this.options.normalize
-      ? this.options.normalize(this.values)
-      : this.values;
-    const parsed = this.options.schema.safeParse(candidate);
-    if (!parsed.success) {
-      this.errors = zodErrors(parsed.error);
-      return false;
-    }
-
     this.isSubmitting = true;
     try {
+      if (!this.validate()) return false;
+      if (!(await this.validateAsync())) return false;
+
+      const candidate = this.options.normalize
+        ? this.options.normalize(this.values)
+        : this.values;
+      const parsed = this.options.schema.safeParse(candidate);
+      if (!parsed.success) {
+        this.errors = zodErrors(parsed.error);
+        return false;
+      }
+
       await submit(parsed.data);
       return true;
     } catch (error) {

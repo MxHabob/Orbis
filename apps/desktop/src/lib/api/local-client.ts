@@ -484,7 +484,7 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("academic_update_class", { request: { ...req, id } }));
   }
   async listClasses(): Promise<ClassDto[]> {
-    return unwrap(await invoke("academic_list_classes"));
+    return unwrap(await invoke("academic_list_sections"));
   }
   async getClass(id: string): Promise<ClassDto> {
     return unwrap(await invoke("academic_get_class", { id }));
