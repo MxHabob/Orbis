@@ -13,6 +13,7 @@ import {
   type TemplateDocument,
 } from "@docforge/core";
 import { createEditorStore } from "./stores/editor-store.svelte";
+import { registerTemplateAiEditor } from "./template-ai-bridge";
 import {
   copyNodes,
   cutNodes,
@@ -64,6 +65,7 @@ let store = createEditorStore({
 let propertiesWidth = $state(320);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
+let unregisterTemplateAiEditor: (() => void) | null = null;
 
 $effect(() => {
   if (store.selectedIds.length > 0) {
@@ -227,6 +229,7 @@ async function initEditor() {
     });
 
     store.loadDocument(doc);
+    unregisterTemplateAiEditor = registerTemplateAiEditor(store);
     isLoading = false;
   } catch (e: unknown) {
     const msg = (e as any)?.message || m.shared_ui_template_editor_initialize_failed();
@@ -439,6 +442,7 @@ onMount(() => {
   window.addEventListener("keydown", handleKeydown);
   return () => {
     window.removeEventListener("keydown", handleKeydown);
+    unregisterTemplateAiEditor?.();
     store.destroy();
   };
 });
@@ -485,15 +489,14 @@ onMount(() => {
         {/if}
 
         <FlyoutPanel {store} />
+        {#if store.editorMode === "design" && isPropertiesOpen}
+          <PropertiesInspector
+            {store}
+            bind:width={propertiesWidth}
+            onclose={() => isPropertiesOpen = false}
+          />
+        {/if}
       </div>
-
-      {#if store.editorMode === "design" && isPropertiesOpen}
-        <PropertiesInspector
-          {store}
-          bind:width={propertiesWidth}
-          onclose={() => isPropertiesOpen = false}
-        />
-      {/if}
     </div>
     <StatusBar {store} />
   {/if}

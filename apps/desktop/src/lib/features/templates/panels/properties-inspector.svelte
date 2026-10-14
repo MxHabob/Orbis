@@ -1225,16 +1225,18 @@ function applyYemeniCertificateColumnsPreset() {
 
 <style>
   .properties-inspector {
-    position: relative;
+    position: absolute;
+    inset-block: 58px 12px;
+    inset-inline-end: 12px;
     width: 320px;
-    height: 100%;
+    max-width: calc(100% - 24px);
     background: var(--color-card);
-    border-inline-start: 1px solid var(--color-border);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 20;
-    flex-shrink: 0;
+    z-index: 40;
   }
 
   :global(.resize-handle) {

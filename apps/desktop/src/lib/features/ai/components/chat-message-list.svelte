@@ -24,6 +24,7 @@ let {
   onActionResponse,
   onRetry,
   onEditUserMessage,
+  onApplyTemplateDesign,
 }: {
   messages: AiChatMessage[];
   isThinking: boolean;
@@ -34,6 +35,7 @@ let {
   onActionResponse?: (action: ActionWithStatus, status: "executed" | "rejected") => void;
   onRetry?: (msgId: string) => void;
   onEditUserMessage?: (msgId: string, newText: string) => void;
+  onApplyTemplateDesign?: (content: string) => void;
 } = $props();
 
 let expandedTools = $state<Record<string, boolean>>({});
@@ -82,6 +84,29 @@ function toggleUserMessageExpand(msgId: string) {
 
 function toggleTool(key: string) {
   expandedTools[key] = !expandedTools[key];
+}
+
+function getTemplateDesignSummary(content: string): { name: string } | null {
+  try {
+    const result: unknown = JSON.parse(content);
+    if (
+      typeof result !== "object" ||
+      result === null ||
+      !("document" in result) ||
+      typeof result.document !== "object" ||
+      result.document === null ||
+      !("meta" in result.document) ||
+      typeof result.document.meta !== "object" ||
+      result.document.meta === null ||
+      !("name" in result.document.meta) ||
+      typeof result.document.meta.name !== "string"
+    ) {
+      return null;
+    }
+    return { name: result.document.meta.name };
+  } catch {
+    return null;
+  }
 }
 
 async function copyText(text: string, id: string) {
@@ -285,6 +310,27 @@ function handleContentClick(e: MouseEvent) {
                     </div>
                   {/if}
                 </div>
+                {#if tool.tool_name === "design_template" && !tool.is_error}
+                  {@const designSummary = getTemplateDesignSummary(tool.content)}
+                  <div class="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+                    <div class="min-w-0">
+                      <p class="text-xs font-semibold text-foreground">{m.template_ai_design_ready()}</p>
+                      {#if designSummary}
+                        <p class="mt-0.5 truncate text-[11px] text-muted-foreground">{designSummary.name}</p>
+                      {/if}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      class="shrink-0"
+                      disabled={!onApplyTemplateDesign}
+                      onclick={() => onApplyTemplateDesign?.(tool.content)}
+                    >
+                      <Sparkles size={12} class="me-1" />
+                      {m.template_ai_apply_design()}
+                    </Button>
+                  </div>
+                {/if}
               {/each}
             </div>
           {/if}

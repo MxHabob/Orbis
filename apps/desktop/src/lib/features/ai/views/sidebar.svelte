@@ -25,6 +25,10 @@ interactive tool inspections, and consequential action approvals.
   import Resizer from "$lib/shell/resizer.svelte";
   import { academicContext, aiContext, authStore, uiStore } from "$lib/stores";
   import { toast } from "@orbis/ui";
+  import {
+    applyTemplateAiDesign,
+    getTemplateAiEditorContext,
+  } from "$lib/features/templates/template-ai-bridge";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import AgentCockpit from "../components/agent-cockpit.svelte";
@@ -228,7 +232,8 @@ interactive tool inspections, and consequential action approvals.
           content: m.content,
         }));
 
-      const activeUiContext = aiContext.context
+      const templateEditorContext = getTemplateAiEditorContext();
+      const baseUiContext = aiContext.context
         ? {
             route: page.url.pathname,
             screen: aiContext.context.screen || aiContext.context.pageName,
@@ -257,6 +262,15 @@ interactive tool inspections, and consequential action approvals.
             class_id: academicContext.selectedClassId || undefined,
             subject_id: academicContext.selectedSubjectId || undefined,
           };
+      const activeUiContext = templateEditorContext
+        ? {
+            ...baseUiContext,
+            screen: "Template Editor",
+            domain: "template",
+            entity_type: templateEditorContext.entityType,
+            metadata: { template_editor_active: true },
+          }
+        : baseUiContext;
 
       const activeAcademicContext = {
         calendar_id: academicContext.currentYear?.id || null,
@@ -269,7 +283,9 @@ interactive tool inspections, and consequential action approvals.
 
       const response = await api.aiChat({
         messages: aiMessages,
-        screen_context: (aiContext.context as Record<string, unknown>) || null,
+        screen_context: templateEditorContext
+          ? { template_editor: templateEditorContext }
+          : (aiContext.context as Record<string, unknown>) || null,
         ui_context: activeUiContext,
         academic_context: activeAcademicContext,
         model: selectedModel ? selectedModel : undefined,
@@ -313,6 +329,19 @@ interactive tool inspections, and consequential action approvals.
     } finally {
       isThinking = false;
       scrollToBottom();
+    }
+  }
+
+  function handleApplyTemplateDesign(content: string) {
+    try {
+      applyTemplateAiDesign(content);
+      toast.success(m.template_ai_design_applied());
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : m.template_ai_no_active_editor(),
+      );
     }
   }
 
@@ -534,6 +563,7 @@ interactive tool inspections, and consequential action approvals.
         onActionResponse={handleActionResponse}
         onRetry={handleRetry}
         onEditUserMessage={handleEditUserMessage}
+        onApplyTemplateDesign={handleApplyTemplateDesign}
       />
     {/if}
 

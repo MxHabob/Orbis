@@ -744,6 +744,101 @@ impl AiOrchestrationService {
                 is_consequential: false,
                 category: ToolCategory::Generation,
             },
+            AiToolDefinition {
+                name: "design_template".into(),
+                description: "Create a complete, editable Orbis template document for the active template editor. Use only the supplied editor context and available variables. Return a polished, print-ready design using native nodes (Text, Shape, Image, Table, Barcode, QRCode, Separator, Frame, Grid, Repeater, Conditional, Header, Footer, Watermark). Positions and dimensions are millimeters. Bind data with {{variable.path}} expressions. Do not invent asset references or external image URLs. Do not include node IDs; the editor creates them. This tool is available only while a template is open. Return a concise user-language summary and the complete document.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "summary": {
+                            "type": "string",
+                            "description": "A short confirmation in the user's language."
+                        },
+                        "document": {
+                            "type": "object",
+                            "description": "A complete version 2.0 TemplateDocument compatible with the active Orbis template editor.",
+                            "properties": {
+                                "version": {"type": "string", "enum": ["2.0"]},
+                                "meta": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "nameAr": {"type": "string"},
+                                        "documentType": {"type": "string"},
+                                        "entityType": {"type": "string"},
+                                        "locale": {"type": "string", "enum": ["ar", "en"]},
+                                        "pageSetup": {
+                                            "type": "object",
+                                            "properties": {
+                                                "size": {"type": "string", "enum": ["A4", "A3", "A5", "Letter", "Legal", "ID_CARD", "BADGE", "Custom"]},
+                                                "width": {"type": "number"},
+                                                "height": {"type": "number"},
+                                                "orientation": {"type": "string", "enum": ["portrait", "landscape"]},
+                                                "margins": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "top": {"type": "number"},
+                                                        "bottom": {"type": "number"},
+                                                        "left": {"type": "number"},
+                                                        "right": {"type": "number"}
+                                                    },
+                                                    "required": ["top", "bottom", "left", "right"]
+                                                },
+                                                "unit": {"type": "string", "enum": ["mm"]}
+                                            },
+                                            "required": ["size", "orientation", "margins", "unit"]
+                                        }
+                                    },
+                                    "required": ["name", "documentType", "entityType", "locale", "pageSetup"]
+                                },
+                                "variables": {
+                                    "type": "object",
+                                    "description": "Custom variables only; use the system variables listed in editor context directly in expressions.",
+                                    "additionalProperties": {
+                                        "type": "object",
+                                        "properties": {
+                                            "source": {"type": "string"},
+                                            "type": {"type": "string", "enum": ["string", "number", "date", "boolean", "image", "array"]},
+                                            "label": {"type": "string"},
+                                            "labelAr": {"type": "string"},
+                                            "format": {"type": "string"},
+                                            "defaultValue": {"type": "string"}
+                                        },
+                                        "required": ["source", "type"]
+                                    }
+                                },
+                                "assets": {"type": "object"},
+                                "pages": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {"type": "string", "enum": ["Page"]},
+                                            "name": {"type": "string"},
+                                            "children": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "description": "A native template node. Include type, name, props, and optional children/elseChildren. Use a supported node type and type-specific props; position uses x/y/width/height in millimeters."
+                                                }
+                                            }
+                                        },
+                                        "required": ["type", "children"]
+                                    }
+                                },
+                                "components": {"type": "object"},
+                                "styles": {"type": "object"}
+                            },
+                            "required": ["version", "meta", "variables", "assets", "pages"]
+                        }
+                    },
+                    "required": ["summary", "document"]
+                }),
+                required_permission: Some("template:write".into()),
+                is_consequential: false,
+                category: ToolCategory::Generation,
+            },
         ]
     }
 
@@ -880,6 +975,7 @@ impl AiOrchestrationService {
                     actx.period_id = assignment.period_id;
                 }
             }
+
         }
 
         if let Some(cid) = actx.section_id {
@@ -931,7 +1027,21 @@ impl AiOrchestrationService {
         ctx: &RequestContext,
         request: AiChatRequest,
     ) -> Result<AiChatResponse, DomainError> {
-        let tools = self.get_authorized_tools(ctx).await?;
+        let template_editor_active = request.ui_context.as_ref().is_some_and(|ui| {
+            ui.domain.as_deref() == Some("template")
+                && ui
+                    .metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.get("template_editor_active"))
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false)
+        });
+        let tools = self
+            .get_authorized_tools(ctx)
+            .await?
+            .into_iter()
+            .filter(|tool| tool.name != "design_template" || template_editor_active)
+            .collect::<Vec<_>>();
         let user_ctx = self.resolve_user_ai_context(ctx).await?;
         let academic_ctx = self.resolve_academic_ai_context(ctx, &request).await?;
 
@@ -952,6 +1062,7 @@ impl AiOrchestrationService {
 
         const MAX_REACT_TURNS: usize = 5;
         let mut final_response = String::new();
+        let mut template_design_summary = None;
 
         let target_model = request.model.as_deref().unwrap_or("");
 
@@ -1078,6 +1189,13 @@ impl AiOrchestrationService {
                         content,
                         is_error,
                     });
+                    if !is_error && tool_call.tool_name == "design_template" {
+                        template_design_summary = tool_call
+                            .arguments
+                            .get("summary")
+                            .and_then(serde_json::Value::as_str)
+                            .map(str::to_owned);
+                    }
                 } else {
                     let err_msg = format!("Unknown tool: {}", tool_call.tool_name);
                     conversation_history.push(AiMessage {
@@ -1088,6 +1206,11 @@ impl AiOrchestrationService {
                         created_at: Some(Utc::now()),
                     });
                 }
+            }
+
+            if let Some(summary) = template_design_summary.take() {
+                final_response = summary;
+                break;
             }
         }
 
@@ -2025,6 +2148,29 @@ impl AiOrchestrationService {
                     "notice": notice_json
                 }))
             }
+            "design_template" => {
+                let document = arguments
+                    .get("document")
+                    .and_then(serde_json::Value::as_object)
+                    .ok_or_else(|| {
+                        DomainError::Validation(
+                            "A template document is required for the design".into(),
+                        )
+                    })?;
+                if !document
+                    .get("meta")
+                    .is_some_and(serde_json::Value::is_object)
+                    || !document
+                        .get("pages")
+                        .and_then(serde_json::Value::as_array)
+                        .is_some_and(|pages| !pages.is_empty())
+                {
+                    return Err(DomainError::Validation(
+                        "The generated template must include metadata and at least one page".into(),
+                    ));
+                }
+                Ok(arguments.clone())
+            }
 
             _ => Err(DomainError::Validation(format!(
                 "Tool '{}' not supported",
@@ -2138,6 +2284,19 @@ impl AiOrchestrationService {
             ));
         }
 
+        if ui_context.is_some_and(|ui| ui.domain.as_deref() == Some("template")) {
+            if let Some(editor_context) =
+                screen_context.and_then(|context| context.get("template_editor"))
+            {
+                prompt.push_str(
+                    "\n[TEMPLATE EDITOR DESIGN CONTEXT]\n\
+                     The user is working in the Orbis template editor. If they ask to create or redesign a template, call design_template once with a complete editable document. Use this context's page setup, entity type, existing custom variables, available system variables, and assets. Keep the design within the printable page area and use only available variable paths and assets. Do not respond with code or a static image.\n",
+                );
+                prompt.push_str(&editor_context.to_string());
+                prompt.push('\n');
+            }
+        }
+
         prompt.push_str(
             "\n[OPERATIONAL & SAFETY CONTRACT]\n\
              1. Always query and execute authoritative domain tools to produce real-time, authentic institutional data. Never fabricate student names, IDs, grades, or finances.\n\
@@ -2219,6 +2378,21 @@ mod tests {
             required_tool_permission(&tool).expect("tool permission is required"),
             Permission::FinanceRead
         );
+    }
+
+    #[test]
+    fn template_design_requires_template_write_permission() {
+        let tool = AiOrchestrationService::registered_tools()
+            .into_iter()
+            .find(|tool| tool.name == "design_template")
+            .expect("template design tool is registered");
+
+        assert_eq!(
+            required_tool_permission(&tool).expect("tool permission is required"),
+            Permission::TemplateWrite
+        );
+        assert_eq!(tool.category, ToolCategory::Generation);
+        assert!(!tool.is_consequential);
     }
 
     #[test]

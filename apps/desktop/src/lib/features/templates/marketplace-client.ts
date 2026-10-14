@@ -1,4 +1,5 @@
 import type { CreateTemplateRequest } from "$lib/api/types";
+import { deserializeDocument, serializeDocument } from "@docforge/core";
 
 export interface ReadyTemplate {
   id: string;
@@ -15,13 +16,19 @@ export interface ReadyTemplate {
   margins_json?: string | null;
   locale?: string | null;
   tags?: string | null;
-  document: Record<string, unknown>;
+  document_url: string;
   preview_url?: string | null;
 }
 
-interface ReadyTemplateCatalog {
-  version: 1;
-  templates: ReadyTemplate[];
+function parsePublicUrl(value: string): URL {
+  const parsed = new URL(value);
+  const isLocalHttp =
+    parsed.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
+  if (parsed.protocol !== "https:" && !isLocalHttp) {
+    throw new Error("Ready-template files must use HTTPS.");
+  }
+  return parsed;
 }
 
 function getCatalogUrl(): string {
@@ -30,11 +37,19 @@ function getCatalogUrl(): string {
     throw new Error("The ready-template catalog URL is not configured.");
   }
 
-  const parsed = new URL(url);
-  if (parsed.protocol !== "https:" && parsed.hostname !== "localhost") {
-    throw new Error("The ready-template catalog must use HTTPS.");
-  }
-  return parsed.href;
+  return parsePublicUrl(url).href;
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || value === null || typeof value === "string";
+}
+
+function isOptionalNumber(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === null ||
+    (typeof value === "number" && Number.isFinite(value))
+  );
 }
 
 function isReadyTemplate(value: unknown): value is ReadyTemplate {
@@ -42,26 +57,38 @@ function isReadyTemplate(value: unknown): value is ReadyTemplate {
   const template = value as Partial<ReadyTemplate>;
   return (
     typeof template.id === "string" &&
+    template.id.length > 0 &&
     typeof template.name === "string" &&
     typeof template.document_type === "string" &&
     typeof template.entity_type === "string" &&
     typeof template.page_size === "string" &&
     typeof template.orientation === "string" &&
-    template.document !== null &&
-    typeof template.document === "object" &&
-    !Array.isArray(template.document)
+    typeof template.document_url === "string" &&
+    isOptionalString(template.name_ar) &&
+    isOptionalString(template.description) &&
+    isOptionalString(template.description_ar) &&
+    isOptionalString(template.margins_json) &&
+    isOptionalString(template.locale) &&
+    isOptionalString(template.tags) &&
+    isOptionalString(template.preview_url) &&
+    isOptionalNumber(template.page_width_mm) &&
+    isOptionalNumber(template.page_height_mm)
   );
 }
 
-export async function listReadyTemplates(
-  search = "",
-): Promise<ReadyTemplate[]> {
+function isDocument(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+export async function listReadyTemplates(): Promise<ReadyTemplate[]> {
   const response = await fetch(getCatalogUrl(), {
     headers: { Accept: "application/json" },
     cache: "no-cache",
   });
   if (!response.ok) {
-    throw new Error(`Could not load the ready-template catalog (${response.status}).`);
+    throw new Error(
+      `Could not load the ready-template catalog (${response.status}).`,
+    );
   }
 
   const catalog: unknown = await response.json();
@@ -77,24 +104,29 @@ export async function listReadyTemplates(
     throw new Error("The ready-template catalog has an invalid format.");
   }
 
-  const query = search.trim().toLocaleLowerCase();
-  return catalog.templates.filter((template) => {
-    if (!query) return true;
-    return (
-      template.name.toLocaleLowerCase().includes(query) ||
-      template.name_ar?.toLocaleLowerCase().includes(query) === true ||
-      template.description?.toLocaleLowerCase().includes(query) === true ||
-      template.description_ar?.toLocaleLowerCase().includes(query) === true
-    );
-  });
+  return catalog.templates;
 }
 
-export function toCreateTemplateRequest(
+export async function createTemplateFromCatalog(
   template: ReadyTemplate,
-): CreateTemplateRequest {
-  const documentPageSetup = template.document.meta as
-    | { pageSetup?: { margins?: Record<string, number> } }
-    | undefined;
+): Promise<CreateTemplateRequest> {
+  const documentUrl = parsePublicUrl(template.document_url).href;
+  const response = await fetch(documentUrl, {
+    headers: { Accept: "application/json" },
+    cache: "force-cache",
+  });
+  if (!response.ok) {
+    throw new Error(
+      `Could not download the selected template (${response.status}).`,
+    );
+  }
+
+  const document: unknown = await response.json();
+  if (!isDocument(document)) {
+    throw new Error("The selected template file has an invalid format.");
+  }
+
+  const normalizedDocument = deserializeDocument(JSON.stringify(document));
 
   return {
     code: `ready:${template.id}`,
@@ -110,15 +142,8 @@ export function toCreateTemplateRequest(
     orientation: template.orientation,
     margins_json:
       template.margins_json ??
-      JSON.stringify(
-        documentPageSetup?.pageSetup?.margins ?? {
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10,
-        },
-      ),
-    document_json: JSON.stringify(template.document),
+      JSON.stringify(normalizedDocument.meta.pageSetup.margins),
+    document_json: serializeDocument(normalizedDocument),
     locale: template.locale ?? "ar",
     tags: template.tags ?? JSON.stringify(["ready-template", template.id]),
   };

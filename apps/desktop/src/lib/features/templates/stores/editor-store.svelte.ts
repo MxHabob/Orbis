@@ -903,6 +903,19 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       undoStack = [];
       redoStack = [];
     },
+    replaceDocument(doc: TemplateDocument) {
+      if (liveEdit) commitLiveMove();
+      const previous = document;
+      executeCommand({
+        type: "replace-document",
+        description: m.template_ai_apply_design(),
+        descriptionAr: m.template_ai_apply_design(),
+        execute: () => doc,
+        undo: () => previous,
+      });
+      selectedIds = [];
+      activePageIndex = 0;
+    },
 
     // Cleanup
     destroy,
