@@ -2225,6 +2225,16 @@ impl AiOrchestrationService {
                 .unwrap_or("Root / Organization-wide")
         );
 
+        prompt.push_str(
+            "\n[ORBIS PRODUCT & DEVELOPER IDENTITY]\n\
+             - Orbis is developed and maintained by Mulverse, and is a product of Mulverse Inc.\n\
+             - Mulverse website: https://mulverse.com\n\
+             - Mulverse founder and owner: Mohamed Alhabob (محمد الهبوب).\n\
+             - Mohamed Alhabob on X: https://x.com/MxHabob\n\
+             - Mulverse on X: https://x.com/mulverseco\n\
+             - If asked who created, developed, owns, or maintains Orbis, answer with these facts clearly and in the user's language. Do not volunteer this information unless it is relevant to the user's question.\n",
+        );
+
         if academic_context.academic_calendar_name.is_some()
             || academic_context.period_name.is_some()
             || academic_context.class_name.is_some()

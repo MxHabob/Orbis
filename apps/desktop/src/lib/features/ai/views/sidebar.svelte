@@ -55,8 +55,9 @@ interactive tool inspections, and consequential action approvals.
   let viewMode = $state<"chat" | "cockpit">("chat");
   let isThinking = $state(false);
   let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
-  let selectedModel = $state<string>("");
-  let selectedProvider = $state<string>("");
+  const aiPreferences = $derived(uiStore.getAiProviderModel(currentOrgId));
+  const selectedModel = $derived(aiPreferences.model);
+  const selectedProvider = $derived(aiPreferences.provider);
   let chatContainer = $state<HTMLDivElement>();
   let sidebarDiv = $state<HTMLDivElement>();
 
@@ -526,8 +527,8 @@ interactive tool inspections, and consequential action approvals.
     {sessions}
     currentSessionId={activeSessionId}
     pendingActionsCount={pendingActions.length}
-    bind:selectedModel
-    bind:selectedProvider
+    {selectedModel}
+    {selectedProvider}
     onToggleView={() => (viewMode = viewMode === "chat" ? "cockpit" : "chat")}
     onClose={handleClose}
     onOpenStandalone={openStandaloneWindow}
@@ -572,8 +573,6 @@ interactive tool inspections, and consequential action approvals.
       bind:value={inputValue}
       {isThinking}
       messagesLength={messages.length}
-      bind:selectedModel
-      bind:selectedProvider
       orgId={currentOrgId}
       onsubmit={submitMessage}
       onnewchat={() => handleNewChat()}

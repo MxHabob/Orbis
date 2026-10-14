@@ -20,18 +20,19 @@ import type { OrbisApp } from "@orbis/app-store";
 import { createConnectedAiProvidersQuery, useSwitchActiveAiProvider } from "$lib/features/ai/queries";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
+import { uiStore } from "$lib/stores";
 
 let {
-  selectedModel = $bindable<string>(""),
-  selectedProvider = $bindable<string>(""),
   orgId = "",
   onOpenSettings,
 }: {
-  selectedModel?: string;
-  selectedProvider?: string;
   orgId?: string;
   onOpenSettings?: () => void;
 } = $props();
+
+const aiPreferences = $derived(uiStore.getAiProviderModel(orgId));
+const savedProvider = $derived(aiPreferences.provider);
+const savedModel = $derived(aiPreferences.model);
 
 // Canonical AI apps from @orbis/app-store (single source of truth)
 const aiApps = $derived(getAppsByCategory("ai-provider"));
@@ -96,14 +97,27 @@ const activeConnected = $derived.by(() => {
   return null;
 });
 
+const selectedIntegration = $derived.by(() => {
+  const saved = connectedIntegrations.find(
+    (provider) =>
+      provider.provider_name.toLowerCase() === savedProvider.toLowerCase(),
+  );
+  return saved ?? (providersQuery.isSuccess ? activeConnected : null);
+});
+
+const selectedProvider = $derived(
+  selectedIntegration?.provider_name ??
+    (providersQuery.isSuccess ? "" : savedProvider),
+);
+
 // Currently selected OrbisApp
 const currentApp = $derived.by(() => {
   if (selectedProvider) {
     const found = findAppForProvider(selectedProvider);
     if (found) return found;
   }
-  if (activeConnected) {
-    const found = findAppForProvider(activeConnected.provider_name);
+  if (selectedIntegration) {
+    const found = findAppForProvider(selectedIntegration.provider_name);
     if (found) return found;
   }
   if (connectedAiApps.length > 0) {
@@ -112,23 +126,17 @@ const currentApp = $derived.by(() => {
   return null;
 });
 
-// Auto-sync initial provider and model from active integration
-$effect(() => {
-  if (!selectedProvider && activeConnected) {
-    selectedProvider = activeConnected.provider_name;
-  }
-  if (!selectedModel && currentApp) {
-    const defaultModelInConfig =
-      (activeConnected?.settings as any)?.default_model ||
-      (activeConnected?.settings as any)?.model;
+const selectedModel = $derived.by(() => {
+  const savedPreferenceMatchesProvider =
+    savedProvider.toLowerCase() === selectedProvider.toLowerCase();
+  if (savedPreferenceMatchesProvider && savedModel) return savedModel;
 
-    const models = getModelsForApp(currentApp);
-    if (defaultModelInConfig) {
-      selectedModel = defaultModelInConfig;
-    } else if (models.length > 0) {
-      selectedModel = models[0].value;
-    }
-  }
+  const defaultModel =
+    (selectedIntegration?.settings as any)?.default_model ||
+    (selectedIntegration?.settings as any)?.model;
+  if (defaultModel) return String(defaultModel);
+
+  return currentApp ? getModelsForApp(currentApp)[0]?.value ?? "" : "";
 });
 
 // Clean short provider name for compact toolbars
@@ -160,8 +168,7 @@ async function handleSelectProviderAndModel(
   app: OrbisApp,
   modelValue: string,
 ) {
-  selectedProvider = providerName;
-  selectedModel = modelValue;
+  uiStore.setAiProviderModel(orgId, providerName, modelValue);
 
   // Toggle active provider in backend integration table if not already enabled
   const matched = connectedIntegrations.find(
