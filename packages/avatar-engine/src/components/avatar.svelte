@@ -14,6 +14,8 @@ const {
   class: className = "",
   label = "Orbis avatar",
   autoBlink = true,
+  faceColor,
+  featureColor,
 }: {
   controller?: AvatarController;
   hat?: AvatarHat;
@@ -22,6 +24,8 @@ const {
   class?: string;
   label?: string;
   autoBlink?: boolean;
+  faceColor?: string;
+  featureColor?: string;
 } = $props();
 
 const fallbackController = new AvatarController();
@@ -34,7 +38,9 @@ const state = $derived.by(() => {
   return activeController.state;
 });
 const resolvedHat = $derived(resolveAvatarHat(hat));
-const drawing = $derived(getAvatarDrawing({ hat: resolvedHat, state }));
+const drawing = $derived(
+  getAvatarDrawing({ hat: resolvedHat, state, faceColor, featureColor }),
+);
 
 $effect(() => {
   if (!controller) fallbackController.setAutoBlink(autoBlink);
@@ -56,6 +62,7 @@ onDestroy(() => fallbackController.destroy());
     viewBox="0 0 200 200"
     width="100%"
     height="100%"
+    class="avatar-svg"
   >
     <AvatarDrawing elements={drawing} />
   </svg>

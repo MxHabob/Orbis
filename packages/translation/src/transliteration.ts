@@ -277,6 +277,8 @@ const commonNames: Readonly<Record<string, string>> = {
   شهاب: "Shehab",
   شعيب: "Shoaib",
   ضياء: "Diaa",
+  ملاك:"Malak",
+  مارسا:"maryia",
 
   // Compound Names
   عبدالله: "Abdullah",
@@ -423,6 +425,8 @@ const commonNames: Readonly<Record<string, string>> = {
   "آل خليفة": "Al Khalifa",
   "آل صباح": "Al Sabah",
   "الهبوب": "Al Haboob",
+  "السالمي":"Al Salmi",
+  "العميسي":"Al amisi",
 
   // Female Names
   فاطمة: "Fatimah",

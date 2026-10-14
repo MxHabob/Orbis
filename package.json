@@ -22,6 +22,7 @@
     "release:notes": "node scripts/release-notes.mjs",
     "release:commit": "node scripts/commit-release.mjs",
     "i18n:audit": "bun run scripts/i18n-audit.ts",
+    "i18n:genericize": "node scripts/genericize-ui-labels.mjs",
     "build": "turbo run build",
     "dev": "turbo run dev --continue",
     "test": "turbo run test",

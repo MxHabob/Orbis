@@ -40,9 +40,9 @@ let {
 </script>
 
 {#if loading}
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+  <div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
     {#each Array(6) as _}
-      <Card class="flex flex-col h-full bg-card/40 border-border/40 rounded-2xl">
+      <Card class="flex flex-col h-full bg-card/40 border-border/40 rounded-2xl min-w-0">
         <CardHeader class="p-4 pb-2">
           <div class="flex items-start justify-between gap-3">
             <Skeleton class="h-5 w-1/2 rounded" />
@@ -62,11 +62,12 @@ let {
           </div>
         </CardContent>
 
-        <CardFooter class="p-3 border-t border-border/40 bg-muted/10 flex items-center justify-between gap-2">
-          <Skeleton class="h-7 w-7 rounded-md" />
-          <div class="flex items-center gap-1.5">
-            <Skeleton class="h-7 w-7 rounded-md" />
-            <Skeleton class="h-7 w-16 rounded-md" />
+        <CardFooter class="p-3 border-t border-border/40 bg-muted/10 flex flex-wrap items-center justify-between gap-2">
+          <Skeleton class="h-7 w-7 rounded-md shrink-0" />
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
+            <Skeleton class="h-7 w-7 rounded-md shrink-0" />
+            <Skeleton class="h-7 w-24 rounded-md shrink-0" />
+            <Skeleton class="h-7 w-7 rounded-md shrink-0" />
           </div>
         </CardFooter>
       </Card>
@@ -87,9 +88,9 @@ let {
     </Button>
   </div>
 {:else}
-  <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6 text-start">
+  <div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5 text-start">
     {#each templates as template (template.id)}
-      <Card class="flex flex-col h-full">
+      <Card class="flex flex-col h-full min-w-0">
         <CardHeader class="p-4 pb-2">
           <div class="flex items-start justify-between gap-3">
             <CardTitle class="text-sm font-bold text-foreground line-clamp-1 leading-snug" title={l(template.nameAr ?? template.name_ar, template.name)}>
@@ -119,7 +120,7 @@ let {
           </div>
         </CardContent>
 
-        <CardFooter class="p-3 border-t border-border/40 bg-muted/10 flex items-center justify-between gap-2">
+        <CardFooter class="p-3 border-t border-border/40 bg-muted/10 flex flex-wrap items-center justify-between gap-2">
           <Button
             variant="destructive"
             size="icon-xs"
@@ -130,11 +131,11 @@ let {
             <Trash size={13} />
           </Button>
           
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex flex-wrap items-center gap-1.5 min-w-0">
             <Button
               variant="outline"
               size="icon-xs"
-              class="h-7 w-7 rounded-md cursor-pointer"
+              class="h-7 w-7 rounded-md shrink-0 cursor-pointer"
               href={`/${orgId}/templates/${template.id}`}
               title={m.common_action_edit_simple()}
             >
@@ -146,7 +147,7 @@ let {
                 <Button
                   variant="outline"
                   size="xs"
-                  class="h-7 px-2 rounded-md cursor-pointer"
+                  class="h-7 px-2 text-xs rounded-md cursor-pointer whitespace-nowrap shrink-0"
                   onclick={() => onSetDefault(template.id)}
                   title={m.settings_templates_action_set_default()}
                 >
@@ -156,7 +157,7 @@ let {
               <Button
                 variant="outline"
                 size="icon-xs"
-                class="h-7 w-7 rounded-md cursor-pointer"
+                class="h-7 w-7 rounded-md shrink-0 cursor-pointer"
                 onclick={() => onarchive(template.id)}
                 title={m.settings_templates_action_archive()}
               >
@@ -167,7 +168,7 @@ let {
                 <Button
                   variant="outline"
                   size="icon-xs"
-                  class="h-7 w-7 rounded-md cursor-pointer"
+                  class="h-7 w-7 rounded-md shrink-0 cursor-pointer"
                   onclick={() => onrestore(template.id)}
                   title={m.common_titlebar_restore()}
                 >
@@ -177,7 +178,7 @@ let {
                 <Button
                   variant="default"
                   size="xs"
-                  class="h-7 px-2.5 rounded-md font-medium cursor-pointer"
+                  class="h-7 px-2.5 rounded-md font-medium shrink-0 cursor-pointer"
                   onclick={() => onpublish(template.id)}
                 >
                   <CheckCircle size={13} class="me-1.5" />

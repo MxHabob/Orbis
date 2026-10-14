@@ -70,6 +70,10 @@ export default function ClassGradesScreen() {
           invalidStudentIds.push(student.id);
           return [];
       }
+      if (!classItem.period_id) {
+        invalidStudentIds.push(student.id);
+        return [];
+      }
       return [
           {
             period_id: classItem.period_id,

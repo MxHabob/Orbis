@@ -1,3 +1,4 @@
+<svelte:options namespace="svg" />
 <script lang="ts">
 import { getAvatarHatDrawing } from "../core/avatar-svg.js";
 import type { AvatarHat } from "../core/types.js";

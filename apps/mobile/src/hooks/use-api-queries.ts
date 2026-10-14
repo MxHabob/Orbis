@@ -194,12 +194,15 @@ export function useTeacherClassDataQuery(classId?: string) {
       }
       const [enrollmentsResponse, classSubjectsResponse, subjectsResponse] =
         await Promise.all([
-          api.listEnrollments({
+          api.listEnrollments2({
             query: { section_id: classId },
             throwOnError: true,
           }),
-          api.listSectionSubjects({
-            query: { section_id: classId, period_id: classItem.period_id },
+          api.listSectionSubjects2({
+            query: {
+              section_id: classId,
+              period_id: classItem.period_id ?? "",
+            },
             throwOnError: true,
           }),
           api.listSubjects({ throwOnError: true }),
@@ -308,7 +311,7 @@ export function useClassGradesQuery(classSubjectId?: string, enabled = true) {
       const response = await api.client.get<{ 200: GradeDto[] }, unknown, true>(
         {
           url: "/api/v1/grades",
-          query: { class_subject_id: classSubjectId },
+          query: { section_subject_id: classSubjectId },
           throwOnError: true,
         },
       );
@@ -338,8 +341,11 @@ export function useClassScheduleQuery(classId?: string) {
       if (!sectionItem || !Array.isArray(subjects)) {
         throw new Error("The section schedule response was invalid.");
       }
-      const classSubjectsResponse = await api.listSectionSubjects({
-        query: { section_id: classId, period_id: sectionItem.period_id },
+      const classSubjectsResponse = await api.listSectionSubjects2({
+        query: {
+          section_id: classId,
+          period_id: sectionItem.period_id ?? "",
+        },
         throwOnError: true,
       });
       const classSubjects = extractData<SectionSubjectDto[]>(
@@ -440,7 +446,7 @@ export function useEnrollmentsQuery(filter?: {
   return useQuery({
     queryKey: queryKeys.student.enrollments(filter),
     queryFn: async (): Promise<EnrollmentDto[]> => {
-      const res = await api.listEnrollments({
+      const res = await api.listEnrollments2({
         query: { section_id: filter?.classId, student_id: filter?.studentId },
         throwOnError: true,
       });
@@ -472,7 +478,7 @@ export function useGradesQuery(filter?: {
       }
       const query = filter.studentId
         ? { student_id: filter.studentId }
-        : { class_subject_id: filter.classSubjectId };
+        : { section_subject_id: filter.classSubjectId };
       const res = await api.client.get<{ 200: GradeDto[] }, unknown, true>({
         url: "/api/v1/grades",
         query,
@@ -503,12 +509,13 @@ export function useAttendanceQuery(filter?: {
       filter?.date || "",
     ),
     queryFn: async (): Promise<AttendanceDto[]> => {
-      const res = await api.listAttendance({
+      const res = await api.client.get<{ 200: AttendanceDto[] }, unknown, true>({
+        url: "/api/v1/attendance",
         query: {
           section_id: filter?.classId,
           student_id: filter?.studentId,
           date: filter?.date,
-        } as any,
+        },
         throwOnError: true,
       });
       const attendance = extractData<AttendanceDto[]>(res);
@@ -718,7 +725,7 @@ export function useStudentExamsQuery(studentId?: string) {
     queryKey: queryKeys.student.exams(studentId ?? ""),
     queryFn: async (): Promise<StudentExamItem[]> => {
       if (!studentId) throw new Error("A student ID is required.");
-      const enrollmentResponse = await api.listEnrollments({
+      const enrollmentResponse = await api.listEnrollments2({
         query: { student_id: studentId },
         throwOnError: true,
       });
@@ -728,19 +735,19 @@ export function useStudentExamsQuery(studentId?: string) {
       }
 
       const activeEnrollments = enrollments.filter(
-        (enrollment) => enrollment.status === "active" && enrollment.class_id,
+        (enrollment) => enrollment.status === "active" && enrollment.section_id,
       );
       if (activeEnrollments.length === 0) return [];
 
       const classSubjectLists = await Promise.all(
         activeEnrollments.map((enrollment) => {
-          if (!enrollment.class_id) {
-            throw new Error("An active enrollment is missing its class.");
+          if (!enrollment.section_id) {
+            throw new Error("An active enrollment is missing its section.");
           }
-          return api.listSectionSubjects({
+          return api.listSectionSubjects2({
             query: {
-              class_id: enrollment.class_id,
-              period_id: enrollment.period_id,
+              section_id: enrollment.section_id,
+              period_id: enrollment.period_id ?? "",
             },
             throwOnError: true,
           });
@@ -847,7 +854,7 @@ export function useStudentScheduleQuery(studentId?: string) {
     queryFn: async (): Promise<StudentScheduleItem[]> => {
       if (!studentId) throw new Error("A student ID is required.");
 
-      const enrollmentResponse = await api.listEnrollments({
+      const enrollmentResponse = await api.listEnrollments2({
         query: { student_id: studentId },
         throwOnError: true,
       });
@@ -856,14 +863,14 @@ export function useStudentScheduleQuery(studentId?: string) {
         throw new Error("The enrollments response was not a list.");
       }
       const activeClasses = enrollments.flatMap((enrollment) =>
-        enrollment.status === "active" && enrollment.class_id
-          ? [{ classId: enrollment.class_id, periodId: enrollment.period_id }]
+        enrollment.status === "active" && enrollment.section_id
+          ? [{ classId: enrollment.section_id, periodId: enrollment.period_id ?? "" }]
           : [],
       );
       const classSubjectsByEnrollment = await Promise.all(
         activeClasses.map(async ({ classId, periodId }) => {
-          const response = await api.listSectionSubjects({
-            query: { class_id: classId, period_id: periodId },
+          const response = await api.listSectionSubjects2({
+            query: { section_id: classId, period_id: periodId },
             throwOnError: true,
           });
           const classSubjects = extractData<SectionSubjectDto[]>(response);

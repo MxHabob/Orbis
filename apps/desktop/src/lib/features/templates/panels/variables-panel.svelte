@@ -9,7 +9,6 @@ import type { VariableDefinition } from "@docforge/core";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Separator } from "@orbis/ui/separator";
 import {
   Select,
   SelectContent,
@@ -22,8 +21,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { ScrollArea } from "@orbis/ui/scroll-area";
-import { AdjustmentsHorizontal, Bars3BottomLeft, Bold, Calendar, ChevronDown, ChevronRight, Clipboard, Code, Hashtag, Knobs, Photo, Plus, Search, Trash } from "@orbis/icons";
+import { Bars3BottomLeft, Bold, Calendar, CheckCircle, Clipboard, Code, Hashtag, ListBullet, Photo, Plus, Search, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -192,17 +190,17 @@ function toggleGroup(group: string) {
 function getTypeIcon(type: string) {
   switch (type) {
     case "string":
-      return TypeIcon;
+      return Bars3BottomLeft;
     case "number":
       return Hashtag;
     case "date":
       return Calendar;
     case "boolean":
-      return ToggleLeft;
+      return CheckCircle;
     case "image":
       return Photo;
     case "array":
-      return List;
+      return ListBullet;
     default:
       return Code;
   }
