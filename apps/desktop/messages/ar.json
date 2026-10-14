@@ -3794,6 +3794,7 @@
   "settings_templates_restore_success": "تم استعادة القالب بنجاح",
   "settings_templates_search_placeholder": "ابحث بالقوالب...",
   "settings_template_marketplace_title": "القوالب الجاهزة",
+  "settings_template_marketplace_open": "تصفح القوالب الجاهزة",
   "settings_template_marketplace_description": "قوالب من فريق Orbis يمكنك إضافتها إلى قوالب مؤسستك واستخدامها دون اتصال.",
   "settings_template_marketplace_search": "ابحث باسم القالب أو وصفه",
   "settings_template_marketplace_loading": "جارٍ التحميل...",

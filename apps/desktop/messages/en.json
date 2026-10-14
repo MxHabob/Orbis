@@ -3794,6 +3794,7 @@
   "settings_templates_restore_success": "Template restored successfully",
   "settings_templates_search_placeholder": "Search templates...",
   "settings_template_marketplace_title": "Ready-to-use templates",
+  "settings_template_marketplace_open": "Browse ready templates",
   "settings_template_marketplace_description": "Templates from the Orbis team that you can add to your organization's templates and use offline.",
   "settings_template_marketplace_search": "Search by template name or description",
   "settings_template_marketplace_loading": "Loading...",

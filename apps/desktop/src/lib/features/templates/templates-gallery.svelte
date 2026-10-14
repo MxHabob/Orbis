@@ -15,12 +15,12 @@ import type { PageSetup, TextNode } from "@docforge/core";
 
 import { l, isAr } from "$lib/core/i18n";
 import SearchField from "$lib/shared/components/search-field.svelte";
-import { Plus } from "@orbis/icons";
+import { GlobeAlt, Plus } from "@orbis/icons";
 import { fade } from "svelte/transition";
 
 import TemplateGrid from "./components/template-grid.svelte";
 import CreateTemplateDialog from "./components/create-template-dialog.svelte";
-import ReadyTemplatesSection from "./components/ready-templates-section.svelte";
+import ReadyTemplatesSheet from "./components/ready-templates-sheet.svelte";
 import {
   createTemplatesQuery,
   createCreateTemplateMutation,
@@ -35,6 +35,7 @@ let { orgId }: { orgId: string } = $props();
 
 // Dialog & Modals State
 let isCreateDialogOpen = $state(false);
+let isReadyTemplatesOpen = $state(false);
 let newTemplateName = $state("");
 let newTemplateNameAr = $state("");
 let newTemplateDocType = $state("CERTIFICATE");
@@ -284,7 +285,16 @@ async function setDefaultTemplate(id: string) {
       </div>
 
       <!-- Action Button -->
-      <div class="flex items-center shrink-0">
+      <div class="flex items-center gap-2 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-9 px-3 text-xs font-medium"
+          onclick={() => (isReadyTemplatesOpen = true)}
+        >
+          <GlobeAlt size={15} class="me-1.5" />
+          {m.settings_template_marketplace_open()}
+        </Button>
         <Button variant="default" size="sm" class="h-9 px-4 text-xs font-semibold shadow-sm" onclick={() => (isCreateDialogOpen = true)}>
           <Plus size={16} class="me-1.5" />
           {m.settings_templates_create_btn()}
@@ -305,14 +315,15 @@ async function setDefaultTemplate(id: string) {
       oncreatenew={() => (isCreateDialogOpen = true)}
     />
   </div>
-
-  <ReadyTemplatesSection
-    {orgId}
-    onimported={async () => {
-      await templatesQuery.refetch();
-    }}
-  />
 </div>
+
+<ReadyTemplatesSheet
+  bind:open={isReadyTemplatesOpen}
+  {orgId}
+  onimported={async () => {
+    await templatesQuery.refetch();
+  }}
+/>
 
 <!-- Create Dialog -->
 <CreateTemplateDialog

@@ -489,14 +489,14 @@ onMount(() => {
         {/if}
 
         <FlyoutPanel {store} />
-        {#if store.editorMode === "design" && isPropertiesOpen}
-          <PropertiesInspector
-            {store}
-            bind:width={propertiesWidth}
-            onclose={() => isPropertiesOpen = false}
-          />
-        {/if}
       </div>
+      {#if store.editorMode === "design" && isPropertiesOpen}
+        <PropertiesInspector
+          {store}
+          bind:width={propertiesWidth}
+          onclose={() => isPropertiesOpen = false}
+        />
+      {/if}
     </div>
     <StatusBar {store} />
   {/if}
@@ -525,11 +525,13 @@ onMount(() => {
     display: flex;
     overflow: hidden;
     position: relative;
+    min-width: 0;
+    min-height: 0;
     background: var(--color-muted);
   }
 
   .canvas-area {
-    flex-grow: 1;
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
