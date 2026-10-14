@@ -72,7 +72,10 @@ async function handleCancelJob(jobId: string) {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="w-full sm:max-w-lg overflow-y-auto flex flex-col p-6 text-start">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-lg"
+    class="w-full overflow-y-auto flex flex-col p-6 text-start"
+  >
     <SheetHeader>
       <div class="flex items-center gap-2">
         <div class="p-2 rounded-lg bg-primary/10 text-primary">

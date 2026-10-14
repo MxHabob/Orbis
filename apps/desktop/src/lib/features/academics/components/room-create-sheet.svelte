@@ -24,7 +24,10 @@ const isEdit = $derived(!!room);
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden p-0 gap-0">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-xl"
+    class="flex flex-col h-full overflow-hidden p-0 gap-0"
+  >
     <RoomForm
       {orgId}
       {room}

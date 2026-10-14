@@ -21,7 +21,10 @@ let {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-2xl overflow-hidden p-0 gap-0">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-2xl"
+    class="flex flex-col h-full overflow-hidden p-0 gap-0"
+  >
     <BranchForm
       {orgId}
       {branch}

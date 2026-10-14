@@ -188,7 +188,10 @@ async function handleDeleteSlot(id: string) {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="w-full sm:max-w-lg overflow-y-auto flex flex-col p-6 text-start">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-lg"
+    class="w-full overflow-y-auto flex flex-col p-6 text-start"
+  >
     <SheetHeader>
       <SheetTitle>
         {m.academics_schedule_time_slots_heading()}

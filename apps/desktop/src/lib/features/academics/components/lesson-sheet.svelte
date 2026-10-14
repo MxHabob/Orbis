@@ -34,7 +34,10 @@ let {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex h-full w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-md"
+    class="flex h-full w-full flex-col gap-0 overflow-hidden p-0"
+  >
     <LessonForm
       {orgId}
       {periodId}
