@@ -272,7 +272,7 @@ async function loadSession() {
         console.error("Failed to load school rooms", err);
         return [];
       }),
-      Promise.all([api.listClasses(), api.listSubjects()]).catch(
+      Promise.all([api.listSections(), api.listSubjects()]).catch(
         (err: unknown) => {
           console.error("Failed to load classes/subjects catalogs", err);
           return [[], []];

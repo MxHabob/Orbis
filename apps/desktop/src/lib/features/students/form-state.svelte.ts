@@ -149,7 +149,7 @@ export class StudentFormState {
     try {
       const [org, classRes] = await Promise.all([
         api.getCurrentOrg().catch(() => null),
-        api.listClasses().catch(() => []),
+        api.listSections().catch(() => []),
         this.financial.init(),
         this.document.loadRequirements(),
       ]);

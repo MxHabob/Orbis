@@ -1,6 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, type CreateClassRequest, queryKeys } from "$lib/api";
+import { api, type CreateSectionRequest, queryKeys } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics/queries";
 import { createQuery } from "@tanstack/svelte-query";
@@ -77,14 +77,17 @@ async function handleSubmit(e: SubmitEvent) {
       throw new Error(m.shared_ui_organizational_unit_required());
     }
 
-    const request: CreateClassRequest = {
+    const request: CreateSectionRequest = {
       unit_id: unitId,
       period_id: periodId,
       name: values.name || values.name_ar || "",
       name_ar: values.name_ar || undefined,
+      code: values.code || undefined,
+      capacity: values.capacity,
+      color: values.color || undefined,
       level: values.grade_level || "1",
     };
-    await api.createClass(request);
+    await api.createSection(request);
     toast.success(m.academics_class_toast_success());
   });
   if (submitted) {

@@ -42,9 +42,9 @@ export function createPeriodsQuery(orgId: () => string) {
 
 /** Classes for an organization. */
 export function createClassesQuery(orgId: () => string) {
-  return createQuery<ClassDto[]>(() => ({
+  return createQuery<SectionDto[]>(() => ({
     queryKey: queryKeys.academic.classes(orgId()),
-    queryFn: () => api.listClasses(),
+    queryFn: () => api.listSections(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
@@ -52,9 +52,9 @@ export function createClassesQuery(orgId: () => string) {
 
 /** Single class by ID. */
 export function createClassQuery(classId: () => string | undefined) {
-  return createQuery<ClassDto>(() => ({
+  return createQuery<SectionDto>(() => ({
     queryKey: queryKeys.academic.class(classId() ?? ""),
-    queryFn: () => api.getClass(classId()!),
+    queryFn: () => api.getSection(classId()!),
     enabled: !!classId(),
     staleTime: 5 * 60 * 1000,
   }));

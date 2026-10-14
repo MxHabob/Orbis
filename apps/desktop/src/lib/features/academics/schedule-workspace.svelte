@@ -70,7 +70,7 @@ const periodsQuery = createQuery(() => ({
 
 const classesQuery = createQuery(() => ({
   queryKey: ["classes", orgId],
-  queryFn: () => api.listClasses(),
+  queryFn: () => api.listSections(),
   enabled: !!orgId,
   staleTime: 5 * 60 * 1000,
 }));

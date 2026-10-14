@@ -116,7 +116,7 @@ async function loadData() {
     isLoading = true;
     const [subRes, classRes, periodRes, unitRes] = await Promise.all([
       api.listSubjects(),
-      api.listClasses(),
+      api.listSections(),
       api.listAcademicPeriods(),
       api.listOrgUnits(),
     ]);
@@ -241,7 +241,7 @@ async function handleCreateClass() {
   successMessage = null;
 
   try {
-    const newClass = await api.createClass({
+    const newClass = await api.createSection({
       unit_id: selectedUnitId,
       period_id: selectedPeriodId,
       name: resolvedName,
@@ -280,7 +280,7 @@ async function handleBatchImportClasses() {
 
   try {
     for (const cls of pendingClasses) {
-      const created = await api.createClass({
+      const created = await api.createSection({
         unit_id: selectedUnitId,
         period_id: selectedPeriodId,
         name: cls.name,

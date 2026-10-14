@@ -4,6 +4,8 @@ export const load: LayoutLoad = async ({ params, parent }) => {
   await parent();
   return {
     orgId: params.orgId,
-    classId: params.classId,
+    sectionId: params.sectionId,
+    classSubjectId: params.classSubjectId,
+    SectionSubjectId: params.classSubjectId,
   };
 };

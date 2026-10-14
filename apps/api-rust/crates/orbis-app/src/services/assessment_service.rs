@@ -673,6 +673,13 @@ impl AssessmentService {
             components: components.unwrap_or_default(),
             is_default,
             is_system: false,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         };

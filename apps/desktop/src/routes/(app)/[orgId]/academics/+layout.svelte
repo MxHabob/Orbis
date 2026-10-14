@@ -5,7 +5,7 @@ using <MainViewport>. Uses the shared SidebarNav component.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createClassesQuery } from "$lib/features/academics";
+import { createSectionsQuery } from "$lib/features/academics";
 import { AcademicCap, AdjustmentsHorizontal, BookOpen, Calendar, ChartBar, DocumentCheck, TaskList, UserBadgeCheck } from "@orbis/icons";
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
@@ -16,8 +16,8 @@ import type { LayoutData } from "./$types";
 let { data, children }: { data: LayoutData; children: Snippet } =
   $props();
 
-const classesQuery = createClassesQuery(() => data.orgId);
-const classesCount = $derived(classesQuery.data?.length ?? 0);
+const sectionsQuery = createSectionsQuery(() => data.orgId);
+const sectionsCount = $derived(sectionsQuery.data?.length ?? 0);
 
 const basePath = $derived(`/${data.orgId}/academics`);
 
@@ -28,10 +28,10 @@ const navItems = $derived([
     icon: AcademicCap,
   },
   {
-    path: "classes",
+    path: "sections",
     label: m.common_search_group_classes(),
     icon: BookOpen,
-    badge: classesCount > 0 ? classesCount : null,
+    badge: sectionsCount > 0 ? sectionsCount : null,
   },
   {
     path: "calendar",

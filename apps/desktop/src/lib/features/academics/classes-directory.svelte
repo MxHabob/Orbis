@@ -1,7 +1,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-import { api, extractErrorMessage, type ClassDto, type AcademicPeriodDto, type EnrollmentDto } from "$lib/api";
+import { api, extractErrorMessage, queryKeys, type SectionDto, type AcademicPeriodDto, type EnrollmentDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -34,8 +34,8 @@ const activePeriodId = $derived(
 );
 
 const classesQuery = createQuery(() => ({
-  queryKey: ["classes", orgId],
-  queryFn: () => api.listClasses(),
+  queryKey: queryKeys.academic.classes(orgId),
+  queryFn: () => api.listSections(),
   enabled: !!orgId,
   staleTime: 3 * 60 * 1000,
 }));
@@ -58,7 +58,7 @@ const enrollmentsQuery = createQuery(() => ({
   staleTime: 3 * 60 * 1000,
 }));
 
-const classes = $derived((classesQuery.data as ClassDto[] | undefined) ?? []);
+const classes = $derived((classesQuery.data as SectionDto[] | undefined) ?? []);
 const enrollments = $derived(
   (enrollmentsQuery.data as EnrollmentDto[] | undefined) ?? [],
 );
@@ -252,7 +252,7 @@ const classMenuActions = $derived([
 						{@const ratio = Number(metric?.utilization_rate || 0)}
 						<a
 							href={localizeHref(
-								`/${orgId}/academics/classes/${cls.id}`,
+								`/${orgId}/academics/sections/${cls.id}`,
 							)}
 							class="no-underline group select-none block"
 						>
@@ -362,5 +362,8 @@ const classMenuActions = $derived([
 <ClassCreateSheet
 	bind:open={isModalOpen}
 	{orgId}
-	onSuccess={() => queryClient.invalidateQueries({ queryKey: ["classes"] })}
+	onSuccess={() =>
+		queryClient.invalidateQueries({
+			queryKey: queryKeys.academic.classes(orgId),
+		})}
 />

@@ -103,6 +103,9 @@ impl AcademicSettings {
             exam_max_score: Decimal::from(30),
             term_max_score: Decimal::from(50),
             annual_max_score: Decimal::from(100),
+            certificate_exam_max_score: Decimal::from(80),
+            certificate_cumulative_max_score: Decimal::from(20),
+            certificate_cumulative_year_count: 3,
         }
     }
 }

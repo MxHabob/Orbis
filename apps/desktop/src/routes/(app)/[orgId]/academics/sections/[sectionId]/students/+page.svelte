@@ -4,11 +4,11 @@
   import { ClassStudents } from "$lib/features/academics";
 
   const orgId = $derived(page.params.orgId || "");
-  const classId = $derived(page.params.classId || "");
+  const sectionId = $derived(page.params.sectionId || "");
 </script>
 
 <svelte:head>
   <title>{m.academics_class_detail_tab_students()} | Orbis</title>
 </svelte:head>
 
-<ClassStudents {orgId} {classId} />
+<ClassStudents {orgId} classId={sectionId} />

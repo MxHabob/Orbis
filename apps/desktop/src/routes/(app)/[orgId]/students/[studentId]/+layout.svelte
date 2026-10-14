@@ -254,7 +254,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
           id: "class_curriculum",
           label: m.ui_copy_class_curriculum_8b6731cd(),
           icon: BookOpen,
-          href: `/${orgId}/academics/classes/${currentClass.id}/curriculum`,
+          href: `/${orgId}/academics/sections/${currentClass.id}/curriculum`,
         }] : []),
       ],
     },

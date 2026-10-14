@@ -115,7 +115,7 @@ export const teacherSubjectImportProfile: BulkImportProfile<
   async buildReferenceData(): Promise<BulkReferenceData> {
     const [classesResponse, subjectsResponse, periodsResponse, firstEmployeePage] =
       await Promise.all([
-        api.listClasses(),
+        api.listSections(),
         api.listSubjects(),
         api.listAcademicPeriods(),
         api.listEmployees({ status: "active", page: 1, page_size: 100 }),

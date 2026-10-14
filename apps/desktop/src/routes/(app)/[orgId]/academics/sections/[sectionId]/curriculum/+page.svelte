@@ -4,11 +4,11 @@
   import { ClassCurriculum } from "$lib/features/academics";
 
   const orgId = $derived(page.params.orgId || "");
-  const classId = $derived(page.params.classId || "");
+  const sectionId = $derived(page.params.sectionId || "");
 </script>
 
 <svelte:head>
   <title>{m.academics_overview_card_classes_desc()} | Orbis</title>
 </svelte:head>
 
-<ClassCurriculum {orgId} {classId} />
+<ClassCurriculum {orgId} classId={sectionId} />

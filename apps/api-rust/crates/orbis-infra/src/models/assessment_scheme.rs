@@ -12,7 +12,7 @@ pub struct Model {
     pub description: Option<String>,
     pub max_score: f64,
     pub formula: Option<serde_json::Value>,
-    /// Assessment level: monthly_period, term, annual, coursework, midterm, final, module_assessment
+    /// Assessment level: monthly_period, term, annual, coursework, midterm, final, module_assessment, certificate, certificate_cumulative
     pub level: String,
     /// Institution scope: school, university, institute, all
     pub institution_scope: String,
@@ -20,6 +20,15 @@ pub struct Model {
     pub components_json: String,
     pub is_default: bool,
     pub is_system: bool,
+    // ── Policy Provenance ─────────────────────────────────────
+    pub source_document: Option<String>,
+    pub source_authority: Option<String>,
+    pub verification_status: Option<String>,
+    pub effective_date: Option<DateTime<Utc>>,
+    pub policy_version: i32,
+    pub min_attendance_ratio: Option<f64>,
+    pub pass_threshold: Option<f64>,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

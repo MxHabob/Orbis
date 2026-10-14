@@ -78,6 +78,10 @@ pub enum AssessmentLevel {
     Final,
     /// Module/block assessment (institute)
     ModuleAssessment,
+    /// Certificate/public examination (e.g. Grade 9 basic, Grade 12 Thanawiya)
+    Certificate,
+    /// Cumulative prior-year contribution to a certificate result
+    CertificateCumulative,
 }
 
 impl std::fmt::Display for AssessmentLevel {
@@ -90,6 +94,8 @@ impl std::fmt::Display for AssessmentLevel {
             AssessmentLevel::Midterm => write!(f, "midterm"),
             AssessmentLevel::Final => write!(f, "final"),
             AssessmentLevel::ModuleAssessment => write!(f, "module_assessment"),
+            AssessmentLevel::Certificate => write!(f, "certificate"),
+            AssessmentLevel::CertificateCumulative => write!(f, "certificate_cumulative"),
         }
     }
 }
@@ -104,6 +110,8 @@ impl AssessmentLevel {
             "midterm" => Self::Midterm,
             "final" => Self::Final,
             "module_assessment" | "module" => Self::ModuleAssessment,
+            "certificate" | "public_exam" => Self::Certificate,
+            "certificate_cumulative" | "cumulative" => Self::CertificateCumulative,
             _ => Self::MonthlyPeriod,
         }
     }
@@ -195,6 +203,30 @@ pub struct AssessmentScheme {
     pub is_default: bool,
     /// Whether this is a system-created scheme (not user-editable).
     pub is_system: bool,
+    // ── Policy Provenance ─────────────────────────────────────
+    /// Official source document (e.g. "Ministerial Decision No. 100").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_document: Option<String>,
+    /// Issuing authority (e.g. "Ministry of Education and Scientific Research, Sana'a").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_authority: Option<String>,
+    /// Verification status: "verified", "partially_verified", "unverified", "configurable".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_status: Option<String>,
+    /// Date this policy becomes effective.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effective_date: Option<DateTime<Utc>>,
+    /// Policy version number for immutable result snapshot traceability.
+    #[serde(default)]
+    pub policy_version: u32,
+    // ── Applicability ─────────────────────────────────────────
+    /// Minimum attendance percentage required for exam eligibility (e.g. 0.75 = 75%).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_attendance_ratio: Option<Decimal>,
+    /// Pass threshold as percentage of max_score (e.g. 0.50 = 50%).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pass_threshold: Option<Decimal>,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -284,6 +316,13 @@ impl AssessmentScheme {
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -323,6 +362,13 @@ impl AssessmentScheme {
             }],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -403,6 +449,13 @@ impl AssessmentScheme {
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -461,6 +514,13 @@ impl AssessmentScheme {
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -519,6 +579,13 @@ impl AssessmentScheme {
             ],
             is_default: false,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -566,6 +633,13 @@ impl AssessmentScheme {
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -635,6 +709,112 @@ impl AssessmentScheme {
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create Yemen secondary certificate (Thanawiya Amma) scheme.
+    /// Grade 12: Ministerial Exam(80) + Cumulative Prior-Year Score(20) = 100.
+    pub fn yemen_secondary_certificate(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "Secondary Certificate (Thanawiya)".to_string(),
+            name_ar: Some("الشهادة الثانوية العامة".to_string()),
+            description: Some(
+                "Yemen secondary certificate: Ministerial Exam(80) + Cumulative Prior-Year Average(20) = 100"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::Certificate,
+            institution_scope: InstitutionScope::School,
+            components: vec![
+                AssessmentComponent {
+                    code: "ministerial_exam".to_string(),
+                    name: "Ministerial Examination".to_string(),
+                    name_ar: Some("الاختبار الوزاري".to_string()),
+                    max_score: Decimal::from(80),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "cumulative_prior_years".to_string(),
+                    name: "Cumulative Prior-Year Average".to_string(),
+                    name_ar: Some("الدرجة التراكمية من السنوات السابقة".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: None,
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            source_document: Some("Yemen MoE Sana'a — Secondary Certificate Examination Regulations".to_string()),
+            source_authority: Some("Ministry of Education and Scientific Research, Sana'a".to_string()),
+            verification_status: Some("verified".to_string()),
+            effective_date: None,
+            policy_version: 1,
+            min_attendance_ratio: Some(Decimal::new(75, 2)), // 75%
+            pass_threshold: Some(Decimal::new(50, 2)), // 50%
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create Yemen basic certificate (Grade 9) examination scheme.
+    /// Structure details are configurable until fully verified.
+    pub fn yemen_basic_certificate(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "Basic Education Certificate (Grade 9)".to_string(),
+            name_ar: Some("شهادة التعليم الأساسي (الصف التاسع)".to_string()),
+            description: Some(
+                "Yemen basic education certificate examination — centrally administered by MoE Sana'a."
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::Certificate,
+            institution_scope: InstitutionScope::School,
+            components: vec![
+                AssessmentComponent {
+                    code: "certificate_exam".to_string(),
+                    name: "Certificate Examination".to_string(),
+                    name_ar: Some("اختبار الشهادة الأساسية".to_string()),
+                    max_score: Decimal::from(100),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: None,
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            source_document: Some("Yemen MoE Sana'a — Basic Education Certificate Regulations".to_string()),
+            source_authority: Some("Ministry of Education and Scientific Research, Sana'a".to_string()),
+            verification_status: Some("partially_verified".to_string()),
+            effective_date: None,
+            policy_version: 1,
+            min_attendance_ratio: Some(Decimal::new(75, 2)),
+            pass_threshold: Some(Decimal::new(50, 2)),
             created_at: now,
             updated_at: now,
         }

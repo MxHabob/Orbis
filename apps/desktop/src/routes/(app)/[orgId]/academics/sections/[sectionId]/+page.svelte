@@ -4,11 +4,11 @@
   import { ClassDetails } from "$lib/features/academics";
 
   const orgId = $derived(page.params.orgId || "");
-  const classId = $derived(page.params.classId || "");
+  const sectionId = $derived(page.params.sectionId || "");
 </script>
 
 <svelte:head>
   <title>{m.common_card_active_classes()} | Orbis</title>
 </svelte:head>
 
-<ClassDetails {orgId} {classId} />
+<ClassDetails {orgId} classId={sectionId} />

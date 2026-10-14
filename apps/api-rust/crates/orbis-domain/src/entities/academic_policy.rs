@@ -255,6 +255,33 @@ pub struct StudentAnnualReportCard {
     pub calculated_at: DateTime<Utc>,
 }
 
+/// Student certificate examination result (Grade 9 basic / Grade 12 Thanawiya).
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct StudentCertificateReportCard {
+    pub student_id: Uuid,
+    pub student_name: String,
+    pub student_number: Option<String>,
+    pub section_id: Uuid,
+    pub class_name: String,
+    pub calendar_id: Uuid,
+    pub academic_calendar_name: String,
+    /// Certificate type: "basic_grade9" or "secondary_thanawiya"
+    pub certificate_type: String,
+    /// Per-subject certificate results (exam + cumulative → total)
+    pub subjects: Vec<SubjectTermResult>,
+    /// Sum of all subject certificate totals
+    pub total_score: Decimal,
+    /// Sum of all subject max scores
+    pub max_possible_score: Decimal,
+    pub overall_percentage: Decimal,
+    pub rank_in_class: Option<u32>,
+    pub rank_in_grade: Option<u32>,
+    pub total_students_in_class: usize,
+    pub total_students_in_grade: usize,
+    pub status: AcademicStatus,
+    pub calculated_at: DateTime<Utc>,
+}
+
 /// Result lifecycle states for a calculation snapshot.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
@@ -725,6 +752,16 @@ pub struct AcademicPolicy {
     /// Configurable maximum annual total score (default 100).
     #[serde(default = "default_annual_hundred")]
     pub annual_max_score: Decimal,
+    // ── Certificate Examination (Thanawiya / Basic) ───────────
+    /// Maximum score for the ministerial certificate exam (default 80 for Thanawiya).
+    #[serde(default = "default_eighty")]
+    pub certificate_exam_max_score: Decimal,
+    /// Maximum cumulative prior-year score for the certificate result (default 20 for Thanawiya).
+    #[serde(default = "default_twenty")]
+    pub certificate_cumulative_max_score: Decimal,
+    /// Number of prior-year annual results to average for cumulative (default 3: grades 9, 10, 11).
+    #[serde(default = "default_three_usize")]
+    pub certificate_cumulative_year_count: usize,
 }
 
 fn default_true() -> bool {
@@ -747,6 +784,14 @@ fn default_annual_hundred() -> Decimal {
     Decimal::from(100)
 }
 
+fn default_eighty() -> Decimal {
+    Decimal::from(80)
+}
+
+fn default_three_usize() -> usize {
+    3
+}
+
 impl Default for AcademicPolicy {
     fn default() -> Self {
         Self {
@@ -765,6 +810,9 @@ impl Default for AcademicPolicy {
             exam_max_score: Decimal::from(30),
             term_max_score: Decimal::from(50),
             annual_max_score: Decimal::from(100),
+            certificate_exam_max_score: Decimal::from(80),
+            certificate_cumulative_max_score: Decimal::from(20),
+            certificate_cumulative_year_count: 3,
         }
     }
 }
@@ -788,6 +836,9 @@ impl AcademicPolicy {
             exam_max_score: Decimal::from(60),
             term_max_score: Decimal::from(100),
             annual_max_score: Decimal::from(100),
+            certificate_exam_max_score: Decimal::from(80),
+            certificate_cumulative_max_score: Decimal::from(20),
+            certificate_cumulative_year_count: 3,
         }
     }
 
@@ -809,6 +860,9 @@ impl AcademicPolicy {
             exam_max_score: Decimal::from(60),
             term_max_score: Decimal::from(100),
             annual_max_score: Decimal::from(100),
+            certificate_exam_max_score: Decimal::from(80),
+            certificate_cumulative_max_score: Decimal::from(20),
+            certificate_cumulative_year_count: 3,
         }
     }
 

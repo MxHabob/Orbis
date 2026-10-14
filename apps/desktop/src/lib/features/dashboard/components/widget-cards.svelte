@@ -4,12 +4,15 @@ import * as m from "$lib/paraglide/messages";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, formatPercent } from "$lib/core/i18n";
 import type { DashboardCountsDto } from "$lib/api/types";
+import { createSectionsQuery } from "$lib/features/academics";
 
 let { stats, orgId }: { stats: DashboardCountsDto | null; orgId: string } = $props();
+const sectionsQuery = createSectionsQuery(() => orgId);
+const sections = $derived(sectionsQuery.data ?? []);
 
 const studentVal = $derived(formatNumber(stats?.total_students ?? 0));
 const studentDetail = $derived(
-  m.common_card_detail_across_classes({ count: stats?.total_classes ?? 0 }),
+  m.common_card_detail_total_enrolled({ count: stats?.total_enrollments ?? 0 }),
 );
 
 const attendanceVal = $derived(
@@ -20,11 +23,6 @@ const attendanceDetail = $derived(
     lateRate: stats?.attendance_overview?.late_rate ?? 0,
     absentRate: stats?.attendance_overview?.absent_rate ?? 0,
   }),
-);
-
-const classesVal = $derived(formatNumber(stats?.total_classes ?? 0));
-const classesDetail = $derived(
-  m.common_card_detail_managed_by({ count: stats?.total_teachers ?? 0 }),
 );
 
 const behaviorPoints = $derived(stats?.behavior_summary?.net_points ?? 0);
@@ -64,9 +62,8 @@ const enrollmentDetail = $derived(
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
 	{@render card(m.common_promo_total(), `/${orgId}/students`, studentVal, studentDetail)}
 	{@render card(m.common_card_attendance_rate(), `/${orgId}/reports`, attendanceVal, attendanceDetail)}
-	{@render card(m.common_card_active_classes(), `/${orgId}/academics`, classesVal, classesDetail)}
+	{@render card(m.common_search_group_classes(), `/${orgId}/academics/sections`, formatNumber(sections.length))}
 	{@render card(m.common_card_behavior_points(), `/${orgId}/students`, behaviorVal, behaviorDetail)}
 	{@render card(m.common_card_staff_members(), `/${orgId}/settings`, staffVal, staffDetail)}
 	{@render card(m.common_card_enrollment_rate(), `/${orgId}/students`, enrollmentVal, enrollmentDetail)}
 </div>
-

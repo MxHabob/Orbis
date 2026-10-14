@@ -20,7 +20,7 @@ import type { LayoutData } from "./$types";
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 const orgId = $derived(data.orgId || String(page.params.orgId || ""));
-const classId = $derived(data.classId || String(page.params.classId || ""));
+const sectionId = $derived(data.sectionId || String(page.params.sectionId || ""));
 const SectionSubjectId = $derived(
   data.SectionSubjectId || String(page.params.SectionSubjectId || ""),
 );
@@ -34,10 +34,10 @@ export interface SectionSubjectWithCatalog extends SectionSubjectDto {
 
 // Subject Offering Details
 const subjectQuery = createQuery(() => ({
-  queryKey: ["subject-info-sub-layout", classId, SectionSubjectId],
+  queryKey: ["subject-info-sub-layout", sectionId, SectionSubjectId],
   queryFn: async (): Promise<SectionSubjectWithCatalog> => {
     const offerings = await api.listSectionSubjects(
-      classId,
+      sectionId,
       academicContext.effectivePeriodId || "",
     );
     const offering = offerings.find(
@@ -50,7 +50,7 @@ const subjectQuery = createQuery(() => ({
     );
     return { ...offering, catalog: catSub };
   },
-  enabled: !!classId && !!SectionSubjectId,
+  enabled: !!sectionId && !!SectionSubjectId,
 }));
 
 const usersQuery = createQuery(() => ({
@@ -75,7 +75,7 @@ const teacherDisplayName = $derived.by(() => {
 });
 
 const basePath = $derived(
-  `/${orgId}/academics/classes/${classId}/curriculum/${SectionSubjectId}`,
+  `/${orgId}/academics/sections/${sectionId}/curriculum/${SectionSubjectId}`,
 );
 
 const menuItems = $derived([

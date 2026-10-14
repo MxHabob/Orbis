@@ -1617,10 +1617,6 @@ export interface OrbisApiClient {
   updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
   listSections(): Promise<SectionDto[]>;
   getSection(id: string): Promise<SectionDto>;
-  createClass(req: CreateClassRequest): Promise<ClassDto>;
-  updateClass(id: string, req: UpdateClassRequest): Promise<ClassDto>;
-  listClasses(): Promise<ClassDto[]>;
-  getClass(id: string): Promise<ClassDto>;
   assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto>;
   getSectionSubject(id: string): Promise<SectionSubjectDto>;
   updateSectionSubject(

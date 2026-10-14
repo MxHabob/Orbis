@@ -65,7 +65,7 @@ async function loadBranchData() {
   isLoading = true;
   try {
     const [classesRes, roomsRes, empRes, unitsRes, usersRes] = await Promise.all([
-      api.listClasses().catch(() => []),
+      api.listSections().catch(() => []),
       api.listRooms().catch(() => []),
       api.listEmployees().catch(() => []),
       api.listOrgUnits().catch(() => []),

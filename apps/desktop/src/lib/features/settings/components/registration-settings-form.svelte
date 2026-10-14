@@ -206,7 +206,7 @@ onMount(async () => {
   try {
     const [backendReqs, classesList, currentSettings] = await Promise.all([
       api.listDocumentRequirements().catch(() => []),
-      api.listClasses().catch(() => []),
+      api.listSections().catch(() => []),
       api.getSettings().catch(() => null),
     ]);
 

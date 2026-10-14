@@ -258,7 +258,7 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
           .filter((id): id is string => Boolean(id)),
       ),
     ];
-    const classes = await Promise.all(classIds.map((id) => api.getClass(id)));
+    const classes = await Promise.all(classIds.map((id) => api.getSection(id)));
     const classesById = new Map(classes.map((item) => [item.id, item]));
 
     return students.map(({ student, person, enrollment }, index) => {

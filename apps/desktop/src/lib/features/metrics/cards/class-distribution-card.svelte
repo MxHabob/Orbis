@@ -32,18 +32,25 @@ async function loadData() {
     if (selectedClass !== "all") params.class_id = selectedClass;
     if (selectedTerm !== "all") params.cycle_id = selectedTerm;
 
-    const classes = await api.listClasses(params);
-    if (classes && classes.length > 0) {
-      data = classes
-        .map((c: any) => ({
+    const sections = await api.listSections();
+    const filteredSections = sections.filter((section) => {
+      if (selectedClass !== "all" && section.id !== selectedClass) return false;
+      if (selectedTerm !== "all" && section.period_id !== selectedTerm) {
+        return false;
+      }
+      return true;
+    });
+    if (filteredSections.length > 0) {
+      data = filteredSections
+        .map((c) => ({
           name:
             getLocale() === "ar" ? c.name_ar || c.name : c.name || c.name_ar,
           count: c.current_students || 0,
         }))
-        .sort((a: any, b: any) => b.count - a.count)
-        .slice(0, 9); // top 9 classes
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 9); // top 9 sections
 
-      activeClassesCount = classes.length;
+      activeClassesCount = filteredSections.length;
     } else {
       data = [];
       activeClassesCount = 0;

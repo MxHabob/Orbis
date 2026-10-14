@@ -224,15 +224,7 @@
     sections.map((item) => ({
       item,
       text: normalizeSearchText(
-        [
-          item.name,
-          item.name_ar,
-          item.code,
-          item.level,
-          item.division,
-          item.track,
-          item.section_type,
-        ].join(" "),
+        [item.name, item.name_ar, item.code, item.level, item.track].join(" "),
       ),
     })),
   );
@@ -474,7 +466,7 @@
     { title: m.employees_nav_title(), path: `/${currentOrgId}/employees`, icon: EmployeeAffairs, keywords: ["موظفين", "معلمين", "طاقم المدرسة"] },
     { title: m.common_nav_reports(), path: `/${currentOrgId}/reports`, icon: ChartBar, keywords: ["تقارير", "تقرير", "تحليلات"] },
     { title: m.common_nav_academics(), path: `/${currentOrgId}/academics`, icon: BookOpen },
-    { title: m.common_search_group_classes(), path: `/${currentOrgId}/academics/classes`, icon: BookOpen, keywords: ["فصول", "الفصول", "صفوف", "الصفوف"] },
+    { title: m.common_search_group_classes(), path: `/${currentOrgId}/academics/sections`, icon: BookOpen, keywords: ["شعب", "الشُعب", "الشعب الدراسية"] },
     { title: m.common_promo_attendance(), path: `/${currentOrgId}/academics/attendance`, icon: UserBadgeCheck },
     { title: m.common_exams_detail_schedule(), path: `/${currentOrgId}/academics/schedule`, icon: Calendar },
     { title: m.common_nav_exams(), path: `/${currentOrgId}/academics/exams`, icon: DocumentCheck },
@@ -681,12 +673,12 @@
         .map(({ item: section }) => ({
           id: `section-${section.id}`,
           title: section.name_ar || section.name,
-          subtitle: [section.code, section.level, section.division]
+          subtitle: [section.code, section.level, section.track]
             .filter(Boolean)
             .join(" · "),
           icon: BookOpen,
           action: () =>
-            goto(`/${currentOrgId}/academics/classes/${section.id}`),
+            goto(`/${currentOrgId}/academics/sections/${section.id}`),
           group: m.common_search_group_classes(),
         })),
     );

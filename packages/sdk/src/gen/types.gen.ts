@@ -322,7 +322,7 @@ export type AssessmentComponent = {
 /**
  * The academic level at which this assessment scheme operates.
  */
-export type AssessmentLevel = 'monthly_period' | 'term' | 'annual' | 'coursework' | 'midterm' | 'final' | 'module_assessment';
+export type AssessmentLevel = 'monthly_period' | 'term' | 'annual' | 'coursework' | 'midterm' | 'final' | 'module_assessment' | 'certificate' | 'certificate_cumulative';
 
 export type AssessmentSchemeDto = {
     components: Array<AssessmentComponent>;
@@ -2033,6 +2033,8 @@ export type ProvisionDefaultsReqDto = {
     enable_period_autopilot?: boolean | null;
     end_date?: string | null;
     hijri_month_lengths?: Blob | File | null;
+    hijri_start_day?: number | null;
+    hijri_start_month?: number | null;
     hijri_start_year?: number | null;
     provision_academic_calendar?: boolean | null;
     provision_assessment_scheme?: boolean | null;

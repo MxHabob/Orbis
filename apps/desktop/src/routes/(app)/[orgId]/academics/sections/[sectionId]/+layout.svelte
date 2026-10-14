@@ -1,6 +1,6 @@
 <!--
   @component ClassLayout
-  SvelteKit Layout for Class routes (/academics/classes/[classId]/*).
+  SvelteKit Layout for Section routes (/academics/sections/[sectionId]/*).
   Provides the cohesive header shell with breadcrumb navigation,
   class capacity badges, and sub-page context.
 -->
@@ -22,15 +22,15 @@ import type { LayoutData } from "./$types";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
-const classId = $derived(data.classId || String(page.params.classId || ""));
+const sectionId = $derived(data.sectionId || String(page.params.sectionId || ""));
 const orgId = $derived(data.orgId || String(page.params.orgId || ""));
 const SectionSubjectId = $derived(
   page.params.SectionSubjectId ? String(page.params.SectionSubjectId) : null,
 );
 
 // Class Info Query using consolidated feature query
-const classQuery = createClassQuery(() => classId);
-const studentsQuery = createClassStudentsQuery(() => classId);
+const classQuery = createClassQuery(() => sectionId);
+const studentsQuery = createClassStudentsQuery(() => sectionId);
 
 const classData = $derived(classQuery.data);
 const students = $derived(studentsQuery.data ?? []);
@@ -55,12 +55,12 @@ const isCurriculumListPage = $derived(
 // Dynamic Back navigation
 const backHref = $derived.by(() => {
   if (SectionSubjectId) {
-    return `/${orgId}/academics/classes/${classId}/curriculum`;
+    return `/${orgId}/academics/sections/${sectionId}/curriculum`;
   }
   if (isStudentsPage || isCurriculumListPage) {
-    return `/${orgId}/academics/classes/${classId}`;
+    return `/${orgId}/academics/sections/${sectionId}`;
   }
-  return `/${orgId}/academics/classes`;
+  return `/${orgId}/academics/sections`;
 });
 
 const backLabel = $derived.by(() => {
@@ -85,15 +85,15 @@ const backLabel = $derived.by(() => {
         <!-- Root Class Name (Clickable link when in subpages) -->
         {#if SectionSubjectId || isStudentsPage || isCurriculumListPage}
           <a
-            href={localizeHref(`/${orgId}/academics/classes/${classId}`)}
+            href={localizeHref(`/${orgId}/academics/sections/${sectionId}`)}
             class="text-base font-bold text-muted-foreground hover:text-primary transition-colors truncate shrink-0"
           >
-            {classDisplayName || classId}
+            {classDisplayName || sectionId}
           </a>
           <span class="text-muted-foreground/60 text-sm font-semibold">/</span>
         {:else}
           <h1 class="text-lg font-bold tracking-tight text-foreground truncate shrink min-w-0">
-            {classDisplayName || classId}
+            {classDisplayName || sectionId}
           </h1>
         {/if}
 

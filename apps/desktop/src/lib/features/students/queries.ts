@@ -60,7 +60,7 @@ export function createStudentDirectoryQuery(orgId: () => string) {
   }));
   const classesQuery = createQuery<ClassDto[]>(() => ({
     queryKey: queryKeys.academic.classes(orgId()),
-    queryFn: () => api.listClasses(),
+    queryFn: () => api.listSections(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
   }));
