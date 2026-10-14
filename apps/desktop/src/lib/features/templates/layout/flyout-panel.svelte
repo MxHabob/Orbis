@@ -42,7 +42,6 @@ const panelTitles: Record<string, string> = {
 };
 
 let toolsTab = $state("layers");
-let searchQuery = $state("");
 
 function close() {
   store.activeRailPanel = null;
@@ -207,12 +206,6 @@ function stopResize() {
     overflow: hidden;
     display: flex;
     flex-direction: column;
-  }
-
-  .flyout-placeholder {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
   }
 
   .flyout-resize-handle {

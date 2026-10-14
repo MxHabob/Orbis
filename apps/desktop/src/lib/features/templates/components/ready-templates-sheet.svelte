@@ -10,6 +10,7 @@
   import { l } from "$lib/core/i18n";
   import {
     createTemplateFromCatalog,
+    isNetworkUnavailable,
     listReadyTemplates,
     type ReadyTemplate,
   } from "../marketplace-client";
@@ -27,6 +28,8 @@
   let importingId = $state<string | null>(null);
   let search = $state("");
   let errorMessage = $state("");
+  let networkUnavailable = $state(false);
+  let retryOfflineAction = $state<(() => void) | null>(null);
   let hasLoaded = $state(false);
   let wasOpen = false;
 
@@ -59,19 +62,35 @@
     if (isLoading) return;
     isLoading = true;
     errorMessage = "";
+    networkUnavailable = false;
+    retryOfflineAction = null;
     try {
       templates = await listReadyTemplates();
       hasLoaded = true;
     } catch (error) {
-      errorMessage = extractErrorMessage(error);
+      if (isNetworkUnavailable(error)) {
+        networkUnavailable = true;
+      } else {
+        errorMessage = extractErrorMessage(error);
+      }
     } finally {
       isLoading = false;
+    }
+  }
+
+  function retry() {
+    if (retryOfflineAction) {
+      retryOfflineAction();
+    } else {
+      void loadTemplates();
     }
   }
 
   async function useTemplate(template: ReadyTemplate) {
     importingId = template.id;
     errorMessage = "";
+    networkUnavailable = false;
+    retryOfflineAction = null;
     try {
       const created = await api.createTemplate(
         await createTemplateFromCatalog(template),
@@ -81,7 +100,14 @@
       open = false;
       await goto(`/${orgId}/templates/${created.id}`);
     } catch (error) {
-      errorMessage = extractErrorMessage(error);
+      if (isNetworkUnavailable(error)) {
+        networkUnavailable = true;
+        retryOfflineAction = () => {
+          void useTemplate(template);
+        };
+      } else {
+        errorMessage = extractErrorMessage(error);
+      }
     } finally {
       importingId = null;
     }
@@ -111,7 +137,25 @@
     {/if}
 
     <div class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide">
-      {#if errorMessage}
+      {#if networkUnavailable}
+        <div
+          class="flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-8 text-center"
+          role="status"
+          aria-live="polite"
+        >
+          <p class="text-sm text-muted-foreground">
+            {m.settings_template_marketplace_offline()}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={retry}
+            disabled={isLoading || importingId !== null}
+          >
+            {m.settings_template_marketplace_retry()}
+          </Button>
+        </div>
+      {:else if errorMessage}
         <div
           class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
           role="alert"

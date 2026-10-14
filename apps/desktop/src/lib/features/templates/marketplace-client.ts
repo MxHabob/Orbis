@@ -40,6 +40,15 @@ function getCatalogUrl(): string {
   return parsePublicUrl(url).href;
 }
 
+export function isNetworkUnavailable(error: unknown): boolean {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
+  if (!(error instanceof TypeError)) return false;
+
+  return /failed to fetch|networkerror|load failed|fetch failed/i.test(
+    error.message,
+  );
+}
+
 function isOptionalString(value: unknown): boolean {
   return value === undefined || value === null || typeof value === "string";
 }

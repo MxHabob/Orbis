@@ -3796,6 +3796,7 @@
   "settings_template_marketplace_title": "القوالب الجاهزة",
   "settings_template_marketplace_open": "تصفح القوالب الجاهزة",
   "settings_template_marketplace_description": "قوالب من فريق Orbis يمكنك إضافتها إلى قوالب مؤسستك واستخدامها دون اتصال.",
+  "settings_template_marketplace_offline": "لمزامنة القوالب الجاهزة، افتح اتصال الإنترنت ثم حاول مرة أخرى.",
   "settings_template_marketplace_search": "ابحث باسم القالب أو وصفه",
   "settings_template_marketplace_loading": "جارٍ التحميل...",
   "settings_template_marketplace_empty": "لا توجد قوالب جاهزة تطابق بحثك.",
