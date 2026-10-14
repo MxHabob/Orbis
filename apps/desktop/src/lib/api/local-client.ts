@@ -1530,6 +1530,7 @@ export class LocalClient implements OrbisApiClient {
   }
   async connectionSetConfig(params: {
     mode: ConnectionMode;
+    databaseEngine?: "postgres";
     serverUrl?: string;
     dbFilename?: string;
     customPath?: string;
@@ -1544,6 +1545,7 @@ export class LocalClient implements OrbisApiClient {
   }): Promise<ConnectionConfig> {
     return invoke<ConnectionConfig>("connection_set_config", {
       mode: params.mode,
+      databaseEngine: params.databaseEngine ?? null,
       serverUrl: params.serverUrl ?? null,
       dbFilename: params.dbFilename ?? null,
       customPath: params.customPath ?? null,

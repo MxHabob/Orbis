@@ -89,14 +89,16 @@ function syncFormValues() {
       connWalMode = controller.config.local.wal_mode ?? true;
       connBusyTimeout = controller.config.local.busy_timeout_ms ?? 5000;
     }
-    if (controller.config.remote) {
-      connServerUrl = controller.config.remote.server_url || "";
-      connHost = controller.config.remote.host || "localhost";
-      connPort = controller.config.remote.port || 5432;
-      connDatabaseName = controller.config.remote.database_name || "orbis_db";
-      connUsername = controller.config.remote.username || "postgres";
-      connPassword = controller.config.remote.password || "";
-      connSslMode = controller.config.remote.ssl_mode || "prefer";
+    if (controller.config.api) {
+      connServerUrl = controller.config.api.server_url || "";
+    }
+    if (controller.config.direct) {
+      connHost = controller.config.direct.host || "localhost";
+      connPort = controller.config.direct.port || 5432;
+      connDatabaseName = controller.config.direct.database_name || "orbis_db";
+      connUsername = controller.config.direct.username || "";
+      connPassword = "";
+      connSslMode = controller.config.direct.ssl_mode || "prefer";
     }
   }
 
@@ -126,15 +128,16 @@ async function handleSaveConnection() {
   try {
     await controller.saveConnectionConfig({
       mode: connMode,
-      serverUrl: connMode === "remote" ? connServerUrl.trim() : undefined,
+      serverUrl: connMode === "api" ? connServerUrl.trim() : undefined,
       dbFilename: connMode === "local" ? connDbFilename.trim() : undefined,
       customPath: connMode === "local" && connCustomPath.trim() ? connCustomPath.trim() : undefined,
-      host: connMode === "remote" ? connHost.trim() : undefined,
-      port: connMode === "remote" ? connPort : undefined,
-      databaseName: connMode === "remote" ? connDatabaseName.trim() : undefined,
-      username: connMode === "remote" ? connUsername.trim() : undefined,
-      password: connMode === "remote" && connPassword ? connPassword : undefined,
-      sslMode: connMode === "remote" ? connSslMode : undefined,
+      databaseEngine: connMode === "direct" ? "postgres" : undefined,
+      host: connMode === "direct" ? connHost.trim() : undefined,
+      port: connMode === "direct" ? connPort : undefined,
+      databaseName: connMode === "direct" ? connDatabaseName.trim() : undefined,
+      username: connMode === "direct" ? connUsername.trim() : undefined,
+      password: connMode === "direct" && connPassword ? connPassword : undefined,
+      sslMode: connMode === "direct" ? connSslMode : undefined,
       walMode: connMode === "local" ? connWalMode : undefined,
       busyTimeoutMs: connMode === "local" ? connBusyTimeout : undefined,
     });
@@ -230,8 +233,16 @@ async function handleOpenExistingDatabase() {
 const kpiStats = $derived([
   {
     label: m.ui_copy_engine_mode_7a8fe27f(),
-    value: controller.isLocal ? m.settings_ui_database_sqlite_embedded() : m.settings_ui_database_postgresql(),
-    sub: controller.isLocal ? m.ui_copy_local_embedded_36bd9bbd() : m.ui_copy_remote_cloud_51770fc6(),
+    value: controller.isLocal
+      ? m.settings_ui_database_sqlite_embedded()
+      : connMode === "direct"
+        ? l("PostgreSQL مباشر", "Direct PostgreSQL")
+        : m.ui_copy_remote_server_efd114c0(),
+    sub: controller.isLocal
+      ? m.ui_copy_local_embedded_36bd9bbd()
+      : connMode === "direct"
+        ? l("اتصال مباشر بالشبكة", "Direct network connection")
+        : m.ui_copy_remote_cloud_51770fc6(),
   },
   {
     label: m.ui_copy_storage_size_8122fef2(),
@@ -265,9 +276,13 @@ const directoryItems = $derived([
     title: m.ui_copy_connection_engine_settings_e9507bc6(),
     desc: m.ui_copy_configure_orbis_api_server_postgresql_cred_20f84da3(),
     icon: GlobeAlt,
-    badge: controller.isLocal ? "SQLite" : "PostgreSQL",
+    badge: controller.isLocal
+      ? "SQLite"
+      : connMode === "direct"
+        ? "PostgreSQL"
+        : "Orbis API",
   },
-  {
+  ...(controller.isLocal ? [{
     id: "backup" as const,
     title: m.ui_copy_backup_retention_policies_6a7221cd(),
     desc: m.ui_copy_create_instant_snapshots_via_vacuum_into_a_2757e2e9(),
@@ -289,7 +304,7 @@ const directoryItems = $derived([
     badge: controller.status && controller.status.pending_migrations.length > 0
       ? m.ui_pending_migrations_count({ count: controller.status.pending_migrations.length })
       : m.ui_copy_up_to_date_ccf363f4(),
-  },
+  }] : []),
 ]);
 
 // Advisor Diagnostic Insights
@@ -382,9 +397,12 @@ const advisorInsights = $derived.by(() => {
         {#if controller.isLocal}
           <Computer size={10} class="text-primary" />
           <span>{m.settings_ui_database_sqlite_embedded()}</span>
+        {:else if connMode === "direct"}
+          <GlobeAlt size={10} class="text-primary" />
+          <span>{l("PostgreSQL مباشر", "Direct PostgreSQL")}</span>
         {:else}
           <GlobeAlt size={10} class="text-primary" />
-          <span>{m.settings_ui_database_postgresql_remote()}</span>
+          <span>{m.ui_copy_remote_server_efd114c0()}</span>
         {/if}
       </Badge>
 
@@ -678,19 +696,38 @@ const advisorInsights = $derived.by(() => {
 
                 <button
                   type="button"
-                  class="p-3 rounded-lg border transition-all flex items-center justify-between cursor-pointer {connMode === 'remote' ? 'border-primary bg-primary/5 shadow-xs' : 'border-border/50 bg-card/40 hover:border-border'}"
-                  onclick={() => connMode = "remote"}
+                  class="p-3 rounded-lg border transition-all flex items-center justify-between cursor-pointer {connMode === 'direct' ? 'border-primary bg-primary/5 shadow-xs' : 'border-border/50 bg-card/40 hover:border-border'}"
+                  onclick={() => connMode = "direct"}
                 >
                   <div class="flex items-center gap-2.5">
-                    <div class="size-7.5 rounded-lg flex items-center justify-center {connMode === 'remote' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
+                    <div class="size-7.5 rounded-lg flex items-center justify-center {connMode === 'direct' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
+                      <Database size={15} />
+                    </div>
+                    <div class="text-start">
+                      <h4 class="text-xs font-bold text-foreground">{l("اتصال PostgreSQL مباشر", "Direct PostgreSQL")}</h4>
+                      <p class="text-[9.5px] text-muted-foreground">{l("اتصال مباشر بقاعدة PostgreSQL.", "Direct connection to PostgreSQL.")}</p>
+                    </div>
+                  </div>
+                  {#if connMode === "direct"}
+                    <CheckCircle size={14} class="text-primary" />
+                  {/if}
+                </button>
+
+                <button
+                  type="button"
+                  class="p-3 rounded-lg border transition-all flex items-center justify-between cursor-pointer {connMode === 'api' ? 'border-primary bg-primary/5 shadow-xs' : 'border-border/50 bg-card/40 hover:border-border'}"
+                  onclick={() => connMode = "api"}
+                >
+                  <div class="flex items-center gap-2.5">
+                    <div class="size-7.5 rounded-lg flex items-center justify-center {connMode === 'api' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}">
                       <GlobeAlt size={15} />
                     </div>
                     <div class="text-start">
                       <h4 class="text-xs font-bold text-foreground">{m.ui_copy_remote_server_efd114c0()}</h4>
-                      <p class="text-[9.5px] text-muted-foreground">{m.ui_copy_central_server_or_postgres_3ad3383f()}</p>
+                      <p class="text-[9.5px] text-muted-foreground">{m.ui_copy_connects_to_a_central_orbis_api_server_for_ed966b7f()}</p>
                     </div>
                   </div>
-                  {#if connMode === "remote"}
+                  {#if connMode === "api"}
                     <CheckCircle size={14} class="text-primary" />
                   {/if}
                 </button>
@@ -742,7 +779,7 @@ const advisorInsights = $derived.by(() => {
                     <Switch bind:checked={connWalMode} />
                   </div>
                 </div>
-              {:else}
+              {:else if connMode === "api"}
                 <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3.5">
                   <FormField id="connServerUrl" label={m.ui_copy_orbis_server_url_b7cff22f()} required>
                     {#snippet children()}
@@ -773,6 +810,9 @@ const advisorInsights = $derived.by(() => {
                     {/snippet}
                   </FormField>
 
+                </div>
+              {:else}
+                <div class="p-4 rounded-lg bg-card/40 border border-border/40 space-y-3.5">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <FormField id="connHost" label={m.ui_copy_database_host_218c7a89()}>
                       {#snippet children()}

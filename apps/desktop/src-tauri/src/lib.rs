@@ -57,9 +57,23 @@ pub fn run() {
             // 3. Auto-connect if a valid local config exists (seamless for returning users)
             //    New users will see the connection/setup flow.
             let validation = conn_config.validate(&app_data_dir);
-            if validation.is_valid && conn_config.mode == connection::ConnectionMode::Local {
+            if validation.is_valid
+                && matches!(
+                    conn_config.mode,
+                    connection::ConnectionMode::Local | connection::ConnectionMode::Direct
+                )
+            {
+                let database_url = conn_config.resolve_database_url(&app_data_dir);
                 let init_result = tauri::async_runtime::block_on(async {
-                    AppState::init(&app_data_dir).await
+                    let database_url = database_url?;
+                    let database_url = database_url
+                        .ok_or_else(|| "Database URL is not configured".to_string())?;
+                    AppState::init(
+                        &app_data_dir,
+                        &database_url,
+                        conn_config.mode == connection::ConnectionMode::Local,
+                    )
+                    .await
                 });
                 match init_result {
                     Ok(app_state) => {

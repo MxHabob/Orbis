@@ -10,7 +10,9 @@ use axum::{
     http::Request,
     middleware::{self, Next},
     response::{IntoResponse, Response},
+    routing::get,
 };
+use sea_orm::ConnectionTrait;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -647,6 +649,7 @@ pub struct ApiDoc;
 
 pub fn app_router(state: state::AppState) -> Router {
     Router::new()
+        .route("/api/v1/health", get(api_health))
         .merge(iam_routes::routes())
         .merge(org_routes::routes())
         .merge(calendar_routes::routes())
@@ -679,6 +682,25 @@ pub fn app_router(state: state::AppState) -> Router {
         .with_state(state)
 }
 
+async fn api_health(State(state): State<state::AppState>) -> Response {
+    let database_connected = state.db.execute_unprepared("SELECT 1").await.is_ok();
+    let status = if database_connected {
+        axum::http::StatusCode::OK
+    } else {
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    };
+    (
+        status,
+        axum::Json(serde_json::json!({
+            "status": if database_connected { "ok" } else { "degraded" },
+            "version": env!("CARGO_PKG_VERSION"),
+            "api_version": "1.0.0",
+            "database_connected": database_connected,
+        })),
+    )
+        .into_response()
+}
+
 async fn enforce_api_license(
     State(state): State<state::AppState>,
     request: Request<Body>,
@@ -689,6 +711,7 @@ async fn enforce_api_license(
         || path.starts_with("/api/v1/bootstrap")
         || path == "/api/v1/system/readiness"
         || path == "/api/v1/system/has-organization"
+        || path == "/api/v1/health"
         || path.starts_with("/swagger-ui")
         || path.starts_with("/api-docs")
     {

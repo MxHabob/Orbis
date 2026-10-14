@@ -1,6 +1,6 @@
 //! Connection configuration — read/write/validate connection settings and database lifecycle.
 //!
-//! Supports both Local (SQLite) and Remote (PostgreSQL / Orbis Server) connection modes.
+//! Supports local SQLite, direct PostgreSQL, and Orbis API connection modes.
 //! Configuration is persisted as JSON in AppData/connection.json.
 //!
 //! This module works before and during database connection lifecycle.
@@ -8,6 +8,10 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tracing::info;
+use keyring::{Entry, Error as KeyringError};
+use url::Url;
+
+const CONNECTION_SECRET_SERVICE: &str = "com.mulverse.orbis.database";
 
 fn default_true() -> bool {
     true
@@ -36,7 +40,9 @@ fn default_max_backups() -> u32 {
 #[serde(rename_all = "snake_case")]
 pub enum ConnectionMode {
     Local,
-    Remote,
+    Direct,
+    #[serde(alias = "remote")]
+    Api,
 }
 
 /// Persisted connection configuration.
@@ -45,8 +51,12 @@ pub struct ConnectionConfig {
     pub mode: ConnectionMode,
     /// Local: SQLite database file path (relative to AppData or absolute).
     pub local: Option<LocalConfig>,
-    /// Remote: Orbis Server URL and credentials.
-    pub remote: Option<RemoteConfig>,
+    /// API server URL. Database credentials are never stored in this config.
+    #[serde(rename = "api", alias = "remote")]
+    pub api: Option<ApiConfig>,
+    /// Direct database connection settings.
+    #[serde(default)]
+    pub direct: Option<DirectConfig>,
     /// Database settings and backup policies.
     #[serde(default)]
     pub settings: DatabaseSettings,
@@ -67,23 +77,26 @@ pub struct LocalConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RemoteConfig {
-    /// Server base URL (e.g. "https://api.orbis.school" or "http://localhost:3000").
+pub struct ApiConfig {
+    /// Orbis API base URL (e.g. "https://api.orbis.school").
     pub server_url: String,
-    /// Database host (for direct Postgres connection if configured).
-    pub host: Option<String>,
-    /// Port (default: 5432 for Postgres, or 80/443 for HTTP).
-    pub port: Option<u16>,
-    /// Database name.
-    pub database_name: Option<String>,
-    /// Database username.
-    pub username: Option<String>,
-    /// Database password (stored securely).
-    pub password: Option<String>,
-    /// SSL Mode (e.g., "prefer", "require", "disable").
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DirectDatabaseEngine {
+    Postgres,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DirectConfig {
+    pub engine: DirectDatabaseEngine,
+    pub host: String,
+    pub port: u16,
+    pub database_name: String,
+    pub username: String,
     pub ssl_mode: Option<String>,
-    /// API key or token (optional — user may authenticate later).
-    pub api_key: Option<String>,
+    pub credential_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -151,7 +164,8 @@ impl ConnectionConfig {
                 wal_mode: true,
                 busy_timeout_ms: 5000,
             }),
-            remote: None,
+            api: None,
+            direct: None,
             settings: DatabaseSettings::default(),
         }
     }
@@ -169,6 +183,13 @@ impl ConnectionConfig {
                 Ok(contents) => match serde_json::from_str::<ConnectionConfig>(&contents) {
                     Ok(config) => {
                         info!("Loaded connection config from {:?}", path);
+                        if let Ok(normalized) = serde_json::to_string_pretty(&config) {
+                            if normalized != contents {
+                                if let Err(error) = std::fs::write(&path, normalized) {
+                                    tracing::warn!("Could not remove legacy connection fields from config: {error}");
+                                }
+                            }
+                        }
                         return config;
                     }
                     Err(e) => {
@@ -231,20 +252,60 @@ impl ConnectionConfig {
         Some(format!("sqlite://{}?mode=rwc", path_str))
     }
 
-    /// Get the remote server URL.
-    pub fn remote_server_url(&self) -> Option<&str> {
-        self.remote.as_ref().map(|r| r.server_url.as_str())
-    }
+    /// Resolve the active database URL. API mode intentionally has no local database URL.
+    pub fn resolve_database_url(&self, app_data_dir: &Path) -> Result<Option<String>, String> {
+        match self.mode {
+            ConnectionMode::Local => Ok(self.resolve_local_db_url(app_data_dir)),
+            ConnectionMode::Api => Ok(None),
+            ConnectionMode::Direct => {
+                let direct = self
+                    .direct
+                    .as_ref()
+                    .ok_or_else(|| "Direct database settings are missing".to_string())?;
+                let password = Entry::new(CONNECTION_SECRET_SERVICE, &direct.credential_id)
+                    .map_err(|e| format!("Unable to access the operating system credential store: {e}"))?
+                    .get_password()
+                    .map_err(|e| match e {
+                        KeyringError::NoEntry => "Database password is not saved in the operating system credential store".to_string(),
+                        other => format!("Unable to read database password from the operating system credential store: {other}"),
+                    })?;
 
-    /// Sanitize configuration for returning to the UI (strip password if sensitive).
-    pub fn sanitized(&self) -> Self {
-        let mut cloned = self.clone();
-        if let Some(remote) = &mut cloned.remote {
-            if remote.password.is_some() {
-                remote.password = Some("••••••••".to_string());
+                let mut url = Url::parse("postgres://localhost")
+                    .map_err(|e| format!("Unable to construct PostgreSQL connection URL: {e}"))?;
+                url.set_host(Some(&direct.host))
+                    .map_err(|_| "Invalid PostgreSQL host".to_string())?;
+                url.set_port(Some(direct.port))
+                    .map_err(|_| "Invalid PostgreSQL port".to_string())?;
+                url.set_username(&direct.username)
+                    .map_err(|_| "Invalid PostgreSQL username".to_string())?;
+                url.set_password(Some(&password))
+                    .map_err(|_| "Invalid PostgreSQL password".to_string())?;
+                url.set_path(&format!("/{}", direct.database_name));
+                if let Some(ssl_mode) = &direct.ssl_mode {
+                    url.query_pairs_mut().append_pair("sslmode", ssl_mode);
+                }
+                Ok(Some(url.to_string()))
             }
         }
-        cloned
+    }
+
+    /// Get the configured Orbis API server URL.
+    pub fn remote_server_url(&self) -> Option<&str> {
+        self.api.as_ref().map(|r| r.server_url.as_str())
+    }
+
+    /// Store a direct-connection password in the operating system credential store.
+    pub fn save_direct_password(credential_id: &str, password: &str) -> Result<(), String> {
+        let entry = Entry::new(CONNECTION_SECRET_SERVICE, credential_id)
+            .map_err(|e| format!("Unable to access the operating system credential store: {e}"))?;
+        entry.set_password(password).map_err(|e| {
+            format!("Unable to save database password in the operating system credential store: {e}")
+        })
+    }
+
+    /// Sanitize configuration before returning it to the UI.
+    pub fn sanitized(&self) -> Self {
+        self.clone()
     }
 
     /// Validate the configuration for completeness and file system accessibility.
@@ -278,21 +339,21 @@ impl ConnectionConfig {
                     resolved_path: resolved_path.map(|p| p.to_string_lossy().to_string()),
                 }
             }
-            ConnectionMode::Remote => match &self.remote {
+            ConnectionMode::Api => match &self.api {
                 Some(remote) if !remote.server_url.trim().is_empty() => {
                     let url = remote.server_url.trim();
                     if url.starts_with("http://") || url.starts_with("https://") {
                         ConnectionValidation {
                             is_valid: true,
-                            mode: "remote".to_string(),
-                            message: format!("Remote server configured: {}", url),
+                            mode: "api".to_string(),
+                            message: "Orbis API server is configured".to_string(),
                             resolved_url: Some(url.to_string()),
                             resolved_path: None,
                         }
                     } else {
                         ConnectionValidation {
                             is_valid: false,
-                            mode: "remote".to_string(),
+                            mode: "api".to_string(),
                             message: "Server URL must start with http:// or https://".to_string(),
                             resolved_url: None,
                             resolved_path: None,
@@ -301,8 +362,32 @@ impl ConnectionConfig {
                 }
                 _ => ConnectionValidation {
                     is_valid: false,
-                    mode: "remote".to_string(),
+                    mode: "api".to_string(),
                     message: "Remote server URL is required".to_string(),
+                    resolved_url: None,
+                    resolved_path: None,
+                },
+            },
+            ConnectionMode::Direct => match &self.direct {
+                Some(direct)
+                    if !direct.host.trim().is_empty()
+                        && !direct.database_name.trim().is_empty()
+                        && !direct.username.trim().is_empty()
+                        && direct.port > 0
+                        && !direct.credential_id.trim().is_empty() =>
+                {
+                    ConnectionValidation {
+                        is_valid: true,
+                        mode: "direct".to_string(),
+                        message: "Direct PostgreSQL connection is configured".to_string(),
+                        resolved_url: None,
+                        resolved_path: None,
+                    }
+                }
+                _ => ConnectionValidation {
+                    is_valid: false,
+                    mode: "direct".to_string(),
+                    message: "Host, port, database, username, and saved credentials are required".to_string(),
                     resolved_url: None,
                     resolved_path: None,
                 },
@@ -400,25 +485,18 @@ mod tests {
     }
 
     #[test]
-    fn test_sanitize_password() {
+    fn test_api_config_does_not_contain_database_credentials() {
         let mut config = ConnectionConfig::default_local();
-        config.mode = ConnectionMode::Remote;
-        config.remote = Some(RemoteConfig {
+        config.mode = ConnectionMode::Api;
+        config.api = Some(ApiConfig {
             server_url: "https://api.orbis.school".to_string(),
-            host: Some("localhost".to_string()),
-            port: Some(5432),
-            database_name: Some("orbis_db".to_string()),
-            username: Some("admin".to_string()),
-            password: Some("super_secret".to_string()),
-            ssl_mode: Some("require".to_string()),
-            api_key: None,
         });
 
         let sanitized = config.sanitized();
-        assert_eq!(
-            sanitized.remote.as_ref().unwrap().password,
-            Some("••••••••".to_string())
-        );
+        let serialized = serde_json::to_string(&sanitized).unwrap();
+        assert!(!serialized.contains("password"));
+        assert!(!serialized.contains("username"));
+        assert!(serialized.contains("https://api.orbis.school"));
     }
 
     #[test]
@@ -433,24 +511,40 @@ mod tests {
     #[test]
     fn test_validate_remote_url() {
         let mut config = ConnectionConfig::default_local();
-        config.mode = ConnectionMode::Remote;
-        config.remote = Some(RemoteConfig {
+        config.mode = ConnectionMode::Api;
+        config.api = Some(ApiConfig {
             server_url: "invalid-url".to_string(),
-            host: None,
-            port: None,
-            database_name: None,
-            username: None,
-            password: None,
-            ssl_mode: None,
-            api_key: None,
         });
 
         let app_data = std::env::temp_dir();
         let val = config.validate(&app_data);
         assert!(!val.is_valid);
 
-        config.remote.as_mut().unwrap().server_url = "https://api.orbis.school".to_string();
+        config.api.as_mut().unwrap().server_url = "https://api.orbis.school".to_string();
         let val2 = config.validate(&app_data);
         assert!(val2.is_valid);
+    }
+
+    #[test]
+    fn test_legacy_remote_config_migrates_to_api_without_database_credentials() {
+        let legacy = r#"{
+          "mode":"remote",
+          "remote":{
+            "server_url":"https://school.example",
+            "host":"db.internal",
+            "username":"desktop_user",
+            "password":"should-not-be-retained"
+          }
+        }"#;
+        let config: ConnectionConfig = serde_json::from_str(legacy).unwrap();
+        assert_eq!(config.mode, ConnectionMode::Api);
+        assert_eq!(
+            config.remote_server_url(),
+            Some("https://school.example")
+        );
+        let serialized = serde_json::to_string(&config).unwrap();
+        assert!(!serialized.contains("should-not-be-retained"));
+        assert!(!serialized.contains("desktop_user"));
+        assert!(serialized.contains("\"api\""));
     }
 }

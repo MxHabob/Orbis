@@ -272,7 +272,7 @@ pub async fn get_database_status(
                 })
             }
         }
-        ConnectionMode::Remote => {
+        ConnectionMode::Api => {
             let server_url = config.remote_server_url().unwrap_or("").to_string();
             let health = crate::connection::check_remote_health(&server_url).await;
 
@@ -283,13 +283,9 @@ pub async fn get_database_status(
             };
 
             Ok(DatabaseStatusDto {
-                mode: "remote".to_string(),
+                mode: "api".to_string(),
                 state: state.to_string(),
-                database_name: config
-                    .remote
-                    .as_ref()
-                    .and_then(|r| r.database_name.clone())
-                    .unwrap_or_else(|| "orbis_remote".to_string()),
+                database_name: "orbis_api".to_string(),
                 connection_target: server_url,
                 file_size_bytes: None,
                 file_size_formatted: None,
@@ -312,6 +308,32 @@ pub async fn get_database_status(
                     None
                 },
                 error_message: health.error,
+            })
+        }
+        ConnectionMode::Direct => {
+            let direct = config
+                .direct
+                .as_ref()
+                .ok_or_else(|| "Direct database settings are missing".to_string())?;
+            let connected = active_db.is_some();
+            Ok(DatabaseStatusDto {
+                mode: "direct".to_string(),
+                state: if connected { "connected" } else { "disconnected" }.to_string(),
+                database_name: direct.database_name.clone(),
+                connection_target: format!("{}:{}/{}", direct.host, direct.port, direct.database_name),
+                file_size_bytes: None,
+                file_size_formatted: None,
+                schema_version: if connected { "connected".to_string() } else { "unknown".to_string() },
+                applied_migrations_count: 0,
+                total_migrations_count,
+                pending_migrations: vec![],
+                is_compatible: true,
+                journal_mode: None,
+                integrity_status: None,
+                last_backup_timestamp: None,
+                last_backup_path: None,
+                last_connected_at: connected.then(|| chrono::Utc::now().to_rfc3339()),
+                error_message: None,
             })
         }
     }

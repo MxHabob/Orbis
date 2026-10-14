@@ -142,19 +142,30 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn init(app_data_dir: &std::path::Path) -> Result<Self, String> {
-        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
-            let db_path = app_data_dir.join("orbis.db");
-            format!("sqlite://{}?mode=rwc", db_path.display())
-        });
-        let db = sea_orm::Database::connect(&db_url)
+    pub async fn init(
+        app_data_dir: &std::path::Path,
+        db_url: &str,
+        migrate: bool,
+    ) -> Result<Self, String> {
+        let db = sea_orm::Database::connect(db_url)
             .await
             .map_err(|e| e.to_string())?;
 
-        // Run migrations
         use orbis_infra::migration::Migrator;
         use sea_orm_migration::MigratorTrait;
-        Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
+        if migrate {
+            Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
+        } else {
+            let pending = Migrator::get_pending_migrations(&db)
+                .await
+                .map_err(|e| e.to_string())?;
+            if !pending.is_empty() {
+                return Err(format!(
+                    "The direct database schema is not up to date ({} migrations pending). Apply migrations using an authorized database administrator before connecting.",
+                    pending.len()
+                ));
+            }
+        }
 
         let active_session = Arc::new(std::sync::RwLock::new(None));
 

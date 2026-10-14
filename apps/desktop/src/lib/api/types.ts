@@ -674,7 +674,7 @@ export interface StorageUploadRequest {
 
 // ── Connection & Database Management Types (Desktop / Hybrid) ─────────────
 
-export type ConnectionMode = "local" | "remote";
+export type ConnectionMode = "local" | "direct" | "api";
 
 export interface LocalConfig {
   db_filename: string;
@@ -683,15 +683,18 @@ export interface LocalConfig {
   busy_timeout_ms?: number;
 }
 
-export interface RemoteConfig {
+export interface ApiConfig {
   server_url: string;
-  host?: string;
-  port?: number;
-  database_name?: string;
-  username?: string;
-  password?: string;
+}
+
+export interface DirectConfig {
+  engine: "postgres";
+  host: string;
+  port: number;
+  database_name: string;
+  username: string;
   ssl_mode?: string;
-  api_key?: string;
+  credential_id: string;
 }
 
 export interface DatabaseSettingsDto {
@@ -707,7 +710,8 @@ export interface DatabaseSettingsDto {
 export interface ConnectionConfig {
   mode: ConnectionMode;
   local?: LocalConfig;
-  remote?: RemoteConfig;
+  api?: ApiConfig;
+  direct?: DirectConfig;
   settings?: DatabaseSettingsDto;
 }
 
@@ -729,7 +733,7 @@ export interface RemoteHealthResult {
 }
 
 export interface DatabaseStatusDto {
-  mode: "local" | "remote";
+  mode: "local" | "direct" | "api" | "remote";
   state: "connected" | "disconnected" | "connecting" | "migration_required" | "warning" | "error" | "not_found";
   database_name: string;
   connection_target: string;
@@ -1972,6 +1976,7 @@ export interface OrbisApiClient {
   connectionGetConfig(): Promise<ConnectionConfig>;
   connectionSetConfig(params: {
     mode: ConnectionMode;
+    databaseEngine?: "postgres";
     serverUrl?: string;
     dbFilename?: string;
     customPath?: string;

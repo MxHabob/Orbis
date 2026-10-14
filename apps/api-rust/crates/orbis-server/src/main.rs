@@ -17,10 +17,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Canonical Database URL Resolution (Shared with Desktop & CLI)
-    let db_url = orbis_infra::config::resolve_database_url();
-    tracing::info!("Connecting to database: {}", db_url);
-    println!("Connecting to database: {}", db_url);
+    // The API server owns its database configuration. Never discover a Desktop
+    // user's local database or log credentials embedded in a database URL.
+    let db_url = orbis_infra::config::resolve_database_url()?;
+    tracing::info!("Connecting to configured server database");
 
     // Connect to database
     let db = Database::connect(&db_url).await?;

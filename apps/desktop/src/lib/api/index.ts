@@ -69,6 +69,8 @@ import { LocalClient } from "./local-client";
 import { RemoteClient } from "./remote-client";
 
 let _instance: OrbisApiClient | null = null;
+let _configuredMode: "local" | "api" | null = null;
+let _configuredBaseUrl: string | null = null;
 
 /**
  * Detect whether we are running inside a Tauri webview.
@@ -87,11 +89,35 @@ export function getApiClient(): OrbisApiClient {
   if (_instance) return _instance;
 
   if (isTauri()) {
-    _instance = new LocalClient();
+    return configureApiClient("local");
   } else {
     const baseUrl = import.meta.env?.VITE_API_URL ?? "http://localhost:3000";
-    _instance = new RemoteClient(baseUrl);
+    return configureApiClient("api", baseUrl);
   }
+}
+
+export function configureApiClient(
+  mode: "local" | "api",
+  baseUrl?: string,
+): OrbisApiClient {
+  if (mode === "api" && !baseUrl?.trim()) {
+    throw new Error("An API base URL is required for API connection mode");
+  }
+
+  const normalizedBaseUrl = mode === "api" ? baseUrl!.replace(/\/$/, "") : null;
+  if (
+    _instance &&
+    _configuredMode === mode &&
+    _configuredBaseUrl === normalizedBaseUrl
+  ) {
+    return _instance;
+  }
+
+  _configuredMode = mode;
+  _configuredBaseUrl = normalizedBaseUrl;
+  _instance =
+    mode === "api" ? new RemoteClient(normalizedBaseUrl!) : new LocalClient();
+  return _instance;
 
   return _instance;
 }
@@ -101,4 +127,6 @@ export function getApiClient(): OrbisApiClient {
  */
 export function resetApiClient(): void {
   _instance = null;
+  _configuredMode = null;
+  _configuredBaseUrl = null;
 }

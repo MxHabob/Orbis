@@ -10,7 +10,7 @@
  * both LocalClient (Tauri IPC) and RemoteClient (HTTP).
  */
 
-import { api } from "$lib/api/client";
+import { api, configureApiClient } from "$lib/api";
 import type {
   StartupPhase,
   ConnectionConfig,
@@ -31,7 +31,20 @@ export interface StartupState {
 export async function resolveStartupPhase(): Promise<StartupState> {
   try {
     // Step 1: Load connection config
-    const config = await api.connectionGetConfig();
+    let config = await api.connectionGetConfig();
+    if (config.mode === "api") {
+      const baseUrl = config.api?.server_url;
+      if (!baseUrl) {
+        return {
+          phase: "connection_setup",
+          config,
+          connected: false,
+          error: "The saved API connection does not have a server URL.",
+        };
+      }
+      configureApiClient("api", baseUrl);
+      config = await api.connectionGetConfig();
+    }
     const validation = await api.connectionValidate();
 
     if (!validation.is_valid) {
@@ -43,12 +56,15 @@ export async function resolveStartupPhase(): Promise<StartupState> {
       };
     }
 
-    // Step 2: Connect to database (auto-connect may have already done this)
     try {
       await api.connectionConnect();
-    } catch {
-      // If connection fails, it might already be connected (auto-connect in lib.rs)
-      // Try to proceed anyway — if AppState doesn't exist, system calls will fail
+    } catch (e) {
+      return {
+        phase: "connection_setup",
+        config,
+        connected: false,
+        error: e instanceof Error ? e.message : String(e),
+      };
     }
 
     // Step 3: Check organization existence

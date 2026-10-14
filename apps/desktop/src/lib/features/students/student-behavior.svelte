@@ -33,7 +33,7 @@ let isGeneratingAI = $state(false);
 let aiSummary = $state<string | null>(null);
 
 let showAddModal = $state(false);
-let newRecordType = $state("Positive");
+let newRecordType = $state("positive");
 let newDescription = $state("");
 let newPoints = $state(1);
 let isSaving = $state(false);
@@ -61,7 +61,7 @@ async function handleAddRecord() {
   try {
     await api.recordBehavior({
       student_id: studentId,
-      record_type: newRecordType,
+      record_type: newRecordType.toLowerCase(),
       description: newDescription.trim(),
       points: Number(newPoints) || 0,
     });
@@ -210,8 +210,8 @@ const rtl = $derived(getLocale() === "ar");
           class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background"
           bind:value={newRecordType}
         >
-          <option value="Positive">Positive (Merit)</option>
-          <option value="Negative">Negative (Violation)</option>
+          <option value="positive">Positive (Merit)</option>
+          <option value="negative">Negative (Violation)</option>
         </select>
       </div>
 

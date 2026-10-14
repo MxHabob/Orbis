@@ -11,6 +11,7 @@ dependencies = [
  "docforge-engine",
  "hostname",
  "image 0.24.9",
+ "keyring",
  "orbis-app",
  "orbis-domain",
  "orbis-infra",
@@ -32,6 +33,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "tracing",
+ "url",
  "uuid",
 ]
 
