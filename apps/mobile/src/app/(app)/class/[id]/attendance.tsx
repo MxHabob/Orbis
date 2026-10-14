@@ -90,7 +90,7 @@ export default function ClassAttendanceScreen() {
       return;
     }
     try {
-      await mutation.mutateAsync({ class_id: classId, date, items });
+      await mutation.mutateAsync({ section_id: classId, date, items });
       setSelectedStatuses({});
       toast.success(t("teacher_save_success"));
     } catch (error) {

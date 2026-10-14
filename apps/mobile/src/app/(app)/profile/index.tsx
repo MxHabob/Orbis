@@ -193,6 +193,8 @@ export default function ProfileScreen() {
     });
   }
 
+  console.log("ProfileScreen render :", user);
+
   return (
     <>
       <Header

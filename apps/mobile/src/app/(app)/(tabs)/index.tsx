@@ -172,17 +172,30 @@ export default function HomeTabScreen() {
   }));
   const teacherClasses: HomeTileData[] = (
     effectiveContext?.teaching_classes ?? []
-  ).map((classItem) => ({
-    id: classItem.class_id,
-    title: l(classItem.name_ar, classItem.name) ?? classItem.name,
-    subtitle: classItem.level ?? undefined,
-    icon: <BookOpen size={30} color={theme.primary} />,
-    onPress: () =>
-      router.push({
-        pathname: "/(app)/class/[id]",
-        params: { id: classItem.class_id },
-      }),
-  }));
+  )
+    .filter(
+      (classItem): classItem is {
+        section_id: string;
+        name?: string;
+        name_ar?: string | null;
+        level?: string | null;
+      } =>
+        typeof classItem === "object" &&
+        classItem !== null &&
+        "section_id" in classItem &&
+        typeof classItem.section_id === "string",
+    )
+    .map((classItem) => ({
+      id: classItem.section_id,
+      title: l(classItem.name_ar, classItem.name) ?? classItem.name ?? "Section",
+      subtitle: classItem.level ?? undefined,
+      icon: <BookOpen size={30} color={theme.primary} />,
+      onPress: () =>
+        router.push({
+          pathname: "/(app)/class/[id]",
+          params: { id: classItem.section_id },
+        }),
+    }));
   const firstDependentId = selectedDependent?.student_id;
 
   const serviceTiles: HomeTileData[] =

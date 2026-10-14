@@ -121,8 +121,8 @@ function isEffectiveContextDto(value: unknown): value is EffectiveContextDto {
       (teachingClass) =>
         typeof teachingClass === "object" &&
         teachingClass !== null &&
-        "class_id" in teachingClass &&
-        typeof teachingClass.class_id === "string",
+        "section_id" in teachingClass &&
+        typeof teachingClass.section_id === "string",
     )
   );
 }

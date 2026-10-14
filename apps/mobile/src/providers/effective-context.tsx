@@ -202,7 +202,11 @@ export function EffectiveContextProvider({
       const restoredClass =
         savedClass &&
         authCtx?.teaching_classes?.some(
-          (classItem) => classItem.class_id === savedClass,
+          (classItem) =>
+            typeof classItem === "object" &&
+            classItem !== null &&
+            "section_id" in classItem &&
+            classItem.section_id === savedClass,
         )
           ? savedClass
           : null;
@@ -295,7 +299,11 @@ export function EffectiveContextProvider({
       const validId =
         id &&
         authCtx?.teaching_classes?.some(
-          (classItem) => classItem.class_id === id,
+          (classItem) =>
+            typeof classItem === "object" &&
+            classItem !== null &&
+            "section_id" in classItem &&
+            classItem.section_id === id,
         )
           ? id
           : null;
