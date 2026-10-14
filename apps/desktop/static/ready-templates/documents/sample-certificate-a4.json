@@ -1,0 +1,113 @@
+{
+  "version": "2.0",
+  "meta": {
+    "name": "Sample Achievement Certificate",
+    "nameAr": "شهادة تفوق تجريبية",
+    "documentType": "CERTIFICATE",
+    "entityType": "student",
+    "locale": "ar",
+    "pageSetup": {
+      "size": "A4",
+      "orientation": "portrait",
+      "margins": { "top": 12, "bottom": 12, "left": 12, "right": 12 },
+      "unit": "mm"
+    }
+  },
+  "variables": {},
+  "assets": {},
+  "pages": [
+    {
+      "type": "Page",
+      "id": "certificate-page",
+      "children": [
+        {
+          "type": "Shape",
+          "id": "certificate-border",
+          "name": "إطار الشهادة",
+          "props": {
+            "shapeType": "rectangle",
+            "position": { "x": 12, "y": 12, "width": 186, "height": 273 },
+            "fill": "transparent",
+            "stroke": "#C59B35",
+            "strokeWidth": 1.2
+          }
+        },
+        {
+          "type": "Text",
+          "id": "certificate-title",
+          "name": "عنوان الشهادة",
+          "props": {
+            "content": "شهادة تفوق",
+            "position": { "x": 24, "y": 42, "width": 162, "height": 18 },
+            "fontSize": 26,
+            "fontFamily": "Rubik",
+            "fontWeight": "bold",
+            "color": "#263B5A",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "certificate-intro",
+          "name": "مقدمة الشهادة",
+          "props": {
+            "content": "تتشرف إدارة المؤسسة بمنح هذه الشهادة إلى",
+            "position": { "x": 24, "y": 82, "width": 162, "height": 12 },
+            "fontSize": 12,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "certificate-student-name",
+          "name": "اسم الطالب",
+          "props": {
+            "content": "اسم الطالب",
+            "position": { "x": 34, "y": 108, "width": 142, "height": 18 },
+            "fontSize": 20,
+            "fontFamily": "Rubik",
+            "fontWeight": "bold",
+            "color": "#A57920",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "certificate-description",
+          "name": "نص الشهادة",
+          "props": {
+            "content": "تقديراً لاجتهاده وتميزه الدراسي، مع أطيب التمنيات له بمزيد من النجاح والتوفيق.",
+            "position": { "x": 30, "y": 145, "width": 150, "height": 28 },
+            "fontSize": 12,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "center",
+            "direction": "rtl",
+            "lineHeight": 1.5
+          }
+        },
+        {
+          "type": "Text",
+          "id": "certificate-signature",
+          "name": "التوقيع",
+          "props": {
+            "content": "مدير المؤسسة\n________________",
+            "position": { "x": 112, "y": 235, "width": 60, "height": 22 },
+            "fontSize": 11,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        }
+      ]
+    }
+  ],
+  "components": {},
+  "styles": {}
+}

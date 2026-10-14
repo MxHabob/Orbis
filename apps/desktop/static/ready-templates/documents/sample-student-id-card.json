@@ -1,0 +1,126 @@
+{
+  "version": "2.0",
+  "meta": {
+    "name": "Sample Student ID Card",
+    "nameAr": "بطاقة طالب تجريبية",
+    "documentType": "ID_CARD",
+    "entityType": "student",
+    "locale": "ar",
+    "pageSetup": {
+      "size": "ID_CARD",
+      "orientation": "landscape",
+      "margins": { "top": 4, "bottom": 4, "left": 4, "right": 4 },
+      "unit": "mm"
+    }
+  },
+  "variables": {},
+  "assets": {},
+  "pages": [
+    {
+      "type": "Page",
+      "id": "id-card-page",
+      "children": [
+        {
+          "type": "Shape",
+          "id": "id-card-background",
+          "name": "خلفية البطاقة",
+          "props": {
+            "shapeType": "rounded-rect",
+            "position": { "x": 2, "y": 2, "width": 81.6, "height": 50 },
+            "fill": "#F0F5FA",
+            "stroke": "#315D83",
+            "strokeWidth": 0.7,
+            "borderRadius": 3
+          }
+        },
+        {
+          "type": "Text",
+          "id": "id-card-org",
+          "name": "اسم المؤسسة",
+          "props": {
+            "content": "اسم المؤسسة التعليمية",
+            "position": { "x": 8, "y": 7, "width": 69, "height": 7 },
+            "fontSize": 9,
+            "fontFamily": "Rubik",
+            "fontWeight": "bold",
+            "color": "#244664",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Shape",
+          "id": "id-card-photo-placeholder",
+          "name": "مكان الصورة",
+          "props": {
+            "shapeType": "rounded-rect",
+            "position": { "x": 7, "y": 18, "width": 19, "height": 24 },
+            "fill": "#DCE6EF",
+            "stroke": "#A8BAC9",
+            "strokeWidth": 0.4,
+            "borderRadius": 1
+          }
+        },
+        {
+          "type": "Text",
+          "id": "id-card-photo-label",
+          "name": "تلميح الصورة",
+          "props": {
+            "content": "صورة",
+            "position": { "x": 8, "y": 27, "width": 17, "height": 6 },
+            "fontSize": 7,
+            "fontFamily": "Rubik",
+            "color": "#607487",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "id-card-name",
+          "name": "اسم الطالب",
+          "props": {
+            "content": "اسم الطالب",
+            "position": { "x": 31, "y": 19, "width": 45, "height": 7 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "fontWeight": "bold",
+            "color": "#263B5A",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "id-card-class",
+          "name": "الصف",
+          "props": {
+            "content": "الصف: __________",
+            "position": { "x": 31, "y": 29, "width": 45, "height": 6 },
+            "fontSize": 8,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "id-card-number",
+          "name": "رقم الطالب",
+          "props": {
+            "content": "رقم الطالب: __________",
+            "position": { "x": 31, "y": 37, "width": 45, "height": 6 },
+            "fontSize": 8,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        }
+      ]
+    }
+  ],
+  "components": {},
+  "styles": {}
+}

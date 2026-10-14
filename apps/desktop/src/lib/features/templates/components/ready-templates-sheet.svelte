@@ -117,26 +117,27 @@
 <Sheet bind:open>
   <SheetContent
     side="end"
-    contentClass="data-[side=end]:w-[min(96vw,64rem)] data-[side=end]:sm:!max-w-5xl"
+    contentClass="data-[side=end]:w-[min(92vw,36rem)] data-[side=end]:sm:!max-w-xl"
     class="flex h-full flex-col gap-0 overflow-hidden p-0"
   >
-    <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 pe-14 text-start">
-      <SheetTitle class="text-xl font-bold text-foreground">
+    <SheetHeader class="shrink-0 border-b border-border/40 px-4 py-3 pe-12 text-start">
+      <SheetTitle class="text-lg font-bold text-foreground">
         {m.settings_template_marketplace_title()}
       </SheetTitle>
     </SheetHeader>
 
     {#if hasLoaded && templates.length > 0}
-      <div class="shrink-0 border-b border-border/40 px-6 py-4">
+      <div class="shrink-0 border-b border-border/40 px-4 py-3">
         <Input
           bind:value={search}
           placeholder={m.settings_template_marketplace_search()}
           aria-label={m.settings_template_marketplace_search()}
+          class="h-9 text-xs"
         />
       </div>
     {/if}
 
-    <div class="min-h-0 flex-1 overflow-y-auto p-6 scrollbar-hide">
+    <div class="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-hide">
       {#if networkUnavailable}
         <div
           class="flex flex-col items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-4 py-8 text-center"
@@ -182,50 +183,50 @@
           {m.settings_template_marketplace_empty()}
         </p>
       {:else if hasLoaded}
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="grid gap-3 sm:grid-cols-2">
           {#each filteredTemplates as template (template.id)}
-            <article class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-border/50 bg-card">
+            <article class="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border/50 bg-card">
               {#if template.preview_url}
                 <img
                   src={template.preview_url}
                   alt={l(template.name_ar, template.name)}
-                  class="h-40 w-full border-b border-border/40 bg-muted/20 object-cover"
+                  class="h-28 w-full border-b border-border/40 bg-muted/20 object-cover"
                   loading="lazy"
                   decoding="async"
                 />
               {:else}
-                <div class="flex h-40 items-center justify-center border-b border-border/40 bg-muted/20 text-sm font-medium text-muted-foreground">
+                <div class="flex h-24 items-center justify-center border-b border-border/40 bg-muted/20 text-xs font-medium text-muted-foreground">
                   {template.document_type}
                 </div>
               {/if}
 
-              <div class="flex flex-1 flex-col gap-4 p-4">
+              <div class="flex flex-1 flex-col gap-2.5 p-3">
                 <div class="min-w-0">
-                  <h3 class="truncate text-sm font-semibold text-foreground">
+                  <h3 class="truncate text-xs font-semibold text-foreground">
                     {l(template.name_ar, template.name)}
                   </h3>
                   {#if template.description_ar || template.description}
-                    <p class="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                    <p class="mt-1 line-clamp-2 text-[11px] leading-snug text-muted-foreground">
                       {l(template.description_ar, template.description)}
                     </p>
                   {/if}
                 </div>
 
-                <div class="flex flex-wrap gap-1.5">
-                  <Badge variant="secondary" class="h-5 px-1.5 text-[10px] font-normal">
+                <div class="flex flex-wrap gap-1">
+                  <Badge variant="secondary" class="h-4 px-1 text-[9px] font-normal">
                     {template.document_type}
                   </Badge>
-                  <Badge variant="secondary" class="h-5 px-1.5 text-[10px] font-normal">
+                  <Badge variant="secondary" class="h-4 px-1 text-[9px] font-normal">
                     {template.entity_type}
                   </Badge>
-                  <Badge variant="secondary" class="h-5 px-1.5 text-[10px] font-normal">
+                  <Badge variant="secondary" class="h-4 px-1 text-[9px] font-normal">
                     {template.page_size}
                   </Badge>
                 </div>
 
                 <Button
                   size="sm"
-                  class="mt-auto w-full"
+                  class="mt-auto h-8 w-full text-xs"
                   onclick={() => useTemplate(template)}
                   disabled={importingId !== null}
                 >

@@ -20,8 +20,8 @@ export interface ReadyTemplate {
   preview_url?: string | null;
 }
 
-function parsePublicUrl(value: string): URL {
-  const parsed = new URL(value);
+function parsePublicUrl(value: string, baseUrl?: string): URL {
+  const parsed = baseUrl ? new URL(value, baseUrl) : new URL(value);
   const isLocalHttp =
     parsed.protocol === "http:" &&
     ["localhost", "127.0.0.1", "[::1]"].includes(parsed.hostname);
@@ -90,7 +90,8 @@ function isDocument(value: unknown): value is Record<string, unknown> {
 }
 
 export async function listReadyTemplates(): Promise<ReadyTemplate[]> {
-  const response = await fetch(getCatalogUrl(), {
+  const catalogUrl = getCatalogUrl();
+  const response = await fetch(catalogUrl, {
     headers: { Accept: "application/json" },
     cache: "no-cache",
   });
@@ -113,7 +114,13 @@ export async function listReadyTemplates(): Promise<ReadyTemplate[]> {
     throw new Error("The ready-template catalog has an invalid format.");
   }
 
-  return catalog.templates;
+  return catalog.templates.map((template) => ({
+    ...template,
+    document_url: parsePublicUrl(template.document_url, catalogUrl).href,
+    preview_url: template.preview_url
+      ? parsePublicUrl(template.preview_url, catalogUrl).href
+      : template.preview_url,
+  }));
 }
 
 export async function createTemplateFromCatalog(

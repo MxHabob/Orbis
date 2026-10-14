@@ -1,0 +1,125 @@
+{
+  "version": "2.0",
+  "meta": {
+    "name": "Sample Payment Receipt",
+    "nameAr": "سند قبض تجريبي",
+    "documentType": "RECEIPT",
+    "entityType": "payment",
+    "locale": "ar",
+    "pageSetup": {
+      "size": "A5",
+      "orientation": "portrait",
+      "margins": { "top": 10, "bottom": 10, "left": 10, "right": 10 },
+      "unit": "mm"
+    }
+  },
+  "variables": {},
+  "assets": {},
+  "pages": [
+    {
+      "type": "Page",
+      "id": "receipt-page",
+      "children": [
+        {
+          "type": "Shape",
+          "id": "receipt-border",
+          "name": "إطار السند",
+          "props": {
+            "shapeType": "rectangle",
+            "position": { "x": 10, "y": 10, "width": 128, "height": 190 },
+            "fill": "transparent",
+            "stroke": "#64866A",
+            "strokeWidth": 0.8
+          }
+        },
+        {
+          "type": "Text",
+          "id": "receipt-title",
+          "name": "عنوان السند",
+          "props": {
+            "content": "سند قبض",
+            "position": { "x": 20, "y": 20, "width": 108, "height": 13 },
+            "fontSize": 20,
+            "fontFamily": "Rubik",
+            "fontWeight": "bold",
+            "color": "#315D3A",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "receipt-number",
+          "name": "رقم السند",
+          "props": {
+            "content": "رقم السند: __________    التاريخ: __________",
+            "position": { "x": 19, "y": 45, "width": 110, "height": 9 },
+            "fontSize": 9,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "receipt-payer",
+          "name": "اسم الدافع",
+          "props": {
+            "content": "استلمنا من: __________________________________",
+            "position": { "x": 19, "y": 70, "width": 110, "height": 10 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "color": "#303944",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "receipt-amount",
+          "name": "المبلغ",
+          "props": {
+            "content": "مبلغ وقدره: __________________________________",
+            "position": { "x": 19, "y": 91, "width": 110, "height": 10 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "color": "#303944",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "receipt-for",
+          "name": "سبب الدفع",
+          "props": {
+            "content": "وذلك عن: _____________________________________",
+            "position": { "x": 19, "y": 112, "width": 110, "height": 10 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "color": "#303944",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "receipt-signature",
+          "name": "التوقيع",
+          "props": {
+            "content": "اسم المستلم وتوقيعه\n___________________",
+            "position": { "x": 71, "y": 155, "width": 55, "height": 20 },
+            "fontSize": 9,
+            "fontFamily": "Rubik",
+            "color": "#424B57",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        }
+      ]
+    }
+  ],
+  "components": {},
+  "styles": {}
+}

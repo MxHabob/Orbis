@@ -51,14 +51,21 @@ export function formatAiErrorMessage(error: unknown): string {
     ].join("\n");
   }
 
-  // 2. Quota & Rate Limits (HTTP 429 / RESOURCE_EXHAUSTED)
+  // 2. Quota & Rate Limits (HTTP 429 / RESOURCE_EXHAUSTED / OpenRouter credit exhaustion)
   if (
     code === 429 ||
     status === "RESOURCE_EXHAUSTED" ||
     raw.includes("RESOURCE_EXHAUSTED") ||
     raw.includes("429") ||
     rawLower.includes("quota exceeded") ||
-    rawLower.includes("rate limit")
+    rawLower.includes("rate limit") ||
+    rawLower.includes("requires more credits") ||
+    rawLower.includes("insufficient credits") ||
+    rawLower.includes("out of credits") ||
+    rawLower.includes("can only afford") ||
+    rawLower.includes("only afford") ||
+    rawLower.includes("more credits, or fewer max_tokens") ||
+    (rawLower.includes("max_tokens") && rawLower.includes("afford"))
   ) {
     return [
       m.ai_ui_error_quota_description(),
@@ -114,7 +121,21 @@ export function formatAiErrorMessage(error: unknown): string {
     ].join("\n");
   }
 
-  // 6. Network / Connection Refused / Timeout
+  // 6. Missing report definition / invalid report code
+  if (
+    rawLower.includes("report definition not found") ||
+    rawLower.includes("report code is required") ||
+    rawLower.includes("report definition") && rawLower.includes("not found") ||
+    rawLower.includes("invalid report code")
+  ) {
+    return [
+      "The requested report definition could not be found for this organization.",
+      "",
+      "Please list the available reports and use a valid report code before retrying.",
+    ].join("\n");
+  }
+
+  // 7. Network / Connection Refused / Timeout
   if (
     rawLower.includes("network error") ||
     rawLower.includes("failed to fetch") ||
@@ -128,7 +149,7 @@ export function formatAiErrorMessage(error: unknown): string {
     ].join("\n");
   }
 
-  // 7. Generic Details / Fallback
+  // 8. Generic Details / Fallback
   const cleanDetails = innerMsg || raw
     .replace(/^Validation failed:\s*/i, "")
     .replace(/^Gemini API Error:\s*/i, "")

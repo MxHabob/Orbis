@@ -67,6 +67,21 @@ fn ensure_tenant_matches(record_org_id: Uuid, tenant_id: Uuid) -> Result<(), Dom
     }
 }
 
+fn format_tool_execution_error(tool_name: &str, error: &DomainError) -> String {
+    let error_text = error.to_string();
+    let normalized = error_text.to_ascii_lowercase();
+
+    if tool_name == "generate_report"
+        && (normalized.contains("report definition not found")
+            || normalized.contains("report code is required")
+            || normalized.contains("not found") && normalized.contains("report"))
+    {
+        return "The requested report definition could not be found. Please list available reports and use a valid report code before retrying.".to_string();
+    }
+
+    format!("Error executing {}: {}", tool_name, error)
+}
+
 fn teacher_assigned_to_class(
     teacher_id: Uuid,
     section_id: Uuid,
@@ -1169,10 +1184,10 @@ impl AiOrchestrationService {
                             }
                             (data.to_string(), false)
                         }
-                        Err(e) => (
-                            format!("Error executing {}: {}", tool_call.tool_name, e),
-                            true,
-                        ),
+                        Err(e) => {
+                            let message = format_tool_execution_error(&tool_call.tool_name, &e);
+                            (message, true)
+                        }
                     };
 
                     conversation_history.push(AiMessage {
@@ -2314,8 +2329,8 @@ impl AiOrchestrationService {
 mod tests {
     use super::{
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
-        required_tool_permission, take_private_ui_result, teacher_assigned_to_class,
-        tool_supports_unit_scoping, unit_in_scope,
+        format_tool_execution_error, required_tool_permission, take_private_ui_result,
+        teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;
@@ -2436,6 +2451,17 @@ mod tests {
             ensure_tenant_matches(Uuid::new_v4(), tenant_id),
             Err(DomainError::NotFound(_))
         ));
+    }
+
+    #[test]
+    fn generate_report_missing_definition_error_is_user_friendly() {
+        let message = format_tool_execution_error(
+            "generate_report",
+            &DomainError::NotFound("Report definition not found".into()),
+        );
+
+        assert!(message.contains("list available reports"));
+        assert!(!message.contains("NotFound: Report definition not found"));
     }
 
     #[test]
