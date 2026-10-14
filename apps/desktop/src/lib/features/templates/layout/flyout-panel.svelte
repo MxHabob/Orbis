@@ -85,8 +85,8 @@ function stopResize() {
     <!-- Header -->
     <div class="flyout-header">
       <h3 class="flyout-title">{panelTitles[panel ?? ""] ?? ""}</h3>
-      <Button variant="ghost" size="icon-xs" class="cursor-pointer shrink-0" onclick={close}>
-        <XMark size={14} />
+      <Button variant="ghost" size="icon-sm" class="cursor-pointer shrink-0" onclick={close}>
+        <XMark size={16} />
       </Button>
     </div>
 
@@ -97,17 +97,17 @@ function stopResize() {
 
       {:else if panel === "tools"}
         <Tabs bind:value={toolsTab} class="flex flex-col h-full">
-          <TabsList class="flex h-8 p-0 bg-muted/20 border-b border-border/30 rounded-none shrink-0 mx-3 mt-1">
-            <TabsTrigger value="layers" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Keyframes size={11} />
+          <TabsList class="flex h-9 p-1 bg-muted/40 border border-border rounded-md shrink-0 mx-3 mt-3">
+            <TabsTrigger value="layers" class="flex-1 text-[11px] gap-1.5 h-full rounded data-[state=active]:bg-card data-[state=active]:shadow-sm cursor-pointer">
+              <Keyframes size={14} />
               {m.template_panel_layers()}
             </TabsTrigger>
-            <TabsTrigger value="variables" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <Code size={11} />
+            <TabsTrigger value="variables" class="flex-1 text-[11px] gap-1.5 h-full rounded data-[state=active]:bg-card data-[state=active]:shadow-sm cursor-pointer">
+              <Code size={14} />
               {m.template_panel_variables()}
             </TabsTrigger>
-            <TabsTrigger value="history" class="flex-1 text-[9px] gap-1 h-full rounded-none data-[state=active]:bg-card cursor-pointer">
-              <ClockRotateRight size={11} />
+            <TabsTrigger value="history" class="flex-1 text-[11px] gap-1.5 h-full rounded data-[state=active]:bg-card data-[state=active]:shadow-sm cursor-pointer">
+              <ClockRotateRight size={14} />
               {m.template_panel_history()}
             </TabsTrigger>
           </TabsList>
@@ -127,11 +127,11 @@ function stopResize() {
           <div class="px-3 py-2">
             <div class="relative">
               <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input type=m.template_search_templates() bind:value={searchQuery} class="h-7 text-[10px] ps-7" />
+              <Input type="text" placeholder={m.template_search_templates()} bind:value={searchQuery} class="h-9 text-xs ps-8" />
             </div>
           </div>
           <div class="flex flex-col items-center justify-center py-12 px-4 gap-2">
-            <p class="text-[10px] text-muted-foreground text-center">
+            <p class="text-xs text-muted-foreground text-center">
               {m.template_msg_soon_templates()}
             </p>
           </div>
@@ -162,11 +162,11 @@ function stopResize() {
     bottom: 0;
     z-index: 30;
     background: var(--color-card);
-    border-inline-end: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+    border-inline-end: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
-    box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
-    animation: flyout-slide-in 0.08s ease-out;
+    box-shadow: 4px 0 12px color-mix(in srgb, var(--color-foreground) 7%, transparent);
+    animation: flyout-slide-in 0.14s ease-out;
   }
 
   @keyframes flyout-slide-in {
@@ -181,8 +181,8 @@ function stopResize() {
   }
 
   :global([dir="rtl"]) .flyout-container {
-    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
-    animation: flyout-slide-in-rtl 0.08s ease-out;
+    box-shadow: -4px 0 12px color-mix(in srgb, var(--color-foreground) 7%, transparent);
+    animation: flyout-slide-in-rtl 0.14s ease-out;
   }
 
   @keyframes flyout-slide-in-rtl {
@@ -200,8 +200,10 @@ function stopResize() {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent);
+    min-height: 52px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-card);
     flex-shrink: 0;
   }
 

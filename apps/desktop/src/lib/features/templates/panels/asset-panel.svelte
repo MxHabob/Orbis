@@ -1,5 +1,5 @@
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
+import { LoadingIndicator, toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
 /**
@@ -106,6 +106,7 @@ function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
   if (!target.files?.length) return;
   const file = target.files[0];
+  const uploadToast = toast.loading("جارٍ رفع الصورة...", { duration: 0 });
 
   uploadMutation.mutate(
     {
@@ -118,9 +119,30 @@ function handleFileSelect(e: Event) {
     },
     {
       onSuccess: (uploaded) => {
-        if (uploaded?.id) {
-          store.addAsset(uploaded.id, "image");
+        if (!uploaded?.id) {
+          uploadToast.update({
+            title: "تعذر رفع الصورة: لم يُرجع الخادم معرّف الملف.",
+            variant: "error",
+            duration: 5000,
+          });
+          return;
         }
+
+        store.addAsset(uploaded.id, "image");
+        uploadToast.update({
+          title: "تم رفع الصورة وإضافتها إلى الوسائط.",
+          variant: "success",
+          duration: 4000,
+        });
+      },
+      onError: (error) => {
+        uploadToast.update({
+          title: error instanceof Error ? error.message : "تعذر رفع الصورة.",
+          variant: "error",
+          duration: 5000,
+        });
+      },
+      onSettled: () => {
         if (fileInput) fileInput.value = "";
       },
     },
@@ -135,32 +157,32 @@ function triggerUpload() {
 <TooltipProvider delayDuration={300}>
 <div class="flex flex-col h-full text-start">
   <!-- Header -->
-  <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
+  <div class="px-3 py-2.5 border-b border-border flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <Photo size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">{m.template_title_assets()}</h3>
+      <Photo size={15} class="text-muted-foreground" />
+      <h3 class="text-sm font-semibold text-foreground">{m.template_title_assets()}</h3>
     </div>
     <div class="flex items-center gap-1">
-      <Badge variant="outline" class="text-[8px]">{filteredAssets.length}</Badge>
+      <Badge variant="outline" class="text-[10px]">{filteredAssets.length}</Badge>
       {#if store.activePage?.children.some((child) => child.type === "Image" && child.props.layer === "background")}
         <Button
           variant="ghost"
           size="icon-xs"
-          class="cursor-pointer h-5 w-5"
+          class="cursor-pointer"
           title={m.template_remove_background()}
           aria-label={m.template_remove_background()}
           onclick={() => store.clearPageBackground()}
         >
-          <Trash size={11} />
+          <Trash size={14} />
         </Button>
       {/if}
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={triggerUpload} disabled={uploadMutation.isPending}>
+          <Button variant="ghost" size="icon-sm" class="cursor-pointer" onclick={triggerUpload} disabled={uploadMutation.isPending}>
             {#if uploadMutation.isPending}
-              <LoadingIndicator   size={11} />
+              <LoadingIndicator   size={14} />
             {:else}
-              <ArrowUpTray size={11} />
+              <ArrowUpTray size={14} />
             {/if}
           </Button>
         </TooltipTrigger>
@@ -177,20 +199,20 @@ function triggerUpload() {
   </div>
 
   <!-- Search -->
-  <div class="px-2 py-1.5 border-b border-border/30">
+  <div class="px-3 py-2 border-b border-border">
     <div class="relative">
-      <Search size={11} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
         placeholder={m.template_search_placeholder()}
         bind:value={searchQuery}
-        class="h-6 text-[10px] ps-7"
+        class="h-9 text-xs ps-8"
       />
     </div>
   </div>
 
   <!-- Asset Grid -->
-  <div class="grow overflow-y-auto scrollbar-hide p-2 flex flex-col gap-2">
+  <div class="grow overflow-y-auto scrollbar-hide p-3 flex flex-col gap-3">
     {#if documentsQuery.isLoading && serverAssets.length === 0}
       <div class="flex justify-center p-4">
         <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
@@ -198,21 +220,21 @@ function triggerUpload() {
     {:else if filteredAssets.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <Photo size={20} class="text-muted-foreground/30" />
-        <p class="text-[10px] text-muted-foreground text-center">
+        <p class="text-xs text-muted-foreground text-center">
           {searchQuery ? m.template_msg_no_results() : m.template_msg_no_assets()}
         </p>
       </div>
     {:else}
-      <div class="grid grid-cols-2 gap-1.5">
+      <div class="grid grid-cols-2 gap-2">
         {#each filteredAssets as doc (doc.id)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="relative group rounded-lg border border-border/40 bg-card/30 hover:border-primary/40 cursor-grab transition-all overflow-hidden flex flex-col"
+            class="relative group rounded-md border border-border bg-card hover:bg-muted/30 cursor-grab transition-colors overflow-hidden flex flex-col"
             draggable="true"
             ondragstart={(e) => handleAssetDragStart(e, doc)}
           >
             <!-- Thumbnail -->
-            <div class="aspect-4/3 bg-muted/20 flex items-center justify-center overflow-hidden">
+            <div class="aspect-4/3 bg-muted/40 flex items-center justify-center overflow-hidden">
               {#await resolveDocumentUrl(getDocumentSource(doc), doc.id)}
                 <LoadingIndicator class="h-4 w-4 text-muted-foreground"  size={16} />
               {:then srcUrl}
@@ -228,10 +250,10 @@ function triggerUpload() {
             </div>
 
             <!-- Info -->
-            <div class="px-1.5 py-1 flex items-center justify-between bg-card">
+            <div class="px-2 py-1.5 flex items-center justify-between bg-card">
               <div class="flex flex-col min-w-0">
-                <span class="text-[8px] font-medium text-foreground truncate">{doc.name}</span>
-                <span class="text-[7px] text-muted-foreground capitalize">{doc.extension?.toUpperCase() || 'IMG'}</span>
+                <span class="text-[11px] font-medium text-foreground truncate">{doc.name}</span>
+                <span class="text-[10px] text-muted-foreground capitalize">{doc.extension?.toUpperCase() || 'IMG'}</span>
               </div>
             </div>
 
@@ -239,18 +261,18 @@ function triggerUpload() {
             <div class="absolute top-1 inset-e-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
               <button
                 type="button"
-                class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer"
+                class="rounded bg-background/90 p-1.5 hover:bg-accent cursor-pointer"
                 title={m.template_set_as_background()}
                 aria-label={m.template_set_as_background()}
                 onclick={() => setAssetAsBackground(doc)}
               >
-                <Photo size={10} class="text-primary" />
+                <Photo size={13} class="text-primary" />
               </button>
-              <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(doc)}>
-                <Plus size={10} class="text-primary" />
+              <button type="button" class="rounded bg-background/90 p-1.5 hover:bg-accent cursor-pointer" onclick={() => insertAssetAsImage(doc)}>
+                <Plus size={13} class="text-primary" />
               </button>
-              <button type="button" class="p-0.5 rounded bg-background/80 hover:bg-accent cursor-pointer" onclick={() => removeAsset(doc)}>
-                <Trash size={10} class="text-destructive" />
+              <button type="button" class="rounded bg-background/90 p-1.5 hover:bg-accent cursor-pointer" onclick={() => removeAsset(doc)}>
+                <Trash size={13} class="text-destructive" />
               </button>
             </div>
           </div>
@@ -261,7 +283,7 @@ function triggerUpload() {
         <Button 
           variant="ghost" 
           size="xs" 
-          class="w-full text-[10px] mt-2 cursor-pointer"
+          class="w-full text-xs mt-2 cursor-pointer"
           disabled={documentsQuery.isFetchingNextPage}
           onclick={() => documentsQuery.fetchNextPage()}
         >
@@ -276,8 +298,8 @@ function triggerUpload() {
   </div>
 
   <!-- Footer hint -->
-  <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10">
-    <p class="text-[8px] text-muted-foreground text-center">
+  <div class="px-3 py-2 border-t border-border">
+    <p class="text-[10px] text-muted-foreground text-center">
       {m.template_msg_drag_asset()}
     </p>
   </div>

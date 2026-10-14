@@ -261,7 +261,7 @@ function handleDrop(e: DragEvent) {
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   bind:this={containerEl}
-  class="relative grow overflow-hidden bg-muted/20 select-none"
+  class="relative grow overflow-hidden bg-muted/45 select-none"
   role="application"
   aria-label={m.docforge_canvas_label()}
   tabindex="0"
@@ -376,5 +376,12 @@ function handleDrop(e: DragEvent) {
   </svg>
 
   <!-- HTML Overlays -->
-  <FloatingActionBar {store} {offsetX} {offsetY} />
+  <FloatingActionBar
+    {store}
+    {offsetX}
+    {offsetY}
+    pageSizePx={{ width: pageWidthPx, height: pageHeightPx }}
+    containerSize={{ width: containerWidth, height: containerHeight }}
+    rulersVisible={store.rulersVisible}
+  />
 </div>

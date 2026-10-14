@@ -178,8 +178,8 @@ function insertPreset(preset: TextPreset) {
     {/each}
   </div>
 
-  <div class="px-3 py-2 border-t border-border/20">
-    <p class="text-[8px] text-muted-foreground text-center">
+  <div class="px-3 py-2 border-t border-border">
+    <p class="text-[10px] text-muted-foreground text-center">
       {m.template_msg_drag_text()}
     </p>
   </div>
@@ -195,10 +195,10 @@ function insertPreset(preset: TextPreset) {
   .presets-list {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 8px 12px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .presets-list::-webkit-scrollbar { display: none; }
@@ -206,26 +206,23 @@ function insertPreset(preset: TextPreset) {
   .preset-card {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid color-mix(in srgb, var(--color-border) 25%, transparent);
-    background: color-mix(in srgb, var(--color-muted) 10%, transparent);
+    gap: 5px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
     cursor: grab;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
     user-select: none;
   }
 
   .preset-card:hover {
-    background: var(--color-accent);
-    border-color: color-mix(in srgb, var(--color-border) 50%, transparent);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    background: var(--color-muted);
+    border-color: var(--color-border);
   }
 
   .preset-card:active {
     cursor: grabbing;
-    transform: scale(0.98);
   }
 
   .preset-preview {
@@ -235,7 +232,7 @@ function insertPreset(preset: TextPreset) {
   }
 
   .preset-label {
-    font-size: 8px;
+    font-size: 11px;
     color: var(--color-muted-foreground);
     margin-top: 2px;
   }

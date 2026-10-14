@@ -34,6 +34,8 @@ import { AdjustmentsHorizontal, AlignHorizontal, AlignVertical, ArrowForward, Ar
 let {
   store,
   templateName = "",
+  isPropertiesVisible = false,
+  ontoggleproperties,
   onback,
   onsave,
   onpreview,
@@ -41,6 +43,8 @@ let {
 }: {
   store: EditorStore;
   templateName?: string;
+  isPropertiesVisible?: boolean;
+  ontoggleproperties?: () => void;
   onback?: () => void;
   onsave: () => void;
   onpreview: () => void;
@@ -193,7 +197,7 @@ function handleAlign(
             items={FONT_FAMILIES}
             selectedItem={FONT_FAMILIES.find(f => f.value === (nodeProps.fontFamily || "Rubik")) || { id: "custom", label: nodeProps.fontFamily || "Rubik", value: nodeProps.fontFamily || "Rubik" }}
             onSelect={(item) => updateProp("fontFamily", item.value)}
-            class="h-6"
+            class="h-8"
             placeholder={m.shared_ui_font()}
           />
         </div>
@@ -210,14 +214,14 @@ function handleAlign(
                   type="number"
                   value={nodeProps.fontSize || 14}
                   oninput={(e) => updateProp("fontSize", parseInt(e.currentTarget.value) || 14)}
-                  class="flex h-6 w-[40px] text-[10px] text-center rounded-md border border-transparent bg-transparent px-1 transition-colors hover:border-border focus:border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  class="flex h-8 w-[48px] text-xs text-center rounded-md border border-transparent bg-transparent px-1 transition-colors hover:border-border focus:border-border focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   min="6" max="300"
                 />
               {/snippet}
             </PopoverTrigger>
             <PopoverContent class="w-[80px] p-0" align="center">
               <div class="flex flex-col max-h-[250px] overflow-y-auto py-1 scrollbar-thin">
-                {#each FONT_SIZES as size}
+                {#each FONT_SIZES as size (size)}
                   <button
                     type="button"
                     class="px-2 py-1.5 text-xs text-center hover:bg-muted font-sans cursor-pointer transition-colors"
@@ -300,7 +304,7 @@ function handleAlign(
           type="number"
           value={nodeProps.strokeWidth ?? 1}
           oninput={(e) => updateProp("strokeWidth", parseFloat(e.currentTarget.value) || 1)}
-          class="h-6 w-[40px] text-[10px]"
+          class="h-8 w-[48px] text-xs"
           min="0" max="20" step="0.5"
         />
         <span class="ctx-label">{m.template_prop_corners()}</span>
@@ -308,7 +312,7 @@ function handleAlign(
           type="number"
           value={nodeProps.borderRadius ?? 0}
           oninput={(e) => updateProp("borderRadius", parseFloat(e.currentTarget.value) || 0)}
-          class="h-6 w-[40px] text-[10px]"
+          class="h-8 w-[48px] text-xs"
           min="0" max="50"
         />
       </div>
@@ -322,7 +326,7 @@ function handleAlign(
           value={nodeProps.fit || "contain"}
           onValueChange={(value) => value && updateProp("fit", value)}
         >
-          <SelectTrigger class="h-6 min-w-[76px] rounded px-1.5 text-[10px]">
+          <SelectTrigger class="h-8 min-w-[84px] rounded-md px-2 text-xs">
             {#if nodeProps.fit === "cover"}
               {m.shared_ui_fit_cover()}
             {:else if nodeProps.fit === "fill"}
@@ -345,7 +349,7 @@ function handleAlign(
           type="number"
           value={Math.round((nodeProps.opacity ?? 1) * 100)}
           oninput={(e) => updateProp("opacity", (parseInt(e.currentTarget.value) || 100) / 100)}
-          class="h-6 w-[45px] text-[10px]"
+          class="h-8 w-[52px] text-xs"
           min="0" max="100"
         />
         <span class="text-[9px] text-muted-foreground">%</span>
@@ -359,7 +363,7 @@ function handleAlign(
           type="text"
           value={nodeProps.data || ""}
           oninput={(e) => updateProp("data", e.currentTarget.value)}
-          class="h-6 w-[160px] text-[10px] font-mono"
+          class="h-8 w-[180px] text-xs font-mono"
         />
         {#if nodeType === "Barcode"}
           <span class="ctx-label">{m.template_prop_format()}</span>
@@ -368,7 +372,7 @@ function handleAlign(
               value={nodeProps.format || "Code128"}
               onValueChange={(value) => value && updateProp("format", value)}
           >
-              <SelectTrigger class="h-6 min-w-[82px] rounded px-1.5 text-[10px]">
+              <SelectTrigger class="h-8 min-w-[90px] rounded-md px-2 text-xs">
                 {nodeProps.format || "Code128"}
               </SelectTrigger>
               <SelectContent>
@@ -414,7 +418,7 @@ function handleAlign(
         <Popover>
           <PopoverTrigger>
             {#snippet child({ props })}
-              <Button {...props} variant="ghost" size="xs" class="cursor-pointer text-[11px] h-6 px-2">
+              <Button {...props} variant="ghost" size="sm" class="cursor-pointer text-xs h-8 px-2.5">
                 {m.template_auto_position()}
               </Button>
             {/snippet}
@@ -444,6 +448,22 @@ function handleAlign(
 
   <!-- Right: Always-visible actions -->
   <div class="ctx-group shrink-0">
+    {#if ontoggleproperties}
+      <Tooltip>
+        <TooltipTrigger>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class={isPropertiesVisible ? "cursor-pointer text-primary" : "cursor-pointer"}
+            aria-pressed={isPropertiesVisible}
+            onclick={ontoggleproperties}
+          >
+            <AdjustmentsHorizontal size={15} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{isPropertiesVisible ? "إخفاء الخصائص" : "إظهار الخصائص"}</TooltipContent>
+      </Tooltip>
+    {/if}
     <Tooltip>
       <TooltipTrigger>
         <Button variant="ghost" size="icon-xs" class="cursor-pointer" onclick={() => store.undo()} disabled={!store.canUndo}>
@@ -504,13 +524,14 @@ function handleAlign(
 
 <style>
   .ctx-toolbar {
-    height: 42px;
-    min-height: 42px;
+    height: 54px;
+    min-height: 54px;
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 8px;
+    gap: 8px;
+    padding: 0 12px;
     background: var(--color-card);
+    border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
     user-select: none;
     overflow-x: auto;
@@ -522,15 +543,15 @@ function handleAlign(
   .ctx-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
     flex-shrink: 0;
   }
 
   .ctx-divider {
     width: 1px;
-    height: 20px;
-    background: color-mix(in srgb, var(--color-border) 60%, transparent);
-    margin: 0 4px;
+    height: 24px;
+    background: var(--color-border);
+    margin: 0 2px;
     flex-shrink: 0;
   }
 
@@ -538,7 +559,7 @@ function handleAlign(
     flex-grow: 1;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 7px;
     min-width: 0;
     overflow-x: auto;
   }
@@ -546,8 +567,8 @@ function handleAlign(
   .ctx-center::-webkit-scrollbar { display: none; }
 
   .ctx-title {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 650;
     color: var(--color-foreground);
     white-space: nowrap;
     overflow: hidden;
@@ -559,15 +580,15 @@ function handleAlign(
     position: relative;
     display: inline-grid;
     align-items: center;
-    min-width: 150px;
+    min-width: 130px;
     max-width: 250px;
   }
 
   .ctx-title-hidden {
     visibility: hidden;
     white-space: pre;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 650;
     padding: 2px 4px;
   }
 
@@ -577,8 +598,8 @@ function handleAlign(
     inset-inline-start: 0;
     width: 100%;
     height: 100%;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 650;
     color: var(--color-foreground);
     background: transparent;
     border: 1px solid transparent;
@@ -613,7 +634,7 @@ function handleAlign(
   }
 
   .ctx-label {
-    font-size: 9px;
+    font-size: 10px;
     color: var(--color-muted-foreground);
     white-space: nowrap;
   }
@@ -642,25 +663,28 @@ function handleAlign(
   .ctx-num-btn:hover { background: var(--color-accent); color: var(--color-foreground); }
 
   .ctx-format-btn {
-    width: 28px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border: none;
-    border-radius: 4px;
+    border-radius: 7px;
     color: var(--color-muted-foreground);
     cursor: pointer;
     transition: all 0.1s;
   }
 
   .ctx-format-btn:hover { background: var(--color-accent); color: var(--color-foreground); }
-  .ctx-format-btn.active { background: var(--color-primary); color: var(--color-primary-foreground); }
+  .ctx-format-btn.active {
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-card));
+    color: var(--color-primary);
+  }
 
   .ctx-color-swatch {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border: 2px solid color-mix(in srgb, var(--color-border) 50%, transparent);
     border-radius: 4px;
     cursor: pointer;
@@ -669,5 +693,16 @@ function handleAlign(
   }
   .ctx-color-swatch::-webkit-color-swatch-wrapper { padding: 1px; }
   .ctx-color-swatch::-webkit-color-swatch { border: none; border-radius: 2px; }
+
+  @media (max-width: 900px) {
+    .ctx-toolbar {
+      gap: 5px;
+      padding-inline: 8px;
+    }
+
+    .ctx-title-wrapper {
+      min-width: 100px;
+    }
+  }
 
 </style>

@@ -10,6 +10,7 @@
  *   - Dimension label
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
+import * as m from "$lib/paraglide/messages";
 import { mmToPx, pxToMm } from "@docforge/core/canvas";
 import { findNode, getPages } from "@docforge/core";
 import type { SnapLine, BoundingBox } from "@docforge/core";
@@ -80,6 +81,7 @@ let dragOrigY = 0;
 let dragOrigW = 0;
 let dragOrigH = 0;
 let dragOrigPositions = new Map<string, { x: number; y: number }>();
+let dragOtherBounds: BoundingBox[] = [];
 let activeSnapLines = $state<SnapLine[]>([]);
 
 // ── Rotation State ───────────────────────────────────────────
@@ -114,6 +116,11 @@ function startDrag(e: MouseEvent, nodeId: string, handle: string) {
   isDragging = true;
   dragHandle = handle;
   dragNodeId = nodeId;
+  store.beginLiveMove(
+    handle === "move"
+      ? m.shared_ui_move_elements()
+      : m.shared_ui_resize_elements(),
+  );
   dragStartX = e.clientX;
   dragStartY = e.clientY;
 
@@ -136,6 +143,7 @@ function startDrag(e: MouseEvent, nodeId: string, handle: string) {
       });
     }
   }
+  dragOtherBounds = collectOtherNodeBounds(new Set(store.selectedIds));
 
   window.addEventListener("mousemove", onDragMove);
   window.addEventListener("mouseup", onDragEnd);
@@ -159,7 +167,6 @@ function onDragMove(e: MouseEvent) {
     let finalY = Math.round(rawY * 10) / 10;
 
     if (store.snapEnabled) {
-      const otherBounds = collectOtherNodeBounds(dragNodeId!);
       const pageSetup = store.document.meta.pageSetup;
       const pageBounds: BoundingBox = {
         x: pageSetup.margins.left,
@@ -176,7 +183,7 @@ function onDragMove(e: MouseEvent) {
 
       const snapResult = calcSmartSnap(
         { x: rawX, y: rawY, width: rawW, height: rawH },
-        otherBounds,
+        dragOtherBounds,
         pageBounds,
         3,
       );
@@ -276,6 +283,7 @@ function startRotation(
   e.stopPropagation();
   e.preventDefault();
   isRotating = true;
+  store.beginLiveMove(m.shared_ui_update_multiple_elements());
   rotateNodeId = nodeId;
 
   // Center of the element
@@ -336,6 +344,7 @@ function onRotateMove(e: MouseEvent) {
 }
 
 function onRotateEnd() {
+  store.commitLiveMove();
   isRotating = false;
   rotateNodeId = null;
   window.removeEventListener("mousemove", onRotateMove);
@@ -419,18 +428,29 @@ function onRubberBandEnd() {
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function collectOtherNodeBounds(excludeId: string): BoundingBox[] {
+function collectOtherNodeBounds(excludeIds: Set<string>): BoundingBox[] {
   const page = store.activePage;
   if (!page) return [];
   const bounds: BoundingBox[] = [];
+  const pageSetup = store.document.meta.pageSetup;
+  const pageWidth = getPageW(pageSetup);
+  const pageHeight = getPageH(pageSetup);
   for (const child of page.children) {
-    if (child.id === excludeId) continue;
-    if ("position" in child && (child as any).position) {
-      const pos = (child as any).position;
-      const w = typeof pos.width === "number" ? pos.width : 50;
-      const h = typeof pos.height === "number" ? pos.height : 20;
-      bounds.push({ x: pos.x ?? 0, y: pos.y ?? 0, width: w, height: h });
-    }
+    if (excludeIds.has(child.id)) continue;
+    const pos = (
+      "props" in child
+        ? (child.props as { position?: { x?: number; y?: number; width?: number | string; height?: number | string } }).position
+        : undefined
+    ) ?? (child as { position?: { x?: number; y?: number; width?: number | string; height?: number | string } }).position;
+    if (!pos) continue;
+
+    const width = typeof pos.width === "string" && pos.width.endsWith("%")
+      ? (Number.parseFloat(pos.width) / 100) * pageWidth
+      : Number(pos.width) || 50;
+    const height = typeof pos.height === "string" && pos.height.endsWith("%")
+      ? (Number.parseFloat(pos.height) / 100) * pageHeight
+      : Number(pos.height) || 20;
+    bounds.push({ x: pos.x ?? 0, y: pos.y ?? 0, width, height });
   }
   return bounds;
 }

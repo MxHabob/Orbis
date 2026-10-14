@@ -111,13 +111,13 @@ let {
 
 <style>
   .status-bar {
-    height: 28px;
+    height: 34px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 10px;
-    background: color-mix(in srgb, var(--color-card) 90%, transparent);
-    border-top: 1px solid color-mix(in srgb, var(--color-border) 25%, transparent);
+    padding: 0 12px;
+    background: var(--color-card);
+    border-top: 1px solid var(--color-border);
     flex-shrink: 0;
     user-select: none;
     backdrop-filter: blur(8px);
@@ -127,7 +127,7 @@ let {
   .status-group {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
   }
 
   .status-text {
@@ -137,14 +137,14 @@ let {
   }
 
   .status-btn {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--color-muted-foreground);
     cursor: pointer;
     transition: all 0.1s;

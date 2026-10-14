@@ -36,6 +36,7 @@ let templateRecord = $state<TemplateDto | null>(null);
 let isSaving = $state(false);
 let isPreviewLoading = $state(false);
 let previewPdfUrl = $state<string | null>(null);
+let isPropertiesOpen = $state(false);
 let contextMenuVisible = $state(false);
 let contextMenuX = $state(0);
 let contextMenuY = $state(0);
@@ -60,8 +61,15 @@ let store = createEditorStore({
   pages: [{ type: "Page", id: "page-root", children: [] }],
 });
 
+let propertiesWidth = $state(320);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
+
+$effect(() => {
+  if (store.selectedIds.length > 0) {
+    isPropertiesOpen = true;
+  }
+});
 
 // Initialize
 async function initEditor() {
@@ -454,6 +462,8 @@ onMount(() => {
       <div class="canvas-area">
         <ContextToolbar
           {store}
+          isPropertiesVisible={isPropertiesOpen}
+          ontoggleproperties={() => isPropertiesOpen = !isPropertiesOpen}
           templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
           onback={goBack}
           onsave={saveTemplate}
@@ -477,8 +487,12 @@ onMount(() => {
         <FlyoutPanel {store} />
       </div>
 
-      {#if store.editorMode === "design"}
-        <PropertiesInspector {store} />
+      {#if store.editorMode === "design" && isPropertiesOpen}
+        <PropertiesInspector
+          {store}
+          bind:width={propertiesWidth}
+          onclose={() => isPropertiesOpen = false}
+        />
       {/if}
     </div>
     <StatusBar {store} />
@@ -499,7 +513,7 @@ onMount(() => {
     width: 100%;
     display: flex;
     flex-direction: column;
-    background: var(--color-background);
+    background: var(--color-muted);
     overflow: hidden;
   }
 
@@ -508,6 +522,7 @@ onMount(() => {
     display: flex;
     overflow: hidden;
     position: relative;
+    background: var(--color-muted);
   }
 
   .canvas-area {
@@ -516,5 +531,7 @@ onMount(() => {
     flex-direction: column;
     overflow: hidden;
     position: relative;
+    min-width: 0;
+    background: var(--color-muted);
   }
 </style>

@@ -65,12 +65,12 @@ const topItems: RailItem[] = [
 
 <style>
   .side-rail {
-    width: 56px;
+    width: 64px;
     height: 100%;
     display: flex;
     flex-direction: column;
     background: var(--color-card);
-    border-inline-end: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+    border-inline-end: 1px solid var(--color-border);
     flex-shrink: 0;
     user-select: none;
     z-index: 20;
@@ -80,8 +80,8 @@ const topItems: RailItem[] = [
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 8px 4px;
+    gap: 5px;
+    padding: 12px 6px;
     flex-grow: 1;
   }
 
@@ -90,36 +90,36 @@ const topItems: RailItem[] = [
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    width: 48px;
-    height: 48px;
+    gap: 5px;
+    width: 52px;
+    height: 52px;
     border: none;
-    border-radius: 8px;
+    border-radius: 11px;
     background: transparent;
     color: var(--color-muted-foreground);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease;
     position: relative;
   }
 
   .rail-btn:hover {
-    background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+    background: color-mix(in srgb, var(--color-muted) 68%, transparent);
     color: var(--color-foreground);
   }
 
   .rail-btn.active {
-    background: var(--color-primary);
-    color: var(--color-primary-foreground);
-  }
-
-  .rail-btn.active:hover {
-    background: color-mix(in srgb, var(--color-primary) 85%, black);
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-card));
+    color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
 
   .rail-label {
-    font-size: 8px;
-    font-weight: 500;
-    line-height: 1;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 9px;
+    font-weight: 550;
+    line-height: 1.1;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 </style>

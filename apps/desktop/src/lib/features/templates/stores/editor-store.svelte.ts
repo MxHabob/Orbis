@@ -61,6 +61,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   // ── Core Document State ──────────────────────────────────
   let document = $state<TemplateDocument>(initialDoc);
   let savedSnapshot = $state<string>(JSON.stringify(initialDoc));
+  let isDirty = $state(false);
+  let liveEdit: { docBefore: string; description: string; descriptionAr: string } | null = null;
   let systemSchemas = $state<Record<string, any>>({});
 
   // ── Selection ────────────────────────────────────────────
@@ -128,7 +130,6 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   const activePage = $derived<PageNode | null>(
     pages[activePageIndex] ?? pages[0] ?? null,
   );
-  const isDirty = $derived(JSON.stringify(document) !== savedSnapshot);
   const canUndo = $derived(undoStack.length > 0);
   const canRedo = $derived(redoStack.length > 0);
   const selectedNodes = $derived(
@@ -143,6 +144,11 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   // ── Command Execution ────────────────────────────────────
 
   function executeCommand(cmd: EditorCommand): void {
+    if (liveEdit) {
+      document = cmd.execute(document);
+      return;
+    }
+
     const docBefore = JSON.stringify(document);
 
     // Try to merge with the last command
@@ -157,6 +163,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
         document = merged.execute(
           JSON.parse(last.docBefore) as TemplateDocument,
         );
+        isDirty = true;
         redoStack = [];
         scheduleAutoSave();
         return;
@@ -165,6 +172,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
     undoStack = [...undoStack.slice(-(MAX_UNDO - 1)), { cmd, docBefore }];
     document = cmd.execute(document);
+    isDirty = true;
     redoStack = [];
     scheduleAutoSave();
   }
@@ -174,6 +182,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     const entry = undoStack[undoStack.length - 1]!;
     const docAfter = JSON.stringify(document);
     document = JSON.parse(entry.docBefore) as TemplateDocument;
+    isDirty = JSON.stringify(document) !== savedSnapshot;
     undoStack = undoStack.slice(0, -1);
     redoStack = [...redoStack, { cmd: entry.cmd, docAfter }];
   }
@@ -181,11 +190,13 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   function redo(): void {
     if (redoStack.length === 0) return;
     const entry = redoStack[redoStack.length - 1]!;
+    const docBefore = JSON.stringify(document);
     document = JSON.parse(entry.docAfter) as TemplateDocument;
+    isDirty = JSON.stringify(document) !== savedSnapshot;
     redoStack = redoStack.slice(0, -1);
     undoStack = [
       ...undoStack,
-      { cmd: entry.cmd, docBefore: JSON.stringify(document) },
+      { cmd: entry.cmd, docBefore },
     ];
   }
 
@@ -341,8 +352,6 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
     const previousChildren = page.children;
     const previousAssets = document.assets;
-    const width = getEffectivePageWidth(document.meta.pageSetup);
-    const height = getEffectivePageHeight(document.meta.pageSetup);
     const backgroundNode: ImageNode = {
       type: "Image",
       id: generateNodeId("image"),
@@ -351,9 +360,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
       props: {
         ...(assetId ? { assetRef: assetId } : {}),
         src,
-        position: { x: 0, y: 0, width, height },
-        width,
-        height,
+        position: { x: 0, y: 0, width: "100%", height: "100%" },
         fit: "cover",
         layer: "background",
       },
@@ -436,6 +443,12 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   function moveNodes(updates: { id: string; x: number; y: number }[]): void {
     if (updates.length === 0) return;
+    if (liveEdit) {
+      for (const update of updates) {
+        document = new MoveNodeCommand(update.id, update.x, update.y).execute(document);
+      }
+      return;
+    }
     if (updates.length === 1) {
       executeCommand(
         new MoveNodeCommand(updates[0]!.id, updates[0]!.x, updates[0]!.y),
@@ -454,6 +467,12 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   function resizeSelected(w: number | string, h?: number | string): void {
     if (selectedIds.length === 0) return;
+    if (liveEdit) {
+      for (const id of selectedIds) {
+        document = new ResizeNodeCommand(id, w, h).execute(document);
+      }
+      return;
+    }
     if (selectedIds.length === 1) {
       executeCommand(new ResizeNodeCommand(selectedIds[0]!, w, h));
     } else {
@@ -468,9 +487,36 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     }
   }
 
-  // No-op for backwards compat (called by SelectionOverlay on drag end)
+  function beginLiveMove(
+    description = m.shared_ui_move_elements(),
+    descriptionAr = description,
+  ): void {
+    if (liveEdit) return;
+    liveEdit = {
+      docBefore: JSON.stringify(document),
+      description,
+      descriptionAr,
+    };
+  }
+
   function commitLiveMove(): void {
-    // Move is already committed via executeCommand
+    if (!liveEdit) return;
+    const transaction = liveEdit;
+    liveEdit = null;
+    if (JSON.stringify(document) === transaction.docBefore) return;
+
+    const command = new BatchCommand(
+      [],
+      transaction.description,
+      transaction.descriptionAr,
+    );
+    undoStack = [
+      ...undoStack.slice(-(MAX_UNDO - 1)),
+      { cmd: command, docBefore: transaction.docBefore },
+    ];
+    redoStack = [];
+    isDirty = true;
+    scheduleAutoSave();
   }
 
   function deleteSelected(): void {
@@ -555,6 +601,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
 
   function markSaved(): void {
     savedSnapshot = JSON.stringify(document);
+    isDirty = false;
   }
 
   function setAutoSaveCallback(cb: (doc: TemplateDocument) => void): void {
@@ -753,6 +800,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     clearPageBackground,
     moveNodes,
     resizeSelected,
+    beginLiveMove,
     deleteSelected,
     duplicateSelected,
     commitLiveMove,
@@ -848,6 +896,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     loadDocument(doc: TemplateDocument) {
       document = doc;
       savedSnapshot = JSON.stringify(doc);
+      isDirty = false;
+      liveEdit = null;
       selectedIds = [];
       activePageIndex = 0;
       undoStack = [];
@@ -874,49 +924,32 @@ export type EditorStore = ReturnType<typeof createEditorStore>;
 // ── Helpers ──────────────────────────────────────────────────
 
 function getEffectivePageWidth(setup: PageSetup): number {
-  if (setup.size === "Custom" && setup.width) return setup.width;
-  const sizes: Record<string, number> = {
-    A4: 210,
-    A3: 297,
-    A5: 148,
-    Letter: 216,
-    Legal: 216,
-    ID_CARD: 85.6,
-    BADGE: 86,
-  };
-  const w = sizes[setup.size] ?? 210;
-  const h =
-    (
-      {
-        A4: 297,
-        A3: 420,
-        A5: 210,
-        Letter: 279,
-        Legal: 356,
-        ID_CARD: 53.98,
-        BADGE: 54,
-      } as Record<string, number>
-    )[setup.size] ?? 297;
-  return setup.orientation === "landscape" ? h : w;
+  const size = getEffectivePageDimensions(setup);
+  return setup.orientation === "landscape" ? size.height : size.width;
 }
 
 function getEffectivePageHeight(setup: PageSetup): number {
-  if (setup.size === "Custom" && setup.height) return setup.height;
-  const w = getEffectivePageWidth({
-    ...setup,
-    orientation: "portrait",
-  } as PageSetup);
-  const sizes: Record<string, number> = {
-    A4: 297,
-    A3: 420,
-    A5: 210,
-    Letter: 279,
-    Legal: 356,
-    ID_CARD: 53.98,
-    BADGE: 54,
+  const size = getEffectivePageDimensions(setup);
+  return setup.orientation === "landscape" ? size.width : size.height;
+}
+
+function getEffectivePageDimensions(
+  setup: PageSetup,
+): { width: number; height: number } {
+  const sizes: Record<string, { width: number; height: number }> = {
+    A4: { width: 210, height: 297 },
+    A3: { width: 297, height: 420 },
+    A5: { width: 148, height: 210 },
+    Letter: { width: 216, height: 279 },
+    Legal: { width: 216, height: 356 },
+    ID_CARD: { width: 53.98, height: 85.6 },
+    BADGE: { width: 54, height: 86 },
   };
-  const h = sizes[setup.size] ?? 297;
-  return setup.orientation === "landscape" ? w : h;
+  const size =
+    setup.size === "Custom"
+      ? { width: setup.width ?? 210, height: setup.height ?? 297 }
+      : (sizes[setup.size] ?? { width: 210, height: 297 });
+  return size;
 }
 
 function createDefaultNode(

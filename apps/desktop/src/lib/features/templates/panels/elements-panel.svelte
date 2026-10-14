@@ -206,14 +206,14 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
 
 <div class="elements-panel">
   <!-- Search -->
-  <div class="px-3 py-2">
+  <div class="border-b border-border px-3 py-2">
     <div class="relative">
-      <Search size={12} class="absolute inset-s-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+      <Search size={14} class="absolute inset-s-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
       <Input
         type="text"
         placeholder=m.template_search_elements()
         bind:value={searchQuery}
-        class="h-7 text-[10px] ps-7"
+        class="h-9 text-xs ps-8"
       />
     </div>
   </div>
@@ -246,8 +246,8 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
   </div>
 
   <!-- Hint -->
-  <div class="px-3 py-2 border-t border-border/20">
-    <p class="text-[8px] text-muted-foreground text-center">
+  <div class="px-3 py-2 border-t border-border">
+    <p class="text-[10px] text-muted-foreground text-center">
       {m.template_msg_drag_element()}
     </p>
   </div>
@@ -263,10 +263,10 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
   .elements-content {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 0 12px 12px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .elements-content::-webkit-scrollbar { display: none; }
@@ -274,47 +274,42 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
   .category-section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 7px;
   }
 
   .category-label {
-    font-size: 9px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--color-muted-foreground);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
   }
 
   .elements-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .element-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 10px 4px 8px;
-    border-radius: 8px;
-    border: 1px solid color-mix(in srgb, var(--color-border) 30%, transparent);
-    background: color-mix(in srgb, var(--color-muted) 15%, transparent);
+    gap: 7px;
+    padding: 12px 8px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    background: var(--color-card);
     cursor: grab;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
     user-select: none;
   }
 
   .element-card:hover {
     background: var(--color-accent);
-    border-color: color-mix(in srgb, var(--color-border) 60%, transparent);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: var(--color-border);
   }
 
   .element-card:active {
     cursor: grabbing;
-    transform: scale(0.97);
   }
 
   .element-icon {
@@ -326,8 +321,11 @@ function handleDragStart(e: DragEvent, item: ElementItem) {
   }
 
   .element-label {
-    font-size: 9px;
-    color: var(--color-muted-foreground);
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 11px;
+    color: var(--color-foreground);
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 </style>
