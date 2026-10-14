@@ -155,7 +155,7 @@ function populateForm(detail: StudentDetailDto) {
   }
 
   sex = p?.gender || "male";
-  classId = String(e?.class_id || "");
+  classId = String(e?.section_id || "");
   studentNumber = String(s?.student_number || "");
   email = String(p?.email || "");
   phone = String(p?.phone || "");
@@ -194,7 +194,7 @@ onMount(async () => {
               (item) => item.status === "active" || item.status === "pending_approval",
             ) ??
             enrollments[0];
-          classId = String(enrollment?.class_id || "");
+          classId = String(enrollment?.section_id || "");
         } catch (error) {
           console.error("Failed to load student enrollments:", error);
           toast.error(extractErrorMessage(error));
@@ -220,7 +220,7 @@ onMount(async () => {
 
 // Derived performance statistics
 const academicStats = $derived.by(() => {
-  const list = gradesReport?.grades || [];
+  const list = gradesReport?.summary || [];
   if (list.length === 0)
     return { avg: 0, passed: 0, failed: 0, gradeLetter: "—" };
   let totalPct = 0;

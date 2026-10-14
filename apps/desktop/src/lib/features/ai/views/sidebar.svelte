@@ -119,13 +119,6 @@ interactive tool inspections, and consequential action approvals.
         await saveFileSession(initial);
       }
 
-      // Persist screen context to disk
-      if (aiContext.context) {
-        await saveFileContext(
-          currentOrgId,
-          aiContext.context as Record<string, unknown>,
-        );
-      }
     }
 
     initStorage();

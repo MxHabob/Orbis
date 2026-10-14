@@ -165,6 +165,9 @@ export function createStudentDirectoryQuery(orgId: () => string) {
   return {
     studentsQuery,
     classesQuery,
+    get classes() {
+      return classesQuery.data ?? [];
+    },
     get error() {
       return (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
         classesQuery.error;

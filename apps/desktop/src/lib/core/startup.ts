@@ -5,7 +5,6 @@
  * 1. Connection config validity
  * 2. Database connectivity
  * 3. Organization existence (bootstrap status)
- * 4. Session/auth state
  *
  * Uses the unified `api` client (OrbisApiClient) — same interface for
  * both LocalClient (Tauri IPC) and RemoteClient (HTTP).
@@ -15,13 +14,11 @@ import { api } from "$lib/api/client";
 import type {
   StartupPhase,
   ConnectionConfig,
-  OrganizationReadiness,
 } from "$lib/api/types";
 
 export interface StartupState {
   phase: StartupPhase;
   config?: ConnectionConfig;
-  readiness?: OrganizationReadiness;
   error?: string;
   connected: boolean;
 }
@@ -76,13 +73,9 @@ export async function resolveStartupPhase(): Promise<StartupState> {
       };
     }
 
-    // Step 4: Get readiness
-    const readiness = await api.systemGetReadiness();
-
     return {
       phase: "login", // Organization exists — proceed to auth
       config,
-      readiness,
       connected: true,
     };
   } catch (e) {

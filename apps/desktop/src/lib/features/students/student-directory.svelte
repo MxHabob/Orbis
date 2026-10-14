@@ -78,7 +78,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
                 isActive: directory.selectedClassId === null,
                 onclick: () => directory.setClassFilter(null)
               },
-              ...directory.classes.map(c => ({
+              ...classes.map(c => ({
                 key: String(c.id),
                 label: String(l(c.name_ar, c.name) || c.name || c.id),
                 isActive: directory.selectedClassId === c.id,

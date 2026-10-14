@@ -39,8 +39,8 @@ const studentClassMap = $derived.by(() => {
   const map: Record<string, string> = {};
   const classLookup = new Map(classes.map(c => [c.id, l(c.name_ar, c.name) || c.name]));
   for (const e of enrollments) {
-    if (e.class_id && (e.status === "active" || e.status === "pending_approval")) {
-      const clsName = classLookup.get(e.class_id) || e.class_id;
+    if (e.section_id && (e.status === "active" || e.status === "pending_approval")) {
+      const clsName = classLookup.get(e.section_id) || e.section_id;
       map[e.student_id] = clsName;
     }
   }

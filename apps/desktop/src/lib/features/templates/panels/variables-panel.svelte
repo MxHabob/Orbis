@@ -1,9 +1,5 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-/**
- * VariablesPanel — Browse, search, and insert data variables into elements.
- * Supports drag-to-bind and click-to-insert {{variable}} syntax.
- */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import type { VariableDefinition } from "@docforge/core";
 import { Input } from "@orbis/ui/input";
@@ -21,7 +17,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { Bars3BottomLeft, Bold, Calendar, CheckCircle, Clipboard, Code, Hashtag, ListBullet, Photo, Plus, Search, Trash } from "@orbis/icons";
+import { Bars3BottomLeft, Calendar, CheckCircle, Clipboard, Code, Hashtag, ListBullet, Photo, Plus, Search, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -113,17 +109,6 @@ const variableEntries = $derived(
     .sort((a, b) => a[0].localeCompare(b[0])),
 );
 
-// Group variables by source prefix (e.g., "student", "enrollment")
-const groupedVariables = $derived(() => {
-  const groups: Record<string, [string, VariableDefinition][]> = {};
-  for (const entry of variableEntries) {
-    const source = entry[1].source;
-    const groupKey = source.includes(".") ? source.split(".")[0]! : "general";
-    if (!groups[groupKey]) groups[groupKey] = [];
-    groups[groupKey]!.push(entry);
-  }
-  return groups;
-});
 
 // ── Actions ──────────────────────────────────────────────────
 
@@ -180,12 +165,6 @@ function removeVariable(varName: string) {
   });
 }
 
-function toggleGroup(group: string) {
-  const next = new Set(expandedGroups);
-  if (next.has(group)) next.delete(group);
-  else next.add(group);
-  expandedGroups = next;
-}
 
 function getTypeIcon(type: string) {
   switch (type) {
@@ -358,7 +337,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <div class="flex flex-col grow min-w-0">
               <div class="flex items-center gap-1">
                 <span class="text-[10px] font-medium text-foreground truncate">{varDef.labelAr || varDef.label || varName}</span>
-                <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{getTypeLabel(varDef.type)}</Badge>
+                <!-- <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{getTypeLabel(varDef.type)}</Badge> -->
               </div>
               <span class="text-[8px] text-muted-foreground font-mono truncate">
                 {`{{${varName}}}`}

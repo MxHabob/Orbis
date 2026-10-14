@@ -43,6 +43,7 @@ class ThemeStore {
     } catch {
       // SSR or localStorage unavailable
     }
+    this.applyToDOM();
   }
 
   applyToDOM() {

@@ -35,6 +35,7 @@ let isDirty = $state(false);
 let matrixData = $state<GradeMatrixResponse | null>(null);
 let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
+let previousSelectedClassId: string | null = null;
 
 onMount(() => {
   if (academicContext.effectivePeriodId)
@@ -43,6 +44,7 @@ onMount(() => {
     selectedClassId = academicContext.selectedClassId;
   if (academicContext.selectedSubjectId)
     selectedSubjectId = academicContext.selectedSubjectId;
+  previousSelectedClassId = selectedClassId;
 });
 
 $effect(() => {
@@ -97,9 +99,15 @@ async function loadInitialData() {
 
 // Reset subject when class changes
 $effect(() => {
-  if (selectedClassId) {
+  const currentClassId = selectedClassId;
+  if (
+    previousSelectedClassId !== null &&
+    currentClassId !== previousSelectedClassId
+  ) {
     selectedSubjectId = "";
+    academicContext.selectedSubjectId = "";
   }
+  previousSelectedClassId = currentClassId;
 });
 
 // ── Grade Matrix ───────────────────────────────────────────────────────────

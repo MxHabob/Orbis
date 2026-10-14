@@ -30,7 +30,7 @@ onMount(() => {
     }
 
     await Promise.all([
-      systemStore.loadReadiness(),
+      systemStore.orgReadiness ?? systemStore.loadReadiness(),
       licenseStore.loadState(),
     ]);
     licenseReady = true;

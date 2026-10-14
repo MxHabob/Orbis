@@ -17,8 +17,7 @@ export { queryKeys } from "./query-keys";
 export { queryClient } from "./query-client";
 export { api } from "./client";
 
-export const isDesktopApp =
-  typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+export { isDesktopApp } from "./runtime";
 export const listenForDeepLinks = () => {};
 export const createDeepLink = () => "";
 
