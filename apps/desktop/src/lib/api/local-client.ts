@@ -1467,6 +1467,9 @@ export class LocalClient implements OrbisApiClient {
   async openAgentWindow(): Promise<void> {
     return invoke<void>("open_agent_window");
   }
+  async openStandaloneWindow(path: string): Promise<void> {
+    return invoke<void>("open_standalone_window", { path });
+  }
 
   // ── License & Activation ────────────────────────────────
   async licenseGetState(): Promise<LicenseStateDto> {

@@ -5,7 +5,7 @@
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
 import { authStore, systemStore, licenseStore, uiStore } from "$lib/stores";
-import { goto } from "$app/navigation";
+import { afterNavigate, goto, replaceState } from "$app/navigation";
 import { page } from "$app/state";
 import { onMount } from "svelte";
 import type { Snippet } from "svelte";
@@ -13,12 +13,25 @@ import type { LayoutData } from "./$types";
 import { localeState } from "$lib/core/i18n";
 import { LoadingIndicator } from "@orbis/ui";
 import LicenseFeatureGate from "$lib/shell/license-feature-gate.svelte";
+import {
+  isStandaloneWindow,
+  STANDALONE_WINDOW_PARAM,
+} from "$lib/shell/window-mode";
 
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 let authReady = $state(false);
 let licenseReady = $state(false);
 
 const isOnboarding = $derived(page.url.pathname.includes("/onboarding"));
+const standaloneWindow = isStandaloneWindow(page.url);
+
+afterNavigate(({ to }) => {
+  if (!standaloneWindow || !to?.url || isStandaloneWindow(to.url)) return;
+
+  const url = new URL(to.url);
+  url.searchParams.set(STANDALONE_WINDOW_PARAM, "1");
+  replaceState(`${url.pathname}${url.search}${url.hash}`, page.state);
+});
 
 onMount(() => {
   const initialize = async () => {
@@ -53,7 +66,11 @@ onMount(() => {
         {/await}
       {/if}
     {:else}
-      <AppChrome orgId={data.orgId} {licenseReady}>
+      <AppChrome
+        orgId={data.orgId}
+        {licenseReady}
+        standalone={standaloneWindow}
+      >
         {@render children()}
       </AppChrome>
     {/if}

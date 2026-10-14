@@ -1947,6 +1947,7 @@ export interface OrbisApiClient {
   systemInstallUpdate(): Promise<void>;
   openChangelogWindow(): Promise<void>;
   openAgentWindow(): Promise<void>;
+  openStandaloneWindow(path: string): Promise<void>;
 
   // ── License & Activation ────────────────────────────────
   licenseGetState(): Promise<LicenseStateDto>;

@@ -1901,6 +1901,8 @@
   "common_titlebar_maximize": "Maximize",
   "common_titlebar_minimize": "Minimize",
   "common_titlebar_restore": "Restore",
+  "common_titlebar_standalone_window": "Open this page in a new window",
+  "common_titlebar_standalone_window_failed": "Could not open this page in a new window.",
   "common_titlebar_theme_toggle": "Toggle Theme",
   "common_unassigned": "Unassigned",
   "common_unexpected_error_message": "An unexpected error occurred. Please try again.",

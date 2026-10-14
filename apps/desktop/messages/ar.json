@@ -1901,6 +1901,8 @@
   "common_titlebar_maximize": "تكبير",
   "common_titlebar_minimize": "تصغير",
   "common_titlebar_restore": "استعادة",
+  "common_titlebar_standalone_window": "فتح هذه الصفحة في نافذة جديدة",
+  "common_titlebar_standalone_window_failed": "تعذر فتح الصفحة في نافذة جديدة.",
   "common_titlebar_theme_toggle": "تبديل المظهر",
   "common_unassigned": "غير محدد",
   "common_unexpected_error_message": "خطأ غير متوقع. يرجى المحاولة مرة أخرى.",

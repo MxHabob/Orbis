@@ -11,6 +11,7 @@ import {
 } from "@orbis/sdk";
 import * as sdk from "@orbis/sdk";
 import { OrbisError } from "./index";
+import { isDesktopApp } from "./runtime";
 import appPackage from "../../../package.json";
 
 import type {
@@ -1918,6 +1919,21 @@ export class RemoteClient implements OrbisApiClient {
     if (typeof window !== "undefined") {
       window.open("/agent", "_blank", "width=460,height=720");
     }
+  }
+  async openStandaloneWindow(path: string): Promise<void> {
+    if (typeof window === "undefined") {
+      throw new Error("Standalone windows are unavailable outside a browser context.");
+    }
+    if (isDesktopApp) {
+      const { invoke } = await import("@tauri-apps/api/core");
+      return invoke<void>("open_standalone_window", { path });
+    }
+
+    const opened = window.open(path, "_blank");
+    if (!opened) {
+      throw new Error("The standalone page window was blocked by the browser.");
+    }
+    opened.opener = null;
   }
 
   async bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult> {

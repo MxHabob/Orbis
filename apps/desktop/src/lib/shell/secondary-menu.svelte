@@ -7,6 +7,7 @@ Student Detail, and User Detail.
 <script lang="ts">
 import { page } from "$app/state";
 import { deLocalizeUrl, localizeHref } from "$lib/paraglide/runtime";
+import { isStandaloneWindow } from "./window-mode";
 
 type MenuItem = {
   path: string;
@@ -39,22 +40,24 @@ function isActive(itemPath: string): boolean {
 }
 </script>
 
-<nav
-  class="flex items-center gap-6 border-b border-border/20 h-10 w-full shrink-0 select-none overflow-x-auto scrollbar-hide"
->
-  {#each items as item (item.path)}
-    <a
-      href={localizeHref(item.path ? `${basePath}/${item.path}` : basePath)}
-      class="text-xs font-semibold pb-2 border-b-2 transition-all duration-150
+{#if !isStandaloneWindow(page.url)}
+  <nav
+    class="flex items-center gap-6 border-b border-border/20 h-10 w-full shrink-0 select-none overflow-x-auto scrollbar-hide"
+  >
+    {#each items as item (item.path)}
+      <a
+        href={localizeHref(item.path ? `${basePath}/${item.path}` : basePath)}
+        class="text-xs font-semibold pb-2 border-b-2 transition-all duration-150
         flex items-center gap-1.5 h-full px-1 cursor-pointer shrink-0
         {isActive(item.path)
         ? 'border-primary text-foreground font-bold'
         : 'border-transparent text-muted-foreground hover:text-foreground'}"
-    >
-      {#if item.icon}
-        <item.icon size={13} />
-      {/if}
-      <span>{item.label}</span>
-    </a>
-  {/each}
-</nav>
+      >
+        {#if item.icon}
+          <item.icon size={13} />
+        {/if}
+        <span>{item.label}</span>
+      </a>
+    {/each}
+  </nav>
+{/if}

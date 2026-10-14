@@ -415,6 +415,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         window_cmds::open_agent_window,
         window_cmds::open_connection_window,
         window_cmds::open_changelog_window,
+        window_cmds::open_standalone_window,
         window_cmds::check_for_updates,
         // ── Connection ──────────────────────────────────────────
         connection_cmds::connection_get_config,
