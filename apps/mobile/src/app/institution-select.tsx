@@ -1,4 +1,4 @@
-import { Search, CheckCircle } from "@orbis/icons/native";
+import { BuildingOffice, CheckCircle, Search } from "@orbis/icons/native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
@@ -25,9 +25,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
 
-const InstitutionSeparator = () => (
-  <View className="mx-four h-px bg-border" />
-);
+const InstitutionSeparator = () => <View className="h-two" />;
 
 export default function InstitutionSelectScreen() {
   const router = useRouter();
@@ -150,20 +148,41 @@ export default function InstitutionSelectScreen() {
         : item.deployment_name;
 
       return (
-        <ListItem
-          title={name}
-          subtitle={subtitle}
-          disabled={connectingId !== null}
-          onPress={() => void connectInstitution(item)}
-          chevron={!isConnecting}
-          right={
-            isConnecting ? (
-              <LoadingIndicator size="sm" />
-            ) : isCurrent ? (
-              <CheckCircle size={18} color={theme.primary} />
-            ) : null
-          }
-        />
+        <View
+          className={`mx-four overflow-hidden rounded-lg border ${
+            isCurrent
+              ? "border-primary/40 bg-primary/5"
+              : "border-border bg-card"
+          }`}
+        >
+          <ListItem
+            title={name}
+            subtitle={subtitle}
+            left={
+              <View
+                className={`h-10 w-10 items-center justify-center rounded-md ${
+                  isCurrent ? "bg-primary/10" : "bg-background-element"
+                }`}
+              >
+                <BuildingOffice
+                  size={19}
+                  color={isCurrent ? theme.primary : theme.textSecondary}
+                />
+              </View>
+            }
+            disabled={connectingId !== null}
+            onPress={() => void connectInstitution(item)}
+            chevron={!isConnecting}
+            right={
+              isConnecting ? (
+                <LoadingIndicator size="sm" />
+              ) : isCurrent ? (
+                <CheckCircle size={19} color={theme.primary} />
+              ) : null
+            }
+            style={{ minHeight: 68, paddingHorizontal: 10 }}
+          />
+        </View>
       );
     },
     [
@@ -173,6 +192,7 @@ export default function InstitutionSelectScreen() {
       selectedInstitution?.deployment_id,
       t,
       theme.primary,
+      theme.textSecondary,
     ],
   );
 
@@ -206,6 +226,7 @@ export default function InstitutionSelectScreen() {
 
     return (
       <EmptyState
+        icon={BuildingOffice}
         title={t("auth_institution_no_matches")}
         style={{ flex: 1 }}
       />
@@ -229,35 +250,42 @@ export default function InstitutionSelectScreen() {
         renderItem={renderInstitution}
         ItemSeparatorComponent={InstitutionSeparator}
         ListHeaderComponent={
-          <View className="gap-four px-four pb-four pt-six">
-            <View className="gap-two">
-              <Text className="font-sans text-2xl font-bold text-foreground">
-                {t("auth_institution_search_title")}
-              </Text>
-              <Text className="font-sans text-sm leading-5 text-muted-foreground">
-                {t("auth_institution_search_hint")}
-              </Text>
+          <View className="gap-five px-four pb-three pt-five">
+            <View className="flex-row items-center gap-three">
+              <View className="h-12 w-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+                <BuildingOffice size={23} color={theme.primary} />
+              </View>
+              <View className="flex-1 gap-one">
+                <Text className="font-sans text-2xl font-bold tracking-tight text-foreground">
+                  {t("auth_institution_search_title")}
+                </Text>
+                <Text className="font-sans text-sm leading-5 text-muted-foreground">
+                  {t("auth_institution_search_hint")}
+                </Text>
+              </View>
             </View>
 
-            <Input
-              label={t("auth_institution_filter_label")}
-              placeholder={t("auth_institution_search_placeholder")}
-              value={search}
-              onChangeText={(value) => {
-                setSearch(value);
-                setError(null);
-              }}
-              icon={<Search size={18} color={theme.textMuted} />}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
+            <View className="rounded-lg border border-border bg-card p-three">
+              <Input
+                label={t("auth_institution_filter_label")}
+                placeholder={t("auth_institution_search_placeholder")}
+                value={search}
+                onChangeText={(value) => {
+                  setSearch(value);
+                  setError(null);
+                }}
+                icon={<Search size={18} color={theme.textMuted} />}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+            </View>
 
             {error && visibleInstitutions.length > 0 ? (
-              <View className="flex-row items-center justify-between gap-three rounded-md border border-destructive/30 bg-destructive/10 px-three py-two">
+              <View className="flex-row items-center justify-between gap-three rounded-md border border-destructive/30 bg-destructive/10 px-three py-three">
                 <Text
                   accessibilityRole="alert"
-                  className="flex-1 text-start text-xs leading-4 text-destructive"
+                  className="flex-1 text-start text-xs leading-5 text-destructive"
                 >
                   {error}
                 </Text>
@@ -270,13 +298,20 @@ export default function InstitutionSelectScreen() {
               </View>
             ) : null}
 
-            <Text className="font-sans text-sm font-semibold text-foreground">
-              {t("auth_institution_results")}
-            </Text>
+            <View className="flex-row items-center justify-between border-b border-border pb-two">
+              <Text className="font-sans text-sm font-semibold text-foreground">
+                {t("auth_institution_results")}
+              </Text>
+              <View className="min-w-7 items-center rounded-full bg-background-element px-two py-one">
+                <Text className="font-sans text-xs font-semibold text-muted-foreground">
+                  {visibleInstitutions.length}
+                </Text>
+              </View>
+            </View>
           </View>
         }
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         alwaysBounceVertical
@@ -296,7 +331,25 @@ export default function InstitutionSelectScreen() {
         }
       />
 
-      <View className="border-t border-border bg-background px-four pb-two pt-three">
+      <View className="gap-three border-t border-border bg-background px-four pb-three pt-three">
+        {selectedInstitution ? (
+          <View className="flex-row items-center gap-three rounded-md bg-background-element px-three py-two">
+            <CheckCircle size={17} color={theme.primary} />
+            <View className="min-w-0 flex-1">
+              <Text className="text-[11px] leading-4 text-muted-foreground">
+                {t("auth_institution_current")}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="text-sm font-semibold text-foreground"
+              >
+                {isArabic && selectedInstitution.name_ar
+                  ? selectedInstitution.name_ar
+                  : selectedInstitution.name}
+              </Text>
+            </View>
+          </View>
+        ) : null}
         <Button
           title={t("auth_sign_in")}
           variant="outline"

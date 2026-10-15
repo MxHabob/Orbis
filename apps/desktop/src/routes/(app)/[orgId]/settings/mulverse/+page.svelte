@@ -3,6 +3,17 @@
   import { createMutation, createQuery } from "@tanstack/svelte-query";
   import { api, queryClient } from "$lib/api";
   import type { MulverseDeploymentDto, MulverseEndpointDto } from "$lib/api";
+  import { toast } from "@orbis/ui";
+  import { Badge } from "@orbis/ui/badge";
+  import { Button } from "@orbis/ui/button";
+  import { Card } from "@orbis/ui/card";
+  import { Input } from "@orbis/ui/input";
+  import { Skeleton } from "@orbis/ui/skeleton";
+  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+
+  function showMutationError(error: unknown) {
+    toast.error(error instanceof Error ? error.message : String(error));
+  }
 
   let { data }: { data: { orgId: string } } = $props();
   let apiKey = $state("");
@@ -40,7 +51,9 @@
     onSuccess: async () => {
       apiKey = "";
       await queryClient.invalidateQueries({ queryKey: ["mulverseConnection", data.orgId] });
+      toast.success(m.settings_orbis_mobile_toast_connected());
     },
+    onError: showMutationError,
   }));
 
   const disconnectMutation = createMutation(() => ({
@@ -49,7 +62,9 @@
       selectedDeploymentId = null;
       await queryClient.invalidateQueries({ queryKey: ["mulverseConnection", data.orgId] });
       await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
+      toast.success(m.settings_orbis_mobile_toast_disconnected());
     },
+    onError: showMutationError,
   }));
 
   const createDeploymentMutation = createMutation(() => ({
@@ -61,7 +76,9 @@
     onSuccess: async () => {
       deploymentName = "";
       await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
+      toast.success(m.settings_orbis_mobile_toast_deployment_created());
     },
+    onError: showMutationError,
   }));
 
   const updateDeploymentMutation = createMutation(() => ({
@@ -73,7 +90,9 @@
     onSuccess: async () => {
       editingDeploymentId = null;
       await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
+      toast.success(m.settings_orbis_mobile_toast_deployment_updated());
     },
+    onError: showMutationError,
   }));
 
   const createEndpointMutation = createMutation(() => ({
@@ -87,7 +106,9 @@
       await queryClient.invalidateQueries({
         queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
       });
+      toast.success(m.settings_orbis_mobile_toast_endpoint_added());
     },
+    onError: showMutationError,
   }));
 
   const updateEndpointMutation = createMutation(() => ({
@@ -100,13 +121,21 @@
         url,
         status,
       }),
-    onSuccess: async () => {
+    onSuccess: async (_result, variables) => {
       editingEndpointId = null;
       endpointUrl = "";
       await queryClient.invalidateQueries({
         queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
       });
+      if (variables.status === "active") {
+        toast.success(m.settings_orbis_mobile_toast_endpoint_activated());
+      } else if (variables.status === "disabled") {
+        toast.success(m.settings_orbis_mobile_toast_endpoint_disabled());
+      } else {
+        toast.success(m.settings_orbis_mobile_toast_endpoint_updated());
+      }
     },
+    onError: showMutationError,
   }));
 
   function submitConnect(event: SubmitEvent) {
@@ -163,221 +192,338 @@
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background">
-  <div class="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
-    <header class="space-y-2">
-      <h1 class="text-xl font-semibold text-foreground">{m.settings_orbis_mobile_title()}</h1>
-      <p class="max-w-3xl text-sm leading-6 text-muted-foreground">
-        {m.settings_orbis_mobile_description()}
-      </p>
+  <div class="mx-auto flex w-full max-w-7xl flex-col gap-7 px-5 py-7 lg:px-8">
+    <header class="flex flex-col justify-between gap-5 border-b border-border pb-6 sm:flex-row sm:items-center">
+      <div class="min-w-0">
+          <h1 class="text-2xl font-semibold tracking-tight text-foreground">{m.settings_orbis_mobile_title()}</h1>
+          <p class="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+            {m.settings_orbis_mobile_description()}
+          </p>
+      </div>
+      {#if connection.isPending}
+        <Skeleton class="h-7 w-24 rounded-full" aria-hidden="true" />
+      {:else if !connection.isError}
+        <Badge variant={connection.data?.connected ? "success" : "secondary"} class="shrink-0 self-start px-3 py-1.5 text-xs sm:self-center">
+          {connection.data?.connected ? m.settings_orbis_mobile_connected() : m.settings_orbis_mobile_connect()}
+        </Badge>
+      {/if}
     </header>
 
     {#if connection.isPending}
-      <div class="space-y-3" aria-label={m.common_loading()}>
-        <div class="h-24 animate-pulse rounded-xl bg-muted"></div>
-        <div class="h-36 animate-pulse rounded-xl bg-muted"></div>
+      <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]" aria-label={m.common_loading()}>
+        <main class="min-w-0 space-y-5">
+          <Card class="gap-0 border-border/50 bg-card/60 shadow-xs">
+            <div class="space-y-2 border-b border-border p-5 sm:p-6">
+              <Skeleton class="h-4 w-2/5 rounded-sm" />
+              <Skeleton class="h-3 w-4/5 rounded-sm" />
+              <Skeleton class="h-3 w-3/5 rounded-sm" />
+            </div>
+            <div class="flex flex-col gap-3 p-5 sm:flex-row sm:p-6">
+              <Skeleton class="h-11 min-w-0 flex-1 rounded-md" />
+              <Skeleton class="h-11 w-full rounded-md sm:w-28" />
+            </div>
+          </Card>
+
+          <Card class="gap-0 border-border/50 bg-card/60 shadow-xs">
+            <div class="space-y-2 border-b border-border p-5 sm:p-6">
+              <Skeleton class="h-4 w-1/3 rounded-sm" />
+              <Skeleton class="h-3 w-3/4 rounded-sm" />
+            </div>
+            <div class="grid gap-3 border-b border-border bg-muted/20 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:p-6">
+              <Skeleton class="h-11 rounded-md" />
+              <Skeleton class="h-11 rounded-md" />
+              <Skeleton class="h-11 w-full rounded-md sm:w-32" />
+            </div>
+            <div class="space-y-2 p-4 sm:p-5">
+              {#each [0, 1] as row (row)}
+                <div class="flex items-center gap-3 rounded-md border border-border bg-background p-3 sm:p-4">
+                  <div class="min-w-0 flex-1 space-y-2">
+                    <Skeleton class="h-3.5 w-2/5 rounded-sm" />
+                    <Skeleton class="h-3 w-1/4 rounded-sm" />
+                  </div>
+                  <Skeleton class="h-6 w-16 rounded-full" />
+                  <Skeleton class="h-8 w-14 rounded-md" />
+                </div>
+              {/each}
+            </div>
+          </Card>
+        </main>
+
+        <aside class="space-y-5">
+          <Card class="gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+            <Skeleton class="h-3.5 w-2/3 rounded-sm" />
+            <Skeleton class="h-3 w-full rounded-sm" />
+            <Skeleton class="h-3 w-4/5 rounded-sm" />
+            <div class="space-y-4 pt-2">
+              {#each [0, 1, 2] as step (step)}
+                <div class="flex items-start gap-3">
+                  <Skeleton class="size-6 shrink-0 rounded-full" />
+                  <div class="flex-1 space-y-2 pt-1">
+                    <Skeleton class="h-3 w-full rounded-sm" />
+                    <Skeleton class="h-3 w-4/5 rounded-sm" />
+                  </div>
+                </div>
+              {/each}
+            </div>
+          </Card>
+          <Card class="gap-2 border-primary/20 bg-primary/[0.04] p-5">
+            <Skeleton class="h-3 w-full rounded-sm" />
+            <Skeleton class="h-3 w-5/6 rounded-sm" />
+          </Card>
+        </aside>
       </div>
     {:else if connection.isError}
-      <section class="space-y-3 rounded-xl border border-destructive/30 bg-card p-5">
+      <Card class="gap-4 border-destructive/30 bg-card p-5 shadow-xs">
         <p class="text-sm text-destructive">{connection.error.message}</p>
-        <button class="rounded-md border border-border px-4 py-2 text-sm" onclick={() => connection.refetch()}>
+        <Button variant="outline" size="lg" onclick={() => connection.refetch()}>
           {m.common_retry()}
-        </button>
-      </section>
-    {:else if !connection.data?.connected}
-      <section class="space-y-4 rounded-xl border border-border bg-card p-5">
-        <div>
-          <h2 class="text-sm font-semibold text-foreground">{m.settings_orbis_mobile_connect_title()}</h2>
-          <p class="mt-1 text-sm leading-6 text-muted-foreground">
-            {m.settings_orbis_mobile_connect_description()}
-          </p>
-        </div>
-        <form class="flex flex-col gap-3 sm:flex-row" onsubmit={submitConnect}>
-          <label class="sr-only" for="mulverse-key">{m.settings_orbis_mobile_api_key()}</label>
-          <input
-            id="mulverse-key"
-            type="password"
-            autocomplete="off"
-            bind:value={apiKey}
-            placeholder={m.settings_orbis_mobile_api_key()}
-            class="min-h-11 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm text-foreground"
-            required
-          />
-          <button
-            type="submit"
-            disabled={!apiKey.trim() || connectMutation.isPending}
-            class="min-h-11 rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"
-          >
-            {connectMutation.isPending ? m.common_loading() : m.settings_orbis_mobile_connect()}
-          </button>
-        </form>
-        {#if connectMutation.isError}
-          <p class="text-sm text-destructive">{connectMutation.error.message}</p>
-        {/if}
-      </section>
+        </Button>
+      </Card>
     {:else}
-      <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-5">
-        <div>
-          <h2 class="text-sm font-semibold text-foreground">{m.settings_orbis_mobile_connected()}</h2>
-          <p class="mt-1 text-sm text-muted-foreground">
-            {connection.data.organization_id}
-          </p>
-        </div>
-        <button
-          class="min-h-11 rounded-md border border-border px-4 text-sm text-foreground disabled:opacity-50"
-          disabled={disconnectMutation.isPending}
-          onclick={() => disconnectMutation.mutate()}
-        >
-          {disconnectMutation.isPending ? m.common_loading() : m.settings_orbis_mobile_disconnect()}
-        </button>
-        {#if disconnectMutation.isError}
-          <p class="w-full text-sm text-destructive">{disconnectMutation.error.message}</p>
-        {/if}
-      </section>
-
-      <section class="space-y-4 rounded-xl border border-border bg-card p-5">
-        <div>
-          <h2 class="text-sm font-semibold text-foreground">{m.settings_orbis_mobile_deployments()}</h2>
-          <p class="mt-1 text-sm text-muted-foreground">{m.settings_orbis_mobile_deployments_description()}</p>
-        </div>
-        <form class="grid gap-3 sm:grid-cols-[1fr_1fr_auto]" onsubmit={submitDeployment}>
-          <label class="sr-only" for="deployment-name">{m.settings_orbis_mobile_deployment_name()}</label>
-          <input id="deployment-name" bind:value={deploymentName} placeholder={m.settings_orbis_mobile_deployment_name()} class="min-h-11 rounded-md border border-border bg-background px-3 text-sm" required />
-          <label class="sr-only" for="deployment-environment">{m.settings_orbis_mobile_environment()}</label>
-          <input id="deployment-environment" bind:value={deploymentEnvironment} placeholder={m.settings_orbis_mobile_environment()} class="min-h-11 rounded-md border border-border bg-background px-3 text-sm" required />
-          <button type="submit" disabled={!deploymentName.trim() || !deploymentEnvironment.trim() || createDeploymentMutation.isPending} class="min-h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50">
-            {m.settings_orbis_mobile_add_deployment()}
-          </button>
-        </form>
-        {#if createDeploymentMutation.isError}
-          <p class="text-sm text-destructive">{createDeploymentMutation.error.message}</p>
-        {/if}
-        {#if deployments.isPending}
-          <div class="h-20 animate-pulse rounded-lg bg-muted"></div>
-        {:else if deployments.isError}
-          <div class="space-y-2 text-sm text-destructive">
-            <p>{deployments.error.message}</p>
-            <button class="underline" onclick={() => deployments.refetch()}>{m.common_retry()}</button>
-          </div>
-        {:else if deployments.data?.length === 0}
-          <p class="rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            {m.settings_orbis_mobile_empty_deployments()}
-          </p>
-        {:else}
-          <div class="divide-y divide-border">
-            {#each deployments.data ?? [] as deployment (deployment.id)}
-              <div class="space-y-3 py-4">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                  <button class="text-start font-medium text-foreground underline-offset-4 hover:underline" onclick={() => (selectedDeploymentId = selectedDeploymentId === deployment.id ? null : deployment.id)}>
-                    {deployment.name}
-                  </button>
-                  <span class="text-xs text-muted-foreground">
-                    {deployment.environment} · {statusMessage(deployment.status)}
-                  </span>
-                  <button class="rounded-md border border-border px-3 py-2 text-sm" onclick={() => { editingDeploymentId = editingDeploymentId === deployment.id ? null : deployment.id; editingDeploymentName = deployment.name; editingDeploymentEnvironment = deployment.environment; }}>
-                    {m.common_action_edit()}
-                  </button>
+      <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
+        <main class="min-w-0 space-y-5">
+          {#if !connection.data?.connected}
+            <Card class="border-border/50 bg-card/60 shadow-xs">
+              <div class="flex items-start gap-4 border-b border-border p-5 sm:p-6">
+                <div>
+                  <p class="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                    {m.settings_orbis_mobile_connect_description()}
+                  </p>
                 </div>
-                {#if editingDeploymentId === deployment.id}
-                  <form class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]" onsubmit={(event) => saveDeployment(event, deployment)}>
-                    <input bind:value={editingDeploymentName} aria-label={m.settings_orbis_mobile_deployment_name()} class="min-h-10 rounded-md border border-border bg-background px-3 text-sm" required />
-                    <input bind:value={editingDeploymentEnvironment} aria-label={m.settings_orbis_mobile_environment()} class="min-h-10 rounded-md border border-border bg-background px-3 text-sm" required />
-                    <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">{m.common_action_save()}</button>
-                  </form>
-                {/if}
-                {#if updateDeploymentMutation.isError}
-                  <p class="text-sm text-destructive">{updateDeploymentMutation.error.message}</p>
-                {/if}
-                {#if selectedDeploymentId === deployment.id}
-                  <div class="space-y-3 rounded-lg bg-muted/30 p-4">
-                    <h3 class="text-sm font-semibold">{m.settings_orbis_mobile_endpoints()}</h3>
-                    {#if endpoints.isPending}
-                      <div class="h-14 animate-pulse rounded bg-muted"></div>
-                    {:else if endpoints.isError}
-                      <div class="space-y-2 text-sm text-destructive">
-                        <p>{endpoints.error.message}</p>
-                        <button class="underline" onclick={() => endpoints.refetch()}>{m.common_retry()}</button>
-                      </div>
-                    {:else if endpoints.data?.length === 0}
-                      <p class="text-sm text-muted-foreground">{m.settings_orbis_mobile_empty_endpoints()}</p>
-                    {:else}
-                      {#each endpoints.data ?? [] as endpoint (endpoint.id)}
-                        <div class="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-background p-3">
-                          <div class="min-w-0 flex-1">
-                            <p class="break-all text-sm text-foreground">{endpoint.url}</p>
-                            <p class="mt-1 text-xs text-muted-foreground">
-                              {endpoint.network_scope} · {statusMessage(endpoint.status)}
-                            </p>
-                          </div>
-                          {#if endpoint.status !== "revoked"}
-                            {#if editingEndpointId === endpoint.id}
-                              <form class="flex w-full gap-2" onsubmit={(event) => saveEndpoint(event, endpoint)}>
-                                <input bind:value={endpointUrl} placeholder={endpoint.url} aria-label={m.settings_orbis_mobile_endpoint_url()} class="min-h-10 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm" />
-                                <button type="submit" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">{m.common_action_save()}</button>
-                              </form>
-                            {:else}
-                              <button class="rounded-md border border-border px-3 py-2 text-sm" onclick={() => { editingEndpointId = endpoint.id; endpointUrl = ""; }}>
-                                {m.settings_orbis_mobile_edit_endpoint()}
-                              </button>
-                              {#if endpoint.status === "disabled"}
-                                <button class="rounded-md border border-border px-3 py-2 text-sm" onclick={() => updateEndpointMutation.mutate({ endpoint, status: "active" })}>
-                                  {m.settings_orbis_mobile_activate()}
-                                </button>
-                              {:else}
-                                <button class="rounded-md border border-border px-3 py-2 text-sm" onclick={() => updateEndpointMutation.mutate({ endpoint, status: "disabled" })}>
-                                  {m.settings_orbis_mobile_disable()}
-                                </button>
-                              {/if}
-                            {/if}
-                          {/if}
-                        </div>
-                      {/each}
-                    {/if}
-                    <form class="grid gap-2 sm:grid-cols-[1fr_auto_auto]" onsubmit={submitEndpoint}>
-                      <label class="sr-only" for="endpoint-url">{m.settings_orbis_mobile_endpoint_url()}</label>
-                      <input id="endpoint-url" bind:value={newEndpointUrl} placeholder={m.settings_orbis_mobile_endpoint_url()} class="min-h-11 min-w-0 rounded-md border border-border bg-background px-3 text-sm" required />
-                      <label class="sr-only" for="endpoint-scope">{m.settings_orbis_mobile_network_scope()}</label>
-                      <select id="endpoint-scope" bind:value={endpointScope} class="min-h-11 rounded-md border border-border bg-background px-3 text-sm">
-                        <option value="public">{m.settings_orbis_mobile_public_endpoint()}</option>
-                        <option value="local_network">{m.settings_orbis_mobile_local_endpoint()}</option>
-                      </select>
-                      <button type="submit" disabled={!newEndpointUrl.trim() || createEndpointMutation.isPending} class="min-h-11 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50">
-                        {m.settings_orbis_mobile_add_endpoint()}
-                      </button>
-                    </form>
-                    {#if createEndpointMutation.isError}
-                      <p class="text-sm text-destructive">{createEndpointMutation.error.message}</p>
-                    {/if}
-                    {#if updateEndpointMutation.isError}
-                      <p class="text-sm text-destructive">{updateEndpointMutation.error.message}</p>
-                    {/if}
-                  </div>
-                {/if}
               </div>
-            {/each}
-          </div>
-        {/if}
-      </section>
-    {/if}
+              <form class="flex flex-col gap-3 p-5 sm:flex-row sm:p-6" onsubmit={submitConnect}>
+                <label class="sr-only" for="mulverse-key">{m.settings_orbis_mobile_api_key()}</label>
+                <Input
+                  id="mulverse-key"
+                  type="password"
+                  autocomplete="off"
+                  bind:value={apiKey}
+                  placeholder={m.settings_orbis_mobile_api_key()}
+                  class="h-11 min-h-11 min-w-0 flex-1 border-border bg-background text-sm text-foreground"
+                  required
+                />
+                <Button
+                  type="submit"
+                  disabled={!apiKey.trim() || connectMutation.isPending}
+                  class="h-11 min-h-11 px-5 text-sm font-semibold"
+                >
+                  {connectMutation.isPending ? m.common_loading() : m.settings_orbis_mobile_connect()}
+                </Button>
+              </form>
+            </Card>
+          {:else}
+            <Card class="flex-row flex-wrap items-center justify-between gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="min-w-0">
+                  <p class="mt-1 truncate font-mono text-xs text-muted-foreground" dir="ltr">
+                    {connection.data.organization_id}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                class="min-h-10 text-sm"
+                disabled={disconnectMutation.isPending}
+                onclick={() => disconnectMutation.mutate()}
+              >
+                {disconnectMutation.isPending ? m.common_loading() : m.settings_orbis_mobile_disconnect()}
+              </Button>
+            </Card>
 
-    <section class="space-y-4 rounded-xl border border-border bg-card p-5">
-      <div>
-        <h2 class="text-sm font-semibold text-foreground">
-          {m.settings_orbis_mobile_directory_title()}
-        </h2>
-        <p class="mt-1 text-sm leading-6 text-muted-foreground">
-          {m.settings_orbis_mobile_directory_description()}
-        </p>
+            <Card class="border-border/50 bg-card/60 shadow-xs">
+              <div class="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                <div class="flex items-start gap-3">
+                  <div>
+                    <p class="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">{m.settings_orbis_mobile_deployments_description()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <form class="grid gap-3 border-b border-border bg-muted/20 p-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:p-6" onsubmit={submitDeployment}>
+                <label class="sr-only" for="deployment-name">{m.settings_orbis_mobile_deployment_name()}</label>
+                <Input
+                  id="deployment-name"
+                  bind:value={deploymentName}
+                  placeholder={m.settings_orbis_mobile_deployment_name()}
+                  class="h-11 min-h-11 border-border bg-background text-sm text-foreground"
+                  required
+                />
+                <label class="sr-only" for="deployment-environment">{m.settings_orbis_mobile_environment()}</label>
+                <Input
+                  id="deployment-environment"
+                  bind:value={deploymentEnvironment}
+                  placeholder={m.settings_orbis_mobile_environment()}
+                  class="h-11 min-h-11 border-border bg-background text-sm text-foreground"
+                  required
+                />
+                <Button
+                  type="submit"
+                  disabled={!deploymentName.trim() || !deploymentEnvironment.trim() || createDeploymentMutation.isPending}
+                  class="h-11 min-h-11 px-4 text-sm font-semibold"
+                >
+                  {m.settings_orbis_mobile_add_deployment()}
+                </Button>
+              </form>
+
+              {#if deployments.isPending}
+                <div class="space-y-3 p-5" aria-label={m.common_loading()}>
+                  <div class="h-16 animate-pulse rounded-lg bg-muted"></div>
+                  <div class="h-16 animate-pulse rounded-lg bg-muted"></div>
+                </div>
+              {:else if deployments.isError}
+                <div class="space-y-3 p-5 text-sm text-destructive">
+                  <p>{deployments.error.message}</p>
+                  <Button variant="outline" onclick={() => deployments.refetch()}>
+                    {m.common_retry()}
+                  </Button>
+                </div>
+              {:else if deployments.data?.length === 0}
+                <div class="flex flex-col items-center px-6 py-12 text-center">
+                  <p class="max-w-sm text-sm leading-6 text-muted-foreground">{m.settings_orbis_mobile_empty_deployments()}</p>
+                </div>
+              {:else}
+                <div class="space-y-2 p-4 sm:p-5">
+                  {#each deployments.data ?? [] as deployment (deployment.id)}
+                    <article class={`overflow-hidden rounded-lg border transition-colors ${selectedDeploymentId === deployment.id ? "border-primary/40 bg-primary/[0.03]" : "border-border bg-background hover:border-muted-foreground/30"}`}>
+                      <div class="flex flex-wrap items-center gap-3 p-3 sm:p-4">
+                        <Button
+                          variant="ghost"
+                          class="h-auto min-h-9 min-w-0 flex-1 justify-start px-0 text-start"
+                          aria-expanded={selectedDeploymentId === deployment.id}
+                          onclick={() => (selectedDeploymentId = selectedDeploymentId === deployment.id ? null : deployment.id)}
+                        >
+                          <span class="min-w-0">
+                            <span class="block truncate text-sm font-semibold text-foreground">{deployment.name}</span>
+                            <span class="mt-1 block text-xs text-muted-foreground">{deployment.environment}</span>
+                          </span>
+                        </Button>
+                        <Badge variant={deployment.status === "active" ? "success" : "outline"} class="px-2.5 py-1 text-xs">
+                          {statusMessage(deployment.status)}
+                        </Badge>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          class="min-h-9 text-xs"
+                          aria-label={`${m.common_action_edit()} ${deployment.name}`}
+                          onclick={() => {
+                            editingDeploymentId = editingDeploymentId === deployment.id ? null : deployment.id;
+                            editingDeploymentName = deployment.name;
+                            editingDeploymentEnvironment = deployment.environment;
+                          }}
+                        >
+                          {m.common_action_edit()}
+                        </Button>
+                      </div>
+
+                      {#if editingDeploymentId === deployment.id}
+                        <form class="grid gap-2 border-t border-border bg-muted/20 p-3 sm:grid-cols-[1fr_1fr_auto]" onsubmit={(event) => saveDeployment(event, deployment)}>
+                          <Input bind:value={editingDeploymentName} aria-label={m.settings_orbis_mobile_deployment_name()} class="h-10 min-h-10 border-border bg-background text-sm text-foreground" required />
+                          <Input bind:value={editingDeploymentEnvironment} aria-label={m.settings_orbis_mobile_environment()} class="h-10 min-h-10 border-border bg-background text-sm text-foreground" required />
+                          <Button type="submit" disabled={updateDeploymentMutation.isPending} class="h-10 min-h-10 px-4">{m.common_action_save()}</Button>
+                        </form>
+                      {/if}
+
+                      {#if selectedDeploymentId === deployment.id}
+                        <div class="space-y-4 border-t border-border bg-muted/20 p-4 sm:p-5">
+                          {#if endpoints.isPending}
+                            <div class="h-14 animate-pulse rounded-md bg-muted"></div>
+                          {:else if endpoints.isError}
+                            <div class="space-y-2 text-sm text-destructive">
+                              <p>{endpoints.error.message}</p>
+                              <Button variant="outline" onclick={() => endpoints.refetch()}>
+                                {m.common_retry()}
+                              </Button>
+                            </div>
+                          {:else if endpoints.data?.length === 0}
+                            <p class="rounded-md border border-dashed border-border px-4 py-5 text-center text-sm text-muted-foreground">{m.settings_orbis_mobile_empty_endpoints()}</p>
+                          {:else}
+                            <div class="space-y-2">
+                              {#each endpoints.data ?? [] as endpoint (endpoint.id)}
+                                <div class="flex flex-wrap items-center gap-3 rounded-md border border-border bg-background p-3">
+                                  <div class="min-w-0 flex-1">
+                                    <p class="break-all font-mono text-xs leading-5 text-foreground" dir="ltr">{endpoint.url}</p>
+                                    <p class="mt-1 text-xs text-muted-foreground">
+                                      {endpoint.network_scope === "public" ? m.settings_orbis_mobile_public_endpoint() : m.settings_orbis_mobile_local_endpoint()} · {statusMessage(endpoint.status)}
+                                    </p>
+                                  </div>
+                                  {#if endpoint.status !== "revoked"}
+                                    {#if editingEndpointId === endpoint.id}
+                                      <form class="flex w-full gap-2" onsubmit={(event) => saveEndpoint(event, endpoint)}>
+                                        <Input bind:value={endpointUrl} placeholder={endpoint.url} aria-label={m.settings_orbis_mobile_endpoint_url()} class="h-10 min-h-10 min-w-0 flex-1 border-border bg-background text-sm text-foreground" />
+                                        <Button type="submit" disabled={updateEndpointMutation.isPending} class="h-10 min-h-10 px-3">{m.common_action_save()}</Button>
+                                      </form>
+                                    {:else}
+                                      <Button variant="outline" size="sm" class="min-h-9 text-xs" onclick={() => { editingEndpointId = endpoint.id; endpointUrl = ""; }}>
+                                        {m.settings_orbis_mobile_edit_endpoint()}
+                                      </Button>
+                                      {#if endpoint.status === "disabled"}
+                                        <Button variant="outline" size="sm" class="min-h-9 text-xs" disabled={updateEndpointMutation.isPending} onclick={() => updateEndpointMutation.mutate({ endpoint, status: "active" })}>
+                                          {m.settings_orbis_mobile_activate()}
+                                        </Button>
+                                      {:else}
+                                        <Button variant="outline" size="sm" class="min-h-9 text-xs" disabled={updateEndpointMutation.isPending} onclick={() => updateEndpointMutation.mutate({ endpoint, status: "disabled" })}>
+                                          {m.settings_orbis_mobile_disable()}
+                                        </Button>
+                                      {/if}
+                                    {/if}
+                                  {/if}
+                                </div>
+                              {/each}
+                            </div>
+                          {/if}
+                          <form class="grid gap-2 border-t border-border pt-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]" onsubmit={submitEndpoint}>
+                            <label class="sr-only" for="endpoint-url">{m.settings_orbis_mobile_endpoint_url()}</label>
+                            <Input id="endpoint-url" bind:value={newEndpointUrl} placeholder={m.settings_orbis_mobile_endpoint_url()} class="h-11 min-h-11 min-w-0 border-border bg-background text-sm text-foreground" required />
+                            <label class="sr-only" for="endpoint-scope">{m.settings_orbis_mobile_network_scope()}</label>
+                            <Select type="single" bind:value={endpointScope}>
+                              <SelectTrigger id="endpoint-scope" class="h-11 w-full rounded-md border-border bg-background text-sm">
+                                {endpointScope === "public" ? m.settings_orbis_mobile_public_endpoint() : m.settings_orbis_mobile_local_endpoint()}
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="public">{m.settings_orbis_mobile_public_endpoint()}</SelectItem>
+                                <SelectItem value="local_network">{m.settings_orbis_mobile_local_endpoint()}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button type="submit" disabled={!newEndpointUrl.trim() || createEndpointMutation.isPending} class="h-11 min-h-11 px-4 text-sm font-semibold">
+                              {m.settings_orbis_mobile_add_endpoint()}
+                            </Button>
+                          </form>
+                        </div>
+                      {/if}
+                    </article>
+                  {/each}
+                </div>
+              {/if}
+            </Card>
+          {/if}
+        </main>
+
+        <aside class="space-y-5">
+          {#if connection.data?.connected}
+            <Card class="gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+              <p class="text-sm leading-6 text-muted-foreground">{m.settings_orbis_mobile_directory_description()}</p>
+              <ol class="mt-5 space-y-4">
+                {#each [m.settings_orbis_mobile_directory_step_one(), m.settings_orbis_mobile_directory_step_two(), m.settings_orbis_mobile_directory_step_three()] as step, index (index)}
+                  <li class="flex gap-3">
+                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-background text-[11px] font-semibold text-muted-foreground">{index + 1}</span>
+                    <span class="pt-0.5 text-xs leading-5 text-muted-foreground">{step}</span>
+                  </li>
+                {/each}
+              </ol>
+              <p class="mt-5 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">{m.settings_orbis_mobile_staff_actions()}</p>
+            </Card>
+          {:else}
+            <Card class="gap-2 border-border/50 bg-card/60 p-5 shadow-xs">
+              <p class="text-sm leading-6 text-muted-foreground">{m.settings_orbis_mobile_directory_description()}</p>
+            </Card>
+          {/if}
+
+          <Card class="border-primary/20 bg-primary/[0.04] p-5">
+            <p class="text-xs leading-5 text-muted-foreground">{m.settings_orbis_mobile_privacy()}</p>
+          </Card>
+        </aside>
       </div>
-      <ul class="list-disc space-y-2 ps-5 text-sm leading-6 text-muted-foreground">
-        <li>{m.settings_orbis_mobile_directory_step_one()}</li>
-        <li>{m.settings_orbis_mobile_directory_step_two()}</li>
-        <li>{m.settings_orbis_mobile_directory_step_three()}</li>
-      </ul>
-      <p class="text-sm text-muted-foreground">{m.settings_orbis_mobile_staff_actions()}</p>
-    </section>
-
-    <p class="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm leading-6 text-muted-foreground">
-      {m.settings_orbis_mobile_privacy()}
-    </p>
+    {/if}
   </div>
 </div>
