@@ -89,6 +89,9 @@ dist-ssr
 # Rust build artifacts
 target/
 
+# Local API development database and SQLite sidecar files
+/orbis-api-dev.db*
+
 # Temp
 dashboard-midday/
 gitbutler/
