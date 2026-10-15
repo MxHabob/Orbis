@@ -95,3 +95,5 @@ target/
 # Temp
 dashboard-midday/
 gitbutler/
+
+.orbis-license/*
