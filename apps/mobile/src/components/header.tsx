@@ -234,7 +234,6 @@ export function Header({
           pointerEvents="none"
           style={[
             styles.titleContainer,
-            { top: insets.top + 4, height: sideSize },
           ]}
         >
           {showTitle && title && !largeTitle ? (
