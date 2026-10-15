@@ -1812,6 +1812,12 @@ export interface OrbisApiClient {
     classId: string,
     yearId: string,
   ): Promise<StudentAnnualReportCard[]>;
+  getStudentCertificateResults(
+    studentId: string,
+    calendarId: string,
+    certificateType: string,
+    classId?: string,
+  ): Promise<StudentCertificateReportCard>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   batchMarkAttendance(
     req: BatchMarkAttendanceRequest,

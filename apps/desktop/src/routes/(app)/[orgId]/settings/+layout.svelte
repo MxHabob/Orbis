@@ -54,7 +54,7 @@ const navGroups = $derived([
         icon: AppNotification,
       },
       {
-        path: "orbis-mobile",
+        path: "mulverse",
         label: m.settings_nav_orbis_mobile(),
         icon: Merge,
       },

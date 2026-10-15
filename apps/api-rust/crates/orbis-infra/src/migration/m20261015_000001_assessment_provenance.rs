@@ -7,80 +7,132 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // source_document
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(ColumnDef::new(AssessmentSchemes::SourceDocument).string().null())
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "source_document")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::SourceDocument)
+                                .string()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
-        // source_authority
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(ColumnDef::new(AssessmentSchemes::SourceAuthority).string().null())
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "source_authority")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::SourceAuthority)
+                                .string()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
-        // verification_status
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(ColumnDef::new(AssessmentSchemes::VerificationStatus).string().null())
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "verification_status")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::VerificationStatus)
+                                .string()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
-        // effective_date
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(ColumnDef::new(AssessmentSchemes::EffectiveDate).timestamp_with_time_zone().null())
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "effective_date")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::EffectiveDate)
+                                .timestamp_with_time_zone()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
-        // policy_version (default 0)
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(
-                        ColumnDef::new(AssessmentSchemes::PolicyVersion)
-                            .integer()
-                            .not_null()
-                            .default(0),
-                    )
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "policy_version")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::PolicyVersion)
+                                .integer()
+                                .not_null()
+                                .default(0),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
-        // min_attendance_ratio
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(ColumnDef::new(AssessmentSchemes::MinAttendanceRatio).double().null())
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "min_attendance_ratio")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::MinAttendanceRatio)
+                                .double()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
-        // pass_threshold
-        manager
-            .alter_table(
-                Table::alter()
-                    .table(AssessmentSchemes::Table)
-                    .add_column(ColumnDef::new(AssessmentSchemes::PassThreshold).double().null())
-                    .to_owned(),
-            )
-            .await?;
+        if !manager
+            .has_column("assessment_schemes", "pass_threshold")
+            .await?
+        {
+            manager
+                .alter_table(
+                    Table::alter()
+                        .table(AssessmentSchemes::Table)
+                        .add_column(
+                            ColumnDef::new(AssessmentSchemes::PassThreshold)
+                                .double()
+                                .null(),
+                        )
+                        .to_owned(),
+                )
+                .await?;
+        }
 
         Ok(())
     }
@@ -119,4 +171,15 @@ enum AssessmentSchemes {
     PolicyVersion,
     MinAttendanceRatio,
     PassThreshold,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn migration_handles_provenance_columns_created_by_unified_schema() {
+        let db = sea_orm::Database::connect("sqlite::memory:").await.unwrap();
+        crate::migration::Migrator::up(&db, None).await.unwrap();
+    }
 }

@@ -237,6 +237,7 @@ import type {
   ActivateKeyRequest,
   OfficialCalendarTemplateDto,
   ApplyCalendarTemplateRequest,
+  StudentCertificateReportCard,
 } from "./types";
 
 function unwrap<T>(response: { data: T } | T): T {
@@ -868,6 +869,21 @@ export class LocalClient implements OrbisApiClient {
       await invoke("assessment_get_class_annual_results", {
         classId,
         yearId,
+      }),
+    );
+  }
+  async getStudentCertificateResults(
+    studentId: string,
+    calendarId: string,
+    certificateType: string,
+    classId?: string,
+  ): Promise<StudentCertificateReportCard> {
+    return unwrap(
+      await invoke("assessment_get_student_certificate_results", {
+        studentId,
+        calendarId,
+        certificateType,
+        classId: classId ?? null,
       }),
     );
   }

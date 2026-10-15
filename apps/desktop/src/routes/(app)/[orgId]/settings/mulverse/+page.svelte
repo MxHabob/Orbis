@@ -274,14 +274,14 @@
                     {deployment.environment} · {statusMessage(deployment.status)}
                   </span>
                   <button class="rounded-md border border-border px-3 py-2 text-sm" onclick={() => { editingDeploymentId = editingDeploymentId === deployment.id ? null : deployment.id; editingDeploymentName = deployment.name; editingDeploymentEnvironment = deployment.environment; }}>
-                    {m.common_edit()}
+                    {m.common_action_edit()}
                   </button>
                 </div>
                 {#if editingDeploymentId === deployment.id}
                   <form class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]" onsubmit={(event) => saveDeployment(event, deployment)}>
                     <input bind:value={editingDeploymentName} aria-label={m.settings_orbis_mobile_deployment_name()} class="min-h-10 rounded-md border border-border bg-background px-3 text-sm" required />
                     <input bind:value={editingDeploymentEnvironment} aria-label={m.settings_orbis_mobile_environment()} class="min-h-10 rounded-md border border-border bg-background px-3 text-sm" required />
-                    <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">{m.common_save()}</button>
+                    <button type="submit" class="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">{m.common_action_save()}</button>
                   </form>
                 {/if}
                 {#if updateDeploymentMutation.isError}
@@ -312,7 +312,7 @@
                             {#if editingEndpointId === endpoint.id}
                               <form class="flex w-full gap-2" onsubmit={(event) => saveEndpoint(event, endpoint)}>
                                 <input bind:value={endpointUrl} placeholder={endpoint.url} aria-label={m.settings_orbis_mobile_endpoint_url()} class="min-h-10 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm" />
-                                <button type="submit" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">{m.common_save()}</button>
+                                <button type="submit" class="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">{m.common_action_save()}</button>
                               </form>
                             {:else}
                               <button class="rounded-md border border-border px-3 py-2 text-sm" onclick={() => { editingEndpointId = endpoint.id; endpointUrl = ""; }}>

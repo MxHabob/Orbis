@@ -1045,3 +1045,33 @@ pub async fn assessment_get_class_annual_results(
 
     Ok(ok(reports))
 }
+
+#[tauri::command]
+pub async fn assessment_get_student_certificate_results(
+    student_id: String,
+    calendar_id: String,
+    certificate_type: String,
+    class_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<orbis_domain::entities::academic_policy::StudentCertificateReportCard>, String> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let cal_id = Uuid::parse_str(&calendar_id).map_err(|_| "Invalid calendar ID")?;
+    let cid = class_id.and_then(|c| Uuid::parse_str(&c).ok());
+
+    let report = state
+        .assessment_service
+        .calculate_student_certificate_report_card(
+            &ctx,
+            ctx.tenant_id,
+            sid,
+            cal_id,
+            cid,
+            certificate_type,
+            None,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(report))
+}

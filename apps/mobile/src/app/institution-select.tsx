@@ -1,12 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Search, CheckCircle } from "@orbis/icons/native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FlatList,
+  RefreshControl,
+  Text,
+  View,
+  type ListRenderItemInfo,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Screen } from "@/components/layout/screen";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
+import { ListItem } from "@/components/ui/list-item";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
-import { useToast } from "@/components/ui/toast";
+import { LoadingState } from "@/components/ui/loading-state";
+import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import {
   checkInstitutionConnection,
@@ -14,10 +23,15 @@ import {
   type DirectoryInstitution,
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
+import { useToast } from "@/components/ui/toast";
+
+const InstitutionSeparator = () => (
+  <View className="mx-four h-px bg-border" />
+);
 
 export default function InstitutionSelectScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const theme = useTheme();
   const { t, isArabic } = useI18n();
   const toast = useToast();
   const {
@@ -31,137 +45,200 @@ export default function InstitutionSelectScreen() {
     DirectoryInstitution[]
   >([]);
   const [isLoadingDirectory, setIsLoadingDirectory] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const directoryRequest = useRef<AbortController | null>(null);
 
-  if (isInitializing) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <LoadingIndicator size="lg" />
-      </View>
-    );
-  }
+  const loadInstitutions = useCallback(
+    async (refresh = false) => {
+      directoryRequest.current?.abort();
+      const controller = new AbortController();
+      directoryRequest.current = controller;
+      setError(null);
+      if (refresh) {
+        setIsLoadingDirectory(false);
+        setIsRefreshing(true);
+      } else {
+        setIsLoadingDirectory(true);
+      }
 
-  const loadInstitutions = async (signal?: AbortSignal) => {
-    setError(null);
-    setIsLoadingDirectory(true);
-    try {
-      const institutions = await searchInstitutionDirectory(undefined, signal);
-      if (!signal?.aborted) setDirectoryInstitutions(institutions);
-    } catch (caught: unknown) {
-      if (signal?.aborted) return;
-      console.error("[Institution Select] Directory load failed.", caught);
-      const message = t("auth_institution_search_error");
-      setError(message);
-      toast.error(message);
-    } finally {
-      if (!signal?.aborted) setIsLoadingDirectory(false);
-    }
-  };
+      try {
+        const institutions = await searchInstitutionDirectory(
+          undefined,
+          controller.signal,
+        );
+        if (!controller.signal.aborted) {
+          setDirectoryInstitutions(institutions);
+        }
+      } catch (caught: unknown) {
+        if (controller.signal.aborted) return;
+        console.error("[Institution Select] Directory load failed.", caught);
+        setError(t("auth_institution_search_error"));
+      } finally {
+        if (directoryRequest.current === controller) {
+          directoryRequest.current = null;
+          setIsLoadingDirectory(false);
+          setIsRefreshing(false);
+        }
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
-    const controller = new AbortController();
-    void loadInstitutions(controller.signal);
-    return () => controller.abort();
-  }, []);
+    if (!isInitializing) {
+      void loadInstitutions();
+    }
+    return () => {
+      directoryRequest.current?.abort();
+      directoryRequest.current = null;
+    };
+  }, [isInitializing, loadInstitutions]);
 
   const visibleInstitutions = useMemo(() => {
     const institutionsByDeploymentId = new Map<string, DirectoryInstitution>();
-    for (const institution of [...directoryInstitutions, ...savedInstitutions]) {
+    for (const institution of directoryInstitutions) {
       institutionsByDeploymentId.set(institution.deployment_id, institution);
     }
+    for (const institution of savedInstitutions) {
+      institutionsByDeploymentId.set(institution.deployment_id, institution);
+    }
+
     const query = search.trim().toLocaleLowerCase();
-    return [...institutionsByDeploymentId.values()].filter((institution) =>
-      !query ||
-      [
-        institution.name,
-        institution.name_ar ?? "",
-        institution.slug,
-        institution.deployment_name,
-      ].some((value) => value.toLocaleLowerCase().includes(query)),
+    return [...institutionsByDeploymentId.values()].filter(
+      (institution) =>
+        !query ||
+        [
+          institution.name,
+          institution.name_ar ?? "",
+          institution.slug,
+          institution.deployment_name,
+        ].some((value) => value.toLocaleLowerCase().includes(query)),
     );
   }, [directoryInstitutions, savedInstitutions, search]);
 
-  const connectInstitution = async (institution: DirectoryInstitution) => {
-    setConnectingId(institution.deployment_id);
-    setError(null);
-    try {
-      await checkInstitutionConnection(institution);
-      await selectInstitution(institution);
-      toast.success(t("auth_institution_connected"));
-      router.replace("/(auth)/sign-in");
-    } catch (caught: unknown) {
-      console.error("[Institution Select] Connection failed.", caught);
-      const message = t("auth_institution_connection_error");
-      setError(message);
-      toast.error(message);
-    } finally {
-      setConnectingId(null);
-    }
-  };
+  const connectInstitution = useCallback(
+    async (institution: DirectoryInstitution) => {
+      setConnectingId(institution.deployment_id);
+      setError(null);
+      try {
+        await checkInstitutionConnection(institution);
+        await selectInstitution(institution);
+        toast.success(t("auth_institution_connected"));
+        router.replace("/(auth)/sign-in");
+      } catch (caught: unknown) {
+        console.error("[Institution Select] Connection failed.", caught);
+        const message = t("auth_institution_connection_error");
+        setError(message);
+        toast.error(message);
+      } finally {
+        setConnectingId(null);
+      }
+    },
+    [router, selectInstitution, t, toast],
+  );
 
-  const renderInstitution = (institution: DirectoryInstitution) => {
-    const name =
-      isArabic && institution.name_ar
-        ? institution.name_ar
-        : institution.name;
-    const isCurrent =
-      selectedInstitution?.deployment_id === institution.deployment_id;
+  const renderInstitution = useCallback(
+    ({ item }: ListRenderItemInfo<DirectoryInstitution>) => {
+      const name = isArabic && item.name_ar ? item.name_ar : item.name;
+      const isCurrent =
+        selectedInstitution?.deployment_id === item.deployment_id;
+      const isConnecting = connectingId === item.deployment_id;
+      const subtitle = isCurrent
+        ? `${item.deployment_name} · ${t("auth_institution_current")}`
+        : item.deployment_name;
+
+      return (
+        <ListItem
+          title={name}
+          subtitle={subtitle}
+          disabled={connectingId !== null}
+          onPress={() => void connectInstitution(item)}
+          chevron={!isConnecting}
+          right={
+            isConnecting ? (
+              <LoadingIndicator size="sm" />
+            ) : isCurrent ? (
+              <CheckCircle size={18} color={theme.primary} />
+            ) : null
+          }
+        />
+      );
+    },
+    [
+      connectInstitution,
+      connectingId,
+      isArabic,
+      selectedInstitution?.deployment_id,
+      t,
+      theme.primary,
+    ],
+  );
+
+  const renderEmpty = useCallback(() => {
+    if (isLoadingDirectory) {
+      return (
+        <LoadingState
+          message={t("auth_institution_loading")}
+          style={{ flex: 1 }}
+        />
+      );
+    }
+
+    if (error) {
+      return (
+        <View className="flex-1 items-center justify-center gap-four px-four py-eight">
+          <Text
+            accessibilityRole="alert"
+            className="text-center text-sm leading-5 text-destructive"
+          >
+            {error}
+          </Text>
+          <Button
+            title={t("common_retry")}
+            variant="outline"
+            onPress={() => void loadInstitutions()}
+          />
+        </View>
+      );
+    }
 
     return (
-      <Pressable
-        key={institution.deployment_id}
-        accessibilityRole="button"
-        accessibilityState={{
-          busy: connectingId === institution.deployment_id,
-          disabled: connectingId !== null,
-        }}
-        disabled={connectingId !== null}
-        onPress={() => void connectInstitution(institution)}
-        className="min-h-16 flex-row items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3"
-      >
-        <View className="min-w-0 flex-1 gap-1">
-          <Text className="font-sans text-sm font-semibold text-foreground">
-            {name}
-          </Text>
-          <Text className="font-sans text-xs text-muted-foreground">
-            {institution.deployment_name}
-          </Text>
-          {isCurrent ? (
-            <Text className="font-sans text-xs font-medium text-primary">
-              {t("auth_institution_current")}
-            </Text>
-          ) : null}
-        </View>
-        {connectingId === institution.deployment_id ? (
-          <LoadingIndicator size="sm" />
-        ) : null}
-      </Pressable>
+      <EmptyState
+        title={t("auth_institution_no_matches")}
+        style={{ flex: 1 }}
+      />
     );
-  };
+  }, [error, isLoadingDirectory, loadInstitutions, t]);
+
+  if (isInitializing) {
+    return (
+      <Screen>
+        <LoadingState message={t("common_loading")} fullscreen />
+      </Screen>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-background">
-      <KeyboardAwareView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingHorizontal: 24,
-          paddingTop: insets.top + 24,
-          paddingBottom: Math.max(insets.bottom, 20) + 16,
-        }}
-      >
-        <View className="flex-1 gap-6">
-          <View className="gap-2">
-            <Text className="font-sans text-[28px] font-extrabold tracking-[-0.5px] text-foreground">
-              {t("auth_institution_search_title")}
-            </Text>
-            <Text className="font-sans text-sm leading-5 text-muted-foreground">
-              {t("auth_institution_search_hint")}
-            </Text>
-          </View>
+    <Screen keyboardAvoiding>
+      <FlatList
+        className="flex-1"
+        data={visibleInstitutions}
+        keyExtractor={(institution) => institution.deployment_id}
+        renderItem={renderInstitution}
+        ItemSeparatorComponent={InstitutionSeparator}
+        ListHeaderComponent={
+          <View className="gap-four px-four pb-four pt-six">
+            <View className="gap-two">
+              <Text className="font-sans text-2xl font-bold text-foreground">
+                {t("auth_institution_search_title")}
+              </Text>
+              <Text className="font-sans text-sm leading-5 text-muted-foreground">
+                {t("auth_institution_search_hint")}
+              </Text>
+            </View>
 
-          <View className="gap-3">
             <Input
               label={t("auth_institution_filter_label")}
               placeholder={t("auth_institution_search_placeholder")}
@@ -170,58 +247,65 @@ export default function InstitutionSelectScreen() {
                 setSearch(value);
                 setError(null);
               }}
+              icon={<Search size={18} color={theme.textMuted} />}
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
             />
+
+            {error && visibleInstitutions.length > 0 ? (
+              <View className="flex-row items-center justify-between gap-three rounded-md border border-destructive/30 bg-destructive/10 px-three py-two">
+                <Text
+                  accessibilityRole="alert"
+                  className="flex-1 text-start text-xs leading-4 text-destructive"
+                >
+                  {error}
+                </Text>
+                <Button
+                  title={t("common_retry")}
+                  variant="outline"
+                  size="sm"
+                  onPress={() => void loadInstitutions()}
+                />
+              </View>
+            ) : null}
+
+            <Text className="font-sans text-sm font-semibold text-foreground">
+              {t("auth_institution_results")}
+            </Text>
           </View>
-
-          {error ? (
-            <Text accessibilityRole="alert" className="text-sm text-destructive">
-              {error}
-            </Text>
-          ) : null}
-
-          {isLoadingDirectory ? (
-            <View className="items-center gap-3 py-8">
-              <LoadingIndicator size="md" />
-              <Text className="text-sm text-muted-foreground">
-                {t("auth_institution_loading")}
-              </Text>
-            </View>
-          ) : null}
-
-          {visibleInstitutions.length > 0 ? (
-            <View className="gap-3">
-              <Text className="font-sans text-base font-semibold text-foreground">
-                {t("auth_institution_results")}
-              </Text>
-              {visibleInstitutions.map(renderInstitution)}
-            </View>
-          ) : !isLoadingDirectory && !error ? (
-            <Text className="text-sm text-muted-foreground">
-              {t("auth_institution_no_matches")}
-            </Text>
-          ) : null}
-        </View>
-        <View className="pt-6">
-          <Button
-            title={t("auth_sign_in")}
-            variant="outline"
-            fullWidth
-            onPress={() => router.replace("/(auth)/sign-in")}
-            disabled={!selectedInstitution || connectingId !== null}
+        }
+        ListEmptyComponent={renderEmpty}
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 16 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        alwaysBounceVertical
+        overScrollMode="always"
+        showsVerticalScrollIndicator={false}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => void loadInstitutions(true)}
+            tintColor={theme.primary}
+            colors={[theme.primary]}
+            progressBackgroundColor={theme.background}
           />
-          {error ? (
-            <Button
-              title={t("common_retry")}
-              variant="outline"
-              fullWidth
-              onPress={() => void loadInstitutions()}
-            />
-          ) : null}
-        </View>
-      </KeyboardAwareView>
-    </View>
+        }
+      />
+
+      <View className="border-t border-border bg-background px-four pb-two pt-three">
+        <Button
+          title={t("auth_sign_in")}
+          variant="outline"
+          size="lg"
+          fullWidth
+          onPress={() => router.replace("/(auth)/sign-in")}
+          disabled={!selectedInstitution || connectingId !== null}
+        />
+      </View>
+    </Screen>
   );
 }
