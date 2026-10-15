@@ -11,7 +11,7 @@ import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/lib/api";
 
 export default function IndexGate() {
-  const { isAuthenticated, isInitializing } = useAuth();
+  const { isAuthenticated, isInitializing, selectedInstitution } = useAuth();
 
   if (isInitializing) {
     return (
@@ -21,9 +21,12 @@ export default function IndexGate() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(app)/(tabs)" />;
+  if (!selectedInstitution) {
+    return <Redirect href="/institution-select" />;
   }
-
-  return <Redirect href="/(auth)/explore" />;
+  return isAuthenticated ? (
+    <Redirect href="/(app)/(tabs)" />
+  ) : (
+    <Redirect href="/(auth)/sign-in" />
+  );
 }

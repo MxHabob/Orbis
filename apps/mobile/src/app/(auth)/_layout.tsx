@@ -10,7 +10,7 @@ import { View } from "react-native";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export default function AuthLayout() {
-  const { isAuthenticated, isInitializing } = useAuth();
+  const { isAuthenticated, isInitializing, selectedInstitution } = useAuth();
 
   if (isInitializing) {
     return (
@@ -18,6 +18,10 @@ export default function AuthLayout() {
         <LoadingIndicator size="lg" />
       </View>
     );
+  }
+
+  if (!selectedInstitution) {
+    return <Redirect href="/institution-select" />;
   }
 
   if (isAuthenticated) {

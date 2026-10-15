@@ -37,6 +37,60 @@ pub struct TrialChallenge {
     pub challenge: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OrbisConnectionResponse {
+    pub connected: bool,
+    pub organization_id: String,
+    pub product_organization_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OrbisDeployment {
+    pub id: String,
+    pub product_organization_id: String,
+    pub name: String,
+    pub environment: String,
+    pub status: String,
+    pub verification_status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateOrbisDeploymentRequest {
+    pub name: String,
+    pub environment: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateOrbisDeploymentRequest {
+    pub name: Option<String>,
+    pub environment: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OrbisEndpoint {
+    pub id: String,
+    pub deployment_id: String,
+    pub url: String,
+    pub network_scope: String,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateOrbisEndpointRequest {
+    pub url: String,
+    pub network_scope: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateOrbisEndpointRequest {
+    pub url: Option<String>,
+    pub status: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct RegisterTrialRequest {
     pub device_public_key: String,
@@ -166,6 +220,130 @@ impl MulverseClient {
     /// Base URL accessor.
     pub fn base_url(&self) -> &str {
         &self.base_url
+    }
+
+    pub async fn verify_orbis_key(
+        &self,
+        api_key: &str,
+    ) -> Result<OrbisConnectionResponse, MulverseApiError> {
+        self.orbis_get("/api/v1/orbis/connection", api_key).await
+    }
+
+    pub async fn list_orbis_deployments(
+        &self,
+        api_key: &str,
+    ) -> Result<Vec<OrbisDeployment>, MulverseApiError> {
+        self.orbis_get("/api/v1/orbis/deployments", api_key).await
+    }
+
+    pub async fn create_orbis_deployment(
+        &self,
+        api_key: &str,
+        request: &CreateOrbisDeploymentRequest,
+    ) -> Result<OrbisDeployment, MulverseApiError> {
+        self.orbis_send(
+            reqwest::Method::POST,
+            "/api/v1/orbis/deployments",
+            api_key,
+            Some(request),
+        )
+        .await
+    }
+
+    pub async fn update_orbis_deployment(
+        &self,
+        api_key: &str,
+        id: &str,
+        request: &UpdateOrbisDeploymentRequest,
+    ) -> Result<OrbisDeployment, MulverseApiError> {
+        self.orbis_send(
+            reqwest::Method::PUT,
+            &format!("/api/v1/orbis/deployments/{id}"),
+            api_key,
+            Some(request),
+        )
+        .await
+    }
+
+    pub async fn list_orbis_endpoints(
+        &self,
+        api_key: &str,
+        deployment_id: &str,
+    ) -> Result<Vec<OrbisEndpoint>, MulverseApiError> {
+        self.orbis_get(
+            &format!("/api/v1/orbis/deployments/{deployment_id}/endpoints"),
+            api_key,
+        )
+        .await
+    }
+
+    pub async fn create_orbis_endpoint(
+        &self,
+        api_key: &str,
+        deployment_id: &str,
+        request: &CreateOrbisEndpointRequest,
+    ) -> Result<OrbisEndpoint, MulverseApiError> {
+        self.orbis_send(
+            reqwest::Method::POST,
+            &format!("/api/v1/orbis/deployments/{deployment_id}/endpoints"),
+            api_key,
+            Some(request),
+        )
+        .await
+    }
+
+    pub async fn update_orbis_endpoint(
+        &self,
+        api_key: &str,
+        endpoint_id: &str,
+        request: &UpdateOrbisEndpointRequest,
+    ) -> Result<OrbisEndpoint, MulverseApiError> {
+        self.orbis_send(
+            reqwest::Method::PUT,
+            &format!("/api/v1/orbis/deployment-endpoints/{endpoint_id}"),
+            api_key,
+            Some(request),
+        )
+        .await
+    }
+
+    async fn orbis_get<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        api_key: &str,
+    ) -> Result<T, MulverseApiError> {
+        self.orbis_send::<(), T>(reqwest::Method::GET, path, api_key, None)
+            .await
+    }
+
+    async fn orbis_send<B: Serialize + ?Sized, T: DeserializeOwned>(
+        &self,
+        method: reqwest::Method,
+        path: &str,
+        api_key: &str,
+        body: Option<&B>,
+    ) -> Result<T, MulverseApiError> {
+        let url = format!("{}{}", self.base_url, path);
+        let mut request = self
+            .client
+            .request(method, url)
+            .bearer_auth(api_key)
+            .header(reqwest::header::ACCEPT, "application/json");
+        if let Some(body) = body {
+            request = request.json(body);
+        }
+        let response = request
+            .send()
+            .await
+            .map_err(|error| MulverseApiError::NetworkError(error.to_string()))?;
+        if response.status().is_success() {
+            response
+                .json::<T>()
+                .await
+                .map_err(|error| MulverseApiError::ParseError(error.to_string()))
+        } else {
+            Err(self.parse_error_response(response).await)
+        }
     }
 
     /// Activate a product key with Mulverse Platform.

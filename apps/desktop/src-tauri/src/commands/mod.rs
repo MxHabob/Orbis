@@ -17,6 +17,7 @@ pub mod group_cmds;
 pub mod iam_cmds;
 pub mod integration_cmds;
 pub mod license_cmds;
+pub mod mulverse_cmds;
 pub mod onboarding_cmds;
 pub mod org_cmds;
 pub mod progression_cmds;
@@ -381,6 +382,15 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         integration_cmds::integration_get_status,
         integration_cmds::integration_disconnect,
         integration_cmds::integration_toggle,
+        mulverse_cmds::mulverse_get_connection,
+        mulverse_cmds::mulverse_connect,
+        mulverse_cmds::mulverse_disconnect,
+        mulverse_cmds::mulverse_list_deployments,
+        mulverse_cmds::mulverse_create_deployment,
+        mulverse_cmds::mulverse_update_deployment,
+        mulverse_cmds::mulverse_list_endpoints,
+        mulverse_cmds::mulverse_create_endpoint,
+        mulverse_cmds::mulverse_update_endpoint,
         // ── Academic Override & Workflow ────────────────────────
         workflow_cmds::workflow_submit_override,
         workflow_cmds::workflow_approve_override,

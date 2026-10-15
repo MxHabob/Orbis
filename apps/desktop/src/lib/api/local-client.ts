@@ -1263,6 +1263,49 @@ export class LocalClient implements OrbisApiClient {
       await invoke("integration_toggle", { providerName, isEnabled }),
     );
   }
+  async getMulverseConnection(): Promise<import("./types").MulverseConnectionDto> {
+    const response = unwrap(await invoke("mulverse_get_connection"));
+    return response ?? {
+      connected: false,
+      organization_id: null,
+      product_organization_id: null,
+    };
+  }
+  async connectMulverse(apiKey: string): Promise<import("./types").MulverseConnectionDto> {
+    return unwrap(await invoke("mulverse_connect", { request: { api_key: apiKey } }));
+  }
+  async disconnectMulverse(): Promise<boolean> {
+    return unwrap(await invoke("mulverse_disconnect"));
+  }
+  async listMulverseDeployments(): Promise<import("./types").MulverseDeploymentDto[]> {
+    return unwrap(await invoke("mulverse_list_deployments"));
+  }
+  async createMulverseDeployment(
+    req: import("./types").MulverseDeploymentRequest,
+  ): Promise<import("./types").MulverseDeploymentDto> {
+    return unwrap(await invoke("mulverse_create_deployment", { request: req }));
+  }
+  async updateMulverseDeployment(
+    id: string,
+    req: Partial<import("./types").MulverseDeploymentRequest>,
+  ): Promise<import("./types").MulverseDeploymentDto> {
+    return unwrap(await invoke("mulverse_update_deployment", { id, request: req }));
+  }
+  async listMulverseEndpoints(deploymentId: string): Promise<import("./types").MulverseEndpointDto[]> {
+    return unwrap(await invoke("mulverse_list_endpoints", { deploymentId }));
+  }
+  async createMulverseEndpoint(
+    deploymentId: string,
+    req: import("./types").MulverseEndpointRequest,
+  ): Promise<import("./types").MulverseEndpointDto> {
+    return unwrap(await invoke("mulverse_create_endpoint", { deploymentId, request: req }));
+  }
+  async updateMulverseEndpoint(
+    id: string,
+    req: import("./types").MulverseEndpointUpdateRequest,
+  ): Promise<import("./types").MulverseEndpointDto> {
+    return unwrap(await invoke("mulverse_update_endpoint", { id, request: req }));
+  }
   // ── Templates ───────────────────────────────────────────────
   async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
     return unwrap(await invoke("template_create", { input: req }));

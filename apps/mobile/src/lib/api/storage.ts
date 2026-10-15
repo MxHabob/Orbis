@@ -16,7 +16,17 @@ export const STORAGE_KEYS = {
   DEVICE_ID: "orbis_device_id",
   SETUP_COMPLETE: "orbis_is_setup_complete",
   API_BASE_URL: "orbis_api_base_url",
+  INSTITUTIONS: "orbis_institutions",
+  ACTIVE_INSTITUTION_ID: "orbis_active_institution_id",
+  INSTITUTION_SESSIONS: "orbis_institution_sessions",
 } as const;
+
+export interface InstitutionSessionSnapshot {
+  token: string;
+  user: string;
+  effectiveContext: string | null;
+  setupComplete: string | null;
+}
 
 const memoryFallback = new Map<string, string>();
 
@@ -82,6 +92,68 @@ export async function deleteSecureItem(key: string): Promise<void> {
     return;
   }
   memoryFallback.delete(key);
+}
+
+export async function getInstitutionSession(
+  institutionId: string,
+): Promise<InstitutionSessionSnapshot | null> {
+  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+  if (!stored) return null;
+
+  const sessions: unknown = JSON.parse(stored);
+  if (typeof sessions !== "object" || sessions === null || Array.isArray(sessions)) {
+    throw new Error("Saved institution sessions have an invalid format.");
+  }
+
+  const session = (sessions as Record<string, unknown>)[institutionId];
+  if (
+    typeof session !== "object" ||
+    session === null ||
+    !("token" in session) ||
+    typeof session.token !== "string" ||
+    !("user" in session) ||
+    typeof session.user !== "string" ||
+    !("effectiveContext" in session) ||
+    (typeof session.effectiveContext !== "string" &&
+      session.effectiveContext !== null) ||
+    !("setupComplete" in session) ||
+    (typeof session.setupComplete !== "string" &&
+      session.setupComplete !== null)
+  ) {
+    return null;
+  }
+
+  return {
+    token: session.token,
+    user: session.user,
+    effectiveContext: session.effectiveContext,
+    setupComplete: session.setupComplete,
+  };
+}
+
+export async function setInstitutionSession(
+  institutionId: string,
+  snapshot: InstitutionSessionSnapshot,
+): Promise<void> {
+  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+  const current: Record<string, InstitutionSessionSnapshot> = stored
+    ? JSON.parse(stored)
+    : {};
+  await setSecureItem(
+    STORAGE_KEYS.INSTITUTION_SESSIONS,
+    JSON.stringify({ ...current, [institutionId]: snapshot }),
+  );
+}
+
+export async function deleteInstitutionSession(
+  institutionId: string,
+): Promise<void> {
+  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+  if (!stored) return;
+
+  const current: Record<string, InstitutionSessionSnapshot> = JSON.parse(stored);
+  delete current[institutionId];
+  await setSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS, JSON.stringify(current));
 }
 
 export const authStorage = {

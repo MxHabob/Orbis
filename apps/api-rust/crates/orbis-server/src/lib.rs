@@ -19,7 +19,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use api::{
     academic_framework_routes, academic_routes, ai_routes, assessment_routes, autopilot_routes,
     bootstrap_routes, calendar_routes, document_routes, employee_routes, exam_routes,
-    finance_routes, folder_routes, group_routes, iam_routes, integration_routes,
+    finance_routes, folder_routes, group_routes, iam_routes, integration_routes, mulverse_routes,
     onboarding_routes, org_routes, override_routes, progression_routes, report_routes,
     scheduling_routes, storage_routes, student_routes,
 };
@@ -316,6 +316,15 @@ use api::{
         api::integration_routes::get_integration_status,
         api::integration_routes::disconnect_app,
         api::integration_routes::toggle_integration,
+        api::mulverse_routes::get_status,
+        api::mulverse_routes::connect,
+        api::mulverse_routes::disconnect,
+        api::mulverse_routes::list_deployments,
+        api::mulverse_routes::create_deployment,
+        api::mulverse_routes::update_deployment,
+        api::mulverse_routes::list_endpoints,
+        api::mulverse_routes::create_endpoint,
+        api::mulverse_routes::update_endpoint,
         // Report & Templates
         api::report_routes::list_templates,
         api::report_routes::create_template,
@@ -557,6 +566,14 @@ use api::{
             api::integration_routes::ToggleIntegrationRequest,
             api::integration_routes::NotificationIntegrationQuery,
             api::integration_routes::NotificationIntegrationCheckDto,
+            api::mulverse_routes::MulverseConnectionDto,
+            api::mulverse_routes::ConnectMulverseRequest,
+            api::mulverse_routes::DeploymentDto,
+            api::mulverse_routes::EndpointDto,
+            api::mulverse_routes::CreateDeploymentRequest,
+            api::mulverse_routes::UpdateDeploymentRequest,
+            api::mulverse_routes::CreateEndpointRequest,
+            api::mulverse_routes::UpdateEndpointRequest,
             // Report & Template
             api::report_routes::TemplateDto,
             api::report_routes::CreateTemplateRequest,
@@ -668,6 +685,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(storage_routes::routes())
         .merge(folder_routes::folder_routes())
         .merge(integration_routes::routes())
+        .merge(mulverse_routes::routes())
         .merge(report_routes::routes())
         .merge(ai_routes::routes())
         .merge(autopilot_routes::routes())

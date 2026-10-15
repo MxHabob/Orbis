@@ -35,6 +35,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(std::env::current_dir()?.join(".orbis-license"));
     let app_version = env!("CARGO_PKG_VERSION").to_string();
     let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
+    let mulverse_client = Arc::new(match mulverse_url.as_deref() {
+        Some(url) => orbis_infra::adapters::mulverse_client::MulverseClient::with_base_url(url)
+            .map_err(std::io::Error::other)?,
+        None => orbis_infra::adapters::mulverse_client::MulverseClient::new()
+            .map_err(std::io::Error::other)?,
+    });
     let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
         orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
             &license_data_dir,
@@ -487,6 +493,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build AppState
     let state = AppState {
+        mulverse_client,
         db: db.clone(),
         org_repo: org_repo.clone(),
         org_unit_repo,

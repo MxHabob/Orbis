@@ -42,7 +42,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const theme = useTheme();
   const toast = useToast();
-  const { user, logout } = useAuth();
+  const { user, logout, institutions } = useAuth();
   const { t, isArabic, locale } = useI18n();
   const organizationQuery = useCurrentOrgQuery();
   const [isSupportDrawerVisible, setIsSupportDrawerVisible] = useState(false);
@@ -144,6 +144,13 @@ export default function ProfileScreen() {
   };
 
   const settingsItems: ProfileMenuItem[] = [
+    {
+      id: "institutions",
+      title: t("auth_institution_linked"),
+      subtitle: t("auth_institution_switch"),
+      trailingText: String(institutions.length),
+      onPress: () => router.push("/institution-select"),
+    },
     {
       id: "security",
       title: t("profile_menu_security"),

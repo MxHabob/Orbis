@@ -138,6 +138,12 @@ import type {
   CurrencyDto,
   IntegrationDto,
   IntegrationStatusResponse,
+  MulverseConnectionDto,
+  MulverseDeploymentDto,
+  MulverseEndpointDto,
+  MulverseDeploymentRequest,
+  MulverseEndpointRequest,
+  MulverseEndpointUpdateRequest,
   ConnectAppRequest,
   TemplateDto,
   CreateTemplateRequest,
@@ -240,6 +246,7 @@ import type {
   OnboardingStateDto,
   ProvisionDefaultsReqDto,
   ProvisionDefaultsResultDto,
+  StudentCertificateReportCard,
 } from "./types";
 
 export class ApiRequestError extends Error {
@@ -507,11 +514,11 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async closeacademicCalendar(id: string): Promise<academicCalendarDto> {
-    return this.call(sdk.closeYear({ client: this.client, path: { id } }));
+    return this.call(sdk.closeYearHandler({ client: this.client, path: { id } }));
   }
 
   async archiveacademicCalendar(id: string): Promise<academicCalendarDto> {
-    return this.call(sdk.archiveYear({ client: this.client, path: { id } }));
+    return this.call(sdk.archiveYearHandler({ client: this.client, path: { id } }));
   }
 
   async deleteacademicCalendar(id: string): Promise<boolean> {
@@ -536,7 +543,7 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async deleteAcademicPeriod(id: string): Promise<boolean> {
-    return this.call(sdk.deletePeriod({ client: this.client, path: { id } }));
+    return this.call(sdk.deletePeriodHandler({ client: this.client, path: { id } }));
   }
 
   async listAcademicPeriods(): Promise<AcademicPeriodDto[]> {
@@ -1211,6 +1218,28 @@ export class RemoteClient implements OrbisApiClient {
     return json.data ?? [];
   }
 
+  async getStudentCertificateResults(
+    studentId: string,
+    calendarId: string,
+    certificateType: string,
+    classId?: string,
+  ): Promise<StudentCertificateReportCard> {
+    const params = new URLSearchParams({
+      calendar_id: calendarId,
+      certificate_type: certificateType,
+    });
+    if (classId) {
+      params.append("section_id", classId);
+    }
+    const url = `${this.baseUrl}/api/v1/students/${studentId}/certificate-results?${params.toString()}`;
+    const res = await fetch(url, {
+      headers: this.token ? { Authorization: `Bearer ${this.token}`, "Content-Type": "application/json" } : { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new ApiRequestError(res.status, await res.json().catch(() => ({ message: res.statusText })));
+    const json = await res.json();
+    return json.data;
+  }
+
   async markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto> {
     return this.call(sdk.markAttendance({ client: this.client, body: req }));
   }
@@ -1645,6 +1674,71 @@ export class RemoteClient implements OrbisApiClient {
         body: { is_enabled: isEnabled },
       }),
     );
+  }
+
+  // ── Mulverse organization deployment management ────────────
+  async getMulverseConnection(): Promise<MulverseConnectionDto> {
+    return this.fetchApi("/api/v1/orbis-mobile");
+  }
+
+  async connectMulverse(apiKey: string): Promise<MulverseConnectionDto> {
+    return this.fetchApi("/api/v1/orbis-mobile", {
+      method: "PUT",
+      body: JSON.stringify({ api_key: apiKey }),
+    });
+  }
+
+  async disconnectMulverse(): Promise<boolean> {
+    return this.fetchApi("/api/v1/orbis-mobile", { method: "DELETE" });
+  }
+
+  async listMulverseDeployments(): Promise<MulverseDeploymentDto[]> {
+    return this.fetchApi("/api/v1/orbis-mobile/deployments");
+  }
+
+  async createMulverseDeployment(
+    req: MulverseDeploymentRequest,
+  ): Promise<MulverseDeploymentDto> {
+    return this.fetchApi("/api/v1/orbis-mobile/deployments", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async updateMulverseDeployment(
+    id: string,
+    req: Partial<MulverseDeploymentRequest>,
+  ): Promise<MulverseDeploymentDto> {
+    return this.fetchApi(`/api/v1/orbis-mobile/deployments/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(req),
+    });
+  }
+
+  async listMulverseEndpoints(deploymentId: string): Promise<MulverseEndpointDto[]> {
+    return this.fetchApi(
+      `/api/v1/orbis-mobile/deployments/${encodeURIComponent(deploymentId)}/endpoints`,
+    );
+  }
+
+  async createMulverseEndpoint(
+    deploymentId: string,
+    req: MulverseEndpointRequest,
+  ): Promise<MulverseEndpointDto> {
+    return this.fetchApi(
+      `/api/v1/orbis-mobile/deployments/${encodeURIComponent(deploymentId)}/endpoints`,
+      { method: "POST", body: JSON.stringify(req) },
+    );
+  }
+
+  async updateMulverseEndpoint(
+    id: string,
+    req: MulverseEndpointUpdateRequest,
+  ): Promise<MulverseEndpointDto> {
+    return this.fetchApi(`/api/v1/orbis-mobile/endpoints/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(req),
+    });
   }
 
   // ── Templates ───────────────────────────────────────────────

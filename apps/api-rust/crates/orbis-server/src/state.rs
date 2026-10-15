@@ -24,6 +24,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct AppState {
     pub license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime>,
+    pub mulverse_client: Arc<orbis_infra::adapters::mulverse_client::MulverseClient>,
     pub db: DatabaseConnection,
     pub org_repo: Arc<dyn OrganizationRepository>,
     pub org_unit_repo: Arc<dyn OrgUnitRepository>,

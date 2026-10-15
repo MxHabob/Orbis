@@ -18,7 +18,7 @@ use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
-    StudentTermReportCard, TiePolicy,
+    StudentCertificateReportCard, StudentTermReportCard, TiePolicy,
 };
 use orbis_domain::entities::academic_calculation::{
     CalculationPreview, CalculationOutputOutcome,
@@ -980,6 +980,14 @@ pub struct ClassAnnualResultQuery {
     pub year_id: Uuid,
 }
 
+#[derive(Deserialize, ToSchema)]
+pub struct StudentCertificateResultQuery {
+    pub calendar_id: Uuid,
+    pub section_id: Option<Uuid>,
+    /// "basic_grade9" or "secondary_thanawiya"
+    pub certificate_type: String,
+}
+
 #[utoipa::path(get, path = "/api/v1/students/{id}/term-results",
     params(
         ("id" = Uuid, Path, description = "Student ID"),
@@ -1028,6 +1036,35 @@ pub async fn get_student_annual_results(
             student_id,
             q.year_id,
             q.section_id,
+            None,
+        )
+        .await?;
+    Ok(ApiResponse::ok(report))
+}
+
+#[utoipa::path(get, path = "/api/v1/students/{id}/certificate-results",
+    params(
+        ("id" = Uuid, Path, description = "Student ID"),
+        ("calendar_id" = Uuid, Query, description = "Academic Year/Calendar ID"),
+        ("section_id" = Option<Uuid>, Query, description = "Optional Class ID"),
+        ("certificate_type" = String, Query, description = "Certificate type: basic_grade9 or secondary_thanawiya"),
+    ),
+    responses((status = 200, body = StudentCertificateReportCard)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_student_certificate_results(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
+    Query(q): Query<StudentCertificateResultQuery>,
+) -> Result<Json<ApiResponse<StudentCertificateReportCard>>, ApiError> {
+    let report = state
+        .assessment_service
+        .calculate_student_certificate_report_card(
+            &ctx,
+            ctx.tenant_id,
+            student_id,
+            q.calendar_id,
+            q.section_id,
+            q.certificate_type,
             None,
         )
         .await?;
@@ -1132,4 +1169,8 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/api/v1/behavior/:id", delete(delete_behavior))
         .route("/api/v1/students/:id/behavior", get(list_student_behavior))
+        .route(
+            "/api/v1/students/:id/certificate-results",
+            get(get_student_certificate_results),
+        )
 }

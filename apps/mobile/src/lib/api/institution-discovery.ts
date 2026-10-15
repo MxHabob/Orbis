@@ -1,4 +1,8 @@
-import { setSecureItem, STORAGE_KEYS } from "./storage";
+import {
+  getSecureItem,
+  setSecureItem,
+  STORAGE_KEYS,
+} from "./storage";
 
 export interface DirectoryInstitution {
   organization_id: string;
@@ -14,10 +18,11 @@ const DIRECTORY_BASE_URL =
   process.env.EXPO_PUBLIC_MULVERSE_API_URL || "https://api.mulverse.com";
 
 export async function searchInstitutionDirectory(
-  search: string,
+  search?: string,
+  signal?: AbortSignal,
 ): Promise<DirectoryInstitution[]> {
-  const query = search.trim();
-  if (query.length < 2 || query.length > 100) {
+  const query = search?.trim() ?? "";
+  if (query.length === 1 || query.length > 100) {
     throw new Error("Search must contain 2 to 100 characters.");
   }
 
@@ -37,8 +42,8 @@ export async function searchInstitutionDirectory(
   }
 
   baseUrl.pathname = "/api/v1/public/orbis-institutions";
-  baseUrl.searchParams.set("search", query);
-  const response = await fetch(baseUrl.toString());
+  if (query) baseUrl.searchParams.set("search", query);
+  const response = await fetch(baseUrl.toString(), { signal });
   if (!response.ok) {
     throw new Error(`Institution search failed (${response.status}).`);
   }
@@ -56,11 +61,71 @@ export async function searchInstitutionDirectory(
 
 export async function saveSelectedInstitution(
   institution: DirectoryInstitution,
+): Promise<DirectoryInstitution[]> {
+  if (!isDirectoryInstitution(institution)) {
+    throw new Error("The selected institution has invalid connection details.");
+  }
+  const knownInstitutions = await getSavedInstitutions();
+  const nextInstitutions = [
+    institution,
+    ...knownInstitutions.filter(
+      (saved) => saved.deployment_id !== institution.deployment_id,
+    ),
+  ];
+  await Promise.all([
+    setSecureItem(STORAGE_KEYS.INSTITUTIONS, JSON.stringify(nextInstitutions)),
+    setSecureItem(STORAGE_KEYS.ACTIVE_INSTITUTION_ID, institution.deployment_id),
+    setSecureItem(STORAGE_KEYS.API_BASE_URL, institution.endpoint_url),
+  ]);
+  return nextInstitutions;
+}
+
+export async function getSavedInstitutions(): Promise<DirectoryInstitution[]> {
+  const stored = await getSecureItem(STORAGE_KEYS.INSTITUTIONS);
+  if (!stored) return [];
+
+  const value: unknown = JSON.parse(stored);
+  if (!Array.isArray(value) || !value.every(isDirectoryInstitution)) {
+    throw new Error("Saved institution connections have an invalid format.");
+  }
+  return value;
+}
+
+export async function checkInstitutionConnection(
+  institution: DirectoryInstitution,
 ): Promise<void> {
   if (!isDirectoryInstitution(institution)) {
     throw new Error("The selected institution has invalid connection details.");
   }
-  await setSecureItem(STORAGE_KEYS.API_BASE_URL, institution.endpoint_url);
+  const healthUrl = new URL(institution.endpoint_url);
+  healthUrl.pathname = `${healthUrl.pathname.replace(/\/+$/, "")}/api/v1/health`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+
+  try {
+    const response = await fetch(healthUrl.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`Institution server check failed (${response.status}).`);
+    }
+
+    const payload: unknown = await response.json();
+    if (
+      typeof payload !== "object" ||
+      payload === null ||
+      !("status" in payload) ||
+      payload.status !== "ok" ||
+      !("database_connected" in payload) ||
+      payload.database_connected !== true
+    ) {
+      throw new Error("The selected institution is not ready for sign-in.");
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {

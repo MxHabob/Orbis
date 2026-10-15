@@ -26,8 +26,11 @@ import { api, configureApiBaseUrl } from "./client";
 import {
   deleteSecureItem,
   getSecureItem,
+  getInstitutionSession,
   STORAGE_KEYS,
   setSecureItem,
+  setInstitutionSession,
+  type InstitutionSessionSnapshot,
 } from "./storage";
 import { ApiRequestError, OrbisError } from "./types";
 import {
@@ -35,6 +38,11 @@ import {
   subscribeToSessionInvalidation,
 } from "./session-events";
 import { onlineManager } from "@/lib/network/online-manager";
+import {
+  getSavedInstitutions,
+  saveSelectedInstitution,
+  type DirectoryInstitution,
+} from "./institution-discovery";
 
 export interface AuthState {
   user: UserDto | null;
@@ -48,6 +56,8 @@ export interface AuthState {
   orgId: string;
   userId: string;
   needsOnboarding: boolean;
+  institutions: DirectoryInstitution[];
+  selectedInstitution: DirectoryInstitution | null;
 }
 
 export interface AuthContextType extends AuthState {
@@ -65,6 +75,7 @@ export interface AuthContextType extends AuthState {
   refreshSessionData: () => Promise<void>;
   checkSetupStatus: () => Promise<boolean | null>;
   clearError: () => void;
+  selectInstitution: (institution: DirectoryInstitution) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -138,6 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSetupComplete, setIsSetupComplete] = useState<boolean | null>(null);
+  const [institutions, setInstitutions] = useState<DirectoryInstitution[]>([]);
+  const [selectedInstitution, setSelectedInstitution] =
+    useState<DirectoryInstitution | null>(null);
+  const selectedInstitutionRef = useRef(selectedInstitution);
+  selectedInstitutionRef.current = selectedInstitution;
 
   const isAuthenticated = useMemo(() => !!token && !!user, [token, user]);
   const orgId = useMemo(() => user?.org_id ?? "", [user]);
@@ -206,9 +222,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       await Promise.all(writes);
-      await checkSetupStatus();
+      const setupComplete = await checkSetupStatus();
+      if (selectedInstitution) {
+        await setInstitutionSession(selectedInstitution.deployment_id, {
+          token: res.token,
+          user: JSON.stringify(res.user),
+          effectiveContext: res.effective_context
+            ? JSON.stringify(res.effective_context)
+            : null,
+          setupComplete:
+            setupComplete === null ? null : setupComplete ? "true" : "false",
+        });
+      }
     },
-    [checkSetupStatus, user],
+    [checkSetupStatus, selectedInstitution, user],
   );
 
   const login = useCallback(
@@ -323,12 +350,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setIsSetupComplete(null);
 
-    await Promise.all([
+    const removals: Promise<void>[] = [
       deleteSecureItem(STORAGE_KEYS.TOKEN),
       deleteSecureItem(STORAGE_KEYS.USER),
       deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
       deleteSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
-    ]);
+    ];
+    if (selectedInstitutionRef.current) {
+      const sessionsRaw = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+      if (sessionsRaw) {
+        const sessions: Record<string, InstitutionSessionSnapshot> =
+          JSON.parse(sessionsRaw);
+        delete sessions[selectedInstitutionRef.current.deployment_id];
+        removals.push(
+          setSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS, JSON.stringify(sessions)),
+        );
+      }
+    }
+    await Promise.all(removals);
   }, []);
 
   const restoreSession = useCallback(async () => {
@@ -340,6 +379,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         savedCtxStr,
         savedSetup,
         savedApiBaseUrl,
+        savedInstitutions,
+        activeInstitutionId,
       ] =
         await Promise.all([
           getSecureItem(STORAGE_KEYS.TOKEN),
@@ -347,7 +388,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           getSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
           getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
           getSecureItem(STORAGE_KEYS.API_BASE_URL),
+          getSavedInstitutions(),
+          getSecureItem(STORAGE_KEYS.ACTIVE_INSTITUTION_ID),
         ]);
+
+      setInstitutions(savedInstitutions);
+      const activeInstitution =
+        savedInstitutions.find(
+          (institution) => institution.deployment_id === activeInstitutionId,
+        ) ?? null;
+      selectedInstitutionRef.current = activeInstitution;
+      setSelectedInstitution(activeInstitution);
 
       if (savedApiBaseUrl) {
         configureApiBaseUrl(savedApiBaseUrl);
@@ -441,6 +492,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [logout]);
 
+  const selectInstitution = useCallback(
+    async (institution: DirectoryInstitution) => {
+      const previousInstitution = selectedInstitutionRef.current;
+      if (previousInstitution && token && user) {
+        const sessionsRaw = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+        const sessions: Record<string, InstitutionSessionSnapshot> = sessionsRaw
+          ? JSON.parse(sessionsRaw)
+          : {};
+        sessions[previousInstitution.deployment_id] = {
+          token,
+          user: JSON.stringify(user),
+          effectiveContext: effectiveContext
+            ? JSON.stringify(effectiveContext)
+            : null,
+          setupComplete:
+            isSetupComplete === null ? null : isSetupComplete ? "true" : "false",
+        };
+        await setSecureItem(
+          STORAGE_KEYS.INSTITUTION_SESSIONS,
+          JSON.stringify(sessions),
+        );
+      }
+
+      const savedInstitutions = await saveSelectedInstitution(institution);
+      const snapshot = await getInstitutionSession(institution.deployment_id);
+      configureApiBaseUrl(institution.endpoint_url);
+      if (
+        previousInstitution &&
+        previousInstitution.deployment_id !== institution.deployment_id &&
+        user
+      ) {
+        notifySessionEnded({ orgId: user.org_id, userId: user.id });
+      }
+
+      const cachedUser: unknown = snapshot ? JSON.parse(snapshot.user) : null;
+      const restoredUser = isUserDto(cachedUser) ? cachedUser : null;
+      const cachedContext: unknown =
+        snapshot?.effectiveContext ? JSON.parse(snapshot.effectiveContext) : null;
+      const restoredContext = isEffectiveContextDto(cachedContext)
+        ? cachedContext
+        : null;
+
+      setInstitutions(savedInstitutions);
+      selectedInstitutionRef.current = institution;
+      setSelectedInstitution(institution);
+      setToken(restoredUser && snapshot ? snapshot.token : null);
+      setUser(restoredUser);
+      setEffectiveContext(restoredContext);
+      setIsSetupComplete(
+        snapshot?.setupComplete === "true"
+          ? true
+          : snapshot?.setupComplete === "false"
+            ? false
+            : null,
+      );
+      setError(null);
+
+      await Promise.all([
+        restoredUser && snapshot
+          ? setSecureItem(STORAGE_KEYS.TOKEN, snapshot.token)
+          : deleteSecureItem(STORAGE_KEYS.TOKEN),
+        restoredUser
+          ? setSecureItem(STORAGE_KEYS.USER, JSON.stringify(restoredUser))
+          : deleteSecureItem(STORAGE_KEYS.USER),
+        restoredContext
+          ? setSecureItem(
+              STORAGE_KEYS.EFFECTIVE_CONTEXT,
+              JSON.stringify(restoredContext),
+            )
+          : deleteSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
+        snapshot?.setupComplete
+          ? setSecureItem(STORAGE_KEYS.SETUP_COMPLETE, snapshot.setupComplete)
+          : deleteSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
+      ]);
+
+      await restoreSession();
+    },
+    [
+      effectiveContext,
+      isSetupComplete,
+      restoreSession,
+      token,
+      user,
+    ],
+  );
+
   const refreshSessionData = useCallback(async () => {
     const res = await api.getSession({ throwOnError: true });
     const session = unwrapApiData<{
@@ -471,7 +608,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
     }
     await Promise.all(writes);
-  }, []);
+    if (selectedInstitutionRef.current && token) {
+      const currentContext =
+        "effective_context" in session
+          ? session.effective_context ?? null
+          : null;
+      await setInstitutionSession(
+        selectedInstitutionRef.current.deployment_id,
+        {
+          token,
+          user: JSON.stringify(session.user),
+          effectiveContext: currentContext
+            ? JSON.stringify(currentContext)
+            : null,
+          setupComplete:
+            isSetupComplete === null
+              ? null
+              : isSetupComplete
+                ? "true"
+                : "false",
+        },
+      );
+    }
+  }, [isSetupComplete, token]);
 
   useEffect(() => {
     return subscribeToSessionInvalidation(() => {
@@ -498,6 +657,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       orgId,
       userId,
       needsOnboarding,
+      institutions,
+      selectedInstitution,
       login,
       loginWithGoogle,
       mfaChallenge,
@@ -508,6 +669,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshSessionData,
       checkSetupStatus,
       clearError,
+      selectInstitution,
     }),
     [
       user,
@@ -521,6 +683,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       orgId,
       userId,
       needsOnboarding,
+      institutions,
+      selectedInstitution,
       login,
       loginWithGoogle,
       mfaChallenge,
@@ -531,6 +695,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshSessionData,
       checkSetupStatus,
       clearError,
+      selectInstitution,
     ],
   );
 

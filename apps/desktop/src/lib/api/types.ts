@@ -654,6 +654,47 @@ export interface IntegrationStatusResponse {
   config?: IntegrationDto | null;
 }
 
+export interface MulverseConnectionDto {
+  connected: boolean;
+  organization_id: string | null;
+  product_organization_id: string | null;
+}
+
+export interface MulverseDeploymentDto {
+  id: string;
+  name: string;
+  environment: string;
+  status: string;
+  verification_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MulverseEndpointDto {
+  id: string;
+  deployment_id: string;
+  url: string;
+  network_scope: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MulverseDeploymentRequest {
+  name: string;
+  environment: string;
+}
+
+export interface MulverseEndpointRequest {
+  url: string;
+  network_scope: "public" | "local_network";
+}
+
+export interface MulverseEndpointUpdateRequest {
+  url?: string;
+  status?: "active" | "pending" | "disabled";
+}
+
 // ── Document & Storage Types ──────────────────────────────────────────────
 
 export interface StorageUploadRequest {
@@ -1342,6 +1383,28 @@ export interface StudentAnnualReportCard {
   calculated_at: string;
 }
 
+export interface StudentCertificateReportCard {
+  student_id: string;
+  student_name: string;
+  student_number?: string | null;
+  section_id: string;
+  class_name: string;
+  calendar_id: string;
+  academic_calendar_name: string;
+  /** "basic_grade9" or "secondary_thanawiya" */
+  certificate_type: string;
+  subjects: SubjectTermResult[];
+  total_score: number;
+  max_possible_score: number;
+  overall_percentage: number;
+  rank_in_class?: number | null;
+  rank_in_grade?: number | null;
+  total_students_in_class: number;
+  total_students_in_grade: number;
+  status: AcademicStatus;
+  calculated_at: string;
+}
+
 export interface AcademicPolicy {
   org_id: string;
   passing_threshold_percentage: number;
@@ -1897,6 +1960,24 @@ export interface OrbisApiClient {
   ): Promise<IntegrationStatusResponse>;
   disconnectApp(providerName: string): Promise<boolean>;
   toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean>;
+  getMulverseConnection(): Promise<MulverseConnectionDto>;
+  connectMulverse(apiKey: string): Promise<MulverseConnectionDto>;
+  disconnectMulverse(): Promise<boolean>;
+  listMulverseDeployments(): Promise<MulverseDeploymentDto[]>;
+  createMulverseDeployment(req: MulverseDeploymentRequest): Promise<MulverseDeploymentDto>;
+  updateMulverseDeployment(
+    id: string,
+    req: Partial<MulverseDeploymentRequest>,
+  ): Promise<MulverseDeploymentDto>;
+  listMulverseEndpoints(deploymentId: string): Promise<MulverseEndpointDto[]>;
+  createMulverseEndpoint(
+    deploymentId: string,
+    req: MulverseEndpointRequest,
+  ): Promise<MulverseEndpointDto>;
+  updateMulverseEndpoint(
+    id: string,
+    req: MulverseEndpointUpdateRequest,
+  ): Promise<MulverseEndpointDto>;
 
   // ── Templates ───────────────────────────────────────────────
   createTemplate(req: CreateTemplateRequest): Promise<TemplateDto>;

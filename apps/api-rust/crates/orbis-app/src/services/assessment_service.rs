@@ -14,7 +14,7 @@ use chrono::{NaiveDate, Utc};
 use orbis_domain::entities::academic_period::PeriodKind;
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult, PeriodComponentScores,
-    StudentAnnualReportCard, StudentTermReportCard, SubjectTermResult,
+    StudentAnnualReportCard, StudentCertificateReportCard, StudentTermReportCard, SubjectTermResult,
 };
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
@@ -1545,5 +1545,207 @@ impl AssessmentService {
         }
 
         Ok(cards)
+    }
+
+    /// Calculate certificate examination report card (Grade 9 basic / Grade 12 Thanawiya).
+    ///
+    /// For each subject, the certificate result combines:
+    /// - Ministerial exam score (from grades marked as `is_final = true`)
+    /// - Cumulative prior-year contribution (from grades with component code "cumulative_prior_years")
+    ///
+    /// The `certificate_type` parameter should be "basic_grade9" or "secondary_thanawiya".
+    pub async fn calculate_student_certificate_report_card(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        student_id: Uuid,
+        calendar_id: Uuid,
+        section_id: Option<Uuid>,
+        certificate_type: String,
+        policy: Option<AcademicPolicy>,
+    ) -> Result<StudentCertificateReportCard, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GradeRead)
+            .await?;
+
+        let policy = self.resolve_policy(org_id, policy).await;
+
+        // 1. Resolve student
+        let (student_name, student_number) = if let Some(sr) = &self.student_repo {
+            if let Some(detail) = sr.find_detail_by_id(student_id).await? {
+                (
+                    detail.person.full_name(),
+                    Some(detail.student.student_number),
+                )
+            } else if let Some(st) = sr.find_by_id(student_id).await? {
+                (
+                    format!("Student {}", &st.id.to_string()[..8]),
+                    Some(st.student_number),
+                )
+            } else {
+                ("Student".to_string(), None)
+            }
+        } else {
+            ("Student".to_string(), None)
+        };
+
+        // 2. Resolve section
+        let resolved_section_id = if let Some(cid) = section_id {
+            cid
+        } else if let Some(er) = &self.enrollment_repo {
+            let enrollments = er.find_by_student(student_id).await?;
+            enrollments
+                .into_iter()
+                .find(|e| e.status == EnrollmentStatus::Active)
+                .and_then(|e| e.section_id)
+                .unwrap_or_else(Uuid::nil)
+        } else {
+            Uuid::nil()
+        };
+
+        let class_name = if let Some(cr) = &self.section_repo {
+            if let Some(cls) = cr.find_by_id(resolved_section_id).await? {
+                cls.name
+            } else {
+                "Class".to_string()
+            }
+        } else {
+            "Class".to_string()
+        };
+
+        // 3. Resolve calendar name
+        let calendar_name = if let Some(yr) = &self.year_repo {
+            if let Some(cal) = yr.find_by_id(calendar_id).await? {
+                cal.name
+            } else {
+                "Academic Year".to_string()
+            }
+        } else {
+            "Academic Year".to_string()
+        };
+
+        // 4. Get section subjects
+        let section_subjects = if resolved_section_id != Uuid::nil() {
+            self.section_subject_repo
+                .find_by_section(resolved_section_id)
+                .await?
+        } else {
+            vec![]
+        };
+
+        // 5. Calculate certificate result per subject
+        let mut subject_results = Vec::with_capacity(section_subjects.len());
+
+        for cs in &section_subjects {
+            let subject = self.subject_repo.find_by_id(cs.subject_id).await?;
+            let (subject_code, subject_name, subject_name_ar, credit_units) = match &subject {
+                Some(s) => (
+                    s.code.clone(),
+                    s.name.clone(),
+                    s.name_ar.clone(),
+                    s.credit_units.unwrap_or(Decimal::ONE),
+                ),
+                None => (
+                    "SUBJ".to_string(),
+                    "Subject".to_string(),
+                    None,
+                    Decimal::ONE,
+                ),
+            };
+
+            // Fetch all grades for this student + subject
+            let all_grades = self
+                .grade_repo
+                .find_by_student_and_subject(student_id, cs.id)
+                .await?;
+
+            // Exam score = grade marked as is_final
+            let exam_score = all_grades
+                .iter()
+                .find(|g| g.is_final)
+                .map(|g| g.score);
+
+            // Cumulative score = grade with component matching cumulative pattern
+            let cumulative_score = all_grades
+                .iter()
+                .find(|g| {
+                    g.component_id.is_none() && !g.is_final
+                        || g.notes
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains("cumulative")
+                })
+                .filter(|g| !g.is_final)
+                .map(|g| g.score);
+
+            let res = AcademicCalculationEngine::calculate_certificate_result(
+                cs.subject_id,
+                subject_code,
+                subject_name,
+                subject_name_ar,
+                credit_units,
+                exam_score,
+                cumulative_score,
+                &policy,
+            )?;
+            subject_results.push(res);
+        }
+
+        // 6. Aggregate
+        let total_score: Decimal = subject_results.iter().map(|s| s.term_total).sum();
+        let max_possible_score: Decimal = subject_results.iter().map(|s| s.term_max).sum();
+        let raw_pct = if max_possible_score > Decimal::ZERO {
+            (total_score / max_possible_score) * Decimal::from(100)
+        } else {
+            Decimal::ZERO
+        };
+        let overall_percentage =
+            apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
+
+        let failed_count = subject_results
+            .iter()
+            .filter(|s| s.status == AcademicStatus::Failed)
+            .count();
+        let any_incomplete = subject_results
+            .iter()
+            .any(|s| s.status == AcademicStatus::Incomplete);
+
+        let status = if any_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_count == 0 {
+            if overall_percentage >= policy.honors_threshold_percentage {
+                AcademicStatus::PassedWithHonors
+            } else if overall_percentage >= policy.passing_threshold_percentage {
+                AcademicStatus::Passed
+            } else {
+                AcademicStatus::Failed
+            }
+        } else if failed_count <= policy.max_failed_subjects_for_conditional_pass {
+            AcademicStatus::ConditionalPass
+        } else {
+            AcademicStatus::Failed
+        };
+
+        Ok(StudentCertificateReportCard {
+            student_id,
+            student_name,
+            student_number,
+            section_id: resolved_section_id,
+            class_name,
+            calendar_id,
+            academic_calendar_name: calendar_name,
+            certificate_type,
+            subjects: subject_results,
+            total_score,
+            max_possible_score,
+            overall_percentage,
+            rank_in_class: None,
+            rank_in_grade: None,
+            total_students_in_class: 0,
+            total_students_in_grade: 0,
+            status,
+            calculated_at: Utc::now(),
+        })
     }
 }

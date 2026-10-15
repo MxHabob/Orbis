@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,13 +48,22 @@ function getMfaUserId(response: unknown): string | undefined {
 export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale, setLocale, isArabic } = useI18n();
   const toast = useToast();
-  const { login, loginWithGoogle } = useAuth();
+  const {
+    login,
+    loginWithGoogle,
+    selectedInstitution,
+    institutions,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!selectedInstitution) {
+    return <Redirect href="/institution-select" />;
+  }
 
   const handleSignIn = async () => {
     const trimmedEmail = email.trim();
@@ -165,6 +174,18 @@ export default function SignInScreen() {
               <Text className="text-xl font-semibold tracking-tight text-foreground">
                 {t("auth_sign_in")}
               </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/institution-select")}
+                hitSlop={8}
+                className="min-h-11 justify-center"
+              >
+                <Text className="text-sm font-semibold text-primary">
+                  {institutions.length > 1
+                    ? t("auth_institution_switch")
+                    : `${t("auth_institution_current")}: ${isArabic && selectedInstitution.name_ar ? selectedInstitution.name_ar : selectedInstitution.name}`}
+                </Text>
+              </Pressable>
 
               <Input
                 placeholder={t("auth_username_or_email")}
@@ -234,21 +255,7 @@ export default function SignInScreen() {
                 size="md"
               />
 
-              <View className="items-center gap-1 pt-1">
-                <View className="flex-row items-center gap-1">
-                  <Text className="text-sm text-muted-foreground">
-                    {t("auth_no_account")}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => router.push("/(auth)/register")}
-                    hitSlop={8}
-                  >
-                    <Text className="text-sm font-semibold text-primary">
-                      {t("auth_register_title")}
-                    </Text>
-                  </Pressable>
-                </View>
+              <View className="items-center pt-1">
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => router.push("/(auth)/explore")}
