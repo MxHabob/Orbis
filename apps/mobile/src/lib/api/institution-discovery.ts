@@ -8,6 +8,7 @@ export interface DirectoryInstitution {
   organization_id: string;
   name: string;
   name_ar: string | null;
+  logo_url?: string | null;
   slug: string;
   deployment_id: string;
   deployment_name: string;
@@ -135,12 +136,30 @@ function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
     typeof institution.organization_id === "string" &&
     typeof institution.name === "string" &&
     (typeof institution.name_ar === "string" || institution.name_ar === null) &&
+    (institution.logo_url === undefined ||
+      institution.logo_url === null ||
+      (typeof institution.logo_url === "string" &&
+        isPublicImageUrl(institution.logo_url))) &&
     typeof institution.slug === "string" &&
     typeof institution.deployment_id === "string" &&
     typeof institution.deployment_name === "string" &&
     typeof institution.endpoint_url === "string" &&
     isPublicEndpoint(institution.endpoint_url)
   );
+}
+
+function isPublicImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      !!url.hostname &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
 }
 
 function isPublicEndpoint(value: string): boolean {

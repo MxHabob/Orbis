@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
   import { createMutation, createQuery } from "@tanstack/svelte-query";
-  import { api, queryClient } from "$lib/api";
+  import { api, queryClient, queryKeys } from "$lib/api";
   import type { MulverseDeploymentDto, MulverseEndpointDto } from "$lib/api";
   import { toast } from "@orbis/ui";
   import { Badge } from "@orbis/ui/badge";
@@ -10,6 +10,9 @@
   import { Input } from "@orbis/ui/input";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+  import { ArchiveBox, Cloud, Database, Merge, Sparkles } from "@orbis/icons";
+  import { resolve } from "$app/paths";
+  import { localizeHref } from "$lib/paraglide/runtime";
 
   function showMutationError(error: unknown) {
     toast.error(error instanceof Error ? error.message : String(error));
@@ -33,6 +36,27 @@
     queryFn: () => api.getMulverseConnection(),
     retry: false,
   }));
+
+  const integrations = createQuery(() => ({
+    queryKey: queryKeys.integration.list(data.orgId),
+    queryFn: () => api.listIntegrations(),
+    retry: false,
+  }));
+
+  function isIntegrationEnabled(...providerNames: string[]): boolean {
+    const normalizedNames = providerNames.map((name) => name.toLowerCase().replaceAll("_", "-"));
+    return integrations.data?.some(
+      (integration) =>
+        integration.is_enabled &&
+        normalizedNames.includes(integration.provider_name.toLowerCase().replaceAll("_", "-")),
+    ) ?? false;
+  }
+
+  const orbisAiEnabled = $derived(isIntegrationEnabled("orbis-ai"));
+  const orbisMobileEnabled = $derived(
+    isIntegrationEnabled("orbis-mobile") || connection.data?.connected === true,
+  );
+  const mulverseCloudEnabled = $derived(isIntegrationEnabled("mulverse-cloud"));
 
   const deployments = createQuery(() => ({
     queryKey: ["mulverseDeployments", data.orgId],
@@ -188,30 +212,138 @@
 </script>
 
 <svelte:head>
-  <title>{m.settings_orbis_mobile_title()} | Orbis</title>
+  <title>{m.settings_mulverse_title()} | Orbis</title>
 </svelte:head>
 
 <div class="h-full w-full overflow-y-auto bg-background">
   <div class="mx-auto flex w-full max-w-7xl flex-col gap-7 px-5 py-7 lg:px-8">
     <header class="flex flex-col justify-between gap-5 border-b border-border pb-6 sm:flex-row sm:items-center">
       <div class="min-w-0">
-          <h1 class="text-2xl font-semibold tracking-tight text-foreground">{m.settings_orbis_mobile_title()}</h1>
-          <p class="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            {m.settings_orbis_mobile_description()}
-          </p>
+        <h1 class="text-2xl font-semibold tracking-tight text-foreground">{m.settings_mulverse_title()}</h1>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+          {m.settings_mulverse_description()}
+        </p>
       </div>
-      {#if connection.isPending}
-        <Skeleton class="h-7 w-24 rounded-full" aria-hidden="true" />
-      {:else if !connection.isError}
-        <Badge variant={connection.data?.connected ? "success" : "secondary"} class="shrink-0 self-start px-3 py-1.5 text-xs sm:self-center">
-          {connection.data?.connected ? m.settings_orbis_mobile_connected() : m.settings_orbis_mobile_connect()}
-        </Badge>
-      {/if}
     </header>
 
-    {#if connection.isPending}
+    <section class="space-y-4" aria-labelledby="mulverse-products-heading">
+      <div>
+        <h2 id="mulverse-products-heading" class="text-lg font-semibold tracking-tight text-foreground">
+          {m.settings_mulverse_products_title()}
+        </h2>
+        <p class="mt-1 text-sm leading-6 text-muted-foreground">
+          {m.settings_mulverse_products_description()}
+        </p>
+      </div>
+
+      {#if integrations.isPending}
+        <div class="grid gap-4 md:grid-cols-3" aria-label={m.common_loading()}>
+          {#each [0, 1, 2] as item (item)}
+            <Card class="h-32 animate-pulse border-border/50 bg-muted/40" />
+          {/each}
+        </div>
+      {:else if integrations.isError}
+        <Card class="flex-row flex-wrap items-center justify-between gap-4 border-destructive/30 bg-destructive/5 p-4" role="alert">
+          <p class="text-sm text-destructive">{integrations.error.message}</p>
+          <Button variant="outline" size="sm" onclick={() => integrations.refetch()}>
+            {m.common_retry()}
+          </Button>
+        </Card>
+      {:else if orbisAiEnabled || orbisMobileEnabled || mulverseCloudEnabled}
+        <div class="grid gap-4 md:grid-cols-3">
+          {#if orbisAiEnabled}
+            <a href={resolve(localizeHref(`/${data.orgId}/ai-center/integrations`))} class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Card class="h-full gap-3 border-border/50 bg-card/60 p-5 shadow-xs transition-colors hover:border-primary/40">
+                <div class="flex items-center gap-3">
+                  <Sparkles size={18} class="shrink-0 text-primary" />
+                  <h3 class="text-sm font-semibold text-foreground">{m.settings_mulverse_orbis_ai()}</h3>
+                </div>
+                <Badge variant="success" class="w-fit">{m.settings_mulverse_enabled()}</Badge>
+              </Card>
+            </a>
+          {/if}
+          {#if orbisMobileEnabled}
+            <a href="#mulverse-mobile-settings" class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Card class="h-full gap-3 border-border/50 bg-card/60 p-5 shadow-xs transition-colors hover:border-primary/40">
+                <div class="flex items-center gap-3">
+                  <Merge size={18} class="shrink-0 text-primary" />
+                  <h3 class="text-sm font-semibold text-foreground">{m.settings_mulverse_orbis_mobile()}</h3>
+                </div>
+                <Badge variant="success" class="w-fit">{m.settings_mulverse_enabled()}</Badge>
+              </Card>
+            </a>
+          {/if}
+          {#if mulverseCloudEnabled}
+            <a href={resolve(localizeHref(`/${data.orgId}/ai-center/integrations`))} class="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <Card class="h-full gap-3 border-border/50 bg-card/60 p-5 shadow-xs transition-colors hover:border-primary/40">
+                <div class="flex items-center gap-3">
+                  <Cloud size={18} class="shrink-0 text-primary" />
+                  <h3 class="text-sm font-semibold text-foreground">{m.settings_mulverse_cloud()}</h3>
+                </div>
+                <Badge variant="success" class="w-fit">{m.settings_mulverse_enabled()}</Badge>
+              </Card>
+            </a>
+          {/if}
+        </div>
+      {:else}
+        <Card class="flex flex-col items-start gap-3 border-dashed border-border bg-muted/20 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p class="max-w-2xl text-sm leading-6 text-muted-foreground">{m.settings_mulverse_no_products()}</p>
+          <Button href={localizeHref(`/${data.orgId}/ai-center/integrations`)} variant="outline" size="sm" class="shrink-0">
+            {m.settings_mulverse_browse_integrations()}
+          </Button>
+        </Card>
+      {/if}
+    </section>
+
+    <section class="space-y-4" aria-labelledby="mulverse-upcoming-heading">
+      <div>
+        <h2 id="mulverse-upcoming-heading" class="text-lg font-semibold tracking-tight text-foreground">
+          {m.settings_mulverse_upcoming_title()}
+        </h2>
+        <p class="mt-1 text-sm leading-6 text-muted-foreground">
+          {m.settings_mulverse_upcoming_description()}
+        </p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-3">
+        <Card class="gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+          <div class="flex items-start gap-3">
+            <Database size={19} class="mt-0.5 shrink-0 text-muted-foreground" />
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">{m.settings_mulverse_database_title()}</h3>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">{m.settings_mulverse_database_description()}</p>
+            </div>
+          </div>
+          <Badge variant="secondary" class="mt-auto w-fit">{m.settings_mulverse_coming_soon()}</Badge>
+        </Card>
+
+        <Card class="gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+          <div class="flex items-start gap-3">
+            <ArchiveBox size={19} class="mt-0.5 shrink-0 text-muted-foreground" />
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">{m.settings_mulverse_backups_title()}</h3>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">{m.settings_mulverse_backups_description()}</p>
+            </div>
+          </div>
+          <Badge variant="secondary" class="mt-auto w-fit">{m.settings_mulverse_coming_soon()}</Badge>
+        </Card>
+
+        <Card class="gap-4 border-border/50 bg-card/60 p-5 shadow-xs">
+          <div class="flex items-start gap-3">
+            <Cloud size={19} class="mt-0.5 shrink-0 text-muted-foreground" />
+            <div>
+              <h3 class="text-sm font-semibold text-foreground">{m.settings_mulverse_storage_title()}</h3>
+              <p class="mt-1 text-xs leading-5 text-muted-foreground">{m.settings_mulverse_storage_description()}</p>
+            </div>
+          </div>
+          <Badge variant="secondary" class="mt-auto w-fit">{m.settings_mulverse_coming_soon()}</Badge>
+        </Card>
+      </div>
+    </section>
+
+    {#if orbisMobileEnabled && connection.isPending}
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]" aria-label={m.common_loading()}>
-        <main class="min-w-0 space-y-5">
+        <main id="mulverse-mobile-settings" class="min-w-0 space-y-5">
           <Card class="gap-0 border-border/50 bg-card/60 shadow-xs">
             <div class="space-y-2 border-b border-border p-5 sm:p-6">
               <Skeleton class="h-4 w-2/5 rounded-sm" />
@@ -272,16 +404,16 @@
           </Card>
         </aside>
       </div>
-    {:else if connection.isError}
+    {:else if orbisMobileEnabled && connection.isError}
       <Card class="gap-4 border-destructive/30 bg-card p-5 shadow-xs">
         <p class="text-sm text-destructive">{connection.error.message}</p>
         <Button variant="outline" size="lg" onclick={() => connection.refetch()}>
           {m.common_retry()}
         </Button>
       </Card>
-    {:else}
+    {:else if orbisMobileEnabled}
       <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_19rem]">
-        <main class="min-w-0 space-y-5">
+        <main id="mulverse-mobile-settings" class="min-w-0 space-y-5">
           {#if !connection.data?.connected}
             <Card class="border-border/50 bg-card/60 shadow-xs">
               <div class="flex items-start gap-4 border-b border-border p-5 sm:p-6">
