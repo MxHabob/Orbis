@@ -19,6 +19,7 @@ import openrouter from "./openrouter/config";
 // ── App Imports ─────────────────────────────────────────────────
 import authen from "./authen/config";
 import orbisAi from "./orbis-ai/config";
+import orbisMobile from "./orbis-mobile/config";
 import hikvisionCamera from "./hikvision-camera/config";
 import smtpEmail from "./smtp-email/config";
 import whatsappBusiness from "./whatsapp-business/config";
@@ -55,6 +56,7 @@ export const apps: OrbisApp[] = [
   // Native & Core Apps
   authen,
   orbisAi,
+  orbisMobile,
   // AI Providers & LLMs
   geminiAi,
   openai,

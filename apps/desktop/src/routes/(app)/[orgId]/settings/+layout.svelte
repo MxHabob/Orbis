@@ -6,6 +6,8 @@ Now includes rooms and subjects (moved from academics).
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
+import { createQuery } from "@tanstack/svelte-query";
+import { api } from "$lib/api";
 import {
   AppNotification,
   ArchiveBox,
@@ -21,6 +23,7 @@ import {
   GlobeAlt,
   Keyframes,
   Lock,
+  Merge,
   Pin,
   ReceiptPercent,
   Scale,
@@ -38,6 +41,12 @@ let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
 
 const basePath = $derived(`/${data.orgId}/settings`);
+const orbisMobileIntegration = createQuery(() => ({
+  queryKey: ["integration-status", data.orgId, "orbis_mobile"],
+  queryFn: () => api.getIntegrationStatus("orbis_mobile"),
+  enabled: !!data.orgId,
+  staleTime: 30_000,
+}));
 
 const navGroups = $derived([
   {
@@ -53,6 +62,15 @@ const navGroups = $derived([
         label: m.common_nav_notifications(),
         icon: AppNotification,
       },
+      ...(orbisMobileIntegration.data?.connected
+        ? [
+            {
+              path: "orbis-mobile",
+              label: m.settings_nav_orbis_mobile(),
+              icon: Merge,
+            },
+          ]
+        : []),
       {
         path: "login-rules",
         label: m.settings_nav_login_rules(),

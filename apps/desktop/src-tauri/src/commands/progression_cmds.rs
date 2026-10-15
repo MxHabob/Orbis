@@ -4,7 +4,9 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_app::services::progression_service::StudentProgressionItem;
-use orbis_domain::entities::progression::{PromotionDecision, ProgressionJob, ProgressionJobStatus};
+use orbis_domain::entities::progression::{
+    ProgressionJob, ProgressionJobStatus, PromotionDecision,
+};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;

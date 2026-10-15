@@ -865,6 +865,15 @@ pub trait IntegrationRepository: Send + Sync {
         org_id: Uuid,
         provider_name: &str,
     ) -> Result<Option<IntegrationConfig>, DomainError>;
+    async fn find_configs_by_provider(
+        &self,
+        provider_name: &str,
+    ) -> Result<Vec<IntegrationConfig>, DomainError> {
+        let _ = provider_name;
+        Err(DomainError::Internal(
+            "Global integration lookup is not supported by this repository".to_owned(),
+        ))
+    }
     async fn delete_config(&self, config_id: Uuid) -> Result<(), DomainError>;
     async fn delete_by_provider(
         &self,

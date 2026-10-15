@@ -21,6 +21,21 @@ export const API_BASE_URL =
     default: "http://localhost:3000",
   });
 
+export function configureApiBaseUrl(baseUrl: string): void {
+  const parsedUrl = new URL(baseUrl);
+  const isDevelopmentLoopback =
+    __DEV__ &&
+    parsedUrl.protocol === "http:" &&
+    ["localhost", "127.0.0.1", "10.0.2.2"].includes(parsedUrl.hostname);
+  if (parsedUrl.protocol !== "https:" && !isDevelopmentLoopback) {
+    throw new Error("The selected Orbis server must use HTTPS.");
+  }
+  if (parsedUrl.username || parsedUrl.password || parsedUrl.search || parsedUrl.hash) {
+    throw new Error("The Orbis server URL contains unsupported components.");
+  }
+  api.client.setConfig({ baseUrl: parsedUrl.toString().replace(/\/+$/, "") });
+}
+
 export const api = createOrbisClient({
   baseUrl: API_BASE_URL,
   headers: async (): Promise<Record<string, string>> => {

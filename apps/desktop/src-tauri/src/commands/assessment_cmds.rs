@@ -4,8 +4,8 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use chrono::NaiveDate;
-use orbis_app::services::calculation_engine::AcademicCalculationEngine;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_app::services::calculation_engine::AcademicCalculationEngine;
 use orbis_domain::entities::academic_calculation::{
     CalculationPlan, CalculationPreview, OutcomePolicy,
 };
@@ -13,8 +13,8 @@ use orbis_domain::entities::academic_policy::{RankingScope, TiePolicy};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::State;
@@ -683,15 +683,17 @@ pub async fn assessment_preview_calculation(
     if let Some(policy) = settings.academic.outcome_policy.as_ref() {
         for output in &result.outputs {
             if output.unit == policy.unit {
-                outcomes.push(orbis_domain::entities::academic_calculation::CalculationOutputOutcome {
-                    output_name: output.name.clone(),
-                    outcome: AcademicCalculationEngine::evaluate_outcome(
-                        output.value,
-                        &output.unit,
-                        policy,
-                    )
-                    .map_err(|error| error.to_string())?,
-                });
+                outcomes.push(
+                    orbis_domain::entities::academic_calculation::CalculationOutputOutcome {
+                        output_name: output.name.clone(),
+                        outcome: AcademicCalculationEngine::evaluate_outcome(
+                            output.value,
+                            &output.unit,
+                            policy,
+                        )
+                        .map_err(|error| error.to_string())?,
+                    },
+                );
             }
         }
     }
@@ -753,10 +755,7 @@ pub async fn assessment_calculate_rankings(
         scores.push((uid, item.score));
     }
 
-    let ranked = AcademicCalculationEngine::compute_rankings(
-        &scores,
-        settings.academic.tie_policy,
-    );
+    let ranked = AcademicCalculationEngine::compute_rankings(&scores, settings.academic.tie_policy);
     let dtos = ranked
         .into_iter()
         .map(|(id, rank)| {
@@ -765,7 +764,9 @@ pub async fn assessment_calculate_rankings(
                     id: id.to_string(),
                     rank,
                 })
-                .ok_or_else(|| "Rank value cannot be represented by the Desktop contract".to_string())
+                .ok_or_else(|| {
+                    "Rank value cannot be represented by the Desktop contract".to_string()
+                })
         })
         .collect::<Result<Vec<_>, _>>()?;
 

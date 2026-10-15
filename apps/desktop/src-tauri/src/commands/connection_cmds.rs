@@ -4,9 +4,8 @@
 //! They read/write the connection config file, validate endpoints, and perform health checks.
 
 use crate::connection::{
-    ConnectionConfig, ConnectionMode, ConnectionValidation, DirectConfig, DirectDatabaseEngine,
-    ApiConfig, LocalConfig,
-    RemoteHealthResult,
+    ApiConfig, ConnectionConfig, ConnectionMode, ConnectionValidation, DirectConfig,
+    DirectDatabaseEngine, LocalConfig, RemoteHealthResult,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -92,16 +91,16 @@ pub async fn connection_set_config(
             ConnectionConfig {
                 mode: ConnectionMode::Api,
                 local: None,
-                api: Some(ApiConfig {
-                    server_url: url,
-                }),
+                api: Some(ApiConfig { server_url: url }),
                 direct: None,
                 settings: existing.settings,
             }
         }
         "direct" => {
             if database_engine.as_deref().unwrap_or("postgres") != "postgres" {
-                return Err("Direct database connections currently support PostgreSQL only".to_string());
+                return Err(
+                    "Direct database connections currently support PostgreSQL only".to_string(),
+                );
             }
             let direct = DirectConfig {
                 engine: DirectDatabaseEngine::Postgres,
@@ -116,7 +115,8 @@ pub async fn connection_set_config(
                     .map(|config| config.credential_id.clone())
                     .unwrap_or_else(|| uuid::Uuid::new_v4().to_string()),
             };
-            if let Some(password) = password.filter(|p| !p.is_empty() && p != "••••••••") {
+            if let Some(password) = password.filter(|p| !p.is_empty() && p != "••••••••")
+            {
                 ConnectionConfig::save_direct_password(&direct.credential_id, &password)?;
             }
             ConnectionConfig {
@@ -203,7 +203,9 @@ pub async fn connection_connect(
         ConnectionMode::Local | ConnectionMode::Direct => {
             let db_url = config
                 .resolve_database_url(&conn_state.app_data_dir)?
-                .ok_or_else(|| "No database URL is configured for this connection mode".to_string())?;
+                .ok_or_else(|| {
+                    "No database URL is configured for this connection mode".to_string()
+                })?;
             let mode = match config.mode {
                 ConnectionMode::Local => "local",
                 ConnectionMode::Direct => "direct",
@@ -214,8 +216,8 @@ pub async fn connection_connect(
                 &db_url,
                 config.mode == ConnectionMode::Local,
             )
-                .await
-                .map_err(|e| format!("Failed to initialize {mode} database connection: {e}"))?;
+            .await
+            .map_err(|e| format!("Failed to initialize {mode} database connection: {e}"))?;
             app.manage(app_state);
             Ok(serde_json::json!({
                 "connected": true,

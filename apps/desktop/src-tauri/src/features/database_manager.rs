@@ -318,12 +318,24 @@ pub async fn get_database_status(
             let connected = active_db.is_some();
             Ok(DatabaseStatusDto {
                 mode: "direct".to_string(),
-                state: if connected { "connected" } else { "disconnected" }.to_string(),
+                state: if connected {
+                    "connected"
+                } else {
+                    "disconnected"
+                }
+                .to_string(),
                 database_name: direct.database_name.clone(),
-                connection_target: format!("{}:{}/{}", direct.host, direct.port, direct.database_name),
+                connection_target: format!(
+                    "{}:{}/{}",
+                    direct.host, direct.port, direct.database_name
+                ),
                 file_size_bytes: None,
                 file_size_formatted: None,
-                schema_version: if connected { "connected".to_string() } else { "unknown".to_string() },
+                schema_version: if connected {
+                    "connected".to_string()
+                } else {
+                    "unknown".to_string()
+                },
                 applied_migrations_count: 0,
                 total_migrations_count,
                 pending_migrations: vec![],

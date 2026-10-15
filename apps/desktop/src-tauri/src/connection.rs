@@ -5,10 +5,10 @@
 //!
 //! This module works before and during database connection lifecycle.
 
+use keyring::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tracing::info;
-use keyring::{Entry, Error as KeyringError};
 use url::Url;
 
 const CONNECTION_SECRET_SERVICE: &str = "com.mulverse.orbis.database";
@@ -186,7 +186,9 @@ impl ConnectionConfig {
                         if let Ok(normalized) = serde_json::to_string_pretty(&config) {
                             if normalized != contents {
                                 if let Err(error) = std::fs::write(&path, normalized) {
-                                    tracing::warn!("Could not remove legacy connection fields from config: {error}");
+                                    tracing::warn!(
+                                        "Could not remove legacy connection fields from config: {error}"
+                                    );
                                 }
                             }
                         }
@@ -299,7 +301,9 @@ impl ConnectionConfig {
         let entry = Entry::new(CONNECTION_SECRET_SERVICE, credential_id)
             .map_err(|e| format!("Unable to access the operating system credential store: {e}"))?;
         entry.set_password(password).map_err(|e| {
-            format!("Unable to save database password in the operating system credential store: {e}")
+            format!(
+                "Unable to save database password in the operating system credential store: {e}"
+            )
         })
     }
 
@@ -387,7 +391,8 @@ impl ConnectionConfig {
                 _ => ConnectionValidation {
                     is_valid: false,
                     mode: "direct".to_string(),
-                    message: "Host, port, database, username, and saved credentials are required".to_string(),
+                    message: "Host, port, database, username, and saved credentials are required"
+                        .to_string(),
                     resolved_url: None,
                     resolved_path: None,
                 },
@@ -538,10 +543,7 @@ mod tests {
         }"#;
         let config: ConnectionConfig = serde_json::from_str(legacy).unwrap();
         assert_eq!(config.mode, ConnectionMode::Api);
-        assert_eq!(
-            config.remote_server_url(),
-            Some("https://school.example")
-        );
+        assert_eq!(config.remote_server_url(), Some("https://school.example"));
         let serialized = serde_json::to_string(&config).unwrap();
         assert!(!serialized.contains("should-not-be-retained"));
         assert!(!serialized.contains("desktop_user"));

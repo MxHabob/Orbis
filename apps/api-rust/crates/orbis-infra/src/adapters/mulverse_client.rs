@@ -153,6 +153,7 @@ impl MulverseClient {
             .user_agent("Orbis-Desktop/1.0")
             .timeout(REQUEST_TIMEOUT)
             .connect_timeout(Duration::from_secs(10))
+            .redirect(reqwest::redirect::Policy::none())
             .build()
             .map_err(|e| format!("Failed to create Mulverse HTTP client: {e}"))?;
 

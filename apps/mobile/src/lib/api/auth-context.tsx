@@ -22,7 +22,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { api } from "./client";
+import { api, configureApiBaseUrl } from "./client";
 import {
   deleteSecureItem,
   getSecureItem,
@@ -334,14 +334,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const restoreSession = useCallback(async () => {
     setIsInitializing(true);
     try {
-      const [savedToken, savedUserStr, savedCtxStr, savedSetup] =
+      const [
+        savedToken,
+        savedUserStr,
+        savedCtxStr,
+        savedSetup,
+        savedApiBaseUrl,
+      ] =
         await Promise.all([
           getSecureItem(STORAGE_KEYS.TOKEN),
           getSecureItem(STORAGE_KEYS.USER),
           getSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
           getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
+          getSecureItem(STORAGE_KEYS.API_BASE_URL),
         ]);
 
+      if (savedApiBaseUrl) {
+        configureApiBaseUrl(savedApiBaseUrl);
+      }
       if (savedToken) {
         setToken(savedToken);
         let restoredUser: UserDto | null = null;

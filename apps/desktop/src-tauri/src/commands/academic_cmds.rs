@@ -577,9 +577,7 @@ pub async fn academic_update_section_subject(
 ) -> Result<ApiResponse<SectionSubjectDto>, String> {
     let ctx = make_ctx(&state);
     let id = Uuid::parse_str(&request.id).map_err(|_| "Invalid SectionSubject ID")?;
-    let instructor_id = request
-        .instructor_id
-        .and_then(|t| Uuid::parse_str(&t).ok());
+    let instructor_id = request.instructor_id.and_then(|t| Uuid::parse_str(&t).ok());
     let assistant_instructor_id = request
         .assistant_instructor_id
         .and_then(|u| Uuid::parse_str(&u).ok());
@@ -633,7 +631,11 @@ pub async fn academic_list_section_subjects(
         .list_section_subjects(ctx.tenant_id, filter)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(items.items.into_iter().map(section_subject_dto).collect()))
+    Ok(ok(items
+        .items
+        .into_iter()
+        .map(section_subject_dto)
+        .collect()))
 }
 
 #[tauri::command]

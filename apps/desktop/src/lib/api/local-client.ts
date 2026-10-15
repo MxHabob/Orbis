@@ -1263,7 +1263,6 @@ export class LocalClient implements OrbisApiClient {
       await invoke("integration_toggle", { providerName, isEnabled }),
     );
   }
-
   // ── Templates ───────────────────────────────────────────────
   async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
     return unwrap(await invoke("template_create", { input: req }));
