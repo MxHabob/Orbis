@@ -281,6 +281,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         assessment_cmds::assessment_get_student_annual_results,
         assessment_cmds::assessment_get_class_term_results,
         assessment_cmds::assessment_get_class_annual_results,
+        assessment_cmds::assessment_get_student_certificate_results,
         // ── Exam ────────────────────────────────────────────────
         exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,
@@ -522,6 +523,7 @@ fn required_feature(command: &str) -> Option<&'static str> {
                 | "assessment_list_student_behavior_records"
                 | "assessment_get_student_term_results"
                 | "assessment_get_student_annual_results"
+                | "assessment_get_student_certificate_results"
         )
     {
         Some("students")
