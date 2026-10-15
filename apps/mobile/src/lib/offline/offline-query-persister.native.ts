@@ -40,7 +40,9 @@ async function openEncryptedDatabase(): Promise<SQLite.SQLiteDatabase> {
       cipher_version?: string;
     }>("PRAGMA cipher_version");
     if (!cipher?.cipher_version) {
-      throw new Error("SQLCipher is not enabled in this app build.");
+      throw new Error(
+        "SQLCipher is not enabled in this native app build. Rebuild and reinstall the app with the expo-sqlite useSQLCipher config plugin enabled; Expo Go does not support this encrypted cache.",
+      );
     }
 
     await database.execAsync(`

@@ -26,6 +26,17 @@ cancelling an animation can leave the final transform applied. See the
 [NativeWind Expo 57 compatibility notes](https://github.com/nativewind/nativewind/blob/main/docs/rc-compatibility.md)
 before relying on cancellation behavior.
 
+## Offline cache and keyboard
+
+The native offline query cache is encrypted with SQLCipher. The
+`expo-sqlite` config plugin enables SQLCipher, but this is a native build-time
+setting: after changing it or adding a native dependency, rebuild and reinstall
+the app with `bun run android:device` from `apps/mobile`. Expo Go does not
+include SQLCipher and cannot restore the encrypted cache.
+
+`KeyboardProvider` is mounted globally in `AppProviders`, so keyboard
+controller hooks and components are available throughout every route.
+
 ## Over-the-air updates
 
 The version row in Preferences uses `expo-updates` to check and download an
