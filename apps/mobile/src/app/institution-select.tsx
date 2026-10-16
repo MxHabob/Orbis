@@ -3,23 +3,19 @@ import {
   CheckCircle,
   Language,
   Logo,
-  MapPin,
-  Search,
+  Pin,
 } from "@orbis/icons/native";
+import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import {
   FlatList,
   ImageBackground,
-  KeyboardAvoidingView,
   type ListRenderItemInfo,
-  Platform,
   Pressable,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -27,17 +23,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input } from "@/components/ui/input";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
+import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { useToast } from "@/components/ui/toast";
@@ -50,38 +38,36 @@ import {
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
 
-const INSTITUTION_DRAWER_SNAP_POINTS = [0.52, 0.88] as const;
-
-interface InstitutionCardProps {
+interface InstitutionTileProps {
   institution: DirectoryInstitution;
   name: string;
-  cardWidth: number;
   isCurrent: boolean;
   isConnecting: boolean;
   disabled: boolean;
   currentLabel: string;
   primaryColor: string;
   onSelect: (institution: DirectoryInstitution) => void;
+  width: number;
 }
 
-const InstitutionCard = memo(function InstitutionCard({
+const InstitutionTile = memo(function InstitutionTile({
   institution,
   name,
-  cardWidth,
   isCurrent,
   isConnecting,
   disabled,
   currentLabel,
   primaryColor,
   onSelect,
-}: InstitutionCardProps) {
+  width,
+}: InstitutionTileProps) {
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
+  const logoUrl = institution.logo_url;
+  const initials = Array.from(name.trim())[0]?.toLocaleUpperCase() ?? "?";
   const handlePress = useCallback(
     () => onSelect(institution),
     [institution, onSelect],
   );
-  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
-  const logoUrl = institution.logo_url;
-  const initials = Array.from(name.trim())[0]?.toLocaleUpperCase() ?? "?";
 
   return (
     <Pressable
@@ -94,17 +80,15 @@ const InstitutionCard = memo(function InstitutionCard({
       }}
       disabled={disabled}
       onPress={handlePress}
-      className={`mx-1.5 h-24 flex-row items-center gap-3 rounded-2xl border px-3 ${
-        isCurrent
-          ? "border-primary/50 bg-primary/5"
-          : "border-border bg-background"
+      className={`min-h-[164px] items-start rounded-2xl border p-3 ${
+        isCurrent ? "border-primary/50 bg-primary/5" : "border-border bg-card"
       }`}
       style={({ pressed }) => [
-        { width: cardWidth },
+        { width },
         pressed && !disabled ? { opacity: 0.82 } : undefined,
       ]}
     >
-      <View className="h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card">
+      <View className="mb-3 h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
         {logoUrl && failedLogoUrl !== logoUrl ? (
           <Image
             source={{ uri: logoUrl }}
@@ -119,58 +103,80 @@ const InstitutionCard = memo(function InstitutionCard({
         )}
       </View>
 
-      <View className="min-w-0 flex-1 gap-1">
+      <View className="w-full flex-1">
         <Text
           numberOfLines={2}
-          className="text-start text-[15px] leading-5 font-semibold text-foreground"
+          className="text-start text-sm leading-5 font-semibold text-foreground"
         >
           {name}
         </Text>
         <Text
           numberOfLines={1}
-          className="text-start text-xs leading-4 text-muted-foreground"
+          className="mt-1 text-start text-xs leading-4 text-muted-foreground"
         >
-          {isCurrent
-            ? `${institution.deployment_name} · ${currentLabel}`
-            : institution.deployment_name}
+          {institution.deployment_name}
         </Text>
       </View>
 
-      <View className="h-11 w-11 shrink-0 items-center justify-center">
+      <View className="absolute end-2 top-2 h-8 w-8 items-center justify-center">
         {isConnecting ? (
           <LoadingIndicator size="sm" />
         ) : isCurrent ? (
-          <CheckCircle size={21} color={primaryColor} />
-        ) : (
-          <View className="h-2 w-2 rounded-full bg-border" />
-        )}
+          <CheckCircle size={20} color={primaryColor} />
+        ) : null}
       </View>
+
+      {isCurrent ? (
+        <Text className="mt-2 text-xs font-medium text-primary">
+          {currentLabel}
+        </Text>
+      ) : null}
     </Pressable>
   );
 });
 
-function InstitutionCardSkeleton({ cardWidth }: { cardWidth: number }) {
+function InstitutionTileSkeleton({ width }: { width: number }) {
   return (
     <View
-      className="mx-1.5 h-24 flex-row items-center gap-3 rounded-2xl border border-border bg-background px-3"
-      style={{ width: cardWidth }}
-      accessibilityLabel="Loading institutions"
+      accessibilityLabel="Loading institution"
       accessibilityRole="progressbar"
+      className="min-h-[164px] rounded-2xl border border-border bg-card p-3"
+      style={{ width }}
     >
-      <Skeleton width={56} height={56} borderRadius={12} />
-      <View className="flex-1 gap-2">
-        <Skeleton width="72%" height={15} borderRadius={6} />
-        <Skeleton width="48%" height={11} borderRadius={6} />
+      <Skeleton width={56} height={56} borderRadius={16} />
+      <View className="mt-3 gap-2">
+        <Skeleton width="76%" height={14} borderRadius={6} />
+        <Skeleton width="54%" height={11} borderRadius={6} />
       </View>
     </View>
   );
+}
+
+function haversineKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
 }
 
 export default function InstitutionSelectScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const institutionCardWidth = Math.min(Math.max(windowWidth - 56, 240), 320);
+  const tileWidth = Math.max((windowWidth - 44) / 2, 132);
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
   const toast = useToast();
@@ -181,65 +187,23 @@ export default function InstitutionSelectScreen() {
     selectInstitution,
   } = useAuth();
   const [search, setSearch] = useState("");
-  const [directoryInstitutions, setDirectoryInstitutions] = useState<
-    DirectoryInstitution[]
-  >([]);
-  const [isLoadingDirectory, setIsLoadingDirectory] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [drawerVisible, setDrawerVisible] = useState(true);
-  const directoryRequest = useRef<AbortController | null>(null);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
-  const loadInstitutions = useCallback(
-    async (refresh = false) => {
-      directoryRequest.current?.abort();
-      const controller = new AbortController();
-      directoryRequest.current = controller;
-      setError(null);
-      if (refresh) {
-        setIsLoadingDirectory(false);
-        setIsRefreshing(true);
-      } else {
-        setIsLoadingDirectory(true);
-      }
-
-      try {
-        const institutions = await searchInstitutionDirectory(
-          undefined,
-          controller.signal,
-        );
-        if (!controller.signal.aborted) {
-          setDirectoryInstitutions(institutions);
-        }
-      } catch (caught: unknown) {
-        if (controller.signal.aborted) return;
-        console.error("[Institution Select] Directory load failed.", caught);
-        setError(t("auth_institution_search_error"));
-      } finally {
-        if (directoryRequest.current === controller) {
-          directoryRequest.current = null;
-          setIsLoadingDirectory(false);
-          setIsRefreshing(false);
-        }
-      }
-    },
-    [t],
-  );
-
-  useEffect(() => {
-    if (!isInitializing) {
-      void loadInstitutions();
-    }
-    return () => {
-      directoryRequest.current?.abort();
-      directoryRequest.current = null;
-    };
-  }, [isInitializing, loadInstitutions]);
+  const directoryQuery = useQuery({
+    queryKey: ["institution-directory"],
+    queryFn: ({ signal }) => searchInstitutionDirectory(undefined, signal),
+    enabled: !isInitializing,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const visibleInstitutions = useMemo(() => {
     const institutionsByDeploymentId = new Map<string, DirectoryInstitution>();
-    for (const institution of directoryInstitutions) {
+    for (const institution of directoryQuery.data ?? []) {
       institutionsByDeploymentId.set(institution.deployment_id, institution);
     }
     for (const institution of savedInstitutions) {
@@ -247,7 +211,7 @@ export default function InstitutionSelectScreen() {
     }
 
     const query = search.trim().toLocaleLowerCase();
-    return [...institutionsByDeploymentId.values()].filter(
+    const filtered = [...institutionsByDeploymentId.values()].filter(
       (institution) =>
         !query ||
         [
@@ -257,12 +221,33 @@ export default function InstitutionSelectScreen() {
           institution.deployment_name,
         ].some((value) => value.toLocaleLowerCase().includes(query)),
     );
-  }, [directoryInstitutions, savedInstitutions, search]);
+
+    if (!userLocation) return filtered;
+
+    return filtered
+      .map((institution) => {
+        if (institution.latitude == null || institution.longitude == null) {
+          return { institution, distanceKm: Number.POSITIVE_INFINITY };
+        }
+
+        return {
+          institution,
+          distanceKm: haversineKm(
+            userLocation.latitude,
+            userLocation.longitude,
+            institution.latitude,
+            institution.longitude,
+          ),
+        };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .map(({ institution }) => institution);
+  }, [directoryQuery.data, savedInstitutions, search, userLocation]);
 
   const connectInstitution = useCallback(
     async (institution: DirectoryInstitution) => {
       setConnectingId(institution.deployment_id);
-      setError(null);
+      setConnectionError(null);
       try {
         await checkInstitutionConnection(institution);
         await selectInstitution(institution);
@@ -271,7 +256,7 @@ export default function InstitutionSelectScreen() {
       } catch (caught: unknown) {
         console.error("[Institution Select] Connection failed.", caught);
         const message = t("auth_institution_connection_error");
-        setError(message);
+        setConnectionError(message);
         toast.error(message);
       } finally {
         setConnectingId(null);
@@ -281,54 +266,91 @@ export default function InstitutionSelectScreen() {
   );
 
   const renderInstitution = useCallback(
-    ({ item }: ListRenderItemInfo<DirectoryInstitution>) => {
-      const name = isArabic && item.name_ar ? item.name_ar : item.name;
-      return (
-        <InstitutionCard
-          institution={item}
-          name={name}
-          cardWidth={institutionCardWidth}
-          isCurrent={selectedInstitution?.deployment_id === item.deployment_id}
-          isConnecting={connectingId === item.deployment_id}
-          disabled={connectingId !== null}
-          currentLabel={t("auth_institution_current")}
-          primaryColor={theme.primary}
-          onSelect={connectInstitution}
-        />
-      );
-    },
+    ({ item }: ListRenderItemInfo<DirectoryInstitution>) => (
+      <InstitutionTile
+        institution={item}
+        name={isArabic && item.name_ar ? item.name_ar : item.name}
+        isCurrent={selectedInstitution?.deployment_id === item.deployment_id}
+        isConnecting={connectingId === item.deployment_id}
+        disabled={connectingId !== null}
+        currentLabel={t("auth_institution_current")}
+        primaryColor={theme.primary}
+        onSelect={connectInstitution}
+        width={tileWidth}
+      />
+    ),
     [
       connectInstitution,
       connectingId,
-      institutionCardWidth,
       isArabic,
       selectedInstitution?.deployment_id,
       t,
       theme.primary,
+      tileWidth,
     ],
   );
 
-  const renderEmpty = useCallback(() => {
-    if (isInitializing || isLoadingDirectory) {
-      return <InstitutionCardSkeleton cardWidth={institutionCardWidth} />;
+  const requestNearbyLocation = useCallback(async () => {
+    if (userLocation) {
+      setUserLocation(null);
+      return;
     }
 
-    if (error) {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        toast.error(t("auth_institution_location_error"));
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setUserLocation({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+      });
+    } catch (caught: unknown) {
+      console.warn(
+        "[Institution Select] Unable to read device location.",
+        caught,
+      );
+      toast.error(t("auth_institution_location_error"));
+    }
+  }, [t, toast, userLocation]);
+
+  const toggleLanguage = useCallback(() => {
+    void setLocale(locale === "ar" ? "en" : "ar");
+  }, [locale, setLocale]);
+
+  const isLoading = isInitializing || directoryQuery.isPending;
+  const directoryError = directoryQuery.isError
+    ? t("auth_institution_search_error")
+    : null;
+
+  const renderEmpty = useCallback(() => {
+    if (isLoading) {
       return (
-        <View
-          className="items-center justify-center gap-4 px-5"
-          style={{ ...styles.emptyState, width: institutionCardWidth }}
-        >
+        <View className="flex-row gap-3">
+          <InstitutionTileSkeleton width={tileWidth} />
+          <InstitutionTileSkeleton width={tileWidth} />
+        </View>
+      );
+    }
+
+    if (directoryError) {
+      return (
+        <View className="items-center gap-4 px-5 py-8">
           <Text
             accessibilityRole="alert"
             className="text-center text-sm leading-5 text-destructive"
           >
-            {error}
+            {directoryError}
           </Text>
           <Button
             title={t("common_retry")}
             variant="outline"
-            onPress={() => void loadInstitutions()}
+            onPress={() => void directoryQuery.refetch()}
           />
         </View>
       );
@@ -338,21 +360,10 @@ export default function InstitutionSelectScreen() {
       <EmptyState
         icon={BuildingOffice}
         title={t("auth_institution_no_matches")}
-        style={{ ...styles.emptyState, width: institutionCardWidth }}
+        style={styles.emptyState}
       />
     );
-  }, [
-    error,
-    institutionCardWidth,
-    isInitializing,
-    isLoadingDirectory,
-    loadInstitutions,
-    t,
-  ]);
-
-  const toggleLanguage = useCallback(() => {
-    void setLocale(locale === "ar" ? "en" : "ar");
-  }, [locale, setLocale]);
+  }, [directoryError, directoryQuery, isLoading, t, tileWidth]);
 
   return (
     <ImageBackground
@@ -372,144 +383,158 @@ export default function InstitutionSelectScreen() {
         style={StyleSheet.absoluteFill}
       />
       <ThemedStatusBar backgroundColor="transparent" style="light" />
-      <View style={[styles.brandRow, { paddingTop: insets.top + 8 }]}>
-        <View className="flex-row items-center gap-2">
-          <Logo size={25} color="#FFFFFF" dotColor="#A821D9" />
-          <Text className="text-lg font-bold tracking-tight text-white">
-            Orbis
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
-          }
-          onPress={toggleLanguage}
-          hitSlop={8}
-          className="absolute end-5 min-h-11 flex-row items-center gap-2 rounded-full border border-white/30 bg-black/10 px-3"
-        >
-          <Language size={15} color="#FFFFFF" />
-          <Text className="text-sm font-medium text-white">
-            {locale === "ar" ? "English" : "العربية"}
-          </Text>
-        </Pressable>
-      </View>
-      {!drawerVisible ? (
-        <Button
-          title={t("auth_institution_search_title")}
-          fullWidth
-          onPress={() => setDrawerVisible(true)}
-          style={styles.reopenDrawer}
-        />
-      ) : null}
-      <Drawer
-        visible={drawerVisible}
-        onClose={() => setDrawerVisible(false)}
-        snapPoints={INSTITUTION_DRAWER_SNAP_POINTS}
-      >
-        <DrawerContent>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-            style={styles.drawerBody}
+      <View className="flex-1" style={{ paddingTop: insets.top + 8 }}>
+        <View className="mb-5 h-11 flex-row items-center justify-between px-5">
+          <View className="flex-row items-center gap-2">
+            <Logo size={25} color="#FFFFFF" dotColor="#A821D9" />
+            <Text className="text-lg font-bold tracking-tight text-white">
+              Orbis
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
+            }
+            onPress={toggleLanguage}
+            hitSlop={8}
+            className="min-h-11 flex-row items-center gap-2 rounded-full border border-white/30 bg-black/10 px-3"
           >
-            <DrawerHeader>
-              <DrawerTitle>{t("auth_institution_search_title")}</DrawerTitle>
-              <DrawerDescription>
-                {t("auth_institution_search_hint")}
-              </DrawerDescription>
-            </DrawerHeader>
-            <ScrollView
-              style={styles.drawerScroll}
-              contentContainerStyle={styles.drawerContent}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="on-drag"
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={isRefreshing}
-                  onRefresh={() => void loadInstitutions(true)}
-                  tintColor={theme.primary}
-                  colors={[theme.primary]}
-                  progressBackgroundColor={theme.background}
-                />
-              }
-            >
-              <Input
-                accessibilityLabel={t("auth_institution_filter_label")}
-                placeholder={t("auth_institution_search_placeholder")}
-                value={search}
-                onChangeText={setSearch}
-                icon={<Search size={18} color={theme.textMuted} />}
-                autoCapitalize="none"
-                autoCorrect={false}
-                returnKeyType="search"
-              />
+            <Language size={15} color="#FFFFFF" />
+            <Text className="text-sm font-medium text-white">
+              {locale === "ar" ? "English" : "العربية"}
+            </Text>
+          </Pressable>
+        </View>
 
-              {error && visibleInstitutions.length > 0 ? (
-                <View className="flex-row items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
+        <View className="flex-1 overflow-hidden rounded-t-[28px] bg-background">
+          <FlatList
+            data={visibleInstitutions}
+            keyExtractor={(institution) => institution.deployment_id}
+            renderItem={renderInstitution}
+            numColumns={2}
+            columnWrapperStyle={styles.tileRow}
+            ListHeaderComponent={
+              <View className="gap-4 pb-5">
+                <View className="gap-1">
+                  <Text className="text-start text-2xl leading-8 font-bold text-foreground">
+                    {t("auth_institution_search_title")}
+                  </Text>
+                  <Text className="text-start text-sm leading-5 text-muted-foreground">
+                    {t("auth_institution_search_hint")}
+                  </Text>
+                </View>
+
+                <SearchInput
+                  accessibilityLabel={t("auth_institution_filter_label")}
+                  placeholder={t("auth_institution_search_placeholder")}
+                  value={search}
+                  onChangeText={setSearch}
+                />
+
+                <View className="flex-row items-center justify-between gap-3">
+                  <Text className="flex-1 text-start text-sm font-semibold text-foreground">
+                    {t("auth_institution_results")}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("auth_institution_nearby")}
+                    accessibilityState={{ selected: userLocation !== null }}
+                    onPress={() => void requestNearbyLocation()}
+                    className={`min-h-11 flex-row items-center gap-2 rounded-full border px-3 ${
+                      userLocation
+                        ? "border-primary/40 bg-primary/10"
+                        : "border-border bg-card"
+                    }`}
+                  >
+                    <Pin
+                      size={16}
+                      color={userLocation ? theme.primary : theme.textMuted}
+                    />
+                    <Text
+                      className={`text-xs font-medium ${
+                        userLocation ? "text-primary" : "text-foreground"
+                      }`}
+                    >
+                      {t("auth_institution_nearby")}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            }
+            ListEmptyComponent={renderEmpty}
+            ListFooterComponent={
+              directoryError && visibleInstitutions.length > 0 ? (
+                <View className="mt-4 flex-row items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
                   <Text
                     accessibilityRole="alert"
                     className="flex-1 text-start text-xs leading-5 text-destructive"
                   >
-                    {error}
+                    {directoryError}
                   </Text>
                   <Button
                     title={t("common_retry")}
                     variant="outline"
                     size="sm"
-                    onPress={() => void loadInstitutions()}
+                    onPress={() => void directoryQuery.refetch()}
                   />
                 </View>
-              ) : null}
+              ) : null
+            }
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: Math.max(insets.bottom, 16) + 12 },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            refreshing={directoryQuery.isRefetching}
+            onRefresh={() => void directoryQuery.refetch()}
+            initialNumToRender={8}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+          />
 
-              <FlatList
-                horizontal
-                style={styles.institutionCarousel}
-                data={visibleInstitutions}
-                keyExtractor={(institution) => institution.deployment_id}
-                renderItem={renderInstitution}
-                ListEmptyComponent={renderEmpty}
-                contentContainerStyle={styles.carouselContent}
-                keyboardShouldPersistTaps="handled"
-                showsHorizontalScrollIndicator={false}
-                initialNumToRender={3}
-                maxToRenderPerBatch={4}
-                updateCellsBatchingPeriod={50}
-                windowSize={5}
-              />
-            </ScrollView>
-            <DrawerFooter>
-              <View className="gap-2">
-                {selectedInstitution ? (
-                  <View className="flex-row items-center gap-3 rounded-xl bg-primary/5 px-3 py-2">
-                    <CheckCircle size={17} color={theme.primary} />
-                    <View className="min-w-0 flex-1">
-                      <Text className="text-[11px] leading-4 text-muted-foreground">
-                        {t("auth_institution_current")}
-                      </Text>
-                      <Text
-                        numberOfLines={1}
-                        className="text-sm font-semibold text-foreground"
-                      >
-                        {isArabic && selectedInstitution.name_ar
-                          ? selectedInstitution.name_ar
-                          : selectedInstitution.name}
-                      </Text>
-                    </View>
-                  </View>
-                ) : null}
-                <Button
-                  title={t("auth_sign_in")}
-                  size="lg"
-                  fullWidth
-                  onPress={() => router.replace("/(auth)/sign-in")}
-                  disabled={!selectedInstitution || connectingId !== null}
-                />
+          <View
+            className="border-t border-border bg-background px-4 pt-3"
+            style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+          >
+            {connectionError ? (
+              <Text
+                accessibilityRole="alert"
+                className="mb-2 text-center text-xs leading-4 text-destructive"
+              >
+                {connectionError}
+              </Text>
+            ) : null}
+            {selectedInstitution ? (
+              <View className="mb-3 flex-row items-center gap-3 rounded-xl bg-primary/5 px-3 py-2">
+                <CheckCircle size={17} color={theme.primary} />
+                <View className="min-w-0 flex-1">
+                  <Text className="text-[11px] leading-4 text-muted-foreground">
+                    {t("auth_institution_current")}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    className="text-sm font-semibold text-foreground"
+                  >
+                    {isArabic && selectedInstitution.name_ar
+                      ? selectedInstitution.name_ar
+                      : selectedInstitution.name}
+                  </Text>
+                </View>
               </View>
-            </DrawerFooter>
-          </KeyboardAvoidingView>
-        </DrawerContent>
-      </Drawer>
+            ) : null}
+            <Button
+              title={t("auth_sign_in")}
+              size="lg"
+              fullWidth
+              onPress={() => router.replace("/(auth)/sign-in")}
+              disabled={!selectedInstitution || connectingId !== null}
+            />
+          </View>
+        </View>
+      </View>
     </ImageBackground>
   );
 }
@@ -520,44 +545,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#081521",
   },
   emptyState: {
-    height: 136,
+    minHeight: 200,
     justifyContent: "center",
   },
-  brandRow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 64,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  reopenDrawer: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    bottom: 24,
-  },
-  drawerBody: {
-    flex: 1,
-  },
-  drawerScroll: {
-    flex: 1,
-    flexShrink: 1,
-  },
-  drawerContent: {
-    gap: 12,
+  listContent: {
+    flexGrow: 1,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 24,
+    gap: 12,
   },
-  institutionCarousel: {
-    height: 104,
-    flexGrow: 0,
-  },
-  carouselContent: {
-    alignItems: "center",
-    paddingHorizontal: 8,
+  tileRow: {
+    justifyContent: "space-between",
+    gap: 12,
   },
   logoImage: {
     width: 46,

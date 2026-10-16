@@ -403,6 +403,8 @@ export const en: Record<TranslationKey, string> = {
   auth_institution_search_title: "Choose your institution",
   auth_institution_search_hint: "Search for your institution to connect to its Orbis server.",
   auth_institution_filter_label: "Filter institutions",
+  auth_institution_nearby: "Nearby",
+  auth_institution_location_error: "Could not access your location. Check permissions and try again.",
   auth_institution_loading: "Loading available institutions…",
   auth_institution_search_placeholder: "Search by institution name",
   auth_institution_search: "Search institutions",

@@ -401,6 +401,8 @@ export const ar = {
   auth_institution_search_title: "اختر مؤسستك",
   auth_institution_search_hint: "ابحث عن مؤسستك للاتصال بخادم Orbis الخاص بها.",
   auth_institution_filter_label: "تصفية المؤسسات",
+  auth_institution_nearby: "بالقرب مني",
+  auth_institution_location_error: "تعذر الوصول إلى موقعك. تحقق من الأذونات وحاول مجددًا.",
   auth_institution_loading: "جارٍ تحميل المؤسسات المتاحة…",
   auth_institution_search_placeholder: "ابحث باسم المؤسسة",
   auth_institution_search: "البحث عن المؤسسات",

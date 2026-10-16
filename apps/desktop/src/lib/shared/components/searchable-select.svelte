@@ -76,11 +76,12 @@ let {
 }: Props = $props();
 
 let searchQuery = $state("");
+const safeItems = $derived(Array.isArray(items) ? items : []);
 
 const filteredItems = $derived.by(() => {
-  if (!searchQuery.trim()) return items;
+  if (!searchQuery.trim()) return safeItems;
   const q = searchQuery.toLowerCase().trim();
-  return items.filter((item: any) => {
+  return safeItems.filter((item: any) => {
     if (!item) return false;
     if (typeof item === "string") return item.toLowerCase().includes(q);
     const label = getItemLabel(item).toLowerCase();
@@ -101,7 +102,7 @@ const filteredItems = $derived.by(() => {
 });
 
 const selectedItem = $derived(
-  items.find((item: any) => getItemValue(item) === String(value || "")),
+  safeItems.find((item: any) => getItemValue(item) === String(value || "")),
 );
 
 const displayLabel = $derived.by(() => {
