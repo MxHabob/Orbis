@@ -1280,7 +1280,9 @@ export class LocalClient implements OrbisApiClient {
     );
   }
   async getMulverseConnection(): Promise<import("./types").MulverseConnectionDto> {
-    const response = unwrap(await invoke("mulverse_get_connection"));
+    const response = unwrap<import("./types").MulverseConnectionDto | null>(
+      await invoke("mulverse_get_connection"),
+    );
     return response ?? {
       connected: false,
       organization_id: null,

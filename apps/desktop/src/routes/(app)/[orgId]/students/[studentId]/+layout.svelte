@@ -10,6 +10,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
   import { createClassesQuery, createPeriodsQuery } from "$lib/features/academics";
   import { createStudentQuery, createEnrollmentsQuery } from "$lib/features/students";
   import * as m from "$lib/paraglide/messages";
+  import { getLocale } from "$lib/paraglide/runtime";
   import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
   import MainViewport from "$lib/shell/main-viewport.svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
@@ -25,6 +26,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     Banknotes,
     BookOpen,
     Document,
+    DocumentCheck,
     DocumentPage,
     EllipsisHorizontal,
     GlobeAlt,
@@ -156,6 +158,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 
   let showTransferDialog = $state(false);
   let showPrintCertificate = $state(false);
+  let showPrintAcademicCertificate = $state(false);
   let transferTargetClassId = $state("");
   let isTransferring = $state(false);
 
@@ -243,6 +246,12 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
           label: m.ui_copy_print_enrollment_certificate_d360ef39(),
           icon: Printer,
           onclick: () => (showPrintCertificate = true),
+        },
+        {
+          id: "print_academic_cert",
+          label: getLocale() === "ar" ? "طباعة الشهادة المدرسية الرسمية" : "Print Official Academic Certificate",
+          icon: DocumentCheck,
+          onclick: () => (showPrintAcademicCertificate = true),
         },
         {
           id: "transfer_class",
@@ -549,7 +558,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
                     >
                       <div class="flex items-center justify-between gap-1">
                         <span class="text-[11px] font-semibold text-foreground truncate">
-                          {getClassName(enr.class_id)}
+                          {getClassName(enr.section_id)}
                         </span>
                         <Badge
                           variant={enr.status === "enrolled" || enr.status === "active" ? "default" : "secondary"}
@@ -681,4 +690,16 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     period_id: academicContext.effectivePeriodId,
   }}
   reportTitle={m.shared_ui_student_enrollment_certificate_title()}
+/>
+
+<!-- Print Official Academic Certificate Dialog -->
+<PdfReportViewer
+  bind:open={showPrintAcademicCertificate}
+  templateId="academic.student-certificate-yemeni"
+  parameters={{
+    student_id: actualStudentId,
+    calendar_id: academicContext.currentYear,
+    period_id: academicContext.effectivePeriodId,
+  }}
+  reportTitle={getLocale() === "ar" ? "الشهادة المدرسية الرسمية المعتمدة" : "Official Academic Certificate"}
 />
