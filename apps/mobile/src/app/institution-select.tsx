@@ -3,10 +3,12 @@ import {
   CheckCircle,
   Language,
   Logo,
+  MapPin,
   Search,
 } from "@orbis/icons/native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {

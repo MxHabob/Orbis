@@ -49,6 +49,9 @@ import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
 
+const asArray = <T>(value: T[] | null | undefined): T[] =>
+  Array.isArray(value) ? value : [];
+
 // ── State ──────────────────────────────────────────────────────────────
 let feeTemplates = $state<FeeTemplateDto[]>([]);
 let discountTemplates = $state<DiscountTemplateDto[]>([]);
@@ -166,14 +169,15 @@ async function loadData(refreshFees = true) {
       api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
     ]);
 
-    feeTemplates = templatesList;
-    discountTemplates = discountsList;
-    students = enrollmentsList.map((e: any) => ({
+    feeTemplates = asArray(templatesList);
+    discountTemplates = asArray(discountsList);
+    const safeEnrollments = asArray(enrollmentsList);
+    students = safeEnrollments.map((e: any) => ({
       id: String(e.id),
       student_id: String(e.student_id),
       full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
     }));
-    periods = periodsList;
+    periods = asArray(periodsList);
 
     if (periods.length > 0 && !formPeriodId) {
       formPeriodId = periods[0].id;

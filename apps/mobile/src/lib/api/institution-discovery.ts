@@ -13,6 +13,8 @@ export interface DirectoryInstitution {
   deployment_id: string;
   deployment_name: string;
   endpoint_url: string;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 const DIRECTORY_BASE_URL =
@@ -132,6 +134,21 @@ export async function checkInstitutionConnection(
 function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
   if (!value || typeof value !== "object") return false;
   const institution = value as Record<string, unknown>;
+  const hasValidCoordinate =
+    institution.latitude === undefined ||
+    institution.latitude === null ||
+    (typeof institution.latitude === "number" &&
+      Number.isFinite(institution.latitude) &&
+      institution.latitude >= -90 &&
+      institution.latitude <= 90);
+  const hasValidLongitude =
+    institution.longitude === undefined ||
+    institution.longitude === null ||
+    (typeof institution.longitude === "number" &&
+      Number.isFinite(institution.longitude) &&
+      institution.longitude >= -180 &&
+      institution.longitude <= 180);
+
   return (
     typeof institution.organization_id === "string" &&
     typeof institution.name === "string" &&
@@ -144,7 +161,13 @@ function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
     typeof institution.deployment_id === "string" &&
     typeof institution.deployment_name === "string" &&
     typeof institution.endpoint_url === "string" &&
-    isPublicEndpoint(institution.endpoint_url)
+    isPublicEndpoint(institution.endpoint_url) &&
+    hasValidCoordinate &&
+    hasValidLongitude &&
+    !(institution.latitude !== undefined && institution.latitude !== null &&
+      (institution.longitude === undefined || institution.longitude === null)) &&
+    !(institution.longitude !== undefined && institution.longitude !== null &&
+      (institution.latitude === undefined || institution.latitude === null))
   );
 }
 
