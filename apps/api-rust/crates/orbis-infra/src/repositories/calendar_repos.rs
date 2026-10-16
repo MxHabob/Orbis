@@ -188,6 +188,22 @@ fn str_to_period_state(s: &str) -> AcademicPeriodState {
 }
 
 fn map_period_model_to_domain(m: academic_period::Model) -> DomainPeriod {
+    let period_type = m
+        .metadata
+        .as_ref()
+        .and_then(|meta| {
+            meta.get("period_type")
+                .and_then(|v| v.as_str())
+                .map(PeriodType::from_str)
+        })
+        .unwrap_or_else(|| {
+            if m.parent_id.is_none() {
+                PeriodType::Semester
+            } else {
+                PeriodType::Month
+            }
+        });
+
     DomainPeriod {
         id: m.id,
         org_id: m.org_id,
@@ -196,7 +212,7 @@ fn map_period_model_to_domain(m: academic_period::Model) -> DomainPeriod {
         name: m.name,
         name_ar: m.name_ar,
         code: m.code,
-        period_type: PeriodType::from_str(&m.period_kind),
+        period_type,
         period_kind: PeriodKind::from_str(&m.period_kind),
         state: str_to_period_state(&m.status),
         start_date: m.start_date.unwrap_or(m.created_at),
@@ -264,12 +280,69 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
     }
 
     async fn save(&self, period: &DomainPeriod) -> Result<(), DomainError> {
+        let type_code = period.period_type.to_string();
+        let period_type_id = if let Some(existing) = TemplateEntity::find()
+            .filter(period_type::Column::OrgId.eq(period.org_id))
+            .filter(period_type::Column::Code.eq(&type_code))
+            .one(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?
+        {
+            existing.id
+        } else {
+            let new_id = Uuid::new_v4();
+            let (name, name_ar, sort_order) = match period.period_type {
+                PeriodType::Semester => ("Semester", Some("فصل دراسي".to_string()), 1),
+                PeriodType::Trimester => ("Trimester", Some("فصل دراسي ثلثي".to_string()), 2),
+                PeriodType::Quarter => ("Quarter", Some("ربع سنوي".to_string()), 3),
+                PeriodType::Month => ("Month", Some("شهر".to_string()), 4),
+                PeriodType::Module => ("Module", Some("وحدة دراسية".to_string()), 5),
+                PeriodType::Block => ("Block", Some("كتلة دراسية".to_string()), 6),
+                PeriodType::Custom => ("Custom", Some("مخصص".to_string()), 7),
+            };
+            let now = chrono::Utc::now();
+            let new_type = period_type::ActiveModel {
+                id: Set(new_id),
+                org_id: Set(period.org_id),
+                code: Set(type_code.clone()),
+                name: Set(name.to_string()),
+                name_ar: Set(name_ar),
+                sort_order: Set(sort_order),
+                created_at: Set(now),
+                updated_at: Set(now),
+            };
+            match new_type.insert(&self.db).await {
+                Ok(_) => new_id,
+                Err(_) => {
+                    if let Some(existing) = TemplateEntity::find()
+                        .filter(period_type::Column::OrgId.eq(period.org_id))
+                        .filter(period_type::Column::Code.eq(&type_code))
+                        .one(&self.db)
+                        .await
+                        .map_err(|e| DomainError::Internal(e.to_string()))?
+                    {
+                        existing.id
+                    } else {
+                        new_id
+                    }
+                }
+            }
+        };
+
+        let mut metadata = period.metadata.clone().unwrap_or_else(|| serde_json::json!({}));
+        if let serde_json::Value::Object(ref mut map) = metadata {
+            map.insert(
+                "period_type".to_string(),
+                serde_json::Value::String(period.period_type.to_string()),
+            );
+        }
+
         let active = academic_period::ActiveModel {
             id: Set(period.id),
             org_id: Set(period.org_id),
             calendar_id: Set(period.year_id),
             parent_id: Set(period.parent_id),
-            period_type_id: Set(period.id),
+            period_type_id: Set(period_type_id),
             name: Set(period.name.clone()),
             name_ar: Set(period.name_ar.clone()),
             code: Set(period.code.clone()),
@@ -291,7 +364,7 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             locked_at: Set(period.locked_at),
             locked_by: Set(period.locked_by),
             sort_order: Set(period.sort_order),
-            metadata: Set(period.metadata.clone()),
+            metadata: Set(Some(metadata)),
             created_at: Set(period.created_at),
             updated_at: Set(period.updated_at),
         };

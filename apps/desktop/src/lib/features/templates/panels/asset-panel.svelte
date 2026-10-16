@@ -1,29 +1,29 @@
 <script lang="ts">
-import { LoadingIndicator, toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { confirmStore } from "$lib/stores";
+import { LoadingIndicator, toast } from "@orbis/ui";
 /**
  * AssetPanel — Image/logo/stamp library.
  * Browse, upload, and drag assets onto the canvas.
  */
-import type { EditorStore } from "../stores/editor-store.svelte";
-import { Input } from "@orbis/ui/input";
-import { Button } from "@orbis/ui/button";
-import { Badge } from "@orbis/ui/badge";
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@orbis/ui/tooltip";
-import { AdjustmentsHorizontal, ArrowPath, ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
-import {
-  useDocuments,
-  useUploadFile,
-  useDeleteDocument,
-  resolveDocumentUrl,
-  getDocumentSource,
+    getDocumentSource,
+    resolveDocumentUrl,
+    useDeleteDocument,
+    useDocuments,
+    useUploadFile,
 } from "$lib/features/documents/queries";
+import { ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@orbis/ui/tooltip";
+import type { EditorStore } from "../stores/editor-store.svelte";
 
 let {
   store,
@@ -106,7 +106,7 @@ function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
   if (!target.files?.length) return;
   const file = target.files[0];
-  const uploadToast = toast.loading("جارٍ رفع الصورة...", { duration: 0 });
+  const uploadToast = toast.loading(m.template_asset_uploading(), { duration: 0 });
 
   uploadMutation.mutate(
     {
@@ -121,7 +121,7 @@ function handleFileSelect(e: Event) {
       onSuccess: (uploaded) => {
         if (!uploaded?.id) {
           uploadToast.update({
-            title: "تعذر رفع الصورة: لم يُرجع الخادم معرّف الملف.",
+            title: m.template_asset_upload_missing_id(),
             variant: "error",
             duration: 5000,
           });
@@ -130,14 +130,14 @@ function handleFileSelect(e: Event) {
 
         store.addAsset(uploaded.id, "image");
         uploadToast.update({
-          title: "تم رفع الصورة وإضافتها إلى الوسائط.",
+          title: m.template_asset_upload_success(),
           variant: "success",
           duration: 4000,
         });
       },
       onError: (error) => {
         uploadToast.update({
-          title: error instanceof Error ? error.message : "تعذر رفع الصورة.",
+          title: error instanceof Error ? error.message : m.template_asset_upload_failed(),
           variant: "error",
           duration: 5000,
         });

@@ -1,8 +1,6 @@
 <script lang="ts">
-import { Grid } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import CanvasNode from "./canvas-node.svelte";
-
 /**
  * CanvasNode — Recursive node renderer for the SVG canvas.
  * Renders each node type (Text, Image, Shape, Frame, Barcode, QR, etc.)
@@ -261,7 +259,7 @@ function getCellDisplayText(col: any, rowIdx: number, runtimeRows?: any[]): stri
 
 function getTotalDisplayText(col: any): string {
   if (col.total) {
-    if (col.total === "label") return col.totalLabel || col.total_label || col.headerAr || "المجموع";
+    if (col.total === "label") return col.totalLabel || col.total_label || col.headerAr || m.template_inspector_total_label();
     return `Σ (${col.total})`;
   }
   if (col.totalLabel || col.total_label) return col.totalLabel || col.total_label;

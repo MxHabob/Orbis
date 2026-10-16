@@ -4,58 +4,56 @@ Streamlined layout for deep-dive student pages.
 Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
 -->
 <script lang="ts">
-  import { page } from "$app/state";
   import { goto } from "$app/navigation";
-  import { api, queryKeys, extractErrorMessage } from "$lib/api";
+  import { page } from "$app/state";
+  import { api, extractErrorMessage, queryKeys } from "$lib/api";
   import { createClassesQuery, createPeriodsQuery } from "$lib/features/academics";
-  import { createStudentQuery, createEnrollmentsQuery } from "$lib/features/students";
+  import { createEnrollmentsQuery, createStudentQuery } from "$lib/features/students";
   import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+  import RelatedActions, {
+      type ActionGroup,
+      type FooterAction,
+  } from "$lib/shared/components/related-actions.svelte";
   import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
   import MainViewport from "$lib/shell/main-viewport.svelte";
   import SecondaryMenu from "$lib/shell/secondary-menu.svelte";
-  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
-  import RelatedActions, {
-    type ActionGroup,
-    type FooterAction,
-  } from "$lib/shared/components/related-actions.svelte";
   
+  import { useStudentFolder } from "$lib/features/documents/queries";
+  import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
+  import { academicContext, confirmStore } from "$lib/stores";
   import {
-    AcademicCap,
-    ArrowsRightLeft,
-    Banknotes,
-    BookOpen,
-    Document,
-    DocumentCheck,
-    DocumentPage,
-    EllipsisHorizontal,
-    GlobeAlt,
-    Phone,
-    Printer,
-    User,
-    UserBadgeCheck,
-    Users,
+      AcademicCap,
+      ArrowsRightLeft,
+      Banknotes,
+      BookOpen,
+      Document,
+      DocumentCheck,
+      DocumentPage,
+      EllipsisHorizontal,
+      Phone,
+      Printer,
+      User,
+      UserBadgeCheck,
+      Users
   } from "@orbis/icons";
   import { toast } from "@orbis/ui";
-  import { academicContext, confirmStore } from "$lib/stores";
-  import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-  import { useStudentFolder } from "$lib/features/documents/queries";
   import { Badge } from "@orbis/ui/badge";
   import { Button } from "@orbis/ui/button";
   import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+      Dialog,
+      DialogContent,
+      DialogDescription,
+      DialogFooter,
+      DialogHeader,
+      DialogTitle,
   } from "@orbis/ui/dialog";
   import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+      DropdownMenu,
+      DropdownMenuContent,
+      DropdownMenuItem,
+      DropdownMenuSeparator,
+      DropdownMenuTrigger,
   } from "@orbis/ui/dropdown-menu";
   import { Skeleton } from "@orbis/ui/skeleton";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -249,7 +247,7 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
         },
         {
           id: "print_academic_cert",
-          label: getLocale() === "ar" ? "طباعة الشهادة المدرسية الرسمية" : "Print Official Academic Certificate",
+          label: m.student_layout_print_official_academic_certificate(),
           icon: DocumentCheck,
           onclick: () => (showPrintAcademicCertificate = true),
         },
@@ -701,5 +699,5 @@ Uses shared DetailPageHeader, SecondaryMenu, and MainViewport.
     calendar_id: academicContext.currentYear,
     period_id: academicContext.effectivePeriodId,
   }}
-  reportTitle={getLocale() === "ar" ? "الشهادة المدرسية الرسمية المعتمدة" : "Official Academic Certificate"}
+  reportTitle={m.student_grades_certificate_print_title()}
 />

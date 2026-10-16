@@ -8,39 +8,36 @@
   - High-performance Svelte 5 Runes architecture with dual-transport parity & zero guessed defaults
 -->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
+import type { ConnectionMode } from "$lib/api/types";
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/core/i18n";
-import { onMount } from "svelte";
+import {
+    ArrowDownTray,
+    ArrowPath,
+    ArrowRight,
+    ArrowUpTray,
+    Bolt,
+    CheckCircle,
+    ClockRotateRight,
+    Computer,
+    Database,
+    FolderOpen,
+    GlobeAlt,
+    Info,
+    InfoCircle,
+    Plus,
+    ShieldCheck,
+    Sparkles,
+    Wrench,
+} from "@orbis/icons";
+import { FormField, LoadingIndicator, toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { FormField } from "@orbis/ui";
-import { Badge } from "@orbis/ui/badge";
-import { Switch } from "@orbis/ui/switch";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { toast } from "@orbis/ui";
-import {
-  ArrowDownTray,
-  ArrowPath,
-  ArrowRight,
-  ArrowUpTray,
-  Bolt,
-  CheckCircle,
-  ClockRotateRight,
-  Computer,
-  Database,
-  FolderOpen,
-  GlobeAlt,
-  Info,
-  InfoCircle,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-  Wrench,
-} from "@orbis/icons";
-import { DatabaseManagerController } from "./database-manager.svelte";
+import { Switch } from "@orbis/ui/switch";
+import { onMount } from "svelte";
 import CreateDatabaseDialog from "./create-database-dialog.svelte";
-import type { ConnectionMode } from "$lib/api/types";
+import { DatabaseManagerController } from "./database-manager.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -236,12 +233,12 @@ const kpiStats = $derived([
     value: controller.isLocal
       ? m.settings_ui_database_sqlite_embedded()
       : connMode === "direct"
-        ? l("PostgreSQL مباشر", "Direct PostgreSQL")
+        ? m.database_direct_postgres()
         : m.ui_copy_remote_server_efd114c0(),
     sub: controller.isLocal
       ? m.ui_copy_local_embedded_36bd9bbd()
       : connMode === "direct"
-        ? l("اتصال مباشر بالشبكة", "Direct network connection")
+        ? m.database_direct_network()
         : m.ui_copy_remote_cloud_51770fc6(),
   },
   {
@@ -399,7 +396,7 @@ const advisorInsights = $derived.by(() => {
           <span>{m.settings_ui_database_sqlite_embedded()}</span>
         {:else if connMode === "direct"}
           <GlobeAlt size={10} class="text-primary" />
-          <span>{l("PostgreSQL مباشر", "Direct PostgreSQL")}</span>
+          <span>{m.database_direct_postgres()}</span>
         {:else}
           <GlobeAlt size={10} class="text-primary" />
           <span>{m.ui_copy_remote_server_efd114c0()}</span>
@@ -704,8 +701,8 @@ const advisorInsights = $derived.by(() => {
                       <Database size={15} />
                     </div>
                     <div class="text-start">
-                      <h4 class="text-xs font-bold text-foreground">{l("اتصال PostgreSQL مباشر", "Direct PostgreSQL")}</h4>
-                      <p class="text-[9.5px] text-muted-foreground">{l("اتصال مباشر بقاعدة PostgreSQL.", "Direct connection to PostgreSQL.")}</p>
+                      <h4 class="text-xs font-bold text-foreground">{m.database_direct_postgres()}</h4>
+                      <p class="text-[9.5px] text-muted-foreground">{m.database_direct_postgres_description()}</p>
                     </div>
                   </div>
                   {#if connMode === "direct"}

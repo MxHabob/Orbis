@@ -1,7 +1,7 @@
+import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import type { BulkImportProfile, BulkProfileId } from "./types";
-import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 
 const localizedHeader = (ar: string, en: string) => () => (getLocale() === "ar" ? ar : en);
 
@@ -16,14 +16,14 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
   students: {
     full_name_ar: m.bulk_entry_student_header_first_name_ar,
     full_name_en: m.bulk_entry_student_header_first_name,
-    place_of_birth: localizedHeader("مكان الميلاد", "Place of Birth"),
-    nationality: localizedHeader("الجنسية", "Nationality"),
-    passport_number: localizedHeader("رقم جواز السفر", "Passport Number"),
-    blood_type: localizedHeader("فصيلة الدم", "Blood Type"),
-    study_mode: localizedHeader("نمط الدراسة", "Study Mode"),
-    address: localizedHeader("العنوان", "Address"),
-    medical_notes: localizedHeader("ملاحظات طبية", "Medical Notes"),
-    special_needs_notes: localizedHeader("الاحتياجات الخاصة", "Special Needs"),
+    place_of_birth: m.bulk_entry_localized_place_of_birth,
+    nationality: m.bulk_entry_localized_nationality,
+    passport_number: m.bulk_entry_localized_passport_number,
+    blood_type: m.bulk_entry_localized_blood_type,
+    study_mode: m.bulk_entry_localized_study_mode,
+    address: m.bulk_entry_localized_address,
+    medical_notes: m.bulk_entry_localized_medical_notes,
+    special_needs_notes: m.bulk_entry_localized_special_needs,
     create_login_account: m.bulk_entry_employee_header_provision_user,
     user_group_names: m.bulk_entry_user_groups_header,
     national_id: m.bulk_entry_student_header_national_id,
@@ -39,7 +39,7 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
   },
   employees: {
     full_name_ar: m.bulk_entry_employee_header_first_name_ar,
-    full_name_en: localizedHeader("الاسم الكامل (إنجليزي)", "Full Name (English)"),
+    full_name_en: m.bulk_entry_localized_full_name_english,
     national_id: m.bulk_entry_employee_header_national_id,
     gender: m.bulk_entry_header_gender,
     employee_type: m.bulk_entry_employee_header_employee_type,
@@ -53,17 +53,11 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     user_group_name: m.bulk_entry_employee_header_user_group,
   },
   "teacher-subjects": {
-    class_code: localizedHeader("رمز الصف أو معرفه", "Class Code or ID"),
-    academic_period_code: localizedHeader(
-      "رمز الفترة الأكاديمية أو معرفها",
-      "Academic Period Code or ID",
-    ),
-    subject_code: localizedHeader("رمز المادة أو معرفها", "Subject Code or ID"),
-    teacher_code: localizedHeader(
-      "الرقم الوظيفي للمعلم أو معرفه",
-      "Teacher Employee Number or ID",
-    ),
-    weekly_hours: localizedHeader("الحصص الأسبوعية", "Weekly Hours"),
+    class_code: m.bulk_entry_localized_class_code,
+    academic_period_code: m.bulk_entry_localized_academic_period_code,
+    subject_code: m.bulk_entry_localized_subject_code,
+    teacher_code: m.bulk_entry_localized_teacher_code,
+    weekly_hours: m.bulk_entry_localized_weekly_hours,
   },
   grades: {
     student_number: m.bulk_entry_grade_header_student_number,

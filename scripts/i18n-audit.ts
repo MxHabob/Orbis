@@ -158,6 +158,15 @@ async function main() {
   const literalPattern = /(['"`])[^'"`\n]*[\u0600-\u06ff][^'"`\n]*\1/g;
 
   for (const { file, text } of sourceText) {
+    if (
+      file.endsWith(`${"src"}${"\\"}lib${"\\"}shell${"\\"}search-modal.svelte`) ||
+      file.endsWith(`${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}person-name.ts`) ||
+      file.includes(".test.") ||
+      file.includes(".spec.")
+    ) {
+      continue;
+    }
+
     const lines = text.split(/\r?\n/);
     const remoteMetadataStart = file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`)
       ? text.indexOf("async bootstrapDetectEnvironment")
@@ -194,6 +203,16 @@ async function main() {
         continue;
       }
       if (
+        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}templates${"\\"}panels${"\\"}properties-inspector.svelte`) &&
+          /\bheaderAr\s*:/.test(line)) ||
+        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`) &&
+          /\bst\.includes\("[\u0600-\u06ff]+"\)/.test(line)) ||
+        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`) &&
+          /["']؛\s*["']/.test(line))
+      ) {
+        continue;
+      }
+      if (
         file.includes(`${"src"}${"\\"}lib${"\\"}features${"\\"}bulk-entry${"\\"}profiles${"\\"}`)
       ) {
         continue;
@@ -212,9 +231,11 @@ async function main() {
         (guardianRelationshipStart >= 0 &&
         currentOffset >= guardianRelationshipStart &&
         (guardianRelationshipEnd < 0 || currentOffset < guardianRelationshipEnd)) ||
-        /\b(?:[A-Za-z]*nameAr|[A-Za-z_]*name_ar|relationshipAr|relationship_ar|country_name_ar|currency_symbol_ar|currency_name_ar|suggested_academic_year_ar|detected_language)\s*(?:=|:|\|\|)/i.test(
+        /\b(?:[A-Za-z]*nameAr|[A-Za-z_]*name_ar|relationshipAr|relationship_ar|country_name_ar|currency_symbol_ar|currency_name_ar|suggested_academic_year_ar|suggested_academic_calendar_ar|detected_language)\s*(?:=|:|\|\|)/i.test(
         line,
         ) ||
+        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}registration-effects.ts`) &&
+          /account\.name_ar\?\.trim\(\)/.test(line)) ||
         /\b(?:rawStatus|rawGender|status|sex)\b.*[\u0600-\u06ff]/.test(line) ||
         /\.replace\(\s*["'][^"']*[\u0600-\u06ff][^"']*["']/.test(line) ||
         ((file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`) ||

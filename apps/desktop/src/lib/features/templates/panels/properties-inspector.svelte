@@ -42,12 +42,12 @@ const compactTextareaClass = "text-xs";
 const pageSetup = $derived(store.document.meta.pageSetup);
 const nodeSectionTitle = $derived(
   node?.type === "Table"
-    ? "إعدادات الجدول"
+    ? m.template_inspector_table_settings()
     : node?.type === "Text"
-      ? "خصائص النص"
+      ? m.template_inspector_text_properties()
       : node?.type === "Shape"
-        ? "خصائص الشكل"
-        : "بيانات العنصر",
+        ? m.template_inspector_shape_properties()
+        : m.template_inspector_element_details(),
 );
 const nodeProps = $derived(
   node && "props" in node ? ((node as any).props || {}) : {}
@@ -70,7 +70,7 @@ function handleImageFileSelect(event: Event) {
   const file = fileInput.files?.[0];
   const targetNodeId = node?.id;
   if (!file || !targetNodeId) return;
-  const uploadToast = toast.loading("جارٍ رفع الصورة واستبدالها...", {
+  const uploadToast = toast.loading(m.template_inspector_replacing_image(), {
     duration: 0,
   });
 
@@ -87,7 +87,7 @@ function handleImageFileSelect(event: Event) {
       onSuccess: (uploaded) => {
         if (!uploaded?.id) {
           uploadToast.update({
-            title: "تعذر استبدال الصورة: لم يُرجع الخادم معرّف الملف.",
+            title: m.template_inspector_replace_missing_id(),
             variant: "error",
             duration: 5000,
           });
@@ -103,13 +103,13 @@ function handleImageFileSelect(event: Event) {
             },
           });
           uploadToast.update({
-            title: "تم استبدال الصورة بنجاح.",
+            title: m.template_inspector_replace_success(),
             variant: "success",
             duration: 4000,
           });
         } catch (error) {
           uploadToast.update({
-            title: error instanceof Error ? error.message : "تعذر تحديث الصورة في المحرر.",
+            title: error instanceof Error ? error.message : m.template_inspector_update_failed(),
             variant: "error",
             duration: 5000,
           });
@@ -118,7 +118,7 @@ function handleImageFileSelect(event: Event) {
       },
       onError: (error) => {
         uploadToast.update({
-          title: error instanceof Error ? error.message : "تعذر رفع الصورة.",
+          title: error instanceof Error ? error.message : m.template_inspector_image_upload_failed(),
           variant: "error",
           duration: 5000,
         });

@@ -1,6 +1,6 @@
 <script lang="ts">
-import { untrack } from "svelte";
 import * as m from "$lib/paraglide/messages";
+import { untrack } from "svelte";
 /**
  * ContextToolbar — Contextual top toolbar that changes based on selection.
  *
@@ -11,25 +11,25 @@ import * as m from "$lib/paraglide/messages";
  *  - Shape → fill, stroke, border-radius
  *  - Multi-select → align, distribute
  */
-import type { EditorStore, EditorTool } from "../stores/editor-store.svelte";
-import { Button } from "@orbis/ui/button";
+import { AdjustmentsHorizontal, AlignHorizontal, AlignVertical, ArrowForward, ArrowLeft, Bold, Component, Eye, FloppyDisk, Grid, Italic, Knobs, Minus, Plus, Underline, UndoAction } from "@orbis/icons";
 import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
 import { Input } from "@orbis/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
 } from "@orbis/ui/select";
 import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from "@orbis/ui/tooltip";
-import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
-import { ComboboxDropdown } from "@orbis/ui/combobox-dropdown";
-import { AdjustmentsHorizontal, AlignHorizontal, AlignVertical, ArrowForward, ArrowLeft, Bold, Collapse, Component, Expand, Eye, FloppyDisk, Grid, Italic, Knobs, Minus, Plus, Underline, UndoAction } from "@orbis/icons";
+import type { EditorStore } from "../stores/editor-store.svelte";
 
 let {
   store,
@@ -461,7 +461,7 @@ function handleAlign(
             <AdjustmentsHorizontal size={15} />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{isPropertiesVisible ? "إخفاء الخصائص" : "إظهار الخصائص"}</TooltipContent>
+        <TooltipContent>{isPropertiesVisible ? m.template_inspector_hide_properties() : m.template_inspector_show_properties()}</TooltipContent>
       </Tooltip>
     {/if}
     <Tooltip>

@@ -1,46 +1,40 @@
 <script lang="ts">
-  import { createQuery } from "@tanstack/svelte-query";
+  import {
+      api,
+      extractErrorMessage,
+      type GradeDto
+  } from "$lib/api";
+  import * as m from "$lib/paraglide/messages";
+  import { getLocale } from "$lib/paraglide/runtime";
+  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+  import { academicContext } from "$lib/stores";
+  import {
+      AcademicCap,
+      BookOpen,
+      ChartBar,
+      DocumentChartBar,
+      InfoCircle,
+      Printer,
+      Refresh
+  } from "@orbis/icons";
+  import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
   import { LoadingIndicator } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
   import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+      Card,
+      CardAction,
+      CardContent,
+      CardDescription,
+      CardHeader,
+      CardTitle,
   } from "@orbis/ui/card";
   import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
+      Select,
+      SelectContent,
+      SelectItem,
+      SelectTrigger,
   } from "@orbis/ui/select";
-  import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-  import {
-    AcademicCap,
-    BookOpen,
-    ChartBar,
-    CheckCircle,
-    DocumentChartBar,
-    DocumentCheck,
-    InfoCircle,
-    Printer,
-    Refresh,
-  } from "@orbis/icons";
-  import {
-    api,
-    extractErrorMessage,
-    type GradeDto,
-    type StudentTermReportCard,
-    type StudentAnnualReportCard,
-    type StudentCertificateReportCard,
-  } from "$lib/api";
-  import { academicContext } from "$lib/stores";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
-  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+  import { createQuery } from "@tanstack/svelte-query";
 
   let {
     orgId,
@@ -167,34 +161,34 @@
     const s = String(status || "").toLowerCase();
     if (s.includes("honor") || s === "passedwithhonors") {
       return {
-        label: isRtl ? "ناجح بتفوق" : "Passed with Honors",
+        label: m.student_grades_status_honors(),
         variant: "default" as const,
         color: "bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-600/30",
       };
     }
     if (s.includes("pass") || s === "passed") {
       return {
-        label: isRtl ? "ناجح" : "Passed",
+        label: m.student_grades_status_passed(),
         variant: "default" as const,
         color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
       };
     }
     if (s.includes("conditional") || s.includes("makeup") || s.includes("second")) {
       return {
-        label: isRtl ? "دور ثان / مكمل" : "Conditional / Retake",
+        label: m.student_grades_status_conditional_retake(),
         variant: "secondary" as const,
         color: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
       };
     }
     if (s.includes("fail") || s === "failed") {
       return {
-        label: isRtl ? "راسب" : "Failed",
+        label: m.student_grades_status_failed(),
         variant: "destructive" as const,
         color: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
       };
     }
     return {
-      label: isRtl ? "قيد المعالجة" : "Incomplete / Pending",
+      label: m.student_grades_status_pending(),
       variant: "secondary" as const,
       color: "bg-muted text-muted-foreground border-border",
     };
@@ -202,27 +196,23 @@
 
   function getAppreciation(percentage?: number | null) {
     if (percentage == null) return "—";
-    if (percentage >= 90) return isRtl ? "ممتاز" : "Excellent";
-    if (percentage >= 80) return isRtl ? "جيد جداً" : "Very Good";
-    if (percentage >= 65) return isRtl ? "جيد" : "Good";
-    if (percentage >= 50) return isRtl ? "مقبول" : "Pass";
-    return isRtl ? "ضعيف" : "Fail";
+    if (percentage >= 90) return m.student_grades_appreciation_excellent();
+    if (percentage >= 80) return m.student_grades_appreciation_very_good();
+    if (percentage >= 65) return m.student_grades_appreciation_good();
+    if (percentage >= 50) return m.student_grades_appreciation_pass();
+    return m.student_grades_appreciation_fail();
   }
 
   // ── Print Triggers ───────────────────────────────────────────
   function triggerPrintCertificate() {
     printTemplateId = "academic.student-certificate-yemeni";
-    printTitle = isRtl
-      ? "الشهادة المدرسية الرسمية المعتمدة"
-      : "Official Academic Certificate";
+    printTitle = m.student_grades_certificate_print_title();
     showPrintCertificateDialog = true;
   }
 
   function triggerPrintTermReport() {
     printTemplateId = "academic.student-term-report-card";
-    printTitle = isRtl
-      ? "كشف درجات الطالب للفصل الدراسي"
-      : "Student Term Report Card";
+    printTitle = m.student_grades_term_report_print_title();
     showPrintCertificateDialog = true;
   }
 
@@ -244,12 +234,12 @@
       weight: grade.weight == null ? "—" : Number(grade.weight),
       letter_grade: grade.letter_grade ?? "—",
       record_state: grade.is_exempt
-        ? (isRtl ? "معفى" : "Exempt")
+        ? m.student_grades_state_exempt()
         : grade.is_excused
-          ? (isRtl ? "معذور" : "Excused")
+          ? m.student_grades_state_excused()
           : grade.is_final
-            ? (isRtl ? "نهائي" : "Final")
-            : (isRtl ? "مرصود" : "Recorded"),
+            ? m.student_grades_state_final()
+            : m.student_grades_state_recorded(),
       updated_at: grade.updated_at,
     })),
   );
@@ -258,16 +248,16 @@
     {
       id: "period",
       prop: "period",
-      header: isRtl ? "الفصل الدراسي" : "Period",
-      name: isRtl ? "الفصل الدراسي" : "Period",
+      header: m.student_grades_period(),
+      name: m.student_grades_period(),
       width: 170,
       size: 170,
     },
     {
       id: "offering_id",
       prop: "offering_id",
-      header: isRtl ? "المقرر / المادة" : "Course or offering",
-      name: isRtl ? "المقرر / المادة" : "Course or offering",
+      header: m.student_grades_course_or_offering(),
+      name: m.student_grades_course_or_offering(),
       width: 230,
       size: 230,
       pin: "left",
@@ -275,16 +265,16 @@
     {
       id: "component_id",
       prop: "component_id",
-      header: isRtl ? "بند التقييم" : "Assessment component",
-      name: isRtl ? "بند التقييم" : "Assessment component",
+      header: m.student_grades_assessment_component(),
+      name: m.student_grades_assessment_component(),
       width: 190,
       size: 190,
     },
     {
       id: "score",
       prop: "score",
-      header: isRtl ? "الدرجة" : "Score",
-      name: isRtl ? "الدرجة" : "Score",
+      header: m.student_grades_score(),
+      name: m.student_grades_score(),
       width: 95,
       size: 95,
       align: "end",
@@ -293,8 +283,8 @@
     {
       id: "maximum",
       prop: "maximum",
-      header: isRtl ? "النهاية الكبرى" : "Maximum",
-      name: isRtl ? "النهاية الكبرى" : "Maximum",
+      header: m.student_grades_maximum_score(),
+      name: m.student_grades_maximum_score(),
       width: 105,
       size: 105,
       align: "end",
@@ -303,8 +293,8 @@
     {
       id: "weight",
       prop: "weight",
-      header: isRtl ? "الوزن" : "Weight",
-      name: isRtl ? "الوزن" : "Weight",
+      header: m.student_grades_weight(),
+      name: m.student_grades_weight(),
       width: 90,
       size: 90,
       align: "end",
@@ -313,24 +303,24 @@
     {
       id: "letter_grade",
       prop: "letter_grade",
-      header: isRtl ? "التقدير" : "Grade",
-      name: isRtl ? "التقدير" : "Grade",
+      header: m.student_grades_grade(),
+      name: m.student_grades_grade(),
       width: 90,
       size: 90,
     },
     {
       id: "record_state",
       prop: "record_state",
-      header: isRtl ? "حالة القيد" : "Record state",
-      name: isRtl ? "حالة القيد" : "Record state",
+      header: m.student_grades_record_state(),
+      name: m.student_grades_record_state(),
       width: 115,
       size: 115,
     },
     {
       id: "updated_at",
       prop: "updated_at",
-      header: isRtl ? "آخر تحديث" : "Last updated",
-      name: isRtl ? "آخر تحديث" : "Last updated",
+      header: m.student_grades_last_updated(),
+      name: m.student_grades_last_updated(),
       width: 180,
       size: 180,
     },
@@ -351,7 +341,7 @@
         onclick={() => (activeTab = "records")}
       >
         <BookOpen size={13} class={activeTab === "records" ? "text-primary" : ""} />
-        <span>{isRtl ? "سجل التقييمات" : "Assessment Records"}</span>
+        <span>{m.student_grades_tab_assessment_records()}</span>
       </button>
 
       <button
@@ -364,7 +354,7 @@
         onclick={() => (activeTab = "term")}
       >
         <DocumentChartBar size={13} class={activeTab === "term" ? "text-primary" : ""} />
-        <span>{isRtl ? "كشف درجات الفصل" : "Term Report Card"}</span>
+        <span>{m.student_grades_tab_term_report()}</span>
       </button>
 
       <button
@@ -377,7 +367,7 @@
         onclick={() => (activeTab = "annual")}
       >
         <ChartBar size={13} class={activeTab === "annual" ? "text-primary" : ""} />
-        <span>{isRtl ? "النتيجة السنوية" : "Annual Results"}</span>
+        <span>{m.student_grades_tab_annual_results()}</span>
       </button>
 
       <button
@@ -390,7 +380,7 @@
         onclick={() => (activeTab = "certificate")}
       >
         <AcademicCap size={13} class={activeTab === "certificate" ? "text-primary" : ""} />
-        <span>{isRtl ? "شهادة إتمام المرحلة" : "Certificate Results"}</span>
+        <span>{m.student_grades_tab_certificate_results()}</span>
       </button>
     </div>
 
@@ -404,7 +394,7 @@
           onclick={triggerPrintCertificate}
         >
           <Printer size={13} />
-          <span>{isRtl ? "طباعة الشهادة الرسمية" : "Print Official Certificate"}</span>
+          <span>{m.student_grades_print_official_certificate()}</span>
         </Button>
       {:else if activeTab === "term"}
         <Button
@@ -414,7 +404,7 @@
           onclick={triggerPrintTermReport}
         >
           <Printer size={13} />
-          <span>{isRtl ? "طباعة كشف الفصل" : "Print Term Report"}</span>
+          <span>{m.student_grades_print_term_report()}</span>
         </Button>
       {/if}
     </div>
@@ -430,10 +420,10 @@
           <BookOpen size={16} class="text-primary" />
           <div class="flex flex-col">
             <CardTitle class="text-xs font-bold uppercase tracking-wider">
-              {isRtl ? "سجل القيود والتقييمات" : "Assessment records"}
+              {m.student_grades_assessment_records_title()}
             </CardTitle>
             <CardDescription class="text-[10px]">
-              {filteredGrades.length} {isRtl ? "سجل مرصود" : "records"}
+              {filteredGrades.length} {m.student_grades_records_label()}
             </CardDescription>
           </div>
         </div>
@@ -449,11 +439,11 @@
             >
               <SelectTrigger class="h-8 min-w-[160px] text-xs">
                 {selectedPeriodId === "all"
-                  ? (isRtl ? "جميع الفترات" : "All periods")
-                  : periodNames.get(selectedPeriodId) ?? (isRtl ? "اختر الفترة" : "Select period")}
+                  ? m.student_grades_all_periods()
+                  : periodNames.get(selectedPeriodId) ?? m.student_grades_select_period()}
               </SelectTrigger>
               <SelectContent class="text-xs">
-                <SelectItem value="all">{isRtl ? "جميع الفترات" : "All periods"}</SelectItem>
+                <SelectItem value="all">{m.student_grades_all_periods()}</SelectItem>
                 {#each academicContext.allPeriods as period (period.id)}
                   <SelectItem value={period.id}>
                     {period.name_ar || period.name}
@@ -529,12 +519,10 @@
             </div>
             <div>
               <h2 class="text-xs font-bold text-foreground">
-                {isRtl ? "كشف درجات الفصل الدراسي" : "Official Term Report Card"}
+                {m.student_grades_term_report_heading()}
               </h2>
               <p class="text-[11px] text-muted-foreground">
-                {isRtl
-                  ? "محصلة أعمال الفصل واختبار نهاية الفصل لجميع المواد"
-                  : "Coursework and final term exam breakdown per subject"}
+                {m.student_grades_term_report_description()}
               </p>
             </div>
           </div>
@@ -548,7 +536,7 @@
               }}
             >
               <SelectTrigger class="h-8 min-w-[180px] text-xs">
-                {periodNames.get(selectedTermPeriodId) ?? (isRtl ? "اختر الفصل" : "Select Term")}
+                {periodNames.get(selectedTermPeriodId) ?? m.student_grades_select_term()}
               </SelectTrigger>
               <SelectContent class="text-xs">
                 {#each academicContext.allPeriods as period (period.id)}
@@ -594,7 +582,7 @@
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "المجموع الكلي" : "Total Score"}
+              {m.student_grades_total_score()}
             </span>
             <div class="mt-1 flex items-baseline gap-1">
               <span class="text-lg font-bold text-foreground">
@@ -608,7 +596,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "النسبة المئوية" : "Percentage"}
+              {m.student_grades_percentage()}
             </span>
             <div class="mt-1 flex items-baseline gap-1">
               <span class="text-lg font-bold text-primary">
@@ -619,7 +607,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "التقدير العام" : "Appreciation"}
+              {m.student_grades_appreciation_label()}
             </span>
             <div class="mt-1 text-sm font-bold text-foreground">
               {getAppreciation(Number(termReport.overall_percentage))}
@@ -628,7 +616,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "الحالة والقرار" : "Academic Decision"}
+              {m.student_grades_academic_decision()}
             </span>
             <div class="mt-1">
               <span class={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${badge.color}`}>
@@ -639,13 +627,13 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "الترتيب على الصف" : "Rank in Class"}
+              {m.student_grades_rank_in_class()}
             </span>
             <div class="mt-1 text-base font-bold text-foreground">
               {termReport.rank_in_class ? `#${termReport.rank_in_class}` : "—"}
               {#if termReport.total_students_in_class}
                 <span class="text-xs font-normal text-muted-foreground">
-                  ({isRtl ? "من" : "of"} {termReport.total_students_in_class})
+                  ({m.student_grades_of()} {termReport.total_students_in_class})
                 </span>
               {/if}
             </div>
@@ -658,13 +646,13 @@
             <table class="w-full text-xs text-start">
               <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
                 <tr>
-                  <th class="px-4 py-2.5 text-start">{isRtl ? "المادة الدراسية" : "Subject"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "محصلة أعمال (20)" : "Coursework (20)"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "اختبار الفصل (30)" : "Exam (30)"}</th>
-                  <th class="px-3 py-2.5 text-center font-bold text-foreground">{isRtl ? "المجموع (50)" : "Total (50)"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النسبة" : "Percentage"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "التقدير" : "Grade"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النتيجة" : "Status"}</th>
+                  <th class="px-4 py-2.5 text-start">{m.student_grades_subject()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_coursework_20()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_term_exam_30()}</th>
+                  <th class="px-3 py-2.5 text-center font-bold text-foreground">{m.student_grades_term_total_50()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border/60">
@@ -695,7 +683,7 @@
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                           : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                       }`}>
-                        {subjPassed ? (isRtl ? "ناجح" : "Passed") : (isRtl ? "راسب" : "Failed")}
+                        {subjPassed ? m.student_grades_status_passed() : m.student_grades_status_failed()}
                       </span>
                     </td>
                   </tr>
@@ -721,12 +709,10 @@
             </div>
             <div>
               <h2 class="text-xs font-bold text-foreground">
-                {isRtl ? "النتيجة السنوية العامة (شهادة النقل)" : "Annual Academic Results (Promotion Certificate)"}
+                {m.student_grades_annual_results_heading()}
               </h2>
               <p class="text-[11px] text-muted-foreground">
-                {isRtl
-                  ? "تجميع نتائج الفصلين الدراسيين الأول والثاني واحتساب القرار النهائي"
-                  : "Aggregated results of Semester 1 and Semester 2 with promotion decision"}
+                {m.student_grades_annual_results_description()}
               </p>
             </div>
           </div>
@@ -740,7 +726,7 @@
               }}
             >
               <SelectTrigger class="h-8 min-w-[180px] text-xs">
-                {yearNames.get(selectedCalendarId) ?? (isRtl ? "اختر العام الدراسي" : "Select Academic Year")}
+                {yearNames.get(selectedCalendarId) ?? m.student_grades_select_academic_year()}
               </SelectTrigger>
               <SelectContent class="text-xs">
                 {#each academicContext.allYears as year (year.id)}
@@ -786,7 +772,7 @@
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "المجموع السنوي" : "Annual Total"}
+              {m.student_grades_annual_total()}
             </span>
             <div class="mt-1 flex items-baseline gap-1">
               <span class="text-lg font-bold text-foreground">
@@ -800,7 +786,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "النسبة العامة" : "Annual Percentage"}
+              {m.student_grades_annual_percentage()}
             </span>
             <div class="mt-1 flex items-baseline gap-1">
               <span class="text-lg font-bold text-primary">
@@ -811,7 +797,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "التقدير السنوي" : "Appreciation"}
+              {m.student_grades_appreciation_label()}
             </span>
             <div class="mt-1 text-sm font-bold text-foreground">
               {getAppreciation(Number(annualReport.overall_percentage))}
@@ -820,7 +806,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "قرار النقل والنتيجة" : "Promotion Status"}
+              {m.student_grades_promotion_status()}
             </span>
             <div class="mt-1">
               <span class={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${badge.color}`}>
@@ -831,13 +817,13 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "الترتيب" : "Rank"}
+              {m.student_grades_rank()}
             </span>
             <div class="mt-1 text-base font-bold text-foreground">
               {annualReport.rank_in_class ? `#${annualReport.rank_in_class}` : "—"}
               {#if annualReport.total_students_in_class}
                 <span class="text-xs font-normal text-muted-foreground">
-                  ({isRtl ? "على الصف" : "in class"})
+                  ({m.student_grades_in_class()})
                 </span>
               {/if}
             </div>
@@ -850,13 +836,13 @@
             <table class="w-full text-xs text-start">
               <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
                 <tr>
-                  <th class="px-4 py-2.5 text-start">{isRtl ? "المادة الدراسية" : "Subject"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "الفصل الأول (50)" : "Term 1 (50)"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "الفصل الثاني (50)" : "Term 2 (50)"}</th>
-                  <th class="px-3 py-2.5 text-center font-bold text-foreground">{isRtl ? "المجموع السنوي (100)" : "Annual Total (100)"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النسبة" : "Percentage"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "التقدير" : "Grade"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النتيجة" : "Status"}</th>
+                  <th class="px-4 py-2.5 text-start">{m.student_grades_subject()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_term_1_50()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_term_2_50()}</th>
+                  <th class="px-3 py-2.5 text-center font-bold text-foreground">{m.student_grades_annual_total_100()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border/60">
@@ -887,7 +873,7 @@
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                           : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                       }`}>
-                        {subjPassed ? (isRtl ? "ناجح" : "Passed") : (isRtl ? "راسب" : "Failed")}
+                        {subjPassed ? m.student_grades_status_passed() : m.student_grades_status_failed()}
                       </span>
                     </td>
                   </tr>
@@ -913,12 +899,12 @@
             </div>
             <div>
               <h2 class="text-xs font-bold text-foreground">
-                {isRtl ? "نتائج الشهادات العامة المعتمدة" : "Official Public Certificate Results"}
+                {m.student_grades_public_certificate_results_heading()}
               </h2>
               <p class="text-[11px] text-muted-foreground">
                 {isRtl
-                  ? "شهادة إتمام المرحلة الأساسية (تاسع) والشهادة الثانوية العامة (80+20)"
-                  : "Basic Education Certificate (Gr9) and Secondary Thanawiya (80+20 formula)"}
+                  ? m.student_grades_public_certificate_results_description()
+                  : m.student_grades_public_certificate_results_description()}
               </p>
             </div>
           </div>
@@ -936,15 +922,15 @@
             >
               <SelectTrigger class="h-8 min-w-[210px] text-xs">
                 {selectedCertType === "secondary_thanawiya"
-                  ? (isRtl ? "الشهادة الثانوية العامة (80+20)" : "Secondary Thanawiya (80+20)")
-                  : (isRtl ? "شهادة التعليم الأساسي (الصف التاسع)" : "Basic Certificate (Grade 9)")}
+                  ? m.student_grades_secondary_certificate()
+                  : m.student_grades_basic_certificate()}
               </SelectTrigger>
               <SelectContent class="text-xs">
                 <SelectItem value="secondary_thanawiya">
-                  {isRtl ? "الشهادة الثانوية العامة (80+20)" : "Secondary Thanawiya (80+20)"}
+                  {m.student_grades_secondary_certificate()}
                 </SelectItem>
                 <SelectItem value="basic_grade9">
-                  {isRtl ? "شهادة التعليم الأساسي (الصف التاسع)" : "Basic Certificate (Grade 9)"}
+                  {m.student_grades_basic_certificate()}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -958,7 +944,7 @@
               }}
             >
               <SelectTrigger class="h-8 min-w-[170px] text-xs">
-                {yearNames.get(selectedCalendarId) ?? (isRtl ? "اختر العام الدراسي" : "Select Academic Year")}
+                {yearNames.get(selectedCalendarId) ?? m.student_grades_select_academic_year()}
               </SelectTrigger>
               <SelectContent class="text-xs">
                 {#each academicContext.allYears as year (year.id)}
@@ -989,12 +975,10 @@
           <InfoCircle size={16} class="shrink-0" />
           <div class="flex-1">
             <span class="font-bold">
-              {isRtl ? "معادلة احتساب معدل الثانوية العامة المعتمدة:" : "Approved Thanawiya Formula:"}
+              {m.student_grades_approved_formula_heading()}
             </span>
             <span class="ms-1 text-foreground">
-              {isRtl
-                ? "درجة كل مادة (100) = الاختبار الوزاري الموحد (80 درجة) + المعدل التراكمي لسنوات النقل السابقة (20 درجة)."
-                : "Subject Total (100) = Unified Ministerial Examination (80 marks) + Cumulative Prior Years Average (20 marks)."}
+              {m.student_grades_approved_formula_description()}
             </span>
           </div>
         </div>
@@ -1021,7 +1005,7 @@
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "المجموع الكلي" : "Total Score"}
+              {m.student_grades_total_score()}
             </span>
             <div class="mt-1 flex items-baseline gap-1">
               <span class="text-lg font-bold text-foreground">
@@ -1035,7 +1019,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "النسبة العامة" : "Overall Percentage"}
+              {m.student_grades_overall_percentage()}
             </span>
             <div class="mt-1 flex items-baseline gap-1">
               <span class="text-lg font-bold text-primary">
@@ -1046,7 +1030,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "التقدير العام" : "Appreciation"}
+              {m.student_grades_appreciation_label()}
             </span>
             <div class="mt-1 text-sm font-bold text-foreground">
               {getAppreciation(Number(certReport.overall_percentage))}
@@ -1055,7 +1039,7 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "النتيجة والقرار" : "Final Status"}
+              {m.student_grades_final_status()}
             </span>
             <div class="mt-1">
               <span class={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${badge.color}`}>
@@ -1066,13 +1050,13 @@
 
           <div class="rounded-xl border border-border bg-card p-3">
             <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {isRtl ? "الترتيب" : "Rank"}
+              {m.student_grades_rank()}
             </span>
             <div class="mt-1 text-base font-bold text-foreground">
               {certReport.rank_in_class ? `#${certReport.rank_in_class}` : "—"}
               {#if certReport.total_students_in_class}
                 <span class="text-xs font-normal text-muted-foreground">
-                  ({isRtl ? "على الدفعة" : "in cohort"})
+                  ({m.student_grades_in_cohort()})
                 </span>
               {/if}
             </div>
@@ -1085,18 +1069,18 @@
             <table class="w-full text-xs text-start">
               <thead class="bg-muted/40 border-b border-border text-[11px] font-semibold text-muted-foreground">
                 <tr>
-                  <th class="px-4 py-2.5 text-start">{isRtl ? "المادة الدراسية" : "Subject"}</th>
+                  <th class="px-4 py-2.5 text-start">{m.student_grades_subject()}</th>
                   {#if selectedCertType === "secondary_thanawiya"}
-                    <th class="px-3 py-2.5 text-center">{isRtl ? "الاختبار الوزاري (80)" : "Exam (80)"}</th>
-                    <th class="px-3 py-2.5 text-center">{isRtl ? "المعدل التراكمي (20)" : "Cumulative (20)"}</th>
+                    <th class="px-3 py-2.5 text-center">{m.student_grades_ministerial_exam_80()}</th>
+                    <th class="px-3 py-2.5 text-center">{m.student_grades_cumulative_average_20()}</th>
                   {/if}
                   <th class="px-3 py-2.5 text-center font-bold text-foreground">
-                    {isRtl ? "الدرجة النهائية (100)" : "Final Score (100)"}
+                    {m.student_grades_final_score_100()}
                   </th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النهاية الصغرى (50)" : "Min Pass (50)"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النسبة" : "Percentage"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "التقدير" : "Grade"}</th>
-                  <th class="px-3 py-2.5 text-center">{isRtl ? "النتيجة" : "Status"}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_minimum_pass_50()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_percentage()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_grade()}</th>
+                  <th class="px-3 py-2.5 text-center">{m.student_grades_status()}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border/60">
@@ -1134,7 +1118,7 @@
                           ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                           : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
                       }`}>
-                        {subjPassed ? (isRtl ? "ناجح" : "Passed") : (isRtl ? "راسب" : "Failed")}
+                        {subjPassed ? m.student_grades_status_passed() : m.student_grades_status_failed()}
                       </span>
                     </td>
                   </tr>

@@ -1,34 +1,34 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
 import type { TemplateDto, UpdateTemplateRequest } from "$lib/api/types";
-import { Button } from "@orbis/ui/button";
-import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import ErrorState from "$lib/shared/components/error-state.svelte";
+import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
 import {
-  createDocument,
-  deserializeDocument,
-  serializeDocument,
-  type TemplateDocument,
+    createDocument,
+    deserializeDocument,
+    serializeDocument,
+    type TemplateDocument,
 } from "@docforge/core";
+import { toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { onMount } from "svelte";
+import CanvasContextMenu from "./canvas/canvas-context-menu.svelte";
+import CanvasRoot from "./canvas/canvas-root.svelte";
+import ContextToolbar from "./layout/context-toolbar.svelte";
+import FlyoutPanel from "./layout/flyout-panel.svelte";
+import SideRail from "./layout/side-rail.svelte";
+import StatusBar from "./layout/status-bar.svelte";
+import PropertiesInspector from "./panels/properties-inspector.svelte";
+import {
+    copyNodes,
+    cutNodes,
+    pasteNodes,
+} from "./stores/clipboard-manager";
 import { createEditorStore } from "./stores/editor-store.svelte";
 import { registerTemplateAiEditor } from "./template-ai-bridge";
-import {
-  copyNodes,
-  cutNodes,
-  pasteNodes,
-} from "./stores/clipboard-manager";
-import CanvasRoot from "./canvas/canvas-root.svelte";
-import CanvasContextMenu from "./canvas/canvas-context-menu.svelte";
-import * as m from "$lib/paraglide/messages";
-import SideRail from "./layout/side-rail.svelte";
-import FlyoutPanel from "./layout/flyout-panel.svelte";
-import ContextToolbar from "./layout/context-toolbar.svelte";
-import StatusBar from "./layout/status-bar.svelte";
-import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
-import ErrorState from "$lib/shared/components/error-state.svelte";
-import PropertiesInspector from "./panels/properties-inspector.svelte";
 
 let { orgId, templateId }: { orgId: string; templateId: string } = $props();
 
@@ -126,111 +126,111 @@ async function initEditor() {
     store.setSystemSchemas({
       student: {
         type: "object",
-        label: "بيانات الطالب",
+        label: m.template_schema_student_group(),
         properties: {
-          name: { type: "string", label: "اسم الطالب الرباعي" },
-          student_number: { type: "string", label: "الرقم الأكاديمي" },
-          national_id: { type: "string", label: "رقم الهوية / الإقامة" },
-          seat_number: { type: "string", label: "رقم الجلوس" },
-          class_name: { type: "string", label: "الصف والشعبة" },
-          grade_level: { type: "string", label: "المرحلة الدراسية" },
-          academic_calendar: { type: "string", label: "العام الدراسي" },
-          birth_date: { type: "string", label: "تاريخ الميلاد" },
-          birth_place: { type: "string", label: "مكان الميلاد" },
-          nationality: { type: "string", label: "الجنسية" },
-          guardian_name: { type: "string", label: "اسم ولي الأمر" },
+          name: { type: "string", label: m.template_schema_student_full_name() },
+          student_number: { type: "string", label: m.template_schema_student_number() },
+          national_id: { type: "string", label: m.template_schema_student_national_id() },
+          seat_number: { type: "string", label: m.template_schema_student_seat_number() },
+          class_name: { type: "string", label: m.template_schema_student_class_section() },
+          grade_level: { type: "string", label: m.template_schema_student_grade_level() },
+          academic_calendar: { type: "string", label: m.template_schema_academic_year() },
+          birth_date: { type: "string", label: m.template_schema_birth_date() },
+          birth_place: { type: "string", label: m.template_schema_birth_place() },
+          nationality: { type: "string", label: m.template_schema_nationality() },
+          guardian_name: { type: "string", label: m.template_schema_guardian_name() },
         },
       },
       academic: {
         type: "object",
-        label: "البيانات الأكاديمية والدرجات",
+        label: m.template_schema_academic_group(),
         properties: {
           subjects: {
             type: "array",
-            label: "جدول المواد والدرجات",
+            label: m.template_schema_subjects_grades_table(),
             items: { type: "object" },
           },
-          annual_total: { type: "number", label: "المجموع السنوي العام" },
-          max_score: { type: "number", label: "النهاية الكبرى العامة" },
-          min_score: { type: "number", label: "النهاية الصغرى العامة" },
-          percentage: { type: "string", label: "المعدل التراكمي / النسبة المئوية" },
-          appreciation: { type: "string", label: "التقدير العام" },
-          status: { type: "string", label: "النتيجة النهائية" },
-          rank_in_class: { type: "string", label: "الترتيب على الصف" },
+          annual_total: { type: "number", label: m.template_schema_annual_total() },
+          max_score: { type: "number", label: m.template_schema_maximum_score() },
+          min_score: { type: "number", label: m.template_schema_minimum_score() },
+          percentage: { type: "string", label: m.template_schema_cumulative_percentage() },
+          appreciation: { type: "string", label: m.template_schema_overall_grade() },
+          status: { type: "string", label: m.template_schema_final_result() },
+          rank_in_class: { type: "string", label: m.template_schema_class_rank() },
         },
       },
       summary: {
         type: "object",
-        label: "ملخص النتيجة والإحصائيات",
+        label: m.template_schema_summary_group(),
         properties: {
-          total_score: { type: "number", label: "مجموع الدرجات المحصلة" },
-          percentage: { type: "string", label: "النسبة المئوية العامة" },
-          status: { type: "string", label: "الحالة والقرار الأكاديمي" },
-          appreciation: { type: "string", label: "التقدير التراكمي" },
-          rank_in_class: { type: "string", label: "الترتيب الأكاديمي" },
+          total_score: { type: "number", label: m.template_schema_total_score() },
+          percentage: { type: "string", label: m.template_schema_overall_percentage() },
+          status: { type: "string", label: m.template_schema_academic_status_decision() },
+          appreciation: { type: "string", label: m.template_schema_cumulative_grade() },
+          rank_in_class: { type: "string", label: m.template_schema_academic_rank() },
         },
       },
       report: {
         type: "object",
-        label: "بيانات التقرير والاعتماد",
+        label: m.template_schema_report_group(),
         properties: {
-          period_name: { type: "string", label: "فترة التقرير / الفصل الدراسي" },
-          academic_calendar: { type: "string", label: "العام الدراسي" },
-          issued_date: { type: "string", label: "تاريخ الإصدار والطباعة" },
-          principal_name: { type: "string", label: "مدير المدرسة" },
-          class_teacher: { type: "string", label: "مربي الصف" },
-          verification_url: { type: "string", label: "رابط التحقق الرقمي QR" },
+          period_name: { type: "string", label: m.template_schema_report_period() },
+          academic_calendar: { type: "string", label: m.template_schema_academic_year() },
+          issued_date: { type: "string", label: m.template_schema_issued_date() },
+          principal_name: { type: "string", label: m.template_schema_principal_name() },
+          class_teacher: { type: "string", label: m.template_schema_class_teacher() },
+          verification_url: { type: "string", label: m.template_schema_verification_qr() },
         },
       },
       exam: {
         type: "object",
-        label: "بيانات الامتحانات واللجان",
+        label: m.template_schema_exam_group(),
         properties: {
-          session_name: { type: "string", label: "اسم الدورة الاختبارية" },
-          hall_name: { type: "string", label: "قاعة الاختبار / مقر اللجنة" },
-          seating_number: { type: "string", label: "رقم الجلوس الرسمي" },
-          desk_number: { type: "string", label: "رقم المقعد" },
-          subject_name: { type: "string", label: "المادة الدراسية" },
-          exam_date: { type: "string", label: "تاريخ ووقت الاختبار" },
-          total_count: { type: "string", label: "إجمالي الطلاب باللجنة" },
+          session_name: { type: "string", label: m.template_schema_exam_session_name() },
+          hall_name: { type: "string", label: m.template_schema_exam_hall() },
+          seating_number: { type: "string", label: m.template_schema_official_seat_number() },
+          desk_number: { type: "string", label: m.template_schema_desk_number() },
+          subject_name: { type: "string", label: m.template_schema_subject_name() },
+          exam_date: { type: "string", label: m.template_schema_exam_date_time() },
+          total_count: { type: "string", label: m.template_schema_committee_student_count() },
         },
       },
       employee: {
         type: "object",
-        label: "بيانات الموظف والكادر",
+        label: m.template_schema_employee_group(),
         properties: {
-          name: { type: "string", label: "اسم الموظف" },
-          job_title: { type: "string", label: "المسمى الوظيفي" },
-          employee_number: { type: "string", label: "الرقم الوظيفي" },
-          department: { type: "string", label: "القسم / الإدارة" },
+          name: { type: "string", label: m.template_schema_employee_name() },
+          job_title: { type: "string", label: m.template_schema_job_title() },
+          employee_number: { type: "string", label: m.template_schema_employee_number() },
+          department: { type: "string", label: m.template_schema_department() },
         },
       },
       receipt: {
         type: "object",
-        label: "بيانات السندات المالية",
+        label: m.template_schema_receipt_group(),
         properties: {
-          number: { type: "string", label: "رقم السند" },
-          date: { type: "string", label: "تاريخ السند" },
-          payer_name: { type: "string", label: "اسم الدافع / المستلم منه" },
-          student_name: { type: "string", label: "اسم الطالب" },
-          amount: { type: "number", label: "المبلغ رقماً" },
-          amount_words: { type: "string", label: "المبلغ كتابة" },
-          description: { type: "string", label: "البيان" },
-          payment_method: { type: "string", label: "طريقة الدفع" },
-          cashier_name: { type: "string", label: "أمين الصندوق" },
+          number: { type: "string", label: m.template_schema_receipt_number() },
+          date: { type: "string", label: m.template_schema_receipt_date() },
+          payer_name: { type: "string", label: m.template_schema_payer_recipient() },
+          student_name: { type: "string", label: m.template_schema_student_name() },
+          amount: { type: "number", label: m.template_schema_amount_numeric() },
+          amount_words: { type: "string", label: m.template_schema_amount_words() },
+          description: { type: "string", label: m.template_schema_description() },
+          payment_method: { type: "string", label: m.template_schema_payment_method() },
+          cashier_name: { type: "string", label: m.template_schema_cashier_name() },
         },
       },
       $org: {
         type: "object",
-        label: "بيانات المنشأة والوزارة",
+        label: m.template_schema_organization_group(),
         properties: {
-          country_name: { type: "string", label: "اسم الدولة" },
-          ministry_name: { type: "string", label: "اسم الوزارة" },
-          region_name: { type: "string", label: "المكتب / المحافظة / المديرية" },
-          name_ar: { type: "string", label: "اسم المنشأة التعليمية (عربي)" },
-          name: { type: "string", label: "اسم المنشأة التعليمية (English)" },
-          logo_url: { type: "string", label: "شعار المنشأة" },
-          emblem_url: { type: "string", label: "شعار الوزارة أو الجمهورية" },
+          country_name: { type: "string", label: m.template_schema_country_name() },
+          ministry_name: { type: "string", label: m.template_schema_ministry_name() },
+          region_name: { type: "string", label: m.template_schema_region_name() },
+          name_ar: { type: "string", label: m.template_schema_organization_name_ar() },
+          name: { type: "string", label: m.template_schema_organization_name_en() },
+          logo_url: { type: "string", label: m.template_schema_organization_logo() },
+          emblem_url: { type: "string", label: m.template_schema_ministry_emblem() },
         },
       },
     });
