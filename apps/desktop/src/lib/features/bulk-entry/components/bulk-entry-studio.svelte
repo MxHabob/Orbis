@@ -1,41 +1,40 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-  import { OrbisGrid, parseClipboard, type CellEditEvent, type GridRowsChangeEvent } from "@orbis/svelte-grid";
-  import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { toast } from "@orbis/ui";
-  import {
-    Plus,
-    Search,
-    Trash,
-    Clipboard,
-    ArrowUpTray,
-    ArrowDownTray,
-    CheckCircle,
-    FolderOpen,
-  } from "@orbis/icons";
-  import * as m from "$lib/paraglide/messages";
-  import { orgContext } from "$lib/stores/org-context.svelte";
-  import { getBulkEntryGridColumns, getBulkEntryProfileName } from "../localization";
   import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
-  import type {
-    BulkProfileId,
-    BulkRowState,
-    BulkPreviewSummary,
-    ChunkProgress,
-    BulkCommitResult,
-  } from "../types";
-  import { BULK_PROFILES, getBulkProfile } from "../profiles";
-  import { createBulkReferenceDataQuery } from "../queries";
-  import { downloadExcelTemplate } from "../engine/template-generator";
-  import { pickAndParseFile, parseDroppedFile } from "../engine/file-parser";
-  import { validateAllRows } from "../engine/validator";
-  import { revalidateCellChange } from "../engine/revalidator";
+  import * as m from "$lib/paraglide/messages";
+  import { createShowInFolderToastAction } from "$lib/shared/utils/download";
+  import { orgContext } from "$lib/stores/org-context.svelte";
+  import {
+      ArrowDownTray,
+      ArrowUpTray,
+      CheckCircle,
+      Clipboard,
+      FolderOpen,
+      Plus,
+      Trash
+  } from "@orbis/icons";
+  import { OrbisGrid, parseClipboard, type CellEditEvent, type GridRowsChangeEvent } from "@orbis/svelte-grid";
+  import { toast } from "@orbis/ui";
+  import { Badge } from "@orbis/ui/badge";
+  import { Button } from "@orbis/ui/button";
+  import { untrack } from "svelte";
   import { executeCommitPipeline } from "../engine/commit-pipeline";
   import { exportCorrectedDataset } from "../engine/exporter";
-  import { createShowInFolderToastAction } from "$lib/shared/utils/download";
-  import ImpactPreviewModal from "./impact-preview-modal.svelte";
+  import { parseDroppedFile, pickAndParseFile } from "../engine/file-parser";
+  import { revalidateCellChange } from "../engine/revalidator";
+  import { downloadExcelTemplate } from "../engine/template-generator";
+  import { validateAllRows } from "../engine/validator";
+  import { getBulkEntryGridColumns, getBulkEntryProfileName } from "../localization";
+  import { BULK_PROFILES, getBulkProfile } from "../profiles";
+  import { createBulkReferenceDataQuery } from "../queries";
+  import type {
+      BulkCommitResult,
+      BulkPreviewSummary,
+      BulkProfileId,
+      BulkRowState,
+      ChunkProgress,
+  } from "../types";
   import CommitProgressModal from "./commit-progress-modal.svelte";
+  import ImpactPreviewModal from "./impact-preview-modal.svelte";
   import ImportResultSummary from "./import-result-summary.svelte";
 
   let {
@@ -524,7 +523,7 @@
     <div class="mx-4 mt-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-center justify-between gap-3" role="alert">
       <span class="text-xs text-destructive">{referenceDataError}</span>
       <Button variant="outline" size="sm" onclick={() => refDataQuery.refetch()}>
-        إعادة المحاولة
+        {m.common_retry()}
       </Button>
     </div>
   {/if}

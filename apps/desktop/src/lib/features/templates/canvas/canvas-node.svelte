@@ -1,5 +1,6 @@
 <script lang="ts">
 import { Grid } from "@orbis/icons";
+import * as m from "$lib/paraglide/messages";
 import CanvasNode from "./canvas-node.svelte";
 
 /**
@@ -539,7 +540,7 @@ function getTotalDisplayText(col: any): string {
         <!-- Fallback empty table placeholder -->
         <rect width={w} height={h} fill="white" stroke="#d1d5db" stroke-width="1" />
         <text x={w / 2} y={h / 2} text-anchor="middle" dominant-baseline="central" fill="#94a3b8" font-size="9">
-          جدول بدون أعمدة (انقر لإضافة أعمدة في لوحة الخصائص)
+          {m.template_inspector_empty_table_placeholder()}
         </text>
       {/if}
 

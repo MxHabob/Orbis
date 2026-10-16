@@ -1,29 +1,29 @@
 <script lang="ts">
+import {
+    getDocumentSource,
+    useUploadFile,
+} from "$lib/features/documents/queries";
 import * as m from "$lib/paraglide/messages";
-import type { EditorStore } from "../stores/editor-store.svelte";
+import {
+    AdjustmentsHorizontal,
+    ArrowUpTray,
+    DocumentPage,
+    Plus,
+    Trash,
+    XMark,
+} from "@orbis/icons";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
-import { Button } from "@orbis/ui/button";
-import { Badge } from "@orbis/ui/badge";
-import { Separator } from "@orbis/ui/separator";
 import { ScrollArea } from "@orbis/ui/scroll-area";
-import { Checkbox } from "@orbis/ui/checkbox";
+import { Separator } from "@orbis/ui/separator";
 import { Textarea } from "@orbis/ui/textarea";
-import { toast } from "@orbis/ui";
 import ColorPicker from "../shared/color-picker.svelte";
 import PropertySelect from "../shared/property-select.svelte";
-import {
-  AdjustmentsHorizontal,
-  ArrowUpTray,
-  DocumentPage,
-  Plus,
-  Trash,
-  XMark,
-} from "@orbis/icons";
-import {
-  useUploadFile,
-  getDocumentSource,
-} from "$lib/features/documents/queries";
+import type { EditorStore } from "../stores/editor-store.svelte";
 
 let {
   store,
@@ -245,28 +245,28 @@ function applyYemeniCertificateColumnsPreset() {
 }
 </script>
 
-<aside class="properties-inspector" style:width={`${width}px`} aria-label="خصائص المحرر">
+<aside class="properties-inspector" style:width={`${width}px`} aria-label={m.template_inspector_editor_properties()}>
   <Button
     variant="ghost"
     size="icon-xs"
     class="resize-handle"
     type="button"
-    aria-label="تغيير عرض لوحة الخصائص"
-    title="اسحب لتغيير العرض"
+    aria-label={m.template_inspector_resize_panel()}
+    title={m.template_inspector_resize_hint()}
     onpointerdown={startResize}
     onkeydown={resizeWithKeyboard}
   />
   <div class="inspector-header">
     <div class="flex min-w-0 items-center gap-2">
       <AdjustmentsHorizontal class="size-4 shrink-0 text-muted-foreground" />
-      <h2 class="inspector-title">{node ? "خصائص العنصر" : "خصائص الصفحة"}</h2>
+      <h2 class="inspector-title">{node ? m.template_inspector_element_properties() : m.template_inspector_page_properties()}</h2>
     </div>
     <div class="flex shrink-0 items-center gap-1">
       {#if node}
         <Badge variant="outline" class="inspector-type">{node.type}</Badge>
       {/if}
       {#if onclose}
-        <Button variant="ghost" size="icon-sm" aria-label="إخفاء الخصائص" onclick={onclose}>
+        <Button variant="ghost" size="icon-sm" aria-label={m.template_inspector_hide_properties()} onclick={onclose}>
           <XMark class="size-4" />
         </Button>
       {/if}
@@ -279,7 +279,7 @@ function applyYemeniCertificateColumnsPreset() {
         <div class="page-inspector">
           <div class="page-summary">
             <DocumentPage class="size-4 text-muted-foreground" />
-            <span>{pageSetup.size} · {pageSetup.orientation === "landscape" ? "أفقي" : "عمودي"}</span>
+            <span>{pageSetup.size} · {pageSetup.orientation === "landscape" ? m.template_orientation_horz() : m.template_orientation_vert()}</span>
           </div>
 
           <Button
@@ -292,10 +292,10 @@ function applyYemeniCertificateColumnsPreset() {
             }}
           >
             <AdjustmentsHorizontal class="size-4" />
-            إعداد الصفحة
+            {m.template_inspector_page_setup()}
           </Button>
 
-          <p class="text-xs leading-5 text-muted-foreground">حدد عنصرًا لعرض خصائصه.</p>
+          <p class="text-xs leading-5 text-muted-foreground">{m.template_inspector_select_element_hint()}</p>
         </div>
       {:else}
         <div class="selected-layer">
@@ -303,10 +303,10 @@ function applyYemeniCertificateColumnsPreset() {
         </div>
 
         <details class="property-section" open>
-          <summary><span>عام</span></summary>
+          <summary><span>{m.template_inspector_general()}</span></summary>
           <div class="property-section-body space-y-3">
             <div class="space-y-1">
-              <Label class="property-label">اسم الطبقة</Label>
+              <Label class="property-label">{m.template_inspector_layer_name()}</Label>
               <Input
                 value={node.name || ""}
                 placeholder={node.type}
@@ -319,26 +319,26 @@ function applyYemeniCertificateColumnsPreset() {
                 <Checkbox
                   checked={node.visible !== false}
                   onCheckedChange={(checked) => updateProp("visible", checked === true)}
-                  aria-label="إظهار العنصر"
+                  aria-label={m.template_inspector_show_element()}
                 />
-                <span>إظهار العنصر</span>
+                <span>{m.template_inspector_show_element()}</span>
               </div>
               <div class="flex items-center gap-2 text-xs">
                 <Checkbox
                   checked={node.locked === true}
                   onCheckedChange={(checked) => updateProp("locked", checked === true)}
-                  aria-label="قفل العنصر"
+                  aria-label={m.template_inspector_lock_element()}
                 />
-                <span>قفل العنصر</span>
+                <span>{m.template_inspector_lock_element()}</span>
               </div>
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1">
-                <Label class="property-label">الشفافية</Label>
+                <Label class="property-label">{m.template_inspector_opacity()}</Label>
                 <Input type="number" min="0" max="1" step="0.05" value={node.opacity ?? 1} onchange={(e) => updateProp("opacity", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">الدوران°</Label>
+                <Label class="property-label">{m.template_inspector_rotation()}</Label>
                 <Input type="number" step="1" value={node.rotation ?? 0} onchange={(e) => updateProp("rotation", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" />
               </div>
             </div>
@@ -347,8 +347,8 @@ function applyYemeniCertificateColumnsPreset() {
 
         <details class="property-section" open>
           <summary>
-            <span>الموضع والحجم</span>
-            <span class="section-unit">ملم</span>
+            <span>{m.template_inspector_position_size()}</span>
+            <span class="section-unit">{m.template_inspector_unit_mm()}</span>
           </summary>
           <div class="property-section-body">
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -373,7 +373,7 @@ function applyYemeniCertificateColumnsPreset() {
               />
             </div>
             <div class="space-y-1">
-              <span class="property-label">العرض</span>
+              <span class="property-label">{m.template_inspector_width()}</span>
               <Input
                 type="text"
                 value={pos.width ?? "100%"}
@@ -382,7 +382,7 @@ function applyYemeniCertificateColumnsPreset() {
               />
             </div>
             <div class="space-y-1">
-              <span class="property-label">الارتفاع</span>
+              <span class="property-label">{m.template_inspector_height()}</span>
               <Input
                 type="text"
                 value={pos.height ?? "auto"}
@@ -402,24 +402,24 @@ function applyYemeniCertificateColumnsPreset() {
         {#if node.type === "Table"}
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <Label class="text-xs font-semibold text-foreground">الجدول</Label>
+              <Label class="text-xs font-semibold text-foreground">{m.template_inspector_table()}</Label>
               <Button
                 variant="ghost"
                 size="xs"
                 onclick={applyYemeniCertificateColumnsPreset}
                 class="text-[11px] h-7 text-primary cursor-pointer hover:bg-primary/10"
-                title="تطبيق هيكل أعمدة شهادة الدرجات اليمنية المعتمدة"
+                title={m.template_inspector_yemeni_certificate_preset_title()}
               >
-                نموذج الشهادة المعتمدة
+                {m.template_inspector_approved_certificate_preset()}
               </Button>
             </div>
 
             <details class="inspector-subsection" open>
-              <summary>البيانات والعرض</summary>
+              <summary>{m.template_inspector_data_display()}</summary>
               <div class="inspector-subsection-body">
             <!-- Data Source Field -->
             <div class="space-y-1">
-              <Label class="text-[11px] text-muted-foreground">مصدر البيانات</Label>
+              <Label class="text-[11px] text-muted-foreground">{m.template_inspector_data_source()}</Label>
               <Input
                 type="text"
                 placeholder="e.g. subjects or rows"
@@ -435,42 +435,42 @@ function applyYemeniCertificateColumnsPreset() {
                 <Checkbox
                   checked={nodeProps.showHeader !== false}
                   onCheckedChange={(checked) => updateProp("showHeader", checked === true)}
-                  aria-label="إظهار الترويسة"
+                  aria-label={m.template_inspector_show_header()}
                 />
-                <span class="text-[11px]">إظهار الترويسة</span>
+                <span class="text-[11px]">{m.template_inspector_show_header()}</span>
               </div>
 
               <div class="flex items-center gap-1.5 cursor-pointer">
                 <Checkbox
                   checked={nodeProps.showTotals === true}
                   onCheckedChange={(checked) => updateProp("showTotals", checked === true)}
-                  aria-label="صف المجموع العام"
+                  aria-label={m.template_inspector_grand_total_row()}
                 />
-                <span class="text-[11px]">صف المجموع العام</span>
+                <span class="text-[11px]">{m.template_inspector_grand_total_row()}</span>
               </div>
 
               <div class="flex items-center gap-1.5 cursor-pointer">
                 <Checkbox
                   checked={nodeProps.showGrid !== false}
                   onCheckedChange={(checked) => updateProp("showGrid", checked === true)}
-                  aria-label="خطوط الشبكة"
+                  aria-label={m.template_inspector_grid_lines()}
                 />
-                <span class="text-[11px]">خطوط الشبكة</span>
+                <span class="text-[11px]">{m.template_inspector_grid_lines()}</span>
               </div>
 
               <div class="flex items-center gap-1.5 cursor-pointer">
                 <Checkbox
                   checked={nodeProps.showBorder !== false}
                   onCheckedChange={(checked) => updateProp("showBorder", checked === true)}
-                  aria-label="إطار خارجي"
+                  aria-label={m.template_inspector_outer_border()}
                 />
-                <span class="text-[11px]">إطار خارجي</span>
+                <span class="text-[11px]">{m.template_inspector_outer_border()}</span>
               </div>
             </div>
 
             <!-- Direction -->
             <div class="space-y-1 pt-1">
-              <Label class="text-[11px] text-muted-foreground">اتجاه الجدول:</Label>
+              <Label class="text-[11px] text-muted-foreground">{m.template_inspector_table_direction()}</Label>
               <div class="flex gap-2">
                 <Button
                   variant={nodeProps.direction === "rtl" ? "default" : "outline"}
@@ -478,7 +478,7 @@ function applyYemeniCertificateColumnsPreset() {
                   onclick={() => updateProp("direction", "rtl")}
                   class="grow h-7 text-xs cursor-pointer"
                 >
-                  RTL (من اليمين)
+                  {m.template_inspector_rtl()}
                 </Button>
                 <Button
                   variant={nodeProps.direction === "ltr" ? "default" : "outline"}
@@ -486,7 +486,7 @@ function applyYemeniCertificateColumnsPreset() {
                   onclick={() => updateProp("direction", "ltr")}
                   class="grow h-7 text-xs cursor-pointer"
                 >
-                  LTR (من اليسار)
+                  {m.template_inspector_ltr()}
                 </Button>
               </div>
             </div>
@@ -498,7 +498,7 @@ function applyYemeniCertificateColumnsPreset() {
             <!-- Columns Management -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
-                <Label class="text-xs font-semibold text-foreground">الأعمدة</Label>
+                <Label class="text-xs font-semibold text-foreground">{m.template_inspector_columns()}</Label>
                 <Button
                   variant="outline"
                   size="sm"
@@ -506,12 +506,12 @@ function applyYemeniCertificateColumnsPreset() {
                   class="h-8 text-xs gap-1.5 cursor-pointer"
                 >
                   <Plus class="size-3.5" />
-                  إضافة عمود
+                  {m.template_inspector_add_column()}
                 </Button>
               </div>
 
               <details class="inspector-subsection">
-                <summary>عرض الأعمدة <span class="text-muted-foreground">({columns.length})</span></summary>
+                <summary>{m.template_inspector_column_display()} <span class="text-muted-foreground">({columns.length})</span></summary>
                 <div class="inspector-subsection-body">
               <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {#each columns as col, idx (col.id || idx)}
@@ -530,17 +530,17 @@ function applyYemeniCertificateColumnsPreset() {
 
                     <div class="grid grid-cols-2 gap-1.5">
                       <div>
-                        <span class="text-[10px] text-muted-foreground">العنوان العربي</span>
+                        <span class="text-[10px] text-muted-foreground">{m.template_inspector_arabic_heading()}</span>
                         <Input
                           type="text"
                           value={col.headerAr || ""}
-                          placeholder="المادة"
+                          placeholder={m.template_inspector_subject()}
                           onchange={(e) => updateColumn(idx, "headerAr", (e.target as HTMLInputElement).value)}
                           class="h-8 text-xs"
                         />
                       </div>
                       <div>
-                        <span class="text-[10px] text-muted-foreground">العنوان الإنجليزي</span>
+                        <span class="text-[10px] text-muted-foreground">{m.template_inspector_english_heading()}</span>
                         <Input
                           type="text"
                           value={col.header || ""}
@@ -553,7 +553,7 @@ function applyYemeniCertificateColumnsPreset() {
 
                     <div class="grid grid-cols-2 gap-1.5">
                       <div>
-                        <span class="text-[10px] text-muted-foreground">الحقل</span>
+                        <span class="text-[10px] text-muted-foreground">{m.template_inspector_field()}</span>
                         <Input
                           type="text"
                           value={col.field || col.key || ""}
@@ -563,7 +563,7 @@ function applyYemeniCertificateColumnsPreset() {
                         />
                       </div>
                       <div>
-                        <span class="text-[10px] text-muted-foreground">العرض</span>
+                        <span class="text-[10px] text-muted-foreground">{m.template_inspector_width()}</span>
                         <Input
                           type="text"
                           value={col.width || "auto"}
@@ -576,27 +576,27 @@ function applyYemeniCertificateColumnsPreset() {
 
                     <div class="grid grid-cols-2 gap-1.5">
                       <div>
-                        <span class="text-[10px] text-muted-foreground">المحاذاة</span>
+                        <span class="text-[10px] text-muted-foreground">{m.template_inspector_alignment()}</span>
                         <PropertySelect
                           value={col.alignment || "center"}
                           options={[
-                            { value: "center", label: "وسط" },
-                            { value: "right", label: "يمين" },
-                            { value: "left", label: "يسار" },
+                            { value: "center", label: m.template_inspector_center() },
+                            { value: "right", label: m.template_inspector_right() },
+                            { value: "left", label: m.template_inspector_left() },
                           ]}
                           onchange={(value) => updateColumn(idx, "alignment", value)}
                         />
                       </div>
                       <div>
-                        <span class="text-[10px] text-muted-foreground">المجموع</span>
+                        <span class="text-[10px] text-muted-foreground">{m.template_inspector_total()}</span>
                         <PropertySelect
                           value={col.totalType || "none"}
                           options={[
-                            { value: "none", label: "بدون" },
-                            { value: "sum", label: "مجموع" },
-                            { value: "avg", label: "متوسط" },
-                            { value: "count", label: "عدد" },
-                            { value: "label", label: "تسمية" },
+                            { value: "none", label: m.template_inspector_none() },
+                            { value: "sum", label: m.template_inspector_sum() },
+                            { value: "avg", label: m.template_inspector_average() },
+                            { value: "count", label: m.template_inspector_count() },
+                            { value: "label", label: m.template_inspector_label() },
                           ]}
                           onchange={(value) => updateColumn(idx, "totalType", value)}
                         />
@@ -613,11 +613,11 @@ function applyYemeniCertificateColumnsPreset() {
 
             <!-- Table Styling -->
             <details class="inspector-subsection">
-              <summary>التنسيق</summary>
+              <summary>{m.template_inspector_formatting()}</summary>
               <div class="inspector-subsection-body">
 
               <div class="space-y-1">
-                <span class="text-[11px] text-muted-foreground">خلفية الترويسة</span>
+                <span class="text-[11px] text-muted-foreground">{m.template_inspector_header_background()}</span>
                 <ColorPicker
                   value={nodeProps.style?.headerBgColor || "#1e3a8a"}
                   onchange={(c) => updateTableStyle("headerBgColor", c)}
@@ -625,7 +625,7 @@ function applyYemeniCertificateColumnsPreset() {
               </div>
 
               <div class="space-y-1">
-                <span class="text-[11px] text-muted-foreground">لون النص</span>
+                <span class="text-[11px] text-muted-foreground">{m.template_inspector_text_color()}</span>
                 <ColorPicker
                   value={nodeProps.style?.headerTextColor || "#ffffff"}
                   onchange={(c) => updateTableStyle("headerTextColor", c)}
@@ -633,7 +633,7 @@ function applyYemeniCertificateColumnsPreset() {
               </div>
 
               <div class="space-y-1">
-                <span class="text-[11px] text-muted-foreground">لون الحدود</span>
+                <span class="text-[11px] text-muted-foreground">{m.template_inspector_border_color()}</span>
                 <ColorPicker
                   value={nodeProps.style?.borderColor || "#475569"}
                   onchange={(c) => updateTableStyle("borderColor", c)}
@@ -642,7 +642,7 @@ function applyYemeniCertificateColumnsPreset() {
 
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span class="text-[11px] text-muted-foreground">ارتفاع الصف</span>
+                  <span class="text-[11px] text-muted-foreground">{m.template_inspector_row_height()}</span>
                   <Input
                     type="number"
                     step="1"
@@ -652,7 +652,7 @@ function applyYemeniCertificateColumnsPreset() {
                   />
                 </div>
                 <div>
-                  <span class="text-[11px] text-muted-foreground">حجم خط العنوان</span>
+                  <span class="text-[11px] text-muted-foreground">{m.template_inspector_heading_font_size()}</span>
                   <Input
                     type="number"
                     step="0.5"
@@ -669,18 +669,18 @@ function applyYemeniCertificateColumnsPreset() {
         <!-- ══════════════ TEXT NODE INSPECTOR ══════════════ -->
         {:else if node.type === "Text"}
           <div class="space-y-3">
-            <Label class="text-xs font-semibold text-foreground">المحتوى</Label>
+            <Label class="text-xs font-semibold text-foreground">{m.template_inspector_content()}</Label>
             <Textarea
               value={nodeProps.content || ""}
               oninput={(e) => updateProp("content", (e.target as HTMLTextAreaElement).value)}
               rows={4}
               class="text-xs font-mono"
-              placeholder={"اكتب النص أو التعبير (مثل: {{student_name}})"}
+              placeholder={m.template_inspector_text_expression_placeholder()}
             />
 
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span class="text-[10px] text-muted-foreground">حجم الخط:</span>
+                <span class="text-[10px] text-muted-foreground">{m.template_inspector_font_size_label()}</span>
                 <Input
                   type="number"
                   step="0.5"
@@ -690,12 +690,12 @@ function applyYemeniCertificateColumnsPreset() {
                 />
               </div>
               <div>
-                <span class="text-[10px] text-muted-foreground">نوع الخط:</span>
+                <span class="text-[10px] text-muted-foreground">{m.template_inspector_font_family_label()}</span>
                 <PropertySelect
                   value={nodeProps.fontFamily || "Amiri"}
                   class="h-7"
                   options={[
-                    { value: "Amiri", label: "Amiri (عربي)" },
+                    { value: "Amiri", label: m.template_inspector_amiri_arabic() },
                     { value: "Rubik", label: "Rubik" },
                     { value: "Tahoma", label: "Tahoma" },
                     { value: "Arial", label: "Arial" },
@@ -706,7 +706,7 @@ function applyYemeniCertificateColumnsPreset() {
             </div>
 
             <div class="space-y-1">
-              <span class="text-[10px] text-muted-foreground">لون النص:</span>
+              <span class="text-[10px] text-muted-foreground">{m.template_inspector_text_color_label()}</span>
               <ColorPicker
                 value={nodeProps.color || "#000000"}
                 onchange={(c) => updateProp("color", c)}
@@ -714,104 +714,104 @@ function applyYemeniCertificateColumnsPreset() {
             </div>
             <div class="grid grid-cols-2 gap-2">
               <div class="space-y-1">
-                <Label class="property-label">سماكة الخط</Label>
+                <Label class="property-label">{m.template_inspector_font_weight()}</Label>
                 <PropertySelect
                   value={nodeProps.fontWeight || "normal"}
                   options={[
-                    { value: "light", label: "خفيف" },
-                    { value: "normal", label: "عادي" },
-                    { value: "bold", label: "عريض" },
+                    { value: "light", label: m.template_inspector_light() },
+                    { value: "normal", label: m.template_inspector_normal() },
+                    { value: "bold", label: m.template_inspector_bold() },
                   ]}
                   onchange={(value) => updateProp("fontWeight", value)}
                 />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">محاذاة النص</Label>
+                <Label class="property-label">{m.template_inspector_text_alignment()}</Label>
                 <PropertySelect
                   value={nodeProps.textAlign || "start"}
                   options={[
-                    { value: "start", label: "البداية" },
-                    { value: "center", label: "الوسط" },
-                    { value: "end", label: "النهاية" },
-                    { value: "justify", label: "ضبط" },
+                    { value: "start", label: m.template_inspector_beginning() },
+                    { value: "center", label: m.template_inspector_center() },
+                    { value: "end", label: m.template_inspector_end() },
+                    { value: "justify", label: m.template_inspector_justify() },
                   ]}
                   onchange={(value) => updateProp("textAlign", value)}
                 />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">اتجاه النص</Label>
+                <Label class="property-label">{m.template_inspector_text_direction()}</Label>
                 <PropertySelect
                   value={nodeProps.direction || "auto"}
                   options={[
-                    { value: "auto", label: "تلقائي" },
-                    { value: "rtl", label: "يمين إلى يسار" },
-                    { value: "ltr", label: "يسار إلى يمين" },
+                    { value: "auto", label: m.template_inspector_automatic() },
+                    { value: "rtl", label: m.template_inspector_right_to_left() },
+                    { value: "ltr", label: m.template_inspector_left_to_right() },
                   ]}
                   onchange={(value) => updateProp("direction", value)}
                 />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">نمط الخط</Label>
+                <Label class="property-label">{m.template_inspector_font_style()}</Label>
                 <PropertySelect
                   value={nodeProps.fontStyle || "normal"}
                   options={[
-                    { value: "normal", label: "عادي" },
-                    { value: "italic", label: "مائل" },
+                    { value: "normal", label: m.template_inspector_normal() },
+                    { value: "italic", label: m.template_inspector_italic() },
                   ]}
                   onchange={(value) => updateProp("fontStyle", value)}
                 />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">زخرفة النص</Label>
+                <Label class="property-label">{m.template_inspector_text_decoration()}</Label>
                 <PropertySelect
                   value={nodeProps.textDecoration || "none"}
                   options={[
-                    { value: "none", label: "بدون" },
-                    { value: "underline", label: "تسطير" },
-                    { value: "line-through", label: "يتوسطه خط" },
+                    { value: "none", label: m.template_inspector_none() },
+                    { value: "underline", label: m.template_inspector_underline() },
+                    { value: "line-through", label: m.template_inspector_line_through() },
                   ]}
                   onchange={(value) => updateProp("textDecoration", value)}
                 />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">حالة الأحرف</Label>
+                <Label class="property-label">{m.template_inspector_letter_case()}</Label>
                 <PropertySelect
                   value={nodeProps.textTransform || "none"}
                   options={[
-                    { value: "none", label: "كما هي" },
-                    { value: "uppercase", label: "كبيرة" },
-                    { value: "lowercase", label: "صغيرة" },
+                    { value: "none", label: m.template_inspector_unchanged_case() },
+                    { value: "uppercase", label: m.template_inspector_uppercase() },
+                    { value: "lowercase", label: m.template_inspector_lowercase() },
                   ]}
                   onchange={(value) => updateProp("textTransform", value)}
                 />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">ارتفاع السطر</Label>
+                <Label class="property-label">{m.template_inspector_line_height()}</Label>
                 <Input type="number" min="0.5" step="0.1" value={nodeProps.lineHeight ?? 1.2} onchange={(e) => updateProp("lineHeight", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">تباعد الأحرف</Label>
+                <Label class="property-label">{m.template_inspector_letter_spacing()}</Label>
                 <Input type="number" step="0.1" value={nodeProps.letterSpacing ?? 0} onchange={(e) => updateProp("letterSpacing", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">أقصى عدد أسطر</Label>
+                <Label class="property-label">{m.template_inspector_max_lines()}</Label>
                 <Input type="number" min="1" step="1" value={nodeProps.maxLines ?? ""} onchange={(e) => updateProp("maxLines", Number((e.target as HTMLInputElement).value) || undefined)} class="h-8 text-xs" />
               </div>
               <div class="space-y-1">
-                <Label class="property-label">تجاوز المحتوى</Label>
+                <Label class="property-label">{m.template_inspector_content_overflow()}</Label>
                 <PropertySelect
                   value={nodeProps.overflow || "visible"}
                   options={[
-                    { value: "visible", label: "ظاهر" },
-                    { value: "hidden", label: "إخفاء" },
-                    { value: "ellipsis", label: "علامة الحذف" },
+                    { value: "visible", label: m.template_inspector_visible() },
+                    { value: "hidden", label: m.template_inspector_hide() },
+                    { value: "ellipsis", label: m.template_inspector_ellipsis() },
                   ]}
                   onchange={(value) => updateProp("overflow", value)}
                 />
               </div>
             </div>
             <div class="space-y-1">
-              <Label class="property-label">لون الخلفية</Label>
+              <Label class="property-label">{m.template_inspector_background_color()}</Label>
               <ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} />
             </div>
           </div>
@@ -820,9 +820,9 @@ function applyYemeniCertificateColumnsPreset() {
           <div class="space-y-3">
             <div class="flex items-center justify-between gap-3">
               <div class="min-w-0">
-                <Label class="property-label">الصورة</Label>
+                <Label class="property-label">{m.template_inspector_image()}</Label>
                 <p class="text-[10px] text-muted-foreground">
-                  {nodeProps.assetRef ? "صورة مرتبطة بمكتبة الوسائط" : "صورة مخصصة"}
+                  {nodeProps.assetRef ? m.template_inspector_image_media_library() : m.template_inspector_custom_image()}
                 </p>
               </div>
               <Button
@@ -833,7 +833,7 @@ function applyYemeniCertificateColumnsPreset() {
                 disabled={imageUploadMutation.isPending}
               >
                 <ArrowUpTray size={14} />
-                {imageUploadMutation.isPending ? "جارٍ الاستبدال..." : "استبدال"}
+                {imageUploadMutation.isPending ? m.template_inspector_replacing_image() : m.template_inspector_replace_image()}
               </Button>
               <input
                 type="file"
@@ -844,58 +844,58 @@ function applyYemeniCertificateColumnsPreset() {
               />
             </div>
             <div class="space-y-1">
-              <Label class="property-label">تعبير مصدر الصورة</Label>
+              <Label class="property-label">{m.template_inspector_image_source_expression()}</Label>
               <Input value={nodeProps.expression || ""} placeholder={"{{image_url}}"} onchange={(e) => updateProp("expression", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" />
             </div>
             <div class="grid grid-cols-2 gap-2">
-              <div class="space-y-1"><Label class="property-label">طريقة الملاءمة</Label>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_image_fit()}</Label>
                 <PropertySelect
                   value={nodeProps.fit || "contain"}
                   options={[
-                    { value: "contain", label: "احتواء" },
-                    { value: "cover", label: "ملء" },
-                    { value: "fill", label: "تمديد" },
-                    { value: "none", label: "أصلية" },
+                    { value: "contain", label: m.template_inspector_fit_contain() },
+                    { value: "cover", label: m.template_inspector_fit_cover() },
+                    { value: "fill", label: m.template_inspector_fit_fill() },
+                    { value: "none", label: m.template_inspector_fit_original() },
                   ]}
                   onchange={(value) => updateProp("fit", value)}
                 />
               </div>
-              <div class="space-y-1"><Label class="property-label">طبقة الصورة</Label>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_image_layer()}</Label>
                 <PropertySelect
                   value={nodeProps.layer || "foreground"}
                   options={[
-                    { value: "foreground", label: "أمامية" },
-                    { value: "background", label: "خلفية" },
+                    { value: "foreground", label: m.template_inspector_foreground() },
+                    { value: "background", label: m.template_inspector_background() },
                   ]}
                   onchange={(value) => updateProp("layer", value)}
                 />
               </div>
-              <div class="space-y-1"><Label class="property-label">انحناء الزوايا</Label><Input type="number" min="0" step="0.5" value={nodeProps.borderRadius ?? 0} onchange={(e) => updateProp("borderRadius", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">سمك الإطار</Label><Input type="number" min="0" step="0.25" value={nodeProps.borderWidth ?? 0} onchange={(e) => updateProp("borderWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_corner_radius()}</Label><Input type="number" min="0" step="0.5" value={nodeProps.borderRadius ?? 0} onchange={(e) => updateProp("borderRadius", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_width()}</Label><Input type="number" min="0" step="0.25" value={nodeProps.borderWidth ?? 0} onchange={(e) => updateProp("borderWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
             </div>
-            <div class="space-y-1"><Label class="property-label">لون الإطار</Label><ColorPicker value={nodeProps.borderColor || "#000000"} onchange={(c) => updateProp("borderColor", c)} /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_color()}</Label><ColorPicker value={nodeProps.borderColor || "#000000"} onchange={(c) => updateProp("borderColor", c)} /></div>
           </div>
 
         <!-- ══════════════ SHAPE NODE INSPECTOR ══════════════ -->
         {:else if node.type === "Shape"}
           <div class="space-y-3">
-            <Label class="text-xs font-semibold text-foreground">التعبئة والحدود</Label>
+            <Label class="text-xs font-semibold text-foreground">{m.template_inspector_fill_and_border()}</Label>
             <div class="space-y-1">
-              <Label class="property-label">نوع الشكل</Label>
+              <Label class="property-label">{m.template_inspector_shape_type()}</Label>
               <PropertySelect
                 value={nodeProps.shapeType || nodeProps.shape || "rectangle"}
                 options={[
-                  { value: "rectangle", label: "مستطيل" },
-                  { value: "rounded-rect", label: "مستطيل بزوايا مستديرة" },
-                  { value: "circle", label: "دائرة" },
-                  { value: "ellipse", label: "قطع ناقص" },
-                  { value: "line", label: "خط" },
+                  { value: "rectangle", label: m.template_inspector_shape_rectangle() },
+                  { value: "rounded-rect", label: m.template_inspector_shape_rounded_rectangle() },
+                  { value: "circle", label: m.template_inspector_shape_circle() },
+                  { value: "ellipse", label: m.template_inspector_shape_ellipse() },
+                  { value: "line", label: m.template_inspector_shape_line() },
                 ]}
                 onchange={(value) => updateProp("shapeType", value)}
               />
             </div>
             <div class="space-y-1">
-              <span class="text-[10px] text-muted-foreground">لون التعبئة (Fill):</span>
+              <span class="text-[10px] text-muted-foreground">{m.template_inspector_fill_color()}</span>
               <ColorPicker
                 value={nodeProps.fill || nodeProps.fillColor || "#ffffff"}
                 onchange={(c) => updateProp("fill", c)}
@@ -903,7 +903,7 @@ function applyYemeniCertificateColumnsPreset() {
             </div>
 
             <div class="space-y-1">
-              <span class="text-[10px] text-muted-foreground">لون الإطار (Stroke):</span>
+              <span class="text-[10px] text-muted-foreground">{m.template_inspector_stroke_color()}</span>
               <ColorPicker
                 value={nodeProps.stroke || nodeProps.strokeColor || "#000000"}
                 onchange={(c) => updateProp("stroke", c)}
@@ -912,7 +912,7 @@ function applyYemeniCertificateColumnsPreset() {
 
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span class="text-[10px] text-muted-foreground">سمك الإطار:</span>
+                <span class="text-[10px] text-muted-foreground">{m.template_inspector_border_width_label()}</span>
                 <Input
                   type="number"
                   step="0.25"
@@ -922,7 +922,7 @@ function applyYemeniCertificateColumnsPreset() {
                 />
               </div>
               <div>
-                <span class="text-[10px] text-muted-foreground">انحناء الزوايا:</span>
+                <span class="text-[10px] text-muted-foreground">{m.template_inspector_corner_radius_label()}</span>
                 <Input
                   type="number"
                   step="0.5"
@@ -937,9 +937,9 @@ function applyYemeniCertificateColumnsPreset() {
         <!-- ══════════════ QR CODE / BARCODE INSPECTOR ══════════════ -->
         {:else if node.type === "QRCode" || node.type === "Barcode"}
           <div class="space-y-3">
-            <Label class="text-xs font-semibold text-foreground">بيانات الرمز</Label>
+            <Label class="text-xs font-semibold text-foreground">{m.template_inspector_code_data()}</Label>
             <div class="space-y-1">
-              <span class="text-[10px] text-muted-foreground">البيانات / الرابط:</span>
+              <span class="text-[10px] text-muted-foreground">{m.template_inspector_data_or_link()}</span>
               <Input
                 type="text"
                 value={nodeProps.data || ""}
@@ -950,26 +950,26 @@ function applyYemeniCertificateColumnsPreset() {
             </div>
             {#if node.type === "QRCode"}
               <div class="grid grid-cols-2 gap-2">
-                <div class="space-y-1"><Label class="property-label">الحجم</Label><Input type="number" min="5" value={nodeProps.size ?? pos.width ?? 30} onchange={(e) => updateProp("size", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-                <div class="space-y-1"><Label class="property-label">تصحيح الخطأ</Label>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_size()}</Label><Input type="number" min="5" value={nodeProps.size ?? pos.width ?? 30} onchange={(e) => updateProp("size", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_error_correction()}</Label>
                   <PropertySelect
                     value={nodeProps.errorCorrection || "M"}
                     options={[
-                      { value: "L", label: "منخفض" },
-                      { value: "M", label: "متوسط" },
-                      { value: "Q", label: "جيد" },
-                      { value: "H", label: "عالٍ" },
+                      { value: "L", label: m.template_inspector_low() },
+                      { value: "M", label: m.template_inspector_medium() },
+                      { value: "Q", label: m.template_inspector_good() },
+                      { value: "H", label: m.template_inspector_high() },
                     ]}
                     onchange={(value) => updateProp("errorCorrection", value)}
                   />
                 </div>
-                <div class="space-y-1"><Label class="property-label">منطقة هادئة</Label><Input type="number" min="0" value={nodeProps.quietZone ?? 4} onchange={(e) => updateProp("quietZone", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-                <div class="space-y-1"><Label class="property-label">حجم الشعار %</Label><Input type="number" min="0" max="40" value={nodeProps.logoSize ?? 20} onchange={(e) => updateProp("logoSize", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_quiet_zone()}</Label><Input type="number" min="0" value={nodeProps.quietZone ?? 4} onchange={(e) => updateProp("quietZone", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_logo_size_percent()}</Label><Input type="number" min="0" max="40" value={nodeProps.logoSize ?? 20} onchange={(e) => updateProp("logoSize", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
               </div>
-              <div class="space-y-1"><Label class="property-label">مرجع الشعار</Label><Input value={nodeProps.logoAssetRef || ""} placeholder="معرّف ملف من الوسائط" onchange={(e) => updateProp("logoAssetRef", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_logo_reference()}</Label><Input value={nodeProps.logoAssetRef || ""} placeholder={m.template_inspector_media_file_id_placeholder()} onchange={(e) => updateProp("logoAssetRef", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
             {:else}
               <div class="grid grid-cols-2 gap-2">
-                <div class="space-y-1"><Label class="property-label">الصيغة</Label>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_format()}</Label>
                   <PropertySelect
                     value={nodeProps.format || "code128"}
                     options={[
@@ -984,96 +984,96 @@ function applyYemeniCertificateColumnsPreset() {
                     onchange={(value) => updateProp("format", value)}
                   />
                 </div>
-                <div class="space-y-1"><Label class="property-label">ارتفاع الرمز</Label><Input type="number" min="5" value={nodeProps.height ?? pos.height ?? 20} onchange={(e) => updateProp("height", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-                <div class="space-y-1"><Label class="property-label">عرض الوحدة</Label><Input type="number" min="0.1" step="0.1" value={nodeProps.moduleWidth ?? 0.3} onchange={(e) => updateProp("moduleWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-                <div class="space-y-1"><Label class="property-label">حجم نص الرمز</Label><Input type="number" min="1" value={nodeProps.textFontSize ?? 8} onchange={(e) => updateProp("textFontSize", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_symbol_height()}</Label><Input type="number" min="5" value={nodeProps.height ?? pos.height ?? 20} onchange={(e) => updateProp("height", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_module_width()}</Label><Input type="number" min="0.1" step="0.1" value={nodeProps.moduleWidth ?? 0.3} onchange={(e) => updateProp("moduleWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_code_text_size()}</Label><Input type="number" min="1" value={nodeProps.textFontSize ?? 8} onchange={(e) => updateProp("textFontSize", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
               </div>
               <div class="flex items-center gap-2 text-xs">
                 <Checkbox
                   checked={nodeProps.showText !== false}
                   onCheckedChange={(checked) => updateProp("showText", checked === true)}
-                  aria-label="إظهار البيانات أسفل الرمز"
+                  aria-label={m.template_inspector_show_data_below_symbol()}
                 />
-                <span>إظهار البيانات أسفل الرمز</span>
+                <span>{m.template_inspector_show_data_below_symbol()}</span>
               </div>
             {/if}
             <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1"><Label class="property-label">لون الرمز</Label><ColorPicker value={nodeProps.color || "#000000"} onchange={(c) => updateProp("color", c)} /></div>
-              <div class="space-y-1"><Label class="property-label">لون الخلفية</Label><ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_symbol_color()}</Label><ColorPicker value={nodeProps.color || "#000000"} onchange={(c) => updateProp("color", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_background_color()}</Label><ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} /></div>
             </div>
           </div>
         {:else if node.type === "Separator"}
           <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
-              <Label class="property-label">الاتجاه</Label>
+              <Label class="property-label">{m.template_inspector_direction()}</Label>
               <PropertySelect
                 value={nodeProps.direction || "horizontal"}
                 options={[
-                  { value: "horizontal", label: "أفقي" },
-                  { value: "vertical", label: "عمودي" },
+                  { value: "horizontal", label: m.template_orientation_horz() },
+                  { value: "vertical", label: m.template_orientation_vert() },
                 ]}
                 onchange={(value) => updateProp("direction", value)}
               />
             </div>
             <div class="space-y-1">
-              <Label class="property-label">النمط</Label>
+              <Label class="property-label">{m.template_inspector_style()}</Label>
               <PropertySelect
                 value={nodeProps.style || "solid"}
                 options={[
-                  { value: "solid", label: "متصل" },
-                  { value: "dashed", label: "متقطع" },
-                  { value: "dotted", label: "منقط" },
+                  { value: "solid", label: m.template_inspector_solid() },
+                  { value: "dashed", label: m.template_inspector_dashed() },
+                  { value: "dotted", label: m.template_inspector_dotted() },
                 ]}
                 onchange={(value) => updateProp("style", value)}
               />
             </div>
-            <div class="space-y-1"><Label class="property-label">السماكة</Label><Input type="number" min="0.1" step="0.1" value={nodeProps.thickness ?? 1} onchange={(e) => updateProp("thickness", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-            <div class="space-y-1"><Label class="property-label">الطول</Label><Input type="number" min="1" value={nodeProps.length ?? pos.width} onchange={(e) => updateProp("length", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-            <div class="col-span-2 space-y-1"><Label class="property-label">اللون</Label><ColorPicker value={nodeProps.color || "#cbd5e1"} onchange={(c) => updateProp("color", c)} /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_thickness()}</Label><Input type="number" min="0.1" step="0.1" value={nodeProps.thickness ?? 1} onchange={(e) => updateProp("thickness", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_length()}</Label><Input type="number" min="1" value={nodeProps.length ?? pos.width} onchange={(e) => updateProp("length", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+            <div class="col-span-2 space-y-1"><Label class="property-label">{m.template_inspector_color()}</Label><ColorPicker value={nodeProps.color || "#cbd5e1"} onchange={(c) => updateProp("color", c)} /></div>
           </div>
         {:else if node.type === "Spacer"}
           <div class="grid grid-cols-2 gap-2">
-            <div class="space-y-1"><Label class="property-label">العرض</Label><Input type="number" min="0" value={nodeProps.width ?? pos.width} onchange={(e) => updateProp("width", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-            <div class="space-y-1"><Label class="property-label">الارتفاع</Label><Input type="number" min="0" value={nodeProps.height ?? pos.height} onchange={(e) => updateProp("height", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_width()}</Label><Input type="number" min="0" value={nodeProps.width ?? pos.width} onchange={(e) => updateProp("width", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_height()}</Label><Input type="number" min="0" value={nodeProps.height ?? pos.height} onchange={(e) => updateProp("height", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
           </div>
         {:else if node.type === "Frame" || node.type === "Grid"}
           <div class="space-y-3">
             {#if node.type === "Frame"}
               <div class="grid grid-cols-2 gap-2">
                 <div class="space-y-1">
-                  <Label class="property-label">اتجاه التخطيط</Label>
+                  <Label class="property-label">{m.template_inspector_layout_direction()}</Label>
                   <PropertySelect
                     value={nodeProps.layout || "vertical"}
                     options={[
-                      { value: "vertical", label: "عمودي" },
-                      { value: "horizontal", label: "أفقي" },
+                      { value: "vertical", label: m.template_orientation_vert() },
+                      { value: "horizontal", label: m.template_orientation_horz() },
                     ]}
                     onchange={(value) => updateProp("layout", value)}
                   />
                 </div>
                 <div class="space-y-1">
-                  <Label class="property-label">المحاذاة</Label>
+                  <Label class="property-label">{m.template_inspector_alignment()}</Label>
                   <PropertySelect
                     value={nodeProps.alignment || "start"}
                     options={[
-                      { value: "start", label: "بداية" },
-                      { value: "center", label: "وسط" },
-                      { value: "end", label: "نهاية" },
-                      { value: "space-between", label: "توزيع" },
-                      { value: "space-around", label: "مسافات متساوية" },
+                      { value: "start", label: m.template_inspector_start() },
+                      { value: "center", label: m.template_inspector_center() },
+                      { value: "end", label: m.template_inspector_end() },
+                      { value: "space-between", label: m.template_inspector_distribute() },
+                      { value: "space-around", label: m.template_inspector_equal_spacing() },
                     ]}
                     onchange={(value) => updateProp("alignment", value)}
                   />
                 </div>
                 <div class="space-y-1">
-                  <Label class="property-label">محاذاة العناصر</Label>
+                  <Label class="property-label">{m.template_inspector_align_items()}</Label>
                   <PropertySelect
                     value={nodeProps.crossAlignment || "stretch"}
                     options={[
-                      { value: "start", label: "بداية" },
-                      { value: "center", label: "وسط" },
-                      { value: "end", label: "نهاية" },
-                      { value: "stretch", label: "تمديد" },
+                      { value: "start", label: m.template_inspector_start() },
+                      { value: "center", label: m.template_inspector_center() },
+                      { value: "end", label: m.template_inspector_end() },
+                      { value: "stretch", label: m.template_inspector_stretch() },
                     ]}
                     onchange={(value) => updateProp("crossAlignment", value)}
                   />
@@ -1082,69 +1082,69 @@ function applyYemeniCertificateColumnsPreset() {
                   <Checkbox
                     checked={nodeProps.wrap === true}
                     onCheckedChange={(checked) => updateProp("wrap", checked === true)}
-                    aria-label="التفاف العناصر"
+                    aria-label={m.template_inspector_wrap_items()}
                   />
-                  <span>التفاف العناصر</span>
+                  <span>{m.template_inspector_wrap_items()}</span>
                 </div>
               </div>
             {:else}
-              <div class="space-y-1"><Label class="property-label">الأعمدة (مثل 1fr, 2fr)</Label><Input value={(nodeProps.columns || []).join(", ")} onchange={(e) => updateProp("columns", (e.target as HTMLInputElement).value.split(",").map((part) => part.trim()).filter(Boolean))} class="h-8 text-xs font-mono" /></div>
-              <div class="space-y-1"><Label class="property-label">الصفوف (اختياري)</Label><Input value={(nodeProps.rows || []).join(", ")} onchange={(e) => updateProp("rows", (e.target as HTMLInputElement).value.split(",").map((part) => part.trim()).filter(Boolean))} class="h-8 text-xs font-mono" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_columns_example()}</Label><Input value={(nodeProps.columns || []).join(", ")} onchange={(e) => updateProp("columns", (e.target as HTMLInputElement).value.split(",").map((part) => part.trim()).filter(Boolean))} class="h-8 text-xs font-mono" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_optional_rows()}</Label><Input value={(nodeProps.rows || []).join(", ")} onchange={(e) => updateProp("rows", (e.target as HTMLInputElement).value.split(",").map((part) => part.trim()).filter(Boolean))} class="h-8 text-xs font-mono" /></div>
             {/if}
             <div class="grid grid-cols-2 gap-2">
-              <div class="space-y-1"><Label class="property-label">المسافة بين العناصر</Label><Input type="number" min="0" value={nodeProps.gap ?? 0} onchange={(e) => updateProp("gap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">سماكة الإطار</Label><Input type="number" min="0" value={nodeProps.borderWidth ?? 0} onchange={(e) => updateProp("borderWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_item_spacing()}</Label><Input type="number" min="0" value={nodeProps.gap ?? 0} onchange={(e) => updateProp("gap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_width()}</Label><Input type="number" min="0" value={nodeProps.borderWidth ?? 0} onchange={(e) => updateProp("borderWidth", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
               {#if node.type === "Grid"}
-                <div class="space-y-1"><Label class="property-label">فجوة الأعمدة</Label><Input type="number" min="0" value={nodeProps.columnGap ?? nodeProps.gap ?? 0} onchange={(e) => updateProp("columnGap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-                <div class="space-y-1"><Label class="property-label">فجوة الصفوف</Label><Input type="number" min="0" value={nodeProps.rowGap ?? nodeProps.gap ?? 0} onchange={(e) => updateProp("rowGap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_column_gap()}</Label><Input type="number" min="0" value={nodeProps.columnGap ?? nodeProps.gap ?? 0} onchange={(e) => updateProp("columnGap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+                <div class="space-y-1"><Label class="property-label">{m.template_inspector_row_gap()}</Label><Input type="number" min="0" value={nodeProps.rowGap ?? nodeProps.gap ?? 0} onchange={(e) => updateProp("rowGap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
               {/if}
-              <div class="space-y-1"><Label class="property-label">الحشو الداخلي</Label><Input type="number" min="0" value={typeof nodeProps.padding === "number" ? nodeProps.padding : nodeProps.padding?.top ?? 0} onchange={(e) => { const value = Number((e.target as HTMLInputElement).value); updateProp("padding", { top: value, right: value, bottom: value, left: value }); }} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_inner_padding()}</Label><Input type="number" min="0" value={typeof nodeProps.padding === "number" ? nodeProps.padding : nodeProps.padding?.top ?? 0} onchange={(e) => { const value = Number((e.target as HTMLInputElement).value); updateProp("padding", { top: value, right: value, bottom: value, left: value }); }} class="h-8 text-xs" /></div>
             </div>
             <div class="grid grid-cols-2 gap-3">
-              <div class="space-y-1"><Label class="property-label">لون الخلفية</Label><ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} /></div>
-              <div class="space-y-1"><Label class="property-label">لون الإطار</Label><ColorPicker value={nodeProps.borderColor || "#cbd5e1"} onchange={(c) => updateProp("borderColor", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_background_color()}</Label><ColorPicker value={nodeProps.backgroundColor || "#ffffff"} onchange={(c) => updateProp("backgroundColor", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_border_color()}</Label><ColorPicker value={nodeProps.borderColor || "#cbd5e1"} onchange={(c) => updateProp("borderColor", c)} /></div>
             </div>
           </div>
         {:else if node.type === "Repeater"}
           <div class="space-y-3">
-            <div class="space-y-1"><Label class="property-label">مصدر التكرار</Label><Input value={nodeProps.dataSource || ""} onchange={(e) => updateProp("dataSource", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_repeat_source()}</Label><Input value={nodeProps.dataSource || ""} onchange={(e) => updateProp("dataSource", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
             <div class="grid grid-cols-2 gap-2">
-              <div class="space-y-1"><Label class="property-label">اسم العنصر</Label><Input value={nodeProps.itemVariable || "item"} onchange={(e) => updateProp("itemVariable", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">اسم الفهرس</Label><Input value={nodeProps.indexVariable || "index"} onchange={(e) => updateProp("indexVariable", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_item_name()}</Label><Input value={nodeProps.itemVariable || "item"} onchange={(e) => updateProp("itemVariable", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_index_name()}</Label><Input value={nodeProps.indexVariable || "index"} onchange={(e) => updateProp("indexVariable", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
               <div class="space-y-1">
-                <Label class="property-label">اتجاه التكرار</Label>
+                <Label class="property-label">{m.template_inspector_repeat_direction()}</Label>
                 <PropertySelect
                   value={nodeProps.layout || "vertical"}
                   options={[
-                    { value: "vertical", label: "عمودي" },
-                    { value: "horizontal", label: "أفقي" },
-                    { value: "grid", label: "شبكة" },
+                    { value: "vertical", label: m.template_orientation_vert() },
+                    { value: "horizontal", label: m.template_orientation_horz() },
+                    { value: "grid", label: m.template_inspector_grid() },
                   ]}
                   onchange={(value) => updateProp("layout", value)}
                 />
               </div>
-              <div class="space-y-1"><Label class="property-label">عدد الأعمدة</Label><Input type="number" min="1" value={nodeProps.columns ?? 2} onchange={(e) => updateProp("columns", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">ترتيب حسب</Label><Input value={nodeProps.sortBy || ""} onchange={(e) => updateProp("sortBy", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_column_count()}</Label><Input type="number" min="1" value={nodeProps.columns ?? 2} onchange={(e) => updateProp("columns", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_sort_by()}</Label><Input value={nodeProps.sortBy || ""} onchange={(e) => updateProp("sortBy", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
               <div class="space-y-1">
-                <Label class="property-label">اتجاه الترتيب</Label>
+                <Label class="property-label">{m.template_inspector_sort_direction()}</Label>
                 <PropertySelect
                   value={nodeProps.sortDirection || "asc"}
                   options={[
-                    { value: "asc", label: "تصاعدي" },
-                    { value: "desc", label: "تنازلي" },
+                    { value: "asc", label: m.template_inspector_ascending() },
+                    { value: "desc", label: m.template_inspector_descending() },
                   ]}
                   onchange={(value) => updateProp("sortDirection", value)}
                 />
               </div>
-              <div class="space-y-1"><Label class="property-label">المسافة</Label><Input type="number" min="0" value={nodeProps.gap ?? 0} onchange={(e) => updateProp("gap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">الحد الأقصى</Label><Input type="number" min="1" value={nodeProps.limit ?? ""} onchange={(e) => updateProp("limit", Number((e.target as HTMLInputElement).value) || undefined)} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_spacing()}</Label><Input type="number" min="0" value={nodeProps.gap ?? 0} onchange={(e) => updateProp("gap", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_maximum_limit()}</Label><Input type="number" min="1" value={nodeProps.limit ?? ""} onchange={(e) => updateProp("limit", Number((e.target as HTMLInputElement).value) || undefined)} class="h-8 text-xs" /></div>
             </div>
-            <div class="space-y-1"><Label class="property-label">شرط التصفية</Label><Input value={nodeProps.filter || ""} onchange={(e) => updateProp("filter", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
-            <div class="space-y-1"><Label class="property-label">رسالة القائمة الفارغة</Label><Input value={nodeProps.emptyMessage || ""} onchange={(e) => updateProp("emptyMessage", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_filter_condition()}</Label><Input value={nodeProps.filter || ""} onchange={(e) => updateProp("filter", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_empty_list_message()}</Label><Input value={nodeProps.emptyMessage || ""} onchange={(e) => updateProp("emptyMessage", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
           </div>
         {:else if node.type === "Conditional"}
           <div class="space-y-1">
-            <Label class="property-label">شرط العرض</Label>
+            <Label class="property-label">{m.template_inspector_display_condition()}</Label>
             <Textarea
               value={nodeProps.condition || ""}
               oninput={(e) => updateProp("condition", (e.target as HTMLTextAreaElement).value)}
@@ -1153,49 +1153,49 @@ function applyYemeniCertificateColumnsPreset() {
             />
           </div>
         {:else if node.type === "ComponentRef"}
-          <div class="space-y-1"><Label class="property-label">معرّف المكوّن</Label><Input value={nodeProps.componentId || ""} onchange={(e) => updateProp("componentId", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
+          <div class="space-y-1"><Label class="property-label">{m.template_inspector_component_id()}</Label><Input value={nodeProps.componentId || ""} onchange={(e) => updateProp("componentId", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
         {:else if node.type === "Header" || node.type === "Footer"}
           <div class="space-y-3">
-            <div class="space-y-1"><Label class="property-label">الارتفاع</Label><Input type="number" min="1" value={nodeProps.height ?? 20} onchange={(e) => updateProp("height", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+            <div class="space-y-1"><Label class="property-label">{m.template_inspector_height()}</Label><Input type="number" min="1" value={nodeProps.height ?? 20} onchange={(e) => updateProp("height", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
             {#if node.type === "Footer"}
               <div class="flex items-center gap-2 text-xs">
                 <Checkbox
                   checked={nodeProps.showPageNumber === true}
                   onCheckedChange={(checked) => updateProp("showPageNumber", checked === true)}
-                  aria-label="إظهار رقم الصفحة"
+                  aria-label={m.template_inspector_show_page_number()}
                 />
-                <span>إظهار رقم الصفحة</span>
+                <span>{m.template_inspector_show_page_number()}</span>
               </div>
-              <div class="space-y-1"><Label class="property-label">تنسيق رقم الصفحة</Label><Input value={nodeProps.pageNumberFormat || "{{page}}/{{total}}"} onchange={(e) => updateProp("pageNumberFormat", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_page_number_format()}</Label><Input value={nodeProps.pageNumberFormat || "{{page}}/{{total}}"} onchange={(e) => updateProp("pageNumberFormat", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
             {/if}
           </div>
         {:else if node.type === "Watermark"}
           <div class="space-y-3">
             <div class="space-y-1">
-              <Label class="property-label">نوع العلامة</Label>
+              <Label class="property-label">{m.template_inspector_watermark_type()}</Label>
               <PropertySelect
                 value={nodeProps.watermarkType || "text"}
                 options={[
-                  { value: "text", label: "نص" },
-                  { value: "image", label: "صورة" },
+                  { value: "text", label: m.template_element_text() },
+                  { value: "image", label: m.template_element_image() },
                 ]}
                 onchange={(value) => updateProp("watermarkType", value)}
               />
             </div>
             {#if nodeProps.watermarkType !== "image"}
-              <div class="space-y-1"><Label class="property-label">نص العلامة</Label><Input value={nodeProps.text || ""} onchange={(e) => updateProp("text", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">لون النص</Label><ColorPicker value={nodeProps.color || "#94a3b8"} onchange={(c) => updateProp("color", c)} /></div>
-              <div class="space-y-1"><Label class="property-label">حجم الخط</Label><Input type="number" min="1" value={nodeProps.fontSize ?? 36} onchange={(e) => updateProp("fontSize", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_watermark_text()}</Label><Input value={nodeProps.text || ""} onchange={(e) => updateProp("text", (e.target as HTMLInputElement).value)} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_text_color()}</Label><ColorPicker value={nodeProps.color || "#94a3b8"} onchange={(c) => updateProp("color", c)} /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_font_size()}</Label><Input type="number" min="1" value={nodeProps.fontSize ?? 36} onchange={(e) => updateProp("fontSize", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
             {:else}
-              <div class="space-y-1"><Label class="property-label">معرّف الصورة</Label><Input value={nodeProps.assetRef || ""} onchange={(e) => updateProp("assetRef", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_image_id()}</Label><Input value={nodeProps.assetRef || ""} onchange={(e) => updateProp("assetRef", (e.target as HTMLInputElement).value)} class="h-8 text-xs font-mono" /></div>
             {/if}
             <div class="grid grid-cols-2 gap-2">
-              <div class="space-y-1"><Label class="property-label">الشفافية</Label><Input type="number" min="0" max="1" step="0.05" value={nodeProps.opacity ?? 0.2} onchange={(e) => updateProp("opacity", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
-              <div class="space-y-1"><Label class="property-label">الدوران°</Label><Input type="number" value={nodeProps.rotation ?? 0} onchange={(e) => updateProp("rotation", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_opacity()}</Label><Input type="number" min="0" max="1" step="0.05" value={nodeProps.opacity ?? 0.2} onchange={(e) => updateProp("opacity", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
+              <div class="space-y-1"><Label class="property-label">{m.template_inspector_rotation()}</Label><Input type="number" value={nodeProps.rotation ?? 0} onchange={(e) => updateProp("rotation", Number((e.target as HTMLInputElement).value))} class="h-8 text-xs" /></div>
             </div>
           </div>
         {:else if node.type === "PageBreak"}
-          <p class="text-xs leading-5 text-muted-foreground">يفرض هذا العنصر بدء صفحة جديدة عند الطباعة.</p>
+          <p class="text-xs leading-5 text-muted-foreground">{m.template_inspector_page_break_print_hint()}</p>
         {/if}
 
           </div>
@@ -1210,7 +1210,7 @@ function applyYemeniCertificateColumnsPreset() {
             class="grow"
           >
             <Trash class="size-4" />
-            حذف العنصر
+            {m.template_inspector_delete_element()}
           </Button>
           <Button
             variant="outline"
@@ -1218,7 +1218,7 @@ function applyYemeniCertificateColumnsPreset() {
             onclick={() => store.duplicateSelected()}
             class="grow"
           >
-            تكرار
+            {m.template_inspector_duplicate_element()}
           </Button>
         </div>
       {/if}
