@@ -5,7 +5,9 @@
  * Built with high-performance gesture physics and fluid spring curves.
  */
 
-import React, {
+import { BlurView } from "expo-blur";
+import type { ReactNode } from "react";
+import {
   createContext,
   useCallback,
   useContext,
@@ -19,10 +21,9 @@ import {
   Pressable,
   StyleSheet,
   Text,
-  View,
   useWindowDimensions,
+  View,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import {
   Gesture,
   GestureDetector,
@@ -38,15 +39,17 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@/hooks/use-theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/hooks/use-theme";
 
 interface DrawerContextValue {
   translateY: SharedValue<number>;
+  sheetHeight: SharedValue<number>;
   onClose: () => void;
   theme: ReturnType<typeof useTheme>;
   isDark: boolean;
   createPanGesture: () => ReturnType<typeof Gesture.Pan>;
+  isSnapping: boolean;
   hasCloseButton: boolean;
   setHasCloseButton: (val: boolean) => void;
 }
@@ -66,8 +69,9 @@ export function useDrawer() {
 export interface DrawerProps {
   visible: boolean;
   onClose: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
   disableContentDrag?: boolean;
+  snapPoints?: readonly number[];
 }
 
 export function Drawer({
@@ -75,12 +79,27 @@ export function Drawer({
   onClose,
   children,
   disableContentDrag = true,
+  snapPoints,
 }: DrawerProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const theme = useTheme();
   const { height } = useWindowDimensions();
   const closedOffset = height;
+  const normalizedSnapPoints = useMemo(() => {
+    if (!snapPoints?.length) return null;
+    const points = [...new Set(snapPoints)]
+      .filter((point) => Number.isFinite(point) && point > 0 && point <= 0.92)
+      .sort((left, right) => left - right);
+    return points.length ? points : null;
+  }, [snapPoints]);
+  const isSnapping = normalizedSnapPoints !== null;
+  const minSheetHeight = isSnapping
+    ? (normalizedSnapPoints[0] ?? 0) * height
+    : 0;
+  const maxSheetHeight = isSnapping
+    ? (normalizedSnapPoints[normalizedSnapPoints.length - 1] ?? 0) * height
+    : 0;
 
   const [shouldRender, setShouldRender] = useState(visible);
   const [hasCloseButton, setHasCloseButton] = useState(false);
@@ -89,43 +108,70 @@ export function Drawer({
     setShouldRender(true);
   }
 
-  const translateY = useSharedValue(visible ? 0 : closedOffset);
+  const translateY = useSharedValue(visible && !isSnapping ? 0 : closedOffset);
+  const sheetHeight = useSharedValue(
+    visible && isSnapping ? minSheetHeight : 0,
+  );
+  const dragStart = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
-      translateY.value = withSpring(0, {
-        damping: 32,
-        stiffness: 380,
-        mass: 0.5,
-        overshootClamping: true,
-      });
+      if (isSnapping) {
+        sheetHeight.value = withSpring(minSheetHeight, {
+          damping: 32,
+          stiffness: 380,
+          mass: 0.5,
+          overshootClamping: true,
+        });
+      } else {
+        translateY.value = withSpring(0, {
+          damping: 32,
+          stiffness: 380,
+          mass: 0.5,
+          overshootClamping: true,
+        });
+      }
     } else {
-      translateY.value = withTiming(
-        closedOffset,
-        { duration: 180, easing: Easing.out(Easing.cubic) },
-        (finished) => {
-          if (finished) {
-            runOnJS(setShouldRender)(false);
-          }
-        },
-      );
+      if (isSnapping) {
+        sheetHeight.value = withTiming(
+          0,
+          { duration: 180, easing: Easing.out(Easing.cubic) },
+          (finished) => {
+            if (finished) runOnJS(setShouldRender)(false);
+          },
+        );
+      } else {
+        translateY.value = withTiming(
+          closedOffset,
+          { duration: 180, easing: Easing.out(Easing.cubic) },
+          (finished) => {
+            if (finished) runOnJS(setShouldRender)(false);
+          },
+        );
+      }
     }
-  }, [closedOffset, translateY, visible]);
+  }, [
+    closedOffset,
+    isSnapping,
+    minSheetHeight,
+    sheetHeight,
+    translateY,
+    visible,
+  ]);
 
   const animatedBackdropStyle = useAnimatedStyle(() => {
-    const progress = Math.max(
-      0,
-      1 - Math.min(1, translateY.value / height),
-    );
+    const progress = isSnapping
+      ? Math.min(1, sheetHeight.value / height)
+      : Math.max(0, 1 - Math.min(1, translateY.value / height));
     const opacity = progress * 0.52;
     return { opacity };
-  });
+  }, [height, isSnapping]);
 
   const animatedSheetStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-    };
-  });
+    return isSnapping
+      ? { height: sheetHeight.value }
+      : { transform: [{ translateY: translateY.value }] };
+  }, [isSnapping]);
 
   const createPanGesture = useCallback(
     () =>
@@ -133,11 +179,52 @@ export function Drawer({
         .minDistance(8)
         .activeOffsetY([-12, 12])
         .failOffsetX([-20, 20])
+        .onStart(() => {
+          dragStart.value = isSnapping ? sheetHeight.value : translateY.value;
+        })
         .onUpdate((event) => {
-          translateY.value = Math.max(0, event.translationY);
+          if (isSnapping) {
+            sheetHeight.value = Math.max(
+              minSheetHeight,
+              Math.min(maxSheetHeight, dragStart.value - event.translationY),
+            );
+          } else {
+            translateY.value = Math.max(0, event.translationY);
+          }
         })
         .onEnd((event) => {
-          if (event.translationY > height * 0.18 || event.velocityY > 800) {
+          if (isSnapping) {
+            const nextHeight = dragStart.value - event.translationY;
+            const shouldClose =
+              (nextHeight < minSheetHeight - height * 0.14 &&
+                event.translationY > 0) ||
+              (dragStart.value <= minSheetHeight + 1 && event.velocityY > 900);
+            if (shouldClose) {
+              sheetHeight.value = withTiming(
+                0,
+                { duration: 200, easing: Easing.out(Easing.cubic) },
+                (finished) => {
+                  if (finished) runOnJS(onClose)();
+                },
+              );
+              return;
+            }
+
+            const middleHeight = (minSheetHeight + maxSheetHeight) / 2;
+            let targetHeight =
+              nextHeight < middleHeight ? minSheetHeight : maxSheetHeight;
+            if (event.velocityY > 350) targetHeight = minSheetHeight;
+            if (event.velocityY < -350) targetHeight = maxSheetHeight;
+            sheetHeight.value = withSpring(targetHeight, {
+              damping: 32,
+              stiffness: 380,
+              mass: 0.5,
+              overshootClamping: true,
+            });
+          } else if (
+            event.translationY > height * 0.18 ||
+            event.velocityY > 800
+          ) {
             translateY.value = withTiming(
               closedOffset,
               { duration: 200, easing: Easing.out(Easing.cubic) },
@@ -154,12 +241,19 @@ export function Drawer({
             });
           }
         }),
-    [closedOffset, height, onClose, translateY],
+    [
+      closedOffset,
+      dragStart,
+      height,
+      isSnapping,
+      maxSheetHeight,
+      minSheetHeight,
+      onClose,
+      sheetHeight,
+      translateY,
+    ],
   );
-  const contentPan = useMemo(
-    () => createPanGesture(),
-    [createPanGesture],
-  );
+  const contentPan = useMemo(() => createPanGesture(), [createPanGesture]);
 
   if (!shouldRender) return null;
 
@@ -170,6 +264,7 @@ export function Drawer({
         {
           maxHeight: height * 0.92,
         },
+        isSnapping ? styles.snappingSheetContainer : undefined,
         animatedSheetStyle,
       ]}
     >
@@ -181,10 +276,12 @@ export function Drawer({
     <DrawerContext.Provider
       value={{
         translateY,
+        sheetHeight,
         onClose,
         theme,
         isDark,
         createPanGesture,
+        isSnapping,
         hasCloseButton,
         setHasCloseButton,
       }}
@@ -224,7 +321,7 @@ export function Drawer({
 }
 
 export interface DrawerContentProps {
-  children: React.ReactNode;
+  children: ReactNode;
   showDragHandle?: boolean;
 }
 
@@ -232,16 +329,13 @@ export function DrawerContent({
   children,
   showDragHandle = true,
 }: DrawerContentProps) {
-  const { theme, hasCloseButton, createPanGesture } = useDrawer();
+  const { theme, hasCloseButton, createPanGesture, isSnapping } = useDrawer();
   const insets = useSafeAreaInsets();
   const pan = useMemo(() => createPanGesture(), [createPanGesture]);
 
   const dragHandleNode = showDragHandle ? (
     <GestureDetector gesture={pan}>
-      <View
-        collapsable={false}
-        style={styles.dragHandleContainer}
-      >
+      <View collapsable={false} style={styles.dragHandleContainer}>
         <View style={[styles.dragHandle, { backgroundColor: theme.border }]} />
       </View>
     </GestureDetector>
@@ -251,6 +345,7 @@ export function DrawerContent({
     <View
       style={[
         styles.menuWrapper,
+        isSnapping ? styles.snappingMenuWrapper : undefined,
         {
           borderColor: theme.border,
           backgroundColor: theme.card,
@@ -260,7 +355,12 @@ export function DrawerContent({
         },
       ]}
     >
-      <View style={styles.bodyContent}>
+      <View
+        style={[
+          styles.bodyContent,
+          isSnapping ? styles.snappingBodyContent : undefined,
+        ]}
+      >
         {dragHandleNode}
         {children}
       </View>
@@ -268,7 +368,7 @@ export function DrawerContent({
   );
 }
 
-export function DrawerHeader({ children }: { children: React.ReactNode }) {
+export function DrawerHeader({ children }: { children: ReactNode }) {
   const { theme, createPanGesture } = useDrawer();
   const pan = useMemo(() => createPanGesture(), [createPanGesture]);
   return (
@@ -283,7 +383,7 @@ export function DrawerHeader({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function DrawerFooter({ children }: { children: React.ReactNode }) {
+export function DrawerFooter({ children }: { children: ReactNode }) {
   const { theme } = useDrawer();
   return (
     <View style={[styles.footer, { borderTopColor: theme.border }]}>
@@ -387,14 +487,20 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 16,
   },
+  snappingSheetContainer: {
+    overflow: "hidden",
+  },
   menuWrapper: {
     overflow: "hidden",
     borderTopWidth: StyleSheet.hairlineWidth,
     borderLeftWidth: StyleSheet.hairlineWidth,
     borderRightWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
+  },
+  snappingMenuWrapper: {
+    flex: 1,
   },
   cancelWrapper: {
     overflow: "hidden",
@@ -408,6 +514,9 @@ const styles = StyleSheet.create({
   },
   bodyContent: {
     paddingVertical: 0,
+  },
+  snappingBodyContent: {
+    flex: 1,
   },
   dragHandleContainer: {
     width: "100%",
@@ -435,12 +544,12 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   title: {
-    ...{"fontSize":16,"lineHeight":22,"fontWeight":"600"},
+    ...{ fontSize: 16, lineHeight: 22, fontWeight: "600" },
     fontWeight: "700",
     textAlign: "center",
   },
   description: {
-    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
+    ...{ fontSize: 11, lineHeight: 14, fontWeight: "500" },
     marginTop: 2,
     textAlign: "center",
   },
@@ -452,7 +561,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   menuItemText: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"600"},
+    ...{ fontSize: 14, lineHeight: 20, fontWeight: "600" },
   },
   separator: {
     height: StyleSheet.hairlineWidth,
