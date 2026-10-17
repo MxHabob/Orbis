@@ -215,6 +215,7 @@ export default function InstitutionSelectScreen() {
   const [search, setSearch] = useState("");
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [manualEntryError, setManualEntryError] = useState<string | null>(null);
   const [manualEntryVisible, setManualEntryVisible] = useState(false);
   const [localCandidate, setLocalCandidate] =
     useState<DirectoryInstitution | null>(null);
@@ -284,13 +285,11 @@ export default function InstitutionSelectScreen() {
       try {
         await checkInstitutionConnection(institution);
         await selectInstitution(institution);
-        toast.success(t("auth_institution_connected"));
         router.replace("/(auth)/sign-in");
       } catch (caught: unknown) {
         console.error("[Institution Select] Connection failed.", caught);
         const message = t("auth_institution_connection_error");
         setConnectionError(message);
-        toast.error(message);
       } finally {
         setConnectingId(null);
       }
@@ -373,11 +372,12 @@ export default function InstitutionSelectScreen() {
   const submitManualInstitution = useCallback(() => {
     try {
       setLocalCandidate(createManualLocalInstitution(localName, localEndpoint));
+      setManualEntryError(null);
       setManualEntryVisible(false);
     } catch {
-      toast.error(t("auth_institution_local_details_error"));
+      setManualEntryError(t("auth_institution_local_details_error"));
     }
-  }, [localEndpoint, localName, t, toast]);
+  }, [localEndpoint, localName, t]);
 
   const confirmLocalInstitution = useCallback(() => {
     if (!localCandidate) return;
@@ -681,6 +681,14 @@ export default function InstitutionSelectScreen() {
               {t("auth_institution_local_hint")}
             </DrawerDescription>
           </DrawerHeader>
+          {manualEntryError ? (
+            <Text
+              accessibilityRole="alert"
+              className="px-five text-start text-xs leading-4 font-medium text-destructive"
+            >
+              {manualEntryError}
+            </Text>
+          ) : null}
           <DrawerScrollView
             style={{ flex: 1 }}
             contentContainerStyle={{ gap: 16, paddingVertical: 16 }}

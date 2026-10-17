@@ -15,7 +15,6 @@ import { useRouter } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import {
@@ -28,7 +27,6 @@ export default function ForgotPasswordScreen() {
   const router = useRouter();
   const theme = useTheme();
   const { t, isArabic } = useI18n();
-  const toast = useToast();
 
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -47,7 +45,6 @@ export default function ForgotPasswordScreen() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 600));
       setIsSubmitted(true);
-      toast.success(t("auth_forgot_success_title"));
     } catch {
       setErrorMsg(t("auth_error_failed"));
     } finally {

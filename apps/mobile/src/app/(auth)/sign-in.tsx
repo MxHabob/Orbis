@@ -18,7 +18,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -49,7 +48,6 @@ export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, locale, setLocale, isArabic } = useI18n();
-  const toast = useToast();
   const {
     login,
     loginWithGoogle,
@@ -60,6 +58,7 @@ export default function SignInScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!selectedInstitution) {
     return <Redirect href="/institution-select" />;
@@ -68,11 +67,12 @@ export default function SignInScreen() {
   const handleSignIn = async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      toast.error(t("auth_error_required") || "Please enter your email and password.");
+      setErrorMessage(t("auth_error_required"));
       return;
     }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       const response = await login(trimmedEmail, password);
       const mfaUserId = getMfaUserId(response);
@@ -86,7 +86,7 @@ export default function SignInScreen() {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : t("auth_error_invalid_credentials");
-      toast.error(message);
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,11 +94,12 @@ export default function SignInScreen() {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       await loginWithGoogle("google-token");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : t("auth_error_google");
-      toast.error(message);
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -218,7 +219,10 @@ export default function SignInScreen() {
                 <Input
                   placeholder="••••••••"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    setErrorMessage(null);
+                  }}
                   secureTextEntry
                   autoComplete="current-password"
                   textContentType="password"
@@ -227,6 +231,15 @@ export default function SignInScreen() {
                   style={{ minHeight: 32, fontSize: 12 }}
                 />
               </View>
+
+              {errorMessage ? (
+                <Text
+                  accessibilityRole="alert"
+                  className="text-start text-xs leading-4 font-medium text-destructive"
+                >
+                  {errorMessage}
+                </Text>
+              ) : null}
 
               <Button
                 title={t("auth_sign_in")}

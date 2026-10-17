@@ -24,7 +24,6 @@ import {
   DrawerFormField,
   DrawerSubmitButton,
 } from "@/components/ui/drawer-form-primitives";
-import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
@@ -63,7 +62,6 @@ export interface SupportDrawerProps {
 
 export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
   const theme = useTheme();
-  const toast = useToast();
   const { t, locale } = useI18n();
   const { user } = useAuth();
   const { height } = useWindowDimensions();
@@ -119,7 +117,7 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
       })
       .catch((error: unknown) => {
         console.error("[Orbis Mobile Support] Failed to open support email.", error);
-        toast.error(t("profile_support_email_error"));
+        setFormError(t("profile_support_email_error"));
       });
   };
 

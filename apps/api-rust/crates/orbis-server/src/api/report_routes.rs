@@ -583,7 +583,7 @@ pub async fn preview_template(
     let doc: TemplateDocument = serde_json::from_str(&req.document_json)
         .map_err(|e| ApiError::bad_request(format!("Invalid template JSON: {}", e)))?;
 
-    let fonts = FontCache::new("Noto Sans Arabic");
+    let fonts = FontCache::with_system_fonts();
     let layout_engine = LayoutEngine::new(&fonts);
     let layout = layout_engine
         .layout(&doc, &req.context_data)

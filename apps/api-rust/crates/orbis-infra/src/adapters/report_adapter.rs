@@ -595,27 +595,7 @@ impl DocumentRenderer for PdfRenderer {
 
                 let context_val = serde_json::Value::Object(ctx_obj);
 
-                let font_candidates = [
-                    ("Amiri", "C:\\Windows\\Fonts\\tahoma.ttf"),
-                    ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
-                    ("Arial", "C:\\Windows\\Fonts\\arial.ttf"),
-                    ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-                ];
-                let (font_family, font_path) = font_candidates
-                    .iter()
-                    .find(|(_, path)| std::path::Path::new(path).exists())
-                    .copied()
-                    .unwrap_or(("Noto Sans Arabic", ""));
-
-                let mut fonts = docforge_engine::render::font_cache::FontCache::new(font_family);
-                if !font_path.is_empty() {
-                    let _ = fonts.load_font_file(
-                        font_family,
-                        400,
-                        docforge_engine::render::font_cache::FontStyleKind::Normal,
-                        font_path,
-                    );
-                }
+                let fonts = docforge_engine::render::font_cache::FontCache::with_system_fonts();
 
                 let layout_engine = docforge_engine::layout::engine::LayoutEngine::new(&fonts);
                 let layout = layout_engine

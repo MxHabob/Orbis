@@ -18,7 +18,6 @@ import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { XMark, ShieldCheck, KeyframePlus } from "@orbis/icons/native";
 
@@ -27,7 +26,6 @@ export default function MFAChallengeScreen() {
   const params = useLocalSearchParams<{ userId?: string }>();
   const theme = useTheme();
   const { t } = useI18n();
-  const toast = useToast();
   const { mfaChallenge, userId: sessionUserId } = useAuth();
 
   const targetUserId = params.userId || sessionUserId || "";
@@ -101,11 +99,9 @@ export default function MFAChallengeScreen() {
         code: codeToSubmit,
       });
 
-      toast.success(t("auth_verify"));
     } catch (err: any) {
       const msg = err?.message || t("auth_error_invalid_credentials");
       setErrorMsg(msg);
-      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }

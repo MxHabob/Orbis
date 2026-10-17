@@ -13,18 +13,17 @@ import { Camera, XMark } from "@orbis/icons/native";
 import { Button } from "@/components/ui/button";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
-import { useToast } from "@/components/ui/toast";
 import { useI18n } from "@/lib/i18n";
 
 export default function InstitutionScanScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
-  const toast = useToast();
   const { t } = useI18n();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState(false);
+  const [permissionRequestError, setPermissionRequestError] = useState(false);
   const scannedRef = useRef(false);
   const frameSize = Math.min(width - 72, height * 0.36, 320);
 
@@ -41,19 +40,17 @@ export default function InstitutionScanScreen() {
   );
 
   const enableCamera = useCallback(async () => {
+    setPermissionRequestError(false);
     try {
-      const result = await requestPermission();
-      if (!result.granted) {
-        toast.error(t("auth_institution_local_camera_error"));
-      }
+      await requestPermission();
     } catch (error: unknown) {
       console.error(
         "[Institution Scan] Camera permission request failed.",
         error,
       );
-      toast.error(t("auth_institution_local_camera_error"));
+      setPermissionRequestError(true);
     }
-  }, [requestPermission, t, toast]);
+  }, [requestPermission]);
 
   const retryCamera = useCallback(() => {
     setCameraError(false);
@@ -80,7 +77,6 @@ export default function InstitutionScanScreen() {
                 error,
               );
               setCameraError(true);
-              toast.error(t("auth_institution_local_camera_error"));
             }}
           />
           <View pointerEvents="none" style={styles.shade} />
@@ -132,7 +128,7 @@ export default function InstitutionScanScreen() {
             {t("auth_institution_local_camera_title")}
           </Text>
           <Text className="text-center text-base leading-6 text-white/75">
-            {permission
+            {permission || permissionRequestError
               ? t("auth_institution_local_camera_error")
               : t("auth_institution_local_camera_loading")}
           </Text>

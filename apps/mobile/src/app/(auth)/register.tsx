@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
 import { api, useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 
@@ -13,7 +12,6 @@ export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
-  const toast = useToast();
   const { login, selectedInstitution } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,7 +42,6 @@ export default function RegisterScreen() {
         },
         throwOnError: true,
       });
-      toast.success(t("auth_register_success"));
       try {
         await login(normalizedEmail, password);
       } catch {
@@ -54,7 +51,6 @@ export default function RegisterScreen() {
       const message =
         error instanceof Error ? error.message : t("auth_error_failed");
       setErrorMessage(message);
-      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
