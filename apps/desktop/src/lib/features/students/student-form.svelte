@@ -37,6 +37,7 @@
   const state = untrack(() => new StudentFormState(orgId || "", studentId));
   const queryClient = useQueryClient();
   const classesQuery = createClassesQuery(() => orgId);
+  let initialFormSnapshot: string | null = null;
   const currentPeriod = $derived(
     academicContext.periods.find(
       (period) => period.id === effectiveContext.currentPeriodId,
@@ -64,6 +65,7 @@
       state.isEditMode = true;
     }
     await state.init();
+    initialFormSnapshot = getFormSnapshot();
   });
 
   const documentStats = $derived.by(() => {
@@ -104,20 +106,59 @@
     };
   });
 
-  const isFormDirty = $derived.by(
-    () =>
-      !!state.personal.nameAr
-      || !!state.personal.nameEn
-      || !!state.personal.classId
-      || !!state.personal.nationalId
-      || !!state.personal.phone
-      || !!state.personal.email
-      || state.guardian.linkedGuardians.some(
-        (guardian) => !!guardian.guardian_id || !!guardian.full_name || !!guardian.phone,
-      )
-      || state.document.submittedDocs.length > 0
-      || Object.keys(state.document.attachments).length > 0
-      || !!state.avatarFile,
+  function getFormSnapshot(): string {
+    return JSON.stringify({
+      personal: {
+        nameAr: state.personal.nameAr,
+        nameEn: state.personal.nameEn,
+        nationalId: state.personal.nationalId,
+        sex: state.personal.sex,
+        classId: state.personal.classId,
+        birthDate: state.personal.birthDate,
+        studentNumber: state.personal.studentNumber,
+        email: state.personal.email,
+        phone: state.personal.phone,
+        address: state.personal.address,
+        previousSchool: state.personal.previousSchool,
+        district: state.personal.district,
+        governorate: state.personal.governorate,
+        nationality: state.personal.nationality,
+        placeOfBirth: state.personal.placeOfBirth,
+        passportNumber: state.personal.passportNumber,
+        bloodType: state.personal.bloodType,
+        emergencyContact: state.personal.emergencyContact,
+        medicalNotes: state.personal.medicalNotes,
+        specialNeedsNotes: state.personal.specialNeedsNotes,
+      },
+      guardians: state.guardian.linkedGuardians,
+      studyMode: state.studyMode,
+      createLoginAccount: state.createLoginAccount,
+      financial: {
+        applyDiscount: state.financial.applyDiscount,
+        discountType: state.financial.discountType,
+        selectedDiscountTemplateId: state.financial.selectedDiscountTemplateId,
+        customDiscountAmount: state.financial.customDiscountAmount,
+        selectedOptionalFees: state.financial.selectedOptionalFees,
+      },
+      documents: {
+        submittedDocs: [...state.document.submittedDocs].sort(),
+        attachments: Object.entries(state.document.attachments)
+          .map(([code, attachment]) => [
+            code,
+            attachment.fileName,
+            attachment.fileSize,
+            attachment.file?.lastModified,
+          ])
+          .sort(([left], [right]) => String(left).localeCompare(String(right))),
+      },
+      avatar: state.avatarFile
+        ? [state.avatarFile.name, state.avatarFile.size, state.avatarFile.lastModified]
+        : null,
+    });
+  }
+
+  const isFormDirty = $derived(
+    initialFormSnapshot !== null && getFormSnapshot() !== initialFormSnapshot,
   );
 
   const canSubmit = $derived(
@@ -450,6 +491,7 @@
     </div>
   </div>
 
+  {#if isFormDirty}
   <div class="fixed inset-x-3 bottom-3 z-40 mx-auto w-auto max-w-4xl rounded-xl border border-border/80 bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:px-4 sm:py-3">
     <div class="flex items-center justify-between gap-3">
       <p class="hidden min-w-0 truncate text-sm text-muted-foreground md:block">
@@ -498,4 +540,5 @@
       </div>
     </div>
   </div>
+  {/if}
 </div>

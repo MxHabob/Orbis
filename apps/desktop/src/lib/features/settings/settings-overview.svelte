@@ -29,9 +29,19 @@ async function handleLanguageChange(newLocale: string, currentValues: any) {
         orgId,
         request: {
           name: currentValues.name,
-          slug: currentValues.slug,
+          name_ar: currentValues.name_ar,
+          code: currentValues.code,
+          logo: currentValues.logo,
+          favicon: currentValues.favicon,
+          primary_color: currentValues.primary_color,
+          base_currency_code: currentValues.currency,
           locale: newLocale,
           timezone: currentValues.timezone,
+          date_format: currentValues.date_format,
+          format_locale: currentValues.format_locale,
+          time_format: currentValues.time_format,
+          is_hijri_enabled: currentValues.is_hijri_enabled,
+          metadata: currentValues.metadata,
         },
       });
     } catch (error) {

@@ -147,6 +147,40 @@ function formatGregorianYear(date: string) {
   return String(getDateParts(new Date(`${date}T12:00:00.000Z`), "UTC").year);
 }
 
+// Study Days (Yemeni System default: Saturday to Wednesday)
+const yemeniWeekdays = [
+  { value: 7, label: "السبت" },
+  { value: 1, label: "الأحد" },
+  { value: 2, label: "الإثنين" },
+  { value: 3, label: "الثلاثاء" },
+  { value: 4, label: "الأربعاء" },
+  { value: 5, label: "الخميس" },
+  { value: 6, label: "الجمعة" },
+];
+
+let selectedStudyDays = $state<number[]>([7, 1, 2, 3, 4]);
+
+function toggleStudyDay(day: number) {
+  if (selectedStudyDays.includes(day)) {
+    if (selectedStudyDays.length > 1) {
+      selectedStudyDays = selectedStudyDays.filter((d) => d !== day);
+    }
+  } else {
+    selectedStudyDays = [...selectedStudyDays, day].sort((a, b) => {
+      const order = [7, 1, 2, 3, 4, 5, 6];
+      return order.indexOf(a) - order.indexOf(b);
+    });
+  }
+}
+
+function setYemeniStudyDaysPreset(daysCount: 5 | 6) {
+  if (daysCount === 5) {
+    selectedStudyDays = [7, 1, 2, 3, 4];
+  } else {
+    selectedStudyDays = [7, 1, 2, 3, 4, 5];
+  }
+}
+
 function suggestacademicCalendar() {
   const now = new Date();
   const today = getOrganizationDate(now);
@@ -161,22 +195,32 @@ function suggestacademicCalendar() {
       "UTC",
       "islamic-umalqura",
     );
+    // In the Yemeni school system, the academic year belongs to a single Hijri year
+    // starting in Muharram (1 محرم) and concluding in Sha'ban (before Ramadan).
     const hijriYear = hijriToday.year + (hijriToday.month > 8 ? 1 : 0);
     startDate = findHijriDate(hijriYear, 1, 1, today);
     endDate = shiftDate(findHijriDate(hijriYear, 9, 1, today), -1);
     const startGregorianYear = formatGregorianYear(startDate);
     const endGregorianYear = formatGregorianYear(endDate);
-    name = `${hijriYear}-${hijriYear + 1} AH / ${startGregorianYear}-${endGregorianYear}`;
-    nameAr = `${hijriYear}-${hijriYear + 1} هـ / ${startGregorianYear}-${endGregorianYear} م`;
+
+    // Yemeni official school year notation: "1448 هـ / 2026-2027 م" (Single Hijri year)
+    name = `${hijriYear} AH / ${startGregorianYear}-${endGregorianYear}`;
+    nameAr = `${hijriYear} هـ / ${startGregorianYear}-${endGregorianYear} م`;
+
+    // Yemeni school day timings: Morning assembly at 07:30, school dismissal at 13:30
+    yearStartDate = `${startDate}T07:30`;
+    yearEndDate = `${endDate}T13:30`;
   } else if (orgContext.isUniversity) {
     const currentYear = getDateParts(now, orgContext.timezone).year;
     const currentMonth = getDateParts(now, orgContext.timezone).month;
     const startYear = currentMonth >= 9 ? currentYear : currentYear - 1;
     const endYear = startYear + 1;
     startDate = `${startYear}-09-01`;
-    endDate = `${endYear}-08-31`;
-    name = `${startYear}/${endYear}`;
-    nameAr = `${startYear}/${endYear} م`;
+    endDate = `${endYear}-06-30`;
+    name = `${startYear}-${endYear}`;
+    nameAr = `${startYear}-${endYear} م`;
+    yearStartDate = `${startDate}T08:00`;
+    yearEndDate = `${endDate}T14:00`;
   } else {
     const gregorianYear = getDateParts(now, orgContext.timezone).year;
     startDate = today;
@@ -191,12 +235,12 @@ function suggestacademicCalendar() {
     endDate = shiftDate(sameDateNextYear, -1);
     name = `Training Cycle ${gregorianYear}`;
     nameAr = `الدورة التدريبية ${gregorianYear}`;
+    yearStartDate = `${startDate}T08:00`;
+    yearEndDate = `${endDate}T14:00`;
   }
 
   yearName = name;
   yearNameAr = nameAr;
-  yearStartDate = `${startDate}T00:00`;
-  yearEndDate = `${endDate}T23:59`;
   successMessage = null;
 }
 
@@ -654,6 +698,49 @@ async function deleteYear(year: academicCalendarDto) {
           <p class="text-xs text-muted-foreground">
             {m.onboarding_step3_suggest_year_desc()}
           </p>
+
+          <!-- Yemeni System Weekly Study Days -->
+          <div class="space-y-2 pt-2 border-t border-border/40">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="text-xs font-semibold text-foreground">
+                أيام الدراسة الأسبوعية (النظام اليمني)
+              </span>
+              <div class="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                  onclick={() => setYemeniStudyDaysPreset(5)}
+                >
+                  5 أيام (السبت - الأربعاء)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                  onclick={() => setYemeniStudyDaysPreset(6)}
+                >
+                  6 أيام (السبت - الخميس)
+                </Button>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              {#each yemeniWeekdays as day}
+                {@const isSelected = selectedStudyDays.includes(day.value)}
+                <button
+                  type="button"
+                  class="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer {isSelected
+                    ? 'bg-primary/10 border-primary/40 text-primary font-bold'
+                    : 'bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground'}"
+                  onclick={() => toggleStudyDay(day.value)}
+                >
+                  <span>{day.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
 
           {#if yearStartIsPast}
             <div
