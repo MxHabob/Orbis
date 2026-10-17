@@ -1,10 +1,8 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::{SectionRepository, SectionSubjectRepository, SubjectRepository};
-use orbis_domain::entities::{
-    section::Section,
-    section_subject::SectionSubject,
-    subject::Subject,
+use orbis_app::ports::repositories::{
+    SectionRepository, SectionSubjectRepository, SubjectRepository,
 };
+use orbis_domain::entities::{section::Section, section_subject::SectionSubject, subject::Subject};
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -153,7 +151,10 @@ impl SectionRepository for AcademicRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_section_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_section_model_to_domain)
+            .collect())
     }
 
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Section>, DomainError> {
@@ -163,7 +164,10 @@ impl SectionRepository for AcademicRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_section_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_section_model_to_domain)
+            .collect())
     }
 
     async fn list(
@@ -180,7 +184,8 @@ impl SectionRepository for AcademicRepoImpl {
                 .all(&self.db)
                 .await
                 .map_err(|e| DomainError::Internal(e.to_string()))?;
-            let section_ids: Vec<Uuid> = section_subjects.into_iter().map(|s| s.section_id).collect();
+            let section_ids: Vec<Uuid> =
+                section_subjects.into_iter().map(|s| s.section_id).collect();
             query = query.filter(section::Column::Id.is_in(section_ids));
         }
         if let Some(ref lvl) = filter.level {
@@ -312,8 +317,7 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         &self,
         _org_id: Uuid,
         filter: orbis_domain::queries::filters::SectionSubjectFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<SectionSubject>, DomainError>
-    {
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<SectionSubject>, DomainError> {
         let mut query = SectionSubjectEntity::find();
         if let Some(class_id) = filter.section_id {
             query = query.filter(section_subject::Column::SectionId.eq(class_id));
@@ -477,45 +481,49 @@ impl orbis_app::ports::repositories::PrerequisiteRepository for AcademicRepoImpl
     async fn find_by_subject(
         &self,
         subject_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError>
-    {
+    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError> {
         let models = crate::models::prerequisite::Entity::find()
             .filter(crate::models::prerequisite::Column::SubjectId.eq(subject_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::prerequisite::Prerequisite {
-            id: m.id,
-            org_id: m.org_id,
-            subject_id: m.subject_id,
-            prerequisite_subject_id: m.prerequisite_subject_id,
-            requirement_type: m.requirement_type,
-            min_grade: m.min_grade,
-            min_score: m.min_score,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| orbis_domain::entities::prerequisite::Prerequisite {
+                id: m.id,
+                org_id: m.org_id,
+                subject_id: m.subject_id,
+                prerequisite_subject_id: m.prerequisite_subject_id,
+                requirement_type: m.requirement_type,
+                min_grade: m.min_grade,
+                min_score: m.min_score,
+            })
+            .collect())
     }
 
     async fn find_by_org(
         &self,
         org_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError>
-    {
+    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError> {
         let models = crate::models::prerequisite::Entity::find()
             .filter(crate::models::prerequisite::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::prerequisite::Prerequisite {
-            id: m.id,
-            org_id: m.org_id,
-            subject_id: m.subject_id,
-            prerequisite_subject_id: m.prerequisite_subject_id,
-            requirement_type: m.requirement_type,
-            min_grade: m.min_grade,
-            min_score: m.min_score,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| orbis_domain::entities::prerequisite::Prerequisite {
+                id: m.id,
+                org_id: m.org_id,
+                subject_id: m.subject_id,
+                prerequisite_subject_id: m.prerequisite_subject_id,
+                requirement_type: m.requirement_type,
+                min_grade: m.min_grade,
+                min_score: m.min_score,
+            })
+            .collect())
     }
 
     async fn save(

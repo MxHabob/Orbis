@@ -1,6 +1,6 @@
-use chrono::{Datelike, DateTime, Utc};
-use orbis_domain::entities::academic_period::{AcademicPeriod, AcademicPeriodState};
+use chrono::{DateTime, Datelike, Utc};
 use orbis_domain::entities::academic_calendar::{AcademicCalendar, AcademicCalendarStatus};
+use orbis_domain::entities::academic_period::{AcademicPeriod, AcademicPeriodState};
 use orbis_domain::entities::assessment_scheme::AssessmentScheme;
 use orbis_domain::entities::period_type::PeriodType;
 use orbis_domain::errors::DomainError;
@@ -15,7 +15,7 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, PeriodTypeRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, PeriodTypeRepository,
 };
 
 pub struct CalendarService {
@@ -140,14 +140,11 @@ impl CalendarService {
             .find_by_id(year_id)
             .await?
             .filter(|year| year.org_id == ctx.tenant_id)
-            .ok_or_else(|| {
-                DomainError::NotFound(format!("Academic year {} not found", year_id))
-            })?;
+            .ok_or_else(|| DomainError::NotFound(format!("Academic year {} not found", year_id)))?;
 
         if !self.period_repo.find_by_year(year.id).await?.is_empty() {
             return Err(DomainError::Validation(
-                "Cannot delete an academic year that has periods. Delete its periods first."
-                    .into(),
+                "Cannot delete an academic year that has periods. Delete its periods first.".into(),
             ));
         }
 
@@ -204,10 +201,12 @@ impl CalendarService {
                 .find_by_id(parent_id)
                 .await?
                 .filter(|parent| parent.org_id == org_id && parent.year_id == year_id)
-                .ok_or_else(|| DomainError::Validation(
-                    "Academic period parent must belong to the same organization and year."
-                        .into(),
-                ))?;
+                .ok_or_else(|| {
+                    DomainError::Validation(
+                        "Academic period parent must belong to the same organization and year."
+                            .into(),
+                    )
+                })?;
             if start_date < parent.start_date || end_date > parent.end_date {
                 return Err(DomainError::Validation(
                     "Academic period dates must fall within its parent period.".into(),
@@ -296,10 +295,7 @@ impl CalendarService {
     }
 
     /// List period templates
-    pub async fn list_period_types(
-        &self,
-        org_id: Uuid,
-    ) -> Result<Vec<PeriodType>, DomainError> {
+    pub async fn list_period_types(&self, org_id: Uuid) -> Result<Vec<PeriodType>, DomainError> {
         self.template_repo.find_by_org(org_id).await
     }
 
@@ -767,9 +763,7 @@ impl CalendarService {
     // ── Official Calendar Templates ─────────────────────────────
 
     /// Returns the list of available official calendar templates.
-    pub fn list_official_templates(
-        &self,
-    ) -> Vec<super::calendar_templates::CalendarTemplateInfo> {
+    pub fn list_official_templates(&self) -> Vec<super::calendar_templates::CalendarTemplateInfo> {
         super::calendar_templates::list_all_templates()
     }
 
@@ -803,11 +797,8 @@ impl CalendarService {
             })?;
 
         // Load the year
-        let year = self
-            .year_repo
-            .find_by_id(year_id)
-            .await?
-            .ok_or_else(|| {
+        let year =
+            self.year_repo.find_by_id(year_id).await?.ok_or_else(|| {
                 DomainError::NotFound(format!("Academic year {} not found", year_id))
             })?;
 
@@ -833,16 +824,15 @@ impl CalendarService {
         let year_start = year.start_date.date_naive();
 
         // Build supplementary periods using the template
-        let new_periods =
-            super::calendar_templates::yemen_1447_1448::build_supplementary_periods(
-                year.org_id,
-                year_id,
-                year_start,
-                term1_end,
-                term2_end,
-                &existing_codes,
-                now,
-            );
+        let new_periods = super::calendar_templates::yemen_1447_1448::build_supplementary_periods(
+            year.org_id,
+            year_id,
+            year_start,
+            term1_end,
+            term2_end,
+            &existing_codes,
+            now,
+        );
 
         // Persist the new periods
         let mut created = Vec::new();
@@ -916,7 +906,9 @@ impl CalendarService {
                     scheme_type: "annual_aggregation".to_string(),
                     max_score: 100.0,
                     passing_score: 50.0,
-                    description_ar: "محصلة الفصل الأول (50) + محصلة الفصل الثاني (50) — عتبة النجاح 50%".to_string(),
+                    description_ar:
+                        "محصلة الفصل الأول (50) + محصلة الفصل الثاني (50) — عتبة النجاح 50%"
+                            .to_string(),
                 },
                 AssessmentSchemeSummaryDto {
                     name: thanawiya.name,
@@ -964,9 +956,21 @@ impl CalendarService {
                 let m_num = i + 1;
                 let (m_en, m_ar) = month_names[i];
                 periods_summary.push(PeriodSummaryDto {
-                    code: format!("H{}-M{:02}", super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR, m_num),
-                    name: format!("{} {}", m_en, super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR),
-                    name_ar: format!("{} {}", m_ar, super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR),
+                    code: format!(
+                        "H{}-M{:02}",
+                        super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR,
+                        m_num
+                    ),
+                    name: format!(
+                        "{} {}",
+                        m_en,
+                        super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR
+                    ),
+                    name_ar: format!(
+                        "{} {}",
+                        m_ar,
+                        super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR
+                    ),
                     period_type: "month".to_string(),
                     period_kind: "teaching".to_string(),
                     sort_order: m_num as i32,
@@ -974,7 +978,11 @@ impl CalendarService {
                 });
                 if i < 3 {
                     periods_summary.push(PeriodSummaryDto {
-                        code: format!("H{}-M{:02}-EXAM", super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR, m_num),
+                        code: format!(
+                            "H{}-M{:02}-EXAM",
+                            super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR,
+                            m_num
+                        ),
                         name: format!("{} Exam", m_en),
                         name_ar: format!("اختبار {} الشهري", m_ar),
                         period_type: "month".to_string(),
@@ -1023,9 +1031,21 @@ impl CalendarService {
                 let m_num = i + 1;
                 let (m_en, m_ar) = month_names[i];
                 periods_summary.push(PeriodSummaryDto {
-                    code: format!("H{}-M{:02}", super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR, m_num),
-                    name: format!("{} {}", m_en, super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR),
-                    name_ar: format!("{} {}", m_ar, super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR),
+                    code: format!(
+                        "H{}-M{:02}",
+                        super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR,
+                        m_num
+                    ),
+                    name: format!(
+                        "{} {}",
+                        m_en,
+                        super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR
+                    ),
+                    name_ar: format!(
+                        "{} {}",
+                        m_ar,
+                        super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR
+                    ),
                     period_type: "month".to_string(),
                     period_kind: "teaching".to_string(),
                     sort_order: m_num as i32,
@@ -1033,7 +1053,11 @@ impl CalendarService {
                 });
                 if i < 7 {
                     periods_summary.push(PeriodSummaryDto {
-                        code: format!("H{}-M{:02}-EXAM", super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR, m_num),
+                        code: format!(
+                            "H{}-M{:02}-EXAM",
+                            super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR,
+                            m_num
+                        ),
                         name: format!("{} Exam", m_en),
                         name_ar: format!("اختبار {} الشهري", m_ar),
                         period_type: "month".to_string(),
@@ -1056,7 +1080,10 @@ impl CalendarService {
 
             // Public examination windows
             for def in &supp_defs {
-                if def.code != "YE-MIDYEAR-BREAK" && def.code != "YE-ADMIN-OPEN" && def.code != "YE-TEACHER-PREP" {
+                if def.code != "YE-MIDYEAR-BREAK"
+                    && def.code != "YE-ADMIN-OPEN"
+                    && def.code != "YE-TEACHER-PREP"
+                {
                     periods_summary.push(PeriodSummaryDto {
                         code: def.code.to_string(),
                         name: def.name.to_string(),
@@ -1155,8 +1182,10 @@ impl CalendarService {
             ];
 
             CalendarDefaultsDto {
-                suggested_name: super::calendar_templates::yemen_1447_1448::TEMPLATE_NAME.to_string(),
-                suggested_name_ar: super::calendar_templates::yemen_1447_1448::TEMPLATE_NAME_AR.to_string(),
+                suggested_name: super::calendar_templates::yemen_1447_1448::TEMPLATE_NAME
+                    .to_string(),
+                suggested_name_ar: super::calendar_templates::yemen_1447_1448::TEMPLATE_NAME_AR
+                    .to_string(),
                 start_date: "2026-06-27T07:30".to_string(),
                 end_date: "2027-02-07T13:30".to_string(),
                 hijri_start_year: super::calendar_templates::yemen_1447_1448::HIJRI_START_YEAR,
@@ -1200,16 +1229,14 @@ impl CalendarService {
                         parent_code: None,
                     },
                 ],
-                assessment_schemes: vec![
-                    AssessmentSchemeSummaryDto {
-                        name: "University Credit-Hour Assessment".to_string(),
-                        name_ar: "نظام الساعات المعتمدة الجامعي".to_string(),
-                        scheme_type: "credit_hour".to_string(),
-                        max_score: 100.0,
-                        passing_score: 60.0,
-                        description_ar: "نظام تقييم الساعات المعتمدة (100 درجة)".to_string(),
-                    },
-                ],
+                assessment_schemes: vec![AssessmentSchemeSummaryDto {
+                    name: "University Credit-Hour Assessment".to_string(),
+                    name_ar: "نظام الساعات المعتمدة الجامعي".to_string(),
+                    scheme_type: "credit_hour".to_string(),
+                    max_score: 100.0,
+                    passing_score: 60.0,
+                    description_ar: "نظام تقييم الساعات المعتمدة (100 درجة)".to_string(),
+                }],
                 timetable_slots: vec![],
             }
         }
@@ -1263,4 +1290,3 @@ pub struct TimeSlotSummaryDto {
     pub is_break: bool,
     pub break_type: Option<String>,
 }
-

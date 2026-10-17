@@ -512,7 +512,14 @@ async fn bulk_schedule_lessons(
     let items = p
         .lessons
         .into_iter()
-        .map(|l| (l.section_subject_id, l.time_slot_id, l.room_id, l.teacher_id))
+        .map(|l| {
+            (
+                l.section_subject_id,
+                l.time_slot_id,
+                l.room_id,
+                l.teacher_id,
+            )
+        })
         .collect();
     let lessons = state
         .scheduling_service

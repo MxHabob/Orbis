@@ -111,7 +111,9 @@ pub struct PeriodTypeDto {
 
 // ── Helpers ─────────────────────────────────────────────────────
 
-fn year_to_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> AcademicCalendarDto {
+fn year_to_dto(
+    y: orbis_domain::entities::academic_calendar::AcademicCalendar,
+) -> AcademicCalendarDto {
     AcademicCalendarDto {
         id: y.id,
         org_id: y.org_id,
@@ -453,10 +455,7 @@ async fn list_period_types(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<PeriodTypeDto>>>, ApiError> {
-    let templates = state
-        .period_type_repo
-        .find_by_org(ctx.tenant_id)
-        .await?;
+    let templates = state.period_type_repo.find_by_org(ctx.tenant_id).await?;
     let dtos = templates
         .into_iter()
         .map(|t| PeriodTypeDto {

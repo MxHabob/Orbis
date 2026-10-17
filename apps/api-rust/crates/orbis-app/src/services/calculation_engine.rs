@@ -927,7 +927,9 @@ impl AcademicCalculationEngine {
         let percentage = output_value(&calculated, "percentage")?;
 
         let is_incomplete = term_final_exam.is_none();
-        let failed_min_exam = if let (Some(min_exam), Some(exam_score)) = (policy.minimum_final_exam_score, term_final_exam) {
+        let failed_min_exam = if let (Some(min_exam), Some(exam_score)) =
+            (policy.minimum_final_exam_score, term_final_exam)
+        {
             exam_score < min_exam
         } else {
             false
@@ -1114,7 +1116,7 @@ impl AcademicCalculationEngine {
         let theory = theory_score.unwrap_or(Decimal::ZERO);
         let practical = practical_score.unwrap_or(Decimal::ZERO);
         let theory_max = policy.coursework_max_score; // e.g. 40
-        let practical_max = policy.exam_max_score;     // e.g. 60
+        let practical_max = policy.exam_max_score; // e.g. 60
         let total_max = theory_max + practical_max;
 
         let total_score = theory.min(theory_max) + practical.min(practical_max);
@@ -1225,9 +1227,9 @@ impl AcademicCalculationEngine {
         cumulative_score: Option<Decimal>,
         policy: &AcademicPolicy,
     ) -> Result<SubjectTermResult, DomainError> {
-        let exam_max = policy.certificate_exam_max_score;       // 80
+        let exam_max = policy.certificate_exam_max_score; // 80
         let cumul_max = policy.certificate_cumulative_max_score; // 20
-        let total_max = exam_max + cumul_max;                    // 100
+        let total_max = exam_max + cumul_max; // 100
 
         let exam = exam_score.unwrap_or(Decimal::ZERO).min(exam_max);
         let cumul = cumulative_score.unwrap_or(Decimal::ZERO).min(cumul_max);
@@ -2073,12 +2075,8 @@ mod tests {
     #[test]
     fn test_cumulative_score_empty_returns_none() {
         let policy = AcademicPolicy::default();
-        let result = AcademicCalculationEngine::resolve_cumulative_score(
-            &[],
-            d("20"),
-            d("100"),
-            &policy,
-        );
+        let result =
+            AcademicCalculationEngine::resolve_cumulative_score(&[], d("20"), d("100"), &policy);
         assert_eq!(result, None);
     }
 
@@ -2103,8 +2101,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(result.term_total, d("91"));  // 75 + 16 = 91
-        assert_eq!(result.term_max, d("100"));   // 80 + 20
+        assert_eq!(result.term_total, d("91")); // 75 + 16 = 91
+        assert_eq!(result.term_max, d("100")); // 80 + 20
         assert_eq!(result.percentage, d("91.00"));
         assert_eq!(result.status, AcademicStatus::PassedWithHonors);
     }
@@ -2144,7 +2142,7 @@ mod tests {
             "Arabic".into(),
             None,
             d("1"),
-            None,          // no exam score
+            None, // no exam score
             Some(d("15")),
             &policy,
         )

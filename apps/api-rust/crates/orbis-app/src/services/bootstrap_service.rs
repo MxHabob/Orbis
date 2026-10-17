@@ -46,7 +46,10 @@ pub struct InstitutionBlueprintConfig {
 
 impl InstitutionBlueprintConfig {
     pub fn from_institution_type(institution_type: &InstitutionType) -> Self {
-        Self::from_institution_type_and_profile(institution_type, &orbis_domain::entities::country_profile::CountryProfile::yemen())
+        Self::from_institution_type_and_profile(
+            institution_type,
+            &orbis_domain::entities::country_profile::CountryProfile::yemen(),
+        )
     }
 
     pub fn from_institution_type_and_profile(
@@ -246,9 +249,7 @@ impl InstitutionBlueprintConfig {
                         .calculation_inputs
                         .iter()
                         .map(|(name, weight)| WeightedItem {
-                            node: AstNode::Variable {
-                                name: name.clone(),
-                            },
+                            node: AstNode::Variable { name: name.clone() },
                             weight: *weight,
                         })
                         .collect(),
@@ -614,17 +615,21 @@ impl BootstrapService {
 
         let org_id = org.id;
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
-        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(req.country_code.as_deref());
+        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(
+            req.country_code.as_deref(),
+        );
 
         // ── Step 4: Initialize organization settings ──────────
         self.initialize_settings(org_id, &institution_type, &country_profile, &req)
             .await?;
 
         // ── Step 5: Seed system reference currencies ──────────
-        self.seed_system_currencies(org_id, &country_profile, &req).await?;
+        self.seed_system_currencies(org_id, &country_profile, &req)
+            .await?;
 
         // ── Step 6: Initialize Chart of Accounts scaffold ─────
-        self.initialize_chart_of_accounts(org_id, &country_profile, &req).await?;
+        self.initialize_chart_of_accounts(org_id, &country_profile, &req)
+            .await?;
 
         // ── Step 7: Create system roles ───────────────────────
         self.create_system_roles(org_id).await?;
@@ -738,7 +743,9 @@ impl BootstrapService {
             final_slug = format!("{}-{}", target_slug, counter);
         }
 
-        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(req.country_code.as_deref());
+        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(
+            req.country_code.as_deref(),
+        );
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
         let now = Utc::now();
 
@@ -793,15 +800,25 @@ impl BootstrapService {
         org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
         org.format_locale = req.format_locale.clone();
         org.time_format = req.time_format.clone();
-        org.is_hijri_enabled = req.is_hijri_enabled.unwrap_or(country_profile.country_code == "YE");
-        org.base_currency_code = req.base_currency_code.clone().or_else(|| Some(country_profile.default_currency.clone()));
+        org.is_hijri_enabled = req
+            .is_hijri_enabled
+            .unwrap_or(country_profile.country_code == "YE");
+        org.base_currency_code = req
+            .base_currency_code
+            .clone()
+            .or_else(|| Some(country_profile.default_currency.clone()));
         org.primary_color = req.primary_color.clone().or(Some("#4f46e5".to_string()));
         org.is_verified = true; // Bootstrap-created org is verified
 
         let resolved_ministry = req.ministry_name.clone().or_else(|| {
-            country_profile.authority_for(institution_type.as_str()).map(|a| a.ministry_name_ar.clone())
+            country_profile
+                .authority_for(institution_type.as_str())
+                .map(|a| a.ministry_name_ar.clone())
         });
-        let resolved_country_name = req.country_name.clone().unwrap_or_else(|| country_profile.name.clone());
+        let resolved_country_name = req
+            .country_name
+            .clone()
+            .unwrap_or_else(|| country_profile.name.clone());
 
         org.metadata = Some(serde_json::json!({
             "institution_type": institution_type.as_str(),
@@ -843,7 +860,10 @@ impl BootstrapService {
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let mut settings = OrganizationSettings::default();
-        let blueprint = InstitutionBlueprintConfig::from_institution_type_and_profile(institution_type, country_profile);
+        let blueprint = InstitutionBlueprintConfig::from_institution_type_and_profile(
+            institution_type,
+            country_profile,
+        );
         blueprint.apply_to_settings(&mut settings);
 
         // 1. Academic Policies & Evaluation Defaults
@@ -1748,7 +1768,7 @@ pub fn transliterate_arabic(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{default_org_admin_group_permissions, InstitutionBlueprintConfig};
+    use super::{InstitutionBlueprintConfig, default_org_admin_group_permissions};
     use crate::services::calculation_engine::AcademicCalculationEngine;
     use orbis_domain::entities::organization::InstitutionType;
     use orbis_domain::entities::settings::OrganizationSettings;

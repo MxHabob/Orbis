@@ -34,7 +34,15 @@ export interface AppSetting {
   /** Help text in Arabic */
   description_ar?: string;
   /** Input type — determines the rendered form control */
-  type: "text" | "password" | "number" | "switch" | "select" | "url" | "directory";
+  type:
+    | "text"
+    | "email"
+    | "password"
+    | "number"
+    | "switch"
+    | "select"
+    | "url"
+    | "directory";
   /** Whether this setting must be filled to connect */
   required: boolean;
   /** Default value */

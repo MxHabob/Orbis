@@ -6,15 +6,12 @@ use uuid::Uuid;
 use orbis_domain::{
     autopilot::task::AutopilotTask,
     entities::{
-        academic_period::AcademicPeriod,
         academic_calendar::AcademicCalendar,
+        academic_period::AcademicPeriod,
         account::Account,
         assessment_scheme::AssessmentScheme,
         attendance::Attendance,
         behavior_record::BehaviorRecord,
-        section::Section,
-        section_subject::SectionSubject,
-        prerequisite::Prerequisite,
         currency::Currency,
         device::UserDevice,
         discount_template::DiscountTemplate,
@@ -40,6 +37,7 @@ use orbis_domain::{
         payment::Payment,
         period_type::PeriodType,
         person::Person,
+        prerequisite::Prerequisite,
         progression::{ProgressionDetail, ProgressionJob},
         role::Role,
         role_permission::RolePermission,
@@ -47,6 +45,8 @@ use orbis_domain::{
         scheduled_lesson::ScheduledLesson,
         seating_number::SeatingNumber,
         secret_number::SecretNumber,
+        section::Section,
+        section_subject::SectionSubject,
         settings::OrganizationSettings,
         student::{Student, StudentDetail},
         student_fee::StudentFee,
@@ -265,10 +265,7 @@ pub trait AcademicFrameworkRepository: Send + Sync {
         &self,
         org_id: Uuid,
         id: Uuid,
-    ) -> Result<
-        Option<orbis_domain::entities::academic_calendar::AcademicPeriod>,
-        DomainError,
-    >;
+    ) -> Result<Option<orbis_domain::entities::academic_calendar::AcademicPeriod>, DomainError>;
     async fn save_calendar_period(
         &self,
         period: &orbis_domain::entities::academic_calendar::AcademicPeriod,
@@ -483,10 +480,7 @@ pub trait SectionSubjectRepository: Send + Sync {
 
 #[async_trait]
 pub trait PrerequisiteRepository: Send + Sync {
-    async fn find_by_subject(
-        &self,
-        subject_id: Uuid,
-    ) -> Result<Vec<Prerequisite>, DomainError>;
+    async fn find_by_subject(&self, subject_id: Uuid) -> Result<Vec<Prerequisite>, DomainError>;
     async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Prerequisite>, DomainError>;
     async fn save(&self, prereq: &Prerequisite) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;
@@ -747,7 +741,10 @@ pub trait CurrencyRepository: Send + Sync {
 pub trait PromotionRepository: Send + Sync {
     async fn find_job_by_id(&self, job_id: Uuid) -> Result<Option<ProgressionJob>, DomainError>;
     async fn find_jobs_by_org(&self, org_id: Uuid) -> Result<Vec<ProgressionJob>, DomainError>;
-    async fn find_details_by_job(&self, job_id: Uuid) -> Result<Vec<ProgressionDetail>, DomainError>;
+    async fn find_details_by_job(
+        &self,
+        job_id: Uuid,
+    ) -> Result<Vec<ProgressionDetail>, DomainError>;
     async fn save_job(&self, job: &ProgressionJob) -> Result<(), DomainError>;
     async fn save_detail(&self, detail: &ProgressionDetail) -> Result<(), DomainError>;
     async fn save_details(&self, details: &[ProgressionDetail]) -> Result<(), DomainError>;

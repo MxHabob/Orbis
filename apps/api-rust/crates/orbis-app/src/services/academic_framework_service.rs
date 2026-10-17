@@ -1,10 +1,10 @@
 use chrono::Utc;
 use orbis_domain::entities::academic_calendar::{
-    AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
+    AcademicCalendar, AcademicCalendarStatus, AcademicPeriod, PeriodType,
 };
-use orbis_domain::entities::subject::Subject;
 use orbis_domain::entities::enrollment::Enrollment;
 use orbis_domain::entities::section_subject::SectionSubject;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use std::sync::Arc;
@@ -98,7 +98,11 @@ impl AcademicFrameworkService {
         self.require_org_permission(ctx, org_id, Permission::SubjectRead)
             .await?;
         if let Some(course_id) = course_id
-            && self.framework_repo.find_course(org_id, course_id).await?.is_none()
+            && self
+                .framework_repo
+                .find_course(org_id, course_id)
+                .await?
+                .is_none()
         {
             return Err(DomainError::NotFound("Course not found".into()));
         }
@@ -521,9 +525,7 @@ impl AcademicFrameworkService {
             created_at: now,
             updated_at: now,
         };
-        self.framework_repo
-            .save_enrollment(&enrollment)
-            .await?;
+        self.framework_repo.save_enrollment(&enrollment).await?;
         Ok(enrollment)
     }
 
@@ -635,8 +637,8 @@ mod tests {
             academic_calendar::{AcademicCalendar, AcademicPeriod, PeriodType},
             course::Course,
             enrollment::{Enrollment, Enrollmentstatus},
-            section_subject::{SectionSubject, SectionSubjectstatus},
             org_unit::OrgUnit,
+            section_subject::{SectionSubject, SectionSubjectstatus},
             student::{AcademicStanding, Student, StudentDetail, StudentStatus},
         },
         errors::DomainError,
@@ -695,10 +697,7 @@ mod tests {
 
     #[async_trait]
     impl AcademicFrameworkRepository for TestFrameworkRepo {
-        async fn list_calendars(
-            &self,
-            _: Uuid,
-        ) -> Result<Vec<AcademicCalendar>, DomainError> {
+        async fn list_calendars(&self, _: Uuid) -> Result<Vec<AcademicCalendar>, DomainError> {
             Ok(vec![])
         }
         async fn find_calendar(
@@ -718,10 +717,7 @@ mod tests {
         async fn save_calendar(&self, _: &AcademicCalendar) -> Result<(), DomainError> {
             Ok(())
         }
-        async fn list_period_types(
-            &self,
-            _: Uuid,
-        ) -> Result<Vec<PeriodType>, DomainError> {
+        async fn list_period_types(&self, _: Uuid) -> Result<Vec<PeriodType>, DomainError> {
             Ok(vec![])
         }
         async fn find_period_type(
@@ -755,10 +751,7 @@ mod tests {
         ) -> Result<Option<AcademicPeriod>, DomainError> {
             Ok(None)
         }
-        async fn save_calendar_period(
-            &self,
-            _: &AcademicPeriod,
-        ) -> Result<(), DomainError> {
+        async fn save_calendar_period(&self, _: &AcademicPeriod) -> Result<(), DomainError> {
             Ok(())
         }
         async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Course>, DomainError> {
@@ -836,11 +829,7 @@ mod tests {
                 updated_at: Utc::now(),
             }))
         }
-        async fn list_enrollments(
-            &self,
-            _: Uuid,
-            _: Uuid,
-        ) -> Result<Vec<Enrollment>, DomainError> {
+        async fn list_enrollments(&self, _: Uuid, _: Uuid) -> Result<Vec<Enrollment>, DomainError> {
             Ok(vec![])
         }
         async fn save_enrollment(&self, _: &Enrollment) -> Result<(), DomainError> {

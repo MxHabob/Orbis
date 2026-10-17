@@ -199,8 +199,8 @@ impl From<DomainError> for ApiError {
 
 // ── Route modules ──────────────────────────────────────────────
 
-pub mod academic_routes;
 pub mod academic_framework_routes;
+pub mod academic_routes;
 pub mod ai_routes;
 pub mod assessment_routes;
 pub mod autopilot_routes;

@@ -15,12 +15,10 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::{
-    academic_calendar::{
-        AcademicCalendar, AcademicPeriod, PeriodType,
-    },
-    subject::Subject,
+    academic_calendar::{AcademicCalendar, AcademicPeriod, PeriodType},
     enrollment::Enrollment,
     section_subject::SectionSubject,
+    subject::Subject,
 };
 
 #[derive(Serialize, ToSchema)]
@@ -289,7 +287,9 @@ pub async fn list_calendars(
         .academic_framework_service
         .list_calendars(&ctx, ctx.tenant_id)
         .await?;
-    Ok(ApiResponse::ok(items.into_iter().map(calendar_dto).collect()))
+    Ok(ApiResponse::ok(
+        items.into_iter().map(calendar_dto).collect(),
+    ))
 }
 
 #[utoipa::path(post, path = "/api/v1/academic-framework/calendars", request_body = CreateAcademicCalendarRequest,
@@ -324,7 +324,9 @@ pub async fn list_period_types(
         .academic_framework_service
         .list_period_types(&ctx, ctx.tenant_id)
         .await?;
-    Ok(ApiResponse::ok(items.into_iter().map(period_type_dto).collect()))
+    Ok(ApiResponse::ok(
+        items.into_iter().map(period_type_dto).collect(),
+    ))
 }
 
 #[utoipa::path(post, path = "/api/v1/academic-framework/period-types", request_body = CreatePeriodTypeRequest,
@@ -442,7 +444,9 @@ pub async fn list_section_subjects(
         .academic_framework_service
         .list_section_subjects(&ctx, ctx.tenant_id, query.course_id)
         .await?;
-    Ok(ApiResponse::ok(items.into_iter().map(offering_dto).collect()))
+    Ok(ApiResponse::ok(
+        items.into_iter().map(offering_dto).collect(),
+    ))
 }
 
 #[utoipa::path(post, path = "/api/v1/academic-framework/course-offerings", request_body = CreateSectionSubjectRequest,

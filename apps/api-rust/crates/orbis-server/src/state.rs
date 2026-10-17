@@ -7,12 +7,12 @@ use orbis_app::ports::reporting::{
 use orbis_app::ports::repositories::{
     AcademicCalendarRepository, AcademicFrameworkRepository, AcademicPeriodRepository,
     AccountRepository, AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository,
-    SectionRepository, SectionSubjectRepository, CurrencyRepository, DashboardRepository,
-    DocumentRepository, EnrollmentRepository, ExamProctorRepository, ExamScheduleRepository,
-    ExamSessionRepository, FeeTemplateRepository, GradeRepository, IntegrationRepository,
-    JournalEntryRepository, OrgUnitRepository, OrganizationRepository, PaymentRepository,
-    PeriodTypeRepository, PersonRepository, PolicyRepository, RoomRepository,
-    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, SessionRepository,
+    CurrencyRepository, DashboardRepository, DocumentRepository, EnrollmentRepository,
+    ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository, FeeTemplateRepository,
+    GradeRepository, IntegrationRepository, JournalEntryRepository, OrgUnitRepository,
+    OrganizationRepository, PaymentRepository, PeriodTypeRepository, PersonRepository,
+    PolicyRepository, RoomRepository, ScheduledLessonRepository, SeatingNumberRepository,
+    SecretNumberRepository, SectionRepository, SectionSubjectRepository, SessionRepository,
     SettingsRepository, StudentFeeRepository, StudentGuardianRepository, SubjectRepository,
     TimeSlotRepository, UserRepository, WorkflowRepository,
 };

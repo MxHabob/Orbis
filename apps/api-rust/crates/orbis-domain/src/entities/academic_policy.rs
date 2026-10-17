@@ -457,12 +457,22 @@ impl ResultSnapshot {
             ));
         }
 
-        if matches!(to_state, ResultLifecycleState::Approved | ResultLifecycleState::Published) && reason.is_none() {
+        if matches!(
+            to_state,
+            ResultLifecycleState::Approved | ResultLifecycleState::Published
+        ) && reason.is_none()
+        {
             return Err("Approval and publication require a recorded reason.".into());
         }
 
-        if (from_state == ResultLifecycleState::Approved || from_state == ResultLifecycleState::Published)
-            && !matches!(to_state, ResultLifecycleState::Published | ResultLifecycleState::Archived | ResultLifecycleState::Revised)
+        if (from_state == ResultLifecycleState::Approved
+            || from_state == ResultLifecycleState::Published)
+            && !matches!(
+                to_state,
+                ResultLifecycleState::Published
+                    | ResultLifecycleState::Archived
+                    | ResultLifecycleState::Revised
+            )
         {
             return Err("Finalized results must move through a recorded publication, revision, or archival action.".into());
         }
@@ -537,10 +547,14 @@ impl ResultSnapshot {
         next_payload: JsonValue,
         correction_reason: Option<&str>,
     ) -> Result<Self, String> {
-        if (self.state == ResultLifecycleState::Approved || self.state == ResultLifecycleState::Published)
+        if (self.state == ResultLifecycleState::Approved
+            || self.state == ResultLifecycleState::Published)
             && correction_reason.is_none()
         {
-            return Err("Approved or published results require a correction reason for a new revision.".into());
+            return Err(
+                "Approved or published results require a correction reason for a new revision."
+                    .into(),
+            );
         }
 
         Ok(Self {
@@ -615,7 +629,10 @@ impl AcademicResultView {
     /// Validates an institution-neutral result payload against a DocForge projection.
     /// Unknown keys are flagged so reports can fail fast when templates rely on fields
     /// the result contract does not expose.
-    pub fn validate_projection(&self, projection: &ReportProjectionSpec) -> ProjectionValidationResult {
+    pub fn validate_projection(
+        &self,
+        projection: &ReportProjectionSpec,
+    ) -> ProjectionValidationResult {
         let mut missing_fields = Vec::new();
         let mut unknown_fields = Vec::new();
         let mut warnings = Vec::new();
@@ -623,7 +640,10 @@ impl AcademicResultView {
         let payload_map = match &self.payload {
             JsonValue::Object(map) => map,
             _ => {
-                warnings.push("Result payload must be a JSON object to validate projection fields.".to_string());
+                warnings.push(
+                    "Result payload must be a JSON object to validate projection fields."
+                        .to_string(),
+                );
                 return ProjectionValidationResult {
                     is_valid: false,
                     missing_fields: projection.required_fields.clone(),
@@ -878,7 +898,11 @@ impl AcademicPolicy {
         } else if percentage >= Decimal::from(70) {
             ("C", "جيد", Decimal::from(2))
         } else if percentage >= Decimal::from(65) {
-            ("D+", "مقبول مرتفع", Decimal::from_str_exact("1.5").unwrap_or(Decimal::ONE))
+            (
+                "D+",
+                "مقبول مرتفع",
+                Decimal::from_str_exact("1.5").unwrap_or(Decimal::ONE),
+            )
         } else if percentage >= Decimal::from(50) {
             ("D", "مقبول", Decimal::ONE)
         } else {
@@ -1011,13 +1035,15 @@ mod tests {
         assert!(snapshot.is_approved());
 
         assert!(snapshot.ensure_mutation_allowed().is_err());
-        assert!(snapshot
-            .new_revision(
-                2,
-                serde_json::json!({"overall_percentage": 82.0, "status": "passed"}),
-                None,
-            )
-            .is_err());
+        assert!(
+            snapshot
+                .new_revision(
+                    2,
+                    serde_json::json!({"overall_percentage": 82.0, "status": "passed"}),
+                    None,
+                )
+                .is_err()
+        );
     }
 
     #[test]
@@ -1091,7 +1117,15 @@ mod tests {
         let validation_for_legacy_fields = view_with_legacy_fields.validate_projection(&projection);
         assert!(!validation_for_legacy_fields.is_valid);
         assert_eq!(validation_for_legacy_fields.unknown_fields.len(), 2);
-        assert!(validation_for_legacy_fields.unknown_fields.contains(&"legacy_gpa".to_string()));
-        assert!(validation_for_legacy_fields.unknown_fields.contains(&"certificate_type".to_string()));
+        assert!(
+            validation_for_legacy_fields
+                .unknown_fields
+                .contains(&"legacy_gpa".to_string())
+        );
+        assert!(
+            validation_for_legacy_fields
+                .unknown_fields
+                .contains(&"certificate_type".to_string())
+        );
     }
 }

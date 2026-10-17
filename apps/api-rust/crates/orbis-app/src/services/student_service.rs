@@ -3,8 +3,8 @@ use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::license::LicenseRuntime;
 use crate::ports::repositories::{
-    SectionRepository, EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository,
-    PersonRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
+    EnrollmentRepository, FeeTemplateRepository, OverrideRequestRepository, PersonRepository,
+    SectionRepository, SequenceCounterRepository, SettingsRepository, StudentFeeRepository,
     StudentGuardianRepository, StudentRepository,
 };
 use chrono::{Datelike, NaiveDate, Utc};
@@ -679,12 +679,9 @@ impl StudentService {
         let admission_policy = org_settings.admission.policy;
         let allow_waitlist =
             org_settings.enrollment.allow_waitlist || admission_policy.allow_waitlist;
-        let requires_approval = org_settings.enrollment.require_admin_approval
-            || admission_policy.requires_approval;
-        let max_class_capacity = org_settings
-            .enrollment
-            .max_class_size_default
-            .max(0);
+        let requires_approval =
+            org_settings.enrollment.require_admin_approval || admission_policy.requires_approval;
+        let max_class_capacity = org_settings.enrollment.max_class_size_default.max(0);
         let mut enrollment_status = EnrollmentStatus::Active;
 
         if completing_draft {
@@ -822,10 +819,7 @@ impl StudentService {
                         due_date: now.date_naive(),
                         discount_details: None,
                         installment_number: Some(1),
-                        notes: Some(format!(
-                            "Auto-assigned mandatory fee: {}",
-                            template.name
-                        )),
+                        notes: Some(format!("Auto-assigned mandatory fee: {}", template.name)),
                         created_by: ctx.user_id(),
                         created_at: now,
                         updated_at: now,
@@ -1394,38 +1388,39 @@ impl StudentService {
             // 6. Cumulative Class Capacity & Multi-Enrollment Simulation
             if !item.registration.is_draft {
                 if let Some(class_id) = item.registration.initial_section_id {
-                let (current_active, max_cap) = if let Some(cached) =
-                    class_capacity_cache.get(&class_id)
-                {
-                    *cached
-                } else {
-                    let active = self
-                        .enrollment_repo
-                        .find_by_section(class_id)
-                        .await
-                        .map(|list| {
-                            list.into_iter()
-                                .filter(|e| e.status == EnrollmentStatus::Active)
-                                .count() as i32
-                        })
-                        .unwrap_or(0);
-                    let max_c = if let Ok(Some(cls)) = self.section_repo.find_by_id(class_id).await {
-                        cls.capacity.unwrap_or(admission_policy.max_class_capacity)
+                    let (current_active, max_cap) = if let Some(cached) =
+                        class_capacity_cache.get(&class_id)
+                    {
+                        *cached
                     } else {
-                        admission_policy.max_class_capacity
+                        let active = self
+                            .enrollment_repo
+                            .find_by_section(class_id)
+                            .await
+                            .map(|list| {
+                                list.into_iter()
+                                    .filter(|e| e.status == EnrollmentStatus::Active)
+                                    .count() as i32
+                            })
+                            .unwrap_or(0);
+                        let max_c =
+                            if let Ok(Some(cls)) = self.section_repo.find_by_id(class_id).await {
+                                cls.capacity.unwrap_or(admission_policy.max_class_capacity)
+                            } else {
+                                admission_policy.max_class_capacity
+                            };
+                        class_capacity_cache.insert(class_id, (active, max_c));
+                        (active, max_c)
                     };
-                    class_capacity_cache.insert(class_id, (active, max_c));
-                    (active, max_c)
-                };
 
-                let allocated = class_allocated_count.entry(class_id).or_insert(0);
-                *allocated += 1;
+                    let allocated = class_allocated_count.entry(class_id).or_insert(0);
+                    *allocated += 1;
 
-                if (current_active + *allocated) > max_cap
-                    && item.registration.bypass_capacity_check != Some(true)
-                {
-                    if is_atomic && !admission_policy.allow_waitlist {
-                        pre_errors.insert(row, format!(
+                    if (current_active + *allocated) > max_cap
+                        && item.registration.bypass_capacity_check != Some(true)
+                    {
+                        if is_atomic && !admission_policy.allow_waitlist {
+                            pre_errors.insert(row, format!(
                             "Class capacity exceeded ({}/{} max). Total active: {}, requested in batch: {}",
                             current_active + *allocated, max_cap, current_active, *allocated
                         ));

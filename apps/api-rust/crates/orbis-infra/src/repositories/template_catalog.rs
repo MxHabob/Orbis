@@ -1804,7 +1804,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2022,7 +2022,7 @@ fn default_exam_hall_register_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2150,7 +2150,7 @@ fn default_exam_hall_seating_card_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2273,7 +2273,7 @@ fn default_user_id_card_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2402,7 +2402,7 @@ fn default_class_schedule_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2562,7 +2562,7 @@ fn default_account_statement_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2743,8 +2743,7 @@ mod tests {
             .find(|t| t.3 == "student" && t.4 == "REPORT")
             .expect("first student REPORT template");
         assert_eq!(
-            first_report.0,
-            "academic.student-certificate-yemeni",
+            first_report.0, "academic.student-certificate-yemeni",
             "Official Yemeni academic certificate must be the first (REPORT, student) template to receive is_default = 1"
         );
     }

@@ -192,23 +192,28 @@ impl MigrationTrait for Migration {
         // Section indexes
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_sections_org ON sections (org_id, section_type)",
-        ).await?;
+        )
+        .await?;
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_sections_code ON sections (org_id, code)",
-        ).await?;
+        )
+        .await?;
 
         // Academic period indexes
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_periods_calendar ON academic_periods (calendar_id)",
-        ).await?;
+        )
+        .await?;
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_periods_org ON academic_periods (org_id)",
-        ).await?;
+        )
+        .await?;
 
         // Subject indexes
         db.execute_unprepared(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_subjects_org_code ON subjects (org_id, code)",
-        ).await?;
+        )
+        .await?;
 
         // Prerequisite indexes
         db.execute_unprepared(
@@ -216,9 +221,8 @@ impl MigrationTrait for Migration {
         ).await?;
 
         // Student indexes
-        db.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS idx_students_org ON students (org_id)",
-        ).await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_students_org ON students (org_id)")
+            .await?;
         db.execute_unprepared(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_students_org_number ON students (org_id, student_number)",
         ).await?;
@@ -226,10 +230,12 @@ impl MigrationTrait for Migration {
         // Payment indexes
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_payments_student ON payments (student_id)",
-        ).await?;
+        )
+        .await?;
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_payments_org_date ON payments (org_id, paid_at)",
-        ).await?;
+        )
+        .await?;
 
         // Student fee indexes
         db.execute_unprepared(
@@ -253,28 +259,28 @@ impl MigrationTrait for Migration {
         ).await?;
 
         // Document indexes
-        db.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS idx_documents_org ON documents (org_id)",
-        ).await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_documents_org ON documents (org_id)")
+            .await?;
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_documents_entity ON documents (entity_type, entity_id)",
-        ).await?;
+        )
+        .await?;
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_documents_folder ON documents (folder_id)",
-        ).await?;
+        )
+        .await?;
 
         // User indexes
-        db.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS idx_users_org ON users (org_id)",
-        ).await?;
-        db.execute_unprepared(
-            "CREATE INDEX IF NOT EXISTS idx_users_person ON users (person_id)",
-        ).await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_users_org ON users (org_id)")
+            .await?;
+        db.execute_unprepared("CREATE INDEX IF NOT EXISTS idx_users_person ON users (person_id)")
+            .await?;
 
         // Report indexes
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_report_jobs_org ON report_jobs (org_id)",
-        ).await?;
+        )
+        .await?;
         db.execute_unprepared(
             "CREATE INDEX IF NOT EXISTS idx_report_definitions_org ON report_definitions (org_id, domain, category)",
         ).await?;
@@ -297,33 +303,79 @@ impl MigrationTrait for Migration {
         let db = _manager.get_connection();
 
         let tables = vec![
-            "sequence_counters", "scheduled_lessons", "time_slots", "rooms",
-            "report_audit_log", "report_jobs", "report_template_bindings",
-            "report_template_versions", "report_templates", "report_definitions",
-            "autopilot_tasks", "workflow_executions", "workflow_actions", "workflow_rules",
-            "integration_secrets", "integration_configs",
-            "custom_field_definitions", "document_requirements", "folders", "documents",
-            "payments", "student_fees", "discount_templates", "fee_templates",
-            "journal_entry_lines", "journal_entries", "accounts",
-            "exchange_rates", "currencies",
-            "secret_numbers", "seating_numbers", "exam_proctors",
-            "exam_schedules", "exam_sessions",
-            "behavior_records", "attendances", "cumulative_gpa_records", "grades",
+            "sequence_counters",
+            "scheduled_lessons",
+            "time_slots",
+            "rooms",
+            "report_audit_log",
+            "report_jobs",
+            "report_template_bindings",
+            "report_template_versions",
+            "report_templates",
+            "report_definitions",
+            "autopilot_tasks",
+            "workflow_executions",
+            "workflow_actions",
+            "workflow_rules",
+            "integration_secrets",
+            "integration_configs",
+            "custom_field_definitions",
+            "document_requirements",
+            "folders",
+            "documents",
+            "payments",
+            "student_fees",
+            "discount_templates",
+            "fee_templates",
+            "journal_entry_lines",
+            "journal_entries",
+            "accounts",
+            "exchange_rates",
+            "currencies",
+            "secret_numbers",
+            "seating_numbers",
+            "exam_proctors",
+            "exam_schedules",
+            "exam_sessions",
+            "behavior_records",
+            "attendances",
+            "cumulative_gpa_records",
+            "grades",
             "academic_override_requests",
-            "progression_details", "progression_jobs",
-            "student_guardians", "enrollments", "students",
-            "section_subjects", "sections", "assessment_schemes",
-            "prerequisites", "subjects",
-            "academic_periods", "period_types", "academic_calendars",
-            "group_permissions", "user_group_memberships", "groups", "employees",
-            "user_devices", "mfa_recovery_codes", "mfa_factors",
-            "user_identities", "user_role_assignments",
-            "role_permissions", "roles", "user_sessions", "users",
-            "persons", "org_units", "organizations",
+            "progression_details",
+            "progression_jobs",
+            "student_guardians",
+            "enrollments",
+            "students",
+            "section_subjects",
+            "sections",
+            "assessment_schemes",
+            "prerequisites",
+            "subjects",
+            "academic_periods",
+            "period_types",
+            "academic_calendars",
+            "group_permissions",
+            "user_group_memberships",
+            "groups",
+            "employees",
+            "user_devices",
+            "mfa_recovery_codes",
+            "mfa_factors",
+            "user_identities",
+            "user_role_assignments",
+            "role_permissions",
+            "roles",
+            "user_sessions",
+            "users",
+            "persons",
+            "org_units",
+            "organizations",
         ];
 
         for table in tables {
-            db.execute_unprepared(&format!("DROP TABLE IF EXISTS {}", table)).await?;
+            db.execute_unprepared(&format!("DROP TABLE IF EXISTS {}", table))
+                .await?;
         }
 
         Ok(())

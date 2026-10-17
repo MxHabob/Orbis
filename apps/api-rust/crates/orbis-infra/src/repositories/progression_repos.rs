@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::PromotionRepository;
 use orbis_domain::entities::progression::{
-    PromotionDecision, ProgressionDetail, ProgressionJob, ProgressionJobStatus,
+    ProgressionDetail, ProgressionJob, ProgressionJobStatus, PromotionDecision,
 };
 use orbis_domain::errors::DomainError;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
@@ -84,7 +84,10 @@ impl PromotionRepository for ProgressionRepoImpl {
             .collect())
     }
 
-    async fn find_details_by_job(&self, job_id: Uuid) -> Result<Vec<ProgressionDetail>, DomainError> {
+    async fn find_details_by_job(
+        &self,
+        job_id: Uuid,
+    ) -> Result<Vec<ProgressionDetail>, DomainError> {
         let models = ProgressionDetailEntity::find()
             .filter(progression_detail::Column::JobId.eq(job_id))
             .all(&self.db)

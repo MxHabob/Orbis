@@ -1,9 +1,9 @@
 //! Student routes — Registrations, Enrollments, Study Mode changes, Status updates, Guardians, Bulk registration.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, patch, post},
-    Json, Router,
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};

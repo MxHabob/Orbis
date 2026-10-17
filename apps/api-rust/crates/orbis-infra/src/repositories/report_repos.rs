@@ -104,7 +104,9 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
 
         if models.is_empty() {
             let now = chrono::Utc::now().to_rfc3339();
-            let _ = super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now).await;
+            let _ =
+                super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now)
+                    .await;
             models = query
                 .order_by_asc(report_definition::Column::SortOrder)
                 .all(&self.db)
@@ -257,7 +259,9 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
 
         if models.is_empty() {
             let now = chrono::Utc::now().to_rfc3339();
-            let _ = super::template_catalog::provision_master_templates(&self.db, org_id, org_id, &now).await;
+            let _ =
+                super::template_catalog::provision_master_templates(&self.db, org_id, org_id, &now)
+                    .await;
             models = query
                 .order_by_desc(report_template::Column::UpdatedAt)
                 .all(&self.db)

@@ -1,17 +1,17 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, PeriodTypeRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, PeriodTypeRepository,
 };
-use orbis_domain::entities::academic_period::AcademicPeriod as DomainPeriod;
 use orbis_domain::entities::academic_calendar::AcademicCalendar as DomainYear;
+use orbis_domain::entities::academic_period::AcademicPeriod as DomainPeriod;
 use orbis_domain::entities::period_type::PeriodType as DomainTemplate;
 use orbis_domain::errors::DomainError;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
 use uuid::Uuid;
 
 use crate::models::{
-    academic_period::{self, Entity as PeriodEntity},
     academic_calendar::{self, Entity as YearEntity},
+    academic_period::{self, Entity as PeriodEntity},
     period_type::{self, Entity as TemplateEntity},
 };
 
@@ -329,7 +329,10 @@ impl AcademicPeriodRepository for CalendarRepoImpl {
             }
         };
 
-        let mut metadata = period.metadata.clone().unwrap_or_else(|| serde_json::json!({}));
+        let mut metadata = period
+            .metadata
+            .clone()
+            .unwrap_or_else(|| serde_json::json!({}));
         if let serde_json::Value::Object(ref mut map) = metadata {
             map.insert(
                 "period_type".to_string(),

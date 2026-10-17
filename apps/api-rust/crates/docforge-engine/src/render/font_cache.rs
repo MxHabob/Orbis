@@ -62,18 +62,68 @@ impl FontCache {
 
         let candidates = [
             // Windows
-            ("Tahoma", 400, FontStyleKind::Normal, "C:\\Windows\\Fonts\\tahoma.ttf"),
-            ("Tahoma", 700, FontStyleKind::Normal, "C:\\Windows\\Fonts\\tahomabd.ttf"),
-            ("Arial", 400, FontStyleKind::Normal, "C:\\Windows\\Fonts\\arial.ttf"),
-            ("Arial", 700, FontStyleKind::Normal, "C:\\Windows\\Fonts\\arialbd.ttf"),
-            ("Segoe UI", 400, FontStyleKind::Normal, "C:\\Windows\\Fonts\\segoeui.ttf"),
-            ("Segoe UI", 700, FontStyleKind::Normal, "C:\\Windows\\Fonts\\segoeuib.ttf"),
+            (
+                "Tahoma",
+                400,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\tahoma.ttf",
+            ),
+            (
+                "Tahoma",
+                700,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\tahomabd.ttf",
+            ),
+            (
+                "Arial",
+                400,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\arial.ttf",
+            ),
+            (
+                "Arial",
+                700,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\arialbd.ttf",
+            ),
+            (
+                "Segoe UI",
+                400,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\segoeui.ttf",
+            ),
+            (
+                "Segoe UI",
+                700,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\segoeuib.ttf",
+            ),
             // Linux
-            ("DejaVu Sans", 400, FontStyleKind::Normal, "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-            ("Noto Sans Arabic", 400, FontStyleKind::Normal, "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf"),
+            (
+                "DejaVu Sans",
+                400,
+                FontStyleKind::Normal,
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ),
+            (
+                "Noto Sans Arabic",
+                400,
+                FontStyleKind::Normal,
+                "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+            ),
             // macOS
-            ("Arial", 400, FontStyleKind::Normal, "/System/Library/Fonts/Supplemental/Arial.ttf"),
-            ("Geeza Pro", 400, FontStyleKind::Normal, "/System/Library/Fonts/GeezaPro.ttc"),
+            (
+                "Arial",
+                400,
+                FontStyleKind::Normal,
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+            ),
+            (
+                "Geeza Pro",
+                400,
+                FontStyleKind::Normal,
+                "/System/Library/Fonts/GeezaPro.ttc",
+            ),
         ];
 
         let mut loaded_any = false;
@@ -89,7 +139,13 @@ impl FontCache {
                     };
                     if !cache.fonts.contains_key(&alias_key) {
                         if let Ok(data) = std::fs::read(path) {
-                            cache.load_font_bytes("Noto Sans Arabic", weight, style, data, PathBuf::from(path));
+                            cache.load_font_bytes(
+                                "Noto Sans Arabic",
+                                weight,
+                                style,
+                                data,
+                                PathBuf::from(path),
+                            );
                         }
                     }
                 }

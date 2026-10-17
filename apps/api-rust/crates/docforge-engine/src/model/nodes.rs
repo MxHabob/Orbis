@@ -232,23 +232,25 @@ impl TablePropsWrapper {
     pub fn into_typed(self) -> TableProps {
         match self {
             TablePropsWrapper::Typed(props) => props,
-            TablePropsWrapper::Legacy(val) => serde_json::from_value(val).unwrap_or_else(|_| TableProps {
-                columns: Vec::new(),
-                data_source: None,
-                rows: None,
-                show_header: true,
-                show_totals: false,
-                show_subtotals: false,
-                group_by: None,
-                sort_by: None,
-                repeating_header: false,
-                position: None,
-                show_grid: true,
-                show_border: true,
-                direction: None,
-                style: None,
-                conditional_formatting: None,
-            }),
+            TablePropsWrapper::Legacy(val) => {
+                serde_json::from_value(val).unwrap_or_else(|_| TableProps {
+                    columns: Vec::new(),
+                    data_source: None,
+                    rows: None,
+                    show_header: true,
+                    show_totals: false,
+                    show_subtotals: false,
+                    group_by: None,
+                    sort_by: None,
+                    repeating_header: false,
+                    position: None,
+                    show_grid: true,
+                    show_border: true,
+                    direction: None,
+                    style: None,
+                    conditional_formatting: None,
+                })
+            }
         }
     }
 }

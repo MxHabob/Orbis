@@ -837,7 +837,21 @@ mod tests {
         assert_eq!(term.level, AssessmentLevel::Term);
         assert!(!monthly.name.to_lowercase().contains("school"));
         assert!(!term.name.to_lowercase().contains("school"));
-        assert!(!monthly.description.as_ref().unwrap().to_lowercase().contains("kindergarten"));
-        assert!(!term.description.as_ref().unwrap().to_lowercase().contains("kindergarten"));
+        assert!(
+            !monthly
+                .description
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .contains("kindergarten")
+        );
+        assert!(
+            !term
+                .description
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .contains("kindergarten")
+        );
     }
 }

@@ -9,13 +9,13 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::context::RequestContext;
-use crate::services::calculation_engine::AcademicCalculationEngine;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
     DashboardCounts, DashboardRepository, OrgUnitRepository, OrganizationRepository,
     SettingsRepository,
 };
+use crate::services::calculation_engine::AcademicCalculationEngine;
 
 #[derive(Debug, Clone, Default, serde::Deserialize, serde::Serialize)]
 pub struct UpdateOrgRequest {
@@ -433,16 +433,16 @@ impl OrganizationService {
         }
 
         if let Some(outcome_policy) = settings.academic.outcome_policy.as_ref() {
-            let plan = settings
-                .academic
-                .calculation_plan
-                .as_ref()
-                .ok_or_else(|| {
-                    DomainError::Validation(
-                        "An outcome policy requires an active calculation plan".into(),
-                    )
-                })?;
-            if !plan.outputs.iter().any(|output| output.unit == outcome_policy.unit) {
+            let plan = settings.academic.calculation_plan.as_ref().ok_or_else(|| {
+                DomainError::Validation(
+                    "An outcome policy requires an active calculation plan".into(),
+                )
+            })?;
+            if !plan
+                .outputs
+                .iter()
+                .any(|output| output.unit == outcome_policy.unit)
+            {
                 return Err(DomainError::Validation(
                     "Outcome policy unit must match at least one calculation output".into(),
                 ));

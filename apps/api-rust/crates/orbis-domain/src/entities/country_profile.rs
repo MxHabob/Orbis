@@ -270,7 +270,8 @@ impl CountryProfile {
             },
             RegulatoryAuthority {
                 institution_type: "institute".to_string(),
-                ministry_name: "Ministry of Technical Education and Vocational Training".to_string(),
+                ministry_name: "Ministry of Technical Education and Vocational Training"
+                    .to_string(),
                 ministry_name_ar: "وزارة التعليم الفني والتدريب المهني".to_string(),
             },
         ];
@@ -355,7 +356,9 @@ impl CountryProfile {
     /// Resolve regulatory/ministry authority for an institution type under this country profile.
     pub fn authority_for(&self, inst_type: &str) -> Option<&RegulatoryAuthority> {
         let normalized = inst_type.trim().to_lowercase();
-        self.authorities.iter().find(|a| a.institution_type == normalized)
+        self.authorities
+            .iter()
+            .find(|a| a.institution_type == normalized)
     }
 
     /// Filter applicable education stages for an institution type under this country profile.

@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::context::RequestContext;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, EnrollmentRepository, PolicyRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, EnrollmentRepository, PolicyRepository,
     StudentFeeRepository,
 };
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
@@ -56,7 +56,9 @@ impl AutopilotEvaluator {
         // ── 1. Academic Year Lifecycle ──────────────────────────────────
         let years = self.year_repo.find_by_org(org_id).await?;
         for year in &years {
-            if year.status == AcademicCalendarStatus::Planning && year.starts_at.map_or(false, |d| d <= now) {
+            if year.status == AcademicCalendarStatus::Planning
+                && year.starts_at.map_or(false, |d| d <= now)
+            {
                 tasks.push(AutopilotTask::new(
                     org_id,
                     TaskType::YearActivate,

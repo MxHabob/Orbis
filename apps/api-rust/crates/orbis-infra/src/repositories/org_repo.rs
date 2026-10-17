@@ -111,7 +111,10 @@ impl OrganizationRepository for OrgRepoImpl {
             is_deleted: Set(org.is_deleted),
             deleted_at: Set(org.deleted_at),
             deleted_by: Set(org.deleted_by),
-            current_period_id: Set(org.current_period_id.as_deref().and_then(|s| Uuid::parse_str(s).ok())),
+            current_period_id: Set(org
+                .current_period_id
+                .as_deref()
+                .and_then(|s| Uuid::parse_str(s).ok())),
             institution_type: Set(org.institution_type.clone()),
             metadata: Set(org.metadata.clone()),
             created_by: Set(org.created_by),

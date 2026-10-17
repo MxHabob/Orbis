@@ -589,7 +589,11 @@ async fn list_section_subjects(
         .academic_service
         .list_section_subjects(ctx.tenant_id, filter)
         .await?;
-    let dtos = items.items.into_iter().map(section_subject_to_dto).collect();
+    let dtos = items
+        .items
+        .into_iter()
+        .map(section_subject_to_dto)
+        .collect();
     Ok(ApiResponse::ok(dtos))
 }
 
@@ -604,10 +608,7 @@ pub struct SectionSubjectQuery {
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/v1/subjects", post(create_subject).get(list_subjects))
-        .route(
-            "/api/v1/subjects/:id",
-            get(get_subject).put(update_subject),
-        )
+        .route("/api/v1/subjects/:id", get(get_subject).put(update_subject))
         .route("/api/v1/sections", post(create_section).get(list_sections))
         .route("/api/v1/sections/:id", get(get_section).put(update_section))
         .route(

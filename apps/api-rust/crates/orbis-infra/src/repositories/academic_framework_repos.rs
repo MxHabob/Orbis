@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::AcademicFrameworkRepository;
 use orbis_domain::entities::academic_calendar::{
-    AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
+    AcademicCalendar, AcademicCalendarStatus, AcademicPeriod, PeriodType,
 };
-use orbis_domain::entities::subject::Subject;
 use orbis_domain::entities::enrollment::Enrollment;
 use orbis_domain::entities::section_subject::SectionSubject;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
@@ -15,10 +15,10 @@ use uuid::Uuid;
 use crate::models::{
     academic_calendar::{self, Entity as CalendarEntity},
     academic_period::{self, Entity as CalendarPeriodEntity},
-    period_type::{self, Entity as PeriodTypeEntity},
-    subject::{self, Entity as SubjectEntity},
     enrollment::{self, Entity as EnrollmentEntity},
+    period_type::{self, Entity as PeriodTypeEntity},
     section_subject::{self, Entity as SectionSubjectEntity},
+    subject::{self, Entity as SubjectEntity},
 };
 
 pub struct AcademicFrameworkRepoImpl {
@@ -187,7 +187,9 @@ fn map_enrollment(m: enrollment::Model) -> Result<Enrollment, DomainError> {
             _ => orbis_domain::entities::enrollment::StudyMode::Regular,
         },
         status: match m.status.as_str() {
-            "pending_approval" => orbis_domain::entities::enrollment::EnrollmentStatus::PendingApproval,
+            "pending_approval" => {
+                orbis_domain::entities::enrollment::EnrollmentStatus::PendingApproval
+            }
             "withdrawn" => orbis_domain::entities::enrollment::EnrollmentStatus::Withdrawn,
             "graduated" => orbis_domain::entities::enrollment::EnrollmentStatus::Graduated,
             "suspended" => orbis_domain::entities::enrollment::EnrollmentStatus::Suspended,
@@ -346,10 +348,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         Ok(model.map(map_calendar_period))
     }
 
-    async fn save_calendar_period(
-        &self,
-        period: &AcademicPeriod,
-    ) -> Result<(), DomainError> {
+    async fn save_calendar_period(&self, period: &AcademicPeriod) -> Result<(), DomainError> {
         let active = academic_period::ActiveModel {
             id: Set(period.id),
             org_id: Set(period.org_id),
@@ -480,8 +479,8 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         org_id: Uuid,
         course_id: Option<Uuid>,
     ) -> Result<Vec<SectionSubject>, DomainError> {
-        let mut query = SectionSubjectEntity::find()
-            .filter(section_subject::Column::OrgId.eq(org_id));
+        let mut query =
+            SectionSubjectEntity::find().filter(section_subject::Column::OrgId.eq(org_id));
         if let Some(course_id) = course_id {
             query = query.filter(section_subject::Column::SubjectId.eq(course_id));
         }
@@ -565,10 +564,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             .collect()
     }
 
-    async fn save_enrollment(
-        &self,
-        enrollment: &Enrollment,
-    ) -> Result<(), DomainError> {
+    async fn save_enrollment(&self, enrollment: &Enrollment) -> Result<(), DomainError> {
         let active = enrollment::ActiveModel {
             id: Set(enrollment.id),
             org_id: Set(enrollment.org_id),

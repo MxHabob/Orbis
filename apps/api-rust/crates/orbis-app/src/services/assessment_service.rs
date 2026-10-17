@@ -2,9 +2,9 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, AssessmentSchemeRepository,
-    AttendanceRepository, BehaviorRecordRepository, SectionRepository, SectionSubjectRepository,
-    EnrollmentRepository, GpaRecordRepository, GradeRepository, SettingsRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, AssessmentSchemeRepository,
+    AttendanceRepository, BehaviorRecordRepository, EnrollmentRepository, GpaRecordRepository,
+    GradeRepository, SectionRepository, SectionSubjectRepository, SettingsRepository,
     StudentRepository, SubjectRepository,
 };
 use crate::services::calculation_engine::{
@@ -14,7 +14,8 @@ use chrono::{NaiveDate, Utc};
 use orbis_domain::entities::academic_period::PeriodKind;
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult, PeriodComponentScores,
-    StudentAnnualReportCard, StudentCertificateReportCard, StudentTermReportCard, SubjectTermResult,
+    StudentAnnualReportCard, StudentCertificateReportCard, StudentTermReportCard,
+    SubjectTermResult,
 };
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
@@ -1660,10 +1661,7 @@ impl AssessmentService {
                 .await?;
 
             // Exam score = grade marked as is_final
-            let exam_score = all_grades
-                .iter()
-                .find(|g| g.is_final)
-                .map(|g| g.score);
+            let exam_score = all_grades.iter().find(|g| g.is_final).map(|g| g.score);
 
             // Cumulative score = grade with component matching cumulative pattern
             let cumulative_score = all_grades

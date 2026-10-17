@@ -5,7 +5,7 @@ use crate::ports::repositories::{EnrollmentRepository, PromotionRepository, Stud
 use chrono::Utc;
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus};
 use orbis_domain::entities::progression::{
-    PromotionDecision, ProgressionDetail, ProgressionJob, ProgressionJobStatus,
+    ProgressionDetail, ProgressionJob, ProgressionJobStatus, PromotionDecision,
 };
 use orbis_domain::entities::student::{AcademicStanding, StudentStatus};
 use orbis_domain::errors::DomainError;

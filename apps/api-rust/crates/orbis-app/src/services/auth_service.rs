@@ -16,8 +16,8 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, SectionRepository, EmployeeRepository, EnrollmentRepository,
-    IntegrationRepository, MfaFactorRepository, MfaRecoveryCodeRepository, PersonRepository,
+    AcademicPeriodRepository, EmployeeRepository, EnrollmentRepository, IntegrationRepository,
+    MfaFactorRepository, MfaRecoveryCodeRepository, PersonRepository, SectionRepository,
     SectionSubjectRepository, SessionRepository, StudentGuardianRepository, StudentRepository,
     UserDeviceRepository, UserIdentityRepository, UserRepository,
 };
@@ -292,7 +292,9 @@ impl AuthService {
                         if !seen_class_ids.insert(assignment.section_id) {
                             continue;
                         }
-                        if let Some(section) = section_repo.find_by_id(assignment.section_id).await? {
+                        if let Some(section) =
+                            section_repo.find_by_id(assignment.section_id).await?
+                        {
                             if section.org_id == user.org_id
                                 && section.is_active
                                 && !section.is_deleted

@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import type { OrbisApp, AppCategory } from "./types";
+import { addConnectionSummary } from "./connection-guides";
 
 // ── AI Providers ────────────────────────────────────────────────
 import geminiAi from "./gemini-ai/config";
@@ -52,7 +53,7 @@ import yemenMobileSms from "./yemen-mobile-sms/config";
 
 // ── Exported App Collection ─────────────────────────────────────
 
-export const apps: OrbisApp[] = [
+const appDefinitions: OrbisApp[] = [
   // Native & Core Apps
   authen,
   orbisAi,
@@ -101,6 +102,8 @@ export const apps: OrbisApp[] = [
   ocrService,
   solverService,
 ];
+
+export const apps: OrbisApp[] = appDefinitions.map(addConnectionSummary);
 
 // ── Helpers ─────────────────────────────────────────────────────
 

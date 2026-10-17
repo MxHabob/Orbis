@@ -1,10 +1,10 @@
 use crate::{
     error::DocforgeError,
-    layout::{LayoutEngine, multi_up::MultiUpConfig},
+    layout::{multi_up::MultiUpConfig, LayoutEngine},
     model::document::TemplateDocument,
     render::{
         font_cache::FontCache,
-        pdf_renderer::{PdfOutput, PdfRenderConfig, render_to_pdf},
+        pdf_renderer::{render_to_pdf, PdfOutput, PdfRenderConfig},
     },
 };
 use serde_json::Value;
@@ -26,5 +26,12 @@ pub fn render_multi_up(
         .map_err(|error| DocforgeError::Render(format!("Invalid template JSON: {error}")))?;
     let fonts = FontCache::new("Noto Sans Arabic");
     let layout = LayoutEngine::new(&fonts).layout_multi_up(&document, contexts, config)?;
-    render_to_pdf(&layout, &fonts, &PdfRenderConfig { title, ..Default::default() })
+    render_to_pdf(
+        &layout,
+        &fonts,
+        &PdfRenderConfig {
+            title,
+            ..Default::default()
+        },
+    )
 }

@@ -385,9 +385,7 @@ fn layout_absolute_node(
                 border_radius: 0.0,
             })])
         }
-        EvaluatedNode::Table(t) => {
-            layout_table_elements(t, x, y, w, h)
-        }
+        EvaluatedNode::Table(t) => layout_table_elements(t, x, y, w, h),
         EvaluatedNode::Barcode(n) => {
             let format = crate::render::barcode_gen::BarcodeFormat::from_str(&n.props.format)
                 .unwrap_or(crate::render::barcode_gen::BarcodeFormat::Code128);
@@ -532,12 +530,23 @@ pub fn layout_table_elements(
         .props
         .direction
         .as_deref()
-        .or_else(|| table.props.style.as_ref().and_then(|s| s.direction.as_deref()))
+        .or_else(|| {
+            table
+                .props
+                .style
+                .as_ref()
+                .and_then(|s| s.direction.as_deref())
+        })
         .map(|d| d.eq_ignore_ascii_case("rtl"))
         .unwrap_or_else(|| {
             cols.iter().any(|c| {
-                c.header.chars().any(|ch| ('\u{0600}'..='\u{06FF}').contains(&ch))
-                    || c.header_ar.as_ref().map(|ar| ar.chars().any(|ch| ('\u{0600}'..='\u{06FF}').contains(&ch))).unwrap_or(false)
+                c.header
+                    .chars()
+                    .any(|ch| ('\u{0600}'..='\u{06FF}').contains(&ch))
+                    || c.header_ar
+                        .as_ref()
+                        .map(|ar| ar.chars().any(|ch| ('\u{0600}'..='\u{06FF}').contains(&ch)))
+                        .unwrap_or(false)
             })
         });
 
@@ -634,7 +643,11 @@ pub fn layout_table_elements(
                 font_style: FontStyle::Normal,
                 color: header_text_col,
                 text_align: align,
-                direction: if is_rtl { TextDirection::Rtl } else { TextDirection::Ltr },
+                direction: if is_rtl {
+                    TextDirection::Rtl
+                } else {
+                    TextDirection::Ltr
+                },
                 line_height: header_font_size * 1.2,
             }));
         }
@@ -687,7 +700,9 @@ pub fn layout_table_elements(
                     }
                 }
                 Some(Value::Bool(b)) => b.to_string(),
-                Some(Value::Null) | None => col.default_value.clone().unwrap_or_else(|| "-".to_string()),
+                Some(Value::Null) | None => {
+                    col.default_value.clone().unwrap_or_else(|| "-".to_string())
+                }
                 Some(other) => other.to_string(),
             };
 
@@ -715,7 +730,11 @@ pub fn layout_table_elements(
                 font_style: FontStyle::Normal,
                 color: Color::BLACK,
                 text_align: align,
-                direction: if is_rtl { TextDirection::Rtl } else { TextDirection::Ltr },
+                direction: if is_rtl {
+                    TextDirection::Rtl
+                } else {
+                    TextDirection::Ltr
+                },
                 line_height: font_size * 1.2,
             }));
         }
@@ -779,13 +798,21 @@ pub fn layout_table_elements(
                     }
                     "label" => {
                         label_placed = true;
-                        if is_rtl { "المجموع".to_string() } else { "Total".to_string() }
+                        if is_rtl {
+                            "المجموع".to_string()
+                        } else {
+                            "Total".to_string()
+                        }
                     }
                     _ => String::new(),
                 }
             } else if !label_placed && i == 0 {
                 label_placed = true;
-                if is_rtl { "المجموع العام".to_string() } else { "Total".to_string() }
+                if is_rtl {
+                    "المجموع العام".to_string()
+                } else {
+                    "Total".to_string()
+                }
             } else {
                 String::new()
             };
@@ -806,7 +833,11 @@ pub fn layout_table_elements(
                     font_style: FontStyle::Normal,
                     color: Color::new(15, 23, 42),
                     text_align: align,
-                    direction: if is_rtl { TextDirection::Rtl } else { TextDirection::Ltr },
+                    direction: if is_rtl {
+                        TextDirection::Rtl
+                    } else {
+                        TextDirection::Ltr
+                    },
                     line_height: font_size * 1.2,
                 }));
             }
@@ -846,11 +877,7 @@ pub fn layout_table_elements(
 
         // Vertical divider lines between columns
         for i in 1..num_cols {
-            let div_x = if is_rtl {
-                col_x[i - 1]
-            } else {
-                col_x[i]
-            };
+            let div_x = if is_rtl { col_x[i - 1] } else { col_x[i] };
             elements.push(PositionedElement::Line(LineElement {
                 x1: div_x,
                 y1: y,
@@ -958,9 +985,18 @@ fn build_taffy_node(
         }
         EvaluatedNode::Table(t) => {
             style.size.width = taffy::style::Dimension::Percent(1.0);
-            let row_h = t.props.style.as_ref().and_then(|s| s.row_height).unwrap_or(20.0);
+            let row_h = t
+                .props
+                .style
+                .as_ref()
+                .and_then(|s| s.row_height)
+                .unwrap_or(20.0);
             let header_h = if t.props.show_header {
-                t.props.style.as_ref().and_then(|s| s.row_height).unwrap_or(24.0)
+                t.props
+                    .style
+                    .as_ref()
+                    .and_then(|s| s.row_height)
+                    .unwrap_or(24.0)
             } else {
                 0.0
             };
@@ -1510,7 +1546,9 @@ mod tests {
     #[test]
     fn test_layout_table_node_and_render_pdf() {
         use crate::model::document::Spacing;
-        use crate::model::nodes::{TableColumnDef, TableNode, TableProps, TablePropsWrapper, TableStyle};
+        use crate::model::nodes::{
+            TableColumnDef, TableNode, TableProps, TablePropsWrapper, TableStyle,
+        };
 
         let setup = PageSetup {
             size: PageSize::A4,
@@ -1669,7 +1707,10 @@ mod tests {
                 false
             }
         });
-        assert!(has_header_subject, "Table header 'المادة' should be rendered");
+        assert!(
+            has_header_subject,
+            "Table header 'المادة' should be rendered"
+        );
 
         // Ensure row content is present
         let has_row_quran = page.elements.iter().any(|el| {
@@ -1679,7 +1720,10 @@ mod tests {
                 false
             }
         });
-        assert!(has_row_quran, "Table row 'القرآن الكريم' should be rendered");
+        assert!(
+            has_row_quran,
+            "Table row 'القرآن الكريم' should be rendered"
+        );
 
         // Ensure total sum (98 + 94 + 91 + 95 = 378) is computed and present
         let has_total_sum = page.elements.iter().any(|el| {
@@ -1689,13 +1733,24 @@ mod tests {
                 false
             }
         });
-        assert!(has_total_sum, "Table totals sum '378' should be computed and rendered");
+        assert!(
+            has_total_sum,
+            "Table totals sum '378' should be computed and rendered"
+        );
 
         // Ensure grid lines and rects are present
-        let lines_count = page.elements.iter().filter(|el| matches!(el, PositionedElement::Line(_))).count();
+        let lines_count = page
+            .elements
+            .iter()
+            .filter(|el| matches!(el, PositionedElement::Line(_)))
+            .count();
         assert!(lines_count > 0, "Grid lines should be drawn");
 
-        let rects_count = page.elements.iter().filter(|el| matches!(el, PositionedElement::Rect(_))).count();
+        let rects_count = page
+            .elements
+            .iter()
+            .filter(|el| matches!(el, PositionedElement::Rect(_)))
+            .count();
         assert!(rects_count > 0, "Borders and backgrounds should be drawn");
 
         // Render to genuine PDF
@@ -1706,7 +1761,13 @@ mod tests {
         )
         .expect("Should render table to PDF");
 
-        assert!(!pdf_output.bytes.is_empty(), "PDF bytes should not be empty");
-        assert!(pdf_output.bytes.starts_with(b"%PDF-"), "Output must be valid PDF");
+        assert!(
+            !pdf_output.bytes.is_empty(),
+            "PDF bytes should not be empty"
+        );
+        assert!(
+            pdf_output.bytes.starts_with(b"%PDF-"),
+            "Output must be valid PDF"
+        );
     }
 }

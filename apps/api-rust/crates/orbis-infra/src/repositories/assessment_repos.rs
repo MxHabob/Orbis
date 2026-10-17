@@ -49,8 +49,12 @@ fn map_scheme_model_to_domain(m: assessment_scheme::Model) -> DomainAssessmentSc
         verification_status: m.verification_status,
         effective_date: m.effective_date,
         policy_version: m.policy_version as u32,
-        min_attendance_ratio: m.min_attendance_ratio.map(|v| rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default()),
-        pass_threshold: m.pass_threshold.map(|v| rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default()),
+        min_attendance_ratio: m
+            .min_attendance_ratio
+            .map(|v| rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default()),
+        pass_threshold: m
+            .pass_threshold
+            .map(|v| rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default()),
         created_at: m.created_at,
         updated_at: m.updated_at,
     }

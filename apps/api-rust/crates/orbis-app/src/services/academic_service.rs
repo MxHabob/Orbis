@@ -2,19 +2,19 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    SectionRepository, SectionSubjectRepository, PrerequisiteRepository, GradeRepository,
+    GradeRepository, PrerequisiteRepository, SectionRepository, SectionSubjectRepository,
     SubjectRepository,
 };
 use chrono::Utc;
+use orbis_domain::entities::prerequisite::PrerequisiteType;
 use orbis_domain::entities::section::Section;
 use orbis_domain::entities::section_subject::SectionSubject;
-use orbis_domain::entities::prerequisite::PrerequisiteType;
 use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    SectionFilter, SectionSubjectFilter, PaginatedList, SubjectFilter,
+    PaginatedList, SectionFilter, SectionSubjectFilter, SubjectFilter,
 };
 use rust_decimal::Decimal;
 use std::sync::Arc;
@@ -262,7 +262,9 @@ impl AcademicService {
         if let Some(code) = input.code {
             let normalized_code = code.trim();
             if normalized_code.is_empty() {
-                return Err(DomainError::Validation("Subject code cannot be empty".into()));
+                return Err(DomainError::Validation(
+                    "Subject code cannot be empty".into(),
+                ));
             }
             if !subject.code.eq_ignore_ascii_case(normalized_code) {
                 if self
@@ -365,11 +367,14 @@ impl AcademicService {
             .await?;
 
         let normalized_name = input.name.trim().to_lowercase();
-        let normalized_name_ar = input.name_ar.as_deref().unwrap_or_default().trim().to_lowercase();
+        let normalized_name_ar = input
+            .name_ar
+            .as_deref()
+            .unwrap_or_default()
+            .trim()
+            .to_lowercase();
         if normalized_name.is_empty() {
-            return Err(DomainError::Validation(
-                "Section name is required".into(),
-            ));
+            return Err(DomainError::Validation("Section name is required".into()));
         }
         if input.capacity.is_some_and(|value| value <= 0) {
             return Err(DomainError::Validation(
@@ -383,11 +388,11 @@ impl AcademicService {
             .iter()
             .any(|s| {
                 s.org_unit_id == input.unit_id
-                    && s.level.as_deref().map(|l| l.trim().to_lowercase()) == input.level.as_deref().map(|l| l.trim().to_lowercase())
+                    && s.level.as_deref().map(|l| l.trim().to_lowercase())
+                        == input.level.as_deref().map(|l| l.trim().to_lowercase())
                     && (s.name.trim().to_lowercase() == normalized_name
                         || (!normalized_name_ar.is_empty()
-                            && s
-                                .name_ar
+                            && s.name_ar
                                 .as_deref()
                                 .unwrap_or_default()
                                 .trim()
@@ -568,7 +573,10 @@ impl AcademicService {
     }
 
     /// Get SectionSubject by ID
-    pub async fn get_section_subject(&self, id: Uuid) -> Result<Option<SectionSubject>, DomainError> {
+    pub async fn get_section_subject(
+        &self,
+        id: Uuid,
+    ) -> Result<Option<SectionSubject>, DomainError> {
         self.section_subject_repo.find_by_id(id).await
     }
 

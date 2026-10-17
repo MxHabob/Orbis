@@ -25,9 +25,10 @@ pub fn load_or_create(app_data_dir: &Path, installation_id: &str) -> Result<Sign
 pub fn load_or_create_deployment_identity(app_data_dir: &Path) -> Result<SigningKey, String> {
     let lock = lock_identity_store(app_data_dir)?;
     let result = (|| {
-        let entry = Entry::new(DEPLOYMENT_KEY_SERVICE, DEPLOYMENT_KEY_ACCOUNT).map_err(|error| {
-            format!("Failed to open the operating system's secure key store: {error}")
-        })?;
+        let entry =
+            Entry::new(DEPLOYMENT_KEY_SERVICE, DEPLOYMENT_KEY_ACCOUNT).map_err(|error| {
+                format!("Failed to open the operating system's secure key store: {error}")
+            })?;
         match entry.get_password() {
             Ok(encoded_seed) => decode_seed(&encoded_seed),
             Err(KeyringError::NoEntry) => {

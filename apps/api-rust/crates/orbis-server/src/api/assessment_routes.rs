@@ -16,12 +16,10 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_domain::entities::academic_calculation::{CalculationOutputOutcome, CalculationPreview};
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
     StudentCertificateReportCard, StudentTermReportCard, TiePolicy,
-};
-use orbis_domain::entities::academic_calculation::{
-    CalculationPreview, CalculationOutputOutcome,
 };
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
@@ -569,10 +567,11 @@ pub async fn preview_configured_calculation(
         .calculation_plan
         .as_ref()
         .ok_or_else(|| ApiError::bad_request("No calculation plan is configured"))?;
-    let result = orbis_app::services::calculation_engine::AcademicCalculationEngine::calculate_plan(
-        plan,
-        &request.values,
-    )?;
+    let result =
+        orbis_app::services::calculation_engine::AcademicCalculationEngine::calculate_plan(
+            plan,
+            &request.values,
+        )?;
     let mut outcomes = Vec::new();
     if let Some(policy) = settings.academic.outcome_policy.as_ref() {
         for output in &result.outputs {

@@ -661,7 +661,11 @@ impl DomainEvent {
             }
             DomainEvent::SectionSubjectAssigned {
                 section_subject_id, ..
-            } => Some(("section_subject.assigned", "section_subject", *section_subject_id)),
+            } => Some((
+                "section_subject.assigned",
+                "section_subject",
+                *section_subject_id,
+            )),
 
             // Student
             DomainEvent::StudentRegistered { student_id, .. } => {
