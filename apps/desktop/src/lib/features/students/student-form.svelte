@@ -7,12 +7,6 @@
   import { Badge } from "@orbis/ui/badge";
   import { ArrowLeft, Check, ChevronDown, Printer } from "@orbis/icons";
   import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-  } from "@orbis/ui/card";
-  import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -262,24 +256,22 @@
       {/if}
     </header>
 
-    <Card class="border-border/70 shadow-xs">
-      <CardHeader class="pb-2">
-        <CardTitle class="text-sm font-semibold">
+    <Accordion
+      type="single"
+      value="admission-rules"
+      class="w-full"
+    >
+      <AccordionItem value="admission-rules" class="border-0">
+        <AccordionTrigger class="py-4 text-sm font-semibold hover:no-underline">
           {m.student_registration_policy_title()}
-        </CardTitle>
-      </CardHeader>
-      <CardContent class="pt-0">
-        <Accordion
-          type="multiple"
-          value={["enrollment"]}
-          class="flex flex-col divide-y divide-border"
-        >
-          <AccordionItem value="enrollment" class="border-0">
-            <AccordionTrigger class="py-3 text-sm font-medium hover:no-underline">
-              {m.student_registration_enrollment_rules()}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div class="grid gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-3">
+        </AccordionTrigger>
+        <AccordionContent>
+          <div class="flex flex-col divide-y divide-border">
+            <section class="pb-4">
+              <h3 class="mb-3 text-xs font-semibold text-foreground">
+                {m.student_registration_enrollment_rules()}
+              </h3>
+              <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div class="min-w-0">
                   <p class="text-xs text-muted-foreground">{m.student_registration_active_period()}</p>
                   <p class="truncate text-sm font-medium">
@@ -317,15 +309,13 @@
                   </p>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </section>
 
-          <AccordionItem value="capacity" class="border-0">
-            <AccordionTrigger class="py-3 text-sm font-medium hover:no-underline">
-              {m.student_registration_capacity_rules()}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div class="grid gap-4 pb-3 sm:grid-cols-2 xl:grid-cols-3">
+            <section class="py-4">
+              <h3 class="mb-3 text-xs font-semibold text-foreground">
+                {m.student_registration_capacity_rules()}
+              </h3>
+              <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <div class="min-w-0">
                   <p class="text-xs text-muted-foreground">
                     {m.ui_copy_default_class_capacity_limit_700d9cac()}
@@ -355,15 +345,13 @@
                   </p>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </section>
 
-          <AccordionItem value="identity" class="border-0">
-            <AccordionTrigger class="py-3 text-sm font-medium hover:no-underline">
-              {m.student_registration_identity_rules()}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div class="grid gap-4 pb-3 sm:grid-cols-2">
+            <section class="py-4">
+              <h3 class="mb-3 text-xs font-semibold text-foreground">
+                {m.student_registration_identity_rules()}
+              </h3>
+              <div class="grid gap-4 sm:grid-cols-2">
                 <div class="min-w-0">
                   <p class="text-xs text-muted-foreground">
                     {m.ui_copy_allow_independent_enrollment_no_guardian_7ce5a41b()}
@@ -385,15 +373,13 @@
                   </p>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </section>
 
-          <AccordionItem value="finance" class="border-0">
-            <AccordionTrigger class="py-3 text-sm font-medium hover:no-underline">
-              {m.student_registration_finance_rules()}
-            </AccordionTrigger>
-            <AccordionContent>
-              <div class="pb-3">
+            <section class="pt-4">
+              <h3 class="mb-3 text-xs font-semibold text-foreground">
+                {m.student_registration_finance_rules()}
+              </h3>
+              <div>
                 <p class="text-xs text-muted-foreground">
                   {m.ui_copy_auto_assign_tuition_fee_template_on_enroll_5ed6c3b1()}
                 </p>
@@ -403,11 +389,11 @@
                     : m.student_registration_policy_disabled()}
                 </p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </CardContent>
-    </Card>
+            </section>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
 
     {#if state.initializationFailed}
       <div
@@ -464,9 +450,9 @@
     </div>
   </div>
 
-  <div class="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
-    <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
-      <p class="hidden min-w-0 truncate text-sm text-muted-foreground sm:block">
+  <div class="fixed inset-x-3 bottom-3 z-40 mx-auto w-auto max-w-4xl rounded-xl border border-border/80 bg-background/95 px-3 py-2 shadow-lg backdrop-blur-sm sm:px-4 sm:py-3">
+    <div class="flex items-center justify-between gap-3">
+      <p class="hidden min-w-0 truncate text-sm text-muted-foreground md:block">
         {#if state.isEditMode}
           {state.personal.nameAr || state.personal.nameEn || m.settings_action_save_changes()}
         {:else if state.admissionPolicy.requiresApproval}
