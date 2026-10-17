@@ -12,7 +12,7 @@
   "app": {
     "macOSPrivateApi": true,
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost https://github.com https://*.githubusercontent.com blob: data:; connect-src 'self' https://api.github.com https://api.mulverse.com https://models.dev; style-src 'self' 'unsafe-inline'; script-src 'self'",
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost https://github.com https://*.githubusercontent.com https://7w08qwpcvz.ufs.sh blob: data:; connect-src 'self' https://api.github.com https://api.mulverse.com https://models.dev https://7w08qwpcvz.ufs.sh; style-src 'self' 'unsafe-inline'; script-src 'self'",
       "dangerousDisableAssetCspModification": false,
       "freezePrototype": false,
       "assetProtocol": {
