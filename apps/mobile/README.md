@@ -84,12 +84,38 @@ When a Wi-Fi network has no internet, the app still treats its local network
 connection as available for API requests; requests to internet-only services
 will remain unavailable.
 
-## Over-the-air updates
+## Mobile app version checks
 
-The version row in Preferences uses `expo-updates` to check and download an
-EAS Update for the installed app runtime. Set `EAS_PROJECT_ID` to the Expo
-project UUID when resolving the app config for native builds and update
-publishes. This enables the `https://u.expo.dev/<project-id>` update URL and
-the `appVersion` runtime policy. Without that ID, OTA updates remain disabled
-and the manual check reports that setup is required. A new native build is
-required after enabling the Expo Updates native module.
+The installed app version is read from the native app metadata
+(`Constants.nativeAppVersion`, falling back to `Constants.expoConfig.version`).
+It is compared with the highest-version published, stable GitHub release tagged
+`mobile-vMAJOR.MINOR.PATCH`.
+Desktop releases and EAS/Expo SDK versions are deliberately excluded. When a
+newer mobile release is found, the app opens its GitHub release page so the user
+can download the appropriate artifact.
+
+Publish mobile app releases with a dedicated tag such as `mobile-v1.2.3`.
+Keep the tag in strict `MAJOR.MINOR.PATCH` format and publish the release (not
+as a draft or prerelease) after its installable artifacts are uploaded. The
+mobile checker only reports an update when such a release exists; it does not
+install native app binaries automatically. EAS Update remains a separate
+over-the-air JavaScript update mechanism.
+
+## Android release build
+
+From the repository root, run:
+
+```sh
+bun run build:mobile:android
+```
+
+This generates the Android native project from the Expo config and builds a
+production Android App Bundle with R8 code shrinking, resource shrinking, and
+PNG crunching enabled. The distributable is
+`apps/mobile/android/app/build/outputs/bundle/release/app-release.aab`.
+Upload the AAB to Google Play; Play generates device-specific downloads from
+it. The AAB is not directly installable like an APK.
+
+The build uses the app version in `app.json`. Before publishing a new release,
+update `expo.version` and increase `expo.android.versionCode` so Android and the
+app's `mobile-vMAJOR.MINOR.PATCH` release tag identify the new version.

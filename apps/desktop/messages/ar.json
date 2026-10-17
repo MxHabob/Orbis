@@ -3034,7 +3034,7 @@
   "operations_ui_admin_account_description": "واجهة العمليات المشرف الحساب الوصف",
   "operations_ui_admin_first_name_arabic_example": "واجهة العمليات المشرف الأول الاسم العربية مثال",
   "operations_ui_admin_last_name_arabic_example": "واجهة العمليات المشرف الأخير الاسم العربية مثال",
-  "operations_ui_admin_password_security_notice": "واجهة العمليات المشرف كلمة المرور الأمان تنبيه",
+  "operations_ui_admin_password_security_notice": "استخدم كلمة مرور قوية للحفاظ على أمان حساب المسؤول.",
   "operations_ui_admission_date": "واجهة العمليات Admission تاريخ",
   "operations_ui_advisor_diagnostics": "واجهة العمليات Advisor Diagnostics",
   "operations_ui_ai_curriculum_folder": "مجلد المناهج المدعوم بالذكاء الاصطناعي",

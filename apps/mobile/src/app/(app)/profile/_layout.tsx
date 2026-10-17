@@ -18,6 +18,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="account" options={{ headerShown: false }} />
       <Stack.Screen name="security" options={{ headerShown: false }} />
       <Stack.Screen name="preferences" options={{ headerShown: false }} />
+      <Stack.Screen name="institutions" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -13,6 +13,7 @@
       "barStyle": "light-content"
     },
     "android": {
+      "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#F5F3FF",
@@ -20,7 +21,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.mxhabob.Orbis"
     },
     "ios": {
       "infoPlist": {
@@ -59,8 +61,14 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["ar", "en"],
-            "android": ["ar", "en"]
+            "ios": [
+              "ar",
+              "en"
+            ],
+            "android": [
+              "ar",
+              "en"
+            ]
           },
           "supportsRTL": true
         }

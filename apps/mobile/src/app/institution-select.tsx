@@ -2,16 +2,13 @@ import {
   BuildingOffice,
   Camera,
   CheckCircle,
-  Language,
-  Logo,
   Pin,
   Search,
 } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
-import { Image } from "expo-image";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   type ListRenderItemInfo,
@@ -25,7 +22,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
 import { Section } from "@/components/layout/section";
-import { Badge } from "@/components/ui/badge";
+import { InstitutionCard } from "@/components/institutions/institution-card";
+import { InstitutionPickerHeader } from "@/components/institutions/institution-picker-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -43,7 +41,6 @@ import {
 } from "@/components/ui/drawer-form-primitives";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
@@ -55,126 +52,6 @@ import {
   searchInstitutionDirectory,
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
-
-interface InstitutionTileProps {
-  institution: DirectoryInstitution;
-  name: string;
-  isCurrent: boolean;
-  isConnecting: boolean;
-  disabled: boolean;
-  localLabel: string;
-  primaryColor: string;
-  onSelect: (institution: DirectoryInstitution) => void;
-  width: number;
-  featured?: boolean;
-}
-
-const InstitutionTile = memo(function InstitutionTile({
-  institution,
-  name,
-  isCurrent,
-  isConnecting,
-  disabled,
-  localLabel,
-  primaryColor,
-  onSelect,
-  width,
-  featured = false,
-}: InstitutionTileProps) {
-  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
-  const logoUrl = institution.logo_url;
-  const initials = Array.from(name.trim())[0]?.toLocaleUpperCase() ?? "?";
-  const handlePress = useCallback(
-    () => onSelect(institution),
-    [institution, onSelect],
-  );
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${name}, ${institution.deployment_name}`}
-      accessibilityState={{
-        disabled,
-        selected: isCurrent,
-        busy: isConnecting,
-      }}
-      disabled={disabled}
-      onPress={handlePress}
-      style={({ pressed }) => [
-        { width },
-        pressed && !disabled ? { opacity: 0.86 } : undefined,
-      ]}
-    >
-      <Card
-        variant="flat"
-        padding={featured ? "five" : "three"}
-      className={`relative ${
-        featured
-          ? "min-h-[136px] flex-row items-center rounded-2xl bg-card shadow-sm"
-          : "min-h-[136px] items-start rounded-xl bg-card"
-      } ${
-        isCurrent ? "bg-primary/5" : ""
-      }`}
-      >
-      <View
-        className={`items-center justify-center overflow-hidden rounded-2xl bg-background-element ${
-          featured ? "me-4 h-[72px] w-[72px]" : "mb-3 h-14 w-14"
-        }`}
-      >
-        {logoUrl && failedLogoUrl !== logoUrl ? (
-          <Image
-            source={{ uri: logoUrl }}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            transition={120}
-            onError={() => setFailedLogoUrl(logoUrl)}
-            style={featured ? styles.featuredLogoImage : styles.logoImage}
-          />
-        ) : (
-          <Text className="text-xl font-bold text-primary">{initials}</Text>
-        )}
-      </View>
-
-      <View className="min-w-0 flex-1">
-        <Text
-          numberOfLines={2}
-          className={`text-start font-semibold text-foreground ${
-            featured ? "text-xl leading-7" : "text-sm leading-5"
-          }`}
-        >
-          {name}
-        </Text>
-        <Text
-          numberOfLines={1}
-          className="mt-1 text-start text-xs leading-4 text-muted-foreground"
-        >
-          {institution.deployment_name}
-        </Text>
-        {institution.is_local ? (
-          <Badge
-            label={localLabel}
-            variant="primary"
-            size="sm"
-            className="mt-1"
-          />
-        ) : null}
-      </View>
-
-      <View
-        className={`absolute ${
-          featured ? "end-3 top-3" : "end-2 top-2"
-        } h-8 w-8 items-center justify-center`}
-      >
-        {isConnecting ? (
-          <LoadingIndicator size="sm" />
-        ) : isCurrent ? (
-          <CheckCircle size={20} color={primaryColor} />
-        ) : null}
-      </View>
-      </Card>
-    </Pressable>
-  );
-});
 
 function haversineKm(
   lat1: number,
@@ -200,7 +77,6 @@ export default function InstitutionSelectScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const tileWidth = (windowWidth - 44) / 2;
   const { institutionQr } = useLocalSearchParams<{ institutionQr?: string }>();
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
@@ -283,7 +159,7 @@ export default function InstitutionSelectScreen() {
       try {
         await checkInstitutionConnection(institution);
         await selectInstitution(institution);
-        router.replace("/(auth)/sign-in");
+        router.replace("/");
       } catch (caught: unknown) {
         console.error("[Institution Select] Connection failed.", caught);
         const message = t("auth_institution_connection_error");
@@ -297,16 +173,14 @@ export default function InstitutionSelectScreen() {
 
   const renderInstitution = useCallback(
     ({ item }: ListRenderItemInfo<DirectoryInstitution>) => (
-      <InstitutionTile
+      <InstitutionCard
         institution={item}
         name={isArabic && item.name_ar ? item.name_ar : item.name}
         isCurrent={selectedInstitution?.deployment_id === item.deployment_id}
-        isConnecting={connectingId === item.deployment_id}
+        isBusy={connectingId === item.deployment_id}
         disabled={connectingId !== null}
         localLabel={t("auth_institution_local_label")}
-        primaryColor={theme.primary}
-        onSelect={connectInstitution}
-        width={tileWidth}
+        onPress={connectInstitution}
       />
     ),
     [
@@ -315,8 +189,6 @@ export default function InstitutionSelectScreen() {
       isArabic,
       selectedInstitution?.deployment_id,
       t,
-      theme.primary,
-      tileWidth,
     ],
   );
 
@@ -435,41 +307,27 @@ export default function InstitutionSelectScreen() {
   return (
     <Screen edges={[]} statusBarStyle="auto">
       <View className="flex-1" style={{ paddingTop: insets.top + 8 }}>
-        <View className="mb-5 h-11 flex-row items-center justify-between px-5">
-          <View className="flex-row items-center gap-2">
-            <Logo size={25} color={theme.primary} dotColor={theme.brandPink} />
-            <Text className="text-lg font-bold tracking-tight text-foreground">
-              Orbis
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
-            }
-            onPress={toggleLanguage}
-            hitSlop={8}
-            className="min-h-11 flex-row items-center gap-2 rounded-full border border-border bg-card px-3"
-          >
-            <Language size={15} color={theme.textMuted} />
-            <Text className="text-sm font-medium text-foreground">
-              {locale === "ar" ? "English" : "العربية"}
-            </Text>
-          </Pressable>
-        </View>
+        <InstitutionPickerHeader
+          languageLabel={locale === "ar" ? "English" : "العربية"}
+          accessibilityLabel={
+            locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
+          }
+          onToggleLanguage={toggleLanguage}
+        />
 
         <View className="flex-1 overflow-hidden bg-background">
           <FlatList
             data={otherInstitutions}
             keyExtractor={(institution) => institution.deployment_id}
             renderItem={renderInstitution}
-            numColumns={2}
-            columnWrapperStyle={styles.tileRow}
             ListHeaderComponent={
               <View className="gap-4 pb-4">
                 <View>
                   <Text className="text-start text-2xl leading-8 font-bold text-foreground">
                     {t("auth_institution_search_title")}
+                  </Text>
+                  <Text className="mt-1 text-start text-sm leading-5 text-muted-foreground">
+                    {t("auth_institution_search_description")}
                   </Text>
                 </View>
 
@@ -495,7 +353,7 @@ export default function InstitutionSelectScreen() {
                     spacing="one"
                     headerSpacing="two"
                   >
-                    <InstitutionTile
+                    <InstitutionCard
                       institution={featuredInstitution}
                       name={
                         isArabic && featuredInstitution.name_ar
@@ -506,15 +364,14 @@ export default function InstitutionSelectScreen() {
                         selectedInstitution?.deployment_id ===
                         featuredInstitution.deployment_id
                       }
-                      isConnecting={
+                      isBusy={
                         connectingId === featuredInstitution.deployment_id
                       }
                       disabled={connectingId !== null}
                       localLabel={t("auth_institution_local_label")}
-                      primaryColor={theme.primary}
-                      onSelect={connectInstitution}
+                      onPress={connectInstitution}
                       width={windowWidth - 32}
-                      featured
+                      variant="featured"
                     />
                   </Section>
                 ) : isLoading ? (
@@ -800,17 +657,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 24,
     gap: 12,
-  },
-  tileRow: {
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  logoImage: {
-    width: 46,
-    height: 46,
-  },
-  featuredLogoImage: {
-    width: 58,
-    height: 58,
   },
 });

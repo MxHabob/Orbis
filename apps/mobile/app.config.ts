@@ -26,6 +26,16 @@ export default ({ config }: { config: ExpoConfig }): ExpoConfig => {
     android,
     plugins: [
       ...(config.plugins ?? []),
+      [
+        "expo-build-properties",
+        {
+          android: {
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
+            enablePngCrunchInReleaseBuilds: true,
+          },
+        },
+      ],
       ["expo-sqlite", { useSQLCipher: true }],
     ],
     ...(updatesEnabled
