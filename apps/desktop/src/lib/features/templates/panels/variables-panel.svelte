@@ -39,8 +39,30 @@ function flattenSchema(
   prefix = "",
 ): Record<string, VariableDefinition & { isSystem?: boolean }> {
   let result: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
-  for (const [key, value] of Object.entries(schema)) {
+  if (!schema || typeof schema !== "object") return result;
+
+  // If the schema is an object with a `properties` map, unwrap its properties directly
+  const props =
+    schema.properties && typeof schema.properties === "object"
+      ? schema.properties
+      : schema;
+
+  for (const [key, value] of Object.entries(props)) {
+    // Skip JSON Schema structural keywords
+    if (
+      props === schema &&
+      ["type", "label", "properties", "required", "$schema", "description"].includes(key)
+    ) {
+      continue;
+    }
+
     const fullPath = prefix ? `${prefix}.${key}` : key;
+    const rawLabel = (value as any)?.label;
+    const resolvedLabel =
+      typeof rawLabel === "function" ? rawLabel() : rawLabel || fullPath;
+    const resolvedLabelAr =
+      (value as any)?.labelAr || resolvedLabel;
+
     if (
       value &&
       typeof value === "object" &&
@@ -54,22 +76,21 @@ function flattenSchema(
     } else if (
       value &&
       typeof value === "object" &&
-      (value as any).type === "array" &&
-      (value as any).items?.type === "object"
+      (value as any).type === "array"
     ) {
       result[fullPath] = {
         source: fullPath,
         type: "array",
-        label: (value as any).label || fullPath,
-        labelAr: (value as any).label || fullPath,
+        label: resolvedLabel,
+        labelAr: resolvedLabelAr,
         isSystem: true,
       };
     } else {
       result[fullPath] = {
         source: fullPath,
         type: (value as any)?.type || "string",
-        label: (value as any)?.label || fullPath,
-        labelAr: (value as any)?.label || fullPath,
+        label: resolvedLabel,
+        labelAr: resolvedLabelAr,
         isSystem: true,
       };
     }
@@ -80,7 +101,17 @@ function flattenSchema(
 const entityType = $derived(store.document.meta?.entityType || "");
 const systemVariables = $derived.by(() => {
   let vars: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
-  const schemas = store.systemSchemas || {};
+  const baseSchemas = store.systemSchemas || {};
+  const schemas: Record<string, any> = { ...baseSchemas };
+
+  // Ensure both org and $org namespaces exist
+  if (schemas.$org && !schemas.org) {
+    schemas.org = schemas.$org;
+  }
+  if (schemas.org && !schemas.$org) {
+    schemas.$org = schemas.org;
+  }
+
   if (entityType && schemas[entityType]) {
     vars = { ...vars, ...flattenSchema(schemas[entityType], entityType) };
   }
@@ -327,9 +358,6 @@ function handleDragStart(e: DragEvent, varName: string) {
             draggable="true"
             ondragstart={(e) => handleDragStart(e, varName)}
           >
-            <!-- Drag handle -->
-            <Bars3BottomLeft size={13} class="text-muted-foreground/40 group-hover:text-muted-foreground shrink-0" />
-
             <!-- Type icon -->
             <TypeIconComp size={14} class="shrink-0 text-muted-foreground" />
 

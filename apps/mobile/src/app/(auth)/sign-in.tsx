@@ -191,7 +191,10 @@ export default function SignInScreen() {
               <Input
                 placeholder={t("auth_username_or_email")}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  setErrorMessage(null);
+                }}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"

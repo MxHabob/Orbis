@@ -78,6 +78,7 @@ let currentJobId = $state<string>("");
 // Preview State
 let isPreviewOpen = $state(false);
 let previewBlobUrl = $state<string>("");
+let currentIsPdf = $state<boolean>(false);
 
 const categoryOptions = [
   { id: "all", label: m.operations_ui_report_category_all() },
@@ -218,8 +219,18 @@ async function handleExecuteReport() {
 async function handlePreviewReport(jobId: string) {
   try {
     const bytes = await api.downloadReportFile(jobId);
-    const mime =
-      selectedFormat === "PDF" ? "application/pdf" : "text/html;charset=utf-8";
+    const isPdf =
+      bytes.length >= 4 &&
+      bytes[0] === 0x25 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x44 &&
+      bytes[3] === 0x46;
+    currentIsPdf = isPdf;
+    const mime = isPdf
+      ? "application/pdf"
+      : selectedFormat === "PDF" || selectedFormat === "HTML"
+        ? "text/html;charset=utf-8"
+        : "application/octet-stream";
     const blob = new Blob([bytes], { type: mime });
     if (previewBlobUrl) {
       URL.revokeObjectURL(previewBlobUrl);
@@ -237,7 +248,12 @@ function handleDownloadCurrent() {
   if (!previewBlobUrl || !selectedDefinition) return;
   const link = document.createElement("a");
   link.href = previewBlobUrl;
-  link.download = `${selectedDefinition.code}_${new Date().toISOString().slice(0, 10)}.${selectedFormat.toLowerCase()}`;
+  const ext = currentIsPdf
+    ? "pdf"
+    : selectedFormat === "PDF"
+      ? "html"
+      : selectedFormat.toLowerCase();
+  link.download = `${selectedDefinition.code}_${new Date().toISOString().slice(0, 10)}.${ext}`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

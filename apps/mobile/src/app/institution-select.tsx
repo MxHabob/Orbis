@@ -45,7 +45,6 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import {
@@ -205,7 +204,6 @@ export default function InstitutionSelectScreen() {
   const { institutionQr } = useLocalSearchParams<{ institutionQr?: string }>();
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
-  const toast = useToast();
   const {
     isInitializing,
     institutions: savedInstitutions,
@@ -214,7 +212,7 @@ export default function InstitutionSelectScreen() {
   } = useAuth();
   const [search, setSearch] = useState("");
   const [connectingId, setConnectingId] = useState<string | null>(null);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [screenError, setScreenError] = useState<string | null>(null);
   const [manualEntryError, setManualEntryError] = useState<string | null>(null);
   const [manualEntryVisible, setManualEntryVisible] = useState(false);
   const [localCandidate, setLocalCandidate] =
@@ -281,7 +279,7 @@ export default function InstitutionSelectScreen() {
   const connectInstitution = useCallback(
     async (institution: DirectoryInstitution) => {
       setConnectingId(institution.deployment_id);
-      setConnectionError(null);
+      setScreenError(null);
       try {
         await checkInstitutionConnection(institution);
         await selectInstitution(institution);
@@ -289,12 +287,12 @@ export default function InstitutionSelectScreen() {
       } catch (caught: unknown) {
         console.error("[Institution Select] Connection failed.", caught);
         const message = t("auth_institution_connection_error");
-        setConnectionError(message);
+        setScreenError(message);
       } finally {
         setConnectingId(null);
       }
     },
-    [router, selectInstitution, t, toast],
+    [router, selectInstitution, t],
   );
 
   const renderInstitution = useCallback(
@@ -323,6 +321,7 @@ export default function InstitutionSelectScreen() {
   );
 
   const requestNearbyLocation = useCallback(async () => {
+    setScreenError(null);
     if (userLocation) {
       setUserLocation(null);
       return;
@@ -331,7 +330,7 @@ export default function InstitutionSelectScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        toast.error(t("auth_institution_location_error"));
+        setScreenError(t("auth_institution_location_error"));
         return;
       }
 
@@ -347,9 +346,9 @@ export default function InstitutionSelectScreen() {
         "[Institution Select] Unable to read device location.",
         caught,
       );
-      toast.error(t("auth_institution_location_error"));
+      setScreenError(t("auth_institution_location_error"));
     }
-  }, [t, toast, userLocation]);
+  }, [t, userLocation]);
 
   const toggleLanguage = useCallback(() => {
     void setLocale(locale === "ar" ? "en" : "ar");
@@ -364,10 +363,10 @@ export default function InstitutionSelectScreen() {
         "[Institution Select] Rejected an unsupported QR code.",
         caught,
       );
-      toast.error(t("auth_institution_local_qr_error"));
+      setScreenError(t("auth_institution_local_qr_error"));
     }
     router.setParams({ institutionQr: undefined });
-  }, [institutionQr, router, t, toast]);
+  }, [institutionQr, router, t]);
 
   const submitManualInstitution = useCallback(() => {
     try {
@@ -425,6 +424,7 @@ export default function InstitutionSelectScreen() {
           if (search) {
             setSearch("");
           } else {
+            setManualEntryError(null);
             setManualEntryVisible(true);
           }
         }}
@@ -552,7 +552,10 @@ export default function InstitutionSelectScreen() {
                     variant="ghost"
                     size="md"
                     className="flex-1 border border-border bg-card"
-                    onPress={() => setManualEntryVisible(true)}
+                    onPress={() => {
+                      setManualEntryError(null);
+                      setManualEntryVisible(true);
+                    }}
                   />
                 </View>
 
@@ -628,12 +631,12 @@ export default function InstitutionSelectScreen() {
             className="bg-background px-4 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 16) }}
           >
-            {connectionError ? (
+            {screenError ? (
               <Text
                 accessibilityRole="alert"
                 className="mb-2 text-center text-xs leading-4 text-destructive"
               >
-                {connectionError}
+                {screenError}
               </Text>
             ) : null}
             {selectedInstitution ? (
@@ -671,7 +674,10 @@ export default function InstitutionSelectScreen() {
 
       <Drawer
         visible={manualEntryVisible}
-        onClose={() => setManualEntryVisible(false)}
+        onClose={() => {
+          setManualEntryVisible(false);
+          setManualEntryError(null);
+        }}
         snapPoints={[0.72]}
       >
         <DrawerContent>
@@ -697,7 +703,10 @@ export default function InstitutionSelectScreen() {
               label={t("auth_institution_local_name")}
               placeholder={t("auth_institution_local_enter_name")}
               value={localName}
-              onChangeText={setLocalName}
+              onChangeText={(value) => {
+                setLocalName(value);
+                setManualEntryError(null);
+              }}
               autoCapitalize="words"
               maxLength={100}
               returnKeyType="next"
@@ -706,7 +715,10 @@ export default function InstitutionSelectScreen() {
               label={t("auth_institution_local_server")}
               placeholder={t("auth_institution_local_server_hint")}
               value={localEndpoint}
-              onChangeText={setLocalEndpoint}
+              onChangeText={(value) => {
+                setLocalEndpoint(value);
+                setManualEntryError(null);
+              }}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"

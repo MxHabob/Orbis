@@ -94,8 +94,15 @@ async function generateReport() {
     const pdfBytes = await api.downloadReportFile(jobId);
 
     if (pdfBytes && pdfBytes.length > 0) {
+      const isPdf =
+        pdfBytes.length >= 4 &&
+        pdfBytes[0] === 0x25 &&
+        pdfBytes[1] === 0x50 &&
+        pdfBytes[2] === 0x44 &&
+        pdfBytes[3] === 0x46;
+      const mime = isPdf ? "application/pdf" : "text/html;charset=utf-8";
       const base64 = uint8ArrayToBase64(pdfBytes);
-      pdfUrl = `data:application/pdf;base64,${base64}`;
+      pdfUrl = `data:${mime};base64,${base64}`;
       progress = 100;
       statusText = m.shared_ui_ready_to_print();
     } else {

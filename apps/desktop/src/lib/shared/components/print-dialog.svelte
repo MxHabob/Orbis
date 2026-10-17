@@ -322,6 +322,8 @@ async function generatePdf(): Promise<boolean> {
   }
 }
 
+const generatePreview = () => generatePdf();
+
 // ── Print Action ─────────────────────────────────────────────
 
 async function handlePrintAction() {

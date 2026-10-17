@@ -85,10 +85,7 @@ export default function ClassAttendanceScreen() {
       if (!status || recordedByStudent.has(student.id)) return [];
       return [{ student_id: student.id, status }];
     });
-    if (items.length === 0) {
-      toast.warning(t("teacher_no_records_to_save"));
-      return;
-    }
+    if (items.length === 0) return;
     try {
       await mutation.mutateAsync({ section_id: classId, date, items });
       setSelectedStatuses({});

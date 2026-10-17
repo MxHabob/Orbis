@@ -220,6 +220,19 @@ async function initEditor() {
           cashier_name: { type: "string", label: m.template_schema_cashier_name() },
         },
       },
+      org: {
+        type: "object",
+        label: m.template_schema_organization_group(),
+        properties: {
+          country_name: { type: "string", label: m.template_schema_country_name() },
+          ministry_name: { type: "string", label: m.template_schema_ministry_name() },
+          region_name: { type: "string", label: m.template_schema_region_name() },
+          name_ar: { type: "string", label: m.template_schema_organization_name_ar() },
+          name: { type: "string", label: m.template_schema_organization_name_en() },
+          logo_url: { type: "string", label: m.template_schema_organization_logo() },
+          emblem_url: { type: "string", label: m.template_schema_ministry_emblem() },
+        },
+      },
       $org: {
         type: "object",
         label: m.template_schema_organization_group(),
@@ -326,8 +339,14 @@ async function generatePreview() {
       {},
       templateRecord?.locale ?? "ar",
     );
+    const isPdf =
+      pdfBytes.length >= 4 &&
+      pdfBytes[0] === 0x25 &&
+      pdfBytes[1] === 0x50 &&
+      pdfBytes[2] === 0x44 &&
+      pdfBytes[3] === 0x46;
     const blob = new Blob([pdfBytes as unknown as BlobPart], {
-      type: "application/pdf",
+      type: isPdf ? "application/pdf" : "text/html;charset=utf-8",
     });
     if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
     previewPdfUrl = URL.createObjectURL(blob);

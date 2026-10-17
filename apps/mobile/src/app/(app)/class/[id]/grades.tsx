@@ -20,6 +20,7 @@ export default function ClassGradesScreen() {
   const classId = typeof id === "string" ? id : undefined;
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [scores, setScores] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
   const classQuery = useTeacherClassDataQuery(classId);
   const classSubjects = classQuery.data?.SectionSubject ?? [];
   const selectedClassSubject =
@@ -60,6 +61,7 @@ export default function ClassGradesScreen() {
   const saveGrades = async () => {
     const classItem = classQuery.data?.classItem;
     if (!selectedClassSubject || !classItem || !canRecord) return;
+    setSaveError(null);
     const invalidStudentIds: string[] = [];
     const items = (classQuery.data?.roster ?? []).flatMap(
       ({ student, enrollment }) => {
@@ -87,11 +89,11 @@ export default function ClassGradesScreen() {
       },
     );
     if (invalidStudentIds.length > 0) {
-      toast.error(t("teacher_invalid_scores"));
+      setSaveError(t("teacher_invalid_scores"));
       return;
     }
     if (items.length === 0) {
-      toast.warning(t("teacher_no_records_to_save"));
+      setSaveError(t("teacher_no_records_to_save"));
       return;
     }
     try {
@@ -99,7 +101,7 @@ export default function ClassGradesScreen() {
       setScores({});
       toast.success(t("teacher_save_success"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("common_error"));
+      setSaveError(error instanceof Error ? error.message : t("common_error"));
     }
   };
 
@@ -145,6 +147,7 @@ export default function ClassGradesScreen() {
                   onPress={() => {
                     setSelectedSubjectId(classSubject.id);
                     setScores({});
+                    setSaveError(null);
                   }}
                   className={`min-h-10 items-center justify-center rounded-md border px-three py-two ${
                     isSelected
@@ -199,12 +202,13 @@ export default function ClassGradesScreen() {
                         <Input
                           label={t("teacher_score")}
                           value={scores[student.id] ?? ""}
-                          onChangeText={(value) =>
+                          onChangeText={(value) => {
+                            setSaveError(null);
                             setScores((current) => ({
                               ...current,
                               [student.id]: value,
-                            }))
-                          }
+                            }));
+                          }}
                           keyboardType="decimal-pad"
                           inputMode="decimal"
                           maxLength={6}
@@ -221,6 +225,14 @@ export default function ClassGradesScreen() {
               ) ? (
                 <Text className="text-sm text-muted-foreground">
                   {t("teacher_no_grade_entries")}
+                </Text>
+              ) : null}
+              {saveError ? (
+                <Text
+                  accessibilityRole="alert"
+                  className="text-start text-xs leading-4 font-medium text-destructive"
+                >
+                  {saveError}
                 </Text>
               ) : null}
               <Button

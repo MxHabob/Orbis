@@ -162,7 +162,7 @@ function handleInput(event: Event) {
 }
 
 function handleFocus() {
-  if (value) requestAnimationFrame(() => inputElement?.select());
+  if (value) requestAnimationFrame(() => inputElement?.select?.());
 }
 
 function handleSelectAccount(account: AccountDto) {
@@ -182,7 +182,7 @@ function handleClear(event: MouseEvent) {
   isOpen = false;
   clearPendingSearch();
   onchange?.(null);
-  inputElement?.focus();
+  inputElement?.focus?.();
 }
 
 function scrollHighlightedOptionIntoView() {
@@ -238,7 +238,7 @@ function handleClickOutside(event: MouseEvent) {
     />
     <Input
       id={inputId}
-      bind:this={inputElement}
+      bind:ref={inputElement}
       type="text"
       autocomplete="off"
       spellcheck="false"
