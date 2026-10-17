@@ -165,7 +165,7 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const migrationMatch = message.match(/^SCHEMA_MIGRATION_REQUIRED:(\d+):/);
+      const migrationMatch = message.match(/SCHEMA_MIGRATION_REQUIRED:(\d+):/);
       if (values.mode === "direct" && migrationMatch) {
         pendingMigrationCount = Number(migrationMatch[1]);
         form.formError = m.ui_pending_migrations_apply_required({
