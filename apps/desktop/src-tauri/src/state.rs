@@ -823,30 +823,30 @@ impl AppState {
                 .map_err(|e| format!("Failed to write JWT secret: {e}"))?;
             Ok(secret)
         }
+    }
 
-        fn load_or_generate_mfa_encryption_key(
-            app_data_dir: &std::path::Path,
-        ) -> Result<String, String> {
-            let key_path = app_data_dir.join("mfa_encryption_key");
-            if key_path.exists() {
-                std::fs::read_to_string(&key_path)
-                    .map(|key| key.trim().to_string())
-                    .map_err(|error| format!("Failed to read MFA encryption key: {error}"))
-            } else {
-                use rand::Rng;
-                let key: String = rand::thread_rng()
-                    .sample_iter(&rand::distributions::Alphanumeric)
-                    .take(64)
-                    .map(char::from)
-                    .collect();
-                if let Some(parent) = key_path.parent() {
-                    std::fs::create_dir_all(parent)
-                        .map_err(|error| format!("Failed to create AppData dir: {error}"))?;
-                }
-                std::fs::write(&key_path, &key)
-                    .map_err(|error| format!("Failed to write MFA encryption key: {error}"))?;
-                Ok(key)
+    fn load_or_generate_mfa_encryption_key(
+        app_data_dir: &std::path::Path,
+    ) -> Result<String, String> {
+        let key_path = app_data_dir.join("mfa_encryption_key");
+        if key_path.exists() {
+            std::fs::read_to_string(&key_path)
+                .map(|key| key.trim().to_string())
+                .map_err(|error| format!("Failed to read MFA encryption key: {error}"))
+        } else {
+            use rand::Rng;
+            let key: String = rand::thread_rng()
+                .sample_iter(&rand::distributions::Alphanumeric)
+                .take(64)
+                .map(char::from)
+                .collect();
+            if let Some(parent) = key_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|error| format!("Failed to create AppData dir: {error}"))?;
             }
+            std::fs::write(&key_path, &key)
+                .map_err(|error| format!("Failed to write MFA encryption key: {error}"))?;
+            Ok(key)
         }
     }
 }
