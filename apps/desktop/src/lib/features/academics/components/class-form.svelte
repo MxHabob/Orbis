@@ -1,8 +1,6 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { api, type CreateSectionRequest, queryKeys } from "$lib/api";
-import { academicContext } from "$lib/stores";
-import { createPeriodsQuery } from "$lib/features/academics/queries";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -12,7 +10,6 @@ import {
   Select,
   SelectTrigger,
   SelectContent,
-  SelectItem,
 } from "@orbis/ui/select";
 import InputColor from "$lib/shared/components/input-color.svelte";
 import { toast } from "@orbis/ui";
@@ -31,9 +28,6 @@ let {
   onCancel: () => void;
 } = $props();
 
-const periodsQuery = createPeriodsQuery(() => orgId);
-const periods = $derived(periodsQuery.data ?? []);
-
 const unitsQuery = createQuery(() => ({
   queryKey: queryKeys.org.units(orgId),
   queryFn: () => api.listOrgUnits(),
@@ -45,11 +39,11 @@ const units = $derived(unitsQuery.data ?? []);
 const form = new FormController({
   initialValues: {
     unit_id: "",
-    period_id: "",
     name: "",
     name_ar: "",
     code: "",
     grade_level: "",
+    track: "",
     capacity: 30,
     color: "",
   },
@@ -63,13 +57,6 @@ function fieldError(field: string): string | undefined {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (values) => {
-    const periodId =
-      values.period_id ||
-      academicContext.effectivePeriodId ||
-      (periods[0]?.id ? String(periods[0].id) : "");
-    if (!periodId) {
-      throw new Error(m.shared_ui_academic_period_required());
-    }
     const unitId =
       values.unit_id ||
       (units[0]?.id ? String(units[0].id) : "");
@@ -79,13 +66,13 @@ async function handleSubmit(e: SubmitEvent) {
 
     const request: CreateSectionRequest = {
       unit_id: unitId,
-      period_id: periodId,
       name: values.name || values.name_ar || "",
       name_ar: values.name_ar || undefined,
       code: values.code || undefined,
       capacity: values.capacity,
       color: values.color || undefined,
       level: values.grade_level || "1",
+      track: values.track || undefined,
     };
     await api.createSection(request);
     toast.success(m.academics_class_toast_success());
@@ -145,8 +132,8 @@ async function handleSubmit(e: SubmitEvent) {
 			{/snippet}
 		</BilingualNameFields>
 
-		<!-- Unit & Period Selection -->
-		<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+		<!-- Organizational Unit -->
+		<div class="grid grid-cols-1 gap-4">
 			{#if units.length > 0}
 				<FormField id="unit_select" label={m.common_word_unit()} error={fieldError("unit_id")}>
 					{#snippet children()}
@@ -170,28 +157,6 @@ async function handleSubmit(e: SubmitEvent) {
 				</FormField>
 			{/if}
 
-			{#if periods.length > 0}
-				<FormField id="period_select" label={m.common_period_form_title_create()} error={fieldError("period_id")}>
-					{#snippet children()}
-					<Select
-						type="single"
-						value={form.values.period_id || academicContext.effectivePeriodId || (periods[0]?.id ? String(periods[0].id) : "")}
-						onValueChange={(v) => (form.values.period_id = v ?? "")}
-					>
-						<SelectTrigger class="h-9 text-xs w-full">
-							{periods.find(p => String(p.id) === (form.values.period_id || academicContext.effectivePeriodId || String(periods[0]?.id)))?.name_ar || periods.find(p => String(p.id) === (form.values.period_id || academicContext.effectivePeriodId || String(periods[0]?.id)))?.name || m.common_period_form_title_create()}
-						</SelectTrigger>
-						<SelectContent class="max-h-52">
-							{#each periods as p}
-								<SelectItem value={String(p.id)}>
-									{p.name_ar || p.name}
-								</SelectItem>
-							{/each}
-						</SelectContent>
-					</Select>
-					{/snippet}
-				</FormField>
-			{/if}
 		</div>
 
 		<!-- Two Columns Row -->
@@ -222,6 +187,17 @@ async function handleSubmit(e: SubmitEvent) {
 				{/snippet}
 			</FormField>
 		</div>
+
+		<FormField id="track" label={m.settings_general_educational_track()} error={fieldError("track")}>
+			{#snippet children()}
+			<Input
+				id="track"
+				type="text"
+				bind:value={form.values.track}
+				onblur={() => form.markTouched("track")}
+			/>
+			{/snippet}
+		</FormField>
 
 		<!-- Capacity -->
 		<FormField id="capacity" label={m.academics_class_label_capacity()} error={fieldError("capacity")} required>

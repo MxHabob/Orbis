@@ -79,7 +79,6 @@ pub enum DomainEvent {
     SectionCreated {
         section_id: Uuid,
         org_id: Uuid,
-        period_id: Uuid,
         timestamp: DateTime<Utc>,
     },
     SectionSubjectAssigned {

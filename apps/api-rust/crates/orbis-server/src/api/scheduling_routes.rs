@@ -44,7 +44,41 @@ pub struct UpdateRoomRequest {
     pub room_type: Option<String>,
     pub capacity: Option<i32>,
     pub floor: Option<i32>,
-    pub org_unit_id: Option<Uuid>,
+    #[serde(default, deserialize_with = "deserialize_nullable_field")]
+    pub org_unit_id: Option<Option<Uuid>>,
+}
+
+fn deserialize_nullable_field<'de, D, T>(
+    deserializer: D,
+) -> Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Some)
+}
+
+#[cfg(test)]
+mod room_update_request_tests {
+    use super::UpdateRoomRequest;
+    use uuid::Uuid;
+
+    #[test]
+    fn room_location_patch_distinguishes_omitted_from_null() {
+        let omitted: UpdateRoomRequest = serde_json::from_str("{}").unwrap();
+        assert_eq!(omitted.org_unit_id, None);
+
+        let cleared: UpdateRoomRequest =
+            serde_json::from_str(r#"{"org_unit_id":null}"#).unwrap();
+        assert_eq!(cleared.org_unit_id, Some(None));
+
+        let location_id = Uuid::new_v4();
+        let assigned: UpdateRoomRequest = serde_json::from_str(&format!(
+            r#"{{"org_unit_id":"{location_id}"}}"#
+        ))
+        .unwrap();
+        assert_eq!(assigned.org_unit_id, Some(Some(location_id)));
+    }
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -250,7 +284,7 @@ async fn update_room(
             p.capacity,
             p.room_type,
             p.floor,
-            p.org_unit_id.map(Some),
+            p.org_unit_id,
         )
         .await?;
     Ok(ApiResponse::ok(RoomDto {

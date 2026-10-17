@@ -1794,6 +1794,8 @@
   "common_rooms_add": "Add Room",
   "common_rooms_col_capacity": "Capacity",
   "common_rooms_col_location": "Location",
+  "common_rooms_location_hint": "Choose the branch, building, or facility where this room is located.",
+  "common_rooms_no_locations": "No branch, building, or facility is configured yet. You can leave this unassigned and add locations under Organizational Units.",
   "common_rooms_col_name": "Room Name",
   "common_rooms_create_success": "Room created successfully",
   "common_rooms_edit_title": "Edit Room Details",

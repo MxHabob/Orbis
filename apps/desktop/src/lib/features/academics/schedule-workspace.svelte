@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
-import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
+import { api, extractErrorMessage, queryKeys, type ScheduleLessonRequest, type OrgUnitDto } from "$lib/api";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -95,10 +95,18 @@ const roomsQuery = createQuery(() => ({
   staleTime: 10 * 60 * 1000,
 }));
 
+const orgUnitsQuery = createQuery<OrgUnitDto[]>(() => ({
+  queryKey: queryKeys.org.units(orgId),
+  queryFn: () => api.listOrgUnits(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
 const periods = $derived(periodsQuery.data ?? []);
 const classes = $derived(classesQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
 const rooms = $derived(roomsQuery.data ?? []);
+const orgUnits = $derived(orgUnitsQuery.data ?? []);
 const teachers = $derived(teachersQuery.data?.items ?? []);
 
 const effectiveActivePeriodId = $derived(
@@ -482,6 +490,7 @@ function handleDirectPrint() {
     {classes}
     {teachers}
     {rooms}
+    {orgUnits}
     {subjects}
     onPeriodChange={(val) => {
       activePeriodId = val;
@@ -635,4 +644,3 @@ function handleDirectPrint() {
   bind:activeJob={activeSolveJob}
   onApply={refetchSchedule}
 />
-

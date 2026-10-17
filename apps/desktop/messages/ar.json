@@ -1794,6 +1794,8 @@
   "common_rooms_add": "إضافة قاعة",
   "common_rooms_col_capacity": "السعة الاستيعابية",
   "common_rooms_col_location": "الموقع",
+  "common_rooms_location_hint": "حدد الفرع أو المبنى أو المرفق الذي تقع فيه القاعة.",
+  "common_rooms_no_locations": "لا توجد فروع أو مبانٍ أو مرافق معرفة بعد. يمكنك ترك القاعة دون تعيين وإضافة المواقع من الوحدات التنظيمية.",
   "common_rooms_col_name": "اسم القاعة",
   "common_rooms_create_success": "تم إضافة القاعة بنجاح",
   "common_rooms_edit_title": "تعديل بيانات القاعة",

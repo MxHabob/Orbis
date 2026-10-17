@@ -118,7 +118,6 @@ pub struct SectionDto {
 #[derive(Deserialize, ToSchema)]
 pub struct CreateSectionRequest {
     pub unit_id: Option<Uuid>,
-    pub period_id: Option<Uuid>,
     pub section_type: Option<String>,
     pub code: Option<String>,
     pub name: String,
@@ -406,7 +405,6 @@ async fn create_section(
             ctx.tenant_id,
             CreateSectionInput {
                 unit_id: p.unit_id,
-                period_id: p.period_id,
                 section_type: p.section_type,
                 code: p.code,
                 name: p.name,

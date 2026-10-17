@@ -6,7 +6,7 @@ Lists all rooms and venues with OrbisGrid, CRUD via RoomCreateSheet.
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, extractErrorMessage, type RoomDto } from "$lib/api";
+import { api, extractErrorMessage, type OrgUnitDto, type RoomDto } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
@@ -18,12 +18,13 @@ import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem }
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { roomFilterFields } from "$lib/core/filter-configs";
 import { confirmStore } from "$lib/stores";
+import { getOrgUnitLocationPath } from "$lib/features/academics/room-location";
 
 let { orgId }: { orgId: string } = $props();
 
 // State
 let rooms = $state<RoomDto[]>([]);
-let orgUnits = $state<any[]>([]);
+let orgUnits = $state<OrgUnitDto[]>([]);
 let isLoading = $state(true);
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
@@ -41,7 +42,7 @@ async function loadRooms() {
   try {
     const [fetchedRooms, fetchedUnits] = await Promise.all([
       api.listRooms(),
-      api.listOrgUnits().catch(() => []),
+      api.listOrgUnits(),
     ]);
     rooms = fetchedRooms;
     orgUnits = fetchedUnits;
@@ -63,13 +64,14 @@ const roomActions: ActionItem[] = [
 
 const gridSource = $derived(
   rooms.map((r, i) => {
-    const unit = r.org_unit_id ? orgUnitsMap.get(String(r.org_unit_id)) : null;
-    const buildingName = unit ? (l(unit.name_ar, unit.name) || unit.name) : (r.building || "—");
+    const locationName = r.org_unit_id
+      ? getOrgUnitLocationPath(String(r.org_unit_id), orgUnitsMap) || "—"
+      : "—";
     return {
       ...r,
       __idx: i + 1,
       name: l(r.name_ar, r.name) || r.name || "—",
-      building: buildingName,
+      building: locationName,
       floor: r.floor !== null && r.floor !== undefined ? String(r.floor) : "—",
       capacity: r.capacity ?? "—",
       room_type: r.room_type || "—",

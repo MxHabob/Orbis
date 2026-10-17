@@ -448,6 +448,7 @@ impl AppState {
 
         let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
             scheduling_repo.clone(),
+            org_unit_repo.clone(),
             scheduling_repo.clone(),
             scheduling_repo.clone(),
             exam_repo.clone(),

@@ -25,8 +25,8 @@ export const createRoomInputSchema = localizedName
       "office",
       "other",
     ]),
-    building: z.string().trim().nullable(),
     floor: z.number().int().nullable(),
+    org_unit_id: z.string().trim(),
   })
   .refine(hasName, { path: ["name"], message: "Name is required" });
 
@@ -72,6 +72,7 @@ export const classFormInputSchema = z
     name_ar: z.string().trim().optional(),
     code: z.string().trim().max(50).optional(),
     grade_level: z.string().trim().max(50).optional(),
+    track: z.string().trim().max(50).optional(),
     capacity: z.number().int().min(1).max(100),
     color: z.string().trim().optional(),
   })

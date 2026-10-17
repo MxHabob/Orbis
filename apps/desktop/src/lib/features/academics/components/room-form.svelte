@@ -1,7 +1,9 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import * as m from "$lib/paraglide/messages";
-  import { api } from "$lib/api";
+  import { createQuery } from "@tanstack/svelte-query";
+  import { api, extractErrorMessage, queryKeys, type OrgUnitDto } from "$lib/api";
+  import { getOrgUnitLocationPath } from "$lib/features/academics/room-location";
   import { createRoomInputSchema } from "@orbis/schemas";
   import { FormController } from "$lib/shared/forms/form-controller.svelte";
   import { FormField } from "@orbis/ui";
@@ -31,8 +33,8 @@
       name_ar?: string | null;
       capacity?: number | null;
       room_type?: string | null;
-      building?: string | null;
       floor?: number | null;
+      org_unit_id?: string | null;
     } | null;
     onSuccess: () => void;
     onCancel: () => void;
@@ -46,11 +48,33 @@
       name_ar: room?.name_ar || "",
       capacity: room?.capacity ?? null,
       room_type: room?.room_type || "classroom",
-      building: room?.building || "",
       floor: room?.floor ?? null,
+      org_unit_id: room?.org_unit_id || "",
     },
     schema: createRoomInputSchema,
   }));
+
+  const orgUnitsQuery = createQuery<OrgUnitDto[]>(() => ({
+    queryKey: queryKeys.org.units(orgId),
+    queryFn: () => api.listOrgUnits(),
+    enabled: !!orgId,
+    staleTime: 5 * 60 * 1000,
+  }));
+  const orgUnits = $derived(orgUnitsQuery.data ?? []);
+  const orgUnitsById = $derived(
+    new Map(orgUnits.map((unit) => [String(unit.id), unit])),
+  );
+  const locationUnits = $derived(
+    orgUnits.filter((unit) =>
+      ["branch", "building", "facility"].includes(unit.unit_type.toLowerCase()),
+    ),
+  );
+
+  const selectedLocationName = $derived(
+    form.values.org_unit_id
+      ? getOrgUnitLocationPath(form.values.org_unit_id, orgUnitsById)
+      : null,
+  );
 
   function fieldError(field: string): string | undefined {
     return form.errors[field]?.[0];
@@ -75,6 +99,7 @@
           name_ar: payload.name_ar || undefined,
           capacity: Number(payload.capacity) || 30,
           room_type: payload.room_type || "classroom",
+          org_unit_id: payload.org_unit_id || null,
           floor:
             payload.floor != null && payload.floor !== ""
               ? Number(payload.floor)
@@ -87,6 +112,7 @@
           name_ar: payload.name_ar || undefined,
           capacity: Number(payload.capacity) || 30,
           room_type: payload.room_type || "classroom",
+          org_unit_id: payload.org_unit_id || undefined,
           floor:
             payload.floor != null && payload.floor !== ""
               ? Number(payload.floor)
@@ -201,23 +227,33 @@
       </FormField>
     </div>
 
-    <!-- Location (Building & Floor) -->
+    <!-- Organizational Location & Floor -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Building -->
       <FormField
-        id="room_building"
-        label={m.common_rooms_label_building()}
-        error={fieldError("building")}
+        id="room_location"
+        label={m.common_rooms_col_location()}
       >
         {#snippet children()}
-          <Input
-            id="room_building"
-            type="text"
-            bind:value={form.values.building}
-            onblur={() => form.markTouched("building")}
-            placeholder={m.common_rooms_placeholder_building()}
-            disabled={form.isSubmitting}
-          />
+          <Select
+            type="single"
+            value={form.values.org_unit_id || "unassigned"}
+            onValueChange={(value) =>
+              (form.values.org_unit_id = value === "unassigned" ? "" : value ?? "")
+            }
+            disabled={form.isSubmitting || orgUnitsQuery.isLoading || orgUnitsQuery.isError}
+          >
+            <SelectTrigger id="room_location" class="h-9 text-sm w-full">
+              {selectedLocationName || m.common_org_unit_none()}
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">{m.common_org_unit_none()}</SelectItem>
+              {#each locationUnits as unit (unit.id)}
+                <SelectItem value={String(unit.id)}>
+                  {getOrgUnitLocationPath(String(unit.id), orgUnitsById) || unit.name}
+                </SelectItem>
+              {/each}
+            </SelectContent>
+          </Select>
         {/snippet}
       </FormField>
 
@@ -239,6 +275,16 @@
         {/snippet}
       </FormField>
     </div>
+
+    <p class="text-xs text-muted-foreground">
+      {#if orgUnitsQuery.isError}
+        {extractErrorMessage(orgUnitsQuery.error)}
+      {:else if !orgUnitsQuery.isLoading && locationUnits.length === 0}
+        {m.common_rooms_no_locations()}
+      {:else}
+        {m.common_rooms_location_hint()}
+      {/if}
+    </p>
   </div>
 
   <!-- Actions -->
@@ -257,7 +303,7 @@
       type="submit"
       variant="lime"
       class="font-semibold px-6"
-      disabled={form.isSubmitting}
+      disabled={form.isSubmitting || orgUnitsQuery.isLoading || orgUnitsQuery.isError}
     >
       {form.isSubmitting ? m.common_state_saving() : m.common_action_save()}
     </Button>

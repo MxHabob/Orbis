@@ -17,12 +17,14 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository, RoomRepository,
-    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, TimeSlotRepository,
+    ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository, OrgUnitRepository,
+    RoomRepository, ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository,
+    TimeSlotRepository,
 };
 
 pub struct SchedulingService {
     pub room_repo: Arc<dyn RoomRepository>,
+    pub org_unit_repo: Arc<dyn OrgUnitRepository>,
     pub time_slot_repo: Arc<dyn TimeSlotRepository>,
     pub lesson_repo: Arc<dyn ScheduledLessonRepository>,
     pub exam_session_repo: Arc<dyn ExamSessionRepository>,
@@ -37,6 +39,7 @@ pub struct SchedulingService {
 impl SchedulingService {
     pub fn new(
         room_repo: Arc<dyn RoomRepository>,
+        org_unit_repo: Arc<dyn OrgUnitRepository>,
         time_slot_repo: Arc<dyn TimeSlotRepository>,
         lesson_repo: Arc<dyn ScheduledLessonRepository>,
         exam_session_repo: Arc<dyn ExamSessionRepository>,
@@ -49,6 +52,7 @@ impl SchedulingService {
     ) -> Self {
         Self {
             room_repo,
+            org_unit_repo,
             time_slot_repo,
             lesson_repo,
             exam_session_repo,
@@ -77,6 +81,10 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ScheduleWrite)
             .await?;
+
+        if let Some(unit_id) = org_unit_id {
+            self.validate_room_org_unit(org_id, unit_id).await?;
+        }
 
         let now = Utc::now();
         let room_id = Uuid::new_v4();
@@ -126,6 +134,10 @@ impl SchedulingService {
             .find_by_id(id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Room not found".into()))?;
+
+        if let Some(Some(unit_id)) = org_unit_id {
+            self.validate_room_org_unit(room.org_id, unit_id).await?;
+        }
 
         let now = Utc::now();
         if let Some(n) = name {
@@ -189,6 +201,25 @@ impl SchedulingService {
 
     pub async fn get_room(&self, id: Uuid) -> Result<Option<Room>, DomainError> {
         self.room_repo.find_by_id(id).await
+    }
+
+    async fn validate_room_org_unit(
+        &self,
+        org_id: Uuid,
+        org_unit_id: Uuid,
+    ) -> Result<(), DomainError> {
+        match self.org_unit_repo.find_by_id(org_unit_id).await? {
+            Some(unit)
+                if unit.org_id == org_id
+                    && unit.is_active
+                    && ["branch", "building", "facility"]
+                        .iter()
+                        .any(|kind| unit.unit_type.eq_ignore_ascii_case(kind)) =>
+            {
+                Ok(())
+            }
+            _ => Err(DomainError::Validation("Invalid room location".into())),
+        }
     }
 
     // ── Time Slots ──────────────────────────────────────────────────

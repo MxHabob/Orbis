@@ -311,6 +311,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
         scheduling_repo.clone(),
+        org_unit_repo.clone(),
         scheduling_repo.clone(),
         scheduling_repo.clone(),
         exam_repo.clone(),

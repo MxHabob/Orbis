@@ -76,7 +76,6 @@ pub struct UpdateSubjectInput {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CreateSectionInput {
     pub unit_id: Option<Uuid>,
-    pub period_id: Option<Uuid>,
     pub section_type: Option<String>,
     pub code: Option<String>,
     pub name: String,
@@ -438,7 +437,6 @@ impl AcademicService {
                 &DomainEvent::SectionCreated {
                     section_id,
                     org_id,
-                    period_id: input.period_id.unwrap_or_default(),
                     timestamp: now,
                 },
             )
