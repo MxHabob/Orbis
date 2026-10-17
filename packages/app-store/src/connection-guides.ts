@@ -39,7 +39,7 @@ const websites: Record<string, string> = {
   tabby: "https://business.tabby.ai/",
   tamara: "https://tamara.co/en-SA/merchant",
   "whatsapp-business":
-    "https://developers.facebook.com/docs/whatsapp/cloud-api/",
+    "https://www.twilio.com/docs/whatsapp/api",
   "yemen-mobile-sms": "https://yemenmobile.com.ye/",
   "yemen-wallet":
     "https://play.google.com/store/apps/details?id=com.s2m.yamenpost.merchant.android",
@@ -107,6 +107,10 @@ const appSpecificSummaries: Record<
     en: "Create a SendGrid API key with Mail Send and User Profile Read access, verify a sender email, then enter the key and sender details below.",
     ar: "أنشئ مفتاح SendGrid بصلاحية Mail Send وUser Profile Read، واعتمد بريد المرسل، ثم أدخل المفتاح وبيانات المرسل أدناه.",
   },
+  "whatsapp-business": {
+    en: "Enable a WhatsApp sender in Twilio, then enter its Account SID, Auth Token, and sender number below. Orbis verifies the Twilio account before saving; actual WhatsApp delivery requires an active sender.",
+    ar: "فعّل مرسل WhatsApp في Twilio، ثم أدخل Account SID وAuth Token ورقم المرسل أدناه. يتحقق أوربيس من حساب Twilio قبل الحفظ؛ ويتطلب الإرسال الفعلي مرسلاً نشطاً.",
+  },
   "orbis_mobile": {
     en: "To connect, publish your active public HTTPS endpoint in the Mulverse deployment dashboard.",
     ar: "للربط، انشر عنوان HTTPS العام والنشط في لوحة نشر Mulverse.",
@@ -135,6 +139,7 @@ const appsWithLiveVerifier = new Set([
   "sms-provider",
   "smtp-email",
   "solver-service",
+  "whatsapp-business",
 ]);
 
 export function addConnectionSummary(app: OrbisApp): OrbisApp {
