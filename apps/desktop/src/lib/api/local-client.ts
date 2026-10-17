@@ -56,6 +56,10 @@ import type {
   UpdateTimeSlotRequest,
   ScheduleLessonRequest,
   BulkScheduleLessonsRequest,
+  TimetableProblem,
+  TimetableSolveStatusDto,
+  TimetableSolverWireStatusDto,
+  SolverSidecarStatusDto,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -727,6 +731,38 @@ export class LocalClient implements OrbisApiClient {
         filter,
       }),
     );
+  }
+  async getSolverSidecarStatus(): Promise<SolverSidecarStatusDto> {
+    return unwrap(await invoke("solver_get_sidecar_status"));
+  }
+  async submitTimetable(problem: TimetableProblem): Promise<void> {
+    unwrap(await invoke("solver_submit_timetable", { problem }));
+  }
+  async getTimetableSolveStatus(
+    jobId: string,
+  ): Promise<TimetableSolveStatusDto> {
+    const status = unwrap(
+      await invoke<TimetableSolverWireStatusDto>(
+        "solver_get_timetable_status",
+        { jobId },
+      ),
+    );
+
+    return {
+      ...status,
+      best_solution: status.best_solution
+        ? {
+            ...status.best_solution,
+            assignments: status.best_solution.assignments.map(
+              ({ class_subject_id, class_id, ...assignment }) => ({
+                ...assignment,
+                section_subject_id: class_subject_id,
+                section_id: class_id,
+              }),
+            ),
+          }
+        : null,
+    };
   }
 
   // ── Assessment ──────────────────────────────────────────────

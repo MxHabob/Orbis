@@ -582,11 +582,14 @@ pub async fn solver_submit_timetable(
         .map_err(|e| e.to_string())?;
     state.solver_sidecar.increment_active_jobs();
 
-    state
+    if let Err(error) = state
         .integration_resolver
         .submit_timetable(&ctx, &problem)
         .await
-        .map_err(|e| e.to_string())?;
+    {
+        state.solver_sidecar.decrement_active_jobs();
+        return Err(error.to_string());
+    }
 
     Ok(ok(()))
 }

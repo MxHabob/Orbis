@@ -217,6 +217,102 @@ export interface PaginatedList<T> {
   total_pages: number;
 }
 
+export type TimetableSolveMode = "full" | "incremental";
+export type TimetableSolveStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface TimetableProblem {
+  job_id: string;
+  org_id: string;
+  period_id: string;
+  mode: TimetableSolveMode;
+  time_slots: Array<{
+    id: string;
+    slot_number: number;
+    start_time: string;
+    end_time: string;
+    is_break: boolean;
+    applicable_days: number[] | null;
+  }>;
+  rooms: Array<{
+    id: string;
+    name: string;
+    capacity: number | null;
+    room_type: string;
+  }>;
+  assignments: Array<{
+    id: string;
+    section_subject_id: string;
+    section_id: string;
+    subject_id: string;
+    teacher_id: string;
+    hour_index: number;
+    time_slot_id?: string | null;
+    day_of_week?: number | null;
+    room_id?: string | null;
+  }>;
+  pinned_lessons: Array<{
+    id: string;
+    section_id: string;
+    teacher_id: string;
+    subject_id: string;
+    section_subject_id: string;
+    time_slot_id: string;
+    day_of_week: number;
+    room_id: string | null;
+  }>;
+  unavailable_slots: Array<{
+    teacher_id: string;
+    day_of_week: number;
+    time_slot_id: string;
+  }>;
+}
+
+export interface TimetableSolveStatusDto {
+  job_id: string;
+  status: TimetableSolveStatus;
+  score: string | null;
+  best_solution: {
+    job_id: string;
+    assignments: TimetableProblem["assignments"];
+    score: string | null;
+  } | null;
+  error: string | null;
+}
+
+export interface TimetableSolverWireStatusDto {
+  job_id: string;
+  status: TimetableSolveStatus;
+  score: string | null;
+  best_solution: {
+    job_id: string;
+    assignments: Array<
+      Omit<
+        TimetableProblem["assignments"][number],
+        "section_subject_id" | "section_id"
+      > & {
+        class_subject_id: string;
+        class_id: string;
+      }
+    >;
+    score: string | null;
+  } | null;
+  error: string | null;
+}
+
+export interface SolverSidecarStatusDto {
+  is_running: boolean;
+  is_healthy: boolean;
+  endpoint_url: string;
+  pid: number | null;
+  active_jobs: number;
+  idle_seconds: number;
+}
+
 export interface PersonDto {
   id: string;
   org_id?: string | null;
@@ -1829,6 +1925,9 @@ export interface OrbisApiClient {
         },
     SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]>;
+  getSolverSidecarStatus(): Promise<SolverSidecarStatusDto>;
+  submitTimetable(problem: TimetableProblem): Promise<void>;
+  getTimetableSolveStatus(jobId: string): Promise<TimetableSolveStatusDto>;
 
   // ── Assessment ──────────────────────────────────────────────
   createAssessmentScheme(

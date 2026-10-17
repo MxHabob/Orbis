@@ -118,9 +118,9 @@ const timeSlotsQuery = createQuery(() => ({
 }));
 
 const periodScheduleQuery = createQuery(() => ({
-  queryKey: ["period-schedule", orgId, activePeriodId],
-  queryFn: () => api.listScheduledLessons(activePeriodId),
-  enabled: !!orgId && !!activePeriodId,
+  queryKey: ["period-schedule", orgId, effectiveActivePeriodId],
+  queryFn: () => api.listScheduledLessons(effectiveActivePeriodId),
+  enabled: !!orgId && !!effectiveActivePeriodId,
   staleTime: 2 * 60 * 1000,
 }));
 
@@ -299,10 +299,10 @@ const roomOccupancy = $derived.by(() => {
 // Action Handlers
 function refetchSchedule() {
   queryClient.invalidateQueries({
-    queryKey: ["period-schedule", orgId, activePeriodId],
+    queryKey: ["period-schedule", orgId, effectiveActivePeriodId],
   });
   queryClient.invalidateQueries({
-    queryKey: ["time-slots", orgId, activePeriodId],
+    queryKey: ["time-slots", orgId, effectiveActivePeriodId],
   });
 }
 
@@ -470,7 +470,7 @@ function handleDirectPrint() {
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden font-sans">
   <!-- Top Horizontal Command & Toolbar -->
   <ScheduleToolbar
-    bind:activePeriodId
+    activePeriodId={effectiveActivePeriodId}
     {periods}
     bind:viewMode
     bind:selectedClassId
@@ -483,8 +483,11 @@ function handleDirectPrint() {
     {teachers}
     {rooms}
     {subjects}
-    onPeriodChange={refetchSchedule}
-    onAutoScheduleClick={() => goto(localizeHref(`/${orgId}/academics/schedule/generator?periodId=${activePeriodId}`))}
+    onPeriodChange={(val) => {
+      activePeriodId = val;
+      refetchSchedule();
+    }}
+    onAutoScheduleClick={() => goto(localizeHref(`/${orgId}/academics/schedule/generator?periodId=${effectiveActivePeriodId}`))}
     onTimeSlotsClick={() => (isTimeSlotsSheetOpen = true)}
     onExportClick={handleDirectPrint}
     onNewLessonClick={() => openNewLessonSheet()}
@@ -603,7 +606,7 @@ function handleDirectPrint() {
 <LessonSheet
   bind:open={isLessonSheetOpen}
   {orgId}
-  periodId={activePeriodId}
+  periodId={effectiveActivePeriodId}
   classId={selectedClassId}
   dayOfWeek={activeCellDay}
   timeSlotId={activeCellSlotId}
@@ -619,7 +622,7 @@ function handleDirectPrint() {
 <!-- Time Slots Management Sheet -->
 <TimeSlotSheet
   bind:open={isTimeSlotsSheetOpen}
-  periodId={activePeriodId}
+  periodId={effectiveActivePeriodId}
   {timeSlots}
   onSuccess={refetchSchedule}
 />
@@ -627,7 +630,7 @@ function handleDirectPrint() {
 <!-- AI Scheduler Drawer -->
 <SolverDrawer
   bind:open={isSolverDrawerOpen}
-  periodId={activePeriodId}
+  periodId={effectiveActivePeriodId}
   bind:previewDraft
   bind:activeJob={activeSolveJob}
   onApply={refetchSchedule}

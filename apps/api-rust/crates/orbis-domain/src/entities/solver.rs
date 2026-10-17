@@ -22,6 +22,7 @@ pub enum JobStatus {
 pub struct TimetableProblem {
     pub job_id: String,
     pub org_id: String,
+    #[serde(rename = "cycle_id", alias = "period_id")]
     pub period_id: String,
     pub mode: SolveMode,
     pub time_slots: Vec<TimeSlotDto>,
@@ -60,7 +61,9 @@ pub struct RoomDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LessonAssignmentDto {
     pub id: String,
+    #[serde(rename = "class_subject_id", alias = "section_subject_id")]
     pub section_subject_id: String,
+    #[serde(rename = "class_id", alias = "section_id")]
     pub section_id: String,
     pub subject_id: String,
     pub teacher_id: String,
@@ -76,9 +79,11 @@ pub struct LessonAssignmentDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PinnedLessonDto {
     pub id: String,
+    #[serde(rename = "class_id", alias = "section_id")]
     pub section_id: String,
     pub teacher_id: String,
     pub subject_id: String,
+    #[serde(rename = "class_subject_id", alias = "section_subject_id")]
     pub section_subject_id: String,
     pub time_slot_id: String,
     pub day_of_week: i32,

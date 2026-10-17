@@ -231,5 +231,37 @@ mod tests {
         let json = serde_json::to_string(&problem).expect("Must serialize to JSON");
         assert!(json.contains("test-job-1"));
         assert!(json.contains("sub-math"));
+        assert!(json.contains("\"cycle_id\":\"period-1\""));
+        assert!(json.contains("\"class_subject_id\":\"cs-1\""));
+        assert!(json.contains("\"class_id\":\"class-1\""));
+        assert!(!json.contains("\"period_id\""));
+        assert!(!json.contains("\"section_subject_id\""));
+    }
+
+    #[test]
+    fn test_timetable_problem_accepts_desktop_ipc_field_names() {
+        let problem: TimetableProblem = serde_json::from_value(serde_json::json!({
+            "job_id": "test-job-2",
+            "org_id": "org-1",
+            "period_id": "period-1",
+            "mode": "incremental",
+            "time_slots": [],
+            "rooms": [],
+            "assignments": [{
+                "id": "lesson-1",
+                "section_subject_id": "cs-1",
+                "section_id": "class-1",
+                "subject_id": "sub-math",
+                "teacher_id": "teacher-1",
+                "hour_index": 0
+            }],
+            "pinned_lessons": [],
+            "unavailable_slots": []
+        }))
+        .expect("Desktop IPC field names must deserialize");
+
+        assert_eq!(problem.period_id, "period-1");
+        assert_eq!(problem.assignments[0].section_subject_id, "cs-1");
+        assert_eq!(problem.assignments[0].section_id, "class-1");
     }
 }

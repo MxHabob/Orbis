@@ -68,6 +68,9 @@ import type {
   UpdateTimeSlotRequest,
   ScheduleLessonRequest,
   BulkScheduleLessonsRequest,
+  TimetableProblem,
+  TimetableSolveStatusDto,
+  SolverSidecarStatusDto,
   AssessmentSchemeDto,
   GradeDto,
   AttendanceDto,
@@ -1023,6 +1026,20 @@ export class RemoteClient implements OrbisApiClient {
         query: { period_id: periodId, section_subject_id: csId, class_id: classId, teacher_id: teacherId } as any,
       }),
     ) ?? [];
+  }
+
+  async getSolverSidecarStatus(): Promise<SolverSidecarStatusDto> {
+    throw new Error("The timetable solver is only available in the Orbis desktop app.");
+  }
+
+  async submitTimetable(_problem: TimetableProblem): Promise<void> {
+    throw new Error("The timetable solver is only available in the Orbis desktop app.");
+  }
+
+  async getTimetableSolveStatus(
+    _jobId: string,
+  ): Promise<TimetableSolveStatusDto> {
+    throw new Error("The timetable solver is only available in the Orbis desktop app.");
   }
 
   // ── Assessment ──────────────────────────────────────────────
