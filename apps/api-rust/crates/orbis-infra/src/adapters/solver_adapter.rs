@@ -53,8 +53,7 @@ impl RemoteTimefoldSolver {
             DomainError::Validation(format!("Solver health response was invalid: {error}"))
         })?;
         if health.get("status").and_then(serde_json::Value::as_str) != Some("healthy")
-            || health.get("service").and_then(serde_json::Value::as_str)
-                != Some("orbis-solver")
+            || health.get("service").and_then(serde_json::Value::as_str) != Some("orbis-solver")
         {
             return Err(DomainError::Validation(
                 "The endpoint did not identify itself as a healthy Orbis Solver service".into(),

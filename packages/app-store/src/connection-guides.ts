@@ -50,8 +50,8 @@ const connectionSummaries: Record<
   { en: string; ar: string }
 > = {
   "ai-provider": {
-    en: "To connect, create an API key with the provider, then enter it and choose a model below.",
-    ar: "للربط، أنشئ مفتاح API لدى المزود، ثم أدخله واختر النموذج أدناه.",
+    en: "To connect, create an API key with the provider, then enter it and choose a model below. Orbis sends a minimal test request that may incur provider usage charges.",
+    ar: "للربط، أنشئ مفتاح API لدى المزود، ثم أدخله واختر النموذج أدناه. يرسل أوربيس طلب اختبار قصيراً قد تترتب عليه رسوم استخدام من المزود.",
   },
   surveillance: {
     en: "To connect, enable the camera API, then enter its network address and credentials below.",
@@ -70,8 +70,8 @@ const connectionSummaries: Record<
     ar: "للربط، ثبّت جهازاً متوافقاً على شبكتك، ثم أدخل بيانات الاتصال به أدناه إن توفرت.",
   },
   storage: {
-    en: "To connect, create a storage location and access credentials with the provider, then enter them below.",
-    ar: "للربط، أنشئ مساحة تخزين وبيانات وصول لدى المزود، ثم أدخلها أدناه.",
+    en: "To connect, create a storage location and access credentials with the provider, then enter them below. Orbis verifies access with a temporary write and delete.",
+    ar: "للربط، أنشئ مساحة تخزين وبيانات وصول لدى المزود، ثم أدخلها أدناه. يتحقق أوربيس من الوصول بإنشاء ملف مؤقت ثم حذفه.",
   },
   "ai-service": {
     en: "To connect, enable the service API, then select the provider and enter its API key below.",
@@ -128,6 +128,7 @@ const appsWithLiveVerifier = new Set([
   "gemini-ai",
   "groq",
   "mistral",
+  "moyasar",
   "ollama",
   "openai",
   "openrouter",
@@ -144,13 +145,20 @@ export function addConnectionSummary(app: OrbisApp): OrbisApp {
 
   const summary =
     appSpecificSummaries[app.id] ?? connectionSummaries[app.category];
+  const canVerifyConnection = appsWithLiveVerifier.has(app.id);
   const moreEn = `[Learn more](${website})`;
   const moreAr = `[لمعرفة المزيد](${website})`;
+  const verificationNoteEn = canVerifyConnection
+    ? ""
+    : "\n\n**Orbis availability:** Orbis cannot verify this integration yet, so it cannot be connected from the App Store.";
+  const verificationNoteAr = canVerifyConnection
+    ? ""
+    : "\n\n**توفر الربط في أوربيس:** لا يستطيع أوربيس التحقق من هذا التكامل حالياً، لذلك لا يمكن ربطه من المتجر بعد.";
 
   return {
     ...app,
-    active: app.active && appsWithLiveVerifier.has(app.id),
-    description: `${app.description}\n\n**Connect:** ${summary.en} ${moreEn}`,
-    description_ar: `${app.description_ar ?? ""}\n\n**طريقة الربط:** ${summary.ar} ${moreAr}`,
+    active: app.active && canVerifyConnection,
+    description: `${app.description}\n\n**Connect:** ${summary.en} ${moreEn}${verificationNoteEn}`,
+    description_ar: `${app.description_ar ?? ""}\n\n**طريقة الربط:** ${summary.ar} ${moreAr}${verificationNoteAr}`,
   };
 }

@@ -4,9 +4,36 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use super::{
-    notification::NotificationAdapter, resolver::IntegrationResolver, storage::StorageResolver,
-    solver_adapter::RemoteTimefoldSolver,
+    notification::NotificationAdapter, resolver::IntegrationResolver,
+    solver_adapter::RemoteTimefoldSolver, storage::StorageResolver,
 };
+
+async fn verify_moyasar_connection(secrets: &HashMap<String, String>) -> Result<(), DomainError> {
+    let secret_key = secrets
+        .get("secret_key")
+        .map(String::as_str)
+        .map(str::trim)
+        .filter(|key| !key.is_empty())
+        .ok_or_else(|| {
+            DomainError::Validation(
+                "The Moyasar integration is missing a required secret key".into(),
+            )
+        })?;
+    let response = reqwest::Client::new()
+        .get("https://api.moyasar.com/v1/payments?limit=1")
+        .basic_auth(secret_key, Some(""))
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+        .map_err(|_| DomainError::Validation("Moyasar connection check failed".into()))?;
+    if !response.status().is_success() {
+        return Err(DomainError::Validation(format!(
+            "Moyasar rejected the connection check (HTTP {})",
+            response.status().as_u16()
+        )));
+    }
+    Ok(())
+}
 
 pub async fn verify_integration_connection(
     ctx: &RequestContext,
@@ -36,7 +63,8 @@ pub async fn verify_integration_connection(
             .check_llm_connection(ctx, provider_name, settings, secrets)
             .await
     } else if category.eq_ignore_ascii_case("automation")
-        && matches!(provider_name, "solver_service" | "solver-service")
+        && (provider_name.eq_ignore_ascii_case("solver_service")
+            || provider_name.eq_ignore_ascii_case("solver-service"))
     {
         let endpoint = settings
             .get("endpoint_url")
@@ -61,6 +89,10 @@ pub async fn verify_integration_connection(
         RemoteTimefoldSolver::new(endpoint.to_string())
             .check_health()
             .await
+    } else if category.eq_ignore_ascii_case("payment-gateway")
+        && provider_name.eq_ignore_ascii_case("moyasar")
+    {
+        verify_moyasar_connection(secrets).await
     } else {
         Err(DomainError::Validation(format!(
             "No live connection verifier is available for category '{}'",
