@@ -719,13 +719,14 @@ impl ReportDataProvider for FeeCollectionDataProvider {
                     sf.net_amount as amount,
                     COALESCE(sf.paid_amount, 0) as paid_amount,
                     sf.status,
-                    s.full_name as student_name,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
                     COALESCE(ft.name, '') as fee_name
                 FROM student_fees sf
                 INNER JOIN students s ON sf.student_id = s.id AND s.org_id = sf.org_id
+                LEFT JOIN persons p ON s.person_id = p.id
                 LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
                 WHERE sf.org_id = $1
-                ORDER BY s.full_name"#,
+                ORDER BY student_name"#,
                 vec![org_id.into()],
             ))
             .await
@@ -917,13 +918,14 @@ impl ReportDataProvider for StudentListDataProvider {
                 self.db.get_database_backend(),
                 r#"SELECT
                     e.id, e.status,
-                    p.full_name as student_name,
-                    c.name as class_name
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
+                    COALESCE(sec.name, '') as class_name
                 FROM enrollments e
-                LEFT JOIN persons p ON e.student_id = p.id
-                LEFT JOIN classes c ON e.section_id = c.id
+                LEFT JOIN students s ON e.student_id = s.id
+                LEFT JOIN persons p ON s.person_id = p.id
+                LEFT JOIN sections sec ON e.section_id = sec.id
                 WHERE e.org_id = $1
-                ORDER BY c.name, p.full_name"#,
+                ORDER BY sec.name, student_name"#,
                 vec![org_id.to_string().into()],
             ))
             .await;
@@ -1035,16 +1037,17 @@ impl ReportDataProvider for TermResultDataProvider {
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             s.name as subject_name,
             s.code as subject_code,
-            c.name as class_name,
-            ap.name as period_name
+            COALESCE(c.name, '') as class_name,
+            COALESCE(ap.name, '') as period_name
         FROM grades g
-        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN students st ON g.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.section_id = c.id
+        LEFT JOIN sections c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
         WHERE g.org_id = $1"#
             .to_string();
@@ -1217,11 +1220,12 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
                 self.db.get_database_backend(),
                 r#"SELECT
                     sn.id, sn.seating_number,
-                    p.full_name as student_name,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
                     r.name as room_name,
                     es.name as session_name
                 FROM seating_numbers sn
-                LEFT JOIN persons p ON sn.student_id = p.id
+                LEFT JOIN students st ON sn.student_id = st.id
+                LEFT JOIN persons p ON st.person_id = p.id
                 LEFT JOIN rooms r ON sn.room_id = r.id
                 LEFT JOIN exam_sessions es ON sn.exam_session_id = es.id
                 WHERE es.org_id = $1
@@ -1337,12 +1341,13 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
 
         let mut sql = r#"SELECT
             py.id, py.receipt_number, py.amount, py.currency_code, py.payment_method, py.payment_date, py.notes,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             ft.name as fee_name
         FROM payments py
         LEFT JOIN student_fees sf ON py.fee_id = sf.id
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
-        LEFT JOIN persons p ON sf.student_id = p.id
+        LEFT JOIN students st ON sf.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         WHERE sf.org_id = $1"#
             .to_string();
 
@@ -1487,18 +1492,19 @@ impl ReportDataProvider for AnnualResultDataProvider {
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             s.name as subject_name,
             s.code as subject_code,
-            c.name as class_name,
-            ay.name as year_name
+            COALESCE(c.name, '') as class_name,
+            COALESCE(ay.name, '') as year_name
         FROM grades g
-        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN students st ON g.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.section_id = c.id
+        LEFT JOIN sections c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
+        LEFT JOIN academic_calendars ay ON ap.calendar_id = ay.id
         WHERE g.org_id = $1"#
             .to_string();
 
@@ -1666,20 +1672,21 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             p.national_id as national_id,
             s.name as subject_name,
             s.code as subject_code,
-            c.name as class_name,
-            ay.name as year_name,
-            ap.name as period_name
+            COALESCE(c.name, '') as class_name,
+            COALESCE(ay.name, '') as year_name,
+            COALESCE(ap.name, '') as period_name
         FROM grades g
-        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN students st ON g.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.section_id = c.id
+        LEFT JOIN sections c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
+        LEFT JOIN academic_calendars ay ON ap.calendar_id = ay.id
         WHERE g.org_id = $1"#
             .to_string();
 
@@ -1988,11 +1995,12 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
                 r#"SELECT
                     sn.id, sn.seating_number,
                     COALESCE(sec.secret_number, '-') as secret_number,
-                    p.full_name as student_name,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
                     r.name as room_name,
                     es.name as session_name
                 FROM seating_numbers sn
-                LEFT JOIN persons p ON sn.student_id = p.id
+                LEFT JOIN students st ON sn.student_id = st.id
+                LEFT JOIN persons p ON st.person_id = p.id
                 LEFT JOIN rooms r ON sn.room_id = r.id
                 LEFT JOIN exam_sessions es ON sn.exam_session_id = es.id
                 LEFT JOIN secret_numbers sec ON sn.student_id = sec.student_id
@@ -2123,11 +2131,12 @@ impl ReportDataProvider for StudentStatementDataProvider {
         let mut sql = r#"SELECT
             sf.id, sf.net_amount as fee_amount, sf.status, sf.due_date,
             ft.name as fee_name,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             COALESCE((SELECT SUM(amount) FROM payments py WHERE py.fee_id = sf.id), 0.0) as paid_amount
         FROM student_fees sf
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
-        LEFT JOIN persons p ON sf.student_id = p.id
+        LEFT JOIN students st ON sf.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         WHERE sf.org_id = $1"#.to_string();
 
         let mut values = vec![org_id.to_string().into()];

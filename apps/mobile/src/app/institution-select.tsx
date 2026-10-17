@@ -5,6 +5,7 @@ import {
   Language,
   Logo,
   Pin,
+  Search,
 } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
@@ -22,7 +23,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Screen } from "@/components/layout/screen";
+import { Section } from "@/components/layout/section";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Drawer,
   DrawerContent,
@@ -37,10 +42,9 @@ import {
   DrawerSubmitButton,
 } from "@/components/ui/drawer-form-primitives";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
-import { SearchInput } from "@/components/ui/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
@@ -59,7 +63,6 @@ interface InstitutionTileProps {
   isCurrent: boolean;
   isConnecting: boolean;
   disabled: boolean;
-  currentLabel: string;
   localLabel: string;
   primaryColor: string;
   onSelect: (institution: DirectoryInstitution) => void;
@@ -73,7 +76,6 @@ const InstitutionTile = memo(function InstitutionTile({
   isCurrent,
   isConnecting,
   disabled,
-  currentLabel,
   localLabel,
   primaryColor,
   onSelect,
@@ -99,20 +101,24 @@ const InstitutionTile = memo(function InstitutionTile({
       }}
       disabled={disabled}
       onPress={handlePress}
-      className={`relative border ${
-        featured
-          ? "min-h-[172px] flex-row items-center rounded-3xl p-5"
-          : "min-h-[164px] items-start rounded-2xl p-3"
-      } ${
-        isCurrent ? "border-primary/50 bg-primary/5" : "border-border bg-card"
-      }`}
       style={({ pressed }) => [
         { width },
-        pressed && !disabled ? { opacity: 0.82 } : undefined,
+        pressed && !disabled ? { opacity: 0.86 } : undefined,
       ]}
     >
+      <Card
+        variant="flat"
+        padding={featured ? "five" : "three"}
+      className={`relative ${
+        featured
+          ? "min-h-[136px] flex-row items-center rounded-2xl bg-card shadow-sm"
+          : "min-h-[136px] items-start rounded-xl bg-card"
+      } ${
+        isCurrent ? "bg-primary/5" : ""
+      }`}
+      >
       <View
-        className={`items-center justify-center overflow-hidden rounded-2xl border border-border bg-background ${
+        className={`items-center justify-center overflow-hidden rounded-2xl bg-background-element ${
           featured ? "me-4 h-[72px] w-[72px]" : "mb-3 h-14 w-14"
         }`}
       >
@@ -146,9 +152,12 @@ const InstitutionTile = memo(function InstitutionTile({
           {institution.deployment_name}
         </Text>
         {institution.is_local ? (
-          <Text className="mt-1 self-start rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-            {localLabel}
-          </Text>
+          <Badge
+            label={localLabel}
+            variant="primary"
+            size="sm"
+            className="mt-1"
+          />
         ) : null}
       </View>
 
@@ -163,32 +172,10 @@ const InstitutionTile = memo(function InstitutionTile({
           <CheckCircle size={20} color={primaryColor} />
         ) : null}
       </View>
-
-      {isCurrent ? (
-        <Text className="mt-2 text-xs font-medium text-primary">
-          {currentLabel}
-        </Text>
-      ) : null}
+      </Card>
     </Pressable>
   );
 });
-
-function InstitutionTileSkeleton({ width }: { width: number }) {
-  return (
-    <View
-      accessibilityLabel="Loading institution"
-      accessibilityRole="progressbar"
-      className="min-h-[164px] rounded-2xl border border-border bg-card p-3"
-      style={{ width }}
-    >
-      <Skeleton width={56} height={56} borderRadius={16} />
-      <View className="mt-3 gap-2">
-        <Skeleton width="76%" height={14} borderRadius={6} />
-        <Skeleton width="54%" height={11} borderRadius={6} />
-      </View>
-    </View>
-  );
-}
 
 function haversineKm(
   lat1: number,
@@ -319,7 +306,6 @@ export default function InstitutionSelectScreen() {
         isCurrent={selectedInstitution?.deployment_id === item.deployment_id}
         isConnecting={connectingId === item.deployment_id}
         disabled={connectingId !== null}
-        currentLabel={t("auth_institution_current")}
         localLabel={t("auth_institution_local_label")}
         primaryColor={theme.primary}
         onSelect={connectInstitution}
@@ -406,14 +392,7 @@ export default function InstitutionSelectScreen() {
     : null;
 
   const renderEmpty = useCallback(() => {
-    if (isLoading) {
-      return (
-        <View className="flex-row gap-3">
-          <InstitutionTileSkeleton width={tileWidth} />
-          <InstitutionTileSkeleton width={tileWidth} />
-        </View>
-      );
-    }
+    if (isLoading) return null;
 
     if (directoryError) {
       return (
@@ -437,14 +416,24 @@ export default function InstitutionSelectScreen() {
       <EmptyState
         icon={BuildingOffice}
         title={t("auth_institution_no_matches")}
-        style={styles.emptyState}
+        actionTitle={
+          search
+            ? t("auth_institution_empty_search_action")
+            : t("auth_institution_empty_directory_action")
+        }
+        onAction={() => {
+          if (search) {
+            setSearch("");
+          } else {
+            setManualEntryVisible(true);
+          }
+        }}
       />
     );
-  }, [directoryError, directoryQuery, isLoading, t, tileWidth]);
+  }, [directoryError, directoryQuery, isLoading, search, t]);
 
   return (
-    <View className="flex-1 bg-background">
-      <ThemedStatusBar style="auto" />
+    <Screen edges={[]} statusBarStyle="auto">
       <View className="flex-1" style={{ paddingTop: insets.top + 8 }}>
         <View className="mb-5 h-11 flex-row items-center justify-between px-5">
           <View className="flex-row items-center gap-2">
@@ -477,50 +466,35 @@ export default function InstitutionSelectScreen() {
             numColumns={2}
             columnWrapperStyle={styles.tileRow}
             ListHeaderComponent={
-              <View className="gap-5 pb-5">
-                <View className="gap-1">
+              <View className="gap-4 pb-4">
+                <View>
                   <Text className="text-start text-2xl leading-8 font-bold text-foreground">
                     {t("auth_institution_search_title")}
                   </Text>
-                  <Text className="text-start text-sm leading-5 text-muted-foreground">
-                    {t("auth_institution_search_hint")}
-                  </Text>
                 </View>
 
-                <SearchInput
+                <Input
                   accessibilityLabel={t("auth_institution_filter_label")}
                   placeholder={t("auth_institution_search_placeholder")}
                   value={search}
                   onChangeText={setSearch}
+                  icon={<Search size={18} color={theme.textMuted} />}
+                  returnKeyType="search"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  clearButtonMode="while-editing"
                 />
 
-                <View className="gap-2">
-                  <Button
-                    title={t("auth_institution_local_scan")}
-                    variant="outline"
-                    size="lg"
-                    fullWidth
-                    icon={<Camera size={18} color={theme.primary} />}
-                    onPress={() => router.push("/institution-scan")}
-                  />
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={() => setManualEntryVisible(true)}
-                    className="min-h-11 items-center justify-center"
-                  >
-                    <Text className="text-sm font-semibold text-primary">
-                      {t("auth_institution_local_manual")}
-                    </Text>
-                  </Pressable>
-                </View>
-
                 {featuredInstitution ? (
-                  <View className="gap-2">
-                    <Text className="text-start text-xs font-semibold uppercase tracking-wide text-primary">
-                      {userLocation
+                  <Section
+                    title={
+                      userLocation
                         ? t("auth_institution_featured_nearby")
-                        : t("auth_institution_featured_recommended")}
-                    </Text>
+                        : t("auth_institution_featured_recommended")
+                    }
+                    spacing="one"
+                    headerSpacing="two"
+                  >
                     <InstitutionTile
                       institution={featuredInstitution}
                       name={
@@ -536,44 +510,82 @@ export default function InstitutionSelectScreen() {
                         connectingId === featuredInstitution.deployment_id
                       }
                       disabled={connectingId !== null}
-                      currentLabel={t("auth_institution_current")}
                       localLabel={t("auth_institution_local_label")}
                       primaryColor={theme.primary}
                       onSelect={connectInstitution}
                       width={windowWidth - 32}
                       featured
                     />
-                  </View>
+                  </Section>
+                ) : isLoading ? (
+                  <Section
+                    title={t("auth_institution_featured_recommended")}
+                    spacing="one"
+                    headerSpacing="two"
+                  >
+                    <Card
+                      variant="flat"
+                      padding="five"
+                      className="min-h-[136px] flex-row items-center rounded-2xl bg-card shadow-sm"
+                      style={{ width: windowWidth - 32 }}
+                    >
+                      <Skeleton width={72} height={72} borderRadius={16} />
+                      <View className="ms-4 flex-1 gap-2">
+                        <Skeleton width="76%" height={18} borderRadius={6} />
+                        <Skeleton width="54%" height={12} borderRadius={6} />
+                      </View>
+                    </Card>
+                  </Section>
                 ) : null}
 
-                <View className="flex-row items-center justify-between gap-3">
-                  <Text className="flex-1 text-start text-sm font-semibold text-foreground">
-                    {t("auth_institution_results")}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t("auth_institution_nearby")}
-                    accessibilityState={{ selected: userLocation !== null }}
-                    onPress={() => void requestNearbyLocation()}
-                    className={`min-h-11 flex-row items-center gap-2 rounded-full border px-3 ${
-                      userLocation
-                        ? "border-primary/40 bg-primary/10"
-                        : "border-border bg-card"
-                    }`}
-                  >
-                    <Pin
-                      size={16}
-                      color={userLocation ? theme.primary : theme.textMuted}
-                    />
-                    <Text
-                      className={`text-xs font-medium ${
-                        userLocation ? "text-primary" : "text-foreground"
+                <View className="flex-row gap-2">
+                  <Button
+                    title={t("auth_institution_local_scan")}
+                    variant="outline"
+                    size="md"
+                    className="flex-1"
+                    icon={<Camera size={16} color={theme.primary} />}
+                    onPress={() => router.push("/institution-scan")}
+                  />
+                  <Button
+                    title={t("auth_institution_local_manual")}
+                    variant="ghost"
+                    size="md"
+                    className="flex-1 border border-border bg-card"
+                    onPress={() => setManualEntryVisible(true)}
+                  />
+                </View>
+
+                <Section
+                  title={t("auth_institution_results")}
+                  spacing="one"
+                  headerSpacing={0}
+                  action={
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t("auth_institution_nearby")}
+                      accessibilityState={{ selected: userLocation !== null }}
+                      onPress={() => void requestNearbyLocation()}
+                      className={`min-h-11 flex-row items-center gap-2 rounded-full px-3 ${
+                        userLocation
+                          ? "bg-primary/10"
+                          : "bg-background-element"
                       }`}
                     >
-                      {t("auth_institution_nearby")}
-                    </Text>
-                  </Pressable>
-                </View>
+                      <Pin
+                        size={16}
+                        color={userLocation ? theme.primary : theme.textMuted}
+                      />
+                      <Text
+                        className={`text-xs font-medium ${
+                          userLocation ? "text-primary" : "text-foreground"
+                        }`}
+                      >
+                        {t("auth_institution_nearby")}
+                      </Text>
+                    </Pressable>
+                  }
+                />
               </View>
             }
             ListEmptyComponent={
@@ -613,7 +625,7 @@ export default function InstitutionSelectScreen() {
           />
 
           <View
-            className="border-t border-border bg-background px-4 pt-3"
+            className="bg-background px-4 pt-3"
             style={{ paddingBottom: Math.max(insets.bottom, 16) }}
           >
             {connectionError ? (
@@ -625,10 +637,14 @@ export default function InstitutionSelectScreen() {
               </Text>
             ) : null}
             {selectedInstitution ? (
-              <View className="mb-3 flex-row items-center gap-3 rounded-xl bg-primary/5 px-3 py-2">
+              <Card
+                variant="flat"
+                padding="three"
+                className="mb-3 flex-row items-center gap-3 rounded-xl bg-primary/5"
+              >
                 <CheckCircle size={17} color={theme.primary} />
                 <View className="min-w-0 flex-1">
-                  <Text className="text-[11px] leading-4 text-muted-foreground">
+                  <Text className="text-xs leading-4 text-muted-foreground">
                     {t("auth_institution_current")}
                   </Text>
                   <Text
@@ -640,7 +656,7 @@ export default function InstitutionSelectScreen() {
                       : selectedInstitution.name}
                   </Text>
                 </View>
-              </View>
+              </Card>
             ) : null}
             <Button
               title={t("auth_sign_in")}
@@ -754,15 +770,11 @@ export default function InstitutionSelectScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  emptyState: {
-    minHeight: 200,
-    justifyContent: "center",
-  },
   listContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
