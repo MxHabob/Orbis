@@ -22,14 +22,15 @@ use crate::services::{
     student_service::StudentService,
 };
 use orbis_domain::entities::ai::{
-    AcademicAiContext, AiChatRequest, AiChatResponse, AiMessage, AiProposedAction,
-    AiToolDefinition, AiToolResult, ToolCategory, UiContext, UserAiContext,
+    AcademicAiContext, AiChatRequest, AiChatResponse, AiCustomReportRequest,
+    AiCustomReportResponse, AiMessage, AiProposedAction, AiToolDefinition, AiToolResult,
+    ToolCategory, UiContext, UserAiContext,
 };
-use orbis_domain::entities::report::{OutputFormat, ParamValue, ReportLocale};
+use orbis_domain::entities::report::{OutputFormat, ParamType, ParamValue, ReportLocale};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    AttendanceFilter, SectionSubjectFilter, GradeFilter, PaginationParams, StudentFeeFilter,
+    AttendanceFilter, GradeFilter, PaginationParams, SectionSubjectFilter, StudentFeeFilter,
     StudentFilter,
 };
 
@@ -71,7 +72,7 @@ fn format_tool_execution_error(tool_name: &str, error: &DomainError) -> String {
     let error_text = error.to_string();
     let normalized = error_text.to_ascii_lowercase();
 
-    if tool_name == "generate_report"
+    if matches!(tool_name, "generate_report" | "create_custom_report")
         && (normalized.contains("report definition not found")
             || normalized.contains("report code is required")
             || normalized.contains("not found") && normalized.contains("report"))
@@ -101,6 +102,107 @@ fn unit_in_scope(unit_id: Option<Uuid>, allowed_units: Option<&[Uuid]>) -> bool 
         None => true,
         Some(allowed) => unit_id.is_some_and(|id| allowed.contains(&id)),
     }
+}
+
+fn parse_output_format(value: &str) -> Result<OutputFormat, DomainError> {
+    match value.to_ascii_lowercase().as_str() {
+        "pdf" => Ok(OutputFormat::Pdf),
+        "xlsx" => Ok(OutputFormat::Xlsx),
+        "csv" => Ok(OutputFormat::Csv),
+        "json" => Ok(OutputFormat::Json),
+        "html" => Ok(OutputFormat::Html),
+        _ => Err(DomainError::Validation(
+            "Unsupported report output format".into(),
+        )),
+    }
+}
+
+fn parse_report_locale(value: &str) -> Result<ReportLocale, DomainError> {
+    match value.to_ascii_lowercase().as_str() {
+        "ar" => Ok(ReportLocale::Ar),
+        "en" => Ok(ReportLocale::En),
+        "ar_en" | "ar-en" => Ok(ReportLocale::ArEn),
+        "en_ar" | "en-ar" => Ok(ReportLocale::EnAr),
+        _ => Err(DomainError::Validation("Unsupported report locale".into())),
+    }
+}
+
+fn parse_custom_report_parameters(
+    value: &serde_json::Value,
+    definitions: &[orbis_domain::entities::report::ParameterDef],
+) -> Result<std::collections::HashMap<String, ParamValue>, DomainError> {
+    let object = match value {
+        serde_json::Value::Null => None,
+        serde_json::Value::Object(object) => Some(object),
+        _ => {
+            return Err(DomainError::Validation(
+                "Report parameters must be an object".into(),
+            ));
+        }
+    };
+    if let Some(object) = object {
+        if object
+            .keys()
+            .any(|key| !definitions.iter().any(|definition| &definition.key == key))
+        {
+            return Err(DomainError::Validation(
+                "An unknown report parameter was provided".into(),
+            ));
+        }
+    }
+
+    let mut parameters = std::collections::HashMap::new();
+    for definition in definitions {
+        let value = object
+            .and_then(|object| object.get(&definition.key))
+            .or(definition.default_value.as_ref());
+        if let Some(value) = value {
+            parameters.insert(
+                definition.key.clone(),
+                parse_report_parameter(value, &definition.param_type, &definition.key)?,
+            );
+        }
+    }
+    Ok(parameters)
+}
+
+fn parse_report_parameter(
+    value: &serde_json::Value,
+    param_type: &ParamType,
+    key: &str,
+) -> Result<ParamValue, DomainError> {
+    if value.get("type").is_some() {
+        return serde_json::from_value(value.clone()).map_err(|_| {
+            DomainError::Validation(format!("Report parameter '{key}' has an invalid value"))
+        });
+    }
+
+    let invalid =
+        || DomainError::Validation(format!("Report parameter '{key}' has an invalid value"));
+    match param_type {
+        ParamType::Text => value.as_str().map(|value| ParamValue::Text(value.into())),
+        ParamType::Integer => value.as_i64().map(ParamValue::Integer),
+        ParamType::Decimal => value.as_f64().map(ParamValue::Decimal),
+        ParamType::Boolean => value.as_bool().map(ParamValue::Boolean),
+        ParamType::Date => value.as_str().map(|value| ParamValue::Date(value.into())),
+        ParamType::Id => value.as_str().map(|value| ParamValue::Id(value.into())),
+        ParamType::Enum => value.as_str().map(|value| ParamValue::Enum(value.into())),
+        ParamType::Period => value.as_str().map(|value| ParamValue::Period(value.into())),
+        ParamType::IdList => value.as_array().and_then(|values| {
+            values
+                .iter()
+                .map(serde_json::Value::as_str)
+                .collect::<Option<Vec<_>>>()
+                .map(|values| ParamValue::IdList(values.into_iter().map(str::to_owned).collect()))
+        }),
+        ParamType::DateRange => value.as_object().and_then(|range| {
+            Some(ParamValue::DateRange {
+                from: range.get("from")?.as_str()?.to_owned(),
+                to: range.get("to")?.as_str()?.to_owned(),
+            })
+        }),
+    }
+    .ok_or_else(invalid)
 }
 
 fn tool_supports_unit_scoping(tool_name: &str) -> bool {
@@ -363,12 +465,7 @@ impl AiOrchestrationService {
             .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
-        if teacher_assigned_to_class(
-            employee.id,
-            section_id,
-            None,
-            &assignments,
-        ) {
+        if teacher_assigned_to_class(employee.id, section_id, None, &assignments) {
             Ok(())
         } else {
             Err(DomainError::NotFound("Class not found".into()))
@@ -441,20 +538,7 @@ impl AiOrchestrationService {
                 continue;
             }
             match check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await {
-                Ok(()) => {
-                    if tool.name == "generate_report" {
-                        match self
-                            .permission_checker
-                            .check(ctx, Permission::ExportData)
-                            .await
-                        {
-                            Ok(()) => {}
-                            Err(DomainError::Unauthorized(_)) => continue,
-                            Err(error) => return Err(error),
-                        }
-                    }
-                    authorized.push(tool)
-                }
+                Ok(()) => authorized.push(tool),
                 Err(DomainError::Unauthorized(_)) => {}
                 Err(error) => return Err(error),
             }
@@ -479,9 +563,129 @@ impl AiOrchestrationService {
             ));
         }
         check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await?;
-        if tool_name == "generate_report" {
+        Ok(())
+    }
+
+    pub async fn create_custom_report(
+        &self,
+        ctx: &RequestContext,
+        request: AiCustomReportRequest,
+    ) -> Result<AiCustomReportResponse, DomainError> {
+        self.authorize_tool(ctx, "create_custom_report").await?;
+        let title = request.title.trim();
+        if title.is_empty() || title.chars().count() > 120 {
+            return Err(DomainError::Validation(
+                "Report title must contain between 1 and 120 characters".into(),
+            ));
+        }
+
+        let definition = self
+            .report_service
+            .get_report_by_code(ctx.tenant_id, &request.report_code)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+        self.check_report_domain_permission(ctx, &definition)
+            .await?;
+
+        let output_format = parse_output_format(&request.output_format)?;
+        if !definition.supported_formats.contains(&output_format) {
+            return Err(DomainError::Validation(format!(
+                "Output format '{}' is not supported for this report",
+                output_format
+            )));
+        }
+        let locale = parse_report_locale(&request.locale)?;
+        let parameters =
+            parse_custom_report_parameters(&request.parameters, &definition.parameters)?;
+        let input = GenerateReportInput {
+            report_code: request.report_code,
+            parameters,
+            output_format: output_format.clone(),
+            locale,
+            title: Some(title.to_string()),
+            selected_columns: Some(request.columns),
+            template_id: request.template_id,
+        };
+        let job = self.report_service.enqueue_report(ctx, input).await?;
+        Ok(AiCustomReportResponse {
+            job_id: job.id,
+            status: job.status.to_string(),
+            title: title.to_string(),
+            output_format: output_format.to_string(),
+        })
+    }
+
+    async fn inspect_report_source(
+        &self,
+        ctx: &RequestContext,
+        arguments: &serde_json::Value,
+    ) -> Result<serde_json::Value, DomainError> {
+        let report_code = arguments
+            .get("report_code")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| DomainError::Validation("report_code is required".into()))?;
+        let definition = self
+            .report_service
+            .get_report_by_code(ctx.tenant_id, report_code)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+        self.check_report_domain_permission(ctx, &definition)
+            .await?;
+
+        let parameters = parse_custom_report_parameters(
+            arguments
+                .get("parameters")
+                .unwrap_or(&serde_json::Value::Null),
+            &definition.parameters,
+        )?;
+        let locale = parse_report_locale(
+            arguments
+                .get("locale")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("ar"),
+        )?;
+        let (definition, dataset, templates) = self
+            .report_service
+            .inspect_report_source(ctx, report_code, &parameters, &locale)
+            .await?;
+
+        Ok(json!({
+            "report": {
+                "code": definition.code,
+                "name": definition.name,
+                "name_ar": definition.name_ar,
+                "description": definition.description,
+                "description_ar": definition.description_ar,
+                "parameters": definition.parameters,
+                "supported_formats": definition.supported_formats,
+                "columns": dataset.columns.into_iter().filter(|column| column.visible).map(|column| json!({
+                    "key": column.key,
+                    "header": column.header,
+                    "header_ar": column.header_ar,
+                    "data_type": column.data_type
+                })).collect::<Vec<_>>()
+            },
+            "published_templates": templates.into_iter().map(|template| json!({
+                "id": template.id,
+                "name": template.name,
+                "name_ar": template.name_ar,
+                "locale": template.locale,
+                "is_default": template.is_default
+            })).collect::<Vec<_>>()
+        }))
+    }
+
+    async fn check_report_domain_permission(
+        &self,
+        ctx: &RequestContext,
+        definition: &orbis_domain::entities::report::ReportDefinition,
+    ) -> Result<(), DomainError> {
+        if matches!(
+            definition.domain,
+            orbis_domain::entities::report::ReportDomain::Finance
+        ) {
             self.permission_checker
-                .check(ctx, Permission::ExportData)
+                .check(ctx, Permission::FinanceRead)
                 .await?;
         }
         Ok(())
@@ -599,20 +803,40 @@ impl AiOrchestrationService {
                 category: ToolCategory::Read,
             },
             AiToolDefinition {
-                name: "generate_report".into(),
-                description: "Generate a formal PDF or Excel report using DocForge reporting engine.".into(),
+                name: "inspect_report_source".into(),
+                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Returns no report rows.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
-                        "report_code": {"type": "string", "description": "Code of the report definition (e.g. STUDENT_TRANSCRIPT, FEE_COLLECTION)"},
-                        "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"], "description": "Format for generated output"},
-                        "parameters": {"type": "object", "description": "Parameters required by the report definition"}
+                        "report_code": {"type": "string", "description": "Code of an available report definition"},
+                        "parameters": {"type": "object", "description": "Typed parameters matching this report's parameter schema"},
+                        "locale": {"type": "string", "enum": ["ar", "en", "ar_en", "en_ar"]}
                     },
-                    "required": ["report_code", "output_format"]
+                    "required": ["report_code"]
                 }),
-                required_permission: Some("template:generate_single".into()),
+                required_permission: Some("data:export".into()),
                 is_consequential: false,
-                category: ToolCategory::Generation,
+                category: ToolCategory::Read,
+            },
+            AiToolDefinition {
+                name: "create_custom_report".into(),
+                description: "Propose a report using an authorized predefined data source, selected fields and a published report template. Requires explicit user confirmation before it is generated and saved.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "report_code": {"type": "string"},
+                        "title": {"type": "string", "maxLength": 120},
+                        "columns": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                        "parameters": {"type": "object"},
+                        "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"]},
+                        "locale": {"type": "string", "enum": ["ar", "en", "ar_en", "en_ar"]},
+                        "template_id": {"type": "string", "description": "Optional ID of a published report template returned by inspect_report_source"}
+                    },
+                    "required": ["report_code", "title", "columns", "output_format"]
+                }),
+                required_permission: Some("data:export".into()),
+                is_consequential: true,
+                category: ToolCategory::Action,
             },
             AiToolDefinition {
                 name: "get_org_overview".into(),
@@ -990,7 +1214,6 @@ impl AiOrchestrationService {
                     actx.period_id = assignment.period_id;
                 }
             }
-
         }
 
         if let Some(cid) = actx.section_id {
@@ -1020,7 +1243,9 @@ impl AiOrchestrationService {
             let assignment = self
                 .ensure_section_subject_access(ctx, section_subject_id)
                 .await?;
-            if actx.section_id.is_some_and(|id| id != assignment.section_id)
+            if actx
+                .section_id
+                .is_some_and(|id| id != assignment.section_id)
                 || actx
                     .subject_id
                     .is_some_and(|id| id != assignment.subject_id)
@@ -1483,6 +1708,12 @@ impl AiOrchestrationService {
             }
             "list_report_templates" => {
                 let templates = self.report_service.list_templates(ctx.tenant_id).await?;
+                let templates = templates.into_iter().filter(|template| {
+                    template.status == orbis_domain::entities::report::TemplateStatus::Published
+                        && template.deleted_at.is_none()
+                        && template.document_type.eq_ignore_ascii_case("report")
+                });
+                let templates = templates.collect::<Vec<_>>();
                 Ok(json!({
                     "count": templates.len(),
                     "templates": templates.into_iter().map(|t| json!({
@@ -1493,57 +1724,7 @@ impl AiOrchestrationService {
                     })).collect::<Vec<_>>()
                 }))
             }
-            "generate_report" => {
-                let report_code = arguments
-                    .get("report_code")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| DomainError::Validation("report_code is required".into()))?;
-                let definition = self
-                    .report_service
-                    .get_report_by_code(ctx.tenant_id, report_code)
-                    .await?
-                    .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
-                if matches!(
-                    definition.domain,
-                    orbis_domain::entities::report::ReportDomain::Finance
-                ) {
-                    self.permission_checker
-                        .check(ctx, Permission::FinanceRead)
-                        .await?;
-                }
-                let output_format_str = arguments
-                    .get("output_format")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("pdf");
-                let output_format = OutputFormat::from_str(output_format_str);
-
-                let mut params = std::collections::HashMap::new();
-                if let Some(obj) = arguments.get("parameters").and_then(|v| v.as_object()) {
-                    for (k, v) in obj {
-                        if let Some(s) = v.as_str() {
-                            params.insert(k.clone(), ParamValue::Text(s.to_string()));
-                        } else if let Some(n) = v.as_i64() {
-                            params.insert(k.clone(), ParamValue::Integer(n));
-                        } else if let Some(b) = v.as_bool() {
-                            params.insert(k.clone(), ParamValue::Boolean(b));
-                        }
-                    }
-                }
-
-                let input = GenerateReportInput {
-                    report_code: report_code.to_string(),
-                    output_format,
-                    parameters: params,
-                    locale: ReportLocale::Ar,
-                };
-
-                let job = self.report_service.enqueue_report(ctx, input).await?;
-                Ok(json!({
-                    "job_id": job.id,
-                    "status": job.status.to_string(),
-                    "report_code": job.report_code
-                }))
-            }
+            "inspect_report_source" => self.inspect_report_source(ctx, arguments).await,
             "get_org_overview" => {
                 let org = self.org_service.get_organization(ctx.tenant_id).await?;
                 let units = self.org_service.list_org_units(ctx.tenant_id).await?;

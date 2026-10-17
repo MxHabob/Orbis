@@ -43,6 +43,7 @@ import type {
   UpdatePeriodRequest,
   OfficialCalendarTemplateDto,
   ApplyCalendarTemplateRequest,
+  CalendarDefaultsDto,
   SubjectDto,
   SectionSubjectDto,
   CreateSubjectRequest,
@@ -238,6 +239,8 @@ import type {
   DisbursePayrollRequest,
   AiChatRequest,
   AiChatResponse,
+  AiCustomReportRequest,
+  AiCustomReportResponse,
   AiToolDefinition,
   AiStoredSession,
   ListTasksResponse,
@@ -589,6 +592,15 @@ export class RemoteClient implements OrbisApiClient {
         headers: { "Content-Type": "application/json" },
       }),
     ) ?? [];
+  }
+
+  async getCalendarDefaults(orgId?: string): Promise<CalendarDefaultsDto> {
+    return this.call<CalendarDefaultsDto>(
+      this.client.get<CalendarDefaultsDto>({
+        url: "/api/v1/calendar/defaults",
+        query: orgId ? { org_id: orgId } : undefined,
+      }),
+    );
   }
 
   // ── Academic ────────────────────────────────────────────────
@@ -2085,7 +2097,7 @@ export class RemoteClient implements OrbisApiClient {
     _orgId?: string,
   ): Promise<ProvisionDefaultsResultDto> {
     return this.call(
-      sdk.provisionBlueprintDefaults({ client: this.client, body: req }),
+      sdk.provisionBlueprintDefaults({ client: this.client, body: req as any }),
     ) as Promise<ProvisionDefaultsResultDto>;
   }
 
@@ -2265,6 +2277,27 @@ export class RemoteClient implements OrbisApiClient {
 
   async aiListTools(): Promise<AiToolDefinition[]> {
     return [];
+  }
+
+  async aiCreateCustomReport(
+    request: AiCustomReportRequest,
+  ): Promise<AiCustomReportResponse> {
+    const response = await fetch(`${this.baseUrl}/api/v1/reports/custom`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+      },
+      body: JSON.stringify(request),
+    });
+    if (!response.ok) {
+      const body = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | null;
+      throw new ApiRequestError(response.status, body ?? response.statusText);
+    }
+    const result = (await response.json()) as { data: AiCustomReportResponse };
+    return result.data;
   }
 
   async aiSaveSession(session: AiStoredSession): Promise<boolean> {

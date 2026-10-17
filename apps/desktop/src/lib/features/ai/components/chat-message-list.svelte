@@ -4,7 +4,7 @@ import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
-import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
+import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, Download, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
 import { fade } from "svelte/transition";
 
@@ -22,6 +22,7 @@ let {
   chatContainer = $bindable(),
   onLinkClick,
   onActionResponse,
+  onReportDownload,
   onRetry,
   onEditUserMessage,
   onApplyTemplateDesign,
@@ -33,6 +34,7 @@ let {
   chatContainer?: HTMLDivElement;
   onLinkClick: (href: string) => void;
   onActionResponse?: (action: ActionWithStatus, status: "executed" | "rejected") => void;
+  onReportDownload?: (action: ActionWithStatus) => void;
   onRetry?: (msgId: string) => void;
   onEditUserMessage?: (msgId: string, newText: string) => void;
   onApplyTemplateDesign?: (content: string) => void;
@@ -473,10 +475,41 @@ function handleContentClick(e: MouseEvent) {
                       <CheckCircle size={12} />
                       {action.resultMessage || m.ai_ui_action_executed_successfully()}
                     </div>
+                    {#if action.tool_name === "create_custom_report" && action.reportJobId}
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        class="mt-2 h-7.5 rounded-lg px-3 text-[11px]"
+                        onclick={() => onReportDownload?.(action)}
+                      >
+                        <Download size={12} class="me-1" />
+                        {m.ai_ui_report_download()}
+                      </Button>
+                    {/if}
                   {:else if action.status === 'rejected'}
                     <div class="text-[10px] text-muted-foreground italic pt-1">
                       {m.ai_ui_action_dismissed_by_request()}
                     </div>
+                  {:else if action.status === 'failed'}
+                    <div class="text-[10.5px] text-destructive font-semibold pt-1">
+                      {action.resultMessage || m.ai_ui_failed()}
+                    </div>
+                  {:else if action.status === 'processing'}
+                    <div class="text-[10.5px] text-muted-foreground font-medium pt-1">
+                      {action.resultMessage || m.ai_ui_report_submitted()}
+                    </div>
+                    {#if action.tool_name === "create_custom_report" && action.reportJobId}
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        class="mt-2 h-7.5 rounded-lg px-3 text-[11px]"
+                        disabled={action.reportChecking}
+                        onclick={() => onActionResponse?.(action, "executed")}
+                      >
+                        <Refresh size={12} class="me-1" />
+                        {m.ai_ui_report_check_status()}
+                      </Button>
+                    {/if}
                   {:else}
                     <div class="flex items-center gap-2 pt-1">
                       <Button

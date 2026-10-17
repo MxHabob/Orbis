@@ -217,6 +217,9 @@ impl AutopilotEngine {
                         parameters: std::collections::HashMap::new(),
                         output_format: OutputFormat::Pdf,
                         locale: ReportLocale::Ar,
+                        title: None,
+                        selected_columns: None,
+                        template_id: None,
                     };
                     self.report_service.generate_report(ctx, input).await?;
                 }

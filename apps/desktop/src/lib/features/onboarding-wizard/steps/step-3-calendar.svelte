@@ -3,7 +3,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, type academicCalendarDto, type AcademicPeriodDto } from "$lib/api";
+import { api, type academicCalendarDto, type AcademicPeriodDto, type CalendarDefaultsDto } from "$lib/api";
 import { orgContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -34,6 +34,7 @@ let successMessage = $state<string | null>(null);
 // Existing Data
 let years = $state<academicCalendarDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
+let backendDefaults = $state<CalendarDefaultsDto | null>(null);
 
 // Academic Year Form
 let yearName = $state("");
@@ -181,7 +182,23 @@ function setYemeniStudyDaysPreset(daysCount: 5 | 6) {
   }
 }
 
+function applyDefaultsToForm(defaults: CalendarDefaultsDto) {
+  yearName = defaults.suggested_name;
+  yearNameAr = defaults.suggested_name_ar;
+  yearStartDate = defaults.start_date;
+  yearEndDate = defaults.end_date;
+  if (defaults.selected_study_days && defaults.selected_study_days.length > 0) {
+    selectedStudyDays = defaults.selected_study_days.map(Number);
+  }
+}
+
 function suggestacademicCalendar() {
+  if (backendDefaults) {
+    applyDefaultsToForm(backendDefaults);
+    successMessage = null;
+    return;
+  }
+
   const now = new Date();
   const today = getOrganizationDate(now);
   let startDate: string;
@@ -244,64 +261,6 @@ function suggestacademicCalendar() {
   successMessage = null;
 }
 
-function getHijriCalendarDefaults(startDate: string) {
-  const formatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-  if (formatter.resolvedOptions().calendar !== "islamic-umalqura") {
-    throw new Error(m.onboarding_step3_default_periods_calendar_error());
-  }
-
-  let cursorTime = Date.parse(`${startDate.slice(0, 10)}T00:00:00.000Z`);
-  if (Number.isNaN(cursorTime)) {
-    throw new Error(m.onboarding_step3_default_periods_calendar_error());
-  }
-
-  const getParts = (date: Date) => {
-    const values = Object.fromEntries(
-      formatter.formatToParts(date).map(({ type, value }) => [type, value]),
-    );
-    return {
-      year: Number(values.year),
-      month: Number(values.month),
-      day: Number(values.day),
-    };
-  };
-
-  const start = getParts(new Date(cursorTime));
-
-  const monthLengths: number[] = [];
-  for (let index = 0; index < 8; index += 1) {
-    const currentMonth = getParts(new Date(cursorTime));
-    const targetYear = currentMonth.year;
-    const targetMonth = currentMonth.month;
-    let days = 0;
-    while (true) {
-      const current = getParts(new Date(cursorTime));
-      if (current.year !== targetYear || current.month !== targetMonth) break;
-      days += 1;
-      if (days > 30) {
-        throw new Error(m.onboarding_step3_default_periods_calendar_error());
-      }
-      cursorTime += 24 * 60 * 60 * 1000;
-    }
-    if (days < (index === 0 ? 1 : 29) || days > 30) {
-      throw new Error(m.onboarding_step3_default_periods_calendar_error());
-    }
-    monthLengths.push(days);
-  }
-
-  return {
-    hijriStartYear: start.year,
-    hijriStartMonth: start.month,
-    hijriStartDay: start.day,
-    monthLengths,
-  };
-}
-
 function validateDateRange(start: string, end: string, message: string) {
   if (!start || !end || end <= start) {
     toast.error(message);
@@ -317,14 +276,22 @@ onMount(async () => {
 async function loadData() {
   try {
     isLoading = true;
-    const [yearsRes, periodsRes] = await Promise.all([
+    const [yearsRes, periodsRes, defaultsRes] = await Promise.all([
       api.listacademicCalendars(),
       api.listAcademicPeriods(),
+      api.getCalendarDefaults(orgId).catch((err) => {
+        console.warn("Failed to load calendar defaults from backend:", err);
+        return null;
+      }),
     ]);
     years = yearsRes;
     periods = periodsRes;
+    backendDefaults = defaultsRes;
     if (years.length > 0 && !selectedYearId) {
       selectedYearId = String(years[0].id);
+    }
+    if (years.length === 0 && !yearName && !yearNameAr && defaultsRes) {
+      applyDefaultsToForm(defaultsRes);
     }
   } catch (err: any) {
     console.error("Failed to load calendar data:", err);
@@ -421,14 +388,6 @@ async function handleGenerateDefaultPeriods() {
     return;
   }
 
-  let calendarDefaults: ReturnType<typeof getHijriCalendarDefaults>;
-  try {
-    calendarDefaults = getHijriCalendarDefaults(selectedYear.start_date);
-  } catch (err: unknown) {
-    toast.error(err instanceof Error ? err.message : m.common_action_failed());
-    return;
-  }
-
   isSubmittingPeriod = true;
   successMessage = null;
   try {
@@ -436,10 +395,12 @@ async function handleGenerateDefaultPeriods() {
       {
         calendar_id: String(selectedYear.id),
         provision_hijri_school_calendar: true,
-        hijri_start_year: calendarDefaults.hijriStartYear,
-        hijri_start_month: calendarDefaults.hijriStartMonth,
-        hijri_start_day: calendarDefaults.hijriStartDay,
-        hijri_month_lengths: calendarDefaults.monthLengths,
+        provision_assessment_scheme: true,
+        provision_time_slots: true,
+        hijri_start_year: backendDefaults?.hijri_start_year,
+        hijri_start_month: backendDefaults?.hijri_start_month,
+        hijri_start_day: backendDefaults?.hijri_start_day,
+        hijri_month_lengths: backendDefaults?.hijri_month_lengths,
       },
       orgId,
     );
@@ -879,22 +840,58 @@ async function deleteYear(year: academicCalendarDto) {
     >
       <div class="space-y-4">
         {#if orgContext.isSchool}
-          <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-            <p class="text-xs text-muted-foreground">
-              {m.onboarding_step3_default_periods_desc()}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || !selectedYearId}
-              onclick={handleGenerateDefaultPeriods}
-              class="text-xs font-semibold"
-            >
-              {isSubmittingPeriod
-                ? m.onboarding_step3_creating_btn()
-                : m.onboarding_step3_default_periods_btn()}
-            </Button>
+          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="space-y-1">
+                <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  🇾🇪 {m.onboarding_step3_default_periods_btn()}
+                </span>
+                <p class="text-xs text-muted-foreground">
+                  {m.onboarding_step3_default_periods_desc()}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                disabled={isSubmittingPeriod || !selectedYearId}
+                onclick={handleGenerateDefaultPeriods}
+                class="text-xs font-semibold"
+              >
+                {isSubmittingPeriod
+                  ? m.onboarding_step3_creating_btn()
+                  : m.onboarding_step3_default_periods_btn()}
+              </Button>
+            </div>
+
+            {#if backendDefaults}
+              <div class="grid gap-2 pt-2 border-t border-primary/10 text-[11px] text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    📅 فترات التقويم ({backendDefaults.periods_summary.length})
+                  </span>
+                  <span>فصلين دراسيين، 8 أشهر تعليمية، 8 اختبارات شهرية، واختبارين نهائيين</span>
+                </div>
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    📊 مخططات التقييم ({backendDefaults.assessment_schemes.length})
+                  </span>
+                  <span>الشهري (100)، الفصلي (30)، المحصلة (50)، والسنوي (100)</span>
+                </div>
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    ⏰ الحصص اليومية ({backendDefaults.timetable_slots.length})
+                  </span>
+                  <span>7 حصص (07:30 - 13:30) مع الطابور والفسحة والاستراحة</span>
+                </div>
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    🗓️ أيام الدراسة
+                  </span>
+                  <span>السبت إلى الأربعاء (5 أيام دراسية أسبوعياً)</span>
+                </div>
+              </div>
+            {/if}
           </div>
 
           <!-- Official Calendar Template -->

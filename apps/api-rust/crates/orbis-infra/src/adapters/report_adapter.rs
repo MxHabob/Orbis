@@ -383,6 +383,47 @@ mod xlsx_tests {
     use std::io::Read;
     use zip::ZipArchive;
 
+    fn empty_dataset() -> ReportDataset {
+        ReportDataset {
+            report_code: "students.overview".into(),
+            report_name: "Student overview".into(),
+            report_name_ar: "ملخص الطلاب".into(),
+            org: OrgReportContext {
+                name: "North Campus".into(),
+                ..OrgReportContext::default()
+            },
+            parameter_summary: Vec::new(),
+            columns: Vec::new(),
+            rows: Vec::new(),
+            groups: None,
+            aggregations: None,
+            total_count: 0,
+            generated_at: Utc::now(),
+            generated_by: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn html_renderer_wraps_default_reports_with_organization_branding() {
+        let dataset = empty_dataset();
+        let export = HtmlRenderer
+            .render(&dataset, None, None)
+            .await
+            .expect("HTML rendering should succeed with default master");
+        let html = String::from_utf8(export.data).expect("HTML output should be utf-8");
+
+        assert!(html.contains("North Campus"));
+        assert!(html.contains("Student overview"));
+        assert!(html.contains("Orbis Educational System"));
+    }
+
+    #[tokio::test]
+    async fn pdf_renderer_rejects_missing_docforge_template_instead_of_mislabelling_html() {
+        let result = PdfRenderer.render(&empty_dataset(), None, None).await;
+
+        assert!(matches!(result, Err(DomainError::Validation(_))));
+    }
+
     #[tokio::test]
     async fn xlsx_renderer_creates_a_valid_workbook_with_escaped_cell_content() {
         let dataset = ReportDataset {
@@ -468,6 +509,8 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("is_rtl", &is_rtl);
         context.insert("org_name", &dataset.org.name);
         context.insert("org_name_ar", &dataset.org.name_ar);
+        context.insert("org_type", &"");
+        context.insert("org_type_ar", &"");
         context.insert("currency", &dataset.org.currency_code);
         context.insert("primary_color", &dataset.org.primary_color);
         context.insert("org_website", &dataset.org.website);
@@ -525,16 +568,16 @@ impl DocumentRenderer for HtmlRenderer {
             .render("inner", &context)
             .map_err(|e| DomainError::Internal(format!("Tera inner render error: {}", e)))?;
 
-        let final_html = if let Some(m) = master {
-            context.insert("inner_content", &inner_html);
-            let master_str = m.document_json.as_str();
-            tera.add_raw_template("master", master_str)
-                .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
-            tera.render("master", &context)
-                .map_err(|e| DomainError::Internal(format!("Tera master render error: {}", e)))?
-        } else {
-            inner_html
-        };
+        context.insert("inner_content", &inner_html);
+        let master_str = master.map_or(
+            crate::adapters::report_defaults::MASTER_TEMPLATE_HTML,
+            |template| template.document_json.as_str(),
+        );
+        tera.add_raw_template("master", master_str)
+            .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
+        let final_html = tera
+            .render("master", &context)
+            .map_err(|e| DomainError::Internal(format!("Tera master render error: {}", e)))?;
 
         let bytes = final_html.into_bytes();
         let size = bytes.len() as u64;
@@ -562,15 +605,30 @@ impl DocumentRenderer for PdfRenderer {
         &self,
         dataset: &ReportDataset,
         template: Option<&ReportTemplate>,
-        master: Option<&ReportTemplate>,
+        _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
         if let Some(t) = template {
-            if let Ok(doc) = serde_json::from_str::<docforge_engine::model::document::TemplateDocument>(&t.document_json) {
+            if let Ok(doc) = serde_json::from_str::<
+                docforge_engine::model::document::TemplateDocument,
+            >(&t.document_json)
+            {
                 let mut ctx_obj = serde_json::Map::new();
-                ctx_obj.insert("org".into(), serde_json::to_value(&dataset.org).unwrap_or_default());
-                ctx_obj.insert("columns".into(), serde_json::to_value(&dataset.columns).unwrap_or_default());
-                ctx_obj.insert("rows".into(), serde_json::Value::Array(dataset.rows.clone()));
-                ctx_obj.insert("subjects".into(), serde_json::Value::Array(dataset.rows.clone()));
+                ctx_obj.insert(
+                    "org".into(),
+                    serde_json::to_value(&dataset.org).unwrap_or_default(),
+                );
+                ctx_obj.insert(
+                    "columns".into(),
+                    serde_json::to_value(&dataset.columns).unwrap_or_default(),
+                );
+                ctx_obj.insert(
+                    "rows".into(),
+                    serde_json::Value::Array(dataset.rows.clone()),
+                );
+                ctx_obj.insert(
+                    "subjects".into(),
+                    serde_json::Value::Array(dataset.rows.clone()),
+                );
 
                 if let Some(aggs) = &dataset.aggregations {
                     ctx_obj.insert("totals".into(), aggs.totals.clone());
@@ -598,17 +656,20 @@ impl DocumentRenderer for PdfRenderer {
                 let fonts = docforge_engine::render::font_cache::FontCache::with_system_fonts();
 
                 let layout_engine = docforge_engine::layout::engine::LayoutEngine::new(&fonts);
-                let layout = layout_engine
-                    .layout(&doc, &context_val)
-                    .map_err(|e| DomainError::Internal(format!("DocForge layout error: {:?}", e)))?;
+                let layout = layout_engine.layout(&doc, &context_val).map_err(|e| {
+                    DomainError::Internal(format!("DocForge layout error: {:?}", e))
+                })?;
 
                 let config = docforge_engine::render::pdf_renderer::PdfRenderConfig {
                     title: Some(doc.meta.name.clone()),
                     ..Default::default()
                 };
 
-                let pdf_out = docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
-                    .map_err(|e| DomainError::Internal(format!("DocForge PDF render error: {:?}", e)))?;
+                let pdf_out =
+                    docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
+                        .map_err(|e| {
+                            DomainError::Internal(format!("DocForge PDF render error: {:?}", e))
+                        })?;
 
                 let bytes = pdf_out.bytes;
                 let size = bytes.len() as u64;
@@ -622,9 +683,9 @@ impl DocumentRenderer for PdfRenderer {
             }
         }
 
-        let mut result = HtmlRenderer.render(dataset, template, master).await?;
-        result.format = OutputFormat::Pdf;
-        Ok(result)
+        Err(DomainError::Validation(
+            "PDF output requires a published DocForge report template. Select a compatible template or use HTML output.".into(),
+        ))
     }
 }
 
@@ -1726,7 +1787,9 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
                 max_total += max;
                 min_total += min;
 
-                let s_name = row.try_get::<String>("", "student_name").unwrap_or_default();
+                let s_name = row
+                    .try_get::<String>("", "student_name")
+                    .unwrap_or_default();
                 if student_name.is_empty() && !s_name.is_empty() {
                     student_name = s_name.clone();
                 }
@@ -1748,7 +1811,11 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
 
                 let t1_cw = (score * 0.3).round();
                 let t1_ex = score - t1_cw;
-                let pct = if max > 0.0 { (score / max) * 100.0 } else { 0.0 };
+                let pct = if max > 0.0 {
+                    (score / max) * 100.0
+                } else {
+                    0.0
+                };
 
                 let appreciation = if pct >= 90.0 {
                     "ممتاز / Excellent"
@@ -1787,7 +1854,11 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         }
 
         let total_count = data_rows.len() as u64;
-        let overall_pct = if max_total > 0.0 { (total_score / max_total) * 100.0 } else { 0.0 };
+        let overall_pct = if max_total > 0.0 {
+            (total_score / max_total) * 100.0
+        } else {
+            0.0
+        };
         let final_status = if total_count == 0 {
             ""
         } else if total_score >= min_total {

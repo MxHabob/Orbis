@@ -215,6 +215,8 @@ import type {
   BulkRegisterStudentCommandResultDto,
   AiChatRequest,
   AiChatResponse,
+  AiCustomReportRequest,
+  AiCustomReportResponse,
   AiStoredSession,
   AiToolDefinition,
   AutopilotDiagnosticsDto,
@@ -237,6 +239,7 @@ import type {
   ActivateKeyRequest,
   OfficialCalendarTemplateDto,
   ApplyCalendarTemplateRequest,
+  CalendarDefaultsDto,
   StudentCertificateReportCard,
 } from "./types";
 
@@ -439,6 +442,9 @@ export class LocalClient implements OrbisApiClient {
     req: ApplyCalendarTemplateRequest,
   ): Promise<AcademicPeriodDto[]> {
     return unwrap(await invoke("calendar_apply_template", { yearId, request: req }));
+  }
+  async getCalendarDefaults(orgId?: string): Promise<CalendarDefaultsDto> {
+    return unwrap(await invoke("calendar_get_defaults", { orgId: orgId ?? null }));
   }
 
   // ── Academic ────────────────────────────────────────────────
@@ -1682,6 +1688,11 @@ export class LocalClient implements OrbisApiClient {
   }
   async aiListTools(): Promise<AiToolDefinition[]> {
     return unwrap(await invoke("ai_list_tools"));
+  }
+  async aiCreateCustomReport(
+    request: AiCustomReportRequest,
+  ): Promise<AiCustomReportResponse> {
+    return unwrap(await invoke("ai_create_custom_report", { request }));
   }
   async aiSaveSession(session: AiStoredSession): Promise<boolean> {
     return unwrap(await invoke("ai_save_session", { session }));

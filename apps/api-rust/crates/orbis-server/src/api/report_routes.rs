@@ -1,11 +1,11 @@
 //! Report & Template routes — Template CRUD, Preview, Validation, Report Generation, Batch Print.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     http::header,
     response::IntoResponse,
     routing::{get, post},
-    Json, Router,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,7 @@ use uuid::Uuid;
 use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
+use orbis_domain::entities::ai::{AiCustomReportRequest, AiCustomReportResponse};
 use orbis_domain::entities::report::*;
 use orbis_domain::iam::permission::Permission;
 
@@ -578,7 +579,7 @@ pub async fn preview_template(
     use docforge_engine::layout::engine::LayoutEngine;
     use docforge_engine::model::document::TemplateDocument;
     use docforge_engine::render::font_cache::FontCache;
-    use docforge_engine::render::pdf_renderer::{render_to_pdf, PdfRenderConfig};
+    use docforge_engine::render::pdf_renderer::{PdfRenderConfig, render_to_pdf};
 
     let doc: TemplateDocument = serde_json::from_str(&req.document_json)
         .map_err(|e| ApiError::bad_request(format!("Invalid template JSON: {}", e)))?;
@@ -864,6 +865,9 @@ pub async fn generate_report(
         parameters: params,
         output_format,
         locale,
+        title: None,
+        selected_columns: None,
+        template_id: None,
     };
 
     check_report_permissions(&state, &ctx, &input.report_code).await?;
@@ -880,6 +884,28 @@ pub async fn generate_report(
         },
         ctx.request_id,
     ))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/v1/reports/custom",
+    tag = "Report",
+    request_body = AiCustomReportRequest,
+    responses((status = 200, description = "Create a confirmed custom report job", body = AiCustomReportResponse)),
+    security(("bearer" = []))
+)]
+pub async fn create_custom_report(
+    State(state): State<AppState>,
+    auth: AuthContext,
+    Json(request): Json<AiCustomReportRequest>,
+) -> Result<Json<ApiResponse<AiCustomReportResponse>>, ApiError> {
+    let ctx = auth.0;
+    let response = state
+        .ai_service
+        .create_custom_report(&ctx, request)
+        .await
+        .map_err(ApiError::from)?;
+    Ok(ApiResponse::ok_with_id(response, ctx.request_id))
 }
 
 #[utoipa::path(
@@ -1536,6 +1562,7 @@ pub fn routes() -> Router<AppState> {
             get(list_template_bindings).post(create_template_binding),
         )
         .route("/api/v1/reports/generate", post(generate_report))
+        .route("/api/v1/reports/custom", post(create_custom_report))
         .route(
             "/api/v1/reports/jobs/:id/status",
             get(get_report_job_status),

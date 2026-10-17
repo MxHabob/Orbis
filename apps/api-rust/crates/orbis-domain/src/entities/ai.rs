@@ -152,6 +152,26 @@ pub struct AiChatResponse {
     pub resolved_academic_context: Option<AcademicAiContext>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AiCustomReportRequest {
+    pub report_code: String,
+    pub title: String,
+    pub columns: Vec<String>,
+    pub parameters: serde_json::Value,
+    pub output_format: String,
+    pub locale: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template_id: Option<uuid::Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AiCustomReportResponse {
+    pub job_id: uuid::Uuid,
+    pub status: String,
+    pub title: String,
+    pub output_format: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LlmChatOutput {
     pub content: Option<String>,

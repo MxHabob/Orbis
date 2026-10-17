@@ -42,7 +42,7 @@ let selectedRoomId = $state<string>("");
 let selectedSubjectId = $state<string>("");
 let searchTerm = $state("");
 let compactView = $state(false);
-let selectedMatrixDay = $state(1);
+let selectedMatrixDay = $state(7);
 
 // Dialog & Sheet States
 let isLessonSheetOpen = $state(false);
@@ -51,7 +51,7 @@ let isSolverDrawerOpen = $state(false);
 
 // Active Lesson for editing / creating
 let targetLesson = $state<any | null>(null);
-let activeCellDay = $state(1);
+let activeCellDay = $state(7);
 let activeCellSlotId = $state("");
 
 // AI Solver Draft State
@@ -127,8 +127,9 @@ const periodScheduleQuery = createQuery(() => ({
 const timeSlots = $derived(timeSlotsQuery.data ?? []);
 const allLessons = $derived(periodScheduleQuery.data ?? []);
 
-// Weekdays definition (Sunday - Thursday / Saturday - Wednesday based on regional setup)
+// Weekdays definition (Saturday - Wednesday / Thursday for regional setup)
 const weekdays = $derived([
+  { value: 7, day: 7, label: m.common_day_saturday() },
   { value: 1, day: 1, label: m.common_day_sunday() },
   { value: 2, day: 2, label: m.common_day_monday() },
   { value: 3, day: 3, label: m.common_day_tuesday() },

@@ -474,6 +474,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         // ── AI Platform ─────────────────────────────────────────
         ai_cmds::ai_chat,
         ai_cmds::ai_list_tools,
+        ai_cmds::ai_create_custom_report,
         ai_cmds::ai_save_session,
         ai_cmds::ai_load_sessions,
         ai_cmds::ai_delete_session,

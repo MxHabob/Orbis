@@ -432,6 +432,23 @@ export interface ReportJobStatusDto {
   error_message?: string | null;
 }
 
+export interface AiCustomReportRequest {
+  report_code: string;
+  title: string;
+  columns: string[];
+  parameters: Record<string, unknown>;
+  output_format: string;
+  locale: string;
+  template_id?: string | null;
+}
+
+export interface AiCustomReportResponse {
+  job_id: string;
+  status: string;
+  title: string;
+  output_format: string;
+}
+
 export interface BatchPrintParams {
   templateId?: string;
   documentJson?: string;
@@ -1716,6 +1733,7 @@ export interface OrbisApiClient {
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
   listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
   applyCalendarTemplate(yearId: string, req: ApplyCalendarTemplateRequest): Promise<AcademicPeriodDto[]>;
+  getCalendarDefaults(orgId?: string): Promise<CalendarDefaultsDto>;
 
   // ── Academic ────────────────────────────────────────────────
   createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;
@@ -2166,6 +2184,7 @@ export interface OrbisApiClient {
   // ── AI Platform ─────────────────────────────────────────────
   aiChat(req: AiChatRequest): Promise<AiChatResponse>;
   aiListTools(): Promise<AiToolDefinition[]>;
+  aiCreateCustomReport(req: AiCustomReportRequest): Promise<AiCustomReportResponse>;
   aiSaveSession(session: AiStoredSession): Promise<boolean>;
   aiLoadSessions(orgId: string): Promise<AiStoredSession[]>;
   aiDeleteSession(orgId: string, sessionId: string): Promise<boolean>;

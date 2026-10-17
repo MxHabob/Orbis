@@ -59,6 +59,9 @@ pub async fn generate_report(
         parameters: params,
         output_format,
         locale: report_locale,
+        title: None,
+        selected_columns: None,
+        template_id: None,
     };
 
     let (mut job, export) = state
