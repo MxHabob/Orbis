@@ -108,11 +108,28 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list = await api.listTemplates({
+    let list = await api.listTemplates({
       entityType: entityType,
       documentType,
       status: "published",
     });
+    if ((!list || list.length === 0) && documentType) {
+      list = await api.listTemplates({
+        documentType,
+        status: "published",
+      });
+    }
+    if (!list || list.length === 0) {
+      list = await api.listTemplates({
+        entityType,
+        status: "published",
+      });
+    }
+    if (!list || list.length === 0) {
+      list = await api.listTemplates({
+        status: "published",
+      });
+    }
     templates = Array.isArray(list) ? list : [];
     if (templates.length > 0) {
       const defaultTemplate = templates.find((template) => template.is_default);

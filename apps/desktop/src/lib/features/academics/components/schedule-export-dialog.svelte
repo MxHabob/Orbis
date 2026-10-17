@@ -15,9 +15,10 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal } from "@orbis/icons";
+import { AdjustmentsHorizontal, Printer } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 import { l } from "$lib/core/i18n";
+import { openPrintDialog } from "$lib/stores/print.svelte";
 
 interface Props {
   open: boolean;
@@ -117,7 +118,71 @@ function getLessonInSlot(day: number, slotId: string) {
 }
 
 function handlePrint() {
-  window.print();
+  const scheduleRows = timeSlots.map((slot) => {
+    const isBreak = Boolean(slot.is_break);
+    const slotName = l(slot.name_ar, slot.name) || `P${slot.slot_number}`;
+    const timeRange = `${slot.start_time?.slice(0, 5) || ""} - ${slot.end_time?.slice(0, 5) || ""}`;
+    const rowObj: Record<string, string> = {
+      slotName: `${slotName} (${timeRange})`,
+      timeRange,
+    };
+
+    for (const day of weekdays) {
+      const dayVal = String(day.value ?? day.day);
+      if (isBreak) {
+        rowObj[`day_${dayVal}`] = l(slot.name_ar, slot.name) || m.common_onboarding_break_recess?.() || "استراحة";
+      } else {
+        const lesson = getLessonInSlot(Number(dayVal), String(slot.id));
+        if (lesson) {
+          const sub = getSubjectName(lesson.subject_id);
+          const teacher = exportType !== "teacher" && lesson.teacher_id ? ` (${getTeacherName(lesson.teacher_id)})` : "";
+          const cls = exportType !== "class" && lesson.class_id ? ` - ${getClassName(lesson.class_id)}` : "";
+          const rm = exportType !== "room" && lesson.room_id ? ` [${getRoomName(lesson.room_id)}]` : "";
+          rowObj[`day_${dayVal}`] = `${sub}${teacher}${cls}${rm}`;
+        } else {
+          rowObj[`day_${dayVal}`] = "—";
+        }
+      }
+    }
+
+    return rowObj;
+  });
+
+  const scheduleContext = {
+    schedule: {
+      title: exportTitle,
+      periodName: periodName || "",
+      exportType: exportType || "class",
+      date: formatDate(new Date()),
+      totalSlots: timeSlots.length,
+      totalDays: weekdays.length,
+    },
+    weekdays: weekdays.map((d) => ({
+      day: d.value ?? d.day,
+      label: d.label,
+    })),
+    timeSlots: timeSlots.map((s) => ({
+      id: s.id,
+      name: l(s.name_ar, s.name) || `P${s.slot_number}`,
+      timeRange: `${s.start_time?.slice(0, 5) || ""} - ${s.end_time?.slice(0, 5) || ""}`,
+      isBreak: Boolean(s.is_break),
+    })),
+    matrix: scheduleRows,
+    lessons: targetLessons.map((l) => ({
+      subject: getSubjectName(l.subject_id),
+      teacher: getTeacherName(l.teacher_id),
+      class: getClassName(l.class_id),
+      room: getRoomName(l.room_id),
+      day: l.day_of_week,
+      slotId: l.time_slot_id,
+    })),
+  };
+
+  open = false;
+  openPrintDialog("schedule", [exportTargetId || "master"], [exportTitle], {
+    documentType: "SCHEDULE",
+    contexts: [scheduleContext],
+  });
 }
 </script>
 
@@ -272,27 +337,9 @@ function handlePrint() {
       </Button>
 
       <Button size="sm" class="gap-1.5 text-xs font-bold shadow-xs" onclick={handlePrint}>
-        <AdjustmentsHorizontal size={14} />
+        <Printer size={14} />
         <span>{m.academics_schedule_print_now()}</span>
       </Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
-
-<style>
-  @media print {
-    :global(body *) {
-      visibility: hidden;
-    }
-    :global(#printable-timetable),
-    :global(#printable-timetable *) {
-      visibility: visible;
-    }
-    :global(#printable-timetable) {
-      position: absolute;
-      inset-inline-start: 0;
-      top: 0;
-      width: 100%;
-    }
-  }
-</style>

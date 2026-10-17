@@ -66,6 +66,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
                  'academic.student-certificate-yemeni', \
                  'academic.official-transcript', \
                  'academic.student-term-report-card', \
+                 'academic.class-schedule', \
                  'administration.enrollment-certificate', \
                  'administration.student-id-card', \
                  'administration.staff-id-card', \
@@ -76,6 +77,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
                  'finance.payment-receipt', \
                  'finance.disbursement-voucher', \
                  'finance.journal-voucher', \
+                 'finance.account-statement', \
                  'administration.organization-letterhead' \
              ) THEN 1 \
              ELSE 0 \
@@ -1063,6 +1065,8 @@ pub fn get_master_template_definitions() -> Vec<(
         "إلى الحساب",
     ));
     templates.extend(default_grade_certificate_templates());
+    templates.push(default_class_schedule_template());
+    templates.push(default_account_statement_template());
     templates
 }
 
@@ -2266,6 +2270,295 @@ fn default_user_id_card_template() -> (
                         "id": "footer-lbl",
                         "props": { "content": "بطاقة رسمية معتمدة | OFFICIAL AUTHORIZED BADGE", "fontSize": 5.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ffffff", "textAlign": "center", "direction": "rtl" },
                         "position": { "x": 5, "y": 49.5, "width": 75, "height": 3 }
+                    }
+                ]
+            }]
+        })
+    )
+}
+
+fn default_class_schedule_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "academic.class-schedule",
+        "Weekly Class Timetable Schedule",
+        "جدول الحصص الأسبوعي الدراسي المعتمد",
+        "schedule",
+        "SCHEDULE",
+        "A4",
+        "landscape",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Weekly Class Timetable Schedule",
+                "nameAr": "جدول الحصص الأسبوعي الدراسي المعتمد",
+                "documentType": "SCHEDULE",
+                "entityType": "schedule",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "landscape",
+                    "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "schedule.title": { "source": "schedule.title", "type": "string", "label": "Schedule Title", "labelAr": "عنوان الجدول" },
+                "schedule.periodName": { "source": "schedule.period_name", "type": "string", "label": "Academic Period", "labelAr": "الفصل الدراسي" },
+                "schedule.date": { "source": "schedule.date", "type": "string", "label": "Date", "labelAr": "تاريخ الطباعة" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "sched-border",
+                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f766e", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "position": { "x": 6, "y": 6, "width": 285, "height": 198 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "sched-header",
+                        "props": { "shape": "rectangle", "fillColor": "#0f766e", "strokeColor": "#0f766e", "strokeWidth": 0, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 8, "width": 281, "height": 24 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-org",
+                        "props": { "content": "{{$org.name_ar}}\n{{$org.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "start", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 190, "y": 10, "width": 95, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-title",
+                        "props": { "content": "جدول الحصص الدراسية الأسبوعي\n{{schedule.title}}", "fontSize": 12.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 75, "y": 9, "width": 137, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-meta",
+                        "props": { "content": "الفصل: {{schedule.periodName}}\nالتاريخ: {{schedule.date}}", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ccfbf1", "textAlign": "start", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 12, "y": 10, "width": 60, "height": 18 }
+                    },
+                    {
+                        "type": "Table",
+                        "id": "sched-matrix",
+                        "props": {
+                            "dataSource": "matrix",
+                            "columns": [
+                                { "header": "الحصة / التوقيت", "headerAr": "الحصة / التوقيت", "field": "slotName", "width": "16%", "alignment": "center" },
+                                { "header": "السبت", "headerAr": "السبت", "field": "day_6", "width": "14%", "alignment": "center" },
+                                { "header": "الأحد", "headerAr": "الأحد", "field": "day_0", "width": "14%", "alignment": "center" },
+                                { "header": "الإثنين", "headerAr": "الإثنين", "field": "day_1", "width": "14%", "alignment": "center" },
+                                { "header": "الثلاثاء", "headerAr": "الثلاثاء", "field": "day_2", "width": "14%", "alignment": "center" },
+                                { "header": "الأربعاء", "headerAr": "الأربعاء", "field": "day_3", "width": "14%", "alignment": "center" },
+                                { "header": "الخميس", "headerAr": "الخميس", "field": "day_4", "width": "14%", "alignment": "center" }
+                            ],
+                            "showHeader": true,
+                            "showTotals": false,
+                            "showGrid": true,
+                            "showBorder": true,
+                            "direction": "rtl",
+                            "style": {
+                                "headerBgColor": "#0f766e",
+                                "headerTextColor": "#ffffff",
+                                "alternateRowBgColor": "#f0fdfa",
+                                "borderColor": "#cbd5e1",
+                                "borderWidth": 0.6,
+                                "headerFontSize": 8.5,
+                                "fontSize": 8.0,
+                                "rowHeight": 18.0
+                            }
+                        },
+                        "position": { "x": 8, "y": 36, "width": 281, "height": 142 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-sig-1",
+                        "props": { "content": "وكيل الشؤون التعليمية\n...................................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 190, "y": 184, "width": 80, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-sig-2",
+                        "props": { "content": "المشرف الأكاديمي\n...................................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 105, "y": 184, "width": 80, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-sig-3",
+                        "props": { "content": "مدير المدرسة / الاعتماد\n...................................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 20, "y": 184, "width": 80, "height": 14 }
+                    }
+                ]
+            }]
+        })
+    )
+}
+
+fn default_account_statement_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "finance.account-statement",
+        "Official General Ledger Account Statement",
+        "كشف حساب مالي رسمي معتمد",
+        "statement",
+        "STATEMENT",
+        "A4",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Official General Ledger Account Statement",
+                "nameAr": "كشف حساب مالي رسمي معتمد",
+                "documentType": "STATEMENT",
+                "entityType": "statement",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "portrait",
+                    "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "account.code": { "source": "account.code", "type": "string", "label": "Account Code", "labelAr": "رقم الحساب" },
+                "account.nameAr": { "source": "account.name_ar", "type": "string", "label": "Account Name", "labelAr": "اسم الحساب" },
+                "account.currency": { "source": "account.currency", "type": "string", "label": "Currency", "labelAr": "العملة" },
+                "summary.closingBalanceFormatted": { "source": "summary.closing_balance_formatted", "type": "string", "label": "Closing Balance", "labelAr": "الرصيد النهائي" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "stmt-border",
+                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f2942", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "position": { "x": 6, "y": 6, "width": 198, "height": 285 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "stmt-header",
+                        "props": { "shape": "rectangle", "fillColor": "#0f2942", "strokeColor": "#0f2942", "strokeWidth": 0, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 8, "width": 194, "height": 26 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-title",
+                        "props": { "content": "{{$org.name_ar}}\nكشف حساب الأستاذ العام المعتمد | STATEMENT OF ACCOUNT", "fontSize": 10.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 10, "y": 9, "width": 190, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-details",
+                        "props": { "content": "الحساب: {{account.code}} - {{account.nameAr}} | العملة: {{account.currency}} | الفترة: {{period.startDateFormatted}} - {{period.endDateFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#94a3b8", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 10, "y": 24, "width": 190, "height": 8 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "box-deb",
+                        "props": { "shape": "rectangle", "fillColor": "#f0fdf4", "strokeColor": "#16a34a", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 138, "y": 37, "width": 64, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "txt-deb",
+                        "props": { "content": "إجمالي المدين: {{summary.totalDebitFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#166534", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 138, "y": 41, "width": 64, "height": 6 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "box-crd",
+                        "props": { "shape": "rectangle", "fillColor": "#fff1f2", "strokeColor": "#e11d48", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 73, "y": 37, "width": 62, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "txt-crd",
+                        "props": { "content": "إجمالي الدائن: {{summary.totalCreditFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#9f1239", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 73, "y": 41, "width": 62, "height": 6 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "box-bal",
+                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#0f2942", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 37, "width": 62, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "txt-bal",
+                        "props": { "content": "الرصيد: {{summary.closingBalanceFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f2942", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 8, "y": 41, "width": 62, "height": 6 }
+                    },
+                    {
+                        "type": "Table",
+                        "id": "stmt-table",
+                        "props": {
+                            "dataSource": "rows",
+                            "columns": [
+                                { "header": "#", "headerAr": "#", "field": "index", "width": "6%", "alignment": "center" },
+                                { "header": "التاريخ", "headerAr": "التاريخ", "field": "date", "width": "15%", "alignment": "center" },
+                                { "header": "رقم المرجع", "headerAr": "رقم المرجع", "field": "ref", "width": "16%", "alignment": "center" },
+                                { "header": "البيان والتفاصيل", "headerAr": "البيان والتفاصيل", "field": "description", "width": "33%", "alignment": "right" },
+                                { "header": "مدين", "headerAr": "مدين", "field": "debitFormatted", "width": "10%", "alignment": "center" },
+                                { "header": "دائن", "headerAr": "دائن", "field": "creditFormatted", "width": "10%", "alignment": "center" },
+                                { "header": "الرصيد", "headerAr": "الرصيد", "field": "balanceFormatted", "width": "10%", "alignment": "center" }
+                            ],
+                            "showHeader": true,
+                            "showTotals": false,
+                            "showGrid": true,
+                            "showBorder": true,
+                            "direction": "rtl",
+                            "style": {
+                                "headerBgColor": "#0f2942",
+                                "headerTextColor": "#ffffff",
+                                "alternateRowBgColor": "#f8fafc",
+                                "borderColor": "#cbd5e1",
+                                "borderWidth": 0.6,
+                                "headerFontSize": 7.5,
+                                "fontSize": 7.0,
+                                "rowHeight": 15.0
+                            }
+                        },
+                        "position": { "x": 8, "y": 53, "width": 194, "height": 208 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-sig-1",
+                        "props": { "content": "المحاسب المالي\n...............................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 135, "y": 268, "width": 60, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-sig-2",
+                        "props": { "content": "المراجعة والتدقيق\n...............................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 75, "y": 268, "width": 60, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-sig-3",
+                        "props": { "content": "المدير المالي والختم\n...............................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 12, "y": 268, "width": 60, "height": 14 }
                     }
                 ]
             }]

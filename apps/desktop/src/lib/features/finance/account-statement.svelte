@@ -17,11 +17,11 @@ import type { AccountDto, CurrencyDto, JournalEntryDto, PaymentDto } from "$lib/
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Card } from "@orbis/ui/card";
-import { toast } from "@orbis/ui";
-import { Refresh, Download } from "@orbis/icons";
+import { Refresh, Download, Printer } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import AccountSearchInput from "$lib/features/finance/components/account-search-input.svelte";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
+import { openPrintDialog } from "$lib/stores/print.svelte";
 import { fade } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
@@ -294,6 +294,58 @@ function exportCsv() {
   link.click();
   URL.revokeObjectURL(url);
 }
+
+function handlePrintStatement() {
+  if (!selectedAccountId || !selectedAccount) {
+    toast.error(m.finance_ui_account_statement_select_account?.() || "يرجى تحديد حساب أولاً");
+    return;
+  }
+  const accountLabel = `${selectedAccount.code} - ${selectedAccount.name_ar || selectedAccount.name}`;
+  const curr = selectedCurrency || "YER";
+  const statementContext = {
+    account: {
+      id: selectedAccount.id,
+      code: selectedAccount.code,
+      name: selectedAccount.name,
+      nameAr: selectedAccount.name_ar || selectedAccount.name,
+      currency: curr,
+      type: selectedAccount.account_type,
+    },
+    period: {
+      startDate: startDate || null,
+      endDate: endDate || null,
+      startDateFormatted: startDate ? formatDate(startDate) : "—",
+      endDateFormatted: endDate ? formatDate(endDate) : "—",
+    },
+    summary: {
+      totalDebit,
+      totalCredit,
+      closingBalance: netBalance,
+      currency: curr,
+      totalDebitFormatted: formatCurrency(totalDebit, curr),
+      totalCreditFormatted: formatCurrency(totalCredit, curr),
+      closingBalanceFormatted: formatCurrency(netBalance, curr),
+      movementCount: statementRows.length,
+    },
+    rows: statementRows.map((r, idx) => ({
+      index: idx + 1,
+      date: r.date_display,
+      ref: r.ref,
+      description: r.desc,
+      debit: r.debit > 0 ? r.debit : null,
+      credit: r.credit > 0 ? r.credit : null,
+      balance: r.running_balance,
+      debitFormatted: r.debit_formatted,
+      creditFormatted: r.credit_formatted,
+      balanceFormatted: r.balance_formatted,
+    })),
+  };
+
+  openPrintDialog("statement", [selectedAccountId], [accountLabel], {
+    documentType: "STATEMENT",
+    contexts: [statementContext],
+  });
+}
 </script>
 
 <div class="flex h-full min-h-0 w-full flex-col overflow-hidden p-6 font-sans bg-background/50">
@@ -340,6 +392,11 @@ function exportCsv() {
 
         <Button variant="ghost" size="icon-sm" onclick={exportCsv} class="text-muted-foreground">
           <Download size={14} />
+        </Button>
+
+        <Button variant="outline" size="sm" onclick={handlePrintStatement} class="h-8 gap-1.5 text-xs font-semibold cursor-pointer border-border/60">
+          <Printer size={14} class="text-primary" />
+          <span>{m.common_action_print?.() || 'طباعة'}</span>
         </Button>
       </div>
     </header>

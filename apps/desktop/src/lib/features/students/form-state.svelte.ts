@@ -8,6 +8,7 @@ import {
   type StudentDetailDto,
   type ClassDto,
   type TemplateDto,
+  type OrganizationSettingsDto,
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 
@@ -33,6 +34,30 @@ import { DocumentInfoState } from "./state/document-info.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { parseRegistrationFieldPolicies } from "./registration-fields";
+
+interface AdmissionPolicyState {
+  registrationEnabled: boolean;
+  requiresApproval: boolean;
+  allowWaitlist: boolean;
+  allowNoGuardian: boolean;
+  allowDuplicateNationalId: boolean;
+  autoAssignFees: boolean;
+  allowLateEnrollment: boolean;
+  siblingPriorityEnabled: boolean;
+  maxClassCapacity: number;
+}
+
+const defaultAdmissionPolicy: AdmissionPolicyState = {
+  registrationEnabled: true,
+  requiresApproval: true,
+  allowWaitlist: true,
+  allowNoGuardian: false,
+  allowDuplicateNationalId: false,
+  autoAssignFees: true,
+  allowLateEnrollment: false,
+  siblingPriorityEnabled: true,
+  maxClassCapacity: 30,
+};
 
 export class StudentFormState {
   orgId: string;
@@ -92,6 +117,8 @@ export class StudentFormState {
   });
   registrationStatus = $state("draft");
   createLoginAccount = $state(false);
+  admissionPolicy = $state<AdmissionPolicyState>({ ...defaultAdmissionPolicy });
+  isInitializing = $state(false);
 
   // Warnings for duplicate values
   duplicateWarnings = $state<{
@@ -146,42 +173,29 @@ export class StudentFormState {
   }
 
   async init() {
+    this.isInitializing = true;
     try {
-      const [org, classRes] = await Promise.all([
-        api.getCurrentOrg().catch(() => null),
-        api.listSections().catch(() => []),
+      const [org, settings] = await Promise.all([
+        api.getCurrentOrg(),
+        api.getSettings(),
         this.financial.init(),
         this.document.loadRequirements(),
       ]);
-
-      if (classRes && Array.isArray(classRes)) {
-        this.classes = classRes;
+      this.orgName = String(org.name || org.name_ar || "");
+      const baseCurr = org.base_currency_code || orgContext.baseCurrency;
+      if (baseCurr) {
+        this.currency = baseCurr;
       }
 
-      if (org) {
-        this.orgName = String(org.name || org.name_ar || "");
-        const baseCurr = org.base_currency_code || orgContext.baseCurrency;
-        if (baseCurr) {
-          this.currency = baseCurr;
-        }
-
-        // Parse organization registration configuration
-        const policies = parseRegistrationFieldPolicies(org.settings);
-        for (const [key, policy] of Object.entries(policies)) {
-          this.activeFields[key] = policy.active;
-          this.requiredFields[key] = policy.active && policy.required;
-          this.preventDuplicates[key] = policy.active && policy.preventDuplicate;
-        }
-
-        const settingsObj = typeof org.settings === "string"
-          ? JSON.parse(org.settings || "{}")
-          : (org.settings as Record<string, any>) || {};
-        const reg = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
-        const reqDocs = (reg.required_documents_list || reg.requiredDocumentsList) as Array<{ nameAr?: string; nameEn?: string; name?: string }> | undefined;
-        if (reqDocs && Array.isArray(reqDocs)) {
-          this.document.setRequiredDocuments(reqDocs.map((d) => d.nameAr || d.nameEn || d.name || ""));
-        }
+      const policies = parseRegistrationFieldPolicies(settings);
+      for (const [key, policy] of Object.entries(policies)) {
+        this.activeFields[key] = policy.active;
+        this.requiredFields[key] = policy.active && policy.required;
+        this.preventDuplicates[key] = policy.active && policy.preventDuplicate;
       }
+
+      this.admissionPolicy = this.parseAdmissionPolicy(settings);
+      this.document.setRequiredDocuments(this.getConfiguredRequiredDocuments(org.settings));
 
       // Load document templates for printing
       try {
@@ -222,7 +236,66 @@ export class StudentFormState {
           error: extractErrorMessage(e),
         }),
       );
+    } finally {
+      this.isInitializing = false;
     }
+  }
+
+  private parseAdmissionPolicy(settings: OrganizationSettingsDto): AdmissionPolicyState {
+    const admissionPolicy = settings.admission?.policy;
+    const enrollment = settings.enrollment;
+    return {
+      registrationEnabled: enrollment?.registration_enabled ?? defaultAdmissionPolicy.registrationEnabled,
+      requiresApproval: enrollment?.require_admin_approval
+        ?? admissionPolicy?.requires_approval
+        ?? defaultAdmissionPolicy.requiresApproval,
+      allowWaitlist: enrollment?.allow_waitlist
+        ?? admissionPolicy?.allow_waitlist
+        ?? defaultAdmissionPolicy.allowWaitlist,
+      allowNoGuardian: admissionPolicy?.allow_no_guardian
+        ?? defaultAdmissionPolicy.allowNoGuardian,
+      allowDuplicateNationalId: admissionPolicy?.allow_duplicate_national_id
+        ?? defaultAdmissionPolicy.allowDuplicateNationalId,
+      autoAssignFees: admissionPolicy?.auto_assign_fees
+        ?? defaultAdmissionPolicy.autoAssignFees,
+      allowLateEnrollment: enrollment?.allow_late_enrollment
+        ?? admissionPolicy?.allow_late_enrollment
+        ?? defaultAdmissionPolicy.allowLateEnrollment,
+      siblingPriorityEnabled: enrollment?.sibling_priority_enabled
+        ?? admissionPolicy?.sibling_priority_enabled
+        ?? defaultAdmissionPolicy.siblingPriorityEnabled,
+      maxClassCapacity: enrollment?.max_class_size_default
+        ?? admissionPolicy?.max_class_capacity
+        ?? defaultAdmissionPolicy.maxClassCapacity,
+    };
+  }
+
+  private getConfiguredRequiredDocuments(settings: unknown): string[] {
+    let settingsObject: Record<string, unknown> = {};
+    try {
+      settingsObject = typeof settings === "string"
+        ? JSON.parse(settings) as Record<string, unknown>
+        : (settings as Record<string, unknown>) ?? {};
+    } catch (error) {
+      console.error("Failed to parse organization document requirements:", error);
+      return [];
+    }
+
+    const admission = (settingsObject.admission
+      ?? settingsObject.registration
+      ?? settingsObject.registration_config) as Record<string, unknown> | undefined;
+    const requirements = admission?.required_documents_list
+      ?? admission?.requiredDocumentsList;
+    if (!Array.isArray(requirements)) return [];
+
+    return requirements
+      .map((item: unknown) => {
+        if (typeof item === "string") return item;
+        if (!item || typeof item !== "object") return "";
+        const document = item as Record<string, unknown>;
+        return String(document.nameAr ?? document.nameEn ?? document.name ?? "");
+      })
+      .filter(Boolean);
   }
 
   // Live debounced duplicate check triggers using authoritative backend API

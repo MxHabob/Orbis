@@ -311,6 +311,7 @@ export interface RegisterStudentInput {
   email?: string;
   address?: string;
   initial_period_id?: string;
+  initial_section_id?: string;
   initial_class_id?: string;
   study_mode?: string;
   // Aliases for compatibility
