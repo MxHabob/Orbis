@@ -2226,6 +2226,7 @@ dependencies = [
 name = "orbis-infra"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
  "async-trait",
  "base64 0.23.1",
  "bcrypt",
@@ -2234,6 +2235,7 @@ dependencies = [
  "ed25519-dalek",
  "fs2",
  "hex",
+ "hkdf",
  "hmac",
  "hostname",
  "jsonwebtoken",
