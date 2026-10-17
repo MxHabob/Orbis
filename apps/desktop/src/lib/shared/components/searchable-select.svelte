@@ -148,7 +148,8 @@ function handleCreateClick(e: MouseEvent) {
   </SelectTrigger>
 
   <SelectContent
-    class="text-xs font-sans max-h-72 w-(--bits-select-anchor-width,100%) min-w-(--bits-select-anchor-width,200px) max-w-(--bits-select-anchor-width,100%) p-0 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden {contentClass}"
+    class="text-xs font-sans w-(--bits-select-anchor-width,100%) min-w-0 max-w-[calc(100vw-1rem)] p-0 shadow-xl rounded-xl border border-border bg-popover text-popover-foreground z-50 overflow-hidden {contentClass}"
+    style="max-height: min(75dvh, 28rem)"
     align="start"
   >
     <!-- Sticky Search Header -->
@@ -174,7 +175,10 @@ function handleCreateClick(e: MouseEvent) {
     </div>
 
     <!-- Scrollable Items List -->
-    <div class="max-h-48 overflow-y-auto p-1 scrollbar-thin">
+    <div
+      class="overflow-y-auto overscroll-contain p-1 scrollbar-thin"
+      style="max-height: min(20rem, calc(75dvh - 3rem))"
+    >
       {#if showAllOption}
         <SelectItem
           value="all"

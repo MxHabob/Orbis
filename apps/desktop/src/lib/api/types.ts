@@ -1274,6 +1274,50 @@ export interface ApplyCalendarTemplateRequest {
   template_code: string;
 }
 
+export interface CalendarDefaultsDto {
+  suggested_name: string;
+  suggested_name_ar: string;
+  start_date: string;
+  end_date: string;
+  hijri_start_year: number;
+  hijri_start_month: number;
+  hijri_start_day: number;
+  hijri_month_lengths: number[];
+  selected_study_days: number[];
+  periods_summary: PeriodSummaryDto[];
+  assessment_schemes: AssessmentSchemeSummaryDto[];
+  timetable_slots: TimeSlotSummaryDto[];
+}
+
+export interface PeriodSummaryDto {
+  code: string;
+  name: string;
+  name_ar: string;
+  period_type: string;
+  period_kind: string;
+  sort_order: number;
+  parent_code?: string;
+}
+
+export interface AssessmentSchemeSummaryDto {
+  name: string;
+  name_ar: string;
+  scheme_type: string;
+  max_score: number;
+  passing_score: number;
+  description_ar: string;
+}
+
+export interface TimeSlotSummaryDto {
+  slot_index: number;
+  name: string;
+  name_ar: string;
+  start_time: string;
+  end_time: string;
+  is_break: boolean;
+  break_type?: string;
+}
+
 export type RoundingMode = 'round_half_up' | 'round_up' | 'round_down' | 'truncate';
 export type RankingScope = 'class' | 'grade_level' | 'org_unit' | 'cohort';
 export type TiePolicy = 'standard_competition' | 'dense' | 'fractional';

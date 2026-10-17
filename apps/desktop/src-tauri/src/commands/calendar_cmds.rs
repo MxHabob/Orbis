@@ -3,7 +3,7 @@
 use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
-use chrono::{DateTime, Utc};
+use chrono::{Datelike, DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -601,3 +601,56 @@ pub async fn calendar_apply_template(
     let dtos = periods.into_iter().map(period_dto).collect();
     Ok(ok(dtos))
 }
+
+pub use orbis_app::services::calendar_service::CalendarDefaultsDto;
+
+#[tauri::command]
+pub async fn calendar_get_defaults(
+    org_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CalendarDefaultsDto>, String> {
+    let ctx = make_ctx(&state);
+    let target_org_id = if let Some(ref id_str) = org_id {
+        Uuid::parse_str(id_str).map_err(|e| format!("Invalid org_id UUID: {e}"))?
+    } else if ctx.tenant_id != Uuid::nil() {
+        ctx.tenant_id
+    } else {
+        let orgs = state.org_repo.list_all().await.map_err(|e| e.to_string())?;
+        orgs.first()
+            .map(|o| o.id)
+            .ok_or_else(|| "No organization exists to onboard".to_string())?
+    };
+
+    let org = state
+        .org_repo
+        .find_by_id(target_org_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    let (inst_type, country_code) = if let Some(o) = org {
+        let it = o
+            .metadata
+            .as_ref()
+            .and_then(|m| m.get("institution_type"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("school")
+            .to_string();
+        let cc = o
+            .metadata
+            .as_ref()
+            .and_then(|m| m.get("country_code"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("YE")
+            .to_string();
+        (it, cc)
+    } else {
+        ("school".to_string(), "YE".to_string())
+    };
+
+    let dto = state
+        .calendar_service
+        .get_calendar_defaults(target_org_id, &inst_type, &country_code);
+
+    Ok(ok(dto))
+}
+
+

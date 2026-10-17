@@ -55,13 +55,7 @@ Run Meta Llama 3.3 70B, DeepSeek R1 Distill, and Mistral with native tool suppor
       description_ar: "النموذج الافتراضي على Groq.",
       type: "select",
       required: true,
-      value: "llama-3.3-70b-versatile",
-      options: [
-        { label: "Llama 3.3 70B Versatile (Recommended)", value: "llama-3.3-70b-versatile" },
-        { label: "DeepSeek R1 Distill Llama 70B", value: "deepseek-r1-distill-llama-70b" },
-        { label: "Llama 3.1 8B Instant (Ultra Fast)", value: "llama-3.1-8b-instant" },
-        { label: "Mixtral 8x7B 32k", value: "mixtral-8x7b-32768" },
-      ],
+      value: "",
     },
     {
       id: "endpoint_url",

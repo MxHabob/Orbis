@@ -38,7 +38,10 @@ pub use bootstrap_service::{
 pub use calculation_engine::{
     AcademicCalculationEngine, AstNode, CalcEngine, WeightedItem, apply_rounding,
 };
-pub use calendar_service::CalendarService;
+pub use calendar_service::{
+    AssessmentSchemeSummaryDto, CalendarDefaultsDto, CalendarService, PeriodSummaryDto,
+    TimeSlotSummaryDto,
+};
 pub use coa_loader::{CoaBlueprintLoader, CoaFile, CoaMetadata, CoaNode};
 pub use document_service::{
     CreateDocumentInput, CreateDocumentRequirementInput, DocumentService,

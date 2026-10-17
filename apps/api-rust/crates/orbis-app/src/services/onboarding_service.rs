@@ -343,12 +343,9 @@ impl OnboardingService {
                 "The Hijri start month or day is invalid.".into(),
             ));
         }
-        let lengths = month_lengths.ok_or_else(|| {
-            DomainError::Validation(
-                "Umm al-Qura month lengths are required to provision the Hijri school calendar."
-                    .into(),
-            )
-        })?;
+        let lengths = month_lengths.unwrap_or_else(|| {
+            vec![30, 29, 30, 29, 30, 29, 30, 29]
+        });
         if lengths.len() != 8
             || lengths
                 .iter()
@@ -422,10 +419,8 @@ impl OnboardingService {
         let calendar_end_date = start_date
             + Duration::days(lengths.iter().map(|days| i64::from(*days)).sum::<i64>() - 1);
         if year.end_date.date_naive() < calendar_end_date {
-            return Err(DomainError::Validation(
-                "The academic year must include all eight generated Hijri months and their exams."
-                    .into(),
-            ));
+            year.end_date = at_day_end(calendar_end_date);
+            self.year_repo.save(&year).await?;
         }
         let mut periods = existing_periods;
         let mut next_month_start = start_date;
@@ -666,6 +661,7 @@ impl OnboardingService {
     async fn provision_default_school_time_slots(
         &self,
         periods: &[AcademicPeriod],
+        is_yemen: bool,
         now: DateTime<Utc>,
     ) -> Result<usize, DomainError> {
         let slot_definitions = [
@@ -694,6 +690,11 @@ impl OnboardingService {
             ("Lesson 7", "الحصة السابعة", (12, 45), (13, 30), false, None),
         ];
         let mut created = 0;
+        let study_days: &[i16] = if is_yemen {
+            &[7, 1, 2, 3, 4]
+        } else {
+            &[1, 2, 3, 4, 5]
+        };
 
         for period in periods.iter().filter(|period| {
             period.parent_id.is_some()
@@ -702,7 +703,7 @@ impl OnboardingService {
         }) {
             let existing_slots = self.time_slot_repo.find_by_period(period.id).await?;
             let mut slots = Vec::with_capacity(45);
-            for day_of_week in 1..=5 {
+            for &day_of_week in study_days {
                 for (index, (name, name_ar, start, end, is_break, break_type)) in
                     slot_definitions.iter().enumerate()
                 {
@@ -2184,9 +2185,7 @@ impl OnboardingService {
                         .into(),
                 ));
             }
-            let hijri_start_year = req
-                .hijri_start_year
-                .ok_or_else(|| DomainError::Validation("A Hijri start year is required.".into()))?;
+            let hijri_start_year = req.hijri_start_year.unwrap_or(1448);
             let active_year_id = active_year_id.ok_or_else(|| {
                 DomainError::Validation(
                     "Create or select an academic year before provisioning calendar periods."
@@ -2199,13 +2198,44 @@ impl OnboardingService {
                     active_year_id,
                     hijri_start_year,
                     req.hijri_start_month.unwrap_or(1),
-                    req.hijri_start_day.unwrap_or(1),
+                    req.hijri_start_day.unwrap_or(9),
                     req.hijri_month_lengths,
                     now,
                 )
                 .await?;
+
+            // Automatically provision official supplementary periods for Yemeni schools
+            // (admin registration opening, teacher prep, mid-year break, basic exams, secondary exams)
+            if country_profile.country_code == "YE" {
+                let existing_codes: Vec<String> =
+                    school_periods.iter().filter_map(|p| p.code.clone()).collect();
+                if let Ok(Some(year_obj)) = self.year_repo.find_by_id(active_year_id).await {
+                    let term1_end = school_periods
+                        .iter()
+                        .find(|p| p.code.as_deref() == Some("T1") && p.parent_id.is_none())
+                        .map(|p| p.end_date.date_naive());
+                    let term2_end = school_periods
+                        .iter()
+                        .find(|p| p.code.as_deref() == Some("T2") && p.parent_id.is_none())
+                        .map(|p| p.end_date.date_naive());
+                    let supp = super::calendar_templates::yemen_1447_1448::build_supplementary_periods(
+                        org_id,
+                        active_year_id,
+                        year_obj.start_date.date_naive(),
+                        term1_end,
+                        term2_end,
+                        &existing_codes,
+                        now,
+                    );
+                    for p in supp {
+                        let _ = self.period_repo.save(&p).await;
+                        school_periods.push(p);
+                    }
+                }
+            }
+
             created_items.push(
-                "Hijri academic calendar: two terms, eight teaching months, monthly exams, and term finals"
+                "Hijri academic calendar: two terms, eight teaching months, monthly exams, term finals, and official supplementary breaks & exam periods"
                     .to_string(),
             );
         }
@@ -2220,8 +2250,10 @@ impl OnboardingService {
             if school_periods.is_empty() {
                 school_periods = self.period_repo.find_by_year(active_year_id).await?;
             }
+            let is_yemen = country_profile.country_code == "YE"
+                || req.provision_hijri_school_calendar.unwrap_or(false);
             let created_slots = self
-                .provision_default_school_time_slots(&school_periods, now)
+                .provision_default_school_time_slots(&school_periods, is_yemen, now)
                 .await?;
             if created_slots == 0
                 && !school_periods.iter().any(|period| {

@@ -55,13 +55,7 @@ Specialized models for code generation, mathematical logic, and document vision 
       description_ar: "النموذج الافتراضي.",
       type: "select",
       required: true,
-      value: "mistral-large-latest",
-      options: [
-        { label: "Mistral Large (Latest — Recommended)", value: "mistral-large-latest" },
-        { label: "Mistral Small (Latest)", value: "mistral-small-latest" },
-        { label: "Codestral (Latest)", value: "codestral-latest" },
-        { label: "Pixtral 12B (Vision)", value: "pixtral-12b-2409" },
-      ],
+      value: "",
     },
     {
       id: "endpoint_url",

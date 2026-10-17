@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import InfoSettingsCard from "./info-settings-card.svelte";
 import BrandingSettingsCard from "./branding-settings-card.svelte";
@@ -7,6 +8,7 @@ import AvatarSettingsCard from "./avatar-settings-card.svelte";
 import DangerZoneSettingsCard from "./danger-zone-settings-card.svelte";
 import BranchSettingsCard from "./branch-settings-card.svelte";
 import OrganizationProfileSettingsCard from "./organization-profile-settings-card.svelte";
+import StaticDataSettingsCard from "./static-data-settings-card.svelte";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
@@ -95,69 +97,69 @@ async function loadSettings() {
   }
 }
 
-$effect(() => {
-  if (org && !initialValues) {
-    name = org.name || "";
-    nameAr = org.name_ar || "";
-    slug = org.slug || "";
-    code = org.code || "";
-    logo = org.logo || "";
-    favicon = org.favicon || "";
-    primaryColor = org.primary_color || "#84cc16";
-    currency = org.base_currency_code || org.currency || "YER";
-    timezone = org.timezone || "Asia/Aden";
-    locale = org.locale || "ar";
-    dateFormat = org.date_format || "YYYY-MM-DD";
-    formatLocale = org.format_locale || "auto";
-    timeFormat = org.time_format || "locale";
-    hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
-    const metadata =
-      org.metadata && typeof org.metadata === "object" && !Array.isArray(org.metadata)
-        ? org.metadata
-        : {};
-    institutionType = typeof metadata.institution_type === "string" ? metadata.institution_type : org.institution_type || "school";
-    educationalTrack = typeof metadata.educational_track === "string" ? metadata.educational_track : "";
-    organizationSize = typeof metadata.organization_size === "string" ? metadata.organization_size : "";
-    countryCode = typeof metadata.country_code === "string" ? metadata.country_code : "";
-    countryName = typeof metadata.country_name === "string" ? metadata.country_name : "";
-    ministryName = typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
-    regionName = typeof metadata.region_name === "string" ? metadata.region_name : "";
-    city = typeof metadata.city === "string" ? metadata.city : "";
-    phone = typeof metadata.phone === "string" ? metadata.phone : "";
-    website = typeof metadata.website === "string" ? metadata.website : "";
-    taxId = typeof metadata.tax_id === "string" ? metadata.tax_id : "";
-    licenseNumber = typeof metadata.license_number === "string" ? metadata.license_number : "";
+onMount(() => {
+  if (!org || initialValues) return;
 
-    loadSettings().finally(() => {
-      initialValues = {
-        name,
-        nameAr,
-        code,
-        primaryColor,
-        favicon,
-        currency,
-        timezone,
-        locale,
-        dateFormat,
-        formatLocale,
-        timeFormat,
-        hijriEnabled,
-        institutionType,
-        educationalTrack,
-        organizationSize,
-        countryCode,
-        countryName,
-        ministryName,
-        regionName,
-        city,
-        phone,
-        website,
-        taxId,
-        licenseNumber,
-      };
-    });
-    systemStore.loadEntitlement();
-  }
+  name = org.name || "";
+  nameAr = org.name_ar || "";
+  slug = org.slug || "";
+  code = org.code || "";
+  logo = org.logo || "";
+  favicon = org.favicon || "";
+  primaryColor = org.primary_color || "#84cc16";
+  currency = org.base_currency_code || org.currency || "YER";
+  timezone = org.timezone || "Asia/Aden";
+  locale = org.locale || "ar";
+  dateFormat = org.date_format || "YYYY-MM-DD";
+  formatLocale = org.format_locale || "auto";
+  timeFormat = org.time_format || "locale";
+  hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
+  const metadata =
+    org.metadata && typeof org.metadata === "object" && !Array.isArray(org.metadata)
+      ? org.metadata
+      : {};
+  institutionType = typeof metadata.institution_type === "string" ? metadata.institution_type : org.institution_type || "school";
+  educationalTrack = typeof metadata.educational_track === "string" ? metadata.educational_track : "";
+  organizationSize = typeof metadata.organization_size === "string" ? metadata.organization_size : "";
+  countryCode = typeof metadata.country_code === "string" ? metadata.country_code : "";
+  countryName = typeof metadata.country_name === "string" ? metadata.country_name : "";
+  ministryName = typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
+  regionName = typeof metadata.region_name === "string" ? metadata.region_name : "";
+  city = typeof metadata.city === "string" ? metadata.city : "";
+  phone = typeof metadata.phone === "string" ? metadata.phone : "";
+  website = typeof metadata.website === "string" ? metadata.website : "";
+  taxId = typeof metadata.tax_id === "string" ? metadata.tax_id : "";
+  licenseNumber = typeof metadata.license_number === "string" ? metadata.license_number : "";
+
+  loadSettings().finally(() => {
+    initialValues = {
+      name,
+      nameAr,
+      code,
+      primaryColor,
+      favicon,
+      currency,
+      timezone,
+      locale,
+      dateFormat,
+      formatLocale,
+      timeFormat,
+      hijriEnabled,
+      institutionType,
+      educationalTrack,
+      organizationSize,
+      countryCode,
+      countryName,
+      ministryName,
+      regionName,
+      city,
+      phone,
+      website,
+      taxId,
+      licenseNumber,
+    };
+  });
+  systemStore.loadEntitlement();
 });
 
 const isDirty = $derived.by(() => {
@@ -430,6 +432,8 @@ function handleSaveAvatar(e: Event) {
         {/if}
       {/if}
     </form>
+
+    <StaticDataSettingsCard />
 
     <AvatarSettingsCard
       bind:logo

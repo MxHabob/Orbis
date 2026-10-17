@@ -38,11 +38,14 @@
       {#if error}
         <p class="mb-4 text-xs text-destructive" role="alert">{error}</p>
       {/if}
-      <AppConnectForm
-        settings={app.settings}
-        {submitting}
-        {onsubmit}
-      />
+      {#key app.id}
+        <AppConnectForm
+          appId={app.id}
+          settings={app.settings}
+          {submitting}
+          {onsubmit}
+        />
+      {/key}
     </div>
   </SheetContent>
 </Sheet>

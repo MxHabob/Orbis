@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
@@ -21,6 +22,7 @@ import { createConnectedAiProvidersQuery, useSwitchActiveAiProvider } from "$lib
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { uiStore } from "$lib/stores";
+import { getModelOptions, loadModelCatalog } from "$lib/features/ai/model-catalog.svelte";
 
 let {
   orgId = "",
@@ -33,6 +35,12 @@ let {
 const aiPreferences = $derived(uiStore.getAiProviderModel(orgId));
 const savedProvider = $derived(aiPreferences.provider);
 const savedModel = $derived(aiPreferences.model);
+
+onMount(() => {
+  loadModelCatalog().catch((error: unknown) => {
+    console.error("Failed to load the cached AI model catalog", error);
+  });
+});
 
 // Canonical AI apps from @orbis/app-store (single source of truth)
 const aiApps = $derived(getAppsByCategory("ai-provider"));
@@ -58,10 +66,12 @@ function findAppForProvider(providerNameOrId: string): OrbisApp | undefined {
 function getModelsForApp(app: OrbisApp): { label: string; value: string }[] {
   const modelSetting = app.settings?.find((s) => s.id === "model");
   if (modelSetting?.options && modelSetting.options.length > 0) {
-    return modelSetting.options;
+    return getModelOptions(app.id, modelSetting.options);
   }
   if (modelSetting?.value) {
-    return [{ label: String(modelSetting.value), value: String(modelSetting.value) }];
+    return getModelOptions(app.id, [
+      { label: String(modelSetting.value), value: String(modelSetting.value) },
+    ]);
   }
   return [];
 }
@@ -136,7 +146,7 @@ const selectedModel = $derived.by(() => {
     (selectedIntegration?.settings as any)?.model;
   if (defaultModel) return String(defaultModel);
 
-  return currentApp ? getModelsForApp(currentApp)[0]?.value ?? "" : "";
+  return "";
 });
 
 // Clean short provider name for compact toolbars
