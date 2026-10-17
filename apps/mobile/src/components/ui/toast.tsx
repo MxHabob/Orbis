@@ -2,13 +2,14 @@
  * @module @orbis/mobile/components/ui/toast
  *
  * S.C.R.A.P.S. Tactile Notification Toast for Orbis Mobile.
- * Features variant icons, theme reactivity, safe-area floating pill, and spring animations.
+ * Features variant icons, theme reactivity, and safe-area placement.
  */
 
 import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -18,12 +19,14 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { CheckCircle, InfoCircle, Sparkles } from "@orbis/icons/native";
 import { useTheme } from "@/hooks/use-theme";
+
+const FLOATING_TAB_BAR_HEIGHT = 48;
+const TOAST_TAB_BAR_GAP = 16;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -72,26 +75,30 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const opacity = useSharedValue(0);
-  const translateY = useSharedValue(-20);
-  const scale = useSharedValue(0.92);
+  const translateY = useSharedValue(4);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const dismiss = useCallback(() => {
-    opacity.value = withTiming(0, {
-      duration: 160,
+    translateY.value = withTiming(4, {
+      duration: 120,
       easing: Easing.out(Easing.ease),
     });
-    translateY.value = withTiming(-20, {
-      duration: 160,
-      easing: Easing.out(Easing.ease),
-    });
-    scale.value = withTiming(
-      0.92,
-      { duration: 160, easing: Easing.out(Easing.ease) },
+    opacity.value = withTiming(
+      0,
+      { duration: 120, easing: Easing.out(Easing.ease) },
       () => {
         runOnJS(setCurrent)(null);
       },
     );
-  }, [opacity, translateY, scale]);
+  }, [opacity, translateY]);
 
   const showToast = useCallback(
     (payload: string | ToastPayload) => {
@@ -112,15 +119,20 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         variant,
       });
 
-      opacity.value = withTiming(1, { duration: 180 });
-      translateY.value = withSpring(0, { damping: 20, stiffness: 320 });
-      scale.value = withSpring(1, { damping: 20, stiffness: 320 });
+      opacity.value = withTiming(1, {
+        duration: 140,
+        easing: Easing.out(Easing.ease),
+      });
+      translateY.value = withTiming(0, {
+        duration: 140,
+        easing: Easing.out(Easing.ease),
+      });
 
       timeoutRef.current = setTimeout(() => {
         dismiss();
       }, duration);
     },
-    [opacity, translateY, scale, dismiss],
+    [opacity, translateY, dismiss],
   );
 
   const toastHandler = Object.assign(
@@ -139,25 +151,36 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   const getVariantIcon = (variant: ToastVariant) => {
     switch (variant) {
       case "success":
-        return (
-          <CheckCircle size={20} color={theme.success} />
-        );
+        return <CheckCircle size={18} color={theme.success} />;
       case "error":
-        return <InfoCircle size={20} color={theme.error} />;
+        return <InfoCircle size={18} color={theme.error} />;
       case "warning":
-        return <InfoCircle size={20} color={theme.warning} />;
+        return <InfoCircle size={18} color={theme.warning} />;
       case "info":
-        return (
-          <InfoCircle size={20} color={theme.info} />
-        );
+        return <InfoCircle size={18} color={theme.info} />;
       default:
         return <Sparkles size={18} color={theme.primary} />;
+    }
+  };
+
+  const getVariantIconBackground = (variant: ToastVariant) => {
+    switch (variant) {
+      case "success":
+        return "bg-success/10";
+      case "error":
+        return "bg-destructive/10";
+      case "warning":
+        return "bg-warning/10";
+      case "info":
+        return "bg-info/10";
+      default:
+        return "bg-primary/10";
     }
   };
 
@@ -169,25 +192,24 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="none"
           className="absolute left-0 right-0 z-[99999] items-center justify-center px-four"
           style={{
-            top: Math.max(insets.top, 16) + 8,
-            elevation: 99999,
+            bottom:
+              Math.max(insets.bottom, 12) +
+              FLOATING_TAB_BAR_HEIGHT +
+              TOAST_TAB_BAR_GAP,
           }}
         >
           <Animated.View
-            className="max-w-[92%] flex-row items-center gap-two rounded-full border border-border bg-card px-four py-three shadow-md"
-            style={[
-              {
-                shadowColor: "#000000",
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.14,
-                shadowRadius: 14,
-                elevation: 8,
-              },
-              animatedStyle,
-            ]}
+            accessibilityRole="alert"
+            accessibilityLiveRegion="polite"
+            className="w-full max-w-[420px] flex-row items-center gap-three rounded-2xl border border-card-border bg-card-elevated px-four py-three"
+            style={animatedStyle}
           >
-            {getVariantIcon(current.variant)}
-            <Text className="shrink text-[13px] leading-[18px] font-semibold text-foreground">
+            <View
+              className={`h-9 w-9 shrink-0 items-center justify-center rounded-xl ${getVariantIconBackground(current.variant)}`}
+            >
+              {getVariantIcon(current.variant)}
+            </View>
+            <Text className="shrink font-sans text-sm leading-5 font-medium text-card-foreground">
               {current.message}
             </Text>
           </Animated.View>

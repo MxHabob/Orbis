@@ -507,13 +507,77 @@ pub async fn template_preview(
     let doc: TemplateDocument = serde_json::from_str(&document_json)
         .map_err(|e| format!("Invalid template document JSON: {}", e))?;
 
-    // 2. Create font cache — using system default Arabic font
-    let fonts = FontCache::new("Noto Sans Arabic");
+    // 2. Create font cache — with pre-loaded OS Arabic and Latin fonts
+    let fonts = FontCache::with_system_fonts();
 
-    // 3. Run layout engine
+    // 3. Prepare preview context (enriching with sensible defaults if empty)
+    let mut resolved_ctx = if let Some(obj) = context_data.as_object() {
+        obj.clone()
+    } else {
+        serde_json::Map::new()
+    };
+
+    if !resolved_ctx.contains_key("student") {
+        resolved_ctx.insert(
+            "student".to_string(),
+            serde_json::json!({
+                "name": "أحمد محمد علي السلامي",
+                "student_number": "2024-0105",
+                "national_id": "0102030405",
+                "seat_number": "1042",
+                "class_name": "الصف التاسع - شعبة (أ)",
+                "grade_level": "المرحلة الأساسية",
+                "academic_calendar": "2024-2025",
+                "birth_date": "2010-05-14",
+                "birth_place": "صنعاء",
+                "nationality": "يمني",
+                "guardian_name": "محمد علي السلامي"
+            }),
+        );
+    }
+    if !resolved_ctx.contains_key("academic") {
+        resolved_ctx.insert(
+            "academic".to_string(),
+            serde_json::json!({
+                "annual_total": 920,
+                "max_score": 1000,
+                "percentage": "92.0%",
+                "appreciation": "ممتاز",
+                "status": "ناجح",
+                "rank_in_class": "1",
+                "subjects": [
+                    { "name": "القرآن الكريم", "score": 98, "max_score": 100 },
+                    { "name": "التربية الإسلامية", "score": 95, "max_score": 100 },
+                    { "name": "اللغة العربية", "score": 90, "max_score": 100 },
+                    { "name": "اللغة الإنجليزية", "score": 88, "max_score": 100 },
+                    { "name": "الرياضيات", "score": 94, "max_score": 100 },
+                    { "name": "العلوم", "score": 92, "max_score": 100 },
+                    { "name": "الاجتماعيات", "score": 91, "max_score": 100 }
+                ]
+            }),
+        );
+    }
+    if !resolved_ctx.contains_key("org") {
+        let org_obj = serde_json::json!({
+            "name": "مدارس الأوربيس النموذجية",
+            "name_ar": "مدارس الأوربيس النموذجية",
+            "country_name": "الجمهورية اليمنية",
+            "ministry_name": "وزارة التربية والتعليم",
+            "region_name": "أمانة العاصمة",
+            "logo_url": ""
+        });
+        resolved_ctx.insert("org".to_string(), org_obj.clone());
+        resolved_ctx.insert("$org".to_string(), org_obj);
+    } else if !resolved_ctx.contains_key("$org") {
+        if let Some(val) = resolved_ctx.get("org") {
+            resolved_ctx.insert("$org".to_string(), val.clone());
+        }
+    }
+
+    // 4. Run layout engine
     let layout_engine = LayoutEngine::new(&fonts);
     let layout = layout_engine
-        .layout(&doc, &context_data)
+        .layout(&doc, &serde_json::Value::Object(resolved_ctx))
         .map_err(|e| format!("Layout computation failed: {}", e))?;
 
     // 4. Render to PDF
