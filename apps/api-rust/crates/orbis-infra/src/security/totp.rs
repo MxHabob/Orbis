@@ -1,8 +1,29 @@
+use aes_gcm::{
+    Aes256Gcm, Nonce,
+    aead::{Aead, KeyInit, OsRng, rand_core::RngCore},
+};
 use async_trait::async_trait;
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+use hkdf::Hkdf;
 use orbis_app::ports::security::TotpService;
+use orbis_domain::errors::DomainError;
+use sha2::Sha256;
 use uuid::Uuid;
 
-pub struct TotpServiceImpl;
+pub struct TotpServiceImpl {
+    encryption_key: [u8; 32],
+}
+
+impl TotpServiceImpl {
+    pub fn new(master_key: &str) -> Self {
+        let hkdf =
+            Hkdf::<Sha256>::new(Some(b"orbis:mfa:totp-encryption:v1"), master_key.as_bytes());
+        let mut encryption_key = [0u8; 32];
+        hkdf.expand(b"totp-secret-storage", &mut encryption_key)
+            .expect("32-byte HKDF output is valid");
+        Self { encryption_key }
+    }
+}
 
 const BASE32_CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -207,15 +228,103 @@ impl TotpService for TotpServiceImpl {
         let mut codes = Vec::with_capacity(count);
         for _ in 0..count {
             let u = Uuid::new_v4().simple().to_string();
-            let c1 = &u[0..4];
-            let c2 = &u[4..8];
-            codes.push(format!("{}-{}", c1.to_uppercase(), c2.to_uppercase()));
+            codes.push(
+                format!("{}-{}-{}-{}", &u[0..8], &u[8..16], &u[16..24], &u[24..32]).to_uppercase(),
+            );
+        }
+
+        #[cfg(test)]
+        mod tests {
+            use super::*;
+
+            #[test]
+            fn encrypted_totp_secrets_round_trip_and_are_key_bound() {
+                let service = TotpServiceImpl::new("stable test master key");
+                let encrypted = service.encrypt_secret("JBSWY3DPEHPK3PXP").unwrap();
+
+                assert!(encrypted.starts_with("v1:"));
+                assert_eq!(
+                    service.decrypt_secret(&encrypted).unwrap(),
+                    "JBSWY3DPEHPK3PXP"
+                );
+                assert!(
+                    TotpServiceImpl::new("different key")
+                        .decrypt_secret(&encrypted)
+                        .is_err()
+                );
+            }
+
+            #[test]
+            fn legacy_plaintext_totp_secrets_remain_readable() {
+                let service = TotpServiceImpl::new("stable test master key");
+
+                assert_eq!(
+                    service.decrypt_secret("JBSWY3DPEHPK3PXP").unwrap(),
+                    "JBSWY3DPEHPK3PXP"
+                );
+            }
+
+            #[test]
+            fn recovery_codes_have_128_bits_of_randomness() {
+                let service = TotpServiceImpl::new("stable test master key");
+
+                let codes = service.generate_recovery_codes(8);
+
+                assert_eq!(codes.len(), 8);
+                assert!(codes.iter().all(|code| {
+                    code.len() == 35
+                        && code.split('-').all(|segment| {
+                            segment.len() == 8 && segment.chars().all(|c| c.is_ascii_hexdigit())
+                        })
+                }));
+                let unique_codes: std::collections::HashSet<_> = codes.iter().collect();
+                assert_eq!(unique_codes.len(), codes.len());
+            }
         }
         codes
     }
 
+    fn encrypt_secret(&self, secret: &str) -> Result<String, DomainError> {
+        let cipher = Aes256Gcm::new_from_slice(&self.encryption_key)
+            .map_err(|_| DomainError::Internal("Invalid MFA encryption key".into()))?;
+        let mut nonce_bytes = [0u8; 12];
+        OsRng.fill_bytes(&mut nonce_bytes);
+        let nonce = Nonce::from_slice(&nonce_bytes);
+        let ciphertext = cipher
+            .encrypt(nonce, secret.as_bytes())
+            .map_err(|_| DomainError::Internal("Unable to encrypt MFA secret".into()))?;
+        let mut payload = nonce_bytes.to_vec();
+        payload.extend_from_slice(&ciphertext);
+        Ok(format!("v1:{}", URL_SAFE_NO_PAD.encode(payload)))
+    }
+
+    fn decrypt_secret(&self, secret: &str) -> Result<String, DomainError> {
+        let Some(encoded_payload) = secret.strip_prefix("v1:") else {
+            // Existing installations stored TOTP secrets in plaintext.
+            return Ok(secret.to_string());
+        };
+        let payload = URL_SAFE_NO_PAD
+            .decode(encoded_payload)
+            .map_err(|_| DomainError::Internal("Invalid encrypted MFA secret".into()))?;
+        if payload.len() <= 12 {
+            return Err(DomainError::Internal("Invalid encrypted MFA secret".into()));
+        }
+        let (nonce_bytes, ciphertext) = payload.split_at(12);
+        let cipher = Aes256Gcm::new_from_slice(&self.encryption_key)
+            .map_err(|_| DomainError::Internal("Invalid MFA encryption key".into()))?;
+        let plaintext = cipher
+            .decrypt(Nonce::from_slice(nonce_bytes), ciphertext)
+            .map_err(|_| DomainError::Internal("Unable to decrypt MFA secret".into()))?;
+        String::from_utf8(plaintext)
+            .map_err(|_| DomainError::Internal("Invalid decrypted MFA secret".into()))
+    }
+
     fn verify_code(&self, secret: &str, code: &str) -> bool {
-        let secret_bytes = match base32_decode(secret) {
+        let decrypted_secret = match self.decrypt_secret(secret) {
+            Ok(secret) => secret,
+            Err(_) => return false,
+        };
+        let secret_bytes = match base32_decode(&decrypted_secret) {
             Some(b) => b,
             None => return false,
         };

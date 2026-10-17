@@ -278,6 +278,7 @@ impl AppState {
         // Generate or load a per-installation JWT secret.
         // Stored as a file in AppData — never hardcoded.
         let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
+        let mfa_encryption_key = Self::load_or_generate_mfa_encryption_key(app_data_dir)?;
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
 
@@ -301,7 +302,9 @@ impl AppState {
         );
         let device_repo =
             Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
-        let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+        let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl::new(
+            &mfa_encryption_key,
+        ));
         let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
         let sequence_repo = Arc::new(
@@ -819,6 +822,31 @@ impl AppState {
             std::fs::write(&secret_path, &secret)
                 .map_err(|e| format!("Failed to write JWT secret: {e}"))?;
             Ok(secret)
+        }
+
+        fn load_or_generate_mfa_encryption_key(
+            app_data_dir: &std::path::Path,
+        ) -> Result<String, String> {
+            let key_path = app_data_dir.join("mfa_encryption_key");
+            if key_path.exists() {
+                std::fs::read_to_string(&key_path)
+                    .map(|key| key.trim().to_string())
+                    .map_err(|error| format!("Failed to read MFA encryption key: {error}"))
+            } else {
+                use rand::Rng;
+                let key: String = rand::thread_rng()
+                    .sample_iter(&rand::distributions::Alphanumeric)
+                    .take(64)
+                    .map(char::from)
+                    .collect();
+                if let Some(parent) = key_path.parent() {
+                    std::fs::create_dir_all(parent)
+                        .map_err(|error| format!("Failed to create AppData dir: {error}"))?;
+                }
+                std::fs::write(&key_path, &key)
+                    .map_err(|error| format!("Failed to write MFA encryption key: {error}"))?;
+                Ok(key)
+            }
         }
     }
 }

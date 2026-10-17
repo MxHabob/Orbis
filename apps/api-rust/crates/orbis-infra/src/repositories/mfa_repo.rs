@@ -4,7 +4,10 @@ use async_trait::async_trait;
 use orbis_app::ports::repositories::{MfaFactorRepository, MfaRecoveryCodeRepository};
 use orbis_domain::entities::mfa::{MfaFactor, MfaRecoveryCode, MfaType};
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    sea_query::Expr,
+};
 use uuid::Uuid;
 
 pub struct MfaFactorRepoImpl {
@@ -145,20 +148,18 @@ impl MfaRecoveryCodeRepository for MfaRecoveryCodeRepoImpl {
         Ok(())
     }
 
-    async fn mark_used(&self, id: Uuid) -> Result<(), DomainError> {
-        if let Some(existing) = RecoveryCodeEntity::find_by_id(id)
-            .one(&self.db)
+    async fn mark_used(&self, id: Uuid) -> Result<bool, DomainError> {
+        let result = RecoveryCodeEntity::update_many()
+            .col_expr(mfa_recovery_code::Column::IsUsed, Expr::value(true))
+            .col_expr(
+                mfa_recovery_code::Column::UsedAt,
+                Expr::value(Some(chrono::Utc::now())),
+            )
+            .filter(mfa_recovery_code::Column::Id.eq(id))
+            .filter(mfa_recovery_code::Column::IsUsed.eq(false))
+            .exec(&self.db)
             .await
-            .map_err(|e| DomainError::Internal(e.to_string()))?
-        {
-            let mut active: mfa_recovery_code::ActiveModel = existing.into();
-            active.is_used = Set(true);
-            active.used_at = Set(Some(chrono::Utc::now()));
-            active
-                .update(&self.db)
-                .await
-                .map_err(|e| DomainError::Internal(e.to_string()))?;
-        }
-        Ok(())
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(result.rows_affected == 1)
     }
 }

@@ -21,6 +21,8 @@ pub struct ExamSessionDto {
     #[serde(alias = "academic_period_id")]
     pub period_id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub session_type: String,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
     pub status: String,
@@ -33,13 +35,22 @@ pub struct CreateExamSessionRequest {
     #[serde(alias = "academic_period_id")]
     pub period_id: Uuid,
     pub name: String,
+    pub name_ar: Option<String>,
+    #[serde(default = "default_exam_session_type")]
+    pub session_type: String,
     pub start_date: NaiveDate,
     pub end_date: NaiveDate,
+}
+
+fn default_exam_session_type() -> String {
+    "final".to_string()
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct UpdateExamSessionRequest {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub session_type: Option<String>,
     pub start_date: Option<NaiveDate>,
     pub end_date: Option<NaiveDate>,
     pub status: Option<String>,
@@ -178,6 +189,8 @@ async fn create_session(
             ctx.tenant_id,
             p.period_id,
             p.name,
+            p.name_ar,
+            p.session_type,
             p.start_date,
             p.end_date,
         )
@@ -187,6 +200,8 @@ async fn create_session(
         org_id: s.org_id,
         period_id: s.period_id,
         name: s.name,
+        name_ar: s.name_ar,
+        session_type: s.session_type,
         start_date: s.start_date,
         end_date: s.end_date,
         status: s.status,
@@ -213,6 +228,8 @@ async fn list_sessions(
             org_id: s.org_id,
             period_id: s.period_id,
             name: s.name,
+            name_ar: s.name_ar,
+            session_type: s.session_type,
             start_date: s.start_date,
             end_date: s.end_date,
             status: s.status,
@@ -240,6 +257,8 @@ async fn get_session(
         org_id: s.org_id,
         period_id: s.period_id,
         name: s.name,
+        name_ar: s.name_ar,
+        session_type: s.session_type,
         start_date: s.start_date,
         end_date: s.end_date,
         status: s.status,
@@ -259,13 +278,24 @@ async fn update_session(
 ) -> Result<Json<ApiResponse<ExamSessionDto>>, ApiError> {
     let s = state
         .scheduling_service
-        .update_exam_session(&ctx, id, p.name, p.start_date, p.end_date, p.status)
+        .update_exam_session(
+            &ctx,
+            id,
+            p.name,
+            p.name_ar,
+            p.session_type,
+            p.start_date,
+            p.end_date,
+            p.status,
+        )
         .await?;
     Ok(ApiResponse::ok(ExamSessionDto {
         id: s.id,
         org_id: s.org_id,
         period_id: s.period_id,
         name: s.name,
+        name_ar: s.name_ar,
+        session_type: s.session_type,
         start_date: s.start_date,
         end_date: s.end_date,
         status: s.status,
@@ -654,4 +684,35 @@ pub fn routes() -> Router<AppState> {
             post(assign_proctor).get(list_proctors),
         )
         .route("/api/v1/exam-proctors/:id", delete(delete_proctor))
+}
+
+#[cfg(test)]
+mod exam_session_request_tests {
+    use super::CreateExamSessionRequest;
+    use uuid::Uuid;
+
+    #[test]
+    fn accepts_period_id_and_legacy_academic_period_id() {
+        let period_id = Uuid::new_v4();
+        for request_body in [
+            serde_json::json!({
+                "period_id": period_id,
+                "name": "Final Exams",
+                "name_ar": "الاختبارات النهائية",
+                "start_date": "2026-10-16",
+                "end_date": "2026-10-28"
+            }),
+            serde_json::json!({
+                "academic_period_id": period_id,
+                "name": "Final Exams",
+                "name_ar": "الاختبارات النهائية",
+                "start_date": "2026-10-16",
+                "end_date": "2026-10-28"
+            }),
+        ] {
+            let request: CreateExamSessionRequest = serde_json::from_value(request_body).unwrap();
+            assert_eq!(request.period_id, period_id);
+            assert_eq!(request.session_type, "final");
+        }
+    }
 }

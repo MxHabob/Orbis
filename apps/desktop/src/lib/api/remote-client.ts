@@ -368,9 +368,8 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.mfaEnroll({ client: this.client, body: req ?? {} }));
   }
 
-  async mfaVerifyEnrollment(req: import("./types").MfaVerifyEnrollmentRequest): Promise<boolean> {
-    await this.call(sdk.mfaVerifyEnrollment({ client: this.client, body: req }));
-    return true;
+  async mfaVerifyEnrollment(req: import("./types").MfaVerifyEnrollmentRequest): Promise<string[]> {
+    return this.call(sdk.mfaVerifyEnrollment({ client: this.client, body: req }));
   }
 
   async mfaChallenge(req: import("./types").MfaChallengeRequest): Promise<LoginResponse> {

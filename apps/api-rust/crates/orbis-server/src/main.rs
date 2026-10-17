@@ -112,6 +112,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let jwt_secret = std::env::var("JWT_SECRET")
         .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
+    let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
+        Ok(key) if !key.trim().is_empty() => key,
+        _ if std::env::var("APP_ENV")
+            .map(|environment| environment != "production")
+            .unwrap_or(true) =>
+        {
+            tracing::warn!(
+                "MFA_ENCRYPTION_KEY is unset; deriving the MFA key from JWT_SECRET for development"
+            );
+            jwt_secret.clone()
+        }
+        _ => return Err("MFA_ENCRYPTION_KEY is required in production".into()),
+    };
     let token_service = Arc::new(JwtTokenService::new(jwt_secret));
     let password_hasher = Arc::new(BcryptHasher);
 
@@ -140,7 +153,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
     let device_repo =
         Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
-    let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+    let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl::new(
+        &mfa_encryption_key,
+    ));
     let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
     // ── Reporting System Wiring ─────────────────────────────────

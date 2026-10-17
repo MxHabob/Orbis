@@ -1771,7 +1771,7 @@ export interface OrbisApiClient {
   getSession(): Promise<SessionResponse>;
   logout(): Promise<void>;
   mfaEnroll(req?: MfaEnrollRequest): Promise<MfaEnrollResponse>;
-  mfaVerifyEnrollment(req: MfaVerifyEnrollmentRequest): Promise<boolean>;
+  mfaVerifyEnrollment(req: MfaVerifyEnrollmentRequest): Promise<string[]>;
   mfaChallenge(req: MfaChallengeRequest): Promise<LoginResponse>;
   linkGoogle(req: GoogleAuthRequest): Promise<UserIdentityDto>;
   loginWithGoogle(req: GoogleAuthRequest): Promise<LoginResponse>;

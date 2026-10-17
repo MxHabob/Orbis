@@ -95,10 +95,12 @@ pub struct LoginRequest {
 
 #[derive(Serialize, ToSchema)]
 pub struct LoginResponse {
-    pub token: String,
-    pub refresh_token: String,
+    pub token: Option<String>,
+    pub refresh_token: Option<String>,
     pub user: UserDto,
-    pub effective_context: EffectiveContextDto,
+    pub effective_context: Option<EffectiveContextDto>,
+    pub mfa_required: bool,
+    pub mfa_token: Option<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -281,14 +283,20 @@ async fn login(
         .auth_service
         .login(&ctx, &payload.email, &payload.password)
         .await?;
-    let roles = res.effective_context.roles.clone();
+    let roles = res
+        .effective_context
+        .as_ref()
+        .map(|context| context.roles.clone())
+        .unwrap_or_default();
     let user_dto = user_to_dto(res.user, res.person.as_ref(), roles);
 
     Ok(ApiResponse::ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_dto,
-        effective_context: res.effective_context.into(),
+        effective_context: res.effective_context.map(Into::into),
+        mfa_required: res.mfa_required,
+        mfa_token: res.mfa_token,
     }))
 }
 
@@ -1051,7 +1059,6 @@ pub struct MfaEnrollResponse {
     pub factor_id: Uuid,
     pub secret: String,
     pub qr_code_uri: String,
-    pub recovery_codes: Vec<String>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -1062,7 +1069,7 @@ pub struct MfaVerifyEnrollmentRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct MfaChallengeRequest {
-    pub user_id: Uuid,
+    pub mfa_token: String,
     pub code: String,
     pub device_id: Option<String>,
     pub remember_device: Option<bool>,
@@ -1117,7 +1124,6 @@ async fn mfa_enroll(
         factor_id: res.factor_id,
         secret: res.secret,
         qr_code_uri: res.qr_code_uri,
-        recovery_codes: res.recovery_codes,
     }))
 }
 
@@ -1125,7 +1131,7 @@ async fn mfa_enroll(
     post,
     path = "/api/v1/auth/mfa/verify-enrollment",
     request_body = MfaVerifyEnrollmentRequest,
-    responses((status = 200, description = "MFA Factor verified and activated")),
+    responses((status = 200, description = "MFA Factor verified and activated", body = Vec<String>)),
     security(("bearer" = [])),
     tag = "Auth"
 )]
@@ -1133,12 +1139,12 @@ async fn mfa_verify_enrollment(
     ctx: AuthContext,
     State(state): State<AppState>,
     Json(payload): Json<MfaVerifyEnrollmentRequest>,
-) -> Result<Json<ApiResponse<bool>>, ApiError> {
-    let verified = state
+) -> Result<Json<ApiResponse<Vec<String>>>, ApiError> {
+    let recovery_codes = state
         .auth_service
         .verify_totp_enrollment(&ctx, payload.factor_id, &payload.code)
         .await?;
-    Ok(ApiResponse::ok(verified))
+    Ok(ApiResponse::ok(recovery_codes))
 }
 
 #[utoipa::path(
@@ -1155,7 +1161,7 @@ async fn mfa_challenge(
     let res = state
         .auth_service
         .verify_mfa_challenge(
-            payload.user_id,
+            &payload.mfa_token,
             &payload.code,
             payload.device_id,
             payload.remember_device.unwrap_or(false),
@@ -1164,7 +1170,7 @@ async fn mfa_challenge(
 
     let user = state
         .user_repo
-        .find_by_id(payload.user_id)
+        .find_by_id(res.user_id)
         .await?
         .ok_or_else(|| ApiError::not_found("User not found"))?;
     let person = state.person_repo.find_by_id(user.person_id).await?;
@@ -1175,10 +1181,12 @@ async fn mfa_challenge(
     let roles = effective_context.roles.clone();
 
     Ok(ApiResponse::ok(LoginResponse {
-        token: res.token,
-        refresh_token: res.refresh_token,
+        token: Some(res.token),
+        refresh_token: Some(res.refresh_token),
         user: user_to_dto(user, person.as_ref(), roles),
-        effective_context: effective_context.into(),
+        effective_context: Some(effective_context.into()),
+        mfa_required: false,
+        mfa_token: None,
     }))
 }
 
@@ -1236,7 +1244,9 @@ async fn google_login(
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_to_dto(user, person.as_ref(), roles),
-        effective_context: effective_context.into(),
+        effective_context: Some(effective_context.into()),
+        mfa_required: res.mfa_required,
+        mfa_token: res.mfa_token,
     }))
 }
 

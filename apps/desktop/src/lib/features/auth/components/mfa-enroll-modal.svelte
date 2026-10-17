@@ -16,12 +16,12 @@ import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
 import { api, type MfaEnrollResponse } from "$lib/api";
 import { authStore } from "$lib/stores";
-import { ArrowLeft, ArrowRight, Check, Clipboard, Download, InfoCircle, UserBadgeCheck } from "@orbis/icons";
+import { ArrowRight, Check, Clipboard, Download, InfoCircle, UserBadgeCheck } from "@orbis/icons";
 
 interface Props {
   open: boolean;
   onSuccess: () => void;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 let { open = $bindable(false), onSuccess, onClose }: Props = $props();
@@ -34,6 +34,7 @@ let qrDataUrl = $state<string>("");
 let copiedSecret = $state(false);
 let copiedCodes = $state(false);
 let verifyCode = $state("");
+let recoveryCodes = $state<string[]>([]);
 let errorMessage = $state<string | null>(null);
 
 async function startEnrollment() {
@@ -44,6 +45,7 @@ async function startEnrollment() {
   try {
     const res = await api.mfaEnroll({ factor_name: "Authenticator App" });
     enrollData = res;
+    recoveryCodes = [];
     if (res.qr_code_uri) {
       qrDataUrl = await QRCode.toDataURL(res.qr_code_uri, {
         width: 200,
@@ -69,6 +71,7 @@ $effect(() => {
     enrollData = null;
     qrDataUrl = "";
     verifyCode = "";
+    recoveryCodes = [];
     step = "qr";
   }
 });
@@ -93,7 +96,7 @@ function downloadRecoveryCodes() {
   if (!enrollData) return;
   const content =
     `${m.auth_ui_recovery_codes_title()}\n${m.auth_ui_recovery_codes_generated_on({ date: new Date().toISOString() })}\n\n${m.auth_ui_recovery_codes_keep_safe()}\n${m.auth_ui_recovery_codes_single_use()}\n\n` +
-    enrollData.recovery_codes.map((c, i) => `${i + 1}. ${c}`).join("\n");
+    recoveryCodes.map((c, i) => `${i + 1}. ${c}`).join("\n");
 
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -110,26 +113,20 @@ async function handleVerifyAndActivate() {
   isSubmitting = true;
   errorMessage = null;
   try {
-    const ok = await api.mfaVerifyEnrollment({
+    recoveryCodes = await api.mfaVerifyEnrollment({
       factor_id: enrollData.factor_id,
       code: verifyCode.trim(),
     });
-    if (ok) {
-      if (authStore.user) {
-        authStore.user = {
-          ...authStore.user,
-          mfa_enabled: true,
-        };
-        localStorage.setItem("orbis_user", JSON.stringify(authStore.user));
-      }
-      localStorage.setItem("orbis_mfa_enabled", "true");
-      toast.success(m.common_mfa_enroll_success());
-      open = false;
-      onSuccess();
-    } else {
-      errorMessage = m.common_mfa_enroll_invalid_code();
-      toast.error(errorMessage);
+    if (authStore.user) {
+      authStore.user = {
+        ...authStore.user,
+        is_mfa_enabled: true,
+      };
+      localStorage.setItem("orbis_user", JSON.stringify(authStore.user));
     }
+    localStorage.setItem("orbis_mfa_enabled", "true");
+    toast.success(m.common_mfa_enroll_success());
+    step = "codes";
   } catch (err: any) {
     errorMessage = err.message || m.auth_ui_mfa_verification_failed();
     toast.error(errorMessage);
@@ -137,9 +134,14 @@ async function handleVerifyAndActivate() {
     isSubmitting = false;
   }
 }
+
+function finishEnrollment() {
+  open = false;
+  onSuccess();
+}
 </script>
 
-<Dialog bind:open onOpenChange={(val) => !val && onClose()}>
+<Dialog bind:open onOpenChange={(val) => !val && onClose?.()}>
   <DialogContent class="max-w-md text-start font-sans">
     <DialogHeader>
       <DialogTitle class="text-sm font-bold flex items-center gap-2">
@@ -221,7 +223,7 @@ async function handleVerifyAndActivate() {
             </div>
 
             <div class="grid grid-cols-2 gap-1.5 p-2.5 bg-muted/30 border border-border rounded-lg font-mono text-xs">
-              {#each enrollData.recovery_codes as code, index}
+              {#each recoveryCodes as code, index (code)}
                 <div class="flex items-center gap-2 py-1 px-2 rounded bg-background border border-border/50">
                   <span class="text-[10px] text-muted-foreground w-3.5">{index + 1}.</span>
                   <span class="font-semibold text-foreground tracking-wider">{code}</span>
@@ -234,7 +236,7 @@ async function handleVerifyAndActivate() {
                 variant="outline"
                 size="sm"
                 class="flex-1 h-9 gap-1.5 text-xs font-medium"
-                onclick={() => copyToClipboard(enrollData!.recovery_codes.join("\n"), "codes")}
+                onclick={() => copyToClipboard(recoveryCodes.join("\n"), "codes")}
               >
                 {#if copiedCodes}
                   <Check class="w-3.5 h-3.5 text-emerald-500" />
@@ -287,25 +289,15 @@ async function handleVerifyAndActivate() {
     <!-- Footer Actions -->
     <DialogFooter class="border-t border-border pt-3 mt-2 flex items-center justify-between">
       {#if step === 'qr'}
-        <Button variant="ghost" size="sm" class="text-xs" onclick={() => { open = false; onClose(); }}>
+        <Button variant="ghost" size="sm" class="text-xs" onclick={() => { open = false; onClose?.(); }}>
           {m.common_titlebar_close()}
-        </Button>
-        <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={() => (step = 'codes')}>
-          <span>{m.common_mfa_enroll_step_codes_btn()}</span>
-          <ArrowRight class="w-3.5 h-3.5 rtl:rotate-180" />
-        </Button>
-      {:else if step === 'codes'}
-        <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'qr')}>
-          <ArrowLeft class="w-3.5 h-3.5 rtl:rotate-180" />
-          <span>{m.common_titlebar_close()}</span>
         </Button>
         <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={() => (step = 'verify')}>
           <span>{m.common_mfa_enroll_step_verify_btn()}</span>
           <ArrowRight class="w-3.5 h-3.5 rtl:rotate-180" />
         </Button>
       {:else if step === 'verify'}
-        <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'codes')}>
-          <ArrowLeft class="w-3.5 h-3.5 rtl:rotate-180" />
+        <Button variant="ghost" size="sm" class="text-xs gap-1" onclick={() => (step = 'qr')}>
           <span>{m.common_titlebar_close()}</span>
         </Button>
         <Button
@@ -321,6 +313,11 @@ async function handleVerifyAndActivate() {
             <UserBadgeCheck class="w-3.5 h-3.5" />
             <span>{m.common_mfa_enroll_confirm_btn()}</span>
           {/if}
+        </Button>
+      {:else if step === 'codes'}
+        <Button size="sm" class="text-xs font-semibold gap-1.5" onclick={finishEnrollment}>
+          <Check class="w-3.5 h-3.5" />
+          <span>{m.common_mfa_enroll_finish_btn()}</span>
         </Button>
       {/if}
     </DialogFooter>

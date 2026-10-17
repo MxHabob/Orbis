@@ -118,7 +118,6 @@ pub struct SectionDto {
 #[derive(Deserialize)]
 pub struct CreateSectionInput {
     pub unit_id: Option<String>,
-    pub period_id: Option<String>,
     pub section_type: Option<String>,
     pub code: Option<String>,
     pub name: String,
@@ -414,7 +413,6 @@ pub async fn academic_create_section(
 ) -> Result<ApiResponse<SectionDto>, String> {
     let ctx = make_ctx(&state);
     let unit_id = request.unit_id.and_then(|u| Uuid::parse_str(&u).ok());
-    let period_id = request.period_id.and_then(|p| Uuid::parse_str(&p).ok());
 
     let c = state
         .academic_service
@@ -423,7 +421,6 @@ pub async fn academic_create_section(
             ctx.tenant_id,
             ServiceCreateSectionInput {
                 unit_id,
-                period_id,
                 section_type: request.section_type,
                 code: request.code,
                 name: request.name,

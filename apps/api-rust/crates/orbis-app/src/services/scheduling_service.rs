@@ -36,6 +36,22 @@ pub struct SchedulingService {
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
 
+fn validate_exam_session(
+    session_type: &str,
+    start_date: NaiveDate,
+    end_date: NaiveDate,
+) -> Result<(), DomainError> {
+    if !["final", "midterm", "quiz", "practical"].contains(&session_type) {
+        return Err(DomainError::Validation("Invalid exam session type".into()));
+    }
+    if end_date < start_date {
+        return Err(DomainError::Validation(
+            "Exam session end date must be on or after its start date".into(),
+        ));
+    }
+    Ok(())
+}
+
 impl SchedulingService {
     pub fn new(
         room_repo: Arc<dyn RoomRepository>,
@@ -577,12 +593,15 @@ impl SchedulingService {
         org_id: Uuid,
         period_id: Uuid,
         name: String,
+        name_ar: Option<String>,
+        session_type: String,
         start_date: NaiveDate,
         end_date: NaiveDate,
     ) -> Result<ExamSession, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ExamSessionWrite)
             .await?;
+        validate_exam_session(&session_type, start_date, end_date)?;
 
         let now = Utc::now();
         let session_id = Uuid::new_v4();
@@ -592,6 +611,8 @@ impl SchedulingService {
             org_id,
             period_id,
             name,
+            name_ar,
+            session_type,
             start_date,
             end_date,
             status: "draft".to_string(),
@@ -895,6 +916,8 @@ impl SchedulingService {
         ctx: &RequestContext,
         id: Uuid,
         name: Option<String>,
+        name_ar: Option<String>,
+        session_type: Option<String>,
         start_date: Option<NaiveDate>,
         end_date: Option<NaiveDate>,
         status: Option<String>,
@@ -911,6 +934,12 @@ impl SchedulingService {
         if let Some(n) = name {
             session.name = n;
         }
+        if let Some(n) = name_ar {
+            session.name_ar = Some(n);
+        }
+        if let Some(session_type) = session_type {
+            session.session_type = session_type;
+        }
         if let Some(s) = start_date {
             session.start_date = s;
         }
@@ -920,6 +949,7 @@ impl SchedulingService {
         if let Some(st) = status {
             session.status = st;
         }
+        validate_exam_session(&session.session_type, session.start_date, session.end_date)?;
         session.updated_at = Utc::now();
 
         self.exam_session_repo.save(&session).await?;
@@ -1032,5 +1062,35 @@ impl SchedulingService {
 
     pub async fn list_proctors(&self, schedule_id: Uuid) -> Result<Vec<ExamProctor>, DomainError> {
         self.exam_proctor_repo.find_by_schedule(schedule_id).await
+    }
+}
+
+#[cfg(test)]
+mod exam_session_validation_tests {
+    use super::validate_exam_session;
+    use chrono::NaiveDate;
+    use orbis_domain::errors::DomainError;
+
+    #[test]
+    fn accepts_supported_types_and_valid_date_ranges() {
+        let start = NaiveDate::from_ymd_opt(2026, 10, 16).unwrap();
+        let end = NaiveDate::from_ymd_opt(2026, 10, 28).unwrap();
+        for session_type in ["final", "midterm", "quiz", "practical"] {
+            assert!(validate_exam_session(session_type, start, end).is_ok());
+        }
+    }
+
+    #[test]
+    fn rejects_unknown_types_and_end_dates_before_start() {
+        let start = NaiveDate::from_ymd_opt(2026, 10, 16).unwrap();
+        let earlier = NaiveDate::from_ymd_opt(2026, 10, 15).unwrap();
+        assert!(matches!(
+            validate_exam_session("unknown", start, start),
+            Err(DomainError::Validation(_))
+        ));
+        assert!(matches!(
+            validate_exam_session("final", start, earlier),
+            Err(DomainError::Validation(_))
+        ));
     }
 }

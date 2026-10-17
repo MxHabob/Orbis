@@ -1,11 +1,13 @@
 use anyhow::{Result, anyhow};
 use colored::*;
-use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use orbis_app::ports::security::TotpService;
 use orbis_infra::security::totp::TotpServiceImpl;
+use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use uuid::Uuid;
 
-use crate::ui::output::{self, COLOR_CYAN, COLOR_EMERALD, COLOR_MUTED, COLOR_PURPLE, COLOR_ROSE, COLOR_WHITE};
+use crate::ui::output::{
+    self, COLOR_CYAN, COLOR_EMERALD, COLOR_MUTED, COLOR_PURPLE, COLOR_ROSE, COLOR_WHITE,
+};
 
 #[derive(Debug, Clone)]
 pub struct AuthenticatedAdmin {
@@ -28,7 +30,7 @@ struct AdminRecord {
 pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<AuthenticatedAdmin> {
     let backend = db.get_database_backend();
 
-        // 1. Fetch only active users with an administrator role
+    // 1. Fetch only active users with an administrator role
     let sql = r#"
                   SELECT u.id, u.email,
                       COALESCE(NULLIF(p.display_name, ''), TRIM(p.first_name || ' ' || p.last_name)) AS full_name,
@@ -48,7 +50,9 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
         .map_err(|e| anyhow!("Failed to query administrator accounts: {e}"))?;
 
     if rows.is_empty() {
-        return Err(anyhow!("No active administrator accounts found in the database."));
+        return Err(anyhow!(
+            "No active administrator accounts found in the database."
+        ));
     }
 
     let admins: Vec<AdminRecord> = rows
@@ -81,12 +85,28 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
         return Err(anyhow!("No valid administrator credentials found."));
     }
 
-    println!("  {} {}", "●".truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2), "Administrator authentication required to continue.".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold());
+    println!(
+        "  {} {}",
+        "●".truecolor(COLOR_PURPLE.0, COLOR_PURPLE.1, COLOR_PURPLE.2),
+        "Administrator authentication required to continue."
+            .truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2)
+            .bold()
+    );
 
     // 2. Select admin account if multiple, or select the single admin
     let selected_admin = if admins.len() == 1 {
         let admin = &admins[0];
-        println!("    {} {} ({})", "Account:".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2), admin.full_name.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold(), admin.email.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2));
+        println!(
+            "    {} {} ({})",
+            "Account:".truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2),
+            admin
+                .full_name
+                .truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2)
+                .bold(),
+            admin
+                .email
+                .truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2)
+        );
         println!();
         admin
     } else {
@@ -162,27 +182,42 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
     let requires_mfa = selected_admin.mfa_enabled || !mfa_rows.is_empty();
 
     if requires_mfa {
-        println!("  {} {}", "●".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2), "Two-Factor Verification (TOTP / Recovery Code)".truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold());
+        println!(
+            "  {} {}",
+            "●".truecolor(COLOR_CYAN.0, COLOR_CYAN.1, COLOR_CYAN.2),
+            "Two-Factor Verification (TOTP / Recovery Code)"
+                .truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2)
+                .bold()
+        );
 
-        let totp_service = TotpServiceImpl;
+        let encryption_key = std::env::var("MFA_ENCRYPTION_KEY")
+            .or_else(|_| std::env::var("JWT_SECRET"))
+            .unwrap_or_else(|_| {
+                "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string()
+            });
+        let totp_service = TotpServiceImpl::new(&encryption_key);
         let mut mfa_verified = false;
 
         for attempt in 1..=max_attempts {
-            let code_input = crate::ui::prompts::prompt_text("Authenticator Code / Recovery Code:")?;
+            let code_input =
+                crate::ui::prompts::prompt_text("Authenticator Code / Recovery Code:")?;
             let trimmed = code_input.trim();
 
             // Try every verified TOTP factor; users may have re-enrolled MFA.
             for mfa_row in &mfa_rows {
                 if let Ok(secret) = mfa_row.try_get::<String>("", "secret_encrypted") {
+                    let secret = totp_service.decrypt_secret(&secret)?;
                     if totp_service.verify_code(&secret, trimmed) {
                         mfa_verified = true;
                         if let Ok(factor_id) = mfa_row.try_get::<Uuid>("", "id") {
                             let now = chrono::Utc::now().to_rfc3339();
-                            let _ = db.execute(Statement::from_sql_and_values(
-                                backend,
-                                "UPDATE user_mfa_factors SET last_used_at = $1 WHERE id = $2",
-                                vec![now.into(), factor_id.into()],
-                            )).await;
+                            let _ = db
+                                .execute(Statement::from_sql_and_values(
+                                    backend,
+                                    "UPDATE user_mfa_factors SET last_used_at = $1 WHERE id = $2",
+                                    vec![now.into(), factor_id.into()],
+                                ))
+                                .await;
                         }
                         break;
                     }
@@ -200,11 +235,14 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
                 WHERE user_id = $1 AND is_used = 0;
             "#;
 
-            if let Ok(rec_rows) = db.query_all(Statement::from_sql_and_values(
-                backend,
-                rec_sql,
-                vec![selected_admin_id.into()],
-            )).await {
+            if let Ok(rec_rows) = db
+                .query_all(Statement::from_sql_and_values(
+                    backend,
+                    rec_sql,
+                    vec![selected_admin_id.into()],
+                ))
+                .await
+            {
                 for rec_row in rec_rows {
                     if let (Ok(rec_id), Ok(code_hash)) = (
                         rec_row.try_get::<Uuid>("", "id"),
@@ -217,7 +255,10 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
                                 "UPDATE user_recovery_codes SET is_used = 1, used_at = $1 WHERE id = $2",
                                 vec![now.into(), rec_id.into()],
                             )).await;
-                            println!("    {} Recovery code verified and consumed.", "✔".truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2));
+                            println!(
+                                "    {} Recovery code verified and consumed.",
+                                "✔".truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2)
+                            );
                             mfa_verified = true;
                             break;
                         }
@@ -245,7 +286,19 @@ pub async fn authenticate_admin(db: &DatabaseConnection) -> Result<Authenticated
         }
     }
 
-    println!("  {} {} ({})\n", "✔ Verified:".truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2).bold(), selected_admin.full_name.truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2).bold(), selected_admin.email.truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2));
+    println!(
+        "  {} {} ({})\n",
+        "✔ Verified:"
+            .truecolor(COLOR_EMERALD.0, COLOR_EMERALD.1, COLOR_EMERALD.2)
+            .bold(),
+        selected_admin
+            .full_name
+            .truecolor(COLOR_WHITE.0, COLOR_WHITE.1, COLOR_WHITE.2)
+            .bold(),
+        selected_admin
+            .email
+            .truecolor(COLOR_MUTED.0, COLOR_MUTED.1, COLOR_MUTED.2)
+    );
 
     Ok(AuthenticatedAdmin {
         user_id: selected_admin.id.clone(),

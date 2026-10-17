@@ -2,7 +2,7 @@
 // Svelte 5 Runes-based authentication state.
 
 import { api } from "$lib/api/client";
-import type { UserDto, EffectiveContextDto } from "$lib/api/types";
+import type { UserDto, EffectiveContextDto, LoginResponse } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
 import { effectiveContext } from "./effective-context.svelte";
 import { systemStore } from "./system.svelte";
@@ -25,11 +25,15 @@ class AuthStore {
     this.isAuthenticated && !systemStore.isOperational
   );
 
-  async login(email: string, password: string) {
+  async login(email: string, password: string): Promise<LoginResponse> {
     this.isLoading = true;
     this.error = null;
     try {
       const res = await api.login({ email, password });
+      if (res.mfa_required) return res;
+      if (!res.token) {
+        throw new Error("The login response did not contain an access token.");
+      }
       this.user = res.user;
       this.token = res.token;
       this.restorePromise = null;
@@ -39,6 +43,7 @@ class AuthStore {
         effectiveContext.setEffectiveContext(res.effective_context);
       }
       await systemStore.loadReadiness();
+      return res;
     } catch (e) {
       this.error = extractErrorMessage(e);
       throw e;

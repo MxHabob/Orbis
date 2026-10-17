@@ -276,7 +276,7 @@ export class LocalClient implements OrbisApiClient {
   }
   async mfaVerifyEnrollment(
     req: MfaVerifyEnrollmentRequest,
-  ): Promise<boolean> {
+  ): Promise<string[]> {
     return unwrap(await invoke("auth_mfa_verify_enrollment", { request: req }));
   }
   async mfaChallenge(

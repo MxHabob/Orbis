@@ -207,6 +207,23 @@ export type AiChatResponse = {
     ui_data?: Array<unknown>;
 };
 
+export type AiCustomReportRequest = {
+    columns: Array<string>;
+    locale: string;
+    output_format: string;
+    parameters: unknown;
+    report_code: string;
+    template_id?: string | null;
+    title: string;
+};
+
+export type AiCustomReportResponse = {
+    job_id: string;
+    output_format: string;
+    status: string;
+    title: string;
+};
+
 export type AiMessage = {
     content: string;
     created_at?: string | null;
@@ -904,7 +921,9 @@ export type CreateEnrollmentRequest = {
 export type CreateExamSessionRequest = {
     end_date: string;
     name: string;
+    name_ar?: string | null;
     period_id: string;
+    session_type?: string;
     start_date: string;
 };
 
@@ -1036,7 +1055,6 @@ export type CreateSectionRequest = {
     level?: string | null;
     name: string;
     name_ar?: string | null;
-    period_id?: string | null;
     section_type?: string | null;
     track?: string | null;
     unit_id?: string | null;
@@ -1391,8 +1409,10 @@ export type ExamSessionDto = {
     end_date: string;
     id: string;
     name: string;
+    name_ar?: string | null;
     org_id: string;
     period_id: string;
+    session_type: string;
     start_date: string;
     status: string;
     updated_at: string;
@@ -2512,9 +2532,9 @@ export type StudentProgressionItemInput = {
     decision: string;
     enrollment_id: string;
     reason?: string;
-    student_number?: string | null;
     source_section_id?: string | null;
     student_id: string;
+    student_number?: string | null;
     target_section_id?: string | null;
 };
 
@@ -2735,6 +2755,8 @@ export type UpdateEndpointRequest = {
 export type UpdateExamSessionRequest = {
     end_date?: string | null;
     name?: string | null;
+    name_ar?: string | null;
+    session_type?: string | null;
     start_date?: string | null;
     status?: string | null;
 };
@@ -6611,6 +6633,22 @@ export type BatchPrintResponses = {
 };
 
 export type BatchPrintResponse = BatchPrintResponses[keyof BatchPrintResponses];
+
+export type CreateCustomReportData = {
+    body: AiCustomReportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/reports/custom';
+};
+
+export type CreateCustomReportResponses = {
+    /**
+     * Create a confirmed custom report job
+     */
+    200: AiCustomReportResponse;
+};
+
+export type CreateCustomReportResponse = CreateCustomReportResponses[keyof CreateCustomReportResponses];
 
 export type GenerateReportData = {
     body: GenerateReportRequest;

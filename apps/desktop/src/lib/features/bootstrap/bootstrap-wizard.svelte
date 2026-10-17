@@ -33,6 +33,7 @@ import StepRegion from "./components/step-region.svelte";
 import StepAdmin from "./components/step-admin.svelte";
 import StepMfa from "./components/step-mfa.svelte";
 import StepReview from "./components/step-review.svelte";
+import MfaEnrollModal from "$lib/features/auth/components/mfa-enroll-modal.svelte";
 import OnboardingHeader from "./components/onboarding-header.svelte";
 import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
 import { buildBootstrapRequest } from "./bootstrap-request";
@@ -63,6 +64,7 @@ let isComplete = $state(false);
 let postBootstrapError = $state<string | null>(null);
 let bootstrapResult = $state<BootstrapResult | null>(null);
 let isCheckingBootstrap = $state(true);
+let isMfaEnrollmentOpen = $state(false);
 
 const steps: Array<{ id: OnboardingStep }> = [
   { id: "intro" },
@@ -197,6 +199,9 @@ function prevStep() {
 }
 
 function skipStep() {
+  if (currentStep === "mfa") {
+    form.setField("enableMfa", false);
+  }
   if (currentStepIndex < steps.length - 1) {
     currentStep = steps[currentStepIndex + 1].id;
     errors = {};
@@ -232,7 +237,11 @@ async function handleLaunchBootstrap() {
       toast.error(postBootstrapError);
     }
     if (!postBootstrapError) {
-      await navigateToWorkspace(result.organization_id);
+      if (payload.enableMfa) {
+        isMfaEnrollmentOpen = true;
+      } else {
+        await navigateToWorkspace(result.organization_id);
+      }
     }
   });
 
@@ -292,6 +301,19 @@ async function startTrialFromBootstrap(): Promise<boolean> {
 async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
   return Boolean(await licenseStore.redeemKey(productKey));
 }
+
+function finishMfaEnrollment() {
+  isMfaEnrollmentOpen = false;
+  const organizationId = bootstrapResult?.organization_id || authStore.orgId;
+  if (organizationId) void navigateToWorkspace(organizationId);
+}
+
+function deferMfaEnrollment() {
+  if (!isMfaEnrollmentOpen) return;
+  isMfaEnrollmentOpen = false;
+  toast.error(m.ui_onboarding_mfa_enrollment_deferred());
+  enterWorkspace();
+}
 </script>
 
 {#if isCheckingBootstrap}
@@ -317,7 +339,7 @@ async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
   {:else if currentStep === "admin"}
     <StepAdmin bind:form={form.values} {errors} />
   {:else if currentStep === "mfa"}
-    <StepMfa />
+    <StepMfa bind:form={form.values} />
   {:else if currentStep === "review"}
     <StepReview
       form={form.values}
@@ -350,4 +372,10 @@ async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
       {/if}
     {/snippet}
   </SetupWorkspace>
+
+  <MfaEnrollModal
+    bind:open={isMfaEnrollmentOpen}
+    onSuccess={finishMfaEnrollment}
+    onClose={deferMfaEnrollment}
+  />
 {/if}

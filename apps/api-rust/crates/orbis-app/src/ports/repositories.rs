@@ -170,6 +170,7 @@ pub trait SessionRepository: Send + Sync {
         session: &orbis_domain::entities::session::Session,
     ) -> Result<(), DomainError>;
     async fn invalidate(&self, token: &str) -> Result<(), DomainError>;
+    async fn consume_mfa_challenge(&self, token: &str) -> Result<bool, DomainError>;
 }
 
 #[async_trait]
@@ -185,7 +186,7 @@ pub trait MfaRecoveryCodeRepository: Send + Sync {
     async fn find_active_by_user(&self, user_id: Uuid)
     -> Result<Vec<MfaRecoveryCode>, DomainError>;
     async fn save_all(&self, codes: &[MfaRecoveryCode]) -> Result<(), DomainError>;
-    async fn mark_used(&self, id: Uuid) -> Result<(), DomainError>;
+    async fn mark_used(&self, id: Uuid) -> Result<bool, DomainError>;
 }
 
 // =========================================================================

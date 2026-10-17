@@ -202,6 +202,9 @@ export interface OnboardingFormModel {
   adminPassword: string;
   adminConfirmPassword: string;
   adminPhone: string;
+
+  // Step 4: Administrator security
+  enableMfa: boolean;
 }
 
 export const INITIAL_ONBOARDING_VALUES: OnboardingFormModel = {
@@ -237,4 +240,5 @@ export const INITIAL_ONBOARDING_VALUES: OnboardingFormModel = {
   adminPassword: "",
   adminConfirmPassword: "",
   adminPhone: "",
+  enableMfa: true,
 };
