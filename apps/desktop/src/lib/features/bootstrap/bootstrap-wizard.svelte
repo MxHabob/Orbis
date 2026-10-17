@@ -236,12 +236,9 @@ async function handleLaunchBootstrap() {
       postBootstrapError = extractErrorMessage(authErr);
       toast.error(postBootstrapError);
     }
-    if (!postBootstrapError) {
-      if (payload.enableMfa) {
-        isMfaEnrollmentOpen = true;
-      } else {
-        await navigateToWorkspace(result.organization_id);
-      }
+
+    if (!postBootstrapError && payload.enableMfa) {
+      isMfaEnrollmentOpen = true;
     }
   });
 
@@ -304,15 +301,12 @@ async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
 
 function finishMfaEnrollment() {
   isMfaEnrollmentOpen = false;
-  const organizationId = bootstrapResult?.organization_id || authStore.orgId;
-  if (organizationId) void navigateToWorkspace(organizationId);
 }
 
 function deferMfaEnrollment() {
   if (!isMfaEnrollmentOpen) return;
   isMfaEnrollmentOpen = false;
   toast.error(m.ui_onboarding_mfa_enrollment_deferred());
-  enterWorkspace();
 }
 </script>
 
@@ -325,7 +319,9 @@ function deferMfaEnrollment() {
     viewportId="onboarding-viewport"
   >
     {#snippet header()}
-      <OnboardingHeader {currentStep} {steps} />
+      {#if !isComplete && !isSubmitting}
+        <OnboardingHeader {currentStep} {steps} />
+      {/if}
     {/snippet}
 
   {#if currentStep === "intro"}
@@ -359,7 +355,7 @@ function deferMfaEnrollment() {
   {/if}
 
     {#snippet footer()}
-      {#if !isComplete}
+      {#if !isComplete && !isSubmitting}
         <OnboardingFooter
           {canGoBack}
           canGoNext={!isLastStep}
