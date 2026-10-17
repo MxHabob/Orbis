@@ -20,6 +20,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerTransparent: true,
+        headerStatusBarHeight: 0,
         headerShadowVisible: false,
         headerStyle: {
           backgroundColor: "transparent",

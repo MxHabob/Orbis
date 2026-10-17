@@ -337,8 +337,10 @@ pub async fn get_database_status(
                         .last()
                         .map(|migration| migration.name().to_string())
                         .unwrap_or_else(|| "v0.0.0 (uninitialized)".to_string());
-                    let applied_names: std::collections::HashSet<_> =
-                        applied.iter().map(|migration| migration.name().to_string()).collect();
+                    let applied_names: std::collections::HashSet<_> = applied
+                        .iter()
+                        .map(|migration| migration.name().to_string())
+                        .collect();
                     pending_migrations = all_migrations
                         .iter()
                         .map(|migration| migration.name().to_string())

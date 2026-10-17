@@ -48,9 +48,7 @@ pub struct UpdateRoomRequest {
     pub org_unit_id: Option<Option<Uuid>>,
 }
 
-fn deserialize_nullable_field<'de, D, T>(
-    deserializer: D,
-) -> Result<Option<Option<T>>, D::Error>
+fn deserialize_nullable_field<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: Deserialize<'de>,
@@ -68,15 +66,12 @@ mod room_update_request_tests {
         let omitted: UpdateRoomRequest = serde_json::from_str("{}").unwrap();
         assert_eq!(omitted.org_unit_id, None);
 
-        let cleared: UpdateRoomRequest =
-            serde_json::from_str(r#"{"org_unit_id":null}"#).unwrap();
+        let cleared: UpdateRoomRequest = serde_json::from_str(r#"{"org_unit_id":null}"#).unwrap();
         assert_eq!(cleared.org_unit_id, Some(None));
 
         let location_id = Uuid::new_v4();
-        let assigned: UpdateRoomRequest = serde_json::from_str(&format!(
-            r#"{{"org_unit_id":"{location_id}"}}"#
-        ))
-        .unwrap();
+        let assigned: UpdateRoomRequest =
+            serde_json::from_str(&format!(r#"{{"org_unit_id":"{location_id}"}}"#)).unwrap();
         assert_eq!(assigned.org_unit_id, Some(Some(location_id)));
     }
 }

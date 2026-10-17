@@ -1053,7 +1053,10 @@ pub async fn assessment_get_student_certificate_results(
     certificate_type: String,
     class_id: Option<String>,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<orbis_domain::entities::academic_policy::StudentCertificateReportCard>, String> {
+) -> Result<
+    ApiResponse<orbis_domain::entities::academic_policy::StudentCertificateReportCard>,
+    String,
+> {
     let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
     let cal_id = Uuid::parse_str(&calendar_id).map_err(|_| "Invalid calendar ID")?;

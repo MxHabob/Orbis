@@ -6,6 +6,8 @@
  */
 
 import * as Localization from "expo-localization";
+import { reloadAppAsync } from "expo";
+import { I18nManager, Platform } from "react-native";
 import { SupportedLocale } from "./types";
 import { ar, TranslationKey } from "./dictionaries/ar";
 import { en } from "./dictionaries/en";
@@ -104,8 +106,23 @@ export function setCurrentLocaleInternal(locale: SupportedLocale): void {
  * Persists and updates the application locale.
  */
 export async function setLocale(locale: SupportedLocale): Promise<void> {
-  currentLocale = locale;
   await setSecureItem(LOCALE_STORAGE_KEY, locale);
+  currentLocale = locale;
+  await synchronizeLocaleDirection(locale);
+}
+
+export async function synchronizeLocaleDirection(
+  locale: SupportedLocale,
+): Promise<void> {
+  if (Platform.OS === "web") return;
+
+  const shouldUseRTL = locale === "ar";
+  I18nManager.allowRTL(true);
+
+  if (I18nManager.isRTL === shouldUseRTL) return;
+
+  I18nManager.forceRTL(shouldUseRTL);
+  await reloadAppAsync();
 }
 
 /**

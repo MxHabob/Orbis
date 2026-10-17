@@ -48,9 +48,12 @@ fn resolve_database_url_from_config(path: &Path) -> Result<String, String> {
 fn default_server_config_path() -> Result<PathBuf, String> {
     #[cfg(target_os = "windows")]
     {
-        let program_data = std::env::var_os("PROGRAMDATA")
-            .ok_or_else(|| "PROGRAMDATA is not set; cannot locate Orbis server configuration".to_string())?;
-        return Ok(PathBuf::from(program_data).join("Orbis").join(SERVER_CONFIG_FILE));
+        let program_data = std::env::var_os("PROGRAMDATA").ok_or_else(|| {
+            "PROGRAMDATA is not set; cannot locate Orbis server configuration".to_string()
+        })?;
+        return Ok(PathBuf::from(program_data)
+            .join("Orbis")
+            .join(SERVER_CONFIG_FILE));
     }
 
     #[cfg(target_os = "macos")]
@@ -64,7 +67,10 @@ fn default_server_config_path() -> Result<PathBuf, String> {
     }
 
     #[allow(unreachable_code)]
-    Err("Unsupported operating system; set ORBIS_SERVER_CONFIG_FILE to the server config path".to_string())
+    Err(
+        "Unsupported operating system; set ORBIS_SERVER_CONFIG_FILE to the server config path"
+            .to_string(),
+    )
 }
 
 #[cfg(test)]
@@ -73,12 +79,13 @@ mod tests {
 
     #[test]
     fn reads_database_url_from_server_config_file() {
-        let config_path = std::env::temp_dir().join(format!(
-            "orbis-server-config-{}.json",
-            uuid::Uuid::new_v4()
-        ));
-        std::fs::write(&config_path, r#"{"database_url":"postgres://localhost/orbis"}"#)
-            .unwrap();
+        let config_path =
+            std::env::temp_dir().join(format!("orbis-server-config-{}.json", uuid::Uuid::new_v4()));
+        std::fs::write(
+            &config_path,
+            r#"{"database_url":"postgres://localhost/orbis"}"#,
+        )
+        .unwrap();
         assert_eq!(
             resolve_database_url_from_config(&config_path).unwrap(),
             "postgres://localhost/orbis"
@@ -88,10 +95,8 @@ mod tests {
 
     #[test]
     fn rejects_empty_database_url_in_server_config_file() {
-        let config_path = std::env::temp_dir().join(format!(
-            "orbis-server-config-{}.json",
-            uuid::Uuid::new_v4()
-        ));
+        let config_path =
+            std::env::temp_dir().join(format!("orbis-server-config-{}.json", uuid::Uuid::new_v4()));
         std::fs::write(&config_path, r#"{"database_url":"  "}"#).unwrap();
         let error = resolve_database_url_from_config(&config_path).unwrap_err();
         assert!(error.contains("database_url cannot be empty"));

@@ -646,10 +646,10 @@ pub async fn calendar_get_defaults(
         ("school".to_string(), "YE".to_string())
     };
 
-    let dto = state
-        .calendar_service
-        .get_calendar_defaults(target_org_id, &inst_type, &country_code);
+    let dto =
+        state
+            .calendar_service
+            .get_calendar_defaults(target_org_id, &inst_type, &country_code);
 
     Ok(ok(dto))
 }
-

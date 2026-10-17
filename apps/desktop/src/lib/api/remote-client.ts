@@ -2188,9 +2188,6 @@ export class RemoteClient implements OrbisApiClient {
       throw new Error(health.error || "Unable to connect to Orbis API");
     }
 
-    async connectionRunMigrations(): Promise<MigrationResultDto> {
-      throw new Error("Database migrations must be applied from the connected desktop database.");
-    }
     return {
       connected: true,
       mode: "api",
@@ -2198,6 +2195,10 @@ export class RemoteClient implements OrbisApiClient {
       server_version: health.version,
       message: "Connected to Orbis API",
     };
+  }
+
+  async connectionRunMigrations(): Promise<MigrationResultDto> {
+    throw new Error("Database migrations must be applied from the connected desktop database.");
   }
 
   async connectionOpenWindow(): Promise<void> {}

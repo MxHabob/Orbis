@@ -4,8 +4,8 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_domain::entities::ai::{
-    AiChatRequest, AiChatResponse, AiCustomReportRequest, AiCustomReportResponse,
-    AiStoredSession, AiToolDefinition,
+    AiChatRequest, AiChatResponse, AiCustomReportRequest, AiCustomReportResponse, AiStoredSession,
+    AiToolDefinition,
 };
 use std::path::{Path, PathBuf};
 use tauri::State;
