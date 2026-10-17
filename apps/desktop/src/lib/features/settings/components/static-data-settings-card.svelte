@@ -3,7 +3,7 @@
   import * as m from "$lib/paraglide/messages";
   import { toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
-  import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
+  import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@orbis/ui/card";
   import { Refresh } from "@orbis/icons";
   import {
     loadModelCatalog,
@@ -52,18 +52,35 @@
 </script>
 
 <Card>
-  <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <CardHeader>
+    <CardTitle>{m.settings_static_data_title()}</CardTitle>
+  </CardHeader>
+  <CardContent class="px-6 py-5">
+    <p class="text-xs leading-relaxed text-muted-foreground">
+      {m.settings_static_data_description()}
+    </p>
+  </CardContent>
+  <CardFooter class="flex flex-wrap items-center justify-between gap-3">
     <div class="min-w-0 space-y-1">
-      <CardTitle>{m.settings_static_data_title()}</CardTitle>
-      <p class="text-xs text-muted-foreground">
-        {m.settings_static_data_description()}
-      </p>
+      {#if modelCatalog.updatedAt}
+        <p class="text-[11px] text-muted-foreground">
+          {m.settings_static_data_cache_status({
+            models: cachedModelCount,
+            date: new Date(modelCatalog.updatedAt).toLocaleString(),
+          })}
+        </p>
+      {/if}
+      {#if errorMessage}
+        <p class="text-xs text-destructive" role="alert">
+          {m.settings_static_data_cache_error({ error: errorMessage })}
+        </p>
+      {/if}
     </div>
     <Button
       type="button"
       variant="outline"
       size="sm"
-      class="w-full sm:w-auto sm:shrink-0"
+      class="h-8 shrink-0 px-4 text-xs font-semibold"
       disabled={isRefreshing}
       onclick={handleRefresh}
     >
@@ -75,22 +92,5 @@
         {m.settings_static_data_refresh()}
       {/if}
     </Button>
-  </CardHeader>
-  {#if modelCatalog.updatedAt || errorMessage}
-    <CardContent class="pt-0">
-      {#if modelCatalog.updatedAt}
-        <p class="text-[11px] text-muted-foreground">
-          {m.settings_static_data_cache_status({
-            models: cachedModelCount,
-            date: new Date(modelCatalog.updatedAt).toLocaleString(),
-          })}
-        </p>
-      {/if}
-      {#if errorMessage}
-        <p class="mt-2 text-xs text-destructive" role="alert">
-          {m.settings_static_data_cache_error({ error: errorMessage })}
-        </p>
-      {/if}
-    </CardContent>
-  {/if}
+  </CardFooter>
 </Card>
