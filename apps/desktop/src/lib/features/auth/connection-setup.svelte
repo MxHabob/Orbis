@@ -24,8 +24,8 @@ import { configureApiClient } from "$lib/api";
 const isRTL = $derived(getLocale().startsWith("ar"));
 
 const connectionSchema = z.object({
-  mode: z.enum(["local", "direct", "api"]),
-  dbFilename: z.string().trim().min(1, m.setup_connection_db_file_label()),
+  mode: z.enum(["local", "direct", "api"]).optional(),
+  dbFilename: z.string().trim(),
   serverUrl: z.string().trim(),
   host: z.string().trim(),
   port: z.coerce.number().int().min(1).max(65535),
@@ -33,6 +33,20 @@ const connectionSchema = z.object({
   username: z.string().trim(),
   password: z.string(),
 }).superRefine((data, context) => {
+  if (!data.mode) {
+    context.addIssue({
+      code: "custom",
+      message: m.setup_connection_mode_title(),
+      path: ["mode"],
+    });
+  }
+  if (data.mode === "local" && !data.dbFilename) {
+    context.addIssue({
+      code: "custom",
+      message: m.setup_connection_db_file_label(),
+      path: ["dbFilename"],
+    });
+  }
   if (data.mode === "api" && (
     !data.serverUrl ||
     (!data.serverUrl.startsWith("http://") && !data.serverUrl.startsWith("https://"))
@@ -66,8 +80,8 @@ type ConnectionFormValues = z.infer<typeof connectionSchema>;
 
 const form = new FormController<ConnectionFormValues>({
   initialValues: {
-    mode: "local",
-    dbFilename: "orbis.db",
+    mode: undefined,
+    dbFilename: "",
     serverUrl: "",
     host: "localhost",
     port: 5432,
@@ -82,8 +96,17 @@ function fieldError(field: keyof ConnectionFormValues): string | undefined {
   return form.errors[field]?.[0];
 }
 
+async function continueToOrganization() {
+  const hasOrg = await api.systemHasOrganization();
+  goto(
+    resolve(localizeHref(hasOrg ? "/login" : "/onboarding")),
+    { replaceState: true },
+  );
+}
+
 let isCheckingHealth = $state(false);
 let healthResult = $state<RemoteHealthResult | null>(null);
+let pendingMigrationCount = $state<number | null>(null);
 
 onMount(() => {
   configureApiClient("local");
@@ -113,6 +136,9 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
   if (e) e.preventDefault();
 
   await form.submit(async (values) => {
+    if (!values.mode) {
+      throw new Error(m.setup_connection_mode_title());
+    }
     await api.connectionSetConfig({
       mode: values.mode,
       serverUrl: values.mode === "api" ? values.serverUrl.trim() : undefined,
@@ -130,18 +156,41 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
     } else {
       configureApiClient("local");
     }
-    const result = await api.connectionConnect();
-    if (result.connected) {
-      const hasOrg = await api.systemHasOrganization();
-      if (hasOrg) {
-        goto(resolve(localizeHref("/login")), { replaceState: true });
+    try {
+      const result = await api.connectionConnect();
+      if (result.connected) {
+        await continueToOrganization();
       } else {
-        goto(resolve(localizeHref("/onboarding")), { replaceState: true });
+        throw new Error(result.message || m.setup_connection_failed());
       }
-    } else {
-      throw new Error(result.message || m.setup_connection_failed());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const migrationMatch = message.match(/^SCHEMA_MIGRATION_REQUIRED:(\d+):/);
+      if (values.mode === "direct" && migrationMatch) {
+        pendingMigrationCount = Number(migrationMatch[1]);
+        form.formError = m.ui_pending_migrations_apply_required({
+          count: pendingMigrationCount,
+        });
+        return;
+      }
+      throw error;
     }
   });
+}
+
+async function applyDirectMigrations() {
+  if (pendingMigrationCount === null || form.isSubmitting) return;
+  form.isSubmitting = true;
+  form.formError = undefined;
+  try {
+    await api.connectionRunMigrations();
+    pendingMigrationCount = null;
+    await continueToOrganization();
+  } catch (error) {
+    form.formError = error instanceof Error ? error.message : String(error);
+  } finally {
+    form.isSubmitting = false;
+  }
 }
 </script>
 
@@ -224,7 +273,11 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
           </div>
         {/if}
 
-        {#if form.values.mode === "local"}
+        {#if !form.values.mode}
+          <p class="px-6 py-4 text-sm text-muted-foreground">
+            {m.setup_connection_mode_title()}
+          </p>
+        {:else if form.values.mode === "local"}
           <SettingsRow
             title={m.setup_connection_db_file_label()}
             description={m.setup_connection_db_file_hint()}
@@ -337,7 +390,22 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
           />
         {/if}
 
-        <div class="flex justify-end border-t border-border px-6 py-4">
+        <div class="flex justify-end gap-2 border-t border-border px-6 py-4">
+          {#if pendingMigrationCount !== null}
+            <Button
+              type="button"
+              variant="outline"
+              class="min-w-40"
+              disabled={form.isSubmitting}
+              onclick={applyDirectMigrations}
+            >
+              {#if form.isSubmitting}
+                <LoadingIndicator class="size-4" size={16} />
+              {:else}
+                {m.database_action_apply_migrations?.() || m.ui_copy_apply_migrations_now_5f07d44c()}
+              {/if}
+            </Button>
+          {/if}
           <Button type="submit" variant="default" class="min-w-40" disabled={form.isSubmitting || (form.values.mode === "api" && healthResult !== null && !healthResult.reachable)}>
             {#if form.isSubmitting}
               <LoadingIndicator class="size-4" size={16} />

@@ -310,7 +310,14 @@ pub async fn database_run_migrations(
         .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
-    require_local_sqlite(&config)?;
+    if !matches!(
+        config.mode,
+        crate::connection::ConnectionMode::Local | crate::connection::ConnectionMode::Direct
+    ) {
+        return Err(
+            "Migrations can be applied only to a local or direct database connection".to_string(),
+        );
+    }
     let result = database_manager::run_pending_migrations(&state.db).await?;
 
     log_db_audit(

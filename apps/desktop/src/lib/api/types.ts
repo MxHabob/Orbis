@@ -2263,6 +2263,7 @@ export interface OrbisApiClient {
   connectionValidate(): Promise<ConnectionValidation>;
   connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
   connectionConnect(): Promise<ConnectResult>;
+  connectionRunMigrations(): Promise<MigrationResultDto>;
   connectionOpenWindow(): Promise<void>;
 
   databaseGetStatus(): Promise<DatabaseStatusDto>;

@@ -9,6 +9,7 @@ use crate::connection::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use tauri::{Manager, State};
 
 /// Managed state for connection config — available before database init.
@@ -74,7 +75,9 @@ pub async fn connection_set_config(
         "local" => ConnectionConfig {
             mode: ConnectionMode::Local,
             local: Some(LocalConfig {
-                db_filename: db_filename.unwrap_or_else(|| "orbis.db".to_string()),
+                db_filename: db_filename
+                    .filter(|filename| !filename.trim().is_empty())
+                    .ok_or("Choose a database file name")?,
                 custom_path: custom_path.filter(|p| !p.trim().is_empty()),
                 wal_mode: wal_mode.unwrap_or(true),
                 busy_timeout_ms: busy_timeout_ms.unwrap_or(5000),
@@ -149,7 +152,11 @@ pub async fn connection_reset(
     conn_state: State<'_, ConnectionState>,
 ) -> Result<ConnectionConfig, String> {
     let default_config = ConnectionConfig::default_local();
-    default_config.save(&conn_state.app_data_dir)?;
+    let config_path = ConnectionConfig::config_path(&conn_state.app_data_dir);
+    if config_path.exists() {
+        std::fs::remove_file(&config_path)
+            .map_err(|error| format!("Failed to reset connection configuration: {error}"))?;
+    }
 
     let mut config = conn_state
         .config
@@ -165,6 +172,15 @@ pub async fn connection_reset(
 pub async fn connection_validate(
     conn_state: State<'_, ConnectionState>,
 ) -> Result<ConnectionValidation, String> {
+    if !ConnectionConfig::config_path(&conn_state.app_data_dir).exists() {
+        return Ok(ConnectionValidation {
+            is_valid: false,
+            mode: "unconfigured".to_string(),
+            message: "Choose a database or server connection to continue".to_string(),
+            resolved_url: None,
+            resolved_path: None,
+        });
+    }
     let config = conn_state
         .config
         .read()
@@ -250,5 +266,85 @@ pub async fn connection_connect(
                 "message": "Connected to Orbis API"
             }))
         }
+    }
+
+    /// Apply PostgreSQL migrations after an explicit request from the connection setup screen.
+    #[tauri::command]
+    pub async fn connection_run_migrations(
+        app: tauri::AppHandle,
+        conn_state: State<'_, ConnectionState>,
+    ) -> Result<crate::features::database_manager::MigrationResultDto, String> {
+        let config = conn_state
+            .config
+            .read()
+            .map_err(|e| format!("Lock error: {e}"))?
+            .clone();
+        if config.mode != ConnectionMode::Direct {
+            return Err("Explicit connection setup migrations are available only for direct PostgreSQL connections".to_string());
+        }
+
+        let db_url = config
+            .resolve_database_url(&conn_state.app_data_dir)?
+            .ok_or_else(|| "PostgreSQL connection settings are missing".to_string())?;
+        let _lock = crate::features::database_manager::OPERATION_LOCK.lock().await;
+        let db = sea_orm::Database::connect(&db_url)
+            .await
+            .map_err(|e| format!("Failed to connect to PostgreSQL for migrations: {e}"))?;
+
+        use orbis_infra::migration::Migrator;
+        use sea_orm_migration::MigratorTrait;
+        let has_migration_table = sea_orm_migration::SchemaManager::new(&db)
+            .has_table("seaql_migrations")
+            .await
+            .map_err(|e| format!("Failed to inspect migration history: {e}"))?;
+        if !has_migration_table {
+            let row = db
+                .query_one(Statement::from_string(
+                    DatabaseBackend::Postgres,
+                    "SELECT COUNT(*)::BIGINT FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE'",
+                ))
+                .await
+                .map_err(|e| format!("Failed to check whether the PostgreSQL database is empty: {e}"))?
+                .ok_or_else(|| "PostgreSQL did not return a table count".to_string())?;
+            let table_count = row
+                .try_get_by_index::<i64>(0)
+                .map_err(|e| format!("Failed to read PostgreSQL table count: {e}"))?;
+            if table_count > 0 {
+                return Err(
+                    "The database contains tables but has no Orbis migration history. Refusing to initialize it automatically; back up and inspect the database first."
+                        .to_string(),
+                );
+            }
+        }
+
+        let pending = if has_migration_table {
+            Migrator::get_pending_migrations(&db)
+                .await
+                .map_err(|e| format!("Failed to check pending migrations: {e}"))?
+                .iter()
+                .map(|migration| migration.name().to_string())
+                .collect::<Vec<_>>()
+        } else {
+            Migrator::migrations()
+                .iter()
+                .map(|migration| migration.name().to_string())
+                .collect::<Vec<_>>()
+        };
+
+        Migrator::up(&db, None)
+            .await
+            .map_err(|e| format!("Failed to apply PostgreSQL migrations: {e}"))?;
+
+        let app_state = crate::state::AppState::init(&conn_state.app_data_dir, &db_url, false)
+            .await
+            .map_err(|e| format!("Migrations completed, but database initialization failed: {e}"))?;
+        app.manage(app_state);
+
+        Ok(crate::features::database_manager::MigrationResultDto {
+            success: true,
+            total_applied: pending.len(),
+            applied_migrations: pending,
+            message: "PostgreSQL schema is initialized and up to date".to_string(),
+        })
     }
 }

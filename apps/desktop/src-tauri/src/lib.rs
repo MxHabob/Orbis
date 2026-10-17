@@ -57,7 +57,8 @@ pub fn run() {
             // 3. Auto-connect if a valid local config exists (seamless for returning users)
             //    New users will see the connection/setup flow.
             let validation = conn_config.validate(&app_data_dir);
-            if validation.is_valid
+            if connection::ConnectionConfig::config_path(&app_data_dir).exists()
+                && validation.is_valid
                 && matches!(
                     conn_config.mode,
                     connection::ConnectionMode::Local | connection::ConnectionMode::Direct

@@ -438,6 +438,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         connection_cmds::connection_validate,
         connection_cmds::connection_check_remote_health,
         connection_cmds::connection_connect,
+        connection_cmds::connection_run_migrations,
         // ── Database Management ─────────────────────────────────
         database_cmds::database_get_status,
         database_cmds::database_create_local,

@@ -153,16 +153,26 @@ impl AppState {
             .map_err(|e| e.to_string())?;
 
         use orbis_infra::migration::Migrator;
-        use sea_orm_migration::MigratorTrait;
+        use sea_orm_migration::{MigratorTrait, SchemaManager};
         if migrate {
             Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
         } else {
+            if !SchemaManager::new(&db)
+                .has_table("seaql_migrations")
+                .await
+                .map_err(|e| e.to_string())?
+            {
+                let pending_count = Migrator::migrations().len();
+                return Err(format!(
+                    "SCHEMA_MIGRATION_REQUIRED:{pending_count}:Orbis schema has not been initialized"
+                ));
+            }
             let pending = Migrator::get_pending_migrations(&db)
                 .await
                 .map_err(|e| e.to_string())?;
             if !pending.is_empty() {
                 return Err(format!(
-                    "The direct database schema is not up to date ({} migrations pending). Apply migrations using an authorized database administrator before connecting.",
+                    "SCHEMA_MIGRATION_REQUIRED:{}:Database schema updates are required",
                     pending.len()
                 ));
             }

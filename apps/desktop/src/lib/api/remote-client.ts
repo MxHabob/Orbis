@@ -2187,6 +2187,10 @@ export class RemoteClient implements OrbisApiClient {
     if (!health.reachable) {
       throw new Error(health.error || "Unable to connect to Orbis API");
     }
+
+    async connectionRunMigrations(): Promise<MigrationResultDto> {
+      throw new Error("Database migrations must be applied from the connected desktop database.");
+    }
     return {
       connected: true,
       mode: "api",

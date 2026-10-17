@@ -25,10 +25,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Connect to database
     let db = Database::connect(&db_url).await?;
 
-    // Run Migrations
     use orbis_infra::migration::Migrator;
-    use sea_orm_migration::MigratorTrait;
-    Migrator::up(&db, None).await?;
+    use sea_orm_migration::{MigratorTrait, SchemaManager};
+    let schema_manager = SchemaManager::new(&db);
+    if !schema_manager.has_table("seaql_migrations").await? {
+        return Err(std::io::Error::other(
+            "Orbis database schema is not initialized. Connect the Desktop to this database and apply migrations before starting the API server.",
+        )
+        .into());
+    }
+    let pending = Migrator::get_pending_migrations(&db).await?;
+    if !pending.is_empty() {
+        return Err(std::io::Error::other(format!(
+            "The Orbis database has {} pending migration(s). Apply them from the Desktop before starting the API server.",
+            pending.len()
+        ))
+        .into());
+    }
 
     let license_data_dir = std::env::var_os("ORBIS_LICENSE_DATA_DIR")
         .map(std::path::PathBuf::from)
