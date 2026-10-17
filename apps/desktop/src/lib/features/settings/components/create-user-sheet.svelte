@@ -51,7 +51,6 @@ import {
   Sparkles,
   User,
   UserGroup,
-  UserPlus,
   Users,
 } from "@orbis/icons";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -467,7 +466,7 @@ async function handleSubmit() {
 <Sheet.Root bind:open>
   <Sheet.Content
     side="end"
-    contentClass="data-[side=end]:w-[min(35rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(35rem,calc(100vw-1rem))]"
+    contentClass="data-[side=end]:sm:!max-w-xl data-[side=end]:md:!max-w-2xl data-[side=end]:lg:!max-w-3xl"
     class="h-full w-full p-0 flex flex-col overflow-hidden"
   >
     <form
@@ -475,35 +474,29 @@ async function handleSubmit() {
         e.preventDefault();
         handleSubmit();
       }}
-      class="flex flex-col h-full overflow-hidden gap-0"
+      class="flex flex-col h-full overflow-hidden gap-0 bg-background text-foreground"
     >
-      <!-- Sheet Header (DiscountTemplate style) -->
-      <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start">
-        <Sheet.Title class="text-base font-bold text-foreground flex items-center gap-2">
-          <UserPlus size={18} class="text-primary" />
-          <span>{m.ui_copy_provision_user_account_796336f2()}</span>
+      <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start flex flex-row items-center justify-between">
+        <Sheet.Title class="text-base font-bold text-foreground">
+          {m.ui_copy_provision_user_account_796336f2()}
         </Sheet.Title>
-        <p class="text-xs text-muted-foreground mt-0.5">
-          {m.settings_ui_user_provisioning_description()}
-        </p>
       </Sheet.Header>
 
-      <!-- Scrollable Accordion Content Area -->
-      <div class="flex-1 overflow-y-auto p-6 scrollbar-hide space-y-4">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-5 scrollbar-hide">
         <Accordion
           type="multiple"
           value={["persona", "identity", "security", "channels"]}
-          class="flex flex-col gap-4"
+          class="flex flex-col"
         >
           <!-- 1. Persona & Target Entity Selection -->
-          <AccordionItem value="persona" class="rounded-lg border border-border/60 overflow-hidden bg-card/40">
-            <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
+          <AccordionItem value="persona" class="border-b border-border/50">
+            <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
               <div class="flex items-center gap-2">
                 <User size={15} class="text-primary" />
                 <span>{m.ui_copy_account_persona_target_entity_a82adc96()}</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent class="px-4 pb-4 pt-1 space-y-4">
+            <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
               <!-- Persona Grid -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <!-- Employee Card -->
@@ -714,14 +707,14 @@ async function handleSubmit() {
           </AccordionItem>
 
           <!-- 2. Account & Demographic Details -->
-          <AccordionItem value="identity" class="rounded-lg border border-border/60 overflow-hidden bg-card/40">
-            <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
+          <AccordionItem value="identity" class="border-b border-border/50">
+            <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
               <div class="flex items-center gap-2">
                 <ShieldCheck size={15} class="text-primary" />
                 <span>{m.ui_copy_identity_account_details_b5154e18()}</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
+            <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
               <!-- Full Name Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField id="dt_user_name_en" label={m.ui_copy_full_name_en_84cacaf7()}>
@@ -823,14 +816,14 @@ async function handleSubmit() {
           </AccordionItem>
 
           <!-- 3. Password & Security -->
-          <AccordionItem value="security" class="rounded-lg border border-border/60 overflow-hidden bg-card/40">
-            <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
+          <AccordionItem value="security" class="border-b border-border/50">
+            <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
               <div class="flex items-center gap-2">
                 <LockClosed size={15} class="text-primary" />
                 <span>{m.ui_copy_password_security_0d1cc84e()}</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
+            <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
               <!-- Password Mode Grid -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
@@ -920,14 +913,14 @@ async function handleSubmit() {
           </AccordionItem>
 
           <!-- 4. Dynamic Integrations-Based Delivery Channels -->
-          <AccordionItem value="channels" class="rounded-lg border border-border/60 overflow-hidden bg-card/40">
-            <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline">
+          <AccordionItem value="channels" class="border-b border-border/50">
+            <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
               <div class="flex items-center gap-2">
                 <Printer size={15} class="text-primary" />
                 <span>{m.ui_copy_delivery_channels_connected_gateways_31a74a07()}</span>
               </div>
             </AccordionTrigger>
-            <AccordionContent class="px-4 pb-4 pt-1 space-y-3">
+            <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
               <p class="text-[11px] text-muted-foreground">
                 {l(
                   m.settings_ui_delivery_channel_integrations_hint(),
@@ -1007,21 +1000,20 @@ async function handleSubmit() {
         </Accordion>
       </div>
 
-      <!-- Form Actions Footer (DiscountTemplate style) -->
-      <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/50">
+      <div class="px-4 py-3 sm:px-5 border-t border-border/40 flex gap-3 shrink-0 bg-background/95">
         <Button
           type="button"
           variant="ghost"
           onclick={() => (open = false)}
           disabled={isSubmitting}
-          class="flex-1 h-9 text-sm cursor-pointer"
+          class="flex-1 h-9 text-sm"
         >
           {m.common_action_cancel()}
         </Button>
         <Button
           type="submit"
           disabled={isSubmitting || !username.trim()}
-          class="flex-1 h-9 text-sm font-semibold cursor-pointer shadow-xs gap-1.5"
+          class="flex-1 h-9 text-sm font-semibold"
         >
           {#if isSubmitting}
             <LoadingIndicator   size={14} />
