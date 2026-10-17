@@ -32,6 +32,37 @@ impl RemoteTimefoldSolver {
         }
     }
 
+    pub async fn check_health(&self) -> Result<(), DomainError> {
+        let url = format!("{}/health", self.base_url);
+        let response = self
+            .client
+            .get(url)
+            .timeout(std::time::Duration::from_secs(5))
+            .send()
+            .await
+            .map_err(|error| {
+                DomainError::Validation(format!("Solver connection check failed: {error}"))
+            })?;
+        if !response.status().is_success() {
+            return Err(DomainError::Validation(format!(
+                "Solver health check returned HTTP {}",
+                response.status().as_u16()
+            )));
+        }
+        let health: serde_json::Value = response.json().await.map_err(|error| {
+            DomainError::Validation(format!("Solver health response was invalid: {error}"))
+        })?;
+        if health.get("status").and_then(serde_json::Value::as_str) != Some("healthy")
+            || health.get("service").and_then(serde_json::Value::as_str)
+                != Some("orbis-solver")
+        {
+            return Err(DomainError::Validation(
+                "The endpoint did not identify itself as a healthy Orbis Solver service".into(),
+            ));
+        }
+        Ok(())
+    }
+
     pub async fn submit(&self, problem: &TimetableProblem) -> Result<(), DomainError> {
         let url = format!("{}/solve", self.base_url);
         debug!(job_id = %problem.job_id, "submitting timetable problem to Timefold solver service");

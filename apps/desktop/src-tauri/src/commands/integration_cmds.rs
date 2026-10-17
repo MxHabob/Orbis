@@ -37,25 +37,41 @@ pub async fn integration_connect_app(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<IntegrationDto>, String> {
     let ctx = make_ctx(&state);
-    if request.category.eq_ignore_ascii_case("storage") {
+    state
+        .integration_service
+        .permission_checker
+        .check(&ctx, Permission::OrganizationWrite)
+        .await
+        .map_err(|error| error.to_string())?;
+    if request.category.eq_ignore_ascii_case("automation")
+        && matches!(
+            request.provider_name.as_str(),
+            "solver_service" | "solver-service"
+        )
+        && request
+            .settings
+            .get("mode")
+            .and_then(serde_json::Value::as_str)
+            == Some("embedded")
+    {
         state
-            .integration_service
-            .permission_checker
-            .check(&ctx, Permission::OrganizationWrite)
+            .solver_sidecar
+            .ensure_running()
             .await
-            .map_err(|error| error.to_string())?;
-        state
-            .storage_resolver
-            .check_connection(
-                ctx.tenant_id,
-                &request.provider_name,
-                &request.category,
-                &request.settings,
-                &request.secrets,
-            )
-            .await
-            .map_err(|error| error.to_string())?;
+            .map_err(|error| format!("Could not start the embedded Solver service: {error}"))?;
     }
+    orbis_infra::adapters::verification::verify_integration_connection(
+        &ctx,
+        &request.provider_name,
+        &request.category,
+        &request.settings,
+        &request.secrets,
+        &state.integration_resolver,
+        &state.notification_adapter,
+        &state.storage_resolver,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
     let config = state
         .integration_service
         .connect_app(

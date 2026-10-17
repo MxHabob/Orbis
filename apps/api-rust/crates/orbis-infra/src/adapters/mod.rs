@@ -15,4 +15,5 @@ pub mod resolver;
 pub mod solver_adapter;
 pub mod storage;
 pub mod trial_device_identity;
+pub mod verification;
 pub mod whatsapp;

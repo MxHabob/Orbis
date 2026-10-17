@@ -653,4 +653,3 @@ pub async fn calendar_get_defaults(
     Ok(ok(dto))
 }
 
-

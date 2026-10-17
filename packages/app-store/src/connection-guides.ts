@@ -121,6 +121,21 @@ const appSpecificSummaries: Record<
   },
 };
 
+const appsWithLiveVerifier = new Set([
+  "anthropic",
+  "cloud-storage",
+  "deepseek",
+  "gemini-ai",
+  "groq",
+  "mistral",
+  "ollama",
+  "openai",
+  "openrouter",
+  "sms-provider",
+  "smtp-email",
+  "solver-service",
+]);
+
 export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const website = websites[app.id];
   if (!website) {
@@ -134,6 +149,7 @@ export function addConnectionSummary(app: OrbisApp): OrbisApp {
 
   return {
     ...app,
+    active: app.active && appsWithLiveVerifier.has(app.id),
     description: `${app.description}\n\n**Connect:** ${summary.en} ${moreEn}`,
     description_ar: `${app.description_ar ?? ""}\n\n**طريقة الربط:** ${summary.ar} ${moreAr}`,
   };

@@ -59,6 +59,73 @@ impl NotificationAdapter {
         self
     }
 
+    pub async fn check_connection(
+        &self,
+        org_id: uuid::Uuid,
+        provider_name: &str,
+        category: &str,
+        settings: &serde_json::Value,
+        secrets: &std::collections::HashMap<String, String>,
+    ) -> Result<(), DomainError> {
+        let channels = settings
+            .get("__notification_channels")
+            .and_then(serde_json::Value::as_array)
+            .ok_or_else(|| {
+                DomainError::Validation(
+                    "Notification integration must declare at least one channel".into(),
+                )
+            })?;
+        if channels.is_empty() {
+            return Err(DomainError::Validation(
+                "Notification integration must declare at least one channel".into(),
+            ));
+        }
+
+        let now = chrono::Utc::now();
+        let integration = IntegrationConfig {
+            id: uuid::Uuid::new_v4(),
+            org_id,
+            provider_name: provider_name.to_string(),
+            category: category.to_string(),
+            is_enabled: true,
+            env: "production".to_string(),
+            settings: Some(settings.clone()),
+            created_at: now,
+            updated_at: now,
+        };
+        let integration_secrets = secrets
+            .iter()
+            .map(|(key_name, secret_key)| IntegrationSecret {
+                id: uuid::Uuid::new_v4(),
+                config_id: integration.id,
+                key_name: key_name.clone(),
+                secret_key: secret_key.clone(),
+                created_at: now,
+                updated_at: now,
+            })
+            .collect::<Vec<_>>();
+
+        for channel in channels {
+            let channel = channel.as_str().ok_or_else(|| {
+                DomainError::Validation("Notification integration channels must be strings".into())
+            })?;
+            let provider = self
+                .providers
+                .iter()
+                .find(|provider| provider.supports(&integration, channel))
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "No connection verifier is available for '{}' notifications",
+                        channel
+                    ))
+                })?;
+            provider
+                .check_connection(&integration, &integration_secrets)
+                .await?;
+        }
+        Ok(())
+    }
+
     async fn resolve_integration(
         &self,
         ctx: &RequestContext,

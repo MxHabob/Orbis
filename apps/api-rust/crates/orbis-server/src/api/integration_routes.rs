@@ -105,24 +105,25 @@ async fn connect_app(
     State(state): State<AppState>,
     Json(p): Json<ConnectAppRequest>,
 ) -> Result<Json<ApiResponse<IntegrationDto>>, ApiError> {
-    if p.category.eq_ignore_ascii_case("storage") {
-        state
-            .integration_service
-            .permission_checker
-            .check(&ctx, Permission::OrganizationWrite)
-            .await?;
-        state
-            .storage_resolver
-            .check_connection(
-                ctx.tenant_id,
-                &p.provider_name,
-                &p.category,
-                &p.settings,
-                &p.secrets,
-            )
-            .await
-            .map_err(|error| ApiError::bad_request(error.to_string()))?;
-    }
+    state
+        .integration_service
+        .permission_checker
+        .check(&ctx, Permission::OrganizationWrite)
+        .await?;
+
+    orbis_infra::adapters::verification::verify_integration_connection(
+        &ctx,
+        &p.provider_name,
+        &p.category,
+        &p.settings,
+        &p.secrets,
+        &state.integration_resolver,
+        &state.notification_adapter,
+        &state.storage_resolver,
+    )
+    .await
+    .map_err(|error| ApiError::bad_request(error.to_string()))?;
+
     let config = state
         .integration_service
         .connect_app(

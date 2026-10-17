@@ -28,6 +28,139 @@ impl IntegrationResolver {
         Self { integration_repo }
     }
 
+    pub async fn check_llm_connection(
+        &self,
+        ctx: &RequestContext,
+        provider_name: &str,
+        settings: &serde_json::Value,
+        secrets: &std::collections::HashMap<String, String>,
+    ) -> Result<(), DomainError> {
+        let provider = provider_name.trim().to_ascii_lowercase();
+        if !matches!(
+            provider.as_str(),
+            "anthropic"
+                | "deepseek"
+                | "gemini"
+                | "groq"
+                | "mistral"
+                | "ollama"
+                | "openai"
+                | "openrouter"
+                | "orbis"
+        ) {
+            return Err(DomainError::Validation(format!(
+                "No connection verifier is available for LLM provider '{}'",
+                provider_name
+            )));
+        }
+        let protocol_override = settings
+            .get("protocol")
+            .and_then(serde_json::Value::as_str)
+            .map(|value| value.trim().to_ascii_lowercase());
+        let (protocol, default_endpoint) = match protocol_override.as_deref() {
+            Some("gemini") => (
+                LlmProviderProtocol::Gemini,
+                "https://generativelanguage.googleapis.com",
+            ),
+            Some("anthropic") | Some("claude") => (
+                LlmProviderProtocol::AnthropicClaude,
+                "https://api.anthropic.com",
+            ),
+            Some("openai") | Some("openai_compatible") => (
+                LlmProviderProtocol::OpenAiCompatible,
+                "https://api.openai.com",
+            ),
+            Some(protocol) => {
+                return Err(DomainError::Validation(format!(
+                    "Unsupported LLM connection protocol '{}'",
+                    protocol
+                )));
+            }
+            None => match provider.as_str() {
+                "gemini" | "gemini-ai" | "google" | "google-gemini" => (
+                    LlmProviderProtocol::Gemini,
+                    "https://generativelanguage.googleapis.com",
+                ),
+                "anthropic" | "claude" => (
+                    LlmProviderProtocol::AnthropicClaude,
+                    "https://api.anthropic.com",
+                ),
+                "deepseek" => (
+                    LlmProviderProtocol::OpenAiCompatible,
+                    "https://api.deepseek.com",
+                ),
+                "groq" => (
+                    LlmProviderProtocol::OpenAiCompatible,
+                    "https://api.groq.com/openai",
+                ),
+                "mistral" => (
+                    LlmProviderProtocol::OpenAiCompatible,
+                    "https://api.mistral.ai",
+                ),
+                "openrouter" => (
+                    LlmProviderProtocol::OpenAiCompatible,
+                    "https://openrouter.ai/api/v1",
+                ),
+                "orbis" | "ollama" | "local" | "vllm" | "lmstudio" => (
+                    LlmProviderProtocol::OpenAiCompatible,
+                    "http://localhost:11434",
+                ),
+                "openai" => (
+                    LlmProviderProtocol::OpenAiCompatible,
+                    "https://api.openai.com",
+                ),
+                _ => {
+                    return Err(DomainError::Validation(format!(
+                        "No connection verifier is available for LLM provider '{}'",
+                        provider_name
+                    )));
+                }
+            },
+        };
+
+        let api_key = secrets
+            .iter()
+            .find(|(name, _)| matches!(name.as_str(), "api_key" | "secret_key" | "token"))
+            .map(|(_, value)| value.trim().to_string())
+            .filter(|value| !value.is_empty());
+        let is_local = matches!(
+            provider.as_str(),
+            "orbis" | "ollama" | "local" | "vllm" | "lmstudio"
+        );
+        if !is_local && api_key.is_none() {
+            return Err(DomainError::Validation(format!(
+                "The {} integration is missing a required API key",
+                provider_name
+            )));
+        }
+
+        let model = settings
+            .get("default_model")
+            .or_else(|| settings.get("model"))
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|model| !model.is_empty())
+            .ok_or_else(|| {
+                DomainError::Validation("An LLM model is required to verify the connection".into())
+            })?;
+        let endpoint = settings
+            .get("endpoint_url")
+            .and_then(serde_json::Value::as_str)
+            .map(str::trim)
+            .filter(|endpoint| !endpoint.is_empty())
+            .unwrap_or(default_endpoint);
+        let config = LlmAdapterConfig::new(protocol, endpoint)
+            .with_api_key(api_key)
+            .with_default_model(Some(model.to_string()))
+            .with_max_tokens(Some(1))
+            .with_timeout_secs(15);
+        let adapter = LlmAdapter::new(config)?;
+        adapter
+            .generate_text(ctx, model, "Connection check", "Reply with OK.", 0.0)
+            .await
+            .map(|_| ())
+    }
+
     async fn resolve_solver_adapter(
         &self,
         ctx: &RequestContext,
