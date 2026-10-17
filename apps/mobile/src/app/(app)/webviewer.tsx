@@ -1,10 +1,9 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
-import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
+import { Header } from "@/components/header";
 import { Screen } from "@/components/layout/screen";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useTheme } from "@/hooks/use-theme";
@@ -20,7 +19,6 @@ function getParam(value: string | string[] | undefined): string | undefined {
 
 export default function WebViewerScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { t } = useI18n();
   const params = useLocalSearchParams<{
@@ -108,8 +106,9 @@ export default function WebViewerScreen() {
               style={[
                 styles.progressTrack,
                 {
-                  top: insets.top + HEADER_CONTENT_OFFSET - 2,
+                  top: 0,
                   backgroundColor: theme.borderSubtle,
+                  borderRadius: 999,
                 },
               ]}
             >
@@ -118,7 +117,12 @@ export default function WebViewerScreen() {
                   styles.progressFill,
                   {
                     width: `${Math.max(loadProgress, 0.04) * 100}%`,
-                    backgroundColor: theme.info,
+                    backgroundColor: theme.primary,
+                    shadowColor: theme.primary,
+                    shadowOpacity: 0.45,
+                    shadowRadius: 4,
+                    shadowOffset: { width: 0, height: 0 },
+                    elevation: 2,
                   },
                 ]}
               />
@@ -163,11 +167,12 @@ const styles = {
     position: "absolute" as const,
     left: 0,
     right: 0,
-    height: 2,
+    height: 4,
     zIndex: 101,
     overflow: "hidden" as const,
   },
   progressFill: {
     height: "100%" as const,
+    borderRadius: 999,
   },
 };

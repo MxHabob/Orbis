@@ -14,7 +14,7 @@ import { useTheme } from "@/hooks/use-theme";
 export function OfflineStatusBanner() {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
-    const theme = useTheme();
+  const theme = useTheme();
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>(
     getNetworkStatus,
   );
@@ -36,14 +36,19 @@ export function OfflineStatusBanner() {
       exiting={FadeOutUp.duration(150)}
       pointerEvents="none"
       className="h-8 items-center justify-center"
-      style={{ top: insets.top }}
+      style={{
+        position: "absolute",
+        top: insets.top,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        elevation: 1000,
+      }}
     >
-      <View
-        className={`flex-row items-center gap-2`}
-      >
-          <Cloud size={18} strokeWidth={1.8}  color={theme.foreground} />
+      <View className="flex-row items-center gap-2">
+        <Cloud size={18} strokeWidth={1.8} color={theme.foreground} />
         <Text
-          className="text-[13px] leading-4.25 font-bold tracking-tight text-foreground"
+          className="text-[13px] font-bold leading-4.25 tracking-tight text-foreground"
         >
           {t("network_offline_read_only")}
         </Text>

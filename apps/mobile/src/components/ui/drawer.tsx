@@ -13,9 +13,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -91,6 +93,7 @@ export function Drawer({
   const { height } = useWindowDimensions();
   const { height: keyboardHeight, progress: keyboardProgress } =
     useReanimatedKeyboardAnimation();
+  const isKeyboardVisible = useRef(false);
   const modalHeight = useSharedValue(height);
   const modalBaseHeight = useSharedValue(0);
   const closedOffset = height;
@@ -121,6 +124,20 @@ export function Drawer({
     visible && isSnapping ? minSheetHeight : 0,
   );
   const dragStart = useSharedValue(0);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      isKeyboardVisible.current = true;
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      isKeyboardVisible.current = false;
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
@@ -326,7 +343,7 @@ export function Drawer({
         <GestureHandlerRootView
           onLayout={(event) => {
             modalHeight.value = event.nativeEvent.layout.height;
-            if (keyboardProgress.value < 0.01) {
+            if (!isKeyboardVisible.current) {
               modalBaseHeight.value = event.nativeEvent.layout.height;
             }
           }}
