@@ -38,6 +38,14 @@ export const modelCatalog = $state<ModelCatalog>({
 });
 
 let loadPromise: Promise<void> | undefined;
+let refreshPromise:
+  | Promise<{
+      providerCount: number;
+      modelCount: number;
+      updatedAt: string;
+    }>
+  | undefined;
+let ensurePromise: Promise<void> | undefined;
 
 function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -183,13 +191,35 @@ export function getModelOptions(
   fallback: ModelOption[] = [],
 ): ModelOption[] {
   const catalogOptions = modelCatalog.providers[appId] ?? [];
-  if (catalogOptions.length === 0) return fallback;
-
-  const options = new Map(catalogOptions.map((option) => [option.value, option]));
-  for (const option of fallback) {
-    if (!options.has(option.value)) options.set(option.value, option);
+  const options = new Map<string, ModelOption>();
+  for (const option of [...catalogOptions, ...fallback]) {
+    const value = option.value.trim();
+    if (!value || value.toLowerCase() === "default" || options.has(value)) {
+      continue;
+    }
+    options.set(value, { label: option.label, value });
   }
   return [...options.values()];
+}
+
+export async function ensureModelCatalog(appId: string): Promise<void> {
+  if (!PROVIDER_SOURCES[appId]) return loadModelCatalog();
+  if (!ensurePromise) {
+    ensurePromise = loadModelCatalog()
+      .catch((error: unknown) => {
+        console.warn(
+          "The cached AI model catalog could not be loaded; refreshing it.",
+          error,
+        );
+      })
+      .then(() => refreshModelCatalog())
+      .then(() => undefined)
+      .catch((error: unknown) => {
+        ensurePromise = undefined;
+        throw error;
+      });
+  }
+  await ensurePromise;
 }
 
 export async function refreshModelCatalog(): Promise<{
@@ -197,25 +227,34 @@ export async function refreshModelCatalog(): Promise<{
   modelCount: number;
   updatedAt: string;
 }> {
-  const response = await fetch(CATALOG_URL, {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!response.ok) {
-    throw new Error(`Model catalog request failed with HTTP ${response.status}.`);
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const response = await fetch(CATALOG_URL, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!response.ok) {
+        throw new Error(
+          `Model catalog request failed with HTTP ${response.status}.`,
+        );
+      }
+
+      const catalog = buildCatalog(await response.json());
+      const contents = `${JSON.stringify(catalog, null, 2)}\n`;
+      applyCatalog(catalog);
+      await writeCachedCatalog(contents);
+
+      return {
+        providerCount: Object.keys(catalog.providers).length,
+        modelCount: Object.values(catalog.providers).reduce(
+          (count, options) => count + options.length,
+          0,
+        ),
+        updatedAt: catalog.updatedAt,
+      };
+    })().finally(() => {
+      refreshPromise = undefined;
+    });
   }
-
-  const catalog = buildCatalog(await response.json());
-  const contents = `${JSON.stringify(catalog, null, 2)}\n`;
-  await writeCachedCatalog(contents);
-  applyCatalog(catalog);
-
-  return {
-    providerCount: Object.keys(catalog.providers).length,
-    modelCount: Object.values(catalog.providers).reduce(
-      (count, options) => count + options.length,
-      0,
-    ),
-    updatedAt: catalog.updatedAt,
-  };
+  return refreshPromise;
 }

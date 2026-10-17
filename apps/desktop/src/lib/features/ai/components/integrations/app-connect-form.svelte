@@ -23,8 +23,8 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import {
+  ensureModelCatalog,
   getModelOptions,
-  loadModelCatalog,
 } from "$lib/features/ai/model-catalog.svelte";
 
 let {
@@ -82,8 +82,8 @@ onMount(() => {
       setting.value ?? (setting.type === "switch" ? false : ""),
     ]),
   );
-  loadModelCatalog().catch((error: unknown) => {
-    console.error("Failed to load the cached AI model catalog", error);
+  ensureModelCatalog(appId).catch((error: unknown) => {
+    console.error("Failed to load AI provider models", error);
   });
 });
 
