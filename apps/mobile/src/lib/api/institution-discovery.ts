@@ -59,11 +59,13 @@ export function createManualLocalInstitution(
   try {
     url = new URL(endpoint.trim());
   } catch {
-    throw new Error("Enter a valid HTTPS server address.");
+    throw new Error("Enter a valid local HTTP or HTTPS server address.");
   }
 
-  if (!isPublicEndpoint(url.toString())) {
-    throw new Error("The local Orbis server must use a valid HTTPS address.");
+  if (!isAllowedInstitutionEndpoint(url.toString())) {
+    throw new Error(
+      "Local HTTP is allowed only for private IPv4 addresses; other servers must use HTTPS.",
+    );
   }
 
   const endpointUrl = url.toString().replace(/\/+$/, "");
@@ -226,7 +228,7 @@ function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
     typeof institution.deployment_id === "string" &&
     typeof institution.deployment_name === "string" &&
     typeof institution.endpoint_url === "string" &&
-    isPublicEndpoint(institution.endpoint_url) &&
+    isAllowedInstitutionEndpoint(institution.endpoint_url) &&
     (institution.is_local === undefined ||
       typeof institution.is_local === "boolean") &&
     hasValidCoordinate &&
@@ -252,18 +254,43 @@ function isPublicImageUrl(value: string): boolean {
   }
 }
 
-function isPublicEndpoint(value: string): boolean {
+export function isAllowedInstitutionEndpoint(value: string): boolean {
   try {
     const url = new URL(value);
-    return (
-      url.protocol === "https:" &&
+    const hasSafeComponents =
       !!url.hostname &&
       !url.username &&
       !url.password &&
       !url.search &&
-      !url.hash
+      !url.hash;
+
+    return (
+      hasSafeComponents &&
+      (url.protocol === "https:" ||
+        (url.protocol === "http:" && isPrivateIpv4Address(url.hostname)))
     );
   } catch {
     return false;
   }
+}
+
+function isPrivateIpv4Address(hostname: string): boolean {
+  const octets = hostname.split(".");
+  if (
+    octets.length !== 4 ||
+    !octets.every((octet) => /^\d{1,3}$/.test(octet))
+  ) {
+    return false;
+  }
+
+  const [first, second, third, fourth] = octets.map(Number);
+  if ([first, second, third, fourth].some((octet) => octet > 255)) {
+    return false;
+  }
+
+  return (
+    first === 10 ||
+    (first === 172 && second >= 16 && second <= 31) ||
+    (first === 192 && second === 168)
+  );
 }

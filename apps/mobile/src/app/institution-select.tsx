@@ -8,13 +8,11 @@ import {
 } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  ImageBackground,
   type ListRenderItemInfo,
   Modal,
   Pressable,
@@ -66,6 +64,7 @@ interface InstitutionTileProps {
   primaryColor: string;
   onSelect: (institution: DirectoryInstitution) => void;
   width: number;
+  featured?: boolean;
 }
 
 const InstitutionTile = memo(function InstitutionTile({
@@ -79,6 +78,7 @@ const InstitutionTile = memo(function InstitutionTile({
   primaryColor,
   onSelect,
   width,
+  featured = false,
 }: InstitutionTileProps) {
   const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
   const logoUrl = institution.logo_url;
@@ -99,7 +99,11 @@ const InstitutionTile = memo(function InstitutionTile({
       }}
       disabled={disabled}
       onPress={handlePress}
-      className={`min-h-[164px] items-start rounded-2xl border p-3 ${
+      className={`relative border ${
+        featured
+          ? "min-h-[172px] flex-row items-center rounded-3xl p-5"
+          : "min-h-[164px] items-start rounded-2xl p-3"
+      } ${
         isCurrent ? "border-primary/50 bg-primary/5" : "border-border bg-card"
       }`}
       style={({ pressed }) => [
@@ -107,7 +111,11 @@ const InstitutionTile = memo(function InstitutionTile({
         pressed && !disabled ? { opacity: 0.82 } : undefined,
       ]}
     >
-      <View className="mb-3 h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background">
+      <View
+        className={`items-center justify-center overflow-hidden rounded-2xl border border-border bg-background ${
+          featured ? "me-4 h-[72px] w-[72px]" : "mb-3 h-14 w-14"
+        }`}
+      >
         {logoUrl && failedLogoUrl !== logoUrl ? (
           <Image
             source={{ uri: logoUrl }}
@@ -115,17 +123,19 @@ const InstitutionTile = memo(function InstitutionTile({
             cachePolicy="memory-disk"
             transition={120}
             onError={() => setFailedLogoUrl(logoUrl)}
-            style={styles.logoImage}
+            style={featured ? styles.featuredLogoImage : styles.logoImage}
           />
         ) : (
           <Text className="text-xl font-bold text-primary">{initials}</Text>
         )}
       </View>
 
-      <View className="w-full flex-1">
+      <View className="min-w-0 flex-1">
         <Text
           numberOfLines={2}
-          className="text-start text-sm leading-5 font-semibold text-foreground"
+          className={`text-start font-semibold text-foreground ${
+            featured ? "text-xl leading-7" : "text-sm leading-5"
+          }`}
         >
           {name}
         </Text>
@@ -142,7 +152,11 @@ const InstitutionTile = memo(function InstitutionTile({
         ) : null}
       </View>
 
-      <View className="absolute end-2 top-2 h-8 w-8 items-center justify-center">
+      <View
+        className={`absolute ${
+          featured ? "end-3 top-3" : "end-2 top-2"
+        } h-8 w-8 items-center justify-center`}
+      >
         {isConnecting ? (
           <LoadingIndicator size="sm" />
         ) : isCurrent ? (
@@ -200,7 +214,7 @@ export default function InstitutionSelectScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
-  const tileWidth = Math.max((windowWidth - 44) / 2, 132);
+  const tileWidth = (windowWidth - 44) / 2;
   const { institutionQr } = useLocalSearchParams<{ institutionQr?: string }>();
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
@@ -273,6 +287,8 @@ export default function InstitutionSelectScreen() {
       .sort((a, b) => a.distanceKm - b.distanceKm)
       .map(({ institution }) => institution);
   }, [directoryQuery.data, savedInstitutions, search, userLocation]);
+  const featuredInstitution = visibleInstitutions[0];
+  const otherInstitutions = visibleInstitutions.slice(1);
 
   const connectInstitution = useCallback(
     async (institution: DirectoryInstitution) => {
@@ -427,28 +443,13 @@ export default function InstitutionSelectScreen() {
   }, [directoryError, directoryQuery, isLoading, t, tileWidth]);
 
   return (
-    <ImageBackground
-      source={require("../../assets/Dreamy Arrival at the Historic Campus.png")}
-      resizeMode="cover"
-      style={styles.background}
-    >
-      <LinearGradient
-        pointerEvents="none"
-        colors={[
-          "rgba(21, 16, 39, 0.24)",
-          "rgba(21, 16, 39, 0.1)",
-          "rgba(21, 16, 39, 0.42)",
-          "rgba(21, 16, 39, 0.56)",
-        ]}
-        locations={[0, 0.28, 0.58, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      <ThemedStatusBar backgroundColor="transparent" style="light" />
+    <View className="flex-1 bg-background">
+      <ThemedStatusBar style="auto" />
       <View className="flex-1" style={{ paddingTop: insets.top + 8 }}>
         <View className="mb-5 h-11 flex-row items-center justify-between px-5">
           <View className="flex-row items-center gap-2">
-            <Logo size={25} color="#FFFFFF" dotColor="#A821D9" />
-            <Text className="text-lg font-bold tracking-tight text-white">
+            <Logo size={25} color={theme.primary} dotColor={theme.brandPink} />
+            <Text className="text-lg font-bold tracking-tight text-foreground">
               Orbis
             </Text>
           </View>
@@ -459,24 +460,24 @@ export default function InstitutionSelectScreen() {
             }
             onPress={toggleLanguage}
             hitSlop={8}
-            className="min-h-11 flex-row items-center gap-2 rounded-full border border-white/30 bg-black/10 px-3"
+            className="min-h-11 flex-row items-center gap-2 rounded-full border border-border bg-card px-3"
           >
-            <Language size={15} color="#FFFFFF" />
-            <Text className="text-sm font-medium text-white">
+            <Language size={15} color={theme.textMuted} />
+            <Text className="text-sm font-medium text-foreground">
               {locale === "ar" ? "English" : "العربية"}
             </Text>
           </Pressable>
         </View>
 
-        <View className="flex-1 overflow-hidden rounded-t-[28px] bg-background">
+        <View className="flex-1 overflow-hidden bg-background">
           <FlatList
-            data={visibleInstitutions}
+            data={otherInstitutions}
             keyExtractor={(institution) => institution.deployment_id}
             renderItem={renderInstitution}
             numColumns={2}
             columnWrapperStyle={styles.tileRow}
             ListHeaderComponent={
-              <View className="gap-4 pb-5">
+              <View className="gap-5 pb-5">
                 <View className="gap-1">
                   <Text className="text-start text-2xl leading-8 font-bold text-foreground">
                     {t("auth_institution_search_title")}
@@ -513,6 +514,38 @@ export default function InstitutionSelectScreen() {
                   </Pressable>
                 </View>
 
+                {featuredInstitution ? (
+                  <View className="gap-2">
+                    <Text className="text-start text-xs font-semibold uppercase tracking-wide text-primary">
+                      {userLocation
+                        ? t("auth_institution_featured_nearby")
+                        : t("auth_institution_featured_recommended")}
+                    </Text>
+                    <InstitutionTile
+                      institution={featuredInstitution}
+                      name={
+                        isArabic && featuredInstitution.name_ar
+                          ? featuredInstitution.name_ar
+                          : featuredInstitution.name
+                      }
+                      isCurrent={
+                        selectedInstitution?.deployment_id ===
+                        featuredInstitution.deployment_id
+                      }
+                      isConnecting={
+                        connectingId === featuredInstitution.deployment_id
+                      }
+                      disabled={connectingId !== null}
+                      currentLabel={t("auth_institution_current")}
+                      localLabel={t("auth_institution_local_label")}
+                      primaryColor={theme.primary}
+                      onSelect={connectInstitution}
+                      width={windowWidth - 32}
+                      featured
+                    />
+                  </View>
+                ) : null}
+
                 <View className="flex-row items-center justify-between gap-3">
                   <Text className="flex-1 text-start text-sm font-semibold text-foreground">
                     {t("auth_institution_results")}
@@ -543,7 +576,9 @@ export default function InstitutionSelectScreen() {
                 </View>
               </View>
             }
-            ListEmptyComponent={renderEmpty}
+            ListEmptyComponent={
+              visibleInstitutions.length === 0 ? renderEmpty : null
+            }
             ListFooterComponent={
               directoryError && visibleInstitutions.length > 0 ? (
                 <View className="mt-4 flex-row items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
@@ -719,15 +754,11 @@ export default function InstitutionSelectScreen() {
           </View>
         </View>
       </Modal>
-    </ImageBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: "#081521",
-  },
   emptyState: {
     minHeight: 200,
     justifyContent: "center",
@@ -745,5 +776,9 @@ const styles = StyleSheet.create({
   logoImage: {
     width: 46,
     height: 46,
+  },
+  featuredLogoImage: {
+    width: 58,
+    height: 58,
   },
 });

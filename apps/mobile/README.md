@@ -47,10 +47,17 @@ setting.
 Teachers can connect to a school server without internet access by joining the
 school Wi-Fi and scanning its Orbis QR code on the institution selection screen.
 Manual server entry is also available. The phone must be able to reach the
-server over the local network, and the server must use HTTPS with a certificate
-trusted by the device. The app checks `/api/v1/health` before saving the
-institution; it does not disable TLS certificate validation to support
-self-signed certificates.
+server over the local network. HTTPS with a certificate trusted by the device
+is required for internet-facing servers. For a trusted local network, HTTP is
+also accepted when the endpoint uses a private IPv4 address (`10.x.x.x`,
+`172.16.x.x`–`172.31.x.x`, or `192.168.x.x`). Do not use this HTTP option on a
+public or untrusted Wi-Fi network: traffic, including sign-in credentials, is
+not encrypted. The app checks `/api/v1/health` before saving the institution.
+Android cleartext networking is enabled at the native app level for this
+feature only when `ORBIS_DEV_ALLOW_LOCAL_HTTP=true` is set while resolving the
+Expo config and building the Android app. The app only accepts HTTP institution
+endpoints in the private IPv4 ranges above. Rebuild the native Android app after
+changing this setting; a JavaScript reload is not enough.
 
 The QR code contains a JSON document in this shape:
 

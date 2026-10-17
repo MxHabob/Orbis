@@ -14,9 +14,16 @@ if (
 
 export default ({ config }: { config: ExpoConfig }): ExpoConfig => {
   const updatesEnabled = Boolean(easProjectId);
+  const android = {
+    ...config.android,
+    usesCleartextTraffic: process.env.ORBIS_DEV_ALLOW_LOCAL_HTTP === "true",
+  } as NonNullable<ExpoConfig["android"]> & {
+    usesCleartextTraffic: boolean;
+  };
 
   return {
     ...config,
+    android,
     plugins: [
       ...(config.plugins ?? []),
       ["expo-sqlite", { useSQLCipher: true }],

@@ -9,6 +9,7 @@
 import { createOrbisClient } from "@orbis/sdk";
 import { Platform } from "react-native";
 import { authStorage } from "./storage";
+import { isAllowedInstitutionEndpoint } from "./institution-discovery";
 import { notifySessionInvalidated } from "./session-events";
 import { OrbisError } from "./types";
 import { onlineManager } from "@/lib/network/online-manager";
@@ -27,11 +28,10 @@ export function configureApiBaseUrl(baseUrl: string): void {
     __DEV__ &&
     parsedUrl.protocol === "http:" &&
     ["localhost", "127.0.0.1", "10.0.2.2"].includes(parsedUrl.hostname);
-  if (parsedUrl.protocol !== "https:" && !isDevelopmentLoopback) {
-    throw new Error("The selected Orbis server must use HTTPS.");
-  }
-  if (parsedUrl.username || parsedUrl.password || parsedUrl.search || parsedUrl.hash) {
-    throw new Error("The Orbis server URL contains unsupported components.");
+  if (!isAllowedInstitutionEndpoint(parsedUrl.toString()) && !isDevelopmentLoopback) {
+    throw new Error(
+      "The Orbis server must use HTTPS or a private IPv4 address over HTTP.",
+    );
   }
   api.client.setConfig({ baseUrl: parsedUrl.toString().replace(/\/+$/, "") });
 }
