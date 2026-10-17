@@ -32,8 +32,8 @@ import {
 import {
   KeyboardAwareScrollView,
   type KeyboardAwareScrollViewProps,
-  KeyboardStickyView,
 } from "react-native-keyboard-controller";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, {
   Easing,
   runOnJS,
@@ -89,7 +89,9 @@ export function Drawer({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
   const closedOffset = height;
   const normalizedSnapPoints = useMemo(() => {
     if (!snapPoints?.length) return null;
@@ -173,10 +175,22 @@ export function Drawer({
   }, [height, isSnapping]);
 
   const animatedSheetStyle = useAnimatedStyle(() => {
+    const availableHeight = Math.max(
+      0,
+      height + keyboardHeight.value - insets.top,
+    );
     return isSnapping
-      ? { height: sheetHeight.value }
-      : { transform: [{ translateY: translateY.value }] };
-  }, [isSnapping]);
+      ? {
+          height: Math.min(sheetHeight.value, availableHeight),
+          transform: [{ translateY: keyboardHeight.value }],
+        }
+      : {
+          maxHeight: Math.min(height * 0.92, availableHeight),
+          transform: [
+            { translateY: translateY.value + keyboardHeight.value },
+          ],
+        };
+  }, [height, insets.top, isSnapping]);
 
   const createPanGesture = useCallback(
     () =>
@@ -391,11 +405,9 @@ export function DrawerHeader({ children }: { children: ReactNode }) {
 export function DrawerFooter({ children }: { children: ReactNode }) {
   const { theme } = useDrawer();
   return (
-    <KeyboardStickyView style={styles.keyboardStickyFooter}>
-      <View style={[styles.footer, { borderTopColor: theme.border }]}>
-        {children}
-      </View>
-    </KeyboardStickyView>
+    <View style={[styles.footer, { borderTopColor: theme.border }]}>
+      {children}
+    </View>
   );
 }
 
@@ -565,9 +577,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  keyboardStickyFooter: {
-    width: "100%",
   },
   title: {
     ...{ fontSize: 16, lineHeight: 22, fontWeight: "600" },
