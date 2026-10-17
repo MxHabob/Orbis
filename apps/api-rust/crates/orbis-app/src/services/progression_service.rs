@@ -249,6 +249,10 @@ impl ProgressionService {
                         PromotionDecision::Exclude,
                         "Student has already graduated".to_string(),
                     ),
+                    StudentStatus::Inactive => (
+                        PromotionDecision::Exclude,
+                        "Student registration is incomplete".to_string(),
+                    ),
                     StudentStatus::Withdrawn
                     | StudentStatus::Expelled
                     | StudentStatus::TransferredOut => (

@@ -449,7 +449,11 @@ pub async fn calendar_get_context(
         .list_years(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
-    let current = years.iter().find(|y| y.status == "active").cloned();
+    let current = years
+        .iter()
+        .find(|y| y.status == "active")
+        .cloned()
+        .or_else(|| years.first().cloned());
     let periods = if let Some(ref cur) = current {
         state
             .calendar_service

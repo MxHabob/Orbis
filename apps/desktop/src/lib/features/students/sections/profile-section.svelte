@@ -156,16 +156,23 @@ const studyModes = [
             bind:value={state.personal.classId}
           />
           {#if state.selectedClass}
-            <div class="flex items-center justify-between px-1">
-              <span class="text-[10px] text-muted-foreground">{m.ui_copy_capacity_ebf7f7c9()}</span>
-              <CapacityIndicator 
-                current={state.selectedClass.student_count || 0} 
-                max={state.selectedClass.capacity || 30} 
-                size="sm"
-                class="w-44"
-              />
-            </div>
-          {/if}
+              {@const enrolledCount = state.selectedClass.current_students ?? 0}
+              {@const classCapacity = state.selectedClass.capacity ?? state.admissionPolicy.maxClassCapacity}
+              <div class="flex items-center justify-between px-1">
+                <span class="text-[10px] text-muted-foreground">{m.ui_copy_capacity_ebf7f7c9()}</span>
+                <CapacityIndicator 
+                  current={enrolledCount} 
+                  max={classCapacity} 
+                  size="sm"
+                  class="w-44"
+                />
+              </div>
+              {#if classCapacity > 0 && enrolledCount >= classCapacity}
+                <p class="px-1 text-xs text-amber-600 dark:text-amber-400" role="status">
+                  {m.student_registration_capacity_review()}
+                </p>
+              {/if}
+            {/if}
         </div>
       </div>
 

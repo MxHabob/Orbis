@@ -64,6 +64,11 @@ let selectedStudentIds = $state<Set<string>>(new Set());
                 onclick: () => directory.setStatusFilter('active')
               },
               {
+                label: m.operations_ui_inactive(),
+                isActive: directory.statusFilter === 'inactive',
+                onclick: () => directory.setStatusFilter('inactive')
+              },
+              {
                 label: m.common_filter_withdrawn(),
                 isActive: directory.statusFilter === 'withdrawn',
                 onclick: () => directory.setStatusFilter('withdrawn')

@@ -8,7 +8,7 @@
   - High-performance OrbisGrid table for ledger movements
 -->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
+import { LoadingIndicator, toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
@@ -297,7 +297,7 @@ function exportCsv() {
 
 function handlePrintStatement() {
   if (!selectedAccountId || !selectedAccount) {
-    toast.error(m.finance_ui_account_statement_select_account?.() || "يرجى تحديد حساب أولاً");
+    toast.error(m.finance_ui_account_statement_account_placeholder());
     return;
   }
   const accountLabel = `${selectedAccount.code} - ${selectedAccount.name_ar || selectedAccount.name}`;
@@ -396,7 +396,7 @@ function handlePrintStatement() {
 
         <Button variant="outline" size="sm" onclick={handlePrintStatement} class="h-8 gap-1.5 text-xs font-semibold cursor-pointer border-border/60">
           <Printer size={14} class="text-primary" />
-          <span>{m.common_action_print?.() || 'طباعة'}</span>
+          <span>{m.operations_ui_print_report()}</span>
         </Button>
       </div>
     </header>

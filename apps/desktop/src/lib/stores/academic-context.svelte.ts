@@ -55,17 +55,21 @@ class AcademicContextStore {
     localStorage.setItem("orbis_academic_subject_id", val);
   }
 
-  isReadOnly = $derived(
-    this._isReadOnly || this.currentYear?.status === "archived",
-  );
-  hasYears = $derived(this.allYears.length > 0);
-  yearLabel = $derived(this.currentYear?.name ?? "");
-  yearLabelAr = $derived(
-    this.currentYear?.name_ar ?? this.currentYear?.name ?? "",
-  );
-  effectivePeriodId = $derived(
-    this._selectedPeriodId || this.activePeriod?.id || "",
-  );
+  get isReadOnly(): boolean {
+    return this._isReadOnly || this.currentYear?.status === "archived";
+  }
+  get hasYears(): boolean {
+    return this.allYears.length > 0;
+  }
+  get yearLabel(): string {
+    return this.currentYear?.name ?? "";
+  }
+  get yearLabelAr(): string {
+    return this.currentYear?.name_ar ?? this.currentYear?.name ?? "";
+  }
+  get effectivePeriodId(): string {
+    return this._selectedPeriodId || this.activePeriod?.id || "";
+  }
 
   /** First active period or first period in list */
   get activePeriod(): AcademicPeriodDto | null {
@@ -89,6 +93,38 @@ class AcademicContextStore {
       this.periods = ctx.periods ?? [];
       this.yearStatus = ctx.current_year?.status ?? "active";
       this._isReadOnly = ctx.current_year?.status === "archived";
+
+      // If current_year wasn't returned as active, check all_years
+      if (!this.currentYear && this.allYears.length > 0) {
+        this.currentYear =
+          this.allYears.find((y) => y.status === "active" || y.is_active) ??
+          this.allYears[0] ??
+          null;
+      }
+
+      // If all_years was empty, fallback to listacademicCalendars
+      if (this.allYears.length === 0) {
+        try {
+          const years = await api.listacademicCalendars();
+          this.allYears = years;
+          this.currentYear =
+            years.find((y) => y.status === "active" || y.is_active) ??
+            years[0] ??
+            null;
+        } catch {
+          // ignore fallback error
+        }
+      }
+
+      // If periods was empty, fallback to listAcademicPeriods
+      if (this.periods.length === 0) {
+        try {
+          this.periods = await api.listAcademicPeriods();
+        } catch {
+          // ignore fallback error
+        }
+      }
+
       if (!this._selectedPeriodId && this.activePeriod) {
         this._selectedPeriodId = this.activePeriod.id;
       }

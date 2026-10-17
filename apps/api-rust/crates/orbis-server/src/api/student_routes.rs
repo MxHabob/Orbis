@@ -135,6 +135,8 @@ pub struct RegisterStudentRequest {
     pub initial_section_id: Option<Uuid>,
     pub study_mode: Option<String>,
     pub bypass_capacity_check: Option<bool>,
+    #[serde(default)]
+    pub is_draft: bool,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -419,6 +421,7 @@ pub async fn register_student(
         initial_section_id: p.initial_section_id,
         study_mode,
         bypass_capacity_check: p.bypass_capacity_check,
+        is_draft: p.is_draft,
     };
 
     let result = state
@@ -442,6 +445,7 @@ pub async fn list_students(
         section_id: q.section_id,
         status: q.status.as_deref().and_then(|s| match s {
             "active" => Some(StudentStatus::Active),
+            "inactive" => Some(StudentStatus::Inactive),
             "on_leave" => Some(StudentStatus::OnLeave),
             "suspended" => Some(StudentStatus::Suspended),
             "withdrawn" => Some(StudentStatus::Withdrawn),
@@ -530,6 +534,7 @@ pub async fn update_student_status(
     Json(p): Json<UpdateStudentStatusRequest>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
     let new_status = match p.status.as_str() {
+        "inactive" => StudentStatus::Inactive,
         "on_leave" => StudentStatus::OnLeave,
         "suspended" => StudentStatus::Suspended,
         "withdrawn" => StudentStatus::Withdrawn,
@@ -686,6 +691,7 @@ pub async fn bulk_register_students(
             initial_section_id: item.registration.initial_section_id,
             study_mode,
             bypass_capacity_check: item.registration.bypass_capacity_check,
+            is_draft: item.registration.is_draft,
         };
 
         domain_items.push(

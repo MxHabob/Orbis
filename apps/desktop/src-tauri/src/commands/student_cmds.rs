@@ -92,7 +92,7 @@ pub struct StudentDto {
     pub org_id: String,
     pub person_id: String,
     pub user_id: Option<String>,
-    pub student_number: String,
+    pub student_number: Option<String>,
     pub status: String,
     pub standing: String,
     pub admitted_at: String,
@@ -108,7 +108,7 @@ pub fn student_to_dto(s: Student) -> StudentDto {
         org_id: s.org_id.to_string(),
         person_id: s.person_id.to_string(),
         user_id: s.user_id.map(|u| u.to_string()),
-        student_number: s.student_number,
+        student_number: Some(s.student_number),
         status: s.status.to_string(),
         standing: s.standing.to_string(),
         admitted_at: s.admitted_at.to_rfc3339(),
@@ -264,8 +264,11 @@ pub struct RegisterStudentRequest {
     pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub initial_period_id: Option<String>,
+    #[serde(alias = "initial_section_id")]
     pub initial_class_id: Option<String>,
     pub study_mode: Option<String>,
+    #[serde(default)]
+    pub is_draft: bool,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -324,6 +327,7 @@ pub struct UpdateStudentProfileRequest {
 pub struct EnrollStudentInput {
     pub period_id: String,
     pub student_id: String,
+    #[serde(alias = "section_id")]
     pub class_id: Option<String>,
     pub student_number: String,
     pub study_mode: Option<String>,
@@ -381,6 +385,7 @@ fn parse_study_mode(mode_str: Option<&str>) -> StudyMode {
 fn parse_student_status(status_str: &str) -> Option<StudentStatus> {
     match status_str {
         "active" => Some(StudentStatus::Active),
+        "inactive" => Some(StudentStatus::Inactive),
         "on_leave" => Some(StudentStatus::OnLeave),
         "suspended" => Some(StudentStatus::Suspended),
         "withdrawn" => Some(StudentStatus::Withdrawn),
@@ -473,6 +478,7 @@ pub async fn student_register_student(
         initial_section_id: initial_class_id,
         study_mode,
         bypass_capacity_check: None,
+        is_draft: request.is_draft,
     };
 
     let result = state
@@ -918,6 +924,7 @@ pub async fn student_bulk_register(
                 .and_then(|id| Uuid::parse_str(id).ok()),
             study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
             bypass_capacity_check: None,
+            is_draft: item.registration.is_draft,
         };
 
         domain_items.push(

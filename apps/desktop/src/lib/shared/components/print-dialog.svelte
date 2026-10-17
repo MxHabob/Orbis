@@ -271,7 +271,7 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
     const classIds = [
       ...new Set(
         students
-          .map(({ enrollment }) => enrollment?.class_id)
+          .map(({ enrollment }) => enrollment?.section_id)
           .filter((id): id is string => Boolean(id)),
       ),
     ];
@@ -279,8 +279,8 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
     const classesById = new Map(classes.map((item) => [item.id, item]));
 
     return students.map(({ student, person, enrollment }, index) => {
-      const classInfo = enrollment?.class_id
-        ? classesById.get(enrollment.class_id)
+      const classInfo = enrollment?.section_id
+        ? classesById.get(enrollment.section_id)
         : undefined;
       return {
         student: {
@@ -290,7 +290,7 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
           studentNumber: student.student_number,
           nationalId: person.national_id ?? student.national_id,
           avatarUrl: student.avatar_url,
-          classId: enrollment?.class_id,
+          classId: enrollment?.section_id,
           className: classInfo?.name,
           classNameAr: classInfo?.name_ar,
           level: classInfo?.level,

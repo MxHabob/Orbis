@@ -358,6 +358,7 @@ fn map_student_model_to_domain(m: student::Model) -> DomainStudent {
         user_id: m.user_id,
         student_number: m.student_number,
         status: match m.status.as_str() {
+            "inactive" => StudentStatus::Inactive,
             "on_leave" => StudentStatus::OnLeave,
             "suspended" => StudentStatus::Suspended,
             "withdrawn" => StudentStatus::Withdrawn,

@@ -16,16 +16,16 @@ import { Badge } from "@orbis/ui/badge";
 import { ClockRotateRight, Pin, User } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 
-// Feature Components
 import {
   ScheduleToolbar,
   ScheduleMatrix,
   LessonSheet,
   TimeSlotSheet,
   SolverDrawer,
-  ScheduleExportDialog,
 } from "$lib/features/academics";
 import ErrorState from "$lib/shared/components/error-state.svelte";
+import { l, formatDate } from "$lib/core/i18n";
+import { openPrintDialog } from "$lib/stores/print.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -48,7 +48,6 @@ let selectedMatrixDay = $state(1);
 let isLessonSheetOpen = $state(false);
 let isTimeSlotsSheetOpen = $state(false);
 let isSolverDrawerOpen = $state(false);
-let isExportDialogOpen = $state(false);
 
 // Active Lesson for editing / creating
 let targetLesson = $state<any | null>(null);
@@ -166,8 +165,8 @@ const conflictLessonIds = $derived.by(() => {
       }
     }
 
-    if (lesson.class_id) {
-      const cKey = `${key}_${lesson.class_id}`;
+    if (lesson.section_id) {
+      const cKey = `${key}_${lesson.section_id}`;
       if (classOccupancy.has(cKey)) {
         ids.add(lesson.id);
         ids.add(classOccupancy.get(cKey)!);
@@ -185,7 +184,7 @@ const filteredLessons = $derived.by(() => {
   if (viewMode === "class") {
     if (!selectedClassId) return [];
     return allLessons.filter(
-      (l) => String(l.class_id) === String(selectedClassId),
+      (l) => String(l.section_id) === String(selectedClassId),
     );
   }
 
@@ -372,6 +371,99 @@ const error = $derived(
     timeSlotsQuery.error ||
     periodScheduleQuery.error,
 );
+
+function handleDirectPrint() {
+  const activePeriod = periods.find((p) => String(p.id) === String(activePeriodId));
+  const periodTitle = activePeriod ? (l(activePeriod.name_ar, activePeriod.name) || activePeriod.name) : "";
+
+  let targetId = "master";
+  let targetTitle = m.academics_schedule_master_title();
+  let relevantLessons = allLessons;
+
+  if (viewMode === "class" && selectedClassId) {
+    const cls = classes.find((c) => String(c.id) === String(selectedClassId));
+    targetId = String(selectedClassId);
+    targetTitle = cls ? `جدول حصص: ${l(cls.name_ar, cls.name)}` : "جدول الحصص";
+    relevantLessons = allLessons.filter((l) => String(l.section_id) === String(selectedClassId));
+  } else if (viewMode === "teacher" && selectedTeacherId) {
+    const teach = teachers.find((t) => String(t.id) === String(selectedTeacherId));
+    targetId = String(selectedTeacherId);
+    targetTitle = teach ? `جدول المعلم: ${l(teach.full_name_ar, teach.full_name)}` : "جدول المعلم";
+    relevantLessons = allLessons.filter((l) => String(l.teacher_id) === String(selectedTeacherId));
+  } else if (viewMode === "room" && selectedRoomId) {
+    const rm = rooms.find((r) => String(r.id) === String(selectedRoomId));
+    targetId = String(selectedRoomId);
+    targetTitle = rm ? `جدول القاعة: ${l(rm.name_ar, rm.name)}` : "جدول القاعة";
+    relevantLessons = allLessons.filter((l) => String(l.room_id) === String(selectedRoomId));
+  }
+
+  const scheduleRows = timeSlots.map((slot) => {
+    const isBreak = Boolean(slot.is_break);
+    const slotName = l(slot.name_ar, slot.name) || `P${slot.slot_number}`;
+    const timeRange = `${slot.start_time?.slice(0, 5) || ""} - ${slot.end_time?.slice(0, 5) || ""}`;
+    const rowObj: Record<string, string> = {
+      slotName: `${slotName} (${timeRange})`,
+      timeRange,
+    };
+
+    for (const day of weekdays) {
+      const dayVal = String(day.value ?? day.day);
+      if (isBreak) {
+        rowObj[`day_${dayVal}`] = l(slot.name_ar, slot.name) || m.common_onboarding_break_recess();
+      } else {
+        const lesson = relevantLessons.find(
+          (l) => Number(l.day_of_week) === Number(dayVal) && String(l.time_slot_id) === String(slot.id),
+        );
+        if (lesson) {
+          const sub = getSubjectName(lesson.subject_id);
+          const teacher = viewMode !== "teacher" && lesson.teacher_id ? ` (${getTeacherName(lesson.teacher_id)})` : "";
+          const cls = viewMode !== "class" && lesson.section_id ? ` - ${getClassName(lesson.section_id)}` : "";
+          const rm = viewMode !== "room" && lesson.room_id ? ` [${getRoomName(lesson.room_id)}]` : "";
+          rowObj[`day_${dayVal}`] = `${sub}${teacher}${cls}${rm}`;
+        } else {
+          rowObj[`day_${dayVal}`] = "—";
+        }
+      }
+    }
+
+    return rowObj;
+  });
+
+  const scheduleContext = {
+    schedule: {
+      title: targetTitle,
+      periodName: periodTitle,
+      exportType: viewMode,
+      date: formatDate(new Date()),
+      totalSlots: timeSlots.length,
+      totalDays: weekdays.length,
+    },
+    weekdays: weekdays.map((d) => ({
+      day: d.value ?? d.day,
+      label: d.label,
+    })),
+    timeSlots: timeSlots.map((s) => ({
+      id: s.id,
+      name: l(s.name_ar, s.name) || `P${s.slot_number}`,
+      timeRange: `${s.start_time?.slice(0, 5) || ""} - ${s.end_time?.slice(0, 5) || ""}`,
+      isBreak: Boolean(s.is_break),
+    })),
+    matrix: scheduleRows,
+    lessons: relevantLessons.map((l) => ({
+      subject: getSubjectName(l.subject_id),
+      teacher: getTeacherName(l.teacher_id),
+      class: getClassName(l.section_id),
+      room: getRoomName(l.room_id),
+      day: l.day_of_week,
+      slotId: l.time_slot_id,
+    })),
+  };
+
+  openPrintDialog("schedule", [targetId], [targetTitle], {
+    documentType: "SCHEDULE",
+    contexts: [scheduleContext],
+  });
+}
 </script>
 
 <div class="h-full w-full flex flex-col items-stretch overflow-hidden font-sans">
@@ -393,7 +485,7 @@ const error = $derived(
     onPeriodChange={refetchSchedule}
     onAutoScheduleClick={() => goto(localizeHref(`/${orgId}/academics/schedule/generator?periodId=${activePeriodId}`))}
     onTimeSlotsClick={() => (isTimeSlotsSheetOpen = true)}
-    onExportClick={() => (isExportDialogOpen = true)}
+    onExportClick={handleDirectPrint}
     onNewLessonClick={() => openNewLessonSheet()}
   />
 
@@ -540,22 +632,3 @@ const error = $derived(
   onApply={refetchSchedule}
 />
 
-<!-- Schedule Export & Print Dialog -->
-<ScheduleExportDialog
-  bind:open={isExportDialogOpen}
-  periodName={periods.find((p) => String(p.id) === String(activePeriodId))?.name_ar || periods.find((p) => String(p.id) === String(activePeriodId))?.name || ""}
-  {viewMode}
-  {selectedClassId}
-  {selectedTeacherId}
-  {selectedRoomId}
-  {classes}
-  {teachers}
-  {rooms}
-  {timeSlots}
-  {weekdays}
-  lessons={allLessons}
-  {getSubjectName}
-  {getTeacherName}
-  {getClassName}
-  {getRoomName}
-/>

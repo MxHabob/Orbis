@@ -29,7 +29,6 @@ import {
   Banknotes,
   BuildingOffice,
   User,
-  UserGroup,
 } from "@orbis/icons";
 import { extractErrorMessage } from "$lib/api";
 import type {
@@ -310,20 +309,12 @@ function handleCancelClick() {
   <!-- Header matching sheet standards -->
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start flex flex-row items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <UserGroup size={18} />
-      </div>
       <div class="flex flex-col">
         <Sheet.Title class="text-base font-bold text-foreground">
           {mode === "create" 
             ? (m.employees_new_title()) 
             : (m.employees_edit_title())}
         </Sheet.Title>
-        <span class="text-xs text-muted-foreground">
-          {mode === "create" 
-            ? m.ui_copy_enter_personal_employment_and_payroll_reco_f1caab5e() 
-            : (employee?.full_name || employee?.first_name || "")}
-        </span>
       </div>
     </div>
   </Sheet.Header>

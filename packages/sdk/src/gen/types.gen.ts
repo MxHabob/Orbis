@@ -797,6 +797,10 @@ export type ConnectAppRequest = {
     settings: unknown;
 };
 
+export type ConnectMulverseRequest = {
+    api_key: string;
+};
+
 export type CourseDto = {
     code: string;
     created_at: string;
@@ -858,6 +862,11 @@ export type CreateCurriculumFolderRequest = {
     term_id?: string | null;
 };
 
+export type CreateDeploymentRequest = {
+    environment: string;
+    name: string;
+};
+
 export type CreateDiscountTemplateRequest = {
     code?: string | null;
     discount_type: string;
@@ -880,6 +889,11 @@ export type CreateDocumentRequirementRequest = {
     name_en?: string | null;
     target_id?: string | null;
     target_type: string;
+};
+
+export type CreateEndpointRequest = {
+    network_scope: string;
+    url: string;
 };
 
 export type CreateEnrollmentRequest = {
@@ -1148,6 +1162,16 @@ export type DashboardCountsDto = {
     total_teachers: number;
 };
 
+export type DeploymentDto = {
+    created_at: string;
+    environment: string;
+    id: string;
+    name: string;
+    status: string;
+    updated_at: string;
+    verification_status: string;
+};
+
 export type DiscountTemplateDto = {
     code: string;
     created_at: string;
@@ -1297,6 +1321,16 @@ export type EmployeeDetailDto = {
     user_status?: string | null;
     username?: string | null;
     work_shift?: string | null;
+};
+
+export type EndpointDto = {
+    created_at: string;
+    deployment_id: string;
+    id: string;
+    network_scope: string;
+    status: string;
+    updated_at: string;
+    url: string;
 };
 
 export type EnrollStudentRequest = {
@@ -1718,6 +1752,12 @@ export type MfaEnrollResponse = {
 export type MfaVerifyEnrollmentRequest = {
     code: string;
     factor_id: string;
+};
+
+export type MulverseConnectionDto = {
+    connected: boolean;
+    organization_id?: string | null;
+    product_organization_id?: string | null;
 };
 
 export type NotificationIntegrationCheckDto = {
@@ -2176,6 +2216,7 @@ export type RegisterStudentRequest = {
     gender?: string | null;
     initial_period_id?: string | null;
     initial_section_id?: string | null;
+    is_draft?: boolean;
     last_name: string;
     last_name_ar?: string | null;
     medical_notes?: string | null;
@@ -2620,6 +2661,11 @@ export type UpdateAccountRequest = {
     sub_type?: string | null;
 };
 
+export type UpdateDeploymentRequest = {
+    environment?: string | null;
+    name?: string | null;
+};
+
 export type UpdateDocumentRequest = {
     asset_type?: string | null;
     calendar_id?: string | null;
@@ -2678,6 +2724,11 @@ export type UpdateEmployeeRequest = {
 
 export type UpdateEmployeeStatusRequest = {
     status: string;
+};
+
+export type UpdateEndpointRequest = {
+    status?: string | null;
+    url?: string | null;
 };
 
 export type UpdateExamSessionRequest = {
@@ -5937,6 +5988,143 @@ export type GetOnboardingStateResponses = {
 };
 
 export type GetOnboardingStateResponse = GetOnboardingStateResponses[keyof GetOnboardingStateResponses];
+
+export type DisconnectData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/orbis-mobile';
+};
+
+export type DisconnectResponses = {
+    204: void;
+};
+
+export type DisconnectResponse = DisconnectResponses[keyof DisconnectResponses];
+
+export type GetStatusData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/orbis-mobile';
+};
+
+export type GetStatusResponses = {
+    200: MulverseConnectionDto;
+};
+
+export type GetStatusResponse = GetStatusResponses[keyof GetStatusResponses];
+
+export type ConnectData = {
+    body: ConnectMulverseRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/orbis-mobile';
+};
+
+export type ConnectResponses = {
+    200: MulverseConnectionDto;
+};
+
+export type ConnectResponse = ConnectResponses[keyof ConnectResponses];
+
+export type ListDeploymentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/orbis-mobile/deployments';
+};
+
+export type ListDeploymentsResponses = {
+    200: Array<DeploymentDto>;
+};
+
+export type ListDeploymentsResponse = ListDeploymentsResponses[keyof ListDeploymentsResponses];
+
+export type CreateDeploymentData = {
+    body: CreateDeploymentRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/orbis-mobile/deployments';
+};
+
+export type CreateDeploymentResponses = {
+    201: DeploymentDto;
+};
+
+export type CreateDeploymentResponse = CreateDeploymentResponses[keyof CreateDeploymentResponses];
+
+export type UpdateDeploymentData = {
+    body: UpdateDeploymentRequest;
+    path: {
+        /**
+         * Deployment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/orbis-mobile/deployments/{id}';
+};
+
+export type UpdateDeploymentResponses = {
+    200: DeploymentDto;
+};
+
+export type UpdateDeploymentResponse = UpdateDeploymentResponses[keyof UpdateDeploymentResponses];
+
+export type ListEndpointsData = {
+    body?: never;
+    path: {
+        /**
+         * Deployment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/orbis-mobile/deployments/{id}/endpoints';
+};
+
+export type ListEndpointsResponses = {
+    200: Array<EndpointDto>;
+};
+
+export type ListEndpointsResponse = ListEndpointsResponses[keyof ListEndpointsResponses];
+
+export type CreateEndpointData = {
+    body: CreateEndpointRequest;
+    path: {
+        /**
+         * Deployment ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/orbis-mobile/deployments/{id}/endpoints';
+};
+
+export type CreateEndpointResponses = {
+    201: EndpointDto;
+};
+
+export type CreateEndpointResponse = CreateEndpointResponses[keyof CreateEndpointResponses];
+
+export type UpdateEndpointData = {
+    body: UpdateEndpointRequest;
+    path: {
+        /**
+         * Endpoint ID
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/v1/orbis-mobile/endpoints/{id}';
+};
+
+export type UpdateEndpointResponses = {
+    200: EndpointDto;
+};
+
+export type UpdateEndpointResponse = UpdateEndpointResponses[keyof UpdateEndpointResponses];
 
 export type ListOrgUnitsData = {
     body?: never;

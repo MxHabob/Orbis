@@ -1,5 +1,5 @@
 <script lang="ts">
-import { AdjustmentsHorizontal, BookOpen, Calendar, ClockRotateRight, Keyframes, Pin, Search, Sparkles, User, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Calendar, ClockRotateRight, Keyframes, Pin, Printer, Search, Sparkles, User, Users } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
@@ -159,8 +159,7 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
         onclick={onExportClick}
         title={m.academics_schedule_export_title()}
       >
-        <AdjustmentsHorizontal size={13} />
-        <span class="hidden xl:inline">{m.academics_schedule_export_label()}</span>
+        <Printer size={13} />
       </Button>
       <!-- AI Generator Studio Button -->
       <Button

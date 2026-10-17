@@ -69,6 +69,8 @@ pub struct RegisterStudentInput {
     pub initial_section_id: Option<Uuid>,
     pub study_mode: Option<StudyMode>,
     pub bypass_capacity_check: Option<bool>,
+    #[serde(default)]
+    pub is_draft: bool,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -307,6 +309,7 @@ impl StudentService {
         };
 
         let now = Utc::now();
+        let is_draft = input.is_draft;
         let org_settings = self
             .settings_repo
             .get_settings(org_id)
@@ -415,7 +418,11 @@ impl StudentService {
             person_id,
             user_id: input.user_id,
             student_number: student_number.clone(),
-            status: StudentStatus::Active,
+            status: if is_draft {
+                StudentStatus::Inactive
+            } else {
+                StudentStatus::Active
+            },
             standing: AcademicStanding::GoodStanding,
             admitted_at: now,
             graduated_at: None,
@@ -438,7 +445,7 @@ impl StudentService {
         let mut created_override_req: Option<AcademicOverrideRequest> = None;
         let mut auto_assigned_fees_count = 0usize;
 
-        if let Some(period_id) = input.initial_period_id {
+        if let Some(period_id) = input.initial_period_id.filter(|_| !is_draft) {
             let mode = input.study_mode.unwrap_or(StudyMode::Regular);
             let mut enrollment_status = EnrollmentStatus::Active;
 
@@ -639,7 +646,8 @@ impl StudentService {
             .await?
             .ok_or_else(|| DomainError::NotFound(format!("Student {} not found", student_id)))?;
 
-        if !student.can_enroll() {
+        let completing_draft = student.status == StudentStatus::Inactive;
+        if !student.can_enroll() && !completing_draft {
             return Err(DomainError::Validation(format!(
                 "Cannot enroll student with status {:?}",
                 student.status
@@ -647,17 +655,137 @@ impl StudentService {
         }
 
         let existing_student_enrollments = self.enrollment_repo.find_by_student(student_id).await?;
-        if existing_student_enrollments
-            .iter()
-            .any(|e| e.period_id == period_id && e.status == EnrollmentStatus::Active)
-        {
+        if let Some(existing) = existing_student_enrollments.iter().find(|enrollment| {
+            enrollment.period_id == period_id
+                && matches!(
+                    enrollment.status,
+                    EnrollmentStatus::Active | EnrollmentStatus::PendingApproval
+                )
+        }) {
+            if completing_draft {
+                return Ok(existing.clone());
+            }
             return Err(DomainError::Conflict(
                 "Student is already actively enrolled in this period".into(),
             ));
         }
 
         let now = Utc::now();
-        let enrollment = Enrollment::new(
+        let org_settings = self
+            .settings_repo
+            .get_settings(org_id)
+            .await
+            .unwrap_or_default();
+        let admission_policy = org_settings.admission.policy;
+        let allow_waitlist =
+            org_settings.enrollment.allow_waitlist || admission_policy.allow_waitlist;
+        let requires_approval = org_settings.enrollment.require_admin_approval
+            || admission_policy.requires_approval;
+        let max_class_capacity = org_settings
+            .enrollment
+            .max_class_size_default
+            .max(0);
+        let mut enrollment_status = EnrollmentStatus::Active;
+
+        if completing_draft {
+            if !org_settings.enrollment.registration_enabled {
+                return Err(DomainError::Validation(
+                    "Student registration is disabled by organization policy".to_string(),
+                ));
+            }
+
+            if let Some(class_id) = section_id {
+                let enrollments = self.enrollment_repo.find_by_section(class_id).await?;
+                let active_count = enrollments
+                    .iter()
+                    .filter(|enrollment| enrollment.status == EnrollmentStatus::Active)
+                    .count() as i32;
+                let capacity = self
+                    .section_repo
+                    .find_by_id(class_id)
+                    .await?
+                    .and_then(|section| section.capacity)
+                    .unwrap_or(max_class_capacity);
+
+                if active_count >= capacity {
+                    if !allow_waitlist {
+                        return Err(DomainError::Validation(format!(
+                            "Class capacity exceeded ({active_count}/{capacity})"
+                        )));
+                    }
+
+                    let request = AcademicOverrideRequest {
+                        id: Uuid::new_v4(),
+                        org_id,
+                        override_type: OverrideType::CapacityOverride,
+                        risk_level: RiskLevel::Medium,
+                        entity_type: "enrollment".to_string(),
+                        entity_id: student_id,
+                        field_name: Some("class_id".to_string()),
+                        old_value: None,
+                        new_value: Some(class_id.to_string()),
+                        reason: format!(
+                            "Class capacity reached ({active_count}/{capacity}); review required."
+                        ),
+                        requested_by: ctx.user_id().unwrap_or(student_id),
+                        requested_by_name: None,
+                        status: OverrideStatus::Pending,
+                        current_approver_role: Some("admin".to_string()),
+                        approval_chain: vec![],
+                        resolved_by: None,
+                        resolved_by_name: None,
+                        resolved_at: None,
+                        resolution_notes: None,
+                        expires_at: None,
+                        metadata: serde_json::json!({
+                            "class_id": class_id,
+                            "active_count": active_count,
+                            "max_capacity": capacity
+                        }),
+                        created_at: now,
+                        updated_at: now,
+                    };
+                    self.override_repo.save(&request).await?;
+                    enrollment_status = EnrollmentStatus::PendingApproval;
+                }
+            }
+
+            if requires_approval {
+                enrollment_status = EnrollmentStatus::PendingApproval;
+                let request = AcademicOverrideRequest {
+                    id: Uuid::new_v4(),
+                    org_id,
+                    override_type: OverrideType::AdmissionApproval,
+                    risk_level: RiskLevel::Low,
+                    entity_type: "enrollment".to_string(),
+                    entity_id: student_id,
+                    field_name: None,
+                    old_value: None,
+                    new_value: None,
+                    reason: "Student completed registration and requires administrative review."
+                        .to_string(),
+                    requested_by: ctx.user_id().unwrap_or(student_id),
+                    requested_by_name: None,
+                    status: OverrideStatus::Pending,
+                    current_approver_role: Some("registrar".to_string()),
+                    approval_chain: vec![],
+                    resolved_by: None,
+                    resolved_by_name: None,
+                    resolved_at: None,
+                    resolution_notes: None,
+                    expires_at: None,
+                    metadata: serde_json::json!({
+                        "period_id": period_id,
+                        "class_id": section_id
+                    }),
+                    created_at: now,
+                    updated_at: now,
+                };
+                self.override_repo.save(&request).await?;
+            }
+        }
+
+        let mut enrollment = Enrollment::new(
             org_id,
             period_id,
             student_id,
@@ -665,8 +793,47 @@ impl StudentService {
             student_number,
             study_mode,
         );
+        enrollment.status = enrollment_status;
 
         self.enrollment_repo.save(&enrollment).await?;
+
+        if completing_draft
+            && admission_policy.auto_assign_fees
+            && enrollment_status == EnrollmentStatus::Active
+        {
+            if let Ok(templates) = self.fee_template_repo.find_by_org(org_id).await {
+                for template in templates
+                    .into_iter()
+                    .filter(|template| template.is_mandatory && template.is_active)
+                {
+                    let fee = StudentFee {
+                        id: Uuid::new_v4(),
+                        org_id,
+                        period_id,
+                        student_id,
+                        enrollment_id: Some(enrollment.id),
+                        fee_template_id: template.id,
+                        original_amount: template.default_amount,
+                        discount_amount: rust_decimal::Decimal::ZERO,
+                        net_amount: template.default_amount,
+                        paid_amount: rust_decimal::Decimal::ZERO,
+                        balance_due: template.default_amount,
+                        status: FeeStatus::Pending,
+                        due_date: now.date_naive(),
+                        discount_details: None,
+                        installment_number: Some(1),
+                        notes: Some(format!(
+                            "Auto-assigned mandatory fee: {}",
+                            template.name
+                        )),
+                        created_by: ctx.user_id(),
+                        created_at: now,
+                        updated_at: now,
+                    };
+                    let _ = self.student_fee_repo.save(&fee).await;
+                }
+            }
+        }
 
         let _ = self
             .event_bus
@@ -1209,7 +1376,7 @@ impl StudentService {
             }
 
             // 5. Guardian Policy Check
-            if !admission_policy.allow_no_guardian {
+            if !item.registration.is_draft && !admission_policy.allow_no_guardian {
                 let has_guardian = item
                     .guardian_name
                     .as_deref()
@@ -1225,7 +1392,8 @@ impl StudentService {
             }
 
             // 6. Cumulative Class Capacity & Multi-Enrollment Simulation
-            if let Some(class_id) = item.registration.initial_section_id {
+            if !item.registration.is_draft {
+                if let Some(class_id) = item.registration.initial_section_id {
                 let (current_active, max_cap) = if let Some(cached) =
                     class_capacity_cache.get(&class_id)
                 {
@@ -1261,6 +1429,7 @@ impl StudentService {
                             "Class capacity exceeded ({}/{} max). Total active: {}, requested in batch: {}",
                             current_active + *allocated, max_cap, current_active, *allocated
                         ));
+                        }
                     }
                 }
             }

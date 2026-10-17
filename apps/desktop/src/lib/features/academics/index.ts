@@ -31,7 +31,6 @@ export { default as ScheduleMatrix } from "./components/schedule-matrix.svelte";
 export { default as LessonSheet } from "./components/lesson-sheet.svelte";
 export { default as TimeSlotSheet } from "./components/time-slot-sheet.svelte";
 export { default as SolverDrawer } from "./components/solver-drawer.svelte";
-export { default as ScheduleExportDialog } from "./components/schedule-export-dialog.svelte";
 export { default as ScheduleGeneratorStudio } from "./components/schedule-generator-studio.svelte";
 export { default as ClassCreateSheet } from "./components/class-create-sheet.svelte";
 export { default as ClassForm } from "./components/class-form.svelte";

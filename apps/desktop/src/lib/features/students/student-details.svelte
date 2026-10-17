@@ -39,8 +39,10 @@ import {
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
+import { goto } from "$app/navigation";
 
 import { l, formatNumber, formatPercent } from "$lib/core/i18n";
+import { localizeHref } from "$lib/paraglide/runtime";
 import { createStudentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
@@ -524,6 +526,24 @@ async function saveStudentDetails(e: Event) {
     </div>
   {:else}
     <div class="flex flex-col gap-8 w-full max-w-6xl mx-auto p-1">
+      {#if student?.status === "inactive"}
+        <div
+          role="status"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3"
+        >
+          <p class="text-sm text-amber-800 dark:text-amber-200">
+            {m.student_registration_draft_saved()}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={() =>
+              goto(localizeHref(`/${orgId}/students/${studentId}/edit`))}
+          >
+            {m.student_registration_resume_draft()}
+          </Button>
+        </div>
+      {/if}
       
       <!-- Evaluation Dashboard Section -->
       <div class="flex flex-col gap-4">
@@ -689,6 +709,7 @@ async function saveStudentDetails(e: Event) {
                 id="student_status_switch"
                 checked={isActiveState}
                 onCheckedChange={(checked) => isActiveState = checked}
+                disabled={student?.status === "inactive"}
               />
               <Label for="student_status_switch" class="text-xs text-muted-foreground select-none cursor-pointer">
                 {isActiveState ? m.common_phase_active() : m.students_student_detail_row_status_inactive()}

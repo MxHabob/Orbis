@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
-import { authStore, systemStore, licenseStore, uiStore } from "$lib/stores";
+import { authStore, systemStore, licenseStore, uiStore, academicContext } from "$lib/stores";
 import { afterNavigate, goto, replaceState } from "$app/navigation";
 import { page } from "$app/state";
 import { onMount } from "svelte";
@@ -45,12 +45,19 @@ onMount(() => {
     await Promise.all([
       systemStore.orgReadiness ?? systemStore.loadReadiness(),
       licenseStore.loadState(),
+      academicContext.resolveContext(data.orgId),
     ]);
     licenseReady = true;
     authReady = true;
   };
 
   void initialize();
+});
+
+$effect(() => {
+  if (data.orgId && data.orgId !== academicContext.orgId && authReady) {
+    void academicContext.resolveContext(data.orgId);
+  }
 });
 </script>
 

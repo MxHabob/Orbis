@@ -11,7 +11,7 @@ class StudentsStore {
   // Filters state
   searchQuery = $state("");
   selectedClassId = $state<string | null>(null);
-  statusFilter = $state<string>("active"); // active, withdrawn, graduated, suspended, all
+  statusFilter = $state<string>("active"); // active, inactive, withdrawn, graduated, suspended, all
 
   /**
    * Helper to filter a student list using the store's current filters.

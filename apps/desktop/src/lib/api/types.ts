@@ -314,6 +314,7 @@ export interface RegisterStudentInput {
   initial_section_id?: string;
   initial_class_id?: string;
   study_mode?: string;
+  is_draft?: boolean;
   // Aliases for compatibility
   personId?: string;
   userId?: string;
