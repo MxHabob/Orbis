@@ -230,7 +230,7 @@ fn validate_name(name: &str, kind: &str) -> Result<(), DomainError> {
 fn validate_unit(unit: &CalculationUnit) -> Result<(), DomainError> {
     if matches!(
         unit,
-        CalculationUnit::Custom(name) | CalculationUnit::Score { scale: name }
+        CalculationUnit::Custom { scale: name } | CalculationUnit::Score { scale: name }
             if name.trim().is_empty()
     ) {
         return Err(DomainError::Validation(
@@ -1530,7 +1530,9 @@ mod tests {
         .unwrap();
         assert_eq!(university_gpa, d("3.5666666666666666666666666667"));
 
-        let competency_unit = CalculationUnit::Custom("competency-level".into());
+        let competency_unit = CalculationUnit::Custom {
+            scale: "competency-level".into(),
+        };
         let institute = CalculationPlan {
             version: 1,
             inputs: vec![
@@ -1579,7 +1581,9 @@ mod tests {
         assert_eq!(institute_result.outputs[0].value, d("4.5"));
         assert_eq!(
             institute_result.outputs[1].unit,
-            CalculationUnit::Custom("competency-level".into())
+            CalculationUnit::Custom {
+                scale: "competency-level".into(),
+            }
         );
         assert_eq!(institute_result.outputs[1].value, d("3"));
     }

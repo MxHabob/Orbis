@@ -1,7 +1,7 @@
 import {
   getSecureItem,
-  setSecureItem,
   STORAGE_KEYS,
+  setSecureItem,
 } from "./storage";
 
 export interface DirectoryInstitution {
@@ -15,6 +15,71 @@ export interface DirectoryInstitution {
   endpoint_url: string;
   latitude?: number | null;
   longitude?: number | null;
+  is_local?: boolean;
+}
+
+export function parseLocalInstitutionQr(data: string): DirectoryInstitution {
+  if (data.length > 4096) {
+    throw new Error("The institution QR code is too large.");
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(data);
+  } catch {
+    throw new Error("The QR code does not contain a valid Orbis configuration.");
+  }
+
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("type" in payload) ||
+    payload.type !== "orbis-institution" ||
+    !("version" in payload) ||
+    payload.version !== 1 ||
+    !("institution" in payload) ||
+    !isDirectoryInstitution(payload.institution)
+  ) {
+    throw new Error("The QR code does not contain a supported Orbis institution.");
+  }
+
+  return { ...payload.institution, is_local: true };
+}
+
+export function createManualLocalInstitution(
+  name: string,
+  endpoint: string,
+): DirectoryInstitution {
+  const institutionName = name.trim();
+  if (institutionName.length < 2 || institutionName.length > 100) {
+    throw new Error("Institution name must contain 2 to 100 characters.");
+  }
+
+  let url: URL;
+  try {
+    url = new URL(endpoint.trim());
+  } catch {
+    throw new Error("Enter a valid HTTPS server address.");
+  }
+
+  if (!isPublicEndpoint(url.toString())) {
+    throw new Error("The local Orbis server must use a valid HTTPS address.");
+  }
+
+  const endpointUrl = url.toString().replace(/\/+$/, "");
+  const deploymentId = `local:${url.host}${url.pathname.replace(/\/+$/, "")}`;
+  const slug = url.hostname.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+
+  return {
+    organization_id: deploymentId,
+    name: institutionName,
+    name_ar: null,
+    slug: `local-${slug}`,
+    deployment_id: deploymentId,
+    deployment_name: url.hostname,
+    endpoint_url: endpointUrl,
+    is_local: true,
+  };
 }
 
 const DIRECTORY_BASE_URL =
@@ -162,6 +227,8 @@ function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
     typeof institution.deployment_name === "string" &&
     typeof institution.endpoint_url === "string" &&
     isPublicEndpoint(institution.endpoint_url) &&
+    (institution.is_local === undefined ||
+      typeof institution.is_local === "boolean") &&
     hasValidCoordinate &&
     hasValidLongitude &&
     !(institution.latitude !== undefined && institution.latitude !== null &&

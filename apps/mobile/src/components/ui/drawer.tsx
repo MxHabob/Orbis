@@ -29,6 +29,11 @@ import {
   GestureDetector,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
+import {
+  KeyboardAwareScrollView,
+  type KeyboardAwareScrollViewProps,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
 import Animated, {
   Easing,
   runOnJS,
@@ -386,9 +391,27 @@ export function DrawerHeader({ children }: { children: ReactNode }) {
 export function DrawerFooter({ children }: { children: ReactNode }) {
   const { theme } = useDrawer();
   return (
-    <View style={[styles.footer, { borderTopColor: theme.border }]}>
+    <KeyboardStickyView style={styles.keyboardStickyFooter}>
+      <View style={[styles.footer, { borderTopColor: theme.border }]}>
+        {children}
+      </View>
+    </KeyboardStickyView>
+  );
+}
+
+export function DrawerScrollView({
+  children,
+  ...props
+}: KeyboardAwareScrollViewProps) {
+  return (
+    <KeyboardAwareScrollView
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      showsVerticalScrollIndicator={false}
+      {...props}
+    >
       {children}
-    </View>
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -542,6 +565,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  keyboardStickyFooter: {
+    width: "100%",
   },
   title: {
     ...{ fontSize: 16, lineHeight: 22, fontWeight: "600" },

@@ -13,6 +13,7 @@
       "barStyle": "light-content"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#F5F3FF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -41,6 +42,14 @@
           "backgroundColor": "#7C3AED",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Orbis uses the camera to scan your school's institution QR code.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       "expo-secure-store",

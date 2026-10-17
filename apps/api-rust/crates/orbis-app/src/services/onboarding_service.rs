@@ -25,10 +25,7 @@ use orbis_domain::entities::academic_period::{
     AcademicPeriod, AcademicPeriodState, PeriodKind, PeriodType,
 };
 use orbis_domain::entities::academic_calendar::{AcademicCalendar, AcademicCalendarStatus};
-use orbis_domain::entities::assessment_scheme::{
-    AssessmentComponent, AssessmentComponentKind, AssessmentLevel, AssessmentScheme,
-    InstitutionScope,
-};
+use orbis_domain::entities::assessment_scheme::AssessmentScheme;
 use orbis_domain::entities::section::Section;
 use orbis_domain::entities::discount_template::{DiscountTemplate, DiscountType};
 use orbis_domain::entities::fee_template::{FeeFrequency, FeeTemplate};
@@ -2387,132 +2384,47 @@ impl OnboardingService {
         // 5. Provision Assessment Schemes if requested & empty
         let existing_schemes = self.assessment_scheme_repo.find_by_org(org_id).await?;
         if existing_schemes.is_empty() && req.provision_assessment_scheme.unwrap_or(false) {
-            let scheme = match inst_type {
+            match inst_type {
                 InstitutionType::School => {
-                    // Also provision the term exam scheme (30 points)
+                    // 1. Monthly 100-point periodic scheme
+                    let monthly_scheme = AssessmentScheme::default_school_monthly(org_id);
+                    self.assessment_scheme_repo.save(&monthly_scheme).await?;
+
+                    // 2. Term Exam 30-point scheme
                     let term_exam_scheme = AssessmentScheme::default_periodic_term_exam(org_id);
                     self.assessment_scheme_repo.save(&term_exam_scheme).await?;
 
-                    AssessmentScheme {
-                        id: Uuid::new_v4(),
-                        org_id,
-                        name: "Monthly 100-Point Evaluation Scheme".to_string(),
-                        name_ar: Some("لائحة التقييم الشهري من 100 درجة".to_string()),
-                        description: Some(
-                            "Customizable monthly evaluation scheme with coursework, participation, attendance, and written assessment.".to_string(),
-                        ),
-                        max_score: Decimal::from(100),
-                        formula: None,
-                        level: AssessmentLevel::MonthlyPeriod,
-                        institution_scope: InstitutionScope::School,
-                        components: vec![
-                            AssessmentComponent {
-                                code: "HW".to_string(),
-                                name: "Coursework & Assignments".to_string(),
-                                name_ar: Some("الأعمال والواجبات".to_string()),
-                                max_score: Decimal::from(20),
-                                weight: Decimal::from(20),
-                                sort_order: 1,
-                                is_required: true,
-                                component_type: Some(AssessmentComponentKind::Assignment),
-                                min_score: None,
-                            },
-                            AssessmentComponent {
-                                code: "ORAL".to_string(),
-                                name: "Participation & Interaction".to_string(),
-                                name_ar: Some("المشاركة والتفاعل".to_string()),
-                                max_score: Decimal::from(20),
-                                weight: Decimal::from(20),
-                                sort_order: 2,
-                                is_required: true,
-                                component_type: Some(AssessmentComponentKind::Participation),
-                                min_score: None,
-                            },
-                            AssessmentComponent {
-                                code: "ATT".to_string(),
-                                name: "Attendance & Conduct".to_string(),
-                                name_ar: Some("المواظبة والسلوك".to_string()),
-                                max_score: Decimal::from(20),
-                                weight: Decimal::from(20),
-                                sort_order: 3,
-                                is_required: true,
-                                component_type: Some(AssessmentComponentKind::Attendance),
-                                min_score: None,
-                            },
-                            AssessmentComponent {
-                                code: "EXAM_M".to_string(),
-                                name: "Written Evaluation".to_string(),
-                                name_ar: Some("التقييم التحريري".to_string()),
-                                max_score: Decimal::from(40),
-                                weight: Decimal::from(40),
-                                sort_order: 4,
-                                is_required: true,
-                                component_type: Some(AssessmentComponentKind::FinalExam),
-                                min_score: None,
-                            },
-                        ],
-                        is_default: true,
-                        is_system: true,
-                        source_document: None,
-                        source_authority: None,
-                        verification_status: None,
-                        effective_date: None,
-                        policy_version: 0,
-                        min_attendance_ratio: None,
-                        pass_threshold: None,
-                        created_at: now,
-                        updated_at: now,
+                    if country_profile.country_code == "YE" {
+                        // 3. Yemeni Term Aggregation (50 pts = 20 coursework + 30 exam)
+                        let term_agg_scheme = AssessmentScheme::default_yemen_school_term_aggregation(org_id);
+                        self.assessment_scheme_repo.save(&term_agg_scheme).await?;
+
+                        // 4. Yemeni Thanawiya Certificate (80% ministerial + 20% cumulative prior years)
+                        let thanawiya_scheme = AssessmentScheme::yemen_secondary_certificate(org_id);
+                        self.assessment_scheme_repo.save(&thanawiya_scheme).await?;
+
+                        // 5. Yemeni Basic Certificate (Grade 9)
+                        let basic_scheme = AssessmentScheme::yemen_basic_certificate(org_id);
+                        self.assessment_scheme_repo.save(&basic_scheme).await?;
+
+                        created_items.push("Official Yemeni Assessment Framework (Monthly 100-pt, Term Exam 30-pt, Term Aggregation 50-pt, Thanawiya Certificate 80/20, Basic Certificate)".to_string());
+                    } else {
+                        created_items.push("Standard School Assessment Schemes (Monthly 100-pt & Term Exam 30-pt)".to_string());
                     }
                 }
-                _ => AssessmentScheme {
-                    id: Uuid::new_v4(),
-                    org_id,
-                    name: "Standard Course Evaluation Scheme".to_string(),
-                    name_ar: Some("لائحة تقييم المقرر القياسية".to_string()),
-                    description: Some("50 coursework / midterm + 50 final examination".to_string()),
-                    max_score: Decimal::from(100),
-                    formula: None,
-                    level: AssessmentLevel::Coursework,
-                    institution_scope: InstitutionScope::All,
-                    components: vec![
-                        AssessmentComponent {
-                            code: "COURSEWORK".to_string(),
-                            name: "Coursework & Midterm".to_string(),
-                            name_ar: Some("الأعمال الفصلية والاختبار النصفي".to_string()),
-                            max_score: Decimal::from(50),
-                            weight: Decimal::from(50),
-                            sort_order: 1,
-                            is_required: true,
-                            component_type: Some(AssessmentComponentKind::Coursework),
-                            min_score: Some(Decimal::from(50)),
-                        },
-                        AssessmentComponent {
-                            code: "FINAL".to_string(),
-                            name: "Final Examination".to_string(),
-                            name_ar: Some("الاختبار النهائي".to_string()),
-                            max_score: Decimal::from(50),
-                            weight: Decimal::from(50),
-                            sort_order: 2,
-                            is_required: true,
-                            component_type: Some(AssessmentComponentKind::FinalExam),
-                            min_score: Some(Decimal::from(50)),
-                        },
-                    ],
-                    is_default: true,
-                    is_system: true,
-                    source_document: None,
-                    source_authority: None,
-                    verification_status: None,
-                    effective_date: None,
-                    policy_version: 0,
-                    min_attendance_ratio: None,
-                    pass_threshold: None,
-                    created_at: now,
-                    updated_at: now,
-                },
-            };
-            self.assessment_scheme_repo.save(&scheme).await?;
-            created_items.push("Standard Assessment Scheme (100-Point Formula)".to_string());
+                InstitutionType::University => {
+                    let uni_scheme = AssessmentScheme::default_university_credit(org_id);
+                    self.assessment_scheme_repo.save(&uni_scheme).await?;
+                    created_items.push("University Credit-Hour Assessment Scheme (100-pt)".to_string());
+                }
+                InstitutionType::Institute => {
+                    let module_scheme = AssessmentScheme::default_institute_module(org_id);
+                    self.assessment_scheme_repo.save(&module_scheme).await?;
+                    let competency_scheme = AssessmentScheme::default_competency_vocational(org_id);
+                    self.assessment_scheme_repo.save(&competency_scheme).await?;
+                    created_items.push("Technical & Vocational Competency Assessment Schemes".to_string());
+                }
+            }
         }
 
         // 6. Provision Tuition Fee Template if requested & empty

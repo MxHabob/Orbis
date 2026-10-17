@@ -41,6 +41,7 @@ pub struct InstitutionBlueprintConfig {
     pub max_class_size_default: i32,
     pub allow_late_enrollment: bool,
     pub number_prefix: String,
+    pub grade_bands: Vec<GradeBand>,
 }
 
 impl InstitutionBlueprintConfig {
@@ -68,27 +69,84 @@ impl InstitutionBlueprintConfig {
             }
         };
 
+        let grade_bands: Vec<GradeBand> = if let Some(ref policy) = profile.grading_policy {
+            policy
+                .grade_bands
+                .iter()
+                .map(|b| GradeBand {
+                    code: b.code.clone(),
+                    label: if !b.label_ar.is_empty() {
+                        format!("{} - {}", b.label_ar, b.label)
+                    } else {
+                        b.label.clone()
+                    },
+                    minimum_score: b.minimum_score,
+                })
+                .collect()
+        } else {
+            vec![
+                GradeBand {
+                    code: "A".to_string(),
+                    label: "ممتاز - Excellent".to_string(),
+                    minimum_score: Decimal::from(90),
+                },
+                GradeBand {
+                    code: "B".to_string(),
+                    label: "جيد جداً - Very good".to_string(),
+                    minimum_score: Decimal::from(80),
+                },
+                GradeBand {
+                    code: "C".to_string(),
+                    label: "جيد - Good".to_string(),
+                    minimum_score: Decimal::from(65),
+                },
+                GradeBand {
+                    code: "D".to_string(),
+                    label: "مقبول - Pass".to_string(),
+                    minimum_score: passing_score,
+                },
+                GradeBand {
+                    code: "F".to_string(),
+                    label: "راسب - Not passed".to_string(),
+                    minimum_score: Decimal::ZERO,
+                },
+            ]
+        };
+
         match institution_type {
-            InstitutionType::School => Self {
-                grading_system: "percentage".to_string(),
-                calculation_inputs: vec![
-                    ("coursework".to_string(), Decimal::new(4, 1)),
-                    ("examination".to_string(), Decimal::new(5, 1)),
-                    ("participation".to_string(), Decimal::new(1, 1)),
-                ],
-                passing_threshold_percentage: passing_score,
-                honors_threshold_percentage: honors_score,
-                minimum_final_exam_score: Some(Decimal::from(10)),
-                max_failed_subjects_for_conditional_pass: 2,
-                min_attendance_rate: Decimal::from(75),
-                ranking_scope: RankingScope::Class,
-                tie_policy: TiePolicy::StandardCompetition,
-                rounding_mode: RoundingMode::RoundHalfUp,
-                decimal_places: 2,
-                max_class_size_default: 30,
-                allow_late_enrollment: false,
-                number_prefix: "STD".to_string(),
-            },
+            InstitutionType::School => {
+                let calculation_inputs = if profile.country_code == "YE" {
+                    // Official Yemeni Ministry of Education term aggregation: Coursework (20) + Exam (30) = 50 pts (40% / 60%)
+                    vec![
+                        ("coursework".to_string(), Decimal::new(4, 1)),
+                        ("examination".to_string(), Decimal::new(6, 1)),
+                    ]
+                } else {
+                    vec![
+                        ("coursework".to_string(), Decimal::new(4, 1)),
+                        ("examination".to_string(), Decimal::new(5, 1)),
+                        ("participation".to_string(), Decimal::new(1, 1)),
+                    ]
+                };
+
+                Self {
+                    grading_system: "percentage".to_string(),
+                    calculation_inputs,
+                    passing_threshold_percentage: passing_score,
+                    honors_threshold_percentage: honors_score,
+                    minimum_final_exam_score: Some(Decimal::from(10)),
+                    max_failed_subjects_for_conditional_pass: 2,
+                    min_attendance_rate: Decimal::from(75),
+                    ranking_scope: RankingScope::Class,
+                    tie_policy: TiePolicy::StandardCompetition,
+                    rounding_mode: RoundingMode::RoundHalfUp,
+                    decimal_places: 2,
+                    max_class_size_default: 30,
+                    allow_late_enrollment: false,
+                    number_prefix: "STD".to_string(),
+                    grade_bands,
+                }
+            }
             InstitutionType::University => Self {
                 grading_system: "gpa".to_string(),
                 calculation_inputs: vec![
@@ -107,6 +165,7 @@ impl InstitutionBlueprintConfig {
                 max_class_size_default: 50,
                 allow_late_enrollment: true,
                 number_prefix: "UNI".to_string(),
+                grade_bands,
             },
             InstitutionType::Institute => Self {
                 grading_system: "percentage".to_string(),
@@ -127,6 +186,7 @@ impl InstitutionBlueprintConfig {
                 max_class_size_default: 25,
                 allow_late_enrollment: false,
                 number_prefix: "INS".to_string(),
+                grade_bands,
             },
         }
     }
@@ -152,33 +212,7 @@ impl InstitutionBlueprintConfig {
             },
             pass_at_or_above: Some(self.passing_threshold_percentage),
             honors_at_or_above: Some(self.honors_threshold_percentage),
-            grade_bands: vec![
-                GradeBand {
-                    code: "A".to_string(),
-                    label: "Excellent".to_string(),
-                    minimum_score: Decimal::from(90),
-                },
-                GradeBand {
-                    code: "B".to_string(),
-                    label: "Very good".to_string(),
-                    minimum_score: Decimal::from(80),
-                },
-                GradeBand {
-                    code: "C".to_string(),
-                    label: "Good".to_string(),
-                    minimum_score: Decimal::from(70),
-                },
-                GradeBand {
-                    code: "D".to_string(),
-                    label: "Pass".to_string(),
-                    minimum_score: self.passing_threshold_percentage,
-                },
-                GradeBand {
-                    code: "F".to_string(),
-                    label: "Not passed".to_string(),
-                    minimum_score: Decimal::ZERO,
-                },
-            ],
+            grade_bands: self.grade_bands.clone(),
         });
         settings.academic.ranking_enabled = true;
         settings.academic.max_displayed_rank = None;
@@ -266,6 +300,7 @@ fn all_admin_permission_pairs() -> Vec<(&'static str, &'static str)> {
         ),
         ("org_unit", &["read", "write", "delete"][..]),
         ("class", &["read", "write", "delete"][..]),
+        ("section", &["read", "write", "delete"][..]),
         ("subject", &["read", "write", "delete"][..]),
         ("schedule", &["read", "write", "delete"][..]),
         ("assessment", &["read", "write", "delete"][..]),

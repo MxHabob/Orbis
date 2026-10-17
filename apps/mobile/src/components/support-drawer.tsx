@@ -1,33 +1,33 @@
-import React, { useState } from "react";
+import { CheckCircle } from "@orbis/icons/native";
+import Constants from "expo-constants";
+import { useState } from "react";
 import {
   Linking,
   Platform,
   Pressable,
-  ScrollView,
   Text,
   View,
   useWindowDimensions,
 } from "react-native";
-import Constants from "expo-constants";
 
+import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
+  DrawerScrollView,
   DrawerTitle,
 } from "@/components/ui/drawer";
 import {
   DrawerFormField,
   DrawerSubmitButton,
 } from "@/components/ui/drawer-form-primitives";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
-import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/api";
-import { CheckCircle } from "@orbis/icons/native";
+import { useI18n } from "@/lib/i18n";
 
 type SupportCategory =
   | "technical_support"
@@ -133,10 +133,8 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
               {t("profile_support_page_description")}
             </DrawerDescription>
           </DrawerHeader>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerClassName="gap-four pb-four"
+          <DrawerScrollView
+            contentContainerStyle={{ gap: 16, paddingBottom: 16 }}
             style={{ flex: 1, maxHeight: height * 0.58, flexShrink: 1 }}
           >
             <View className="gap-two px-five">
@@ -204,7 +202,7 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
             <Text className="px-five text-start text-xs leading-4 text-muted-foreground">
               {t("support_mail_review_note")}
             </Text>
-          </ScrollView>
+          </DrawerScrollView>
           <DrawerFooter>
             <View className="gap-two">
               <DrawerSubmitButton

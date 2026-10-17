@@ -5,17 +5,22 @@ onlineManager.setOnline(false);
 export interface NetworkStatus {
   isKnown: boolean;
   isOnline: boolean;
+  isConnected: boolean;
 }
 
 let networkStatus: NetworkStatus = {
   isKnown: false,
   isOnline: false,
+  isConnected: false,
 };
 const networkStatusListeners = new Set<(status: NetworkStatus) => void>();
 
-export function updateNetworkStatus(isOnline: boolean): void {
-  networkStatus = { isKnown: true, isOnline };
-  onlineManager.setOnline(isOnline);
+export function updateNetworkStatus(
+  isOnline: boolean,
+  isConnected: boolean = isOnline,
+): void {
+  networkStatus = { isKnown: true, isOnline, isConnected };
+  onlineManager.setOnline(isConnected);
   for (const listener of networkStatusListeners) {
     listener(networkStatus);
   }

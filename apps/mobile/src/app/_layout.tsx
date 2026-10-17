@@ -146,6 +146,15 @@ function RootLayoutContent() {
             <Stack.Screen name="(app)" options={{ headerShown: false }} />
             <Stack.Screen name="institution-select" options={{ headerShown: false }} />
             <Stack.Screen
+              name="institution-scan"
+              options={{
+                presentation: "modal",
+                animation: "slide_from_bottom",
+                headerShown: false,
+                contentStyle: { backgroundColor: "#000000" },
+              }}
+            />
+            <Stack.Screen
               name="+not-found"
               options={{ title: "Oops!", headerShown: true }}
             />

@@ -65,6 +65,7 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
       receivedNetworkEvent = true;
       updateNetworkStatus(
         state.isConnected === true && state.isInternetReachable !== false,
+        state.isConnected === true,
       );
     };
 
@@ -78,7 +79,7 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
       .catch((error: unknown) => {
         console.error("[Orbis Mobile Network] Failed to read network status.", error);
         if (!receivedNetworkEvent) {
-          updateNetworkStatus(false);
+          updateNetworkStatus(false, false);
         }
       });
 

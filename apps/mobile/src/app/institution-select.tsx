@@ -1,5 +1,6 @@
 import {
   BuildingOffice,
+  Camera,
   CheckCircle,
   Language,
   Logo,
@@ -9,12 +10,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Location from "expo-location";
-import { useRouter } from "expo-router";
-import { memo, useCallback, useMemo, useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
   ImageBackground,
   type ListRenderItemInfo,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -23,6 +25,19 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerScrollView,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  DrawerFormField,
+  DrawerSubmitButton,
+} from "@/components/ui/drawer-form-primitives";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { SearchInput } from "@/components/ui/search-input";
@@ -33,7 +48,9 @@ import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import {
   checkInstitutionConnection,
+  createManualLocalInstitution,
   type DirectoryInstitution,
+  parseLocalInstitutionQr,
   searchInstitutionDirectory,
 } from "@/lib/api/institution-discovery";
 import { useI18n } from "@/lib/i18n";
@@ -45,6 +62,7 @@ interface InstitutionTileProps {
   isConnecting: boolean;
   disabled: boolean;
   currentLabel: string;
+  localLabel: string;
   primaryColor: string;
   onSelect: (institution: DirectoryInstitution) => void;
   width: number;
@@ -57,6 +75,7 @@ const InstitutionTile = memo(function InstitutionTile({
   isConnecting,
   disabled,
   currentLabel,
+  localLabel,
   primaryColor,
   onSelect,
   width,
@@ -116,6 +135,11 @@ const InstitutionTile = memo(function InstitutionTile({
         >
           {institution.deployment_name}
         </Text>
+        {institution.is_local ? (
+          <Text className="mt-1 self-start rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+            {localLabel}
+          </Text>
+        ) : null}
       </View>
 
       <View className="absolute end-2 top-2 h-8 w-8 items-center justify-center">
@@ -177,6 +201,7 @@ export default function InstitutionSelectScreen() {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
   const tileWidth = Math.max((windowWidth - 44) / 2, 132);
+  const { institutionQr } = useLocalSearchParams<{ institutionQr?: string }>();
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
   const toast = useToast();
@@ -189,6 +214,11 @@ export default function InstitutionSelectScreen() {
   const [search, setSearch] = useState("");
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [manualEntryVisible, setManualEntryVisible] = useState(false);
+  const [localCandidate, setLocalCandidate] =
+    useState<DirectoryInstitution | null>(null);
+  const [localName, setLocalName] = useState("");
+  const [localEndpoint, setLocalEndpoint] = useState("");
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -274,6 +304,7 @@ export default function InstitutionSelectScreen() {
         isConnecting={connectingId === item.deployment_id}
         disabled={connectingId !== null}
         currentLabel={t("auth_institution_current")}
+        localLabel={t("auth_institution_local_label")}
         primaryColor={theme.primary}
         onSelect={connectInstitution}
         width={tileWidth}
@@ -322,6 +353,36 @@ export default function InstitutionSelectScreen() {
   const toggleLanguage = useCallback(() => {
     void setLocale(locale === "ar" ? "en" : "ar");
   }, [locale, setLocale]);
+
+  useEffect(() => {
+    if (!institutionQr) return;
+    try {
+      setLocalCandidate(parseLocalInstitutionQr(institutionQr));
+    } catch (caught: unknown) {
+      console.warn(
+        "[Institution Select] Rejected an unsupported QR code.",
+        caught,
+      );
+      toast.error(t("auth_institution_local_qr_error"));
+    }
+    router.setParams({ institutionQr: undefined });
+  }, [institutionQr, router, t, toast]);
+
+  const submitManualInstitution = useCallback(() => {
+    try {
+      setLocalCandidate(createManualLocalInstitution(localName, localEndpoint));
+      setManualEntryVisible(false);
+    } catch {
+      toast.error(t("auth_institution_local_details_error"));
+    }
+  }, [localEndpoint, localName, t, toast]);
+
+  const confirmLocalInstitution = useCallback(() => {
+    if (!localCandidate) return;
+    const candidate = localCandidate;
+    setLocalCandidate(null);
+    void connectInstitution(candidate);
+  }, [connectInstitution, localCandidate]);
 
   const isLoading = isInitializing || directoryQuery.isPending;
   const directoryError = directoryQuery.isError
@@ -432,6 +493,26 @@ export default function InstitutionSelectScreen() {
                   onChangeText={setSearch}
                 />
 
+                <View className="gap-2">
+                  <Button
+                    title={t("auth_institution_local_scan")}
+                    variant="outline"
+                    size="lg"
+                    fullWidth
+                    icon={<Camera size={18} color={theme.primary} />}
+                    onPress={() => router.push("/institution-scan")}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setManualEntryVisible(true)}
+                    className="min-h-11 items-center justify-center"
+                  >
+                    <Text className="text-sm font-semibold text-primary">
+                      {t("auth_institution_local_manual")}
+                    </Text>
+                  </Pressable>
+                </View>
+
                 <View className="flex-row items-center justify-between gap-3">
                   <Text className="flex-1 text-start text-sm font-semibold text-foreground">
                     {t("auth_institution_results")}
@@ -487,6 +568,7 @@ export default function InstitutionSelectScreen() {
             ]}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
             showsVerticalScrollIndicator={false}
             refreshing={directoryQuery.isRefetching}
             onRefresh={() => void directoryQuery.refetch()}
@@ -535,6 +617,108 @@ export default function InstitutionSelectScreen() {
           </View>
         </View>
       </View>
+
+      <Drawer
+        visible={manualEntryVisible}
+        onClose={() => setManualEntryVisible(false)}
+        snapPoints={[0.72]}
+      >
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{t("auth_institution_local_title")}</DrawerTitle>
+            <DrawerDescription>
+              {t("auth_institution_local_hint")}
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ gap: 16, paddingVertical: 16 }}
+          >
+            <DrawerFormField
+              label={t("auth_institution_local_name")}
+              placeholder={t("auth_institution_local_enter_name")}
+              value={localName}
+              onChangeText={setLocalName}
+              autoCapitalize="words"
+              maxLength={100}
+              returnKeyType="next"
+            />
+            <DrawerFormField
+              label={t("auth_institution_local_server")}
+              placeholder={t("auth_institution_local_server_hint")}
+              value={localEndpoint}
+              onChangeText={setLocalEndpoint}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              maxLength={2048}
+              returnKeyType="done"
+            />
+            <Text className="px-5 text-start text-xs leading-5 text-muted-foreground">
+              {t("auth_institution_local_secure_hint")}
+            </Text>
+          </DrawerScrollView>
+          <DrawerFooter>
+            <DrawerSubmitButton
+              label={t("auth_institution_local_confirm")}
+              onPress={submitManualInstitution}
+            />
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Modal
+        visible={localCandidate !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLocalCandidate(null)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/55 px-5">
+          <View className="w-full max-w-md gap-4 rounded-3xl bg-background p-5">
+            <View className="gap-1">
+              <Text className="text-start text-xl font-bold text-foreground">
+                {t("auth_institution_connection_title")}
+              </Text>
+              <Text className="text-start text-sm leading-5 text-muted-foreground">
+                {t("auth_institution_connection_hint")}
+              </Text>
+            </View>
+            {localCandidate ? (
+              <View className="gap-2 rounded-xl border border-border bg-card p-4">
+                <Text className="text-start text-xs font-medium text-primary">
+                  {t("auth_institution_local_label")}
+                </Text>
+                <Text className="text-start text-base font-semibold text-foreground">
+                  {isArabic && localCandidate.name_ar
+                    ? localCandidate.name_ar
+                    : localCandidate.name}
+                </Text>
+                <Text
+                  numberOfLines={2}
+                  className="text-start text-xs leading-5 text-muted-foreground"
+                >
+                  {localCandidate.endpoint_url}
+                </Text>
+              </View>
+            ) : null}
+            <View className="flex-row gap-3">
+              <Button
+                title={t("common_cancel")}
+                variant="outline"
+                size="lg"
+                onPress={() => setLocalCandidate(null)}
+                className="flex-1"
+              />
+              <Button
+                title={t("auth_institution_local_confirm")}
+                size="lg"
+                onPress={confirmLocalInstitution}
+                className="flex-1"
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ImageBackground>
   );
 }

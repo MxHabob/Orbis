@@ -1,12 +1,12 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import * as m from "$lib/paraglide/messages";
-  import { toast } from "@orbis/ui";
+  import { Switch, toast } from "@orbis/ui";
   import { Button } from "@orbis/ui/button";
   import { Input } from "@orbis/ui/input";
   import { Label } from "@orbis/ui/label";
-  import { Switch } from "@orbis/ui/switch";
   import { Card, CardContent } from "@orbis/ui/card";
+  import { Badge } from "@orbis/ui/badge";
   import {
     Select,
     SelectContent,
@@ -107,6 +107,176 @@
     return JSON.stringify(value);
   }
 
+  function resolveScale(rawUnit: any): string {
+    if (!rawUnit) return "percentage";
+    if (typeof rawUnit.scale === "string") return rawUnit.scale;
+    if (
+      typeof rawUnit.scale === "object" &&
+      rawUnit.scale !== null &&
+      typeof rawUnit.scale.scale === "string"
+    ) {
+      return rawUnit.scale.scale;
+    }
+    return "percentage";
+  }
+
+  interface PolicyPreset {
+    id: string;
+    label: string;
+    description: string;
+    badge: string;
+    badgeVariant: "default" | "secondary" | "outline";
+    scale: string;
+    outputName: string;
+    normalize: boolean;
+    roundingMode: CalculationRoundingMode;
+    decimalPlaces: number;
+    inputs: InputEditor[];
+    outcomeEnabled: boolean;
+    passThreshold: string;
+    honorsThreshold: string;
+    gradeBands: GradeBandEditor[];
+  }
+
+  const YEMENI_POLICY_PRESETS: PolicyPreset[] = [
+    {
+      id: "yemen_school_term",
+      label: "النظام المدرسي العام المعتمد (وزارة التربية والتعليم)",
+      description: "محصلة الفصل من 50 درجة: محصلة الأعمال الشهرية (20 درجة / 40%) + اختبار نهاية الفصل (30 درجة / 60%، شرط اجتياز 10)",
+      badge: "معتمد وزارياً",
+      badgeVariant: "default",
+      scale: "percentage",
+      outputName: "term_result",
+      normalize: true,
+      roundingMode: "round_half_up",
+      decimalPlaces: 2,
+      inputs: [
+        {
+          name: "coursework",
+          weight: "0.4",
+          minimum: "0",
+          maximum: "20",
+          sample: "18",
+        },
+        {
+          name: "examination",
+          weight: "0.6",
+          minimum: "0",
+          maximum: "30",
+          sample: "25",
+        },
+      ],
+      outcomeEnabled: true,
+      passThreshold: "50",
+      honorsThreshold: "90",
+      gradeBands: [
+        { code: "A", label: "ممتاز", minimum: "90" },
+        { code: "B", label: "جيد جداً", minimum: "80" },
+        { code: "C", label: "جيد", minimum: "65" },
+        { code: "D", label: "مقبول", minimum: "50" },
+        { code: "F", label: "راسب", minimum: "0" },
+      ],
+    },
+    {
+      id: "yemen_thanawiya_cert",
+      label: "الشهادة الثانوية العامة - التراكمي (الصف 12)",
+      description: "المجموع الكلي من 100%: الاختبار الوزاري النهائي (80%) + المعدل التراكمي للسنوات السابقة (20%)",
+      badge: "شهادة عامة",
+      badgeVariant: "secondary",
+      scale: "percentage",
+      outputName: "thanawiya_score",
+      normalize: true,
+      roundingMode: "round_half_up",
+      decimalPlaces: 2,
+      inputs: [
+        {
+          name: "ministerial_exam",
+          weight: "0.8",
+          minimum: "0",
+          maximum: "100",
+          sample: "85",
+        },
+        {
+          name: "cumulative_prior",
+          weight: "0.2",
+          minimum: "0",
+          maximum: "100",
+          sample: "88",
+        },
+      ],
+      outcomeEnabled: true,
+      passThreshold: "50",
+      honorsThreshold: "90",
+      gradeBands: [
+        { code: "A", label: "ممتاز", minimum: "90" },
+        { code: "B", label: "جيد جداً", minimum: "80" },
+        { code: "C", label: "جيد", minimum: "65" },
+        { code: "D", label: "مقبول", minimum: "50" },
+        { code: "F", label: "راسب", minimum: "0" },
+      ],
+    },
+    {
+      id: "university_credit",
+      label: "التعليم الجامعي (الساعات المعتمدة)",
+      description: "تقييم المقرر: أعمال دراسية (20%) + اختبار نصفي (20%) + اختبار نهائي (60%)",
+      badge: "جامعي",
+      badgeVariant: "outline",
+      scale: "percentage",
+      outputName: "gpa_course",
+      normalize: true,
+      roundingMode: "round_half_up",
+      decimalPlaces: 2,
+      inputs: [
+        {
+          name: "coursework",
+          weight: "0.2",
+          minimum: "0",
+          maximum: "100",
+          sample: "80",
+        },
+        {
+          name: "midterm",
+          weight: "0.2",
+          minimum: "0",
+          maximum: "100",
+          sample: "75",
+        },
+        {
+          name: "final_exam",
+          weight: "0.6",
+          minimum: "0",
+          maximum: "100",
+          sample: "82",
+        },
+      ],
+      outcomeEnabled: true,
+      passThreshold: "60",
+      honorsThreshold: "90",
+      gradeBands: [
+        { code: "A", label: "ممتاز", minimum: "90" },
+        { code: "B", label: "جيد جداً", minimum: "80" },
+        { code: "C", label: "جيد", minimum: "70" },
+        { code: "D", label: "مقبول", minimum: "60" },
+        { code: "F", label: "راسب", minimum: "0" },
+      ],
+    },
+  ];
+
+  function applyPreset(preset: PolicyPreset) {
+    form.scale = preset.scale;
+    form.outputName = preset.outputName;
+    form.normalize = preset.normalize;
+    form.roundingMode = preset.roundingMode;
+    form.decimalPlaces = preset.decimalPlaces;
+    form.inputs = preset.inputs.map((inp) => ({ ...inp }));
+    form.outcomeEnabled = preset.outcomeEnabled;
+    form.passThreshold = preset.passThreshold;
+    form.honorsThreshold = preset.honorsThreshold;
+    form.gradeBands = preset.gradeBands.map((gb) => ({ ...gb }));
+    customPlanReadOnly = false;
+    toast.success(`تم تطبيق قالب: ${preset.label}`);
+  }
+
   function hydrateFromSettings(settings: CalculationEngineSettings) {
     const plan = settings.calculation_plan;
     const output = plan?.outputs.length === 1 ? plan.outputs[0] : undefined;
@@ -142,7 +312,7 @@
       );
       const outcomePolicy = settings.outcome_policy;
       form = {
-        scale: unit.scale,
+        scale: resolveScale(unit),
         outputName: output.name,
         normalize: expression.normalize,
         roundingMode: output.rounding?.mode ?? "round_half_up",
@@ -460,6 +630,43 @@
             </CardContent>
           </Card>
         {:else}
+          <!-- Yemeni Presets Selector -->
+          <div class="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <span>🏛️</span>
+                  <span>قوالب ومعايير محرك الحساب المعتمدة لليمن</span>
+                </h3>
+                <p class="text-xs text-muted-foreground mt-0.5">
+                  اضغط على أحد القوالب المعيارية المعتمدة رسمياً لتعبئة مدخلات ومقاييس الحساب والتقديرات تلقائياً
+                </p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {#each YEMENI_POLICY_PRESETS as preset}
+                <button
+                  type="button"
+                  class="flex flex-col text-start p-3 rounded-lg border border-border/70 bg-card hover:border-primary hover:bg-card/80 transition-all cursor-pointer group shadow-xs"
+                  onclick={() => applyPreset(preset)}
+                >
+                  <div class="flex items-center justify-between w-full mb-1">
+                    <span class="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                      {preset.label}
+                    </span>
+                    <Badge variant={preset.badgeVariant} class="text-[10px] px-1.5 py-0 h-4">
+                      {preset.badge}
+                    </Badge>
+                  </div>
+                  <p class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                    {preset.description}
+                  </p>
+                </button>
+              {/each}
+            </div>
+          </div>
+
           <!-- Core Calculation Parameters -->
           <Card class="overflow-hidden border-border/70 shadow-xs">
             <CardContent class="grid grid-cols-1 gap-5 p-6 sm:grid-cols-2 lg:grid-cols-4">

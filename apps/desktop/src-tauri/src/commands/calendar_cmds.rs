@@ -534,3 +534,66 @@ pub async fn calendar_list_period_types(
         .collect();
     Ok(ok(dtos))
 }
+
+#[derive(Serialize)]
+pub struct OfficialCalendarTemplateDto {
+    pub code: String,
+    pub name: String,
+    pub name_ar: String,
+    pub country: String,
+    pub country_name: String,
+    pub country_name_ar: String,
+    pub hijri_year: i32,
+    pub gregorian_years: String,
+    pub decision_number: Option<String>,
+    pub decision_date: Option<String>,
+    pub authority: String,
+    pub authority_ar: String,
+}
+
+#[derive(Deserialize)]
+pub struct ApplyCalendarTemplateRequest {
+    pub template_code: String,
+}
+
+#[tauri::command]
+pub async fn calendar_list_official_templates(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<OfficialCalendarTemplateDto>>, String> {
+    let templates = state.calendar_service.list_official_templates();
+    let dtos = templates
+        .into_iter()
+        .map(|t| OfficialCalendarTemplateDto {
+            code: t.code,
+            name: t.name,
+            name_ar: t.name_ar,
+            country: t.country,
+            country_name: t.country_name,
+            country_name_ar: t.country_name_ar,
+            hijri_year: t.hijri_year,
+            gregorian_years: t.gregorian_years,
+            decision_number: t.decision_number,
+            decision_date: t.decision_date,
+            authority: t.authority,
+            authority_ar: t.authority_ar,
+        })
+        .collect();
+    Ok(ok(dtos))
+}
+
+#[tauri::command]
+pub async fn calendar_apply_template(
+    year_id: String,
+    request: ApplyCalendarTemplateRequest,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AcademicPeriodDto>>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&year_id).map_err(|e| e.to_string())?;
+    let periods = state
+        .calendar_service
+        .apply_official_calendar_template(&ctx, uid, &request.template_code)
+        .await
+        .map_err(|e| e.to_string())?;
+    let dtos = periods.into_iter().map(period_dto).collect();
+    Ok(ok(dtos))
+}
