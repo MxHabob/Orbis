@@ -19,6 +19,8 @@ import {
   Modal,
   Platform,
   Pressable,
+  ScrollView,
+  type ScrollViewProps,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -29,10 +31,6 @@ import {
   GestureDetector,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
-import {
-  KeyboardAwareScrollView,
-  type KeyboardAwareScrollViewProps,
-} from "react-native-keyboard-controller";
 import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, {
   Easing,
@@ -91,7 +89,10 @@ export function Drawer({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  const { height: keyboardHeight, progress: keyboardProgress } =
+    useReanimatedKeyboardAnimation();
+  const modalHeight = useSharedValue(height);
+  const modalBaseHeight = useSharedValue(0);
   const closedOffset = height;
   const normalizedSnapPoints = useMemo(() => {
     if (!snapPoints?.length) return null;
@@ -175,22 +176,32 @@ export function Drawer({
   }, [height, isSnapping]);
 
   const animatedSheetStyle = useAnimatedStyle(() => {
+    const androidResizeOffset =
+      modalBaseHeight.value > 0
+        ? Math.max(0, modalBaseHeight.value - modalHeight.value)
+        : 0;
+    const keyboardOffset =
+      Platform.OS === "ios"
+        ? keyboardHeight.value
+        : Math.min(0, keyboardHeight.value + androidResizeOffset);
     const availableHeight = Math.max(
       0,
-      height + keyboardHeight.value - insets.top,
+      modalHeight.value + keyboardOffset - insets.top,
     );
     return isSnapping
       ? {
-          height: Math.min(sheetHeight.value, availableHeight),
-          transform: [{ translateY: keyboardHeight.value }],
+          height: Math.min(
+            sheetHeight.value +
+              (availableHeight - sheetHeight.value) * keyboardProgress.value,
+            availableHeight,
+          ),
+          transform: [{ translateY: keyboardOffset }],
         }
       : {
           maxHeight: Math.min(height * 0.92, availableHeight),
-          transform: [
-            { translateY: translateY.value + keyboardHeight.value },
-          ],
+          transform: [{ translateY: translateY.value + keyboardOffset }],
         };
-  }, [height, insets.top, isSnapping]);
+  }, [height, insets.top, isSnapping, keyboardProgress, modalHeight]);
 
   const createPanGesture = useCallback(
     () =>
@@ -312,7 +323,15 @@ export function Drawer({
         statusBarTranslucent
         onRequestClose={onClose}
       >
-        <GestureHandlerRootView style={styles.modalContainer}>
+        <GestureHandlerRootView
+          onLayout={(event) => {
+            modalHeight.value = event.nativeEvent.layout.height;
+            if (keyboardProgress.value < 0.01) {
+              modalBaseHeight.value = event.nativeEvent.layout.height;
+            }
+          }}
+          style={styles.modalContainer}
+        >
           <Animated.View style={[styles.backdrop, animatedBackdropStyle]}>
             {Platform.OS === "android" ? null : (
               <BlurView
@@ -411,19 +430,16 @@ export function DrawerFooter({ children }: { children: ReactNode }) {
   );
 }
 
-export function DrawerScrollView({
-  children,
-  ...props
-}: KeyboardAwareScrollViewProps) {
+export function DrawerScrollView({ children, ...props }: ScrollViewProps) {
   return (
-    <KeyboardAwareScrollView
+    <ScrollView
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
       showsVerticalScrollIndicator={false}
       {...props}
     >
       {children}
-    </KeyboardAwareScrollView>
+    </ScrollView>
   );
 }
 
