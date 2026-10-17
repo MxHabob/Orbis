@@ -38,6 +38,8 @@ pub struct ProgressionJobDto {
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StudentProgressionItemInput {
     pub student_id: Uuid,
+    #[serde(default)]
+    pub student_number: Option<String>,
     pub enrollment_id: Uuid,
     pub source_section_id: Option<Uuid>,
     pub target_section_id: Option<Uuid>,
@@ -112,6 +114,7 @@ pub async fn evaluate_cohort(
         .into_iter()
         .map(|i| StudentProgressionItemInput {
             student_id: i.student_id,
+            student_number: i.student_number,
             enrollment_id: i.enrollment_id,
             source_section_id: i.source_section_id,
             target_section_id: i.target_section_id,
@@ -134,6 +137,7 @@ pub async fn promote_cohort(
         .into_iter()
         .map(|i| StudentProgressionItem {
             student_id: i.student_id,
+            student_number: i.student_number,
             enrollment_id: i.enrollment_id,
             source_section_id: i.source_section_id,
             target_section_id: i.target_section_id,

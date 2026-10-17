@@ -2512,6 +2512,7 @@ export type StudentProgressionItemInput = {
     decision: string;
     enrollment_id: string;
     reason?: string;
+    student_number?: string | null;
     source_section_id?: string | null;
     student_id: string;
     target_section_id?: string | null;

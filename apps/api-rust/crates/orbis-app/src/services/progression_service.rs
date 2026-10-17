@@ -25,6 +25,7 @@ pub struct ProgressionService {
 #[derive(Debug, Clone)]
 pub struct StudentProgressionItem {
     pub student_id: Uuid,
+    pub student_number: Option<String>,
     pub enrollment_id: Uuid,
     pub source_section_id: Option<Uuid>,
     pub target_section_id: Option<Uuid>,
@@ -217,6 +218,9 @@ impl ProgressionService {
 
         for enr in enrollments {
             let student_opt = self.student_repo.find_by_id(enr.student_id).await?;
+            let student_number = student_opt
+                .as_ref()
+                .map(|student| student.student_number.clone());
             let (decision, reason) = if let Some(student) = student_opt {
                 match student.status {
                     StudentStatus::Active => match student.standing {
@@ -278,6 +282,7 @@ impl ProgressionService {
 
             items.push(StudentProgressionItem {
                 student_id: enr.student_id,
+                student_number,
                 enrollment_id: enr.id,
                 source_section_id: enr.section_id,
                 target_section_id: None,
