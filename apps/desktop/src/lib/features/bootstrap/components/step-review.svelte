@@ -1,5 +1,6 @@
 <!-- @component StepReview -->
 <script lang="ts">
+import { onDestroy } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import {
   type OnboardingFormModel,
@@ -15,6 +16,7 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Card, CardContent } from "@orbis/ui/card";
+import { Avatar, AvatarController } from "@orbis/avatar-engine";
 
 let {
   form,
@@ -46,6 +48,7 @@ let {
   onRedeemKey: (productKey: string) => Promise<boolean>;
 } = $props();
 
+const avatarController = new AvatarController();
 let productKey = $state("");
 let setupStage = $state(0);
 const blueprint = $derived(getBlueprint(form.institutionType));
@@ -69,6 +72,21 @@ const administratorName = $derived(
     : form.adminFirstName || form.adminFirstNameAr) ||
     (isArabic ? "محمد" : "there"),
 );
+const institutionTypeLabel = $derived(
+  ({
+    k12_school: () => m.ui_onboarding_institution_type_school(),
+    university: () => m.ui_onboarding_institution_type_university(),
+    vocational_institute: () => m.ui_onboarding_institution_type_vocational_institute(),
+    language_center: () => m.ui_onboarding_institution_type_language_center(),
+  })[form.institutionType](),
+);
+
+$effect(() => {
+  if (isComplete) avatarController.happy();
+});
+
+onDestroy(() => avatarController.destroy());
+
 $effect(() => {
   if (!isSubmitting) return;
 
@@ -108,15 +126,21 @@ async function redeemProductKey(event: SubmitEvent) {
   </section>
 {:else if isComplete}
   <section class="mx-auto flex min-h-[64vh] max-w-4xl flex-col items-center justify-center px-4 py-10 text-center">
-    <h1 class="max-w-3xl text-3xl font-light leading-tight tracking-tight text-foreground sm:text-5xl" dir={isArabic ? "rtl" : "ltr"}>
-      {m.ui_onboarding_setup_welcome({ name: organizationName })}
+    <Avatar
+      controller={avatarController}
+      hat="graduation"
+      width="160px"
+      height="160px"
+      label="Orbis"
+      class="mb-4"
+    />
+    <h1 class="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl" dir={isArabic ? "rtl" : "ltr"}>
+      {m.ui_onboarding_setup_welcome({
+        name: organizationName,
+        administrator: administratorName,
+        institutionType: institutionTypeLabel,
+      })}
     </h1>
-    <p class="mt-5 max-w-xl text-base leading-8 text-muted-foreground sm:text-lg">
-      {m.ui_onboarding_setup_welcome_description()}
-    </p>
-    {#if result?.organization_slug}
-      <p class="mt-3 font-mono text-xs text-muted-foreground/70">{result.organization_slug}</p>
-    {/if}
 
     {#if warnings.length > 0}
       <div class="mt-7 w-full max-w-xl space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-start text-sm text-amber-800 dark:text-amber-200" role="status">

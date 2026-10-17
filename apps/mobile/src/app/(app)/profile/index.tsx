@@ -310,13 +310,9 @@ export default function ProfileScreen() {
         <Button
           title={t("profile_sign_out_button")}
           onPress={handleSignOut}
-          variant="destructive"
+          variant="danger"
           size="lg"
           fullWidth
-          icon={
-            <SignOut size={18} color={theme.destructiveForeground} />
-          }
-          className="rounded-full"
         />
 
         <View className="items-center gap-one px-four pb-two pt-one">
