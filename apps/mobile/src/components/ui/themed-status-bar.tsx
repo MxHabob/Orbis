@@ -38,8 +38,8 @@ export function ThemedStatusBar({ backgroundColor, style }: ThemedStatusBarProps
 
       {shouldRenderAndroidBar && (
         <RNStatusBar
-          translucent={backgroundColor === "transparent"}
-          backgroundColor={backgroundColor}
+          translucent
+          backgroundColor="transparent"
           barStyle={androidBarStyle}
           animated
         />
@@ -47,4 +47,3 @@ export function ThemedStatusBar({ backgroundColor, style }: ThemedStatusBarProps
     </>
   );
 }
-
