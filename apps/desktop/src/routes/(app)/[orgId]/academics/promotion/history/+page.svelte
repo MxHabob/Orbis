@@ -6,6 +6,6 @@ let { data }: { data: { orgId: string } } = $props();
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide">
   <div class="max-w-4xl mx-auto p-6">
-    <PromotionHistory orgId={data.orgId} userId="" />
+    <PromotionHistory orgId={data.orgId} />
   </div>
 </div>

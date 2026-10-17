@@ -57,18 +57,3 @@ export function createPromoteCohortMutation() {
   }));
 }
 
-/** Rollback mutation (kept for backwards compatibility) */
-export function createRollbackMutation() {
-  const queryClient = useQueryClient();
-  return createMutation(() => ({
-    mutationFn: async (_params: { jobId: string; userId?: string }) => {
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.progression.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
-    },
-  }));
-}
-
