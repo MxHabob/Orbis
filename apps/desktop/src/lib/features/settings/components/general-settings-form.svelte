@@ -275,7 +275,9 @@ async function handleSubmit(e?: Event) {
     initialValues = {
       name,
       nameAr,
+      code,
       primaryColor,
+      favicon,
       currency,
       timezone,
       locale,
