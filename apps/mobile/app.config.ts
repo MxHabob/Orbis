@@ -26,6 +26,7 @@ export default ({ config }: { config: ExpoConfig }): ExpoConfig => {
     android,
     plugins: [
       ...(config.plugins ?? []),
+      "./plugins/with-android-release-signing.cjs",
       [
         "expo-build-properties",
         {

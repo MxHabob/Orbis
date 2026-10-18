@@ -113,11 +113,11 @@ const error = $derived(
 
 // Categories
 const categoryTabs = [
-  { id: "all", label: "جميع تقارير الامتحانات" },
-  { id: "seating", label: "أرقام الجلوس وتوزيع المقاعد" },
-  { id: "halls", label: "قاعات ولجان الاختبار" },
-  { id: "proctors", label: "المراقبون والإشراف" },
-  { id: "control", label: "الكنترول والنتائج السرية" },
+  { id: "all", label: () => m.exam_reports_category_all() },
+  { id: "seating", label: () => m.exam_reports_category_seating() },
+  { id: "halls", label: () => m.exam_reports_category_halls() },
+  { id: "proctors", label: () => m.exam_reports_category_proctors() },
+  { id: "control", label: () => m.exam_reports_category_control() },
 ];
 
 function getCategoryIcon(cat?: string) {
@@ -165,7 +165,7 @@ const selectedReport = $derived<ReportDefinitionDto | null>(
 // Dynamic Real KPI Stats
 const kpiStats = $derived([
   {
-    label: "إجمالي تقارير الامتحانات",
+    label: m.exam_reports_total_reports(),
     value: allExamReports.length,
   },
   {
@@ -173,11 +173,11 @@ const kpiStats = $derived([
     value: examSessions.length,
   },
   {
-    label: "قوالب الامتحانات الذكية",
+    label: m.exam_reports_smart_templates(),
     value: examTemplates.length,
   },
   {
-    label: "قاعات الاختبار المتاحة",
+    label: m.exam_reports_available_halls(),
     value: rooms.length,
   },
 ]);
@@ -189,7 +189,7 @@ const advisorInsights = $derived.by(() => {
   if (allExamReports.length > 0) {
     insights.push({
       id: "reports-catalog",
-      text: `تم تفعيل وتوفير ${allExamReports.length} تقريراً رسمياً معتمداً لإدارة الامتحانات والكنترول.`,
+      text: m.exam_reports_catalog_ready({ count: String(allExamReports.length) }),
       variant: "success" as const,
     });
   }
@@ -197,13 +197,13 @@ const advisorInsights = $derived.by(() => {
   if (examSessions.length > 0) {
     insights.push({
       id: "sessions-ok",
-      text: `يوجد ${examSessions.length} دورة اختبارية مسجلة بالفصل الدراسي الحالي.`,
+      text: m.exam_reports_sessions_registered({ count: String(examSessions.length) }),
       variant: "success" as const,
     });
   } else {
     insights.push({
       id: "sessions-empty",
-      text: "لم يتم تسجيل أي دورة اختبارية بعد لهذا الفصل؛ يمكنك إنشاء دورة جديدة من تبويب الاختبارات.",
+      text: m.exam_reports_no_sessions_registered(),
       variant: "warning" as const,
     });
   }
@@ -371,7 +371,7 @@ function handlePrintTemplate() {
           <Input
             type="text"
             bind:value={searchQuery}
-            placeholder="بحث في جميع تقارير إدارة الامتحانات والكنترول..."
+            placeholder={m.exam_reports_search_placeholder()}
             class="ps-9 h-9 text-xs bg-card/60 border-border/60 rounded-lg"
           />
         </div>
@@ -384,13 +384,13 @@ function handlePrintTemplate() {
               onclick={() => (selectedCategory = tab.id)}
               class="px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors duration-150 whitespace-nowrap cursor-pointer border {selectedCategory === tab.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted/40 text-muted-foreground border-border/40 hover:bg-muted/70 hover:text-foreground'}"
             >
-              {tab.label}
+              {tab.label()}
             </button>
           {/each}
         </div>
 
         <div class="flex items-center justify-between text-[10px] text-muted-foreground font-semibold px-1 mt-1">
-          <span>التقارير المتوفرة ({filteredReports.length})</span>
+          <span>{m.exam_reports_available_count({ count: String(filteredReports.length) })}</span>
           <span class="font-mono text-[9px]">Domain: Exam & Control</span>
         </div>
         
@@ -399,7 +399,7 @@ function handlePrintTemplate() {
           {#if filteredReports.length === 0}
             <div class="flex flex-col items-center justify-center py-12 text-muted-foreground border border-dashed border-border/50 rounded-xl gap-2">
               <DocumentPage size={20} class="opacity-40" />
-              <span class="text-xs">لا توجد تقارير مطابقة لمعايير البحث</span>
+              <span class="text-xs">{m.exam_reports_no_matches()}</span>
             </div>
           {:else}
             {#each filteredReports as report (report.code)}
@@ -462,23 +462,23 @@ function handlePrintTemplate() {
             </div>
 
             <p class="text-[10px] text-muted-foreground leading-relaxed">
-              {selectedReport.description_ar || selectedReport.description || "تقرير إداري معتمد ضمن منظومة الامتحانات المركزية."}
+              {selectedReport.description_ar || selectedReport.description || m.exam_reports_default_description()}
             </p>
 
             <!-- Parameter Configuration Controls -->
             <div class="pt-2 border-t border-border/40 flex flex-col gap-2.5">
-              <span class="text-[9.5px] font-bold text-foreground tracking-wide">خيارات ومعايير التقرير</span>
+              <span class="text-[9.5px] font-bold text-foreground tracking-wide">{m.exam_reports_options_criteria()}</span>
 
               <!-- Session Selector -->
               {#if examSessions.length > 0}
                 <div class="space-y-1">
-                  <Label class="text-[9.5px] text-muted-foreground font-semibold">الدورة الاختبارية</Label>
+                  <Label class="text-[9.5px] text-muted-foreground font-semibold">{m.exam_reports_session_label()}</Label>
                   <Select type="single" value={selectedSessionId} onValueChange={(v) => (selectedSessionId = v ?? "")}>
                     <SelectTrigger class="h-8 text-xs bg-background/50">
-                      <span>{examSessions.find((s) => String(s.id) === selectedSessionId)?.title_ar || examSessions.find((s) => String(s.id) === selectedSessionId)?.title || "جميع الدورات الاختبارية"}</span>
+                      <span>{examSessions.find((s) => String(s.id) === selectedSessionId)?.title_ar || examSessions.find((s) => String(s.id) === selectedSessionId)?.title || m.exam_reports_all_sessions()}</span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="" class="text-xs">جميع الدورات الاختبارية</SelectItem>
+                      <SelectItem value="" class="text-xs">{m.exam_reports_all_sessions()}</SelectItem>
                       {#each examSessions as sess (sess.id)}
                         <SelectItem value={String(sess.id)} class="text-xs">{sess.title_ar || sess.title}</SelectItem>
                       {/each}
@@ -490,13 +490,13 @@ function handlePrintTemplate() {
               <!-- Room / Hall Selector -->
               {#if rooms.length > 0}
                 <div class="space-y-1">
-                  <Label class="text-[9.5px] text-muted-foreground font-semibold">قاعة / لجنة الاختبار</Label>
+                  <Label class="text-[9.5px] text-muted-foreground font-semibold">{m.exam_reports_room_committee()}</Label>
                   <Select type="single" value={selectedRoomId} onValueChange={(v) => (selectedRoomId = v ?? "")}>
                     <SelectTrigger class="h-8 text-xs bg-background/50">
-                      <span>{rooms.find((r) => String(r.id) === selectedRoomId)?.name_ar || rooms.find((r) => String(r.id) === selectedRoomId)?.name || "جميع القاعات واللجان"}</span>
+                      <span>{rooms.find((r) => String(r.id) === selectedRoomId)?.name_ar || rooms.find((r) => String(r.id) === selectedRoomId)?.name || m.exam_reports_all_rooms_committees()}</span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="" class="text-xs">جميع القاعات واللجان</SelectItem>
+                      <SelectItem value="" class="text-xs">{m.exam_reports_all_rooms_committees()}</SelectItem>
                       {#each rooms as rm (rm.id)}
                         <SelectItem value={String(rm.id)} class="text-xs">{rm.name_ar || rm.name}</SelectItem>
                       {/each}
@@ -508,13 +508,13 @@ function handlePrintTemplate() {
               <!-- Section / Class Selector -->
               {#if sections.length > 0}
                 <div class="space-y-1">
-                  <Label class="text-[9.5px] text-muted-foreground font-semibold">الصف / الشعبة</Label>
+                  <Label class="text-[9.5px] text-muted-foreground font-semibold">{m.exam_reports_class_section()}</Label>
                   <Select type="single" value={selectedSectionId} onValueChange={(v) => (selectedSectionId = v ?? "")}>
                     <SelectTrigger class="h-8 text-xs bg-background/50">
-                      <span>{sections.find((s) => String(s.id) === selectedSectionId)?.name_ar || sections.find((s) => String(s.id) === selectedSectionId)?.name || "جميع الصفوف والشعب"}</span>
+                      <span>{sections.find((s) => String(s.id) === selectedSectionId)?.name_ar || sections.find((s) => String(s.id) === selectedSectionId)?.name || m.exam_reports_all_classes_sections()}</span>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="" class="text-xs">جميع الصفوف والشعب</SelectItem>
+                      <SelectItem value="" class="text-xs">{m.exam_reports_all_classes_sections()}</SelectItem>
                       {#each sections as sec (sec.id)}
                         <SelectItem value={String(sec.id)} class="text-xs">{sec.name_ar || sec.name}</SelectItem>
                       {/each}
@@ -525,7 +525,7 @@ function handlePrintTemplate() {
 
               <!-- Date Filter -->
               <div class="space-y-1">
-                <Label class="text-[9.5px] text-muted-foreground font-semibold">تاريخ الجلسة</Label>
+                <Label class="text-[9.5px] text-muted-foreground font-semibold">{m.exam_reports_session_date()}</Label>
                 <Input
                   type="date"
                   bind:value={selectedDate}
@@ -543,7 +543,7 @@ function handlePrintTemplate() {
                 onclick={handlePreviewAndPrint}
               >
                 <Printer size={14} />
-                <span>معاينة وطباعة التقرير (PDF)</span>
+                <span>{m.exam_reports_preview_print_pdf()}</span>
               </Button>
 
               <Button 
@@ -553,7 +553,7 @@ function handlePrintTemplate() {
                 onclick={handlePrintTemplate}
               >
                 <DocumentPage size={13} class="text-primary" />
-                <span>طباعة مخصصة بالقوالب الذكية</span>
+                <span>{m.exam_reports_smart_template_print()}</span>
               </Button>
             </div>
           </div>

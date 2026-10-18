@@ -1,18 +1,26 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateReleaseNotes } from "./release-notes-validation.mjs";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 function git(args, options = {}) {
-  return execFileSync("git", args, {
+  const output = execFileSync("git", args, {
     cwd: rootDir,
     encoding: "utf8",
     stdio: options.stdio ?? "pipe",
-  }).trim();
+  });
+  return (output ?? "").trim();
+}
+
+function findReleaseCommit(tag) {
+  return git(["log", "--format=%H%x1f%s", "HEAD"])
+    .split(/\r?\n/)
+    .map((record) => record.split("\x1f"))
+    .find(([, subject]) => subject === `chore(release): ${tag}`)?.[0] ?? null;
 }
 
 function main() {
@@ -46,6 +54,8 @@ function main() {
 
   const files = [
     "apps/desktop/package.json",
+    "apps/mobile/package.json",
+    "apps/mobile/app.json",
     "apps/desktop/src-tauri/Cargo.toml",
     "apps/solver-service/pom.xml",
     "apps/desktop/src-tauri/tauri.conf.json",
@@ -55,14 +65,20 @@ function main() {
     ...filenames,
   ];
   git(["add", "--", ...files]);
-  git([
-    "commit",
-    "-m",
-    `chore(release): ${tag}`,
-    "-m",
-    "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
-  ], { stdio: "inherit" });
-  git(["tag", "-a", tag, "-m", `Orbis ${tag}`], { stdio: "inherit" });
+  if (git(["diff", "--cached", "--name-only"])) {
+    git([
+      "commit",
+      "-m",
+      `chore(release): ${tag}`,
+      "-m",
+      "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>",
+    ], { stdio: "inherit" });
+  }
+  const releaseCommit = findReleaseCommit(tag);
+  if (!releaseCommit) {
+    throw new Error(`No release changes are staged, and no release commit for ${tag} exists in the current branch.`);
+  }
+  git(["tag", "-a", tag, releaseCommit, "-m", `Orbis ${tag}`], { stdio: "inherit" });
   console.log(`Created release commit and annotated tag ${tag}. Push the commit and tag to trigger CI.`);
 }
 

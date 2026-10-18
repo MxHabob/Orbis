@@ -1,4 +1,4 @@
-name: Prepare Production Release
+name: Build and Publish Production Release
 
 on:
   push:
@@ -41,17 +41,25 @@ jobs:
           const fs = require("node:fs");
           const version = process.env.VERSION;
           const desktopVersion = require("./apps/desktop/package.json").version;
+          const mobileVersion = require("./apps/mobile/package.json").version;
+          const mobileConfig = require("./apps/mobile/app.json").expo;
+          const mobileVersionCode = mobileConfig.android?.versionCode;
           const tauriVersion = require("./apps/desktop/src-tauri/tauri.conf.json").version;
           const stagingVersion = require("./apps/desktop/src-tauri/tauri.staging.conf.json").version;
           const cargoVersion = fs.readFileSync("./apps/desktop/src-tauri/Cargo.toml", "utf8").match(/^version = "([^"]+)"/m)?.[1];
           const lockfile = fs.readFileSync("./bun.lock", "utf8");
           const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
+          const mobileLockfileVersion = lockfile.match(/"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/)?.[1];
           const solverPom = fs.readFileSync("./apps/solver-service/pom.xml", "utf8");
           const solverVersion = solverPom.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1];
-          const versions = { desktopVersion, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, solverVersion };
+          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion, solverVersion };
           if (Object.values(versions).some((candidate) => !candidate || candidate !== version)) {
             throw new Error(`Tag v${version} must match release versions: ${JSON.stringify(versions)}`);
           }
+          if (!Number.isSafeInteger(mobileVersionCode) || mobileVersionCode < 1) {
+            throw new Error(`Android versionCode must be a positive integer; received ${mobileVersionCode}.`);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `android_version_code=${mobileVersionCode}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           NODE
 
@@ -139,7 +147,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Validate application signing configuration
+      - name: Validate release signing and license configuration
         shell: bash
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -148,7 +156,7 @@ jobs:
           MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
         run: |
           if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" || -z "$MULVERSE_LICENSE_PUBLIC_KEY_B64" || -z "$MULVERSE_LICENSE_KEY_ID" ]]; then
-            echo "::error::Configure updater signing and Mulverse license verification variables before releasing."
+            echo "::error::Configure updater signing and application license verification variables before releasing."
             exit 1
           fi
 
@@ -156,9 +164,8 @@ jobs:
         working-directory: apps/desktop
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-          MULVERSE_PUBLIC_BASE_URL: ${{ vars.MULVERSE_PUBLIC_BASE_URL }}
         run: |
-          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; const base = (process.env.MULVERSE_PUBLIC_BASE_URL || 'https://api.mulverse.com').replace(/\\/+$/, ''); const endpoint = base + '/api/v1/public/updates/tauri?product_key=ORBIS&channel=stable&current_version={{current_version}}&target={{target}}&arch={{arch}}'; const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: [endpoint] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
+          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; const endpoint = 'https://github.com/MxHabob/Orbis/releases/latest/download/latest.json'; const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: [endpoint] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
 
       - name: Build signed Tauri app and upload to draft release
         uses: tauri-apps/tauri-action@v1
@@ -179,11 +186,123 @@ jobs:
           projectPath: apps/desktop
           args: --config src-tauri/tauri.updater.conf.json --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
-  prepare-github-release:
-    name: Validate and prepare GitHub Release draft
+  build-android:
+    name: Build and sign Android release
     needs:
       - validate
       - build-desktop
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate Android signing secrets
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "::error::Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEY_ALIAS, ANDROID_KEYSTORE_PASSWORD, and ANDROID_KEY_PASSWORD repository secrets before releasing."
+            exit 1
+          fi
+          keystore_path="$RUNNER_TEMP/orbis-android-release.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
+          echo "ORBIS_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          echo "ORBIS_ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ORBIS_ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ORBIS_ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        env:
+          ORBIS_DEV_ALLOW_LOCAL_HTTP: "false"
+        run: bun run expo prebuild --platform android --no-install
+
+      - name: Verify generated Android version
+        working-directory: apps/mobile
+        env:
+          EXPECTED_VERSION: ${{ needs.validate.outputs.version }}
+          EXPECTED_VERSION_CODE: ${{ needs.validate.outputs.android_version_code }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const gradle = fs.readFileSync("android/app/build.gradle", "utf8");
+          const versionName = gradle.match(/^\s*versionName\s+"([^"]+)"/m)?.[1];
+          const versionCode = Number(gradle.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1]);
+          if (versionName !== process.env.EXPECTED_VERSION || versionCode !== Number(process.env.EXPECTED_VERSION_CODE)) {
+            throw new Error(`Generated Android version ${versionName} (${versionCode}) does not match the release tag and app config.`);
+          }
+          NODE
+
+      - name: Build release APK and AAB
+        working-directory: apps/mobile/android
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease -PreactNativeArchitectures=arm64-v8a
+
+      - name: Verify signatures and stage release assets
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          aab="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$apk"
+          test -s "$aab"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [[ -z "$apksigner" ]]; then
+            echo "::error::Android build-tools apksigner was not found."
+            exit 1
+          fi
+          "$apksigner" verify --verbose "$apk"
+          jarsigner -verify "$aab"
+          keytool -printcert -jarfile "$aab" > /dev/null
+          mkdir -p release-output
+          cp "$apk" "release-output/Orbis-${VERSION}-android-arm64.apk"
+          cp "$aab" "release-output/Orbis-${VERSION}-android-arm64.aab"
+
+      - name: Upload Android packages to draft GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" release-output/* --repo "$GITHUB_REPOSITORY" --clobber
+
+  prepare-github-release:
+    name: Validate and publish GitHub Release
+    needs:
+      - validate
+      - build-desktop
+      - build-android
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -228,6 +347,8 @@ jobs:
             ["macOS updater archive", /\.app\.tar\.gz$/],
             ["Windows NSIS updater archive", /\.nsis\.zip$/],
             ["Tauri updater JSON", /^latest\.json$/],
+            ["Android APK", new RegExp(`^orbis-${version}-android-arm64\\.apk$`, "i")],
+            ["Android App Bundle", new RegExp(`^orbis-${version}-android-arm64\\.aab$`, "i")],
           ]) {
             if (!has(pattern)) throw new Error(`Release is missing ${label}.`);
           }
@@ -235,60 +356,30 @@ jobs:
           if (metadata.version.replace(/^v/, "") !== version) {
             throw new Error(`Updater metadata version ${metadata.version} does not match ${version}.`);
           }
+          const releaseAssetBase = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${process.env.GITHUB_REF_NAME}/`;
           for (const target of ["windows-x86_64", "darwin-aarch64"]) {
             const platform = metadata.platforms?.[target];
             if (!platform?.url || !platform?.signature) {
               throw new Error(`Updater metadata is missing a signed ${target} update.`);
             }
-            if (!platform.url.startsWith("https://")) {
-              throw new Error(`Updater URL for ${target} must use HTTPS.`);
+            if (!platform.url.startsWith(releaseAssetBase)) {
+              throw new Error(`Updater URL for ${target} must point to this GitHub Release.`);
             }
           }
           NODE
 
-      - name: Keep release as draft pending Mulverse distribution
+      - name: Publish validated GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "::notice::Build and signed assets validated. The release remains a draft while Mulverse receives and publishes the updater artifacts."
+          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false
+
+      - name: Summarize published release
+        run: |
+          echo "::notice::Desktop and Android release assets validated. The GitHub Release is published and serves desktop updates."
           {
-            echo "## Release prepared"
-            echo "Builds, installers, Tauri signatures, and updater metadata passed validation."
-            echo "The GitHub Release remains a draft. The following Mulverse sync job uploads and publishes the public release."
+            echo "## Release published"
+            echo "Desktop installers, signed Android APK/AAB packages, Tauri signatures, and updater metadata passed validation."
+            echo "The signed updater metadata and installers are served directly from GitHub Releases."
           } >> "$GITHUB_STEP_SUMMARY"
-
-  sync-mulverse:
-    name: Publish signed artifacts to Mulverse
-    needs:
-      - validate
-      - prepare-github-release
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MULVERSE_API_BASE_URL: ${{ secrets.MULVERSE_API_BASE_URL }}
-      MULVERSE_API_TOKEN: ${{ secrets.MULVERSE_API_TOKEN }}
-      MULVERSE_PRODUCT_ID: ${{ secrets.MULVERSE_PRODUCT_ID }}
-      MULVERSE_CHANNEL_STABLE_KEY: ${{ vars.MULVERSE_CHANNEL_STABLE_KEY || 'stable' }}
-      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-      RELEASE_ARTIFACT_DIR: release-artifacts
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Download signed updater artifacts from the private draft
-        run: |
-          mkdir -p "$RELEASE_ARTIFACT_DIR"
-          gh release download "${GITHUB_REF_NAME}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --dir "$RELEASE_ARTIFACT_DIR" \
-            --pattern "*.nsis.zip" \
-            --pattern "*.nsis.zip.sig" \
-            --pattern "*.app.tar.gz" \
-            --pattern "*.app.tar.gz.sig" \
-            --pattern "latest.json"
-
-      - name: Sync release idempotently to Mulverse
-        run: node scripts/sync-mulverse-release.mjs

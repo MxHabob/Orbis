@@ -170,12 +170,12 @@ fn lock_identity_store(app_data_dir: &Path) -> Result<std::fs::File, String> {
 }
 
 fn load_or_create_with_service(
-    app_data_dir: &Path,
+    _app_data_dir: &Path,
     installation_id: &str,
     service: &str,
 ) -> Result<SigningKey, String> {
-    let lock = lock_identity_store(app_data_dir)?;
-    let result = load_or_create_locked(app_data_dir, installation_id, service);
+    let lock = lock_identity_store(_app_data_dir)?;
+    let result = load_or_create_locked(_app_data_dir, installation_id, service);
     let unlock_result =
         FileExt::unlock(&lock).map_err(|error| format!("Failed to unlock trial identity: {error}"));
     match (result, unlock_result) {

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const paths = {
   desktopPackage: "apps/desktop/package.json",
+  mobilePackage: "apps/mobile/package.json",
+  mobileConfig: "apps/mobile/app.json",
   cargo: "apps/desktop/src-tauri/Cargo.toml",
   solver: "apps/solver-service/pom.xml",
   tauri: "apps/desktop/src-tauri/tauri.conf.json",
@@ -40,9 +42,17 @@ function versionFromLockfile(source) {
   return match[1];
 }
 
+function androidVersionCodeFromConfig(config) {
+  const versionCode = config.expo?.android?.versionCode;
+  if (!Number.isSafeInteger(versionCode) || versionCode < 1) {
+    throw new Error("Could not read a positive android.versionCode from apps/mobile/app.json.");
+  }
+  return versionCode;
+}
+
 function replaceVersion(source, expression, version, label) {
   if (!expression.test(source)) throw new Error(`Could not find ${label} version field.`);
-  return source.replace(expression, `$1${version}$2`);
+  return source.replace(expression, (_match, prefix, _currentVersion, suffix) => `${prefix}${version}${suffix}`);
 }
 
 function bump(currentVersion, level) {
@@ -96,32 +106,63 @@ function main() {
 
   const original = {
     package: read(paths.desktopPackage),
+    mobilePackage: read(paths.mobilePackage),
+    mobileConfig: read(paths.mobileConfig),
     cargo: read(paths.cargo),
     solver: read(paths.solver),
     tauri: read(paths.tauri),
     staging: read(paths.staging),
     lockfile: read(paths.lockfile),
   };
+  const mobilePackage = JSON.parse(original.mobilePackage);
+  const mobileConfig = JSON.parse(original.mobileConfig);
+  const currentAndroidVersionCode = androidVersionCodeFromConfig(mobileConfig);
+  const nextAndroidVersionCode = currentAndroidVersionCode + 1;
+  if (!Number.isSafeInteger(nextAndroidVersionCode) || nextAndroidVersionCode > 2_100_000_000) {
+    throw new Error("The next Android versionCode exceeds Google's supported limit.");
+  }
   const versions = {
     package: pkg.version,
+    mobilePackage: mobilePackage.version,
+    mobileConfig: mobileConfig.expo?.version,
     cargo: versionFromCargo(original.cargo),
     solver: original.solver.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1],
     tauri: JSON.parse(original.tauri).version,
     staging: JSON.parse(original.staging).version,
     lockfile: versionFromLockfile(original.lockfile),
+    mobileLockfile: original.lockfile.match(
+      /"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/,
+    )?.[1],
   };
   if (Object.values(versions).some((version) => version !== currentVersion)) {
     throw new Error(`Version files are inconsistent: ${JSON.stringify(versions)}. Align them before bumping.`);
   }
 
   const updated = {
-    package: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
+    desktopPackage: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
+    mobilePackage: `${JSON.stringify({ ...mobilePackage, version: nextVersion }, null, 2)}\n`,
+    mobileConfig: `${JSON.stringify({
+      ...mobileConfig,
+      expo: {
+        ...mobileConfig.expo,
+        version: nextVersion,
+        android: {
+          ...mobileConfig.expo.android,
+          versionCode: nextAndroidVersionCode,
+        },
+      },
+    }, null, 2)}\n`,
     cargo: replaceVersion(original.cargo, /(^\[package\][\s\S]*?^version\s*=\s*")([^"]+)(")/m, nextVersion, "Cargo package"),
     solver: replaceVersion(original.solver, /(<orbis\.version>)([^<]+)(<\/orbis\.version>)/, nextVersion, "Orbis solver"),
     tauri: `${JSON.stringify({ ...JSON.parse(original.tauri), version: nextVersion }, null, 2)}\n`,
     staging: `${JSON.stringify({ ...JSON.parse(original.staging), version: nextVersion }, null, 2)}\n`,
     lockfile: replaceVersion(
-      original.lockfile,
+      replaceVersion(
+        original.lockfile,
+        /("apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*")([^"]+)(")/,
+        nextVersion,
+        "Bun lockfile mobile workspace",
+      ),
       /("apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*")([^"]+)(")/,
       nextVersion,
       "Bun lockfile workspace",

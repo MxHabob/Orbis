@@ -392,17 +392,23 @@ function handleDirectPrint() {
   if (viewMode === "class" && selectedClassId) {
     const cls = classes.find((c) => String(c.id) === String(selectedClassId));
     targetId = String(selectedClassId);
-    targetTitle = cls ? `جدول حصص: ${l(cls.name_ar, cls.name)}` : "جدول الحصص";
+    targetTitle = cls
+      ? m.academics_schedule_print_class({ name: l(cls.name_ar, cls.name) })
+      : m.academics_schedule_print_class_fallback();
     relevantLessons = allLessons.filter((l) => String(l.section_id) === String(selectedClassId));
   } else if (viewMode === "teacher" && selectedTeacherId) {
     const teach = teachers.find((t) => String(t.id) === String(selectedTeacherId));
     targetId = String(selectedTeacherId);
-    targetTitle = teach ? `جدول المعلم: ${l(teach.full_name_ar, teach.full_name)}` : "جدول المعلم";
+    targetTitle = teach
+      ? m.academics_schedule_print_teacher({ name: l(teach.full_name_ar, teach.full_name) })
+      : m.academics_schedule_print_teacher_fallback();
     relevantLessons = allLessons.filter((l) => String(l.teacher_id) === String(selectedTeacherId));
   } else if (viewMode === "room" && selectedRoomId) {
     const rm = rooms.find((r) => String(r.id) === String(selectedRoomId));
     targetId = String(selectedRoomId);
-    targetTitle = rm ? `جدول القاعة: ${l(rm.name_ar, rm.name)}` : "جدول القاعة";
+    targetTitle = rm
+      ? m.academics_schedule_print_room({ name: l(rm.name_ar, rm.name) })
+      : m.academics_schedule_print_room_fallback();
     relevantLessons = allLessons.filter((l) => String(l.room_id) === String(selectedRoomId));
   }
 

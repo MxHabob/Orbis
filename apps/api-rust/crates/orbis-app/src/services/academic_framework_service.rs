@@ -635,11 +635,11 @@ mod tests {
     use orbis_domain::{
         entities::{
             academic_calendar::{AcademicCalendar, AcademicPeriod, PeriodType},
-            course::Course,
             enrollment::{Enrollment, Enrollmentstatus},
             org_unit::OrgUnit,
-            section_subject::{SectionSubject, SectionSubjectstatus},
+            section_subject::SectionSubject,
             student::{AcademicStanding, Student, StudentDetail, StudentStatus},
+            subject::Subject,
         },
         errors::DomainError,
         iam::{actor::Actor, permission::Permission},
@@ -754,9 +754,13 @@ mod tests {
         async fn save_calendar_period(&self, _: &AcademicPeriod) -> Result<(), DomainError> {
             Ok(())
         }
-        async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Course>, DomainError> {
+        async fn find_course(
+            &self,
+            org_id: Uuid,
+            id: Uuid,
+        ) -> Result<Option<Subject>, DomainError> {
             Ok(
-                (org_id == self.org_id && id == self.course_id).then(|| Course {
+                (org_id == self.org_id && id == self.course_id).then(|| Subject {
                     id,
                     org_id,
                     unit_id: None,
@@ -764,25 +768,35 @@ mod tests {
                     name: "Course".into(),
                     name_ar: None,
                     description: None,
+                    subject_type: "course".into(),
+                    is_core: false,
+                    is_elective: false,
                     credit_units: None,
                     workload_units: None,
+                    theory_hours: None,
+                    practical_hours: None,
+                    is_lab_required: false,
+                    max_students_per_section: None,
+                    color: None,
+                    icon: None,
+                    sort_order: None,
                     is_active: true,
                     created_at: Utc::now(),
                     updated_at: Utc::now(),
                 }),
             )
         }
-        async fn list_courses(&self, _: Uuid) -> Result<Vec<Course>, DomainError> {
+        async fn list_courses(&self, _: Uuid) -> Result<Vec<Subject>, DomainError> {
             Ok(vec![])
         }
         async fn find_course_by_code(
             &self,
             _: Uuid,
             _: &str,
-        ) -> Result<Option<Course>, DomainError> {
+        ) -> Result<Option<Subject>, DomainError> {
             Ok(None)
         }
-        async fn save_course(&self, _: &Course) -> Result<(), DomainError> {
+        async fn save_course(&self, _: &Subject) -> Result<(), DomainError> {
             Ok(())
         }
         async fn find_section_subject(
@@ -816,13 +830,19 @@ mod tests {
             Ok(self.duplicate_attempt.then(|| Enrollment {
                 id: Uuid::new_v4(),
                 org_id,
-                offering_id: Uuid::new_v4(),
+                period_id: Uuid::nil(),
                 student_id: Uuid::new_v4(),
+                section_id: Some(Uuid::new_v4()),
                 attempt_number: 1,
+                student_number: String::new(),
+                study_mode: orbis_domain::entities::enrollment::StudyMode::Regular,
                 status: Enrollmentstatus::Active,
+                is_attendance_exempt: false,
+                is_grade_exempt: false,
                 enrolled_at: Utc::now(),
                 withdrawn_at: None,
                 withdrawal_reason: None,
+                meta: serde_json::json!({}),
                 created_by: None,
                 updated_by: None,
                 created_at: Utc::now(),
@@ -1000,7 +1020,7 @@ mod tests {
                 .as_ref()
                 .unwrap()
                 .period_id,
-            None
+            Uuid::nil()
         );
     }
 
@@ -1011,20 +1031,27 @@ mod tests {
         let offering = SectionSubject {
             id: offering_id,
             org_id,
-            course_id: Uuid::new_v4(),
-            period_id: None,
-            section_code: None,
-            name: None,
-            status: SectionSubjectstatus::Open,
+            section_id: Uuid::new_v4(),
+            subject_id: Uuid::new_v4(),
+            period_id: Uuid::nil(),
+            instructor_id: None,
+            assistant_instructor_id: None,
+            substitute_instructor_id: None,
+            scheme_id: None,
+            weekly_hours: None,
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            grade_groups: None,
             capacity: None,
-            starts_at: None,
-            ends_at: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            status: "open".into(),
+            is_active: true,
+            created_at: Some(Utc::now()),
+            updated_at: Some(Utc::now()),
         };
         let (service, _) = test_service(
             org_id,
-            offering.course_id,
+            offering.subject_id,
             Some(offering),
             false,
             Uuid::new_v4(),
@@ -1045,16 +1072,23 @@ mod tests {
         let offering = SectionSubject {
             id: offering_id,
             org_id,
-            course_id,
-            period_id: None,
-            section_code: None,
-            name: None,
-            status: SectionSubjectstatus::Open,
+            section_id: Uuid::new_v4(),
+            subject_id: course_id,
+            period_id: Uuid::nil(),
+            instructor_id: None,
+            assistant_instructor_id: None,
+            substitute_instructor_id: None,
+            scheme_id: None,
+            weekly_hours: None,
+            theory_hours: None,
+            practical_hours: None,
+            assessment_config: None,
+            grade_groups: None,
             capacity: None,
-            starts_at: None,
-            ends_at: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            status: "open".into(),
+            is_active: true,
+            created_at: Some(Utc::now()),
+            updated_at: Some(Utc::now()),
         };
         let (service, _) = test_service(org_id, course_id, Some(offering), true, org_id);
 

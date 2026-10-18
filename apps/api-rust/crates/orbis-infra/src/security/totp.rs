@@ -232,55 +232,6 @@ impl TotpService for TotpServiceImpl {
                 format!("{}-{}-{}-{}", &u[0..8], &u[8..16], &u[16..24], &u[24..32]).to_uppercase(),
             );
         }
-
-        #[cfg(test)]
-        mod tests {
-            use super::*;
-
-            #[test]
-            fn encrypted_totp_secrets_round_trip_and_are_key_bound() {
-                let service = TotpServiceImpl::new("stable test master key");
-                let encrypted = service.encrypt_secret("JBSWY3DPEHPK3PXP").unwrap();
-
-                assert!(encrypted.starts_with("v1:"));
-                assert_eq!(
-                    service.decrypt_secret(&encrypted).unwrap(),
-                    "JBSWY3DPEHPK3PXP"
-                );
-                assert!(
-                    TotpServiceImpl::new("different key")
-                        .decrypt_secret(&encrypted)
-                        .is_err()
-                );
-            }
-
-            #[test]
-            fn legacy_plaintext_totp_secrets_remain_readable() {
-                let service = TotpServiceImpl::new("stable test master key");
-
-                assert_eq!(
-                    service.decrypt_secret("JBSWY3DPEHPK3PXP").unwrap(),
-                    "JBSWY3DPEHPK3PXP"
-                );
-            }
-
-            #[test]
-            fn recovery_codes_have_128_bits_of_randomness() {
-                let service = TotpServiceImpl::new("stable test master key");
-
-                let codes = service.generate_recovery_codes(8);
-
-                assert_eq!(codes.len(), 8);
-                assert!(codes.iter().all(|code| {
-                    code.len() == 35
-                        && code.split('-').all(|segment| {
-                            segment.len() == 8 && segment.chars().all(|c| c.is_ascii_hexdigit())
-                        })
-                }));
-                let unique_codes: std::collections::HashSet<_> = codes.iter().collect();
-                assert_eq!(unique_codes.len(), codes.len());
-            }
-        }
         codes
     }
 
@@ -346,5 +297,54 @@ impl TotpService for TotpServiceImpl {
         }
 
         false
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encrypted_totp_secrets_round_trip_and_are_key_bound() {
+        let service = TotpServiceImpl::new("stable test master key");
+        let encrypted = service.encrypt_secret("JBSWY3DPEHPK3PXP").unwrap();
+
+        assert!(encrypted.starts_with("v1:"));
+        assert_eq!(
+            service.decrypt_secret(&encrypted).unwrap(),
+            "JBSWY3DPEHPK3PXP"
+        );
+        assert!(
+            TotpServiceImpl::new("different key")
+                .decrypt_secret(&encrypted)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn legacy_plaintext_totp_secrets_remain_readable() {
+        let service = TotpServiceImpl::new("stable test master key");
+
+        assert_eq!(
+            service.decrypt_secret("JBSWY3DPEHPK3PXP").unwrap(),
+            "JBSWY3DPEHPK3PXP"
+        );
+    }
+
+    #[test]
+    fn recovery_codes_have_128_bits_of_randomness() {
+        let service = TotpServiceImpl::new("stable test master key");
+
+        let codes = service.generate_recovery_codes(8);
+
+        assert_eq!(codes.len(), 8);
+        assert!(codes.iter().all(|code| {
+            code.len() == 35
+                && code.split('-').all(|segment| {
+                    segment.len() == 8 && segment.chars().all(|c| c.is_ascii_hexdigit())
+                })
+        }));
+        let unique_codes: std::collections::HashSet<_> = codes.iter().collect();
+        assert_eq!(unique_codes.len(), codes.len());
     }
 }
