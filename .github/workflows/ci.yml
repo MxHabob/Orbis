@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
