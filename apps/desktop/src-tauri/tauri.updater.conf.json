@@ -5,7 +5,9 @@
   "plugins": {
     "updater": {
       "pubkey": "",
-      "endpoints": [],
+      "endpoints": [
+        "https://github.com/MxHabob/Orbis/releases/latest/download/latest.json"
+      ],
       "dangerousInsecureTransportProtocol": false
     }
   }

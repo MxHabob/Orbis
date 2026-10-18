@@ -1,4 +1,4 @@
-name: Prepare Production Release
+name: Build and Publish Production Release
 
 on:
   push:
@@ -139,7 +139,7 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Validate application signing configuration
+      - name: Validate release signing and license configuration
         shell: bash
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -148,7 +148,7 @@ jobs:
           MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
         run: |
           if [[ -z "$TAURI_SIGNING_PRIVATE_KEY" || -z "$TAURI_UPDATER_PUBLIC_KEY" || -z "$MULVERSE_LICENSE_PUBLIC_KEY_B64" || -z "$MULVERSE_LICENSE_KEY_ID" ]]; then
-            echo "::error::Configure updater signing and Mulverse license verification variables before releasing."
+            echo "::error::Configure updater signing and application license verification variables before releasing."
             exit 1
           fi
 
@@ -156,9 +156,8 @@ jobs:
         working-directory: apps/desktop
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
-          MULVERSE_PUBLIC_BASE_URL: ${{ vars.MULVERSE_PUBLIC_BASE_URL }}
         run: |
-          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; const base = (process.env.MULVERSE_PUBLIC_BASE_URL || 'https://api.mulverse.com').replace(/\\/+$/, ''); const endpoint = base + '/api/v1/public/updates/tauri?product_key=ORBIS&channel=stable&current_version={{current_version}}&target={{target}}&arch={{arch}}'; const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: [endpoint] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
+          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; const endpoint = 'https://github.com/MxHabob/Orbis/releases/latest/download/latest.json'; const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: [endpoint] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
 
       - name: Build signed Tauri app and upload to draft release
         uses: tauri-apps/tauri-action@v1
@@ -180,7 +179,7 @@ jobs:
           args: --config src-tauri/tauri.updater.conf.json --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
   prepare-github-release:
-    name: Validate and prepare GitHub Release draft
+    name: Validate and publish GitHub Release
     needs:
       - validate
       - build-desktop
@@ -235,60 +234,30 @@ jobs:
           if (metadata.version.replace(/^v/, "") !== version) {
             throw new Error(`Updater metadata version ${metadata.version} does not match ${version}.`);
           }
+          const releaseAssetBase = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${process.env.GITHUB_REF_NAME}/`;
           for (const target of ["windows-x86_64", "darwin-aarch64"]) {
             const platform = metadata.platforms?.[target];
             if (!platform?.url || !platform?.signature) {
               throw new Error(`Updater metadata is missing a signed ${target} update.`);
             }
-            if (!platform.url.startsWith("https://")) {
-              throw new Error(`Updater URL for ${target} must use HTTPS.`);
+            if (!platform.url.startsWith(releaseAssetBase)) {
+              throw new Error(`Updater URL for ${target} must point to this GitHub Release.`);
             }
           }
           NODE
 
-      - name: Keep release as draft pending Mulverse distribution
+      - name: Publish validated GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "::notice::Build and signed assets validated. The release remains a draft while Mulverse receives and publishes the updater artifacts."
+          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false
+
+      - name: Summarize published release
+        run: |
+          echo "::notice::Build and signed assets validated. The GitHub Release is published and serves desktop updates."
           {
-            echo "## Release prepared"
+            echo "## Release published"
             echo "Builds, installers, Tauri signatures, and updater metadata passed validation."
-            echo "The GitHub Release remains a draft. The following Mulverse sync job uploads and publishes the public release."
+            echo "The signed updater metadata and installers are served directly from GitHub Releases."
           } >> "$GITHUB_STEP_SUMMARY"
-
-  sync-mulverse:
-    name: Publish signed artifacts to Mulverse
-    needs:
-      - validate
-      - prepare-github-release
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    permissions:
-      contents: read
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      MULVERSE_API_BASE_URL: ${{ secrets.MULVERSE_API_BASE_URL }}
-      MULVERSE_API_TOKEN: ${{ secrets.MULVERSE_API_TOKEN }}
-      MULVERSE_PRODUCT_ID: ${{ secrets.MULVERSE_PRODUCT_ID }}
-      MULVERSE_CHANNEL_STABLE_KEY: ${{ vars.MULVERSE_CHANNEL_STABLE_KEY || 'stable' }}
-      RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-      RELEASE_ARTIFACT_DIR: release-artifacts
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-
-      - name: Download signed updater artifacts from the private draft
-        run: |
-          mkdir -p "$RELEASE_ARTIFACT_DIR"
-          gh release download "${GITHUB_REF_NAME}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --dir "$RELEASE_ARTIFACT_DIR" \
-            --pattern "*.nsis.zip" \
-            --pattern "*.nsis.zip.sig" \
-            --pattern "*.app.tar.gz" \
-            --pattern "*.app.tar.gz.sig" \
-            --pattern "latest.json"
-
-      - name: Sync release idempotently to Mulverse
-        run: node scripts/sync-mulverse-release.mjs

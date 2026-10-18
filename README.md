@@ -16,6 +16,8 @@
     <a href="mailto:mulverseco@gmail.com">Contact Mulverse</a>
     ·
     <a href="https://github.com/MxHabob/Orbis/releases">Releases</a>
+    ·
+    <a href="docs/releases.md">Release guide</a>
   </p>
 
   <p>

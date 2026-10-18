@@ -246,7 +246,7 @@ pub async fn system_get_changelog(app: AppHandle) -> Result<Vec<ReleaseChangelog
     fetch_github_changelog(&current_version).await
 }
 
-/// Check for a signed update using the configured Mulverse updater endpoint.
+/// Check for a signed update using the configured GitHub Releases endpoint.
 #[tauri::command]
 pub async fn system_check_for_updates(app: AppHandle) -> Result<UpdateCheckResult, String> {
     use tauri_plugin_updater::UpdaterExt;
