@@ -122,9 +122,9 @@
 
   interface PolicyPreset {
     id: string;
-    label: string;
-    description: string;
-    badge: string;
+    label: () => string;
+    description: () => string;
+    badge: () => string;
     badgeVariant: "default" | "secondary" | "outline";
     scale: string;
     outputName: string;
@@ -135,15 +135,15 @@
     outcomeEnabled: boolean;
     passThreshold: string;
     honorsThreshold: string;
-    gradeBands: GradeBandEditor[];
+    gradeBands: Array<Omit<GradeBandEditor, "label"> & { label: () => string }>;
   }
 
   const YEMENI_POLICY_PRESETS: PolicyPreset[] = [
     {
       id: "yemen_school_term",
-      label: "النظام المدرسي العام المعتمد (وزارة التربية والتعليم)",
-      description: "محصلة الفصل من 50 درجة: محصلة الأعمال الشهرية (20 درجة / 40%) + اختبار نهاية الفصل (30 درجة / 60%، شرط اجتياز 10)",
-      badge: "معتمد وزارياً",
+      label: () => m.settings_calc_preset_yemen_school_title(),
+      description: () => m.settings_calc_preset_yemen_school_description(),
+      badge: () => m.settings_calc_preset_yemen_school_badge(),
       badgeVariant: "default",
       scale: "percentage",
       outputName: "term_result",
@@ -170,18 +170,18 @@
       passThreshold: "50",
       honorsThreshold: "90",
       gradeBands: [
-        { code: "A", label: "ممتاز", minimum: "90" },
-        { code: "B", label: "جيد جداً", minimum: "80" },
-        { code: "C", label: "جيد", minimum: "65" },
-        { code: "D", label: "مقبول", minimum: "50" },
-        { code: "F", label: "راسب", minimum: "0" },
+        { code: "A", label: () => m.settings_calc_grade_excellent(), minimum: "90" },
+        { code: "B", label: () => m.settings_calc_grade_very_good(), minimum: "80" },
+        { code: "C", label: () => m.settings_calc_grade_good(), minimum: "65" },
+        { code: "D", label: () => m.settings_calc_grade_acceptable(), minimum: "50" },
+        { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
       ],
     },
     {
       id: "yemen_thanawiya_cert",
-      label: "الشهادة الثانوية العامة - التراكمي (الصف 12)",
-      description: "المجموع الكلي من 100%: الاختبار الوزاري النهائي (80%) + المعدل التراكمي للسنوات السابقة (20%)",
-      badge: "شهادة عامة",
+      label: () => m.settings_calc_preset_yemen_certificate_title(),
+      description: () => m.settings_calc_preset_yemen_certificate_description(),
+      badge: () => m.settings_calc_preset_yemen_certificate_badge(),
       badgeVariant: "secondary",
       scale: "percentage",
       outputName: "thanawiya_score",
@@ -208,18 +208,18 @@
       passThreshold: "50",
       honorsThreshold: "90",
       gradeBands: [
-        { code: "A", label: "ممتاز", minimum: "90" },
-        { code: "B", label: "جيد جداً", minimum: "80" },
-        { code: "C", label: "جيد", minimum: "65" },
-        { code: "D", label: "مقبول", minimum: "50" },
-        { code: "F", label: "راسب", minimum: "0" },
+        { code: "A", label: () => m.settings_calc_grade_excellent(), minimum: "90" },
+        { code: "B", label: () => m.settings_calc_grade_very_good(), minimum: "80" },
+        { code: "C", label: () => m.settings_calc_grade_good(), minimum: "65" },
+        { code: "D", label: () => m.settings_calc_grade_acceptable(), minimum: "50" },
+        { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
       ],
     },
     {
       id: "university_credit",
-      label: "التعليم الجامعي (الساعات المعتمدة)",
-      description: "تقييم المقرر: أعمال دراسية (20%) + اختبار نصفي (20%) + اختبار نهائي (60%)",
-      badge: "جامعي",
+      label: () => m.settings_calc_preset_university_title(),
+      description: () => m.settings_calc_preset_university_description(),
+      badge: () => m.settings_calc_preset_university_badge(),
       badgeVariant: "outline",
       scale: "percentage",
       outputName: "gpa_course",
@@ -253,11 +253,11 @@
       passThreshold: "60",
       honorsThreshold: "90",
       gradeBands: [
-        { code: "A", label: "ممتاز", minimum: "90" },
-        { code: "B", label: "جيد جداً", minimum: "80" },
-        { code: "C", label: "جيد", minimum: "70" },
-        { code: "D", label: "مقبول", minimum: "60" },
-        { code: "F", label: "راسب", minimum: "0" },
+        { code: "A", label: () => m.settings_calc_grade_excellent(), minimum: "90" },
+        { code: "B", label: () => m.settings_calc_grade_very_good(), minimum: "80" },
+        { code: "C", label: () => m.settings_calc_grade_good(), minimum: "70" },
+        { code: "D", label: () => m.settings_calc_grade_acceptable(), minimum: "60" },
+        { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
       ],
     },
   ];
@@ -272,9 +272,12 @@
     form.outcomeEnabled = preset.outcomeEnabled;
     form.passThreshold = preset.passThreshold;
     form.honorsThreshold = preset.honorsThreshold;
-    form.gradeBands = preset.gradeBands.map((gb) => ({ ...gb }));
+    form.gradeBands = preset.gradeBands.map(({ label, ...gradeBand }) => ({
+      ...gradeBand,
+      label: label(),
+    }));
     customPlanReadOnly = false;
-    toast.success(`تم تطبيق قالب: ${preset.label}`);
+    toast.success(m.settings_calc_preset_applied({ name: preset.label() }));
   }
 
   function hydrateFromSettings(settings: CalculationEngineSettings) {
@@ -636,10 +639,10 @@
               <div>
                 <h3 class="text-sm font-semibold text-foreground flex items-center gap-2">
                   <span>🏛️</span>
-                  <span>قوالب ومعايير محرك الحساب المعتمدة لليمن</span>
+                  <span>{m.settings_calc_yemen_presets_title()}</span>
                 </h3>
                 <p class="text-xs text-muted-foreground mt-0.5">
-                  اضغط على أحد القوالب المعيارية المعتمدة رسمياً لتعبئة مدخلات ومقاييس الحساب والتقديرات تلقائياً
+                  {m.settings_calc_yemen_presets_description()}
                 </p>
               </div>
             </div>
@@ -653,14 +656,14 @@
                 >
                   <div class="flex items-center justify-between w-full mb-1">
                     <span class="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {preset.label}
+                      {preset.label()}
                     </span>
                     <Badge variant={preset.badgeVariant} class="text-[10px] px-1.5 py-0 h-4">
-                      {preset.badge}
+                      {preset.badge()}
                     </Badge>
                   </div>
                   <p class="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                    {preset.description}
+                    {preset.description()}
                   </p>
                 </button>
               {/each}

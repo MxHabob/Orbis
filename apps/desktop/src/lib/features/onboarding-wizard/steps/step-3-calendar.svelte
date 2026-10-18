@@ -150,13 +150,13 @@ function formatGregorianYear(date: string) {
 
 // Study Days (Yemeni System default: Saturday to Wednesday)
 const yemeniWeekdays = [
-  { value: 7, label: "السبت" },
-  { value: 1, label: "الأحد" },
-  { value: 2, label: "الإثنين" },
-  { value: 3, label: "الثلاثاء" },
-  { value: 4, label: "الأربعاء" },
-  { value: 5, label: "الخميس" },
-  { value: 6, label: "الجمعة" },
+  { value: 7, label: () => m.onboarding_step3_weekday_saturday() },
+  { value: 1, label: () => m.onboarding_step3_weekday_sunday() },
+  { value: 2, label: () => m.onboarding_step3_weekday_monday() },
+  { value: 3, label: () => m.onboarding_step3_weekday_tuesday() },
+  { value: 4, label: () => m.onboarding_step3_weekday_wednesday() },
+  { value: 5, label: () => m.onboarding_step3_weekday_thursday() },
+  { value: 6, label: () => m.onboarding_step3_weekday_friday() },
 ];
 
 let selectedStudyDays = $state<number[]>([7, 1, 2, 3, 4]);
@@ -664,7 +664,7 @@ async function deleteYear(year: academicCalendarDto) {
           <div class="space-y-2 pt-2 border-t border-border/40">
             <div class="flex items-center justify-between flex-wrap gap-2">
               <span class="text-xs font-semibold text-foreground">
-                أيام الدراسة الأسبوعية (النظام اليمني)
+              {m.onboarding_step3_yemen_weekly_study_days()}
               </span>
               <div class="flex items-center gap-1.5">
                 <Button
@@ -674,7 +674,7 @@ async function deleteYear(year: academicCalendarDto) {
                   class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
                   onclick={() => setYemeniStudyDaysPreset(5)}
                 >
-                  5 أيام (السبت - الأربعاء)
+                  {m.onboarding_step3_weekday_preset_five()}
                 </Button>
                 <Button
                   type="button"
@@ -683,7 +683,7 @@ async function deleteYear(year: academicCalendarDto) {
                   class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
                   onclick={() => setYemeniStudyDaysPreset(6)}
                 >
-                  6 أيام (السبت - الخميس)
+                  {m.onboarding_step3_weekday_preset_six()}
                 </Button>
               </div>
             </div>
@@ -697,7 +697,7 @@ async function deleteYear(year: academicCalendarDto) {
                     : 'bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground'}"
                   onclick={() => toggleStudyDay(day.value)}
                 >
-                  <span>{day.label}</span>
+                  <span>{day.label()}</span>
                 </button>
               {/each}
             </div>
@@ -868,27 +868,27 @@ async function deleteYear(year: academicCalendarDto) {
               <div class="grid gap-2 pt-2 border-t border-primary/10 text-[11px] text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
                 <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
                   <span class="font-medium text-foreground flex items-center gap-1">
-                    📅 فترات التقويم ({backendDefaults.periods_summary.length})
+                    📅 {m.onboarding_step3_calendar_summary_periods({ count: String(backendDefaults.periods_summary.length) })}
                   </span>
-                  <span>فصلين دراسيين، 8 أشهر تعليمية، 8 اختبارات شهرية، واختبارين نهائيين</span>
+                  <span>{m.onboarding_step3_calendar_summary_periods_description()}</span>
                 </div>
                 <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
                   <span class="font-medium text-foreground flex items-center gap-1">
-                    📊 مخططات التقييم ({backendDefaults.assessment_schemes.length})
+                    📊 {m.onboarding_step3_calendar_summary_assessments({ count: String(backendDefaults.assessment_schemes.length) })}
                   </span>
-                  <span>الشهري (100)، الفصلي (30)، المحصلة (50)، والسنوي (100)</span>
+                  <span>{m.onboarding_step3_calendar_summary_assessments_description()}</span>
                 </div>
                 <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
                   <span class="font-medium text-foreground flex items-center gap-1">
-                    ⏰ الحصص اليومية ({backendDefaults.timetable_slots.length})
+                    ⏰ {m.onboarding_step3_calendar_summary_daily_lessons({ count: String(backendDefaults.timetable_slots.length) })}
                   </span>
-                  <span>7 حصص (07:30 - 13:30) مع الطابور والفسحة والاستراحة</span>
+                  <span>{m.onboarding_step3_calendar_summary_daily_lessons_description()}</span>
                 </div>
                 <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
                   <span class="font-medium text-foreground flex items-center gap-1">
-                    🗓️ أيام الدراسة
+                    🗓️ {m.onboarding_step3_calendar_summary_study_days()}
                   </span>
-                  <span>السبت إلى الأربعاء (5 أيام دراسية أسبوعياً)</span>
+                  <span>{m.onboarding_step3_calendar_summary_study_days_description()}</span>
                 </div>
               </div>
             {/if}

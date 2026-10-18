@@ -2662,32 +2662,35 @@ mod tests {
         let other_class_id = Uuid::new_v4();
         let assignment = orbis_domain::entities::section_subject::SectionSubject {
             id: Uuid::new_v4(),
-            section_id,
+            org_id: Uuid::new_v4(),
+            section_id: class_id,
             subject_id: Uuid::new_v4(),
             period_id: Uuid::new_v4(),
-            instructor_id: teacher_id,
+            instructor_id: Some(teacher_id),
             assistant_instructor_id: None,
             substitute_instructor_id: None,
-            grade_groups: None,
+            scheme_id: None,
             weekly_hours: None,
             theory_hours: None,
             practical_hours: None,
             assessment_config: None,
-            scheme_id: None,
+            grade_groups: None,
+            capacity: None,
+            status: "active".into(),
             is_active: true,
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
+            created_at: Some(chrono::Utc::now()),
+            updated_at: Some(chrono::Utc::now()),
         };
 
         assert!(teacher_assigned_to_class(
             teacher_id,
-            section_id,
+            class_id,
             None,
             std::slice::from_ref(&assignment)
         ));
         assert!(!teacher_assigned_to_class(
             teacher_id,
-            other_section_id,
+            other_class_id,
             None,
             std::slice::from_ref(&assignment)
         ));

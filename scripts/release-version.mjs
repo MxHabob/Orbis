@@ -42,7 +42,7 @@ function versionFromLockfile(source) {
 
 function replaceVersion(source, expression, version, label) {
   if (!expression.test(source)) throw new Error(`Could not find ${label} version field.`);
-  return source.replace(expression, `$1${version}$2`);
+  return source.replace(expression, (_match, prefix, _currentVersion, suffix) => `${prefix}${version}${suffix}`);
 }
 
 function bump(currentVersion, level) {
@@ -115,7 +115,7 @@ function main() {
   }
 
   const updated = {
-    package: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
+    desktopPackage: `${JSON.stringify({ ...pkg, version: nextVersion }, null, 2)}\n`,
     cargo: replaceVersion(original.cargo, /(^\[package\][\s\S]*?^version\s*=\s*")([^"]+)(")/m, nextVersion, "Cargo package"),
     solver: replaceVersion(original.solver, /(<orbis\.version>)([^<]+)(<\/orbis\.version>)/, nextVersion, "Orbis solver"),
     tauri: `${JSON.stringify({ ...JSON.parse(original.tauri), version: nextVersion }, null, 2)}\n`,

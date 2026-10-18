@@ -70,7 +70,7 @@ const administratorName = $derived(
   (isArabic
     ? form.adminFirstNameAr || form.adminFirstName
     : form.adminFirstName || form.adminFirstNameAr) ||
-    (isArabic ? "محمد" : "there"),
+    m.ui_onboarding_default_admin_name(),
 );
 const institutionTypeLabel = $derived(
   ({

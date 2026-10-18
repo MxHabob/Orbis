@@ -23,31 +23,31 @@
 
   const YEMEN_STATUTORY_TIERS = [
     {
-      title: "1. التقييم الشهري الدوري",
-      score: "100 درجة",
-      details: "واجبات (20) + شفوي ومشاركة (20) + مواظبة وسلوك (20) + تقييم تحريري (40)",
-      badge: "شهري مستمر",
+      title: () => m.onboarding_step6_tier_monthly_title(),
+      score: () => m.onboarding_step6_tier_score_100(),
+      details: () => m.onboarding_step6_tier_monthly_details(),
+      badge: () => m.onboarding_step6_tier_monthly_badge(),
       color: "border-blue-500/30 bg-blue-500/5",
     },
     {
-      title: "2. محصلة الفصل الدراسي",
-      score: "50 درجة",
-      details: "محصلة الأعمال الشهرية (20 درجة) + اختبار نهاية الفصل (30 درجة، شرط اجتياز 10/30)",
-      badge: "نهاية الفصل",
+      title: () => m.onboarding_step6_tier_term_title(),
+      score: () => m.onboarding_step6_tier_score_50(),
+      details: () => m.onboarding_step6_tier_term_details(),
+      badge: () => m.onboarding_step6_tier_term_badge(),
       color: "border-primary/30 bg-primary/5",
     },
     {
-      title: "3. المجموع السنوي العام",
-      score: "100 درجة",
-      details: "الفصل الأول (50 درجة) + الفصل الثاني (50 درجة) — عتبة النجاح العامة 50%",
-      badge: "المحصلة السنوية",
+      title: () => m.onboarding_step6_tier_annual_title(),
+      score: () => m.onboarding_step6_tier_score_100(),
+      details: () => m.onboarding_step6_tier_annual_details(),
+      badge: () => m.onboarding_step6_tier_annual_badge(),
       color: "border-emerald-500/30 bg-emerald-500/5",
     },
     {
-      title: "4. الشهادة الثانوية العامة (الصف 12)",
-      score: "80% / 20%",
-      details: "الاختبار الوزاري النهائي (80%) + المعدل التراكمي للسنوات السابقة (20%)",
-      badge: "شهادة وزارية",
+      title: () => m.onboarding_step6_tier_certificate_title(),
+      score: () => m.onboarding_step6_tier_score_80_20(),
+      details: () => m.onboarding_step6_tier_certificate_details(),
+      badge: () => m.onboarding_step6_tier_certificate_badge(),
       color: "border-amber-500/30 bg-amber-500/5",
     },
   ];
@@ -69,10 +69,10 @@
         <span class="text-xl">🇾🇪</span>
         <div>
           <h3 class="text-sm font-semibold text-foreground">
-            الهيكل التقييمي المعتمد رسمياً — وزارة التربية والتعليم (الجمهورية اليمنية)
+            {m.onboarding_step6_yemen_assessment_title()}
           </h3>
           <p class="text-xs text-muted-foreground mt-0.5">
-            المرجعية المعيارية المعتمدة لاحتساب وتقييم نتائج الطلاب في مراحل التعليم الأساسي والثانوي
+            {m.onboarding_step6_yemen_assessment_description()}
           </p>
         </div>
       </div>
@@ -86,14 +86,14 @@
         <div class="p-3 rounded-lg border {tier.color} flex flex-col justify-between space-y-2">
           <div>
             <div class="flex items-center justify-between gap-1 mb-1">
-              <span class="text-xs font-bold text-foreground">{tier.title}</span>
-              <Badge variant="secondary" class="text-[10px] px-1 py-0 h-4">{tier.badge}</Badge>
+              <span class="text-xs font-bold text-foreground">{tier.title()}</span>
+              <Badge variant="secondary" class="text-[10px] px-1 py-0 h-4">{tier.badge()}</Badge>
             </div>
-            <p class="text-[11px] text-muted-foreground leading-relaxed">{tier.details}</p>
+            <p class="text-[11px] text-muted-foreground leading-relaxed">{tier.details()}</p>
           </div>
           <div class="pt-2 border-t border-border/30 flex items-center justify-between">
-            <span class="text-[10px] text-muted-foreground">الوزن الأقصى:</span>
-            <span class="text-xs font-mono font-bold text-primary">{tier.score}</span>
+            <span class="text-[10px] text-muted-foreground">{m.onboarding_step6_maximum_weight()}</span>
+            <span class="text-xs font-mono font-bold text-primary">{tier.score()}</span>
           </div>
         </div>
       {/each}
@@ -110,7 +110,7 @@
         class="h-8 text-xs cursor-pointer"
         onclick={() => (activeTab = "calculation")}
       >
-        محرك الحساب والسياسات الأكاديمية
+        {m.onboarding_step6_calculation_tab()}
       </Button>
       <Button
         type="button"
@@ -119,14 +119,14 @@
         class="h-8 text-xs cursor-pointer"
         onclick={() => (activeTab = "schemes")}
       >
-        هياكل ولوائح التقييم المعتمدة
+        {m.onboarding_step6_assessment_schemes_tab()}
       </Button>
     </div>
 
     <span class="text-[11px] text-muted-foreground hidden sm:inline-block">
       {activeTab === "calculation"
-        ? "تعديل قواعد التقريب ومعادلات المجموع والترتيب"
-        : "إدارة وتخصيص أوزان مكونات التقييم الشهرية والفصلية والشهادات"}
+        ? m.onboarding_step6_calculation_tab_description()
+        : m.onboarding_step6_assessment_schemes_tab_description()}
     </span>
   </div>
 
