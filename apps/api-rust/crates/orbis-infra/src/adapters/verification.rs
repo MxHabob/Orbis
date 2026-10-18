@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 
 use super::{
-    notification::NotificationAdapter, resolver::IntegrationResolver,
+    authen::AuthenAdapter, notification::NotificationAdapter, resolver::IntegrationResolver,
     solver_adapter::RemoteTimefoldSolver, storage::StorageResolver,
 };
 
@@ -50,6 +50,37 @@ pub async fn verify_integration_connection(
             .check_connection(ctx.tenant_id, provider_name, category, settings, secrets)
             .await
             .map_err(|error| DomainError::Validation(error.to_string()))
+    } else if category.eq_ignore_ascii_case("ai-vision")
+        && provider_name.eq_ignore_ascii_case("authen")
+    {
+        let api_url = settings
+            .get("api_url")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|url| !url.is_empty())
+            .ok_or_else(|| {
+                DomainError::Validation("The Authen integration is missing its API URL".into())
+            })?;
+        let api_key = secrets
+            .get("api_key")
+            .map(String::as_str)
+            .map(str::trim)
+            .filter(|key| !key.is_empty())
+            .ok_or_else(|| {
+                DomainError::Validation("The Authen integration is missing its API key".into())
+            })?;
+        AuthenAdapter::new(api_url.to_string(), api_key.to_string())
+            .check_connection()
+            .await
+    } else if category.eq_ignore_ascii_case("identity")
+        && provider_name.eq_ignore_ascii_case("orbis_mobile")
+    {
+        if !settings.as_object().is_some_and(serde_json::Map::is_empty) || !secrets.is_empty() {
+            return Err(DomainError::Validation(
+                "Orbis Mobile activation does not accept integration settings or secrets".into(),
+            ));
+        }
+        Ok(())
     } else if category.eq_ignore_ascii_case("communication") {
         notification_adapter
             .check_connection(ctx.tenant_id, provider_name, category, settings, secrets)

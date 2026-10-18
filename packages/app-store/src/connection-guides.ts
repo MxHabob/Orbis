@@ -95,6 +95,10 @@ const appSpecificSummaries: Record<
   string,
   { en: string; ar: string }
 > = {
+  authen: {
+    en: "Enter your Authen API URL and key. Orbis verifies access with a generated blank test image; no user image is sent, but the check may count toward your Authen usage.",
+    ar: "أدخل عنوان Authen ومفتاح API. يتحقق أوربيس من الوصول بصورة اختبار اصطناعية فارغة؛ لا تُرسل صور مستخدمين، لكن قد يُحتسب الطلب ضمن استخدام Authen.",
+  },
   alkuraimi: {
     en: "Contact Al-Kuraimi to request merchant API specifications and confirm Orbis support before proceeding.",
     ar: "تواصل مع بنك الكريمي لطلب مواصفات API للتجار وتأكد من دعم أوربيس قبل المتابعة.",
@@ -126,6 +130,7 @@ const appSpecificSummaries: Record<
 };
 
 const appsWithLiveVerifier = new Set([
+  "authen",
   "anthropic",
   "cloud-storage",
   "deepseek",
@@ -142,6 +147,8 @@ const appsWithLiveVerifier = new Set([
   "whatsapp-business",
 ]);
 
+const appsAvailableWithoutLiveVerifier = new Set(["orbis_mobile"]);
+
 export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const website = websites[app.id];
   if (!website) {
@@ -151,18 +158,20 @@ export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const summary =
     appSpecificSummaries[app.id] ?? connectionSummaries[app.category];
   const canVerifyConnection = appsWithLiveVerifier.has(app.id);
+  const isAvailable =
+    canVerifyConnection || appsAvailableWithoutLiveVerifier.has(app.id);
   const moreEn = `[Learn more](${website})`;
   const moreAr = `[لمعرفة المزيد](${website})`;
-  const verificationNoteEn = canVerifyConnection
+  const verificationNoteEn = isAvailable
     ? ""
     : "\n\n**Orbis availability:** Orbis cannot verify this integration yet, so it cannot be connected from the App Store.";
-  const verificationNoteAr = canVerifyConnection
+  const verificationNoteAr = isAvailable
     ? ""
     : "\n\n**توفر الربط في أوربيس:** لا يستطيع أوربيس التحقق من هذا التكامل حالياً، لذلك لا يمكن ربطه من المتجر بعد.";
 
   return {
     ...app,
-    active: app.active && canVerifyConnection,
+    active: app.active && isAvailable,
     description: `${app.description}\n\n**Connect:** ${summary.en} ${moreEn}${verificationNoteEn}`,
     description_ar: `${app.description_ar ?? ""}\n\n**طريقة الربط:** ${summary.ar} ${moreAr}${verificationNoteAr}`,
   };
