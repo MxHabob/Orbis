@@ -32,6 +32,14 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
 }
 
+fn require_local_sqlite(config: &ConnectionConfig) -> Result<(), String> {
+    if config.mode == crate::connection::ConnectionMode::Local {
+        Ok(())
+    } else {
+        Err("This database operation is available only for a local SQLite connection".to_string())
+    }
+}
+
 async fn log_db_audit(state: &AppState, action: &str, details: serde_json::Value) {
     let ctx = crate::commands::make_ctx(state);
     if let Some(user_id) = ctx.actor.id() {
@@ -95,12 +103,10 @@ pub async fn database_create_local(
     }
 
     // Initialize/replace AppState
-    if let Some(db_url) = new_config.resolve_local_db_url(&conn_state.app_data_dir) {
-        unsafe {
-            std::env::set_var("DATABASE_URL", &db_url);
-        }
-    }
-    let new_app_state = AppState::init(&conn_state.app_data_dir)
+    let db_url = new_config
+        .resolve_database_url(&conn_state.app_data_dir)?
+        .ok_or_else(|| "Local database URL is not configured".to_string())?;
+    let new_app_state = AppState::init(&conn_state.app_data_dir, &db_url, true)
         .await
         .map_err(|e| format!("Failed to initialize AppState with new database: {e}"))?;
 
@@ -167,12 +173,10 @@ pub async fn database_open_existing(
     }
 
     // Connect AppState to this DB
-    if let Some(db_url) = config.resolve_local_db_url(&conn_state.app_data_dir) {
-        unsafe {
-            std::env::set_var("DATABASE_URL", &db_url);
-        }
-    }
-    let new_app_state = AppState::init(&conn_state.app_data_dir)
+    let db_url = config
+        .resolve_database_url(&conn_state.app_data_dir)?
+        .ok_or_else(|| "Local database URL is not configured".to_string())?;
+    let new_app_state = AppState::init(&conn_state.app_data_dir, &db_url, true)
         .await
         .map_err(|e| format!("Failed to initialize connection to selected database: {e}"))?;
 
@@ -211,6 +215,7 @@ pub async fn database_backup(
         .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
+    require_local_sqlite(&config)?;
 
     let result = database_manager::execute_backup(
         &conn_state.app_data_dir,
@@ -263,13 +268,17 @@ pub async fn database_restore(
         .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
+    require_local_sqlite(&config)?;
 
     let result =
         database_manager::execute_restore(&conn_state.app_data_dir, &config, &backup_file_path)
             .await?;
 
     // Reinitialize AppState with restored database
-    let new_app_state = AppState::init(&conn_state.app_data_dir)
+    let db_url = config
+        .resolve_database_url(&conn_state.app_data_dir)?
+        .ok_or_else(|| "Local database URL is not configured".to_string())?;
+    let new_app_state = AppState::init(&conn_state.app_data_dir, &db_url, true)
         .await
         .map_err(|e| format!("Failed to reconnect to restored database: {e}"))?;
 
@@ -294,7 +303,21 @@ pub async fn database_restore(
 #[tauri::command]
 pub async fn database_run_migrations(
     state: State<'_, AppState>,
+    conn_state: State<'_, ConnectionState>,
 ) -> Result<ApiResponse<MigrationResultDto>, String> {
+    let config = conn_state
+        .config
+        .read()
+        .map_err(|e| format!("Lock error: {e}"))?
+        .clone();
+    if !matches!(
+        config.mode,
+        crate::connection::ConnectionMode::Local | crate::connection::ConnectionMode::Direct
+    ) {
+        return Err(
+            "Migrations can be applied only to a local or direct database connection".to_string(),
+        );
+    }
     let result = database_manager::run_pending_migrations(&state.db).await?;
 
     log_db_audit(
@@ -313,7 +336,14 @@ pub async fn database_run_migrations(
 #[tauri::command]
 pub async fn database_check_integrity(
     state: State<'_, AppState>,
+    conn_state: State<'_, ConnectionState>,
 ) -> Result<ApiResponse<IntegrityResultDto>, String> {
+    let config = conn_state
+        .config
+        .read()
+        .map_err(|e| format!("Lock error: {e}"))?
+        .clone();
+    require_local_sqlite(&config)?;
     let result = database_manager::check_active_integrity(&state.db).await?;
     Ok(ok(result))
 }
@@ -328,6 +358,7 @@ pub async fn database_optimize(
         .read()
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
+    require_local_sqlite(&config)?;
 
     let result =
         database_manager::optimize_database(&conn_state.app_data_dir, &config, &state.db).await?;
@@ -369,6 +400,7 @@ pub async fn database_update_settings(
         .map_err(|e| format!("Lock error: {e}"))?
         .clone();
 
+    require_local_sqlite(&config)?;
     config.settings = settings.clone();
     config.save(&conn_state.app_data_dir)?;
 

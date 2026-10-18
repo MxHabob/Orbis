@@ -4,7 +4,7 @@
 // Uses the `image` crate (already in the project for Tauri tray icons).
 // ═══════════════════════════════════════════════════════════════
 
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 
 use crate::error::DocforgeError;
 

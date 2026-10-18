@@ -4,7 +4,9 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_app::services::progression_service::StudentProgressionItem;
-use orbis_domain::entities::progression::{PromotionDecision, ProgressionJob, ProgressionJobStatus};
+use orbis_domain::entities::progression::{
+    ProgressionJob, ProgressionJobStatus, PromotionDecision,
+};
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use uuid::Uuid;
@@ -34,9 +36,11 @@ pub struct ProgressionJobDto {
 #[derive(Serialize, Deserialize)]
 pub struct StudentProgressionItemInput {
     pub student_id: String,
+    #[serde(default)]
+    pub student_number: Option<String>,
     pub enrollment_id: String,
-    pub source_class_id: Option<String>,
-    pub target_class_id: Option<String>,
+    pub source_section_id: Option<String>,
+    pub target_section_id: Option<String>,
     pub decision: String,
     #[serde(default)]
     pub reason: String,
@@ -102,14 +106,19 @@ pub async fn progression_promote_cohort(
         let student_id = Uuid::parse_str(&item.student_id).map_err(|_| "Invalid studentId")?;
         let enrollment_id =
             Uuid::parse_str(&item.enrollment_id).map_err(|_| "Invalid enrollmentId")?;
-        let source_class_id = item.source_class_id.and_then(|c| Uuid::parse_str(&c).ok());
-        let target_class_id = item.target_class_id.and_then(|c| Uuid::parse_str(&c).ok());
+        let source_section_id = item
+            .source_section_id
+            .and_then(|section_id| Uuid::parse_str(&section_id).ok());
+        let target_section_id = item
+            .target_section_id
+            .and_then(|section_id| Uuid::parse_str(&section_id).ok());
 
         items.push(StudentProgressionItem {
             student_id,
+            student_number: item.student_number,
             enrollment_id,
-            source_class_id,
-            target_class_id,
+            source_section_id,
+            target_section_id,
             decision: parse_decision(&item.decision),
             reason: item.reason,
         });
@@ -148,9 +157,10 @@ pub async fn progression_evaluate_cohort(
         .into_iter()
         .map(|i| StudentProgressionItemInput {
             student_id: i.student_id.to_string(),
+            student_number: i.student_number,
             enrollment_id: i.enrollment_id.to_string(),
-            source_class_id: i.source_class_id.map(|c| c.to_string()),
-            target_class_id: i.target_class_id.map(|c| c.to_string()),
+            source_section_id: i.source_section_id.map(|section_id| section_id.to_string()),
+            target_section_id: i.target_section_id.map(|section_id| section_id.to_string()),
             decision: i.decision.to_string(),
             reason: i.reason,
         })

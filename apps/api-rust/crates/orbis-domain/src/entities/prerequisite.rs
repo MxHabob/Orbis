@@ -16,4 +16,3 @@ pub struct Prerequisite {
 
 /// Compat alias for old CoursePrerequisiteType
 pub type PrerequisiteType = String;
-

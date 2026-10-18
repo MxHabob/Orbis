@@ -98,11 +98,11 @@ pub struct AcademicContextResponse {
 #[derive(Serialize)]
 pub struct PeriodTypeDto {
     pub id: String,
+    pub org_id: String,
+    pub code: String,
     pub name: String,
     pub name_ar: Option<String>,
-    pub institution_type: String,
-    pub structure: serde_json::Value,
-    pub is_default: bool,
+    pub sort_order: i32,
 }
 
 fn year_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> AcademicCalendarDto {
@@ -115,7 +115,7 @@ fn year_dto(y: orbis_domain::entities::academic_calendar::AcademicCalendar) -> A
         start_date: y.start_date.to_rfc3339(),
         end_date: y.end_date.to_rfc3339(),
         is_active,
-        status: y.status,
+        status: y.status.to_string(),
         current_period_id: y.current_period_id.map(|u| u.to_string()),
         notes: y.notes,
         created_at: y.created_at.to_rfc3339(),
@@ -449,7 +449,11 @@ pub async fn calendar_get_context(
         .list_years(ctx.tenant_id)
         .await
         .map_err(|e| e.to_string())?;
-    let current = years.iter().find(|y| y.status == "active").cloned();
+    let current = years
+        .iter()
+        .find(|y| y.status == "active")
+        .cloned()
+        .or_else(|| years.first().cloned());
     let periods = if let Some(ref cur) = current {
         state
             .calendar_service
@@ -525,12 +529,127 @@ pub async fn calendar_list_period_types(
         .into_iter()
         .map(|t| PeriodTypeDto {
             id: t.id.to_string(),
+            org_id: t.org_id.to_string(),
+            code: t.code,
             name: t.name,
             name_ar: t.name_ar,
-            institution_type: t.institution_type,
-            structure: t.structure,
-            is_default: t.is_default,
+            sort_order: t.sort_order,
         })
         .collect();
     Ok(ok(dtos))
+}
+
+#[derive(Serialize)]
+pub struct OfficialCalendarTemplateDto {
+    pub code: String,
+    pub name: String,
+    pub name_ar: String,
+    pub country: String,
+    pub country_name: String,
+    pub country_name_ar: String,
+    pub hijri_year: i32,
+    pub gregorian_years: String,
+    pub decision_number: Option<String>,
+    pub decision_date: Option<String>,
+    pub authority: String,
+    pub authority_ar: String,
+}
+
+#[derive(Deserialize)]
+pub struct ApplyCalendarTemplateRequest {
+    pub template_code: String,
+}
+
+#[tauri::command]
+pub async fn calendar_list_official_templates(
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<OfficialCalendarTemplateDto>>, String> {
+    let templates = state.calendar_service.list_official_templates();
+    let dtos = templates
+        .into_iter()
+        .map(|t| OfficialCalendarTemplateDto {
+            code: t.code,
+            name: t.name,
+            name_ar: t.name_ar,
+            country: t.country,
+            country_name: t.country_name,
+            country_name_ar: t.country_name_ar,
+            hijri_year: t.hijri_year,
+            gregorian_years: t.gregorian_years,
+            decision_number: t.decision_number,
+            decision_date: t.decision_date,
+            authority: t.authority,
+            authority_ar: t.authority_ar,
+        })
+        .collect();
+    Ok(ok(dtos))
+}
+
+#[tauri::command]
+pub async fn calendar_apply_template(
+    year_id: String,
+    request: ApplyCalendarTemplateRequest,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AcademicPeriodDto>>, String> {
+    let ctx = make_ctx(&state);
+    let uid = Uuid::parse_str(&year_id).map_err(|e| e.to_string())?;
+    let periods = state
+        .calendar_service
+        .apply_official_calendar_template(&ctx, uid, &request.template_code)
+        .await
+        .map_err(|e| e.to_string())?;
+    let dtos = periods.into_iter().map(period_dto).collect();
+    Ok(ok(dtos))
+}
+
+pub use orbis_app::services::calendar_service::CalendarDefaultsDto;
+
+#[tauri::command]
+pub async fn calendar_get_defaults(
+    org_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<CalendarDefaultsDto>, String> {
+    let ctx = make_ctx(&state);
+    let target_org_id = if let Some(ref id_str) = org_id {
+        Uuid::parse_str(id_str).map_err(|e| format!("Invalid org_id UUID: {e}"))?
+    } else if ctx.tenant_id != Uuid::nil() {
+        ctx.tenant_id
+    } else {
+        let orgs = state.org_repo.list_all().await.map_err(|e| e.to_string())?;
+        orgs.first()
+            .map(|o| o.id)
+            .ok_or_else(|| "No organization exists to onboard".to_string())?
+    };
+
+    let org = state
+        .org_repo
+        .find_by_id(target_org_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    let (inst_type, country_code) = if let Some(o) = org {
+        let it = o
+            .metadata
+            .as_ref()
+            .and_then(|m| m.get("institution_type"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("school")
+            .to_string();
+        let cc = o
+            .metadata
+            .as_ref()
+            .and_then(|m| m.get("country_code"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("YE")
+            .to_string();
+        (it, cc)
+    } else {
+        ("school".to_string(), "YE".to_string())
+    };
+
+    let dto =
+        state
+            .calendar_service
+            .get_calendar_defaults(target_org_id, &inst_type, &country_code);
+
+    Ok(ok(dto))
 }

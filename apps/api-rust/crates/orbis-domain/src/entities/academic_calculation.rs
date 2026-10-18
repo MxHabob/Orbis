@@ -4,14 +4,51 @@ use utoipa::ToSchema;
 
 use super::academic_policy::RoundingMode;
 
+fn deserialize_flexible_scale<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum FlexibleScale {
+        Direct(String),
+        Nested { scale: String },
+    }
+
+    match FlexibleScale::deserialize(deserializer)? {
+        FlexibleScale::Direct(s) => Ok(s),
+        FlexibleScale::Nested { scale } => Ok(scale),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, ToSchema)]
-#[serde(tag = "type", content = "scale", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum CalculationUnit {
     Dimensionless,
-    Score { scale: String },
+    Score {
+        #[serde(deserialize_with = "deserialize_flexible_scale")]
+        scale: String,
+    },
     Credit,
     Count,
-    Custom(String),
+    Custom {
+        #[serde(deserialize_with = "deserialize_flexible_scale")]
+        scale: String,
+    },
+}
+
+impl CalculationUnit {
+    pub fn score(scale: impl Into<String>) -> Self {
+        Self::Score {
+            scale: scale.into(),
+        }
+    }
+
+    pub fn custom(scale: impl Into<String>) -> Self {
+        Self::Custom {
+            scale: scale.into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
@@ -168,4 +205,76 @@ pub struct CalculationPreview {
 
 fn default_required() -> bool {
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calculation_unit_clean_serialization() {
+        let unit = CalculationUnit::Score {
+            scale: "percentage".to_string(),
+        };
+        let json = serde_json::to_string(&unit).unwrap();
+        assert_eq!(json, r#"{"type":"score","scale":"percentage"}"#);
+
+        let custom = CalculationUnit::Custom {
+            scale: "rubric-1-4".to_string(),
+        };
+        let json_custom = serde_json::to_string(&custom).unwrap();
+        assert_eq!(json_custom, r#"{"type":"custom","scale":"rubric-1-4"}"#);
+    }
+
+    #[test]
+    fn test_calculation_unit_flexible_deserialization() {
+        // Direct string scale (Clean format)
+        let direct_json = r#"{"type":"score","scale":"percentage"}"#;
+        let direct: CalculationUnit = serde_json::from_str(direct_json).unwrap();
+        assert_eq!(
+            direct,
+            CalculationUnit::Score {
+                scale: "percentage".to_string()
+            }
+        );
+
+        // Nested scale object (Legacy format from Serde content="scale")
+        let nested_json = r#"{"type":"score","scale":{"scale":"percentage"}}"#;
+        let nested: CalculationUnit = serde_json::from_str(nested_json).unwrap();
+        assert_eq!(
+            nested,
+            CalculationUnit::Score {
+                scale: "percentage".to_string()
+            }
+        );
+
+        // Custom unit direct and nested
+        let custom_direct = r#"{"type":"custom","scale":"rubric-1-4"}"#;
+        let res_custom_direct: CalculationUnit = serde_json::from_str(custom_direct).unwrap();
+        assert_eq!(
+            res_custom_direct,
+            CalculationUnit::Custom {
+                scale: "rubric-1-4".to_string()
+            }
+        );
+
+        let custom_nested = r#"{"type":"custom","scale":{"scale":"rubric-1-4"}}"#;
+        let res_custom_nested: CalculationUnit = serde_json::from_str(custom_nested).unwrap();
+        assert_eq!(
+            res_custom_nested,
+            CalculationUnit::Custom {
+                scale: "rubric-1-4".to_string()
+            }
+        );
+
+        // Dimensionless, Credit, Count
+        let dim: CalculationUnit = serde_json::from_str(r#"{"type":"dimensionless"}"#).unwrap();
+        assert_eq!(dim, CalculationUnit::Dimensionless);
+
+        let credit: CalculationUnit = serde_json::from_str(r#"{"type":"credit"}"#).unwrap();
+        assert_eq!(credit, CalculationUnit::Credit);
+
+        let count: CalculationUnit = serde_json::from_str(r#"{"type":"count"}"#).unwrap();
+        assert_eq!(count, CalculationUnit::Count);
+    }
 }

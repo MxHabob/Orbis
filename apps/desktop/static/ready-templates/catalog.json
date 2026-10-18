@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "sample-certificate-a4",
+      "name": "Sample Achievement Certificate",
+      "name_ar": "شهادة تفوق تجريبية",
+      "description": "A simple A4 achievement certificate for testing the ready-template catalog.",
+      "description_ar": "شهادة تفوق بسيطة بمقاس A4 لتجربة مكتبة القوالب الجاهزة.",
+      "document_type": "CERTIFICATE",
+      "entity_type": "student",
+      "page_size": "A4",
+      "orientation": "portrait",
+      "locale": "ar",
+      "tags": "[\"sample\",\"certificate\"]",
+      "document_url": "https://7w08qwpcvz.ufs.sh/f/qdIC0CrNjhHEqd6OYIANjhHEquiJ5e3kTs1RAwGb47L6FlZV"
+    },
+    {
+      "id": "sample-student-report-a4",
+      "name": "Sample Student Report",
+      "name_ar": "تقرير طالب تجريبي",
+      "description": "A simple A4 student report template with static field labels.",
+      "description_ar": "قالب تقرير طالب بسيط بمقاس A4 مع حقول إرشادية ثابتة.",
+      "document_type": "REPORT",
+      "entity_type": "student",
+      "page_size": "A4",
+      "orientation": "portrait",
+      "locale": "ar",
+      "tags": "[\"sample\",\"report\"]",
+      "document_url": "https://7w08qwpcvz.ufs.sh/f/qdIC0CrNjhHEX4wSNaBynTY5tk3hVD1HrmwsdBUPEv4G7foj"
+    },
+    {
+      "id": "sample-student-id-card",
+      "name": "Sample Student ID Card",
+      "name_ar": "بطاقة طالب تجريبية",
+      "description": "A landscape student ID card on the supported ID_CARD page size.",
+      "description_ar": "بطاقة طالب أفقية باستخدام مقاس ID_CARD المدعوم.",
+      "document_type": "ID_CARD",
+      "entity_type": "student",
+      "page_size": "ID_CARD",
+      "page_width_mm": 85.6,
+      "page_height_mm": 53.98,
+      "orientation": "landscape",
+      "locale": "ar",
+      "tags": "[\"sample\",\"id-card\"]",
+      "document_url": "https://7w08qwpcvz.ufs.sh/f/qdIC0CrNjhHEJ2WUIq9BDXMLq6V3gerNT9oxmRnbCpUvfaGl"
+    },
+    {
+      "id": "sample-payment-receipt-a5",
+      "name": "Sample Payment Receipt",
+      "name_ar": "سند قبض تجريبي",
+      "description": "A simple A5 payment receipt template.",
+      "description_ar": "قالب سند قبض بسيط بمقاس A5.",
+      "document_type": "RECEIPT",
+      "entity_type": "payment",
+      "page_size": "A5",
+      "orientation": "portrait",
+      "locale": "ar",
+      "tags": "[\"sample\",\"receipt\"]",
+      "document_url": "https://7w08qwpcvz.ufs.sh/f/qdIC0CrNjhHEIzpNuHEzES1uQYc3ngVCr8fJq7ZmsIFeoptj"
+    },
+    {
+      "id": "sample-exam-card-a5",
+      "name": "Sample Exam Card",
+      "name_ar": "بطاقة اختبار تجريبية",
+      "description": "A simple A5 exam card for testing template selection and import.",
+      "description_ar": "بطاقة اختبار بسيطة بمقاس A5 لتجربة اختيار القوالب واستيرادها.",
+      "document_type": "EXAM_CARD",
+      "entity_type": "student",
+      "page_size": "A5",
+      "orientation": "landscape",
+      "locale": "ar",
+      "tags": "[\"sample\",\"exam-card\"]",
+      "document_url": "https://7w08qwpcvz.ufs.sh/f/qdIC0CrNjhHEd0s1KreIeRmjsVPGxchY9wWElQFN12kqig7L"
+    }
+  ]
+}

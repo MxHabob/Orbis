@@ -64,7 +64,7 @@ async function loadSecurityData() {
     const cachedMfa =
       typeof window !== "undefined" &&
       localStorage.getItem("orbis_mfa_enabled") === "true";
-    isMfaEnabled = !!(authStore.user as any).mfa_enabled || cachedMfa;
+    isMfaEnabled = authStore.user.is_mfa_enabled || cachedMfa;
 
     const cachedGoogle =
       typeof window !== "undefined" &&
@@ -136,7 +136,7 @@ async function handleMfaRefresh() {
   if (authStore.user) {
     authStore.user = {
       ...authStore.user,
-      mfa_enabled: true,
+      is_mfa_enabled: true,
     };
     if (typeof window !== "undefined") {
       localStorage.setItem("orbis_user", JSON.stringify(authStore.user));

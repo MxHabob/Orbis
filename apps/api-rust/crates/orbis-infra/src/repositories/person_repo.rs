@@ -25,9 +25,7 @@ fn map_model_to_person(m: person::Model) -> Person {
         national_id: m.national_id,
         passport_number: m.passport_number,
         gender: m.gender,
-        birth_date: m
-            .birth_date
-            .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+        birth_date: m.birth_date,
         place_of_birth: m.place_of_birth,
         nationality: m.nationality,
         blood_type: m.blood_type,
@@ -125,7 +123,7 @@ impl PersonRepository for PersonRepoImpl {
             national_id: Set(person.national_id.clone()),
             passport_number: Set(person.passport_number.clone()),
             gender: Set(person.gender.clone()),
-            birth_date: Set(person.birth_date.map(|d| d.to_string())),
+            birth_date: Set(person.birth_date),
             place_of_birth: Set(person.place_of_birth.clone()),
             nationality: Set(person.nationality.clone()),
             blood_type: Set(person.blood_type.clone()),

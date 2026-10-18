@@ -53,7 +53,7 @@ let isSaving = $state(false);
 onMount(async () => {
   isLoadingClasses = true;
   try {
-    const classList = await api.listClasses();
+    const classList = await api.listSections();
     classes = classList || [];
     if (classes.length > 0) {
       selectedClassId = String(classes[0].id);

@@ -22,14 +22,15 @@ use crate::services::{
     student_service::StudentService,
 };
 use orbis_domain::entities::ai::{
-    AcademicAiContext, AiChatRequest, AiChatResponse, AiMessage, AiProposedAction,
-    AiToolDefinition, AiToolResult, ToolCategory, UiContext, UserAiContext,
+    AcademicAiContext, AiChatRequest, AiChatResponse, AiCustomReportRequest,
+    AiCustomReportResponse, AiMessage, AiProposedAction, AiToolDefinition, AiToolResult,
+    ToolCategory, UiContext, UserAiContext,
 };
-use orbis_domain::entities::report::{OutputFormat, ParamValue, ReportLocale};
+use orbis_domain::entities::report::{OutputFormat, ParamType, ParamValue, ReportLocale};
 use orbis_domain::errors::DomainError;
 use orbis_domain::iam::permission::Permission;
 use orbis_domain::queries::filters::{
-    AttendanceFilter, SectionSubjectFilter, GradeFilter, PaginationParams, StudentFeeFilter,
+    AttendanceFilter, GradeFilter, PaginationParams, SectionSubjectFilter, StudentFeeFilter,
     StudentFilter,
 };
 
@@ -67,18 +68,32 @@ fn ensure_tenant_matches(record_org_id: Uuid, tenant_id: Uuid) -> Result<(), Dom
     }
 }
 
+fn format_tool_execution_error(tool_name: &str, error: &DomainError) -> String {
+    let error_text = error.to_string();
+    let normalized = error_text.to_ascii_lowercase();
+
+    if matches!(tool_name, "generate_report" | "create_custom_report")
+        && (normalized.contains("report definition not found")
+            || normalized.contains("report code is required")
+            || normalized.contains("not found") && normalized.contains("report"))
+    {
+        return "The requested report definition could not be found. Please list available reports and use a valid report code before retrying.".to_string();
+    }
+
+    format!("Error executing {}: {}", tool_name, error)
+}
+
 fn teacher_assigned_to_class(
     teacher_id: Uuid,
-    class_id: Uuid,
+    section_id: Uuid,
     homeroom_teacher_id: Option<Uuid>,
     assignments: &[orbis_domain::entities::section_subject::SectionSubject],
 ) -> bool {
     homeroom_teacher_id == Some(teacher_id)
         || assignments.iter().any(|assignment| {
-            assignment.class_id == class_id
-                && (assignment.primary_teacher_id == teacher_id
-                    || assignment.assistant_teacher_id == Some(teacher_id)
-                    || assignment.substitute_teacher_id == Some(teacher_id))
+            assignment.section_id == section_id
+                && (assignment.instructor_id == Some(teacher_id)
+                    || assignment.assistant_instructor_id == Some(teacher_id))
         })
 }
 
@@ -87,6 +102,107 @@ fn unit_in_scope(unit_id: Option<Uuid>, allowed_units: Option<&[Uuid]>) -> bool 
         None => true,
         Some(allowed) => unit_id.is_some_and(|id| allowed.contains(&id)),
     }
+}
+
+fn parse_output_format(value: &str) -> Result<OutputFormat, DomainError> {
+    match value.to_ascii_lowercase().as_str() {
+        "pdf" => Ok(OutputFormat::Pdf),
+        "xlsx" => Ok(OutputFormat::Xlsx),
+        "csv" => Ok(OutputFormat::Csv),
+        "json" => Ok(OutputFormat::Json),
+        "html" => Ok(OutputFormat::Html),
+        _ => Err(DomainError::Validation(
+            "Unsupported report output format".into(),
+        )),
+    }
+}
+
+fn parse_report_locale(value: &str) -> Result<ReportLocale, DomainError> {
+    match value.to_ascii_lowercase().as_str() {
+        "ar" => Ok(ReportLocale::Ar),
+        "en" => Ok(ReportLocale::En),
+        "ar_en" | "ar-en" => Ok(ReportLocale::ArEn),
+        "en_ar" | "en-ar" => Ok(ReportLocale::EnAr),
+        _ => Err(DomainError::Validation("Unsupported report locale".into())),
+    }
+}
+
+fn parse_custom_report_parameters(
+    value: &serde_json::Value,
+    definitions: &[orbis_domain::entities::report::ParameterDef],
+) -> Result<std::collections::HashMap<String, ParamValue>, DomainError> {
+    let object = match value {
+        serde_json::Value::Null => None,
+        serde_json::Value::Object(object) => Some(object),
+        _ => {
+            return Err(DomainError::Validation(
+                "Report parameters must be an object".into(),
+            ));
+        }
+    };
+    if let Some(object) = object {
+        if object
+            .keys()
+            .any(|key| !definitions.iter().any(|definition| &definition.key == key))
+        {
+            return Err(DomainError::Validation(
+                "An unknown report parameter was provided".into(),
+            ));
+        }
+    }
+
+    let mut parameters = std::collections::HashMap::new();
+    for definition in definitions {
+        let value = object
+            .and_then(|object| object.get(&definition.key))
+            .or(definition.default_value.as_ref());
+        if let Some(value) = value {
+            parameters.insert(
+                definition.key.clone(),
+                parse_report_parameter(value, &definition.param_type, &definition.key)?,
+            );
+        }
+    }
+    Ok(parameters)
+}
+
+fn parse_report_parameter(
+    value: &serde_json::Value,
+    param_type: &ParamType,
+    key: &str,
+) -> Result<ParamValue, DomainError> {
+    if value.get("type").is_some() {
+        return serde_json::from_value(value.clone()).map_err(|_| {
+            DomainError::Validation(format!("Report parameter '{key}' has an invalid value"))
+        });
+    }
+
+    let invalid =
+        || DomainError::Validation(format!("Report parameter '{key}' has an invalid value"));
+    match param_type {
+        ParamType::Text => value.as_str().map(|value| ParamValue::Text(value.into())),
+        ParamType::Integer => value.as_i64().map(ParamValue::Integer),
+        ParamType::Decimal => value.as_f64().map(ParamValue::Decimal),
+        ParamType::Boolean => value.as_bool().map(ParamValue::Boolean),
+        ParamType::Date => value.as_str().map(|value| ParamValue::Date(value.into())),
+        ParamType::Id => value.as_str().map(|value| ParamValue::Id(value.into())),
+        ParamType::Enum => value.as_str().map(|value| ParamValue::Enum(value.into())),
+        ParamType::Period => value.as_str().map(|value| ParamValue::Period(value.into())),
+        ParamType::IdList => value.as_array().and_then(|values| {
+            values
+                .iter()
+                .map(serde_json::Value::as_str)
+                .collect::<Option<Vec<_>>>()
+                .map(|values| ParamValue::IdList(values.into_iter().map(str::to_owned).collect()))
+        }),
+        ParamType::DateRange => value.as_object().and_then(|range| {
+            Some(ParamValue::DateRange {
+                from: range.get("from")?.as_str()?.to_owned(),
+                to: range.get("to")?.as_str()?.to_owned(),
+            })
+        }),
+    }
+    .ok_or_else(invalid)
 }
 
 fn tool_supports_unit_scoping(tool_name: &str) -> bool {
@@ -147,15 +263,15 @@ impl AiOrchestrationService {
             .into_iter()
             .filter(|enrollment| enrollment.org_id == ctx.tenant_id)
         {
-            let Some(class_id) = enrollment.class_id else {
+            let Some(class_id) = enrollment.section_id else {
                 continue;
             };
             let class = self
                 .academic_service
-                .class_repo
+                .section_repo
                 .find_by_id(class_id)
                 .await?;
-            let Some(class) = class.filter(|class| class.org_id == ctx.tenant_id) else {
+            let Some(_class) = class.filter(|class| class.org_id == ctx.tenant_id) else {
                 continue;
             };
             let assignments = self
@@ -164,7 +280,7 @@ impl AiOrchestrationService {
             if teacher_assigned_to_class(
                 employee.id,
                 class_id,
-                class.homeroom_teacher_id,
+                None, // Section no longer has homeroom_instructor_id
                 &assignments,
             ) {
                 return Ok(());
@@ -226,8 +342,8 @@ impl AiOrchestrationService {
         for assignment in assignments.items {
             let Some(class) = self
                 .academic_service
-                .class_repo
-                .find_by_id(assignment.class_id)
+                .section_repo
+                .find_by_id(assignment.section_id)
                 .await?
             else {
                 continue;
@@ -248,7 +364,7 @@ impl AiOrchestrationService {
             }
             result.push(orbis_domain::entities::ai::TeachingAssignmentInfo {
                 section_subject_id: assignment.id,
-                class_id: assignment.class_id,
+                section_id: assignment.section_id,
                 class_name: class.name,
                 subject_id: assignment.subject_id,
                 subject_name: subject.name,
@@ -261,17 +377,17 @@ impl AiOrchestrationService {
     async fn ensure_class_tenant(
         &self,
         ctx: &RequestContext,
-        class_id: Uuid,
+        section_id: Uuid,
     ) -> Result<(), DomainError> {
         let class = self
             .academic_service
-            .class_repo
-            .find_by_id(class_id)
+            .section_repo
+            .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
         ensure_tenant_matches(class.org_id, ctx.tenant_id)?;
         let allowed_units = self.user_org_unit_allowlist(ctx).await?;
-        if !unit_in_scope(class.unit_id.into(), allowed_units.as_deref()) {
+        if !unit_in_scope(class.org_unit_id.into(), allowed_units.as_deref()) {
             return Err(DomainError::NotFound("Class not found".into()));
         }
         Ok(())
@@ -320,10 +436,10 @@ impl AiOrchestrationService {
     async fn ensure_class_access(
         &self,
         ctx: &RequestContext,
-        class_id: Uuid,
+        section_id: Uuid,
         period_id: Option<Uuid>,
     ) -> Result<(), DomainError> {
-        self.ensure_class_tenant(ctx, class_id).await?;
+        self.ensure_class_tenant(ctx, section_id).await?;
         let Some(employee) = self.teacher_employee(ctx).await? else {
             return Ok(());
         };
@@ -334,28 +450,22 @@ impl AiOrchestrationService {
         } else {
             self.academic_service
                 .section_subject_repo
-                .find_by_class(class_id)
+                .find_by_section(section_id)
                 .await?
                 .into_iter()
                 .filter(|assignment| {
-                    assignment.primary_teacher_id == employee.id
-                        || assignment.assistant_teacher_id == Some(employee.id)
-                        || assignment.substitute_teacher_id == Some(employee.id)
+                    assignment.instructor_id == Some(employee.id)
+                        || assignment.assistant_instructor_id == Some(employee.id)
                 })
                 .collect()
         };
-        let class = self
+        let _class = self
             .academic_service
-            .class_repo
-            .find_by_id(class_id)
+            .section_repo
+            .find_by_id(section_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
-        if teacher_assigned_to_class(
-            employee.id,
-            class_id,
-            class.homeroom_teacher_id,
-            &assignments,
-        ) {
+        if teacher_assigned_to_class(employee.id, section_id, None, &assignments) {
             Ok(())
         } else {
             Err(DomainError::NotFound("Class not found".into()))
@@ -373,7 +483,7 @@ impl AiOrchestrationService {
             .find_by_id(section_subject_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("Class subject not found".into()))?;
-        self.ensure_class_access(ctx, assignment.class_id, Some(assignment.period_id))
+        self.ensure_class_access(ctx, assignment.section_id, Some(assignment.period_id))
             .await?;
         let subject = self
             .academic_service
@@ -428,20 +538,7 @@ impl AiOrchestrationService {
                 continue;
             }
             match check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await {
-                Ok(()) => {
-                    if tool.name == "generate_report" {
-                        match self
-                            .permission_checker
-                            .check(ctx, Permission::ExportData)
-                            .await
-                        {
-                            Ok(()) => {}
-                            Err(DomainError::Unauthorized(_)) => continue,
-                            Err(error) => return Err(error),
-                        }
-                    }
-                    authorized.push(tool)
-                }
+                Ok(()) => authorized.push(tool),
                 Err(DomainError::Unauthorized(_)) => {}
                 Err(error) => return Err(error),
             }
@@ -466,9 +563,129 @@ impl AiOrchestrationService {
             ));
         }
         check_tool_permission(self.permission_checker.as_ref(), ctx, &tool).await?;
-        if tool_name == "generate_report" {
+        Ok(())
+    }
+
+    pub async fn create_custom_report(
+        &self,
+        ctx: &RequestContext,
+        request: AiCustomReportRequest,
+    ) -> Result<AiCustomReportResponse, DomainError> {
+        self.authorize_tool(ctx, "create_custom_report").await?;
+        let title = request.title.trim();
+        if title.is_empty() || title.chars().count() > 120 {
+            return Err(DomainError::Validation(
+                "Report title must contain between 1 and 120 characters".into(),
+            ));
+        }
+
+        let definition = self
+            .report_service
+            .get_report_by_code(ctx.tenant_id, &request.report_code)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+        self.check_report_domain_permission(ctx, &definition)
+            .await?;
+
+        let output_format = parse_output_format(&request.output_format)?;
+        if !definition.supported_formats.contains(&output_format) {
+            return Err(DomainError::Validation(format!(
+                "Output format '{}' is not supported for this report",
+                output_format
+            )));
+        }
+        let locale = parse_report_locale(&request.locale)?;
+        let parameters =
+            parse_custom_report_parameters(&request.parameters, &definition.parameters)?;
+        let input = GenerateReportInput {
+            report_code: request.report_code,
+            parameters,
+            output_format: output_format.clone(),
+            locale,
+            title: Some(title.to_string()),
+            selected_columns: Some(request.columns),
+            template_id: request.template_id,
+        };
+        let job = self.report_service.enqueue_report(ctx, input).await?;
+        Ok(AiCustomReportResponse {
+            job_id: job.id,
+            status: job.status.to_string(),
+            title: title.to_string(),
+            output_format: output_format.to_string(),
+        })
+    }
+
+    async fn inspect_report_source(
+        &self,
+        ctx: &RequestContext,
+        arguments: &serde_json::Value,
+    ) -> Result<serde_json::Value, DomainError> {
+        let report_code = arguments
+            .get("report_code")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| DomainError::Validation("report_code is required".into()))?;
+        let definition = self
+            .report_service
+            .get_report_by_code(ctx.tenant_id, report_code)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+        self.check_report_domain_permission(ctx, &definition)
+            .await?;
+
+        let parameters = parse_custom_report_parameters(
+            arguments
+                .get("parameters")
+                .unwrap_or(&serde_json::Value::Null),
+            &definition.parameters,
+        )?;
+        let locale = parse_report_locale(
+            arguments
+                .get("locale")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or("ar"),
+        )?;
+        let (definition, dataset, templates) = self
+            .report_service
+            .inspect_report_source(ctx, report_code, &parameters, &locale)
+            .await?;
+
+        Ok(json!({
+            "report": {
+                "code": definition.code,
+                "name": definition.name,
+                "name_ar": definition.name_ar,
+                "description": definition.description,
+                "description_ar": definition.description_ar,
+                "parameters": definition.parameters,
+                "supported_formats": definition.supported_formats,
+                "columns": dataset.columns.into_iter().filter(|column| column.visible).map(|column| json!({
+                    "key": column.key,
+                    "header": column.header,
+                    "header_ar": column.header_ar,
+                    "data_type": column.data_type
+                })).collect::<Vec<_>>()
+            },
+            "published_templates": templates.into_iter().map(|template| json!({
+                "id": template.id,
+                "name": template.name,
+                "name_ar": template.name_ar,
+                "locale": template.locale,
+                "is_default": template.is_default
+            })).collect::<Vec<_>>()
+        }))
+    }
+
+    async fn check_report_domain_permission(
+        &self,
+        ctx: &RequestContext,
+        definition: &orbis_domain::entities::report::ReportDefinition,
+    ) -> Result<(), DomainError> {
+        if matches!(
+            definition.domain,
+            orbis_domain::entities::report::ReportDomain::Finance
+        ) {
             self.permission_checker
-                .check(ctx, Permission::ExportData)
+                .check(ctx, Permission::FinanceRead)
                 .await?;
         }
         Ok(())
@@ -586,20 +803,40 @@ impl AiOrchestrationService {
                 category: ToolCategory::Read,
             },
             AiToolDefinition {
-                name: "generate_report".into(),
-                description: "Generate a formal PDF or Excel report using DocForge reporting engine.".into(),
+                name: "inspect_report_source".into(),
+                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Returns no report rows.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
-                        "report_code": {"type": "string", "description": "Code of the report definition (e.g. STUDENT_TRANSCRIPT, FEE_COLLECTION)"},
-                        "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"], "description": "Format for generated output"},
-                        "parameters": {"type": "object", "description": "Parameters required by the report definition"}
+                        "report_code": {"type": "string", "description": "Code of an available report definition"},
+                        "parameters": {"type": "object", "description": "Typed parameters matching this report's parameter schema"},
+                        "locale": {"type": "string", "enum": ["ar", "en", "ar_en", "en_ar"]}
                     },
-                    "required": ["report_code", "output_format"]
+                    "required": ["report_code"]
                 }),
-                required_permission: Some("template:generate_single".into()),
+                required_permission: Some("data:export".into()),
                 is_consequential: false,
-                category: ToolCategory::Generation,
+                category: ToolCategory::Read,
+            },
+            AiToolDefinition {
+                name: "create_custom_report".into(),
+                description: "Propose a report using an authorized predefined data source, selected fields and a published report template. Requires explicit user confirmation before it is generated and saved.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "report_code": {"type": "string"},
+                        "title": {"type": "string", "maxLength": 120},
+                        "columns": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+                        "parameters": {"type": "object"},
+                        "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"]},
+                        "locale": {"type": "string", "enum": ["ar", "en", "ar_en", "en_ar"]},
+                        "template_id": {"type": "string", "description": "Optional ID of a published report template returned by inspect_report_source"}
+                    },
+                    "required": ["report_code", "title", "columns", "output_format"]
+                }),
+                required_permission: Some("data:export".into()),
+                is_consequential: true,
+                category: ToolCategory::Action,
             },
             AiToolDefinition {
                 name: "get_org_overview".into(),
@@ -746,6 +983,101 @@ impl AiOrchestrationService {
                 is_consequential: false,
                 category: ToolCategory::Generation,
             },
+            AiToolDefinition {
+                name: "design_template".into(),
+                description: "Create a complete, editable Orbis template document for the active template editor. Use only the supplied editor context and available variables. Return a polished, print-ready design using native nodes (Text, Shape, Image, Table, Barcode, QRCode, Separator, Frame, Grid, Repeater, Conditional, Header, Footer, Watermark). Positions and dimensions are millimeters. Bind data with {{variable.path}} expressions. Do not invent asset references or external image URLs. Do not include node IDs; the editor creates them. This tool is available only while a template is open. Return a concise user-language summary and the complete document.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "summary": {
+                            "type": "string",
+                            "description": "A short confirmation in the user's language."
+                        },
+                        "document": {
+                            "type": "object",
+                            "description": "A complete version 2.0 TemplateDocument compatible with the active Orbis template editor.",
+                            "properties": {
+                                "version": {"type": "string", "enum": ["2.0"]},
+                                "meta": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {"type": "string"},
+                                        "nameAr": {"type": "string"},
+                                        "documentType": {"type": "string"},
+                                        "entityType": {"type": "string"},
+                                        "locale": {"type": "string", "enum": ["ar", "en"]},
+                                        "pageSetup": {
+                                            "type": "object",
+                                            "properties": {
+                                                "size": {"type": "string", "enum": ["A4", "A3", "A5", "Letter", "Legal", "ID_CARD", "BADGE", "Custom"]},
+                                                "width": {"type": "number"},
+                                                "height": {"type": "number"},
+                                                "orientation": {"type": "string", "enum": ["portrait", "landscape"]},
+                                                "margins": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "top": {"type": "number"},
+                                                        "bottom": {"type": "number"},
+                                                        "left": {"type": "number"},
+                                                        "right": {"type": "number"}
+                                                    },
+                                                    "required": ["top", "bottom", "left", "right"]
+                                                },
+                                                "unit": {"type": "string", "enum": ["mm"]}
+                                            },
+                                            "required": ["size", "orientation", "margins", "unit"]
+                                        }
+                                    },
+                                    "required": ["name", "documentType", "entityType", "locale", "pageSetup"]
+                                },
+                                "variables": {
+                                    "type": "object",
+                                    "description": "Custom variables only; use the system variables listed in editor context directly in expressions.",
+                                    "additionalProperties": {
+                                        "type": "object",
+                                        "properties": {
+                                            "source": {"type": "string"},
+                                            "type": {"type": "string", "enum": ["string", "number", "date", "boolean", "image", "array"]},
+                                            "label": {"type": "string"},
+                                            "labelAr": {"type": "string"},
+                                            "format": {"type": "string"},
+                                            "defaultValue": {"type": "string"}
+                                        },
+                                        "required": ["source", "type"]
+                                    }
+                                },
+                                "assets": {"type": "object"},
+                                "pages": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "type": {"type": "string", "enum": ["Page"]},
+                                            "name": {"type": "string"},
+                                            "children": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "description": "A native template node. Include type, name, props, and optional children/elseChildren. Use a supported node type and type-specific props; position uses x/y/width/height in millimeters."
+                                                }
+                                            }
+                                        },
+                                        "required": ["type", "children"]
+                                    }
+                                },
+                                "components": {"type": "object"},
+                                "styles": {"type": "object"}
+                            },
+                            "required": ["version", "meta", "variables", "assets", "pages"]
+                        }
+                    },
+                    "required": ["summary", "document"]
+                }),
+                required_permission: Some("template:write".into()),
+                is_consequential: false,
+                category: ToolCategory::Generation,
+            },
         ]
     }
 
@@ -858,8 +1190,8 @@ impl AiOrchestrationService {
             if actx.period_id.is_none() {
                 actx.period_id = ui.period_id;
             }
-            if actx.class_id.is_none() {
-                actx.class_id = ui.class_id;
+            if actx.section_id.is_none() {
+                actx.section_id = ui.section_id;
             }
             if actx.subject_id.is_none() {
                 actx.subject_id = ui.subject_id;
@@ -869,12 +1201,12 @@ impl AiOrchestrationService {
             }
         }
 
-        if actx.class_id.is_none() && actx.section_subject_id.is_none() {
+        if actx.section_id.is_none() && actx.section_subject_id.is_none() {
             if let Some(employee) = self.teacher_employee(ctx).await? {
                 let assignments = self.teaching_assignments(ctx, employee.id).await?;
                 if assignments.len() == 1 {
                     let assignment = &assignments[0];
-                    actx.class_id = Some(assignment.class_id);
+                    actx.section_id = Some(assignment.section_id);
                     actx.class_name = Some(assignment.class_name.clone());
                     actx.subject_id = Some(assignment.subject_id);
                     actx.subject_name = Some(assignment.subject_name.clone());
@@ -884,10 +1216,10 @@ impl AiOrchestrationService {
             }
         }
 
-        if let Some(cid) = actx.class_id {
+        if let Some(cid) = actx.section_id {
             let class = self
                 .academic_service
-                .class_repo
+                .section_repo
                 .find_by_id(cid)
                 .await?
                 .ok_or_else(|| DomainError::NotFound("Class not found".into()))?;
@@ -911,7 +1243,9 @@ impl AiOrchestrationService {
             let assignment = self
                 .ensure_section_subject_access(ctx, section_subject_id)
                 .await?;
-            if actx.class_id.is_some_and(|id| id != assignment.class_id)
+            if actx
+                .section_id
+                .is_some_and(|id| id != assignment.section_id)
                 || actx
                     .subject_id
                     .is_some_and(|id| id != assignment.subject_id)
@@ -919,7 +1253,7 @@ impl AiOrchestrationService {
             {
                 return Err(DomainError::NotFound("Class subject not found".into()));
             }
-            actx.class_id = Some(assignment.class_id);
+            actx.section_id = Some(assignment.section_id);
             actx.subject_id = Some(assignment.subject_id);
             actx.period_id = Some(assignment.period_id);
         }
@@ -933,7 +1267,21 @@ impl AiOrchestrationService {
         ctx: &RequestContext,
         request: AiChatRequest,
     ) -> Result<AiChatResponse, DomainError> {
-        let tools = self.get_authorized_tools(ctx).await?;
+        let template_editor_active = request.ui_context.as_ref().is_some_and(|ui| {
+            ui.domain.as_deref() == Some("template")
+                && ui
+                    .metadata
+                    .as_ref()
+                    .and_then(|metadata| metadata.get("template_editor_active"))
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false)
+        });
+        let tools = self
+            .get_authorized_tools(ctx)
+            .await?
+            .into_iter()
+            .filter(|tool| tool.name != "design_template" || template_editor_active)
+            .collect::<Vec<_>>();
         let user_ctx = self.resolve_user_ai_context(ctx).await?;
         let academic_ctx = self.resolve_academic_ai_context(ctx, &request).await?;
 
@@ -954,6 +1302,7 @@ impl AiOrchestrationService {
 
         const MAX_REACT_TURNS: usize = 5;
         let mut final_response = String::new();
+        let mut template_design_summary = None;
 
         let target_model = request.model.as_deref().unwrap_or("");
 
@@ -1060,10 +1409,10 @@ impl AiOrchestrationService {
                             }
                             (data.to_string(), false)
                         }
-                        Err(e) => (
-                            format!("Error executing {}: {}", tool_call.tool_name, e),
-                            true,
-                        ),
+                        Err(e) => {
+                            let message = format_tool_execution_error(&tool_call.tool_name, &e);
+                            (message, true)
+                        }
                     };
 
                     conversation_history.push(AiMessage {
@@ -1080,6 +1429,13 @@ impl AiOrchestrationService {
                         content,
                         is_error,
                     });
+                    if !is_error && tool_call.tool_name == "design_template" {
+                        template_design_summary = tool_call
+                            .arguments
+                            .get("summary")
+                            .and_then(serde_json::Value::as_str)
+                            .map(str::to_owned);
+                    }
                 } else {
                     let err_msg = format!("Unknown tool: {}", tool_call.tool_name);
                     conversation_history.push(AiMessage {
@@ -1090,6 +1446,11 @@ impl AiOrchestrationService {
                         created_at: Some(Utc::now()),
                     });
                 }
+            }
+
+            if let Some(summary) = template_design_summary.take() {
+                final_response = summary;
+                break;
             }
         }
 
@@ -1145,7 +1506,7 @@ impl AiOrchestrationService {
                 if !term.is_empty() {
                     filter.search = Some(term.to_string());
                 }
-                filter.class_id = class_id;
+                filter.section_id = class_id;
                 filter.period_id = period_id;
 
                 let result = self
@@ -1234,7 +1595,7 @@ impl AiOrchestrationService {
 
                 let mut filter = AttendanceFilter::default();
                 filter.student_id = Some(sid);
-                filter.class_id = class_id;
+                filter.section_id = class_id;
                 filter.status = status;
 
                 let attendance = self
@@ -1347,6 +1708,12 @@ impl AiOrchestrationService {
             }
             "list_report_templates" => {
                 let templates = self.report_service.list_templates(ctx.tenant_id).await?;
+                let templates = templates.into_iter().filter(|template| {
+                    template.status == orbis_domain::entities::report::TemplateStatus::Published
+                        && template.deleted_at.is_none()
+                        && template.document_type.eq_ignore_ascii_case("report")
+                });
+                let templates = templates.collect::<Vec<_>>();
                 Ok(json!({
                     "count": templates.len(),
                     "templates": templates.into_iter().map(|t| json!({
@@ -1357,57 +1724,7 @@ impl AiOrchestrationService {
                     })).collect::<Vec<_>>()
                 }))
             }
-            "generate_report" => {
-                let report_code = arguments
-                    .get("report_code")
-                    .and_then(|v| v.as_str())
-                    .ok_or_else(|| DomainError::Validation("report_code is required".into()))?;
-                let definition = self
-                    .report_service
-                    .get_report_by_code(ctx.tenant_id, report_code)
-                    .await?
-                    .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
-                if matches!(
-                    definition.domain,
-                    orbis_domain::entities::report::ReportDomain::Finance
-                ) {
-                    self.permission_checker
-                        .check(ctx, Permission::FinanceRead)
-                        .await?;
-                }
-                let output_format_str = arguments
-                    .get("output_format")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("pdf");
-                let output_format = OutputFormat::from_str(output_format_str);
-
-                let mut params = std::collections::HashMap::new();
-                if let Some(obj) = arguments.get("parameters").and_then(|v| v.as_object()) {
-                    for (k, v) in obj {
-                        if let Some(s) = v.as_str() {
-                            params.insert(k.clone(), ParamValue::Text(s.to_string()));
-                        } else if let Some(n) = v.as_i64() {
-                            params.insert(k.clone(), ParamValue::Integer(n));
-                        } else if let Some(b) = v.as_bool() {
-                            params.insert(k.clone(), ParamValue::Boolean(b));
-                        }
-                    }
-                }
-
-                let input = GenerateReportInput {
-                    report_code: report_code.to_string(),
-                    output_format,
-                    parameters: params,
-                    locale: ReportLocale::Ar,
-                };
-
-                let job = self.report_service.enqueue_report(ctx, input).await?;
-                Ok(json!({
-                    "job_id": job.id,
-                    "status": job.status.to_string(),
-                    "report_code": job.report_code
-                }))
-            }
+            "inspect_report_source" => self.inspect_report_source(ctx, arguments).await,
             "get_org_overview" => {
                 let org = self.org_service.get_organization(ctx.tenant_id).await?;
                 let units = self.org_service.list_org_units(ctx.tenant_id).await?;
@@ -1508,7 +1825,7 @@ impl AiOrchestrationService {
                 }
 
                 let mut filter = StudentFilter::default();
-                filter.class_id = class_id;
+                filter.section_id = class_id;
                 filter.period_id = period_id;
 
                 let students_list = self
@@ -1809,7 +2126,7 @@ impl AiOrchestrationService {
                     let section_subject = self
                         .ensure_section_subject_access(ctx, section_subject_id)
                         .await?;
-                    if class_id.is_some_and(|id| id != section_subject.class_id) {
+                    if class_id.is_some_and(|id| id != section_subject.section_id) {
                         return Err(DomainError::NotFound("Class subject not found".into()));
                     }
                 } else if self.teacher_employee(ctx).await?.is_some()
@@ -2027,6 +2344,29 @@ impl AiOrchestrationService {
                     "notice": notice_json
                 }))
             }
+            "design_template" => {
+                let document = arguments
+                    .get("document")
+                    .and_then(serde_json::Value::as_object)
+                    .ok_or_else(|| {
+                        DomainError::Validation(
+                            "A template document is required for the design".into(),
+                        )
+                    })?;
+                if !document
+                    .get("meta")
+                    .is_some_and(serde_json::Value::is_object)
+                    || !document
+                        .get("pages")
+                        .and_then(serde_json::Value::as_array)
+                        .is_some_and(|pages| !pages.is_empty())
+                {
+                    return Err(DomainError::Validation(
+                        "The generated template must include metadata and at least one page".into(),
+                    ));
+                }
+                Ok(arguments.clone())
+            }
 
             _ => Err(DomainError::Validation(format!(
                 "Tool '{}' not supported",
@@ -2066,6 +2406,16 @@ impl AiOrchestrationService {
                 .unwrap_or("Root / Organization-wide")
         );
 
+        prompt.push_str(
+            "\n[ORBIS PRODUCT & DEVELOPER IDENTITY]\n\
+             - Orbis is developed and maintained by Mulverse, and is a product of Mulverse Inc.\n\
+             - Mulverse website: https://mulverse.com\n\
+             - Mulverse founder and owner: Mohamed Alhabob (محمد الهبوب).\n\
+             - Mohamed Alhabob on X: https://x.com/MxHabob\n\
+             - Mulverse on X: https://x.com/mulverseco\n\
+             - If asked who created, developed, owns, or maintains Orbis, answer with these facts clearly and in the user's language. Do not volunteer this information unless it is relevant to the user's question.\n",
+        );
+
         if academic_context.academic_calendar_name.is_some()
             || academic_context.period_name.is_some()
             || academic_context.class_name.is_some()
@@ -2092,7 +2442,7 @@ impl AiOrchestrationService {
                 prompt.push_str(&format!(
                     "- Class: {} ({}), Subject: {} ({}), Period: {}, Assignment: {}\n",
                     assignment.class_name,
-                    assignment.class_id,
+                    assignment.section_id,
                     assignment.subject_name,
                     assignment.subject_id,
                     assignment
@@ -2140,6 +2490,19 @@ impl AiOrchestrationService {
             ));
         }
 
+        if ui_context.is_some_and(|ui| ui.domain.as_deref() == Some("template")) {
+            if let Some(editor_context) =
+                screen_context.and_then(|context| context.get("template_editor"))
+            {
+                prompt.push_str(
+                    "\n[TEMPLATE EDITOR DESIGN CONTEXT]\n\
+                     The user is working in the Orbis template editor. If they ask to create or redesign a template, call design_template once with a complete editable document. Use this context's page setup, entity type, existing custom variables, available system variables, and assets. Keep the design within the printable page area and use only available variable paths and assets. Do not respond with code or a static image.\n",
+                );
+                prompt.push_str(&editor_context.to_string());
+                prompt.push('\n');
+            }
+        }
+
         prompt.push_str(
             "\n[OPERATIONAL & SAFETY CONTRACT]\n\
              1. Always query and execute authoritative domain tools to produce real-time, authentic institutional data. Never fabricate student names, IDs, grades, or finances.\n\
@@ -2157,8 +2520,8 @@ impl AiOrchestrationService {
 mod tests {
     use super::{
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
-        required_tool_permission, take_private_ui_result, teacher_assigned_to_class,
-        tool_supports_unit_scoping, unit_in_scope,
+        format_tool_execution_error, required_tool_permission, take_private_ui_result,
+        teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;
@@ -2224,6 +2587,21 @@ mod tests {
     }
 
     #[test]
+    fn template_design_requires_template_write_permission() {
+        let tool = AiOrchestrationService::registered_tools()
+            .into_iter()
+            .find(|tool| tool.name == "design_template")
+            .expect("template design tool is registered");
+
+        assert_eq!(
+            required_tool_permission(&tool).expect("tool permission is required"),
+            Permission::TemplateWrite
+        );
+        assert_eq!(tool.category, ToolCategory::Generation);
+        assert!(!tool.is_consequential);
+    }
+
+    #[test]
     fn missing_or_unknown_tool_permissions_are_denied() {
         for required_permission in [None, Some("not:a:permission".into())] {
             let tool = AiToolDefinition {
@@ -2267,18 +2645,29 @@ mod tests {
     }
 
     #[test]
+    fn generate_report_missing_definition_error_is_user_friendly() {
+        let message = format_tool_execution_error(
+            "generate_report",
+            &DomainError::NotFound("Report definition not found".into()),
+        );
+
+        assert!(message.contains("list available reports"));
+        assert!(!message.contains("NotFound: Report definition not found"));
+    }
+
+    #[test]
     fn teacher_class_scope_requires_a_matching_assignment() {
         let teacher_id = Uuid::new_v4();
         let class_id = Uuid::new_v4();
         let other_class_id = Uuid::new_v4();
         let assignment = orbis_domain::entities::section_subject::SectionSubject {
             id: Uuid::new_v4(),
-            class_id,
+            section_id,
             subject_id: Uuid::new_v4(),
             period_id: Uuid::new_v4(),
-            primary_teacher_id: teacher_id,
-            assistant_teacher_id: None,
-            substitute_teacher_id: None,
+            instructor_id: teacher_id,
+            assistant_instructor_id: None,
+            substitute_instructor_id: None,
             grade_groups: None,
             weekly_hours: None,
             theory_hours: None,
@@ -2292,13 +2681,13 @@ mod tests {
 
         assert!(teacher_assigned_to_class(
             teacher_id,
-            class_id,
+            section_id,
             None,
             std::slice::from_ref(&assignment)
         ));
         assert!(!teacher_assigned_to_class(
             teacher_id,
-            other_class_id,
+            other_section_id,
             None,
             std::slice::from_ref(&assignment)
         ));

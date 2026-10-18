@@ -3,12 +3,19 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, type academicCalendarDto, type AcademicPeriodDto } from "$lib/api";
+import { api, type academicCalendarDto, type AcademicPeriodDto, type CalendarDefaultsDto } from "$lib/api";
 import { orgContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Badge } from "@orbis/ui/badge";
+import { Textarea } from "@orbis/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+} from "@orbis/ui/select";
 import OnboardingStepHeader from "../onboarding-step-header.svelte";
 import OnboardingSection from "../onboarding-section.svelte";
 import { getTasksForStep } from "../onboarding-steps";
@@ -27,28 +34,60 @@ let successMessage = $state<string | null>(null);
 // Existing Data
 let years = $state<academicCalendarDto[]>([]);
 let periods = $state<AcademicPeriodDto[]>([]);
+let backendDefaults = $state<CalendarDefaultsDto | null>(null);
 
 // Academic Year Form
 let yearName = $state("");
 let yearNameAr = $state("");
 let yearStartDate = $state("");
 let yearEndDate = $state("");
+let editingYearId = $state<string | null>(null);
+let editingYearName = $state("");
+let editingYearNameAr = $state("");
+let editingYearStartDate = $state("");
+let editingYearEndDate = $state("");
+let editingYearNotes = $state("");
 
 // Selected Year for Period Creation
 let selectedYearId = $state<string>("");
 let periodName = $state("");
 let periodNameAr = $state("");
+let periodCode = $state("");
 let periodStartDate = $state("");
 let periodEndDate = $state("");
 let periodType = $state("custom");
 let periodKind = $state("teaching");
 let periodParentId = $state("");
+let editingPeriodId = $state<string | null>(null);
+let editingPeriodName = $state("");
+let editingPeriodNameAr = $state("");
+let editingPeriodCode = $state("");
+let editingPeriodStartDate = $state("");
+let editingPeriodEndDate = $state("");
+let editingPeriodKind = $state("teaching");
+let isUpdatingRecord = $state(false);
 
 const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
 const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
 const selectedYear = $derived(years.find((year) => String(year.id) === selectedYearId));
 const organizationToday = $derived(getOrganizationDate(new Date()));
-const yearStartIsPast = $derived(!!yearStartDate && yearStartDate < organizationToday);
+const yearStartIsPast = $derived(!!yearStartDate && yearStartDate.slice(0, 10) < organizationToday);
+
+function toDateTimeInput(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function toApiDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(m.onboarding_step3_year_err_dates());
+  }
+  return date.toISOString();
+}
 
 function getDateParts(date: Date, timeZone: string, calendar = "gregory") {
   const formatter = new Intl.DateTimeFormat(`en-US-u-ca-${calendar}`, {
@@ -109,7 +148,57 @@ function formatGregorianYear(date: string) {
   return String(getDateParts(new Date(`${date}T12:00:00.000Z`), "UTC").year);
 }
 
+// Study Days (Yemeni System default: Saturday to Wednesday)
+const yemeniWeekdays = [
+  { value: 7, label: "السبت" },
+  { value: 1, label: "الأحد" },
+  { value: 2, label: "الإثنين" },
+  { value: 3, label: "الثلاثاء" },
+  { value: 4, label: "الأربعاء" },
+  { value: 5, label: "الخميس" },
+  { value: 6, label: "الجمعة" },
+];
+
+let selectedStudyDays = $state<number[]>([7, 1, 2, 3, 4]);
+
+function toggleStudyDay(day: number) {
+  if (selectedStudyDays.includes(day)) {
+    if (selectedStudyDays.length > 1) {
+      selectedStudyDays = selectedStudyDays.filter((d) => d !== day);
+    }
+  } else {
+    selectedStudyDays = [...selectedStudyDays, day].sort((a, b) => {
+      const order = [7, 1, 2, 3, 4, 5, 6];
+      return order.indexOf(a) - order.indexOf(b);
+    });
+  }
+}
+
+function setYemeniStudyDaysPreset(daysCount: 5 | 6) {
+  if (daysCount === 5) {
+    selectedStudyDays = [7, 1, 2, 3, 4];
+  } else {
+    selectedStudyDays = [7, 1, 2, 3, 4, 5];
+  }
+}
+
+function applyDefaultsToForm(defaults: CalendarDefaultsDto) {
+  yearName = defaults.suggested_name;
+  yearNameAr = defaults.suggested_name_ar;
+  yearStartDate = defaults.start_date;
+  yearEndDate = defaults.end_date;
+  if (defaults.selected_study_days && defaults.selected_study_days.length > 0) {
+    selectedStudyDays = defaults.selected_study_days.map(Number);
+  }
+}
+
 function suggestacademicCalendar() {
+  if (backendDefaults) {
+    applyDefaultsToForm(backendDefaults);
+    successMessage = null;
+    return;
+  }
+
   const now = new Date();
   const today = getOrganizationDate(now);
   let startDate: string;
@@ -123,22 +212,32 @@ function suggestacademicCalendar() {
       "UTC",
       "islamic-umalqura",
     );
+    // In the Yemeni school system, the academic year belongs to a single Hijri year
+    // starting in Muharram (1 محرم) and concluding in Sha'ban (before Ramadan).
     const hijriYear = hijriToday.year + (hijriToday.month > 8 ? 1 : 0);
     startDate = findHijriDate(hijriYear, 1, 1, today);
     endDate = shiftDate(findHijriDate(hijriYear, 9, 1, today), -1);
     const startGregorianYear = formatGregorianYear(startDate);
     const endGregorianYear = formatGregorianYear(endDate);
-    name = `${hijriYear}-${hijriYear + 1} AH / ${startGregorianYear}-${endGregorianYear}`;
-    nameAr = `${hijriYear}-${hijriYear + 1} هـ / ${startGregorianYear}-${endGregorianYear} م`;
+
+    // Yemeni official school year notation: "1448 هـ / 2026-2027 م" (Single Hijri year)
+    name = `${hijriYear} AH / ${startGregorianYear}-${endGregorianYear}`;
+    nameAr = `${hijriYear} هـ / ${startGregorianYear}-${endGregorianYear} م`;
+
+    // Yemeni school day timings: Morning assembly at 07:30, school dismissal at 13:30
+    yearStartDate = `${startDate}T07:30`;
+    yearEndDate = `${endDate}T13:30`;
   } else if (orgContext.isUniversity) {
     const currentYear = getDateParts(now, orgContext.timezone).year;
     const currentMonth = getDateParts(now, orgContext.timezone).month;
     const startYear = currentMonth >= 9 ? currentYear : currentYear - 1;
     const endYear = startYear + 1;
     startDate = `${startYear}-09-01`;
-    endDate = `${endYear}-08-31`;
-    name = `${startYear}/${endYear}`;
-    nameAr = `${startYear}/${endYear} م`;
+    endDate = `${endYear}-06-30`;
+    name = `${startYear}-${endYear}`;
+    nameAr = `${startYear}-${endYear} م`;
+    yearStartDate = `${startDate}T08:00`;
+    yearEndDate = `${endDate}T14:00`;
   } else {
     const gregorianYear = getDateParts(now, orgContext.timezone).year;
     startDate = today;
@@ -153,68 +252,13 @@ function suggestacademicCalendar() {
     endDate = shiftDate(sameDateNextYear, -1);
     name = `Training Cycle ${gregorianYear}`;
     nameAr = `الدورة التدريبية ${gregorianYear}`;
+    yearStartDate = `${startDate}T08:00`;
+    yearEndDate = `${endDate}T14:00`;
   }
 
   yearName = name;
   yearNameAr = nameAr;
-  yearStartDate = startDate;
-  yearEndDate = endDate;
   successMessage = null;
-}
-
-function getHijriCalendarDefaults(startDate: string) {
-  const formatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-  if (formatter.resolvedOptions().calendar !== "islamic-umalqura") {
-    throw new Error(m.onboarding_step3_default_periods_calendar_error());
-  }
-
-  let cursorTime = Date.parse(`${startDate.slice(0, 10)}T00:00:00.000Z`);
-  if (Number.isNaN(cursorTime)) {
-    throw new Error(m.onboarding_step3_default_periods_calendar_error());
-  }
-
-  const getParts = (date: Date) => {
-    const values = Object.fromEntries(
-      formatter.formatToParts(date).map(({ type, value }) => [type, value]),
-    );
-    return {
-      year: Number(values.year),
-      month: Number(values.month),
-      day: Number(values.day),
-    };
-  };
-
-  const start = getParts(new Date(cursorTime));
-  if (start.month !== 1 || start.day !== 1) {
-    throw new Error(m.onboarding_step3_default_periods_start_error());
-  }
-
-  const monthLengths: number[] = [];
-  for (let index = 0; index < 8; index += 1) {
-    const targetYear = start.year + Math.floor(index / 12);
-    const targetMonth = (index % 12) + 1;
-    let days = 0;
-    while (true) {
-      const current = getParts(new Date(cursorTime));
-      if (current.year !== targetYear || current.month !== targetMonth) break;
-      days += 1;
-      if (days > 30) {
-        throw new Error(m.onboarding_step3_default_periods_calendar_error());
-      }
-      cursorTime += 24 * 60 * 60 * 1000;
-    }
-    if (days < 29 || days > 30) {
-      throw new Error(m.onboarding_step3_default_periods_calendar_error());
-    }
-    monthLengths.push(days);
-  }
-
-  return { hijriStartYear: start.year, monthLengths };
 }
 
 function validateDateRange(start: string, end: string, message: string) {
@@ -232,14 +276,22 @@ onMount(async () => {
 async function loadData() {
   try {
     isLoading = true;
-    const [yearsRes, periodsRes] = await Promise.all([
+    const [yearsRes, periodsRes, defaultsRes] = await Promise.all([
       api.listacademicCalendars(),
       api.listAcademicPeriods(),
+      api.getCalendarDefaults(orgId).catch((err) => {
+        console.warn("Failed to load calendar defaults from backend:", err);
+        return null;
+      }),
     ]);
     years = yearsRes;
     periods = periodsRes;
+    backendDefaults = defaultsRes;
     if (years.length > 0 && !selectedYearId) {
       selectedYearId = String(years[0].id);
+    }
+    if (years.length === 0 && !yearName && !yearNameAr && defaultsRes) {
+      applyDefaultsToForm(defaultsRes);
     }
   } catch (err: any) {
     console.error("Failed to load calendar data:", err);
@@ -265,8 +317,8 @@ async function handleCreateYear() {
     const newYear = await api.createacademicCalendar({
       name: yearName.trim() || yearNameAr.trim(),
       name_ar: yearNameAr.trim() || undefined,
-      start_date: new Date(`${yearStartDate}T00:00:00Z`).toISOString(),
-      end_date: new Date(`${yearEndDate}T23:59:59Z`).toISOString(),
+      start_date: toApiDateTime(yearStartDate),
+      end_date: toApiDateTime(yearEndDate),
     });
 
     years = [...years, newYear];
@@ -308,12 +360,14 @@ async function handleCreatePeriod() {
       name_ar: periodNameAr.trim() || undefined,
       period_type: periodType,
       period_kind: periodKind,
-      start_date: new Date(`${periodStartDate}T00:00:00Z`).toISOString(),
-      end_date: new Date(`${periodEndDate}T23:59:59Z`).toISOString(),
+      code: periodCode.trim() || undefined,
+      start_date: toApiDateTime(periodStartDate),
+      end_date: toApiDateTime(periodEndDate),
     });
     periods = [...periods, created];
     periodName = "";
     periodNameAr = "";
+    periodCode = "";
     periodStartDate = "";
     periodEndDate = "";
     periodParentId = "";
@@ -334,14 +388,6 @@ async function handleGenerateDefaultPeriods() {
     return;
   }
 
-  let calendarDefaults: ReturnType<typeof getHijriCalendarDefaults>;
-  try {
-    calendarDefaults = getHijriCalendarDefaults(selectedYear.start_date);
-  } catch (err: unknown) {
-    toast.error(err instanceof Error ? err.message : m.common_action_failed());
-    return;
-  }
-
   isSubmittingPeriod = true;
   successMessage = null;
   try {
@@ -349,8 +395,12 @@ async function handleGenerateDefaultPeriods() {
       {
         calendar_id: String(selectedYear.id),
         provision_hijri_school_calendar: true,
-        hijri_start_year: calendarDefaults.hijriStartYear,
-        hijri_month_lengths: calendarDefaults.monthLengths,
+        provision_assessment_scheme: true,
+        provision_time_slots: true,
+        hijri_start_year: backendDefaults?.hijri_start_year,
+        hijri_start_month: backendDefaults?.hijri_start_month,
+        hijri_start_day: backendDefaults?.hijri_start_day,
+        hijri_month_lengths: backendDefaults?.hijri_month_lengths,
       },
       orgId,
     );
@@ -359,6 +409,153 @@ async function handleGenerateDefaultPeriods() {
     successMessage = m.onboarding_step3_periods_generated_success();
   } catch (err: unknown) {
     console.error("Failed to generate default school periods:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isSubmittingPeriod = false;
+  }
+}
+
+let isApplyingTemplate = $state(false);
+
+async function handleApplyOfficialTemplate(templateCode: string) {
+  if (!selectedYear) {
+    toast.error(m.onboarding_step3_period_err_year());
+    return;
+  }
+
+  isApplyingTemplate = true;
+  successMessage = null;
+  try {
+    await api.applyCalendarTemplate(String(selectedYear.id), {
+      template_code: templateCode,
+    });
+    periods = await api.listAcademicPeriods();
+    await refreshOnboardingState(orgId, m.common_action_failed());
+    successMessage = "Official calendar template applied successfully.";
+  } catch (err: unknown) {
+    console.error("Failed to apply official calendar template:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isApplyingTemplate = false;
+  }
+}
+
+function startYearEdit(year: academicCalendarDto) {
+  editingYearId = String(year.id);
+  editingYearName = year.name;
+  editingYearNameAr = year.name_ar ?? "";
+  editingYearStartDate = toDateTimeInput(year.start_date);
+  editingYearEndDate = toDateTimeInput(year.end_date);
+  editingYearNotes = year.notes ?? "";
+}
+
+function cancelYearEdit() {
+  editingYearId = null;
+}
+
+async function saveYearEdit(year: academicCalendarDto) {
+  if (!editingYearName.trim() && !editingYearNameAr.trim()) {
+    toast.error(m.onboarding_step3_year_err_name());
+    return;
+  }
+  if (!validateDateRange(editingYearStartDate, editingYearEndDate, m.onboarding_step3_year_err_dates())) {
+    return;
+  }
+
+  isUpdatingRecord = true;
+  try {
+    const updated = await api.updateacademicCalendar(String(year.id), {
+      name: editingYearName.trim() || editingYearNameAr.trim(),
+      name_ar: editingYearNameAr.trim() || null,
+      start_date: toApiDateTime(editingYearStartDate),
+      end_date: toApiDateTime(editingYearEndDate),
+      notes: editingYearNotes.trim() || null,
+    });
+    years = years.map((item) => item.id === updated.id ? updated : item);
+    editingYearId = null;
+    await refreshOnboardingState(orgId, m.common_action_failed());
+  } catch (err: unknown) {
+    console.error("Failed to update academic year:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isUpdatingRecord = false;
+  }
+}
+
+async function transitionYear(year: academicCalendarDto, action: "activate" | "close" | "archive") {
+  isSubmittingYear = true;
+  try {
+    const updated = action === "activate"
+      ? await api.activateacademicCalendar(String(year.id))
+      : action === "close"
+        ? await api.closeacademicCalendar(String(year.id))
+        : await api.archiveacademicCalendar(String(year.id));
+    years = years.map((item) => item.id === updated.id ? updated : item);
+    await refreshOnboardingState(orgId, m.common_action_failed());
+  } catch (err: unknown) {
+    console.error(`Failed to ${action} academic year:`, err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isSubmittingYear = false;
+  }
+}
+
+function startPeriodEdit(period: AcademicPeriodDto) {
+  editingPeriodId = String(period.id);
+  editingPeriodName = period.name;
+  editingPeriodNameAr = period.name_ar ?? "";
+  editingPeriodCode = period.code ?? "";
+  editingPeriodStartDate = toDateTimeInput(period.start_date);
+  editingPeriodEndDate = toDateTimeInput(period.end_date);
+  editingPeriodKind = period.period_kind;
+}
+
+function cancelPeriodEdit() {
+  editingPeriodId = null;
+}
+
+async function savePeriodEdit(period: AcademicPeriodDto) {
+  if (!editingPeriodName.trim() && !editingPeriodNameAr.trim()) {
+    toast.error(m.onboarding_step3_year_err_name());
+    return;
+  }
+  if (!validateDateRange(editingPeriodStartDate, editingPeriodEndDate, m.onboarding_step3_year_err_dates())) {
+    return;
+  }
+
+  isUpdatingRecord = true;
+  try {
+    const updated = await api.updateAcademicPeriod(String(period.id), {
+      name: editingPeriodName.trim() || editingPeriodNameAr.trim(),
+      name_ar: editingPeriodNameAr.trim() || null,
+      code: editingPeriodCode.trim() || null,
+      start_date: toApiDateTime(editingPeriodStartDate),
+      end_date: toApiDateTime(editingPeriodEndDate),
+      period_kind: editingPeriodKind,
+    });
+    periods = periods.map((item) => item.id === updated.id ? updated : item);
+    editingPeriodId = null;
+    await refreshOnboardingState(orgId, m.common_action_failed());
+  } catch (err: unknown) {
+    console.error("Failed to update academic period:", err);
+    toast.error(err instanceof Error ? err.message : m.common_action_failed());
+  } finally {
+    isUpdatingRecord = false;
+  }
+}
+
+async function transitionPeriod(period: AcademicPeriodDto, action: "lock" | "unlock" | "close") {
+  isSubmittingPeriod = true;
+  try {
+    const updated = action === "lock"
+      ? await api.lockAcademicPeriod(String(period.id))
+      : action === "unlock"
+        ? await api.unlockAcademicPeriod(String(period.id))
+        : await api.closeAcademicPeriod(String(period.id));
+    periods = periods.map((item) => item.id === updated.id ? updated : item);
+    await refreshOnboardingState(orgId, m.common_action_failed());
+  } catch (err: unknown) {
+    console.error(`Failed to ${action} academic period:`, err);
     toast.error(err instanceof Error ? err.message : m.common_action_failed());
   } finally {
     isSubmittingPeriod = false;
@@ -443,7 +640,7 @@ async function deleteYear(year: academicCalendarDto) {
               </Label>
               <Input
                 id="onboarding-year-start"
-                type="date"
+                type="datetime-local"
                 bind:value={yearStartDate}
               />
             </div>
@@ -453,7 +650,7 @@ async function deleteYear(year: academicCalendarDto) {
               </Label>
               <Input
                 id="onboarding-year-end"
-                type="date"
+                type="datetime-local"
                 bind:value={yearEndDate}
               />
             </div>
@@ -462,6 +659,49 @@ async function deleteYear(year: academicCalendarDto) {
           <p class="text-xs text-muted-foreground">
             {m.onboarding_step3_suggest_year_desc()}
           </p>
+
+          <!-- Yemeni System Weekly Study Days -->
+          <div class="space-y-2 pt-2 border-t border-border/40">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span class="text-xs font-semibold text-foreground">
+                أيام الدراسة الأسبوعية (النظام اليمني)
+              </span>
+              <div class="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                  onclick={() => setYemeniStudyDaysPreset(5)}
+                >
+                  5 أيام (السبت - الأربعاء)
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  class="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                  onclick={() => setYemeniStudyDaysPreset(6)}
+                >
+                  6 أيام (السبت - الخميس)
+                </Button>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              {#each yemeniWeekdays as day}
+                {@const isSelected = selectedStudyDays.includes(day.value)}
+                <button
+                  type="button"
+                  class="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer {isSelected
+                    ? 'bg-primary/10 border-primary/40 text-primary font-bold'
+                    : 'bg-muted/30 border-border/40 text-muted-foreground hover:text-foreground'}"
+                  onclick={() => toggleStudyDay(day.value)}
+                >
+                  <span>{day.label}</span>
+                </button>
+              {/each}
+            </div>
+          </div>
 
           {#if yearStartIsPast}
             <div
@@ -503,29 +743,86 @@ async function deleteYear(year: academicCalendarDto) {
             </span>
             <div class="divide-y divide-border/40 rounded-lg border border-border/50 bg-card overflow-hidden">
               {#each years as yr (yr.id)}
-                <div class="flex items-center justify-between p-3 text-xs">
-                  <div class="flex items-center gap-3">
-                    <span class="flex size-7 items-center justify-center rounded-md bg-primary/10 font-bold text-primary text-[11px]">
-                      📅
-                    </span>
-                    <div>
-                      <div class="font-medium text-foreground">
-                        {yr.name_ar || yr.name}
-                      </div>
-                      <div class="text-[11px] font-mono text-muted-foreground">
-                        {yr.start_date.split('T')[0]} → {yr.end_date.split('T')[0]}
+                <div class="space-y-3 p-3 text-xs">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                      <span class="flex size-7 items-center justify-center rounded-md bg-primary/10 font-bold text-primary text-[11px]">
+                        📅
+                      </span>
+                      <div>
+                        <div class="font-medium text-foreground">
+                          {yr.name_ar || yr.name}
+                        </div>
+                        <div class="text-[11px] font-mono text-muted-foreground">
+                          {yr.start_date.replace("T", " ").slice(0, 16)} → {yr.end_date.replace("T", " ").slice(0, 16)}
+                        </div>
                       </div>
                     </div>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                      <Badge variant="outline" class={yr.is_active
+                        ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]"
+                        : "text-[10px]"}>
+                        {yr.status}
+                      </Badge>
+                      <Button variant="outline" size="sm" disabled={isUpdatingRecord || isSubmittingYear} onclick={() => startYearEdit(yr)}>
+                        {m.common_action_edit()}
+                      </Button>
+                      {#if !yr.is_active && yr.status !== "archived"}
+                        <Button variant="outline" size="sm" disabled={isSubmittingYear} onclick={() => transitionYear(yr, "activate")}>
+                          {m.onboarding_step3_activate()}
+                        </Button>
+                      {/if}
+                      {#if yr.status !== "closed" && yr.status !== "archived"}
+                        <Button variant="outline" size="sm" disabled={isSubmittingYear} onclick={() => transitionYear(yr, "close")}>
+                          {m.common_action_close()}
+                        </Button>
+                      {/if}
+                      {#if yr.status !== "archived"}
+                        <Button variant="outline" size="sm" disabled={isSubmittingYear} onclick={() => transitionYear(yr, "archive")}>
+                          {m.onboarding_step3_archive()}
+                        </Button>
+                      {/if}
+                      <DeleteRecordButton
+                        label={yr.name_ar || yr.name}
+                        onDelete={() => deleteYear(yr)}
+                      />
+                    </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <Badge variant="outline" class="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px]">
-                      {m.onboarding_active_badge()}
-                    </Badge>
-                    <DeleteRecordButton
-                      label={yr.name_ar || yr.name}
-                      onDelete={() => deleteYear(yr)}
-                    />
-                  </div>
+                  {#if editingYearId === String(yr.id)}
+                    <div class="grid gap-3 rounded-md border border-border/50 bg-muted/20 p-3 sm:grid-cols-2">
+                      <div class="sm:col-span-2">
+                        <BilingualNameFields
+                          arId="edit-year-name-ar"
+                          enId="edit-year-name-en"
+                          arLabel={m.onboarding_step3_year_name_ar()}
+                          enLabel={m.onboarding_step3_year_name_en()}
+                          bind:arValue={editingYearNameAr}
+                          bind:enValue={editingYearName}
+                          kind="label"
+                          requestSuggestion={suggestLocalTranslation}
+                          disabled={isUpdatingRecord}
+                          loadingMessage={m.bilingual_entry_loading()}
+                          failureMessage={m.bilingual_entry_failure()}
+                        />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for={`edit-year-start-${yr.id}`} class="text-xs">{m.onboarding_step3_start_date()}</Label>
+                        <Input id={`edit-year-start-${yr.id}`} type="datetime-local" bind:value={editingYearStartDate} />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for={`edit-year-end-${yr.id}`} class="text-xs">{m.onboarding_step3_end_date()}</Label>
+                        <Input id={`edit-year-end-${yr.id}`} type="datetime-local" bind:value={editingYearEndDate} />
+                      </div>
+                      <div class="space-y-1.5 sm:col-span-2">
+                        <Label for={`edit-year-notes-${yr.id}`} class="text-xs">{m.onboarding_step3_notes()}</Label>
+                        <Textarea id={`edit-year-notes-${yr.id}`} bind:value={editingYearNotes} rows={3} disabled={isUpdatingRecord} />
+                      </div>
+                      <div class="flex justify-end gap-2 sm:col-span-2">
+                        <Button variant="outline" size="sm" disabled={isUpdatingRecord} onclick={cancelYearEdit}>{m.common_action_cancel()}</Button>
+                        <Button size="sm" disabled={isUpdatingRecord} onclick={() => saveYearEdit(yr)}>{m.common_save_changes()}</Button>
+                      </div>
+                    </div>
+                  {/if}
                 </div>
               {/each}
             </div>
@@ -543,23 +840,84 @@ async function deleteYear(year: academicCalendarDto) {
     >
       <div class="space-y-4">
         {#if orgContext.isSchool}
-          <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-            <p class="text-xs text-muted-foreground">
-              {m.onboarding_step3_default_periods_desc()}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={isSubmittingPeriod || !selectedYearId}
-              onclick={handleGenerateDefaultPeriods}
-              class="text-xs font-semibold"
-            >
-              {isSubmittingPeriod
-                ? m.onboarding_step3_creating_btn()
-                : m.onboarding_step3_default_periods_btn()}
-            </Button>
+          <div class="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="space-y-1">
+                <span class="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  🇾🇪 {m.onboarding_step3_default_periods_btn()}
+                </span>
+                <p class="text-xs text-muted-foreground">
+                  {m.onboarding_step3_default_periods_desc()}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                disabled={isSubmittingPeriod || !selectedYearId}
+                onclick={handleGenerateDefaultPeriods}
+                class="text-xs font-semibold"
+              >
+                {isSubmittingPeriod
+                  ? m.onboarding_step3_creating_btn()
+                  : m.onboarding_step3_default_periods_btn()}
+              </Button>
+            </div>
+
+            {#if backendDefaults}
+              <div class="grid gap-2 pt-2 border-t border-primary/10 text-[11px] text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    📅 فترات التقويم ({backendDefaults.periods_summary.length})
+                  </span>
+                  <span>فصلين دراسيين، 8 أشهر تعليمية، 8 اختبارات شهرية، واختبارين نهائيين</span>
+                </div>
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    📊 مخططات التقييم ({backendDefaults.assessment_schemes.length})
+                  </span>
+                  <span>الشهري (100)، الفصلي (30)، المحصلة (50)، والسنوي (100)</span>
+                </div>
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    ⏰ الحصص اليومية ({backendDefaults.timetable_slots.length})
+                  </span>
+                  <span>7 حصص (07:30 - 13:30) مع الطابور والفسحة والاستراحة</span>
+                </div>
+                <div class="flex flex-col gap-0.5 rounded bg-background/50 p-2 border border-border/40">
+                  <span class="font-medium text-foreground flex items-center gap-1">
+                    🗓️ أيام الدراسة
+                  </span>
+                  <span>السبت إلى الأربعاء (5 أيام دراسية أسبوعياً)</span>
+                </div>
+              </div>
+            {/if}
           </div>
+
+          <!-- Official Calendar Template -->
+          {#if periods.length > 0}
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-accent/30 bg-accent/5 p-4">
+              <div class="space-y-1">
+                <p class="text-xs font-semibold text-foreground">
+                  🇾🇪 Official Yemen School Calendar (1448 AH / 2026-2027)
+                </p>
+                <p class="text-xs text-muted-foreground">
+                  Apply supplementary periods from Ministerial Decision No. 100:
+                  admin opening, teacher prep, mid-year break, and public examination windows.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isApplyingTemplate || !selectedYearId}
+                onclick={() => handleApplyOfficialTemplate("YE-1447-1448")}
+                class="text-xs font-semibold"
+              >
+                {isApplyingTemplate ? "Applying…" : "Apply Official Calendar"}
+              </Button>
+            </div>
+          {/if}
         {/if}
 
         <div class="rounded-lg border border-border/40 bg-muted/20 p-4 space-y-4">
@@ -583,69 +941,104 @@ async function deleteYear(year: academicCalendarDto) {
               />
             </div>
             <div class="space-y-1.5">
-              <Label for="onboarding-period-type" class="text-xs font-medium">
-                Period type
+              <Label for="onboarding-period-code" class="text-xs font-medium">
+                {m.onboarding_step3_code()}
               </Label>
-              <select
-                id="onboarding-period-type"
-                class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                bind:value={periodType}
+              <Input id="onboarding-period-code" bind:value={periodCode} disabled={isSubmittingPeriod} />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="onboarding-period-type" class="text-xs font-medium">
+                {m.onboarding_academic_period_type()}
+              </Label>
+              <Select
+                type="single"
+                value={periodType}
+                onValueChange={(value) => {
+                  if (value) periodType = value;
+                }}
                 disabled={isSubmittingPeriod}
               >
-                <option value="custom">Custom</option>
-                <option value="semester">Semester</option>
-                <option value="trimester">Trimester</option>
-                <option value="quarter">Quarter</option>
-                <option value="month">Month</option>
-                <option value="module">Module</option>
-                <option value="block">Block</option>
-              </select>
+                <SelectTrigger id="onboarding-period-type" class="h-10 w-full">
+                  <span>{periodType}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="custom">Custom</SelectItem>
+                  <SelectItem value="semester">Semester</SelectItem>
+                  <SelectItem value="trimester">Trimester</SelectItem>
+                  <SelectItem value="quarter">Quarter</SelectItem>
+                  <SelectItem value="month">Month</SelectItem>
+                  <SelectItem value="module">Module</SelectItem>
+                  <SelectItem value="block">Block</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-1.5">
               <Label for="onboarding-period-kind" class="text-xs font-medium">
-                Period role
+                {m.onboarding_academic_period_role()}
               </Label>
-              <select
-                id="onboarding-period-kind"
-                class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                bind:value={periodKind}
+              <Select
+                type="single"
+                value={periodKind}
+                onValueChange={(value) => {
+                  if (value) periodKind = value;
+                }}
                 disabled={isSubmittingPeriod}
               >
-                <option value="teaching">Teaching</option>
-                <option value="examination">Examination</option>
-                <option value="break">Break</option>
-                <option value="registration">Registration</option>
-                <option value="preparatory">Preparatory</option>
-              </select>
+                <SelectTrigger id="onboarding-period-kind" class="h-10 w-full">
+                  <span>{periodKind}</span>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teaching">Teaching</SelectItem>
+                  <SelectItem value="examination">Examination</SelectItem>
+                  <SelectItem value="break">Break</SelectItem>
+                  <SelectItem value="registration">Registration</SelectItem>
+                  <SelectItem value="preparatory">Preparatory</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div class="space-y-1.5">
               <Label for="onboarding-period-start" class="text-xs font-medium">
                 {m.onboarding_step3_start_date()}
               </Label>
-              <Input id="onboarding-period-start" type="date" bind:value={periodStartDate} />
+              <Input id="onboarding-period-start" type="datetime-local" bind:value={periodStartDate} />
             </div>
             <div class="space-y-1.5">
               <Label for="onboarding-period-end" class="text-xs font-medium">
                 {m.onboarding_step3_end_date()}
               </Label>
-              <Input id="onboarding-period-end" type="date" bind:value={periodEndDate} />
+              <Input id="onboarding-period-end" type="datetime-local" bind:value={periodEndDate} />
             </div>
             {#if periods.some((period) => period.year_id === selectedYearId)}
               <div class="space-y-1.5 sm:col-span-2">
                 <Label for="onboarding-period-parent" class="text-xs font-medium">
-                  Parent period (optional)
+                  {m.onboarding_academic_period_parent_optional()}
                 </Label>
-                <select
-                  id="onboarding-period-parent"
-                  class="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                  bind:value={periodParentId}
+                <Select
+                  type="single"
+                  value={periodParentId || "none"}
+                  onValueChange={(value) => {
+                    if (value) periodParentId = value === "none" ? "" : value;
+                  }}
                   disabled={isSubmittingPeriod}
                 >
-                  <option value="">No parent</option>
-                  {#each periods.filter((period) => period.year_id === selectedYearId) as period (period.id)}
-                    <option value={String(period.id)}>{period.name_ar || period.name}</option>
-                  {/each}
-                </select>
+                  <SelectTrigger id="onboarding-period-parent" class="h-10 w-full">
+                    <span>
+                      {periodParentId
+                        ? periods.find((period) => String(period.id) === periodParentId)
+                            ?.name_ar ||
+                          periods.find((period) => String(period.id) === periodParentId)?.name
+                        : "No parent"}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No parent</SelectItem>
+                    {#each periods.filter((period) => period.year_id === selectedYearId) as period (period.id)}
+                      <SelectItem value={String(period.id)}>
+                        {period.name_ar || period.name}
+                      </SelectItem>
+                    {/each}
+                  </SelectContent>
+                </Select>
               </div>
             {/if}
           </div>
@@ -670,26 +1063,109 @@ async function deleteYear(year: academicCalendarDto) {
             </span>
             <div class="grid gap-2 sm:grid-cols-2">
               {#each periods as p (p.id)}
-                <div class="flex items-center justify-between rounded-lg border border-border/50 bg-card p-3 text-xs">
-                  <div class="flex items-center gap-2">
-                    <span class="flex size-6 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-bold">
-                      📑
-                    </span>
-                    <div>
-                      <div class="font-medium text-foreground">
-                        {p.name_ar || p.name}
-                      </div>
-                      <div class="text-[10px] text-muted-foreground">
-                        {p.start_date.split('T')[0]} → {p.end_date.split('T')[0]}
+                <div class="space-y-3 rounded-lg border border-border/50 bg-card p-3 text-xs">
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                      <span class="flex size-6 items-center justify-center rounded bg-primary/10 text-primary text-[10px] font-bold">
+                        📑
+                      </span>
+                      <div>
+                        <div class="font-medium text-foreground">
+                          {p.name_ar || p.name}
+                        </div>
+                        <div class="text-[10px] text-muted-foreground">
+                          {years.find((year) => String(year.id) === p.year_id)?.name_ar ||
+                            years.find((year) => String(year.id) === p.year_id)?.name}
+                          ·
+                          {p.start_date.replace("T", " ").slice(0, 16)} → {p.end_date.replace("T", " ").slice(0, 16)}
+                          {#if p.parent_id}
+                            · {periods.find((parent) => String(parent.id) === p.parent_id)?.name_ar ||
+                              periods.find((parent) => String(parent.id) === p.parent_id)?.name}
+                          {/if}
+                          {#if p.code} · {p.code}{/if}
+                        </div>
                       </div>
                     </div>
+                    <div class="flex flex-wrap items-center justify-end gap-2">
+                      <Badge variant="secondary" class="text-[10px] uppercase">{p.period_type}</Badge>
+                      <Badge variant="outline" class="text-[10px] uppercase">{p.period_kind}</Badge>
+                      <Badge variant={p.is_locked ? "destructive" : "outline"} class="text-[10px]">
+                        {p.is_locked ? m.onboarding_step3_locked() : p.status}
+                      </Badge>
+                      <Badge variant="outline" class="text-[10px]">
+                        {p.is_enrollment_open ? m.onboarding_step3_enrollment_open() : m.onboarding_step3_enrollment_closed()}
+                      </Badge>
+                      <Badge variant="outline" class="text-[10px]">
+                        {p.is_grade_entry_open ? m.onboarding_step3_grade_entry_open() : m.onboarding_step3_grade_entry_closed()}
+                      </Badge>
+                      <Button variant="outline" size="sm" disabled={isUpdatingRecord || p.is_locked} onclick={() => startPeriodEdit(p)}>
+                        {m.common_action_edit()}
+                      </Button>
+                      {#if p.is_locked}
+                        <Button variant="outline" size="sm" disabled={isSubmittingPeriod} onclick={() => transitionPeriod(p, "unlock")}>
+                          {m.onboarding_step3_unlock()}
+                        </Button>
+                      {:else}
+                        <Button variant="outline" size="sm" disabled={isSubmittingPeriod} onclick={() => transitionPeriod(p, "close")}>
+                          {m.common_action_close()}
+                        </Button>
+                      {/if}
+                      <DeleteRecordButton label={p.name_ar || p.name} onDelete={() => deletePeriod(p)} />
+                    </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <Badge variant="secondary" class="text-[10px] uppercase">
-                      {p.period_type}
-                    </Badge>
-                    <DeleteRecordButton label={p.name_ar || p.name} onDelete={() => deletePeriod(p)} />
-                  </div>
+                  {#if editingPeriodId === String(p.id)}
+                    <div class="grid gap-3 rounded-md border border-border/50 bg-muted/20 p-3 sm:grid-cols-2">
+                      <div class="sm:col-span-2">
+                        <BilingualNameFields
+                          arId="edit-period-name-ar"
+                          enId="edit-period-name-en"
+                          arLabel={m.onboarding_step3_year_name_ar()}
+                          enLabel={m.onboarding_step3_year_name_en()}
+                          bind:arValue={editingPeriodNameAr}
+                          bind:enValue={editingPeriodName}
+                          kind="label"
+                          requestSuggestion={suggestLocalTranslation}
+                          disabled={isUpdatingRecord}
+                          loadingMessage={m.bilingual_entry_loading()}
+                          failureMessage={m.bilingual_entry_failure()}
+                        />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for={`edit-period-code-${p.id}`} class="text-xs">{m.onboarding_step3_code()}</Label>
+                        <Input id={`edit-period-code-${p.id}`} bind:value={editingPeriodCode} disabled={isUpdatingRecord} />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for={`edit-period-kind-${p.id}`} class="text-xs">{m.onboarding_step3_period_kind()}</Label>
+                        <Select
+                          type="single"
+                          value={editingPeriodKind}
+                          onValueChange={(value) => { if (value) editingPeriodKind = value; }}
+                          disabled={isUpdatingRecord}
+                        >
+                          <SelectTrigger id={`edit-period-kind-${p.id}`} class="h-10 w-full"><span>{editingPeriodKind}</span></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="teaching">Teaching</SelectItem>
+                            <SelectItem value="examination">Examination</SelectItem>
+                            <SelectItem value="break">Break</SelectItem>
+                            <SelectItem value="registration">Registration</SelectItem>
+                            <SelectItem value="preparatory">Preparatory</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for={`edit-period-start-${p.id}`} class="text-xs">{m.onboarding_step3_start_date()}</Label>
+                        <Input id={`edit-period-start-${p.id}`} type="datetime-local" bind:value={editingPeriodStartDate} disabled={isUpdatingRecord} />
+                      </div>
+                      <div class="space-y-1.5">
+                        <Label for={`edit-period-end-${p.id}`} class="text-xs">{m.onboarding_step3_end_date()}</Label>
+                        <Input id={`edit-period-end-${p.id}`} type="datetime-local" bind:value={editingPeriodEndDate} disabled={isUpdatingRecord} />
+                      </div>
+                      <div class="flex justify-end gap-2 sm:col-span-2">
+                        <Button variant="outline" size="sm" disabled={isUpdatingRecord} onclick={cancelPeriodEdit}>{m.common_action_cancel()}</Button>
+                        <Button size="sm" disabled={isUpdatingRecord} onclick={() => savePeriodEdit(p)}>{m.common_save_changes()}</Button>
+                      </div>
+                    </div>
+                  {/if}
                 </div>
               {/each}
             </div>

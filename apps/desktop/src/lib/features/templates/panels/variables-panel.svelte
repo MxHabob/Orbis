@@ -1,15 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-/**
- * VariablesPanel — Browse, search, and insert data variables into elements.
- * Supports drag-to-bind and click-to-insert {{variable}} syntax.
- */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import type { VariableDefinition } from "@docforge/core";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { Separator } from "@orbis/ui/separator";
 import {
   Select,
   SelectContent,
@@ -22,8 +17,7 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { ScrollArea } from "@orbis/ui/scroll-area";
-import { AdjustmentsHorizontal, Bars3BottomLeft, Bold, Calendar, ChevronDown, ChevronRight, Clipboard, Code, Hashtag, Knobs, Photo, Plus, Search, Trash } from "@orbis/icons";
+import { Bars3BottomLeft, Calendar, CheckCircle, Clipboard, Code, Hashtag, ListBullet, Photo, Plus, Search, Trash } from "@orbis/icons";
 
 let {
   store,
@@ -45,8 +39,30 @@ function flattenSchema(
   prefix = "",
 ): Record<string, VariableDefinition & { isSystem?: boolean }> {
   let result: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
-  for (const [key, value] of Object.entries(schema)) {
+  if (!schema || typeof schema !== "object") return result;
+
+  // If the schema is an object with a `properties` map, unwrap its properties directly
+  const props =
+    schema.properties && typeof schema.properties === "object"
+      ? schema.properties
+      : schema;
+
+  for (const [key, value] of Object.entries(props)) {
+    // Skip JSON Schema structural keywords
+    if (
+      props === schema &&
+      ["type", "label", "properties", "required", "$schema", "description"].includes(key)
+    ) {
+      continue;
+    }
+
     const fullPath = prefix ? `${prefix}.${key}` : key;
+    const rawLabel = (value as any)?.label;
+    const resolvedLabel =
+      typeof rawLabel === "function" ? rawLabel() : rawLabel || fullPath;
+    const resolvedLabelAr =
+      (value as any)?.labelAr || resolvedLabel;
+
     if (
       value &&
       typeof value === "object" &&
@@ -60,22 +76,21 @@ function flattenSchema(
     } else if (
       value &&
       typeof value === "object" &&
-      (value as any).type === "array" &&
-      (value as any).items?.type === "object"
+      (value as any).type === "array"
     ) {
       result[fullPath] = {
         source: fullPath,
         type: "array",
-        label: (value as any).label || fullPath,
-        labelAr: (value as any).label || fullPath,
+        label: resolvedLabel,
+        labelAr: resolvedLabelAr,
         isSystem: true,
       };
     } else {
       result[fullPath] = {
         source: fullPath,
         type: (value as any)?.type || "string",
-        label: (value as any)?.label || fullPath,
-        labelAr: (value as any)?.label || fullPath,
+        label: resolvedLabel,
+        labelAr: resolvedLabelAr,
         isSystem: true,
       };
     }
@@ -86,7 +101,17 @@ function flattenSchema(
 const entityType = $derived(store.document.meta?.entityType || "");
 const systemVariables = $derived.by(() => {
   let vars: Record<string, VariableDefinition & { isSystem?: boolean }> = {};
-  const schemas = store.systemSchemas || {};
+  const baseSchemas = store.systemSchemas || {};
+  const schemas: Record<string, any> = { ...baseSchemas };
+
+  // Ensure both org and $org namespaces exist
+  if (schemas.$org && !schemas.org) {
+    schemas.org = schemas.$org;
+  }
+  if (schemas.org && !schemas.$org) {
+    schemas.$org = schemas.org;
+  }
+
   if (entityType && schemas[entityType]) {
     vars = { ...vars, ...flattenSchema(schemas[entityType], entityType) };
   }
@@ -115,17 +140,6 @@ const variableEntries = $derived(
     .sort((a, b) => a[0].localeCompare(b[0])),
 );
 
-// Group variables by source prefix (e.g., "student", "enrollment")
-const groupedVariables = $derived(() => {
-  const groups: Record<string, [string, VariableDefinition][]> = {};
-  for (const entry of variableEntries) {
-    const source = entry[1].source;
-    const groupKey = source.includes(".") ? source.split(".")[0]! : "general";
-    if (!groups[groupKey]) groups[groupKey] = [];
-    groups[groupKey]!.push(entry);
-  }
-  return groups;
-});
 
 // ── Actions ──────────────────────────────────────────────────
 
@@ -182,27 +196,21 @@ function removeVariable(varName: string) {
   });
 }
 
-function toggleGroup(group: string) {
-  const next = new Set(expandedGroups);
-  if (next.has(group)) next.delete(group);
-  else next.add(group);
-  expandedGroups = next;
-}
 
 function getTypeIcon(type: string) {
   switch (type) {
     case "string":
-      return TypeIcon;
+      return Bars3BottomLeft;
     case "number":
       return Hashtag;
     case "date":
       return Calendar;
     case "boolean":
-      return ToggleLeft;
+      return CheckCircle;
     case "image":
       return Photo;
     case "array":
-      return List;
+      return ListBullet;
     default:
       return Code;
   }
@@ -251,17 +259,17 @@ function handleDragStart(e: DragEvent, varName: string) {
 <TooltipProvider delayDuration={300}>
 <div class="flex flex-col h-full text-start">
   <!-- Header -->
-  <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
+  <div class="px-3 py-2.5 border-b border-border flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <Code size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">{m.template_panel_variables()}</h3>
+      <Code size={15} class="text-muted-foreground" />
+      <h3 class="text-sm font-semibold text-foreground">{m.template_panel_variables()}</h3>
     </div>
     <div class="flex items-center gap-1">
-      <Badge variant="outline" class="text-[8px]">{variableEntries.length}</Badge>
+      <Badge variant="outline" class="text-[10px]">{variableEntries.length}</Badge>
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => showAddForm = !showAddForm}>
-            <Plus size={11} />
+          <Button variant="ghost" size="icon-sm" class="cursor-pointer" onclick={() => showAddForm = !showAddForm}>
+            <Plus size={14} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_btn_add_var()}</TooltipContent>
@@ -270,7 +278,7 @@ function handleDragStart(e: DragEvent, varName: string) {
   </div>
 
   <!-- Search -->
-      <div class="px-4 pb-2 shrink-0">
+      <div class="px-3 pb-2 shrink-0">
         <div class="relative flex items-center">
           <Search
             class="absolute inset-s-2.5 size-3.5 text-muted-foreground pointer-events-none"
@@ -278,29 +286,29 @@ function handleDragStart(e: DragEvent, varName: string) {
           <Input
             placeholder={m.common_header_search()}
             bind:value={searchQuery}
-            class="h-7 text-[10px] ps-7"
+            class="h-9 text-xs ps-8"
           />
         </div>
       </div>
 
   <!-- Add Variable Form -->
   {#if showAddForm}
-    <div class="px-3 py-2 border-b border-border/30 bg-muted/20 flex flex-col gap-1.5">
+    <div class="px-3 py-3 border-b border-border bg-muted/30 flex flex-col gap-2">
       <Input
         type="text"
         placeholder=m.template_var_name()
         bind:value={newVarName}
-        class="h-6 text-[10px]"
+        class="h-9 text-xs"
       />
       <Input
         type="text"
         placeholder=m.template_var_source()
         bind:value={newVarSource}
-        class="h-6 text-[10px] font-mono"
+        class="h-9 text-xs font-mono"
       />
       <div class="flex items-center gap-1.5">
         <Select type="single" bind:value={newVarType}>
-          <SelectTrigger class="h-6 min-w-0 grow rounded px-1.5 text-[10px]">
+          <SelectTrigger class="h-9 min-w-0 grow rounded-md px-2 text-xs">
             {#if newVarType === "number"}
               {m.shared_ui_type_number()}
             {:else if newVarType === "date"}
@@ -324,7 +332,7 @@ function handleDragStart(e: DragEvent, varName: string) {
             <SelectItem value="array">{m.shared_ui_type_array()}</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="lime" size="xs" class="cursor-pointer h-6 text-[10px]" onclick={addVariable}>
+        <Button variant="default" size="sm" class="cursor-pointer" onclick={addVariable}>
           {m.template_btn_add()}
         </Button>
       </div>
@@ -336,7 +344,7 @@ function handleDragStart(e: DragEvent, varName: string) {
     {#if variableEntries.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <Code size={20} class="text-muted-foreground/30" />
-        <p class="text-[10px] text-muted-foreground text-center">
+        <p class="text-xs text-muted-foreground text-center">
           {searchQuery ? m.template_msg_no_results() : m.template_msg_no_vars()}
         </p>
       </div>
@@ -346,33 +354,30 @@ function handleDragStart(e: DragEvent, varName: string) {
           {@const TypeIconComp = getTypeIcon(varDef.type)}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="flex items-center gap-1.5 px-2 py-1.5 mx-1 rounded hover:bg-accent/50 cursor-grab group transition-all"
+            class="flex items-center gap-2 px-2.5 py-2 mx-1 rounded-md hover:bg-muted/60 cursor-grab group transition-colors"
             draggable="true"
             ondragstart={(e) => handleDragStart(e, varName)}
           >
-            <!-- Drag handle -->
-            <Bars3BottomLeft size={9} class="text-muted-foreground/30 group-hover:text-muted-foreground shrink-0" />
-
             <!-- Type icon -->
-            <TypeIconComp size={11} class="shrink-0 text-muted-foreground" />
+            <TypeIconComp size={14} class="shrink-0 text-muted-foreground" />
 
             <!-- Variable info -->
             <div class="flex flex-col grow min-w-0">
               <div class="flex items-center gap-1">
-                <span class="text-[10px] font-medium text-foreground truncate">{varDef.labelAr || varDef.label || varName}</span>
-                <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{getTypeLabel(varDef.type)}</Badge>
+                <span class="text-xs font-medium text-foreground truncate">{varDef.labelAr || varDef.label || varName}</span>
+                <!-- <Badge variant={getTypeBadgeVariant(varDef.type)} class="text-[7px] h-3 px-1">{getTypeLabel(varDef.type)}</Badge> -->
               </div>
-              <span class="text-[8px] text-muted-foreground font-mono truncate">
+              <span class="text-[10px] text-muted-foreground font-mono truncate">
                 {`{{${varName}}}`}
               </span>
             </div>
 
             <!-- Actions (on hover) -->
-            <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+            <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
               <Tooltip>
                 <TooltipTrigger>
-                  <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => insertVariable(varName)}>
-                    <Plus size={10} class="text-primary" />
+                  <button type="button" class="rounded p-1 hover:bg-accent cursor-pointer" onclick={() => insertVariable(varName)}>
+                    <Plus size={13} class="text-primary" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{m.template_tooltip_insert_var()}</TooltipContent>
@@ -380,8 +385,8 @@ function handleDragStart(e: DragEvent, varName: string) {
 
               <Tooltip>
                 <TooltipTrigger>
-                  <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => copyVariableTag(varName)}>
-                    <Clipboard size={10} class="text-muted-foreground" />
+                  <button type="button" class="rounded p-1 hover:bg-accent cursor-pointer" onclick={() => copyVariableTag(varName)}>
+                    <Clipboard size={13} class="text-muted-foreground" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{m.template_tooltip_copy_tag()}</TooltipContent>
@@ -390,14 +395,14 @@ function handleDragStart(e: DragEvent, varName: string) {
               {#if !(varDef as any).isSystem}
                 <Tooltip>
                   <TooltipTrigger>
-                    <button type="button" class="p-0.5 rounded hover:bg-accent cursor-pointer" onclick={() => removeVariable(varName)}>
-                      <Trash size={10} class="text-destructive" />
+                    <button type="button" class="rounded p-1 hover:bg-accent cursor-pointer" onclick={() => removeVariable(varName)}>
+                      <Trash size={13} class="text-destructive" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>{m.template_tooltip_delete()}</TooltipContent>
                 </Tooltip>
               {:else}
-                <Badge variant="outline" class="text-[8px] px-1 h-3.5 font-normal text-muted-foreground bg-muted/30">{m.shared_ui_system()}</Badge>
+                <Badge variant="outline" class="text-[9px] px-1.5 h-5 font-normal text-muted-foreground">{m.shared_ui_system()}</Badge>
               {/if}
             </div>
           </div>
@@ -407,8 +412,8 @@ function handleDragStart(e: DragEvent, varName: string) {
   </div>
 
   <!-- Footer hint -->
-  <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10">
-    <p class="text-[8px] text-muted-foreground text-center">
+  <div class="px-3 py-2 border-t border-border">
+    <p class="text-[10px] text-muted-foreground text-center">
       {m.template_msg_var_drag()}
     </p>
   </div>

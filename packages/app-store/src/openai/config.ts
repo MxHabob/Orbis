@@ -62,15 +62,7 @@ Supports custom organization IDs, fine-tuned models, and configurable max token 
       description_ar: "النموذج الافتراضي لإنشاء المحتوى وتنفيذ مهام الوكلاء.",
       type: "select",
       required: true,
-      value: "gpt-4o",
-      options: [
-        { label: "GPT-4o (Omni — Recommended)", value: "gpt-4o" },
-        { label: "GPT-4o mini (Fast & Cost Effective)", value: "gpt-4o-mini" },
-        { label: "o1 (Deep Reasoning)", value: "o1" },
-        { label: "o3-mini (Next-Gen Reasoning)", value: "o3-mini" },
-        { label: "GPT-4.5 Preview", value: "gpt-4.5-preview" },
-        { label: "GPT-4 Turbo", value: "gpt-4-turbo" },
-      ],
+      value: "",
     },
     {
       id: "endpoint_url",

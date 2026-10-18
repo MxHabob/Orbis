@@ -58,10 +58,20 @@ export class UpdatePropsCommand implements EditorCommand {
   execute(doc: TemplateDocument): TemplateDocument {
     // FloppyDisk previous props for undo
     const node = findNode(doc, this.nodeId);
-    if (node && "props" in node && node.props) {
+    if (node) {
+      const rootKeys = new Set([
+        "id", "type", "name", "locked", "visible", "opacity", "rotation",
+        "zIndex", "groupId", "styleRef", "position", "positionMode",
+      ]);
       this.prevProps = {};
       for (const key of Object.keys(this.props)) {
-        this.prevProps[key] = (node.props as Record<string, unknown>)[key];
+        if (key === "props" && "props" in node && node.props) {
+          this.prevProps[key] = { ...node.props };
+        } else if (rootKeys.has(key)) {
+          this.prevProps[key] = (node as unknown as Record<string, unknown>)[key];
+        } else if ("props" in node && node.props) {
+          this.prevProps[key] = (node.props as Record<string, unknown>)[key];
+        }
       }
     }
     return updateNodeProps(doc, this.nodeId, this.props);
@@ -69,7 +79,23 @@ export class UpdatePropsCommand implements EditorCommand {
 
   undo(doc: TemplateDocument): TemplateDocument {
     if (!this.prevProps) return doc;
-    return updateNodeProps(doc, this.nodeId, this.prevProps);
+    const previous = { ...this.prevProps };
+    const previousNodeProps = previous.props;
+    const node = findNode(doc, this.nodeId);
+    if (
+      previousNodeProps &&
+      typeof previousNodeProps === "object" &&
+      node &&
+      "props" in node &&
+      node.props
+    ) {
+      const restoredProps = { ...(previousNodeProps as Record<string, unknown>) };
+      for (const key of Object.keys(node.props)) {
+        if (!(key in restoredProps)) restoredProps[key] = undefined;
+      }
+      previous.props = restoredProps;
+    }
+    return updateNodeProps(doc, this.nodeId, previous);
   }
 
   canMerge(prev: EditorCommand): boolean {

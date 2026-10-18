@@ -8,7 +8,27 @@ use uuid::Uuid;
 // Assessment Component — a single gradable element within a scheme
 // ═══════════════════════════════════════════════════════════════
 
-/// A single assessment component (e.g., Assignments, Oral, Attendance, Written Test).
+/// The semantic kind of an assessment component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum AssessmentComponentKind {
+    Coursework,
+    Assignment,
+    Quiz,
+    Oral,
+    Attendance,
+    Participation,
+    Midterm,
+    FinalExam,
+    Practical,
+    Lab,
+    Project,
+    Competency,
+    Fieldwork,
+    Other,
+}
+
+/// A single assessment component (e.g., Assignments, Oral, Attendance, Written Test, Practical Exam).
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AssessmentComponent {
@@ -28,6 +48,12 @@ pub struct AssessmentComponent {
     pub sort_order: i32,
     /// Whether this component is required (vs. optional/bonus).
     pub is_required: bool,
+    /// Semantic kind of this assessment component.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_type: Option<AssessmentComponentKind>,
+    /// Minimum required score to pass this component (if component-level gatekeeping applies).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_score: Option<Decimal>,
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -52,6 +78,10 @@ pub enum AssessmentLevel {
     Final,
     /// Module/block assessment (institute)
     ModuleAssessment,
+    /// Certificate/public examination (e.g. Grade 9 basic, Grade 12 Thanawiya)
+    Certificate,
+    /// Cumulative prior-year contribution to a certificate result
+    CertificateCumulative,
 }
 
 impl std::fmt::Display for AssessmentLevel {
@@ -64,6 +94,8 @@ impl std::fmt::Display for AssessmentLevel {
             AssessmentLevel::Midterm => write!(f, "midterm"),
             AssessmentLevel::Final => write!(f, "final"),
             AssessmentLevel::ModuleAssessment => write!(f, "module_assessment"),
+            AssessmentLevel::Certificate => write!(f, "certificate"),
+            AssessmentLevel::CertificateCumulative => write!(f, "certificate_cumulative"),
         }
     }
 }
@@ -78,6 +110,8 @@ impl AssessmentLevel {
             "midterm" => Self::Midterm,
             "final" => Self::Final,
             "module_assessment" | "module" => Self::ModuleAssessment,
+            "certificate" | "public_exam" => Self::Certificate,
+            "certificate_cumulative" | "cumulative" => Self::CertificateCumulative,
             _ => Self::MonthlyPeriod,
         }
     }
@@ -169,6 +203,30 @@ pub struct AssessmentScheme {
     pub is_default: bool,
     /// Whether this is a system-created scheme (not user-editable).
     pub is_system: bool,
+    // ── Policy Provenance ─────────────────────────────────────
+    /// Official source document (e.g. "Ministerial Decision No. 100").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_document: Option<String>,
+    /// Issuing authority (e.g. "Ministry of Education and Scientific Research, Sana'a").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_authority: Option<String>,
+    /// Verification status: "verified", "partially_verified", "unverified", "configurable".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub verification_status: Option<String>,
+    /// Date this policy becomes effective.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effective_date: Option<DateTime<Utc>>,
+    /// Policy version number for immutable result snapshot traceability.
+    #[serde(default)]
+    pub policy_version: u32,
+    // ── Applicability ─────────────────────────────────────────
+    /// Minimum attendance percentage required for exam eligibility (e.g. 0.75 = 75%).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_attendance_ratio: Option<Decimal>,
+    /// Pass threshold as percentage of max_score (e.g. 0.50 = 50%).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pass_threshold: Option<Decimal>,
+
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -219,6 +277,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 1,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Assignment),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "oral".to_string(),
@@ -228,6 +288,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 2,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Oral),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "attendance".to_string(),
@@ -237,6 +299,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 3,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Attendance),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "written_test".to_string(),
@@ -246,10 +310,19 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 4,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Quiz),
+                    min_score: None,
                 },
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -284,9 +357,18 @@ impl AssessmentScheme {
                 weight: Decimal::ONE,
                 sort_order: 1,
                 is_required: true,
+                component_type: Some(AssessmentComponentKind::FinalExam),
+                min_score: Some(Decimal::from(10)),
             }],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -317,6 +399,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 1,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Quiz),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "participation".to_string(),
@@ -326,6 +410,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 2,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Participation),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "project".to_string(),
@@ -335,6 +421,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 3,
                     is_required: false,
+                    component_type: Some(AssessmentComponentKind::Project),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "midterm".to_string(),
@@ -344,6 +432,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 4,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Midterm),
+                    min_score: None,
                 },
                 AssessmentComponent {
                     code: "final_exam".to_string(),
@@ -353,10 +443,19 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 5,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: Some(Decimal::from(20)),
                 },
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         }
@@ -387,6 +486,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 1,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: Some(Decimal::from(20)),
                 },
                 AssessmentComponent {
                     code: "practical".to_string(),
@@ -396,6 +497,8 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 2,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Practical),
+                    min_score: Some(Decimal::from(24)),
                 },
                 AssessmentComponent {
                     code: "attendance".to_string(),
@@ -405,10 +508,313 @@ impl AssessmentScheme {
                     weight: Decimal::ONE,
                     sort_order: 3,
                     is_required: true,
+                    component_type: Some(AssessmentComponentKind::Attendance),
+                    min_score: None,
                 },
             ],
             is_default: true,
             is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create a vocational competency assessment scheme (100 points, practical mastery gate).
+    pub fn default_competency_vocational(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "Vocational Competency Assessment".to_string(),
+            name_ar: Some("تقييم الجدارات المهنية والتدريب العملي".to_string()),
+            description: Some(
+                "Competency-based evaluation: Theory(30) + Practical Skills(50, min 35) + Safety & Standards(20, min 15) = 100"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::ModuleAssessment,
+            institution_scope: InstitutionScope::Institute,
+            components: vec![
+                AssessmentComponent {
+                    code: "theory".to_string(),
+                    name: "Theory Knowledge".to_string(),
+                    name_ar: Some("المعارف النظرية".to_string()),
+                    max_score: Decimal::from(30),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: Some(Decimal::from(15)),
+                },
+                AssessmentComponent {
+                    code: "practical_skills".to_string(),
+                    name: "Practical Skill Execution".to_string(),
+                    name_ar: Some("التطبيق العملي والمهاري".to_string()),
+                    max_score: Decimal::from(50),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Practical),
+                    min_score: Some(Decimal::from(35)),
+                },
+                AssessmentComponent {
+                    code: "safety_standards".to_string(),
+                    name: "Safety & Professional Standards".to_string(),
+                    name_ar: Some("معايير السلامة المهنية والانضباط".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 3,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Competency),
+                    min_score: Some(Decimal::from(15)),
+                },
+            ],
+            is_default: false,
+            is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create standard Yemeni school term aggregation scheme (20 coursework + 30 exam = 50).
+    pub fn default_yemen_school_term_aggregation(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "School Term Evaluation (50 pts)".to_string(),
+            name_ar: Some("محصلة الفصل الدراسي المدرسي (50 درجة)".to_string()),
+            description: Some(
+                "Yemeni standard school term: Monthly Coursework Average(20) + Term Exam(30) = 50"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(50),
+            formula: None,
+            level: AssessmentLevel::Term,
+            institution_scope: InstitutionScope::School,
+            components: vec![
+                AssessmentComponent {
+                    code: "coursework_contribution".to_string(),
+                    name: "Monthly Coursework Contribution".to_string(),
+                    name_ar: Some("محصلة الأعمال الشهرية".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "term_exam".to_string(),
+                    name: "Term Final Examination".to_string(),
+                    name_ar: Some("اختبار نهاية الفصل".to_string()),
+                    max_score: Decimal::from(30),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: Some(Decimal::from(10)),
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create credit-hour university course assessment scheme (100 points).
+    pub fn default_university_credit(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "University Credit-Hour Course Assessment".to_string(),
+            name_ar: Some("تقييم المقرر بالساعات المعتمدة (100 درجة)".to_string()),
+            description: Some(
+                "University assessment: Coursework(20) + Midterm(20) + Practical/Project(20) + Final Exam(40) = 100"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::Coursework,
+            institution_scope: InstitutionScope::University,
+            components: vec![
+                AssessmentComponent {
+                    code: "coursework".to_string(),
+                    name: "Assignments & Quizzes".to_string(),
+                    name_ar: Some("الواجبات والاختبارات القصيرة".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "midterm".to_string(),
+                    name: "Midterm Examination".to_string(),
+                    name_ar: Some("الاختبار النصفي".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Midterm),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "project_lab".to_string(),
+                    name: "Project / Laboratory Work".to_string(),
+                    name_ar: Some("المشروع / التطبيق العملي".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 3,
+                    is_required: false,
+                    component_type: Some(AssessmentComponentKind::Lab),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "final_exam".to_string(),
+                    name: "Comprehensive Final Examination".to_string(),
+                    name_ar: Some("الاختبار النهائي الشامل".to_string()),
+                    max_score: Decimal::from(40),
+                    weight: Decimal::ONE,
+                    sort_order: 4,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: Some(Decimal::from(20)),
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create Yemen secondary certificate (Thanawiya Amma) scheme.
+    /// Grade 12: Ministerial Exam(80) + Cumulative Prior-Year Score(20) = 100.
+    pub fn yemen_secondary_certificate(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "Secondary Certificate (Thanawiya)".to_string(),
+            name_ar: Some("الشهادة الثانوية العامة".to_string()),
+            description: Some(
+                "Yemen secondary certificate: Ministerial Exam(80) + Cumulative Prior-Year Average(20) = 100"
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::Certificate,
+            institution_scope: InstitutionScope::School,
+            components: vec![
+                AssessmentComponent {
+                    code: "ministerial_exam".to_string(),
+                    name: "Ministerial Examination".to_string(),
+                    name_ar: Some("الاختبار الوزاري".to_string()),
+                    max_score: Decimal::from(80),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: None,
+                },
+                AssessmentComponent {
+                    code: "cumulative_prior_years".to_string(),
+                    name: "Cumulative Prior-Year Average".to_string(),
+                    name_ar: Some("الدرجة التراكمية من السنوات السابقة".to_string()),
+                    max_score: Decimal::from(20),
+                    weight: Decimal::ONE,
+                    sort_order: 2,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::Coursework),
+                    min_score: None,
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            source_document: Some("Yemen MoE Sana'a — Secondary Certificate Examination Regulations".to_string()),
+            source_authority: Some("Ministry of Education and Scientific Research, Sana'a".to_string()),
+            verification_status: Some("verified".to_string()),
+            effective_date: None,
+            policy_version: 1,
+            min_attendance_ratio: Some(Decimal::new(75, 2)), // 75%
+            pass_threshold: Some(Decimal::new(50, 2)), // 50%
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Create Yemen basic certificate (Grade 9) examination scheme.
+    /// Structure details are configurable until fully verified.
+    pub fn yemen_basic_certificate(org_id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id: Uuid::new_v4(),
+            org_id,
+            name: "Basic Education Certificate (Grade 9)".to_string(),
+            name_ar: Some("شهادة التعليم الأساسي (الصف التاسع)".to_string()),
+            description: Some(
+                "Yemen basic education certificate examination — centrally administered by MoE Sana'a."
+                    .to_string(),
+            ),
+            max_score: Decimal::from(100),
+            formula: None,
+            level: AssessmentLevel::Certificate,
+            institution_scope: InstitutionScope::School,
+            components: vec![
+                AssessmentComponent {
+                    code: "certificate_exam".to_string(),
+                    name: "Certificate Examination".to_string(),
+                    name_ar: Some("اختبار الشهادة الأساسية".to_string()),
+                    max_score: Decimal::from(100),
+                    weight: Decimal::ONE,
+                    sort_order: 1,
+                    is_required: true,
+                    component_type: Some(AssessmentComponentKind::FinalExam),
+                    min_score: None,
+                },
+            ],
+            is_default: true,
+            is_system: true,
+            source_document: Some("Yemen MoE Sana'a — Basic Education Certificate Regulations".to_string()),
+            source_authority: Some("Ministry of Education and Scientific Research, Sana'a".to_string()),
+            verification_status: Some("partially_verified".to_string()),
+            effective_date: None,
+            policy_version: 1,
+            min_attendance_ratio: Some(Decimal::new(75, 2)),
+            pass_threshold: Some(Decimal::new(50, 2)),
             created_at: now,
             updated_at: now,
         }
@@ -431,7 +837,21 @@ mod tests {
         assert_eq!(term.level, AssessmentLevel::Term);
         assert!(!monthly.name.to_lowercase().contains("school"));
         assert!(!term.name.to_lowercase().contains("school"));
-        assert!(!monthly.description.as_ref().unwrap().to_lowercase().contains("kindergarten"));
-        assert!(!term.description.as_ref().unwrap().to_lowercase().contains("kindergarten"));
+        assert!(
+            !monthly
+                .description
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .contains("kindergarten")
+        );
+        assert!(
+            !term
+                .description
+                .as_ref()
+                .unwrap()
+                .to_lowercase()
+                .contains("kindergarten")
+        );
     }
 }

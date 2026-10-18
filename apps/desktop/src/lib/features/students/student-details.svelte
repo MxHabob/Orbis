@@ -27,12 +27,22 @@ import {
 } from "@orbis/ui/card";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
-import { AcademicCap } from "@orbis/icons";
+import {
+  AcademicCap,
+  Calendar,
+  CheckCircle,
+  ClockRotateRight,
+  Sparkles,
+  Tag,
+  UserBadgeCheck,
+} from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
+import { goto } from "$app/navigation";
 
-import { l } from "$lib/core/i18n";
+import { l, formatNumber, formatPercent } from "$lib/core/i18n";
+import { localizeHref } from "$lib/paraglide/runtime";
 import { createStudentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
@@ -45,6 +55,9 @@ import {
   type BehaviorRecordDto,
   type ClassDto,
   type StudentDetailDto,
+  type StudentTermReportCard,
+  type CumulativeGpaRecordDto,
+  type EnrollmentDto,
 } from "$lib/api";
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
@@ -126,9 +139,11 @@ const monthsList = $derived([
 
 // Evaluation State & Loading
 let evaluationLoading = $state(true);
-let gradesReport = $state<CalculationResultDto | null>(null);
-let attendanceReport = $state<AttendanceDto | null>(null);
+let termReport = $state<StudentTermReportCard | null>(null);
+let gpaReport = $state<CumulativeGpaRecordDto | null>(null);
+let attendanceRecords = $state<AttendanceDto[]>([]);
 let behaviorRecords = $state<BehaviorRecordDto[]>([]);
+let activeEnrollment = $state<EnrollmentDto | null>(null);
 
 function populateForm(detail: StudentDetailDto) {
   const p = detail.person;
@@ -155,7 +170,7 @@ function populateForm(detail: StudentDetailDto) {
   }
 
   sex = p?.gender || "male";
-  classId = String(e?.class_id || "");
+  classId = String(e?.section_id || "");
   studentNumber = String(s?.student_number || "");
   email = String(p?.email || "");
   phone = String(p?.phone || "");
@@ -176,15 +191,15 @@ onMount(async () => {
     const detail = await api.getStudent(studentId);
     if (detail) {
       populateForm(detail);
-      let enrollment = detail.enrollment;
+      activeEnrollment = detail.enrollment ?? null;
 
-      if (!enrollment) {
+      if (!activeEnrollment) {
         try {
           const enrollments = await api.listEnrollments({
             student_id: studentId,
             page_size: 100,
           });
-          enrollment =
+          activeEnrollment =
             enrollments.find(
               (item) =>
                 item.period_id === academicContext.effectivePeriodId &&
@@ -193,24 +208,40 @@ onMount(async () => {
             enrollments.find(
               (item) => item.status === "active" || item.status === "pending_approval",
             ) ??
-            enrollments[0];
-          classId = String(enrollment?.class_id || "");
+            enrollments[0] ??
+            null;
+          if (activeEnrollment?.section_id) {
+            classId = String(activeEnrollment.section_id);
+          }
         } catch (error) {
           console.error("Failed to load student enrollments:", error);
-          toast.error(extractErrorMessage(error));
         }
       }
 
       const periodId =
-        academicContext.effectivePeriodId || enrollment?.period_id || "";
-      if (periodId && studentId) {
-        const gRes = await api.calculateGpa({ student_id: studentId, period_id: periodId }).catch(() => null);
-        gradesReport = gRes;
-        attendanceReport = null;
-        behaviorRecords = [];
+        academicContext.effectivePeriodId || activeEnrollment?.period_id || "";
+
+      // Load attendance, behavior, and academic results in parallel
+      const [attRes, behRes, termRes, gpaRes] = await Promise.allSettled([
+        api.listStudentAttendance(studentId),
+        api.listStudentBehaviorRecords(studentId),
+        periodId ? api.getStudentTermResults(studentId, periodId, classId || undefined) : Promise.resolve(null),
+        periodId ? api.calculateGpa({ student_id: studentId, period_id: periodId }) : Promise.resolve(null),
+      ]);
+
+      if (attRes.status === "fulfilled" && Array.isArray(attRes.value)) {
+        attendanceRecords = attRes.value;
+      }
+      if (behRes.status === "fulfilled" && Array.isArray(behRes.value)) {
+        behaviorRecords = behRes.value;
+      }
+      if (termRes.status === "fulfilled" && termRes.value) {
+        termReport = termRes.value;
+      }
+      if (gpaRes.status === "fulfilled" && gpaRes.value) {
+        gpaReport = gpaRes.value;
       }
     }
-
   } catch (e) {
     console.error("Failed to load evaluation reports:", e);
   } finally {
@@ -218,44 +249,109 @@ onMount(async () => {
   }
 });
 
-// Derived performance statistics
+// Derived academic performance statistics
 const academicStats = $derived.by(() => {
-  const list = gradesReport?.grades || [];
-  if (list.length === 0)
-    return { avg: 0, passed: 0, failed: 0, gradeLetter: "—" };
-  let totalPct = 0;
-  let passed = 0;
-  let failed = 0;
-  for (const g of list) {
-    const max = Number(g.max_score || 100);
-    const score = Number(g.score || 0);
-    const pctVal = max > 0 ? (score / max) * 100 : score;
-    totalPct += pctVal;
-    if (pctVal >= 50) {
-      passed++;
-    } else {
-      failed++;
+  if (termReport && termReport.subjects && termReport.subjects.length > 0) {
+    const subs = termReport.subjects;
+    let totalPct = 0;
+    let passed = 0;
+    let failed = 0;
+    for (const s of subs) {
+      const pct = Number(s.percentage || 0);
+      totalPct += pct;
+      if (String(s.status || "").toLowerCase() === "passed" || pct >= 50) {
+        passed++;
+      } else {
+        failed++;
+      }
     }
+    const avg = Math.round(Number(termReport.overall_percentage ?? (totalPct / subs.length)));
+    let letter = "F";
+    if (avg >= 90) letter = "A";
+    else if (avg >= 85) letter = "B+";
+    else if (avg >= 80) letter = "B";
+    else if (avg >= 75) letter = "C+";
+    else if (avg >= 70) letter = "C";
+    else if (avg >= 60) letter = "D";
+    else if (avg >= 50) letter = "E";
+    return {
+      avg,
+      passed,
+      failed,
+      gradeLetter: letter,
+      gpa: termReport.gpa != null ? Number(termReport.gpa).toFixed(2) : null,
+      rank: termReport.rank_in_class ?? null,
+      totalStudents: termReport.total_students_in_class ?? null,
+      hasData: true,
+    };
   }
-  const avg = Math.round(totalPct / list.length);
-  let letter = "F";
-  if (avg >= 90) letter = "A";
-  else if (avg >= 85) letter = "B+";
-  else if (avg >= 80) letter = "B";
-  else if (avg >= 75) letter = "C+";
-  else if (avg >= 70) letter = "C";
-  else if (avg >= 60) letter = "D";
-  else if (avg >= 50) letter = "E";
-  return { avg, passed, failed, gradeLetter: letter };
+
+  const list = (gpaReport as any)?.summary || (gpaReport as any)?.grades || [];
+  if (list.length > 0) {
+    let totalPct = 0;
+    let passed = 0;
+    let failed = 0;
+    for (const g of list) {
+      const max = Number(g.max_score || 100);
+      const score = Number(g.score || 0);
+      const pctVal = max > 0 ? (score / max) * 100 : score;
+      totalPct += pctVal;
+      if (pctVal >= 50) passed++;
+      else failed++;
+    }
+    const avg = Math.round(totalPct / list.length);
+    let letter = "F";
+    if (avg >= 90) letter = "A";
+    else if (avg >= 85) letter = "B+";
+    else if (avg >= 80) letter = "B";
+    else if (avg >= 75) letter = "C+";
+    else if (avg >= 70) letter = "C";
+    else if (avg >= 60) letter = "D";
+    else if (avg >= 50) letter = "E";
+    return {
+      avg,
+      passed,
+      failed,
+      gradeLetter: letter,
+      gpa: (gpaReport as any)?.gpa != null ? Number((gpaReport as any).gpa).toFixed(2) : null,
+      rank: null,
+      totalStudents: null,
+      hasData: true,
+    };
+  }
+
+  return { avg: 0, passed: 0, failed: 0, gradeLetter: "—", gpa: null, rank: null, totalStudents: null, hasData: false };
 });
 
+// Derived attendance statistics
+const attendanceStats = $derived.by(() => {
+  if (!attendanceRecords.length) {
+    return { present: 0, absent: 0, late: 0, excused: 0, total: 0, rate: 100, hasData: false };
+  }
+  let present = 0;
+  let absent = 0;
+  let late = 0;
+  let excused = 0;
+  for (const a of attendanceRecords) {
+    const st = String(a.status || "").toLowerCase();
+    if (st.includes("present") || st.includes("حاضر")) present++;
+    else if (st.includes("absent") || st.includes("غائب")) absent++;
+    else if (st.includes("late") || st.includes("متأخر")) late++;
+    else if (st.includes("excused") || st.includes("معذور")) excused++;
+  }
+  const total = present + absent + late + excused;
+  const rate = total > 0 ? Math.round(((present + late * 0.5) / total) * 100) : 100;
+  return { present, absent, late, excused, total, rate, hasData: total > 0 };
+});
+
+// Derived behavior statistics
 const behaviorStats = $derived.by(() => {
   let positive = 0;
   let negative = 0;
   let points = 100;
   for (const rec of behaviorRecords) {
-    const type = String(rec.behavior_type || "").toLowerCase();
-    const pts = Number(rec.points || 0);
+    const type = String(rec.record_type || (rec as any).behavior_type || "").toLowerCase();
+    const pts = Math.abs(Number(rec.points || 0));
     if (type === "positive") {
       positive++;
       points += pts;
@@ -264,22 +360,16 @@ const behaviorStats = $derived.by(() => {
       points -= pts;
     }
   }
-  return { positive, negative, points };
+  return { positive, negative, points, hasData: behaviorRecords.length > 0 };
 });
 
+// Automated recommendation engine
 const decisionHelper = $derived.by(() => {
   const acadAvg = academicStats.avg;
-  const attRate = attendanceReport ? Number(attendanceReport.rate ?? 100) : 100;
+  const attRate = attendanceStats.rate;
   const negBeh = behaviorStats.negative;
 
-  const hasNoGrades = (gradesReport?.grades || []).length === 0;
-  const hasNoAttendance =
-    !attendanceReport ||
-    ((attendanceReport.present_count ?? 0) === 0 &&
-      (attendanceReport.absent_count ?? 0) === 0 &&
-      (attendanceReport.late_count ?? 0) === 0);
-  const hasNoBehavior = behaviorRecords.length === 0;
-  const hasNoData = hasNoGrades && hasNoAttendance && hasNoBehavior;
+  const hasNoData = !academicStats.hasData && !attendanceStats.hasData && !behaviorStats.hasData;
 
   if (hasNoData) {
     return {
@@ -357,6 +447,7 @@ async function saveStudentDetails(e: Event) {
 
     const targetStudentId = student?.id || studentId;
 
+    // 1. Update Profile Fields
     await api.updateStudentProfile({
       student_id: targetStudentId,
       first_name: firstName,
@@ -365,6 +456,7 @@ async function saveStudentDetails(e: Event) {
       first_name_ar: firstNameAr,
       middle_name_ar: middleNameAr,
       last_name_ar: lastNameAr,
+      display_name: nameAr.trim() || nameEn.trim() || undefined,
       gender: sex || undefined,
       birth_date: birthDate || undefined,
       national_id: nationalId.trim() || undefined,
@@ -379,12 +471,38 @@ async function saveStudentDetails(e: Event) {
       address: address.trim() || undefined,
     });
 
+    // 2. Update Status if changed
     const currentStatus = student?.status === "active";
     if (isActiveState !== currentStatus) {
       await api.updateStudentStatus({
         student_id: targetStudentId,
         status: isActiveState ? "active" : "withdrawn",
       });
+    }
+
+    // 3. Update Class / Enrollment if changed
+    if (classId) {
+      if (activeEnrollment && String(activeEnrollment.section_id) !== String(classId)) {
+        await api.transferClass({
+          enrollment_id: activeEnrollment.id,
+          target_class_id: classId,
+          reason: "Class changed from student details profile",
+        }).catch((err) => {
+          console.warn("Transfer class warning:", err);
+        });
+      } else if (!activeEnrollment) {
+        const periodId = academicContext.effectivePeriodId;
+        if (periodId) {
+          await api.enrollStudent({
+            period_id: periodId,
+            student_id: targetStudentId,
+            section_id: classId,
+            student_number: studentNumber || targetStudentId.slice(0, 8),
+          }).catch((err) => {
+            console.warn("Enroll student warning:", err);
+          });
+        }
+      }
     }
 
     toast.success(m.common_form_success_update());
@@ -408,6 +526,24 @@ async function saveStudentDetails(e: Event) {
     </div>
   {:else}
     <div class="flex flex-col gap-8 w-full max-w-6xl mx-auto p-1">
+      {#if student?.status === "inactive"}
+        <div
+          role="status"
+          class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3"
+        >
+          <p class="text-sm text-amber-800 dark:text-amber-200">
+            {m.student_registration_draft_saved()}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onclick={() =>
+              goto(localizeHref(`/${orgId}/students/${studentId}/edit`))}
+          >
+            {m.student_registration_resume_draft()}
+          </Button>
+        </div>
+      {/if}
       
       <!-- Evaluation Dashboard Section -->
       <div class="flex flex-col gap-4">
@@ -422,6 +558,102 @@ async function saveStudentDetails(e: Event) {
           </div>
         {:else}
           <div class="flex flex-col gap-6">
+            <!-- Live Performance Metrics Cards Strip -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Metric 1: Academic Result -->
+              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.academics_card_average_grade()}</span>
+                  <AcademicCap size={15} class="text-primary" />
+                </div>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-xl font-bold font-mono text-foreground">
+                    {academicStats.hasData ? `${academicStats.avg}%` : "—"}
+                  </span>
+                  {#if academicStats.hasData && academicStats.gradeLetter !== "—"}
+                    <Badge variant="outline" class="text-[9px] font-bold px-1.5 py-0">
+                      {academicStats.gradeLetter}
+                    </Badge>
+                  {/if}
+                </div>
+                <div class="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+                  {#if academicStats.gpa}
+                    <span>GPA: <strong class="text-foreground">{academicStats.gpa}</strong></span>
+                  {/if}
+                  {#if academicStats.rank}
+                    <span>| {m.operations_ui_rank()}: <strong class="text-foreground">#{academicStats.rank}</strong>{academicStats.totalStudents ? `/${academicStats.totalStudents}` : ''}</span>
+                  {/if}
+                </div>
+              </Card>
+
+              <!-- Metric 2: Attendance -->
+              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_card_attendance_rate()}</span>
+                  <Calendar size={15} class="text-emerald-500" />
+                </div>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-xl font-bold font-mono text-foreground">
+                    {attendanceStats.hasData ? formatPercent(attendanceStats.rate) : "—"}
+                  </span>
+                  {#if attendanceStats.absent > 0}
+                    <Badge variant="destructive" class="text-[9px] font-semibold px-1 py-0">
+                      {attendanceStats.absent} {m.academics_attendance_col_absent()}
+                    </Badge>
+                  {/if}
+                </div>
+                <div class="text-[10px] text-muted-foreground font-mono">
+                  {formatNumber(attendanceStats.present)} {m.academics_attendance_day_unit()} {m.academics_attendance_col_present()}
+                  {#if attendanceStats.late > 0}
+                    • {attendanceStats.late} {m.academics_attendance_col_late()}
+                  {/if}
+                </div>
+              </Card>
+
+              <!-- Metric 3: Behavior -->
+              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.ui_copy_behavioral_standing_968ef046()}</span>
+                  <Sparkles size={15} class="text-amber-500" />
+                </div>
+                <div class="flex items-baseline gap-2">
+                  <span class="text-xl font-bold font-mono text-foreground">
+                    {behaviorStats.points}
+                  </span>
+                  <span class="text-[10px] text-muted-foreground font-semibold">pts</span>
+                </div>
+                <div class="text-[10px] text-muted-foreground">
+                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold">+{behaviorStats.positive}</span>
+                  <span class="mx-1">/</span>
+                  <span class="text-rose-600 dark:text-rose-400 font-semibold">-{behaviorStats.negative}</span>
+                  <span class="ms-1">{m.academics_behavior_records_title()}</span>
+                </div>
+              </Card>
+
+              <!-- Metric 4: Enrollment & Class -->
+              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_table_class()}</span>
+                  <Tag size={15} class="text-primary" />
+                </div>
+                <div class="flex items-baseline gap-2 truncate">
+                  <span class="text-sm font-bold truncate text-foreground">
+                    {selectedClassName}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <Badge variant={isActiveState ? "lime" : "secondary"} class="text-[9px] px-1.5 py-0 font-medium">
+                    {isActiveState ? m.common_phase_active() : m.students_student_detail_row_status_inactive()}
+                  </Badge>
+                  {#if student?.standing && student.standing !== "good_standing"}
+                    <Badge variant="outline" class="text-[9px] px-1.5 py-0 font-mono text-amber-500">
+                      {student.standing}
+                    </Badge>
+                  {/if}
+                </div>
+              </Card>
+            </div>
+
             {#if classId}
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Left: Attendance Trends Card (2/3 width) -->
@@ -477,6 +709,7 @@ async function saveStudentDetails(e: Event) {
                 id="student_status_switch"
                 checked={isActiveState}
                 onCheckedChange={(checked) => isActiveState = checked}
+                disabled={student?.status === "inactive"}
               />
               <Label for="student_status_switch" class="text-xs text-muted-foreground select-none cursor-pointer">
                 {isActiveState ? m.common_phase_active() : m.students_student_detail_row_status_inactive()}

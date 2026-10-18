@@ -5,28 +5,34 @@
  * Enforces session requirement and mounts primary App Stack.
  */
 
-import { useTheme } from "@/hooks/use-theme";
-import { useAuth } from "@/lib/api";
 import { Redirect, Stack } from "expo-router";
-import { ActivityIndicator, View } from "react-native";
+import { View } from "react-native";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
+import { useAuth } from "@/lib/api";
+import { useEffectiveContext } from "@/providers/effective-context";
 
 export default function AppProtectedLayout() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const theme = useTheme();
+  const { isAuthenticated, isInitializing } = useAuth();
+  const { isReady: isContextReady } = useEffectiveContext();
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
-      <View
-        className="flex-1 items-center justify-center bg-background"
-      >
-        <ActivityIndicator size="large" color={theme.primary} />
+      <View className="flex-1 items-center justify-center bg-background">
+        <LoadingIndicator size="lg" />
       </View>
     );
   }
 
-  // Route protection: If unauthenticated, redirect to Sign In
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/sign-in" />;
+  }
+
+  if (!isContextReady) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <LoadingIndicator size="lg" />
+      </View>
+    );
   }
 
   return (
@@ -41,6 +47,7 @@ export default function AppProtectedLayout() {
       <Stack.Screen name="student/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="class/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
+      <Stack.Screen name="webviewer" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -13,8 +13,8 @@ use orbis_domain::entities::student_guardian::StudentGuardian as DomainStudentGu
 use orbis_domain::errors::DomainError;
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginatedList, StudentFilter};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
-    QueryOrder, Set, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, PaginatorTrait,
+    QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -103,14 +103,31 @@ impl StudentRepository for StudentRepoImpl {
         }
 
         if let Some(ref s) = filter.search {
-            if !s.is_empty() {
-                let search_pat = format!("%{}%", s);
-                query = query.filter(
-                    student::Column::StudentNumber
-                        .like(&search_pat)
-                        .or(student::Column::FullName.like(&search_pat))
-                        .or(student::Column::NationalId.like(&search_pat)),
-                );
+            let terms: Vec<_> = s
+                .split_whitespace()
+                .filter(|term| !term.is_empty())
+                .collect();
+            if !terms.is_empty() {
+                let mut all_terms = Condition::all();
+                for term in terms {
+                    let search_pat = format!("%{term}%");
+                    all_terms = all_terms.add(
+                        Condition::any()
+                            .add(student::Column::StudentNumber.like(&search_pat))
+                            .add(person::Column::FirstName.like(&search_pat))
+                            .add(person::Column::MiddleName.like(&search_pat))
+                            .add(person::Column::LastName.like(&search_pat))
+                            .add(person::Column::FirstNameAr.like(&search_pat))
+                            .add(person::Column::MiddleNameAr.like(&search_pat))
+                            .add(person::Column::LastNameAr.like(&search_pat))
+                            .add(person::Column::DisplayName.like(&search_pat))
+                            .add(person::Column::NationalId.like(&search_pat))
+                            .add(person::Column::PassportNumber.like(&search_pat))
+                            .add(person::Column::Email.like(&search_pat))
+                            .add(person::Column::Phone.like(&search_pat)),
+                    );
+                }
+                query = query.filter(all_terms);
             }
         }
 
@@ -136,23 +153,23 @@ impl StudentRepository for StudentRepoImpl {
                 let pm = pm_opt.unwrap_or_else(|| person::Model {
                     id: sm.person_id,
                     org_id: Some(sm.org_id),
-                    first_name: sm.first_name.clone(),
+                    first_name: String::new(),
                     middle_name: None,
-                    last_name: sm.last_name.clone(),
+                    last_name: String::new(),
                     first_name_ar: None,
                     middle_name_ar: None,
                     last_name_ar: None,
                     display_name: None,
-                    national_id: sm.national_id.clone(),
-                    passport_number: sm.passport_number.clone(),
-                    gender: Some(sm.gender.clone()),
-                    birth_date: sm.date_of_birth.map(|d| d.to_string()),
-                    place_of_birth: sm.place_of_birth.clone(),
-                    nationality: sm.nationality.clone(),
-                    blood_type: sm.blood_type.clone(),
+                    national_id: None,
+                    passport_number: None,
+                    gender: None,
+                    birth_date: None,
+                    place_of_birth: None,
+                    nationality: None,
+                    blood_type: None,
                     marital_status: None,
-                    medical_notes: sm.medical_notes.clone(),
-                    special_needs_notes: sm.special_needs_notes.clone(),
+                    medical_notes: None,
+                    special_needs_notes: None,
                     phone: None,
                     email: None,
                     address: None,
@@ -189,13 +206,17 @@ impl StudentRepository for StudentRepoImpl {
         org_id: Uuid,
         national_id: &str,
     ) -> Result<Option<DomainStudent>, DomainError> {
-        let model = StudentEntity::find()
-            .filter(student::Column::OrgId.eq(org_id))
-            .filter(student::Column::NationalId.eq(national_id))
+        let person = crate::models::person::Entity::find()
+            .filter(crate::models::person::Column::OrgId.eq(Some(org_id)))
+            .filter(crate::models::person::Column::NationalId.eq(Some(national_id.to_string())))
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(map_student_model_to_domain))
+        if let Some(p) = person {
+            self.find_by_person_id(p.id).await
+        } else {
+            Ok(None)
+        }
     }
 
     async fn find_by_person_id(
@@ -314,29 +335,16 @@ fn student_to_active_model(s: &DomainStudent) -> student::ActiveModel {
         person_id: Set(s.person_id),
         user_id: Set(s.user_id),
         student_number: Set(s.student_number.clone()),
-        national_id: Set(None),
-        passport_number: Set(None),
-        first_name: Set("".into()),
-        last_name: Set("".into()),
-        full_name: Set("".into()),
-        name_ar: Set(None),
-        gender: Set("male".into()),
-        date_of_birth: Set(None),
-        place_of_birth: Set(None),
-        nationality: Set(None),
-        blood_type: Set(None),
-        medical_notes: Set(None),
-        special_needs_notes: Set(None),
-        org_unit_id: Set(s.org_unit_id),
         status: Set(s.status.to_string()),
         standing: Set(s.standing.to_string()),
         admitted_at: Set(s.admitted_at),
         graduated_at: Set(s.graduated_at),
         is_deleted: Set(s.is_deleted),
         deleted_at: Set(s.deleted_at),
+        meta: Set(Some(s.meta.clone())),
+        org_unit_id: Set(s.org_unit_id),
         created_by: Set(s.created_by),
         updated_by: Set(s.updated_by),
-        meta: Set(Some(s.meta.clone())),
         created_at: Set(s.created_at),
         updated_at: Set(s.updated_at),
     }
@@ -350,6 +358,7 @@ fn map_student_model_to_domain(m: student::Model) -> DomainStudent {
         user_id: m.user_id,
         student_number: m.student_number,
         status: match m.status.as_str() {
+            "inactive" => StudentStatus::Inactive,
             "on_leave" => StudentStatus::OnLeave,
             "suspended" => StudentStatus::Suspended,
             "withdrawn" => StudentStatus::Withdrawn,
@@ -394,9 +403,7 @@ fn map_person_model_to_domain(m: person::Model) -> DomainPerson {
         national_id: m.national_id,
         passport_number: m.passport_number,
         gender: m.gender,
-        birth_date: m
-            .birth_date
-            .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+        birth_date: m.birth_date,
         place_of_birth: m.place_of_birth,
         nationality: m.nationality,
         blood_type: m.blood_type,
@@ -433,8 +440,8 @@ impl EnrollmentRepository for StudentRepoImpl {
             query = query.filter(enrollment::Column::PeriodId.eq(period_id));
         }
 
-        if let Some(class_id) = filter.class_id {
-            query = query.filter(enrollment::Column::ClassId.eq(class_id));
+        if let Some(section_id) = filter.section_id {
+            query = query.filter(enrollment::Column::SectionId.eq(section_id));
         }
 
         if let Some(student_id) = filter.student_id {
@@ -487,9 +494,12 @@ impl EnrollmentRepository for StudentRepoImpl {
             .collect())
     }
 
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainEnrollment>, DomainError> {
+    async fn find_by_section(
+        &self,
+        section_id: Uuid,
+    ) -> Result<Vec<DomainEnrollment>, DomainError> {
         let models = EnrollmentEntity::find()
-            .filter(enrollment::Column::ClassId.eq(class_id))
+            .filter(enrollment::Column::SectionId.eq(section_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -517,10 +527,11 @@ impl EnrollmentRepository for StudentRepoImpl {
             org_id: Set(e.org_id),
             period_id: Set(e.period_id),
             student_id: Set(e.student_id),
-            class_id: Set(e.class_id),
+            section_id: Set(e.section_id),
             student_number: Set(e.student_number.clone()),
             status: Set(e.status.to_string()),
             study_mode: Set(Some(e.study_mode.to_string())),
+            attempt_number: Set(e.attempt_number),
             is_attendance_exempt: Set(Some(e.is_attendance_exempt)),
             is_grade_exempt: Set(Some(e.is_grade_exempt)),
             enrolled_at: Set(e.enrolled_at.into()),
@@ -582,7 +593,8 @@ fn map_enrollment_model_to_domain(m: enrollment::Model) -> DomainEnrollment {
         org_id: m.org_id,
         period_id: m.period_id,
         student_id: m.student_id,
-        class_id: m.class_id,
+        section_id: m.section_id,
+        attempt_number: m.attempt_number,
         student_number: m.student_number,
         study_mode: match m.study_mode.as_deref().unwrap_or("regular") {
             "homeschooled" => StudyMode::Homeschooled,
@@ -672,6 +684,7 @@ impl StudentGuardianRepository for StudentRepoImpl {
     async fn save(&self, g: &DomainStudentGuardian) -> Result<(), DomainError> {
         let active = student_guardian::ActiveModel {
             id: Set(g.id),
+            org_id: Set(None),
             student_id: Set(g.student_id),
             guardian_id: Set(g.guardian_id),
             relationship: Set(g.relationship.clone()),

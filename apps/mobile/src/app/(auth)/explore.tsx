@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
-import { ScrollView, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 
@@ -15,16 +16,18 @@ export default function VisitorExploreScreen() {
   const { t } = useI18n();
 
   return (
-    <ScrollView
-      className="flex-1 bg-background"
-      contentContainerClassName="flex-grow justify-between gap-six px-five pb-eight pt-twelve"
+    <ScreenScrollView
+      edges={["top", "bottom", "left", "right"]}
+      scrollViewProps={{
+        contentContainerClassName: "flex-grow justify-between gap-eight px-six pb-eight pt-eight",
+      }}
     >
-      <View className="gap-six">
-        <View className="gap-two">
-          <Text className="text-sm font-semibold uppercase tracking-widest text-primary">
+      <View className="gap-eight">
+        <View className="gap-three">
+          <Text className="text-xs font-semibold uppercase tracking-widest text-primary">
             {t("nav_app_name")}
           </Text>
-          <Text className="text-3xl font-extrabold text-foreground">
+          <Text className="text-[32px] leading-[38px] font-bold tracking-tight text-foreground">
             {t("visitor_title")}
           </Text>
           <Text className="text-base leading-6 text-muted-foreground">
@@ -32,11 +35,11 @@ export default function VisitorExploreScreen() {
           </Text>
         </View>
 
-        <View className="gap-three">
-          {VISITOR_FEATURES.map(([titleKey, descriptionKey]) => (
+        <View className="overflow-hidden border-y border-border">
+          {VISITOR_FEATURES.map(([titleKey, descriptionKey], index) => (
             <View
               key={titleKey}
-              className="gap-one rounded-xl border border-border bg-card p-four"
+              className={`gap-one py-four ${index < VISITOR_FEATURES.length - 1 ? "border-b border-border" : ""}`}
             >
               <Text className="text-base font-semibold text-foreground">
                 {t(titleKey)}
@@ -64,6 +67,6 @@ export default function VisitorExploreScreen() {
           size="lg"
         />
       </View>
-    </ScrollView>
+    </ScreenScrollView>
   );
 }

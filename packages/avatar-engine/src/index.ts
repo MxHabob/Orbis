@@ -6,10 +6,20 @@ export { thinkAnimation } from "./animations/think.js";
 export { default as Avatar } from "./components/avatar.svelte";
 export { default as AvatarHats } from "./components/avatar-hats.svelte";
 export { default as AvatarPilotPlane } from "./components/avatar-pilot-plane.svelte";
-export { AvatarController } from "./core/avatar-controller.svelte";
+export { AvatarController } from "./core/avatar-controller.js";
 export {
   type AvatarState,
   AvatarStateMachine,
 } from "./core/avatar-state-machine.js";
-export type { AvatarHat } from "./core/types.js";
-export { ALL_AVATAR_HATS } from "./core/types.js";
+export {
+  type AvatarSvgOptions,
+  type AvatarSvgElement,
+  getAvatarDrawing,
+  getAvatarHatDrawing,
+  renderAvatarSvg,
+} from "./core/avatar-svg.js";
+export {
+  type AvatarHat,
+  ALL_AVATAR_HATS,
+  resolveAvatarHat,
+} from "./core/types.js";

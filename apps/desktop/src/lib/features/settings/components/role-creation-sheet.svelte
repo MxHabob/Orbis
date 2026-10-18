@@ -189,7 +189,10 @@ async function handleSubmit(e: SubmitEvent) {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-xl md:max-w-2xl overflow-hidden p-0 gap-0">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-xl data-[side=end]:md:!max-w-2xl"
+    class="flex flex-col h-full overflow-hidden p-0 gap-0"
+  >
     <form onsubmit={handleSubmit} class="flex flex-col h-full overflow-hidden gap-0">
       <!-- Sheet Header -->
       <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">

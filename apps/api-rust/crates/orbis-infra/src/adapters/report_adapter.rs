@@ -383,6 +383,47 @@ mod xlsx_tests {
     use std::io::Read;
     use zip::ZipArchive;
 
+    fn empty_dataset() -> ReportDataset {
+        ReportDataset {
+            report_code: "students.overview".into(),
+            report_name: "Student overview".into(),
+            report_name_ar: "ملخص الطلاب".into(),
+            org: OrgReportContext {
+                name: "North Campus".into(),
+                ..OrgReportContext::default()
+            },
+            parameter_summary: Vec::new(),
+            columns: Vec::new(),
+            rows: Vec::new(),
+            groups: None,
+            aggregations: None,
+            total_count: 0,
+            generated_at: Utc::now(),
+            generated_by: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn html_renderer_wraps_default_reports_with_organization_branding() {
+        let dataset = empty_dataset();
+        let export = HtmlRenderer
+            .render(&dataset, None, None)
+            .await
+            .expect("HTML rendering should succeed with default master");
+        let html = String::from_utf8(export.data).expect("HTML output should be utf-8");
+
+        assert!(html.contains("North Campus"));
+        assert!(html.contains("Student overview"));
+        assert!(html.contains("Orbis Educational System"));
+    }
+
+    #[tokio::test]
+    async fn pdf_renderer_rejects_missing_docforge_template_instead_of_mislabelling_html() {
+        let result = PdfRenderer.render(&empty_dataset(), None, None).await;
+
+        assert!(matches!(result, Err(DomainError::Validation(_))));
+    }
+
     #[tokio::test]
     async fn xlsx_renderer_creates_a_valid_workbook_with_escaped_cell_content() {
         let dataset = ReportDataset {
@@ -468,6 +509,8 @@ impl DocumentRenderer for HtmlRenderer {
         context.insert("is_rtl", &is_rtl);
         context.insert("org_name", &dataset.org.name);
         context.insert("org_name_ar", &dataset.org.name_ar);
+        context.insert("org_type", &"");
+        context.insert("org_type_ar", &"");
         context.insert("currency", &dataset.org.currency_code);
         context.insert("primary_color", &dataset.org.primary_color);
         context.insert("org_website", &dataset.org.website);
@@ -525,16 +568,16 @@ impl DocumentRenderer for HtmlRenderer {
             .render("inner", &context)
             .map_err(|e| DomainError::Internal(format!("Tera inner render error: {}", e)))?;
 
-        let final_html = if let Some(m) = master {
-            context.insert("inner_content", &inner_html);
-            let master_str = m.document_json.as_str();
-            tera.add_raw_template("master", master_str)
-                .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
-            tera.render("master", &context)
-                .map_err(|e| DomainError::Internal(format!("Tera master render error: {}", e)))?
-        } else {
-            inner_html
-        };
+        context.insert("inner_content", &inner_html);
+        let master_str = master.map_or(
+            crate::adapters::report_defaults::MASTER_TEMPLATE_HTML,
+            |template| template.document_json.as_str(),
+        );
+        tera.add_raw_template("master", master_str)
+            .map_err(|e| DomainError::Internal(format!("Tera master parse error: {}", e)))?;
+        let final_html = tera
+            .render("master", &context)
+            .map_err(|e| DomainError::Internal(format!("Tera master render error: {}", e)))?;
 
         let bytes = final_html.into_bytes();
         let size = bytes.len() as u64;
@@ -562,15 +605,30 @@ impl DocumentRenderer for PdfRenderer {
         &self,
         dataset: &ReportDataset,
         template: Option<&ReportTemplate>,
-        master: Option<&ReportTemplate>,
+        _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
         if let Some(t) = template {
-            if let Ok(doc) = serde_json::from_str::<docforge_engine::model::document::TemplateDocument>(&t.document_json) {
+            if let Ok(doc) = serde_json::from_str::<
+                docforge_engine::model::document::TemplateDocument,
+            >(&t.document_json)
+            {
                 let mut ctx_obj = serde_json::Map::new();
-                ctx_obj.insert("org".into(), serde_json::to_value(&dataset.org).unwrap_or_default());
-                ctx_obj.insert("columns".into(), serde_json::to_value(&dataset.columns).unwrap_or_default());
-                ctx_obj.insert("rows".into(), serde_json::Value::Array(dataset.rows.clone()));
-                ctx_obj.insert("subjects".into(), serde_json::Value::Array(dataset.rows.clone()));
+                ctx_obj.insert(
+                    "org".into(),
+                    serde_json::to_value(&dataset.org).unwrap_or_default(),
+                );
+                ctx_obj.insert(
+                    "columns".into(),
+                    serde_json::to_value(&dataset.columns).unwrap_or_default(),
+                );
+                ctx_obj.insert(
+                    "rows".into(),
+                    serde_json::Value::Array(dataset.rows.clone()),
+                );
+                ctx_obj.insert(
+                    "subjects".into(),
+                    serde_json::Value::Array(dataset.rows.clone()),
+                );
 
                 if let Some(aggs) = &dataset.aggregations {
                     ctx_obj.insert("totals".into(), aggs.totals.clone());
@@ -595,40 +653,23 @@ impl DocumentRenderer for PdfRenderer {
 
                 let context_val = serde_json::Value::Object(ctx_obj);
 
-                let font_candidates = [
-                    ("Amiri", "C:\\Windows\\Fonts\\tahoma.ttf"),
-                    ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
-                    ("Arial", "C:\\Windows\\Fonts\\arial.ttf"),
-                    ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-                ];
-                let (font_family, font_path) = font_candidates
-                    .iter()
-                    .find(|(_, path)| std::path::Path::new(path).exists())
-                    .copied()
-                    .unwrap_or(("Noto Sans Arabic", ""));
-
-                let mut fonts = docforge_engine::render::font_cache::FontCache::new(font_family);
-                if !font_path.is_empty() {
-                    let _ = fonts.load_font_file(
-                        font_family,
-                        400,
-                        docforge_engine::render::font_cache::FontStyleKind::Normal,
-                        font_path,
-                    );
-                }
+                let fonts = docforge_engine::render::font_cache::FontCache::with_system_fonts();
 
                 let layout_engine = docforge_engine::layout::engine::LayoutEngine::new(&fonts);
-                let layout = layout_engine
-                    .layout(&doc, &context_val)
-                    .map_err(|e| DomainError::Internal(format!("DocForge layout error: {:?}", e)))?;
+                let layout = layout_engine.layout(&doc, &context_val).map_err(|e| {
+                    DomainError::Internal(format!("DocForge layout error: {:?}", e))
+                })?;
 
                 let config = docforge_engine::render::pdf_renderer::PdfRenderConfig {
                     title: Some(doc.meta.name.clone()),
                     ..Default::default()
                 };
 
-                let pdf_out = docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
-                    .map_err(|e| DomainError::Internal(format!("DocForge PDF render error: {:?}", e)))?;
+                let pdf_out =
+                    docforge_engine::render::pdf_renderer::render_to_pdf(&layout, &fonts, &config)
+                        .map_err(|e| {
+                            DomainError::Internal(format!("DocForge PDF render error: {:?}", e))
+                        })?;
 
                 let bytes = pdf_out.bytes;
                 let size = bytes.len() as u64;
@@ -642,9 +683,9 @@ impl DocumentRenderer for PdfRenderer {
             }
         }
 
-        let mut result = HtmlRenderer.render(dataset, template, master).await?;
-        result.format = OutputFormat::Pdf;
-        Ok(result)
+        Err(DomainError::Validation(
+            "PDF output requires a published DocForge report template. Select a compatible template or use HTML output.".into(),
+        ))
     }
 }
 
@@ -719,13 +760,14 @@ impl ReportDataProvider for FeeCollectionDataProvider {
                     sf.net_amount as amount,
                     COALESCE(sf.paid_amount, 0) as paid_amount,
                     sf.status,
-                    s.full_name as student_name,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
                     COALESCE(ft.name, '') as fee_name
                 FROM student_fees sf
                 INNER JOIN students s ON sf.student_id = s.id AND s.org_id = sf.org_id
+                LEFT JOIN persons p ON s.person_id = p.id
                 LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
                 WHERE sf.org_id = $1
-                ORDER BY s.full_name"#,
+                ORDER BY student_name"#,
                 vec![org_id.into()],
             ))
             .await
@@ -917,13 +959,14 @@ impl ReportDataProvider for StudentListDataProvider {
                 self.db.get_database_backend(),
                 r#"SELECT
                     e.id, e.status,
-                    p.full_name as student_name,
-                    c.name as class_name
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, s.student_number, '') as student_name,
+                    COALESCE(sec.name, '') as class_name
                 FROM enrollments e
-                LEFT JOIN persons p ON e.student_id = p.id
-                LEFT JOIN classes c ON e.class_id = c.id
+                LEFT JOIN students s ON e.student_id = s.id
+                LEFT JOIN persons p ON s.person_id = p.id
+                LEFT JOIN sections sec ON e.section_id = sec.id
                 WHERE e.org_id = $1
-                ORDER BY c.name, p.full_name"#,
+                ORDER BY sec.name, student_name"#,
                 vec![org_id.to_string().into()],
             ))
             .await;
@@ -1035,16 +1078,17 @@ impl ReportDataProvider for TermResultDataProvider {
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             s.name as subject_name,
             s.code as subject_code,
-            c.name as class_name,
-            ap.name as period_name
+            COALESCE(c.name, '') as class_name,
+            COALESCE(ap.name, '') as period_name
         FROM grades g
-        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN students st ON g.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN sections c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
         WHERE g.org_id = $1"#
             .to_string();
@@ -1217,11 +1261,12 @@ impl ReportDataProvider for ExamSeatingPlanDataProvider {
                 self.db.get_database_backend(),
                 r#"SELECT
                     sn.id, sn.seating_number,
-                    p.full_name as student_name,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
                     r.name as room_name,
                     es.name as session_name
                 FROM seating_numbers sn
-                LEFT JOIN persons p ON sn.student_id = p.id
+                LEFT JOIN students st ON sn.student_id = st.id
+                LEFT JOIN persons p ON st.person_id = p.id
                 LEFT JOIN rooms r ON sn.room_id = r.id
                 LEFT JOIN exam_sessions es ON sn.exam_session_id = es.id
                 WHERE es.org_id = $1
@@ -1337,12 +1382,13 @@ impl ReportDataProvider for PaymentReceiptDataProvider {
 
         let mut sql = r#"SELECT
             py.id, py.receipt_number, py.amount, py.currency_code, py.payment_method, py.payment_date, py.notes,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             ft.name as fee_name
         FROM payments py
         LEFT JOIN student_fees sf ON py.fee_id = sf.id
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
-        LEFT JOIN persons p ON sf.student_id = p.id
+        LEFT JOIN students st ON sf.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         WHERE sf.org_id = $1"#
             .to_string();
 
@@ -1487,18 +1533,19 @@ impl ReportDataProvider for AnnualResultDataProvider {
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             s.name as subject_name,
             s.code as subject_code,
-            c.name as class_name,
-            ay.name as year_name
+            COALESCE(c.name, '') as class_name,
+            COALESCE(ay.name, '') as year_name
         FROM grades g
-        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN students st ON g.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN sections c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
+        LEFT JOIN academic_calendars ay ON ap.calendar_id = ay.id
         WHERE g.org_id = $1"#
             .to_string();
 
@@ -1666,20 +1713,21 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
 
         let mut sql = r#"SELECT
             g.id, g.score, g.max_score,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             p.national_id as national_id,
             s.name as subject_name,
             s.code as subject_code,
-            c.name as class_name,
-            ay.name as year_name,
-            ap.name as period_name
+            COALESCE(c.name, '') as class_name,
+            COALESCE(ay.name, '') as year_name,
+            COALESCE(ap.name, '') as period_name
         FROM grades g
-        LEFT JOIN persons p ON g.student_id = p.id
+        LEFT JOIN students st ON g.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         LEFT JOIN section_subjects cs ON g.section_subject_id = cs.id
         LEFT JOIN subjects s ON cs.subject_id = s.id
-        LEFT JOIN classes c ON cs.class_id = c.id
+        LEFT JOIN sections c ON cs.section_id = c.id
         LEFT JOIN academic_periods ap ON g.period_id = ap.id
-        LEFT JOIN academic_calendars ay ON ap.year_id = ay.id
+        LEFT JOIN academic_calendars ay ON ap.calendar_id = ay.id
         WHERE g.org_id = $1"#
             .to_string();
 
@@ -1692,7 +1740,7 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         }
         if let Some(cid) = class_filter {
             let idx = values.len() + 1;
-            sql.push_str(&format!(" AND cs.class_id = ${}", idx));
+            sql.push_str(&format!(" AND cs.section_id = ${}", idx));
             values.push(cid.to_string().into());
         }
         if let Some(yid) = year_filter {
@@ -1739,7 +1787,9 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
                 max_total += max;
                 min_total += min;
 
-                let s_name = row.try_get::<String>("", "student_name").unwrap_or_default();
+                let s_name = row
+                    .try_get::<String>("", "student_name")
+                    .unwrap_or_default();
                 if student_name.is_empty() && !s_name.is_empty() {
                     student_name = s_name.clone();
                 }
@@ -1761,7 +1811,11 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
 
                 let t1_cw = (score * 0.3).round();
                 let t1_ex = score - t1_cw;
-                let pct = if max > 0.0 { (score / max) * 100.0 } else { 0.0 };
+                let pct = if max > 0.0 {
+                    (score / max) * 100.0
+                } else {
+                    0.0
+                };
 
                 let appreciation = if pct >= 90.0 {
                     "ممتاز / Excellent"
@@ -1800,7 +1854,11 @@ impl ReportDataProvider for AcademicCertificateDataProvider {
         }
 
         let total_count = data_rows.len() as u64;
-        let overall_pct = if max_total > 0.0 { (total_score / max_total) * 100.0 } else { 0.0 };
+        let overall_pct = if max_total > 0.0 {
+            (total_score / max_total) * 100.0
+        } else {
+            0.0
+        };
         let final_status = if total_count == 0 {
             ""
         } else if total_score >= min_total {
@@ -1988,11 +2046,12 @@ impl ReportDataProvider for ExamAttendanceSheetDataProvider {
                 r#"SELECT
                     sn.id, sn.seating_number,
                     COALESCE(sec.secret_number, '-') as secret_number,
-                    p.full_name as student_name,
+                    COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
                     r.name as room_name,
                     es.name as session_name
                 FROM seating_numbers sn
-                LEFT JOIN persons p ON sn.student_id = p.id
+                LEFT JOIN students st ON sn.student_id = st.id
+                LEFT JOIN persons p ON st.person_id = p.id
                 LEFT JOIN rooms r ON sn.room_id = r.id
                 LEFT JOIN exam_sessions es ON sn.exam_session_id = es.id
                 LEFT JOIN secret_numbers sec ON sn.student_id = sec.student_id
@@ -2123,11 +2182,12 @@ impl ReportDataProvider for StudentStatementDataProvider {
         let mut sql = r#"SELECT
             sf.id, sf.net_amount as fee_amount, sf.status, sf.due_date,
             ft.name as fee_name,
-            p.full_name as student_name,
+            COALESCE(NULLIF(TRIM(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')), ''), NULLIF(TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')), ''), p.display_name, st.student_number, '') as student_name,
             COALESCE((SELECT SUM(amount) FROM payments py WHERE py.fee_id = sf.id), 0.0) as paid_amount
         FROM student_fees sf
         LEFT JOIN fee_templates ft ON sf.fee_template_id = ft.id
-        LEFT JOIN persons p ON sf.student_id = p.id
+        LEFT JOIN students st ON sf.student_id = st.id
+        LEFT JOIN persons p ON st.person_id = p.id
         WHERE sf.org_id = $1"#.to_string();
 
         let mut values = vec![org_id.to_string().into()];

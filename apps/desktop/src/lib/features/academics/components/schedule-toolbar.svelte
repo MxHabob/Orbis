@@ -1,5 +1,5 @@
 <script lang="ts">
-import { AdjustmentsHorizontal, BookOpen, Calendar, ClockRotateRight, Keyframes, Pin, Search, Sparkles, User, Users } from "@orbis/icons";
+import { AdjustmentsHorizontal, BookOpen, Calendar, ClockRotateRight, Keyframes, Pin, Printer, Search, Sparkles, User, Users } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
@@ -10,6 +10,8 @@ import {
 } from "@orbis/ui/select";
 import { l } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
+import type { OrgUnitDto } from "$lib/api";
+import { getOrgUnitLocationPath } from "$lib/features/academics/room-location";
 
 type ViewMode = "class" | "teacher" | "room" | "subject" | "matrix";
 
@@ -26,6 +28,7 @@ interface Props {
   classes: any[];
   teachers: any[];
   rooms: any[];
+  orgUnits: OrgUnitDto[];
   subjects: any[];
   onPeriodChange?: (periodId: string) => void;
   onAutoScheduleClick?: () => void;
@@ -47,6 +50,7 @@ let {
   classes = [],
   teachers = [],
   rooms = [],
+  orgUnits = [],
   subjects = [],
   onPeriodChange,
   onAutoScheduleClick,
@@ -54,6 +58,10 @@ let {
   onExportClick,
   onNewLessonClick,
 }: Props = $props();
+
+const orgUnitsById = $derived(
+  new Map(orgUnits.map((unit) => [String(unit.id), unit])),
+);
 
 const selectedPeriod = $derived(
   periods.find((p) => String(p.id) === String(activePeriodId)),
@@ -159,8 +167,7 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
         onclick={onExportClick}
         title={m.academics_schedule_export_title()}
       >
-        <AdjustmentsHorizontal size={13} />
-        <span class="hidden xl:inline">{m.academics_schedule_export_label()}</span>
+        <Printer size={13} />
       </Button>
       <!-- AI Generator Studio Button -->
       <Button
@@ -240,7 +247,10 @@ const viewModes: { id: ViewMode; label: () => string; icon: any }[] = [
             <SelectContent class="max-h-60 text-start">
               {#each rooms as r (r.id)}
                 <SelectItem value={String(r.id)} class="text-xs">
-                  {l(r.name_ar, r.name)} {r.building ? `(${r.building})` : ""}
+                  {l(r.name_ar, r.name)}
+                  {#if r.org_unit_id}
+                    ({getOrgUnitLocationPath(String(r.org_unit_id), orgUnitsById) || "—"})
+                  {/if}
                 </SelectItem>
               {/each}
             </SelectContent>

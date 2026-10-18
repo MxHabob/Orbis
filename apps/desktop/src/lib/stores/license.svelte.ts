@@ -16,6 +16,7 @@ class LicenseStore {
   hasLoaded = $state(false);
   error = $state<string | null>(null);
   private pendingActions = 0;
+  private latestActionId = 0;
 
   // Derived state
   state = $derived<LicenseState>(this.licenseState?.state ?? "unavailable");
@@ -60,16 +61,21 @@ class LicenseStore {
     action: () => Promise<T>,
     onSuccess: (value: T) => void,
   ): Promise<T | null> {
+    const actionId = ++this.latestActionId;
     this.error = null;
     this.pendingActions++;
     this.isLoading = true;
     try {
       const value = await action();
-      onSuccess(value);
-      this.hasLoaded = true;
+      if (actionId === this.latestActionId) {
+        onSuccess(value);
+        this.hasLoaded = true;
+      }
       return value;
     } catch (error) {
-      this.error = extractErrorMessage(error);
+      if (actionId === this.latestActionId) {
+        this.error = extractErrorMessage(error);
+      }
       return null;
     } finally {
       this.pendingActions--;
@@ -157,6 +163,7 @@ class LicenseStore {
    * Reset the store state.
    */
   reset() {
+    this.latestActionId++;
     this.licenseState = null;
     this.isLoading = false;
     this.hasLoaded = false;

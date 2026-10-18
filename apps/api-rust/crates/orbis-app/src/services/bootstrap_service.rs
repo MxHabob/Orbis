@@ -41,39 +41,123 @@ pub struct InstitutionBlueprintConfig {
     pub max_class_size_default: i32,
     pub allow_late_enrollment: bool,
     pub number_prefix: String,
+    pub grade_bands: Vec<GradeBand>,
 }
 
 impl InstitutionBlueprintConfig {
     pub fn from_institution_type(institution_type: &InstitutionType) -> Self {
+        Self::from_institution_type_and_profile(
+            institution_type,
+            &orbis_domain::entities::country_profile::CountryProfile::yemen(),
+        )
+    }
+
+    pub fn from_institution_type_and_profile(
+        institution_type: &InstitutionType,
+        profile: &orbis_domain::entities::country_profile::CountryProfile,
+    ) -> Self {
+        let (passing_score, honors_score) = if let Some(ref policy) = profile.grading_policy {
+            match institution_type {
+                InstitutionType::School | InstitutionType::Institute => {
+                    (policy.passing_percentage, policy.honors_percentage)
+                }
+                InstitutionType::University => (Decimal::from(60), Decimal::from(90)),
+            }
+        } else {
+            match institution_type {
+                InstitutionType::School | InstitutionType::Institute => {
+                    (Decimal::from(50), Decimal::from(85))
+                }
+                InstitutionType::University => (Decimal::from(60), Decimal::from(90)),
+            }
+        };
+
+        let grade_bands: Vec<GradeBand> = if let Some(ref policy) = profile.grading_policy {
+            policy
+                .grade_bands
+                .iter()
+                .map(|b| GradeBand {
+                    code: b.code.clone(),
+                    label: if !b.label_ar.is_empty() {
+                        format!("{} - {}", b.label_ar, b.label)
+                    } else {
+                        b.label.clone()
+                    },
+                    minimum_score: b.minimum_score,
+                })
+                .collect()
+        } else {
+            vec![
+                GradeBand {
+                    code: "A".to_string(),
+                    label: "ممتاز - Excellent".to_string(),
+                    minimum_score: Decimal::from(90),
+                },
+                GradeBand {
+                    code: "B".to_string(),
+                    label: "جيد جداً - Very good".to_string(),
+                    minimum_score: Decimal::from(80),
+                },
+                GradeBand {
+                    code: "C".to_string(),
+                    label: "جيد - Good".to_string(),
+                    minimum_score: Decimal::from(65),
+                },
+                GradeBand {
+                    code: "D".to_string(),
+                    label: "مقبول - Pass".to_string(),
+                    minimum_score: passing_score,
+                },
+                GradeBand {
+                    code: "F".to_string(),
+                    label: "راسب - Not passed".to_string(),
+                    minimum_score: Decimal::ZERO,
+                },
+            ]
+        };
+
         match institution_type {
-            InstitutionType::School => Self {
-                grading_system: "percentage".to_string(),
-                calculation_inputs: vec![
-                    ("coursework".to_string(), Decimal::new(4, 1)),
-                    ("examination".to_string(), Decimal::new(5, 1)),
-                    ("participation".to_string(), Decimal::new(1, 1)),
-                ],
-                passing_threshold_percentage: Decimal::from(50),
-                honors_threshold_percentage: Decimal::from(85),
-                minimum_final_exam_score: Some(Decimal::from(10)),
-                max_failed_subjects_for_conditional_pass: 2,
-                min_attendance_rate: Decimal::from(75),
-                ranking_scope: RankingScope::Class,
-                tie_policy: TiePolicy::StandardCompetition,
-                rounding_mode: RoundingMode::RoundHalfUp,
-                decimal_places: 2,
-                max_class_size_default: 30,
-                allow_late_enrollment: false,
-                number_prefix: "STD".to_string(),
-            },
+            InstitutionType::School => {
+                let calculation_inputs = if profile.country_code == "YE" {
+                    // Official Yemeni Ministry of Education term aggregation: Coursework (20) + Exam (30) = 50 pts (40% / 60%)
+                    vec![
+                        ("coursework".to_string(), Decimal::new(4, 1)),
+                        ("examination".to_string(), Decimal::new(6, 1)),
+                    ]
+                } else {
+                    vec![
+                        ("coursework".to_string(), Decimal::new(4, 1)),
+                        ("examination".to_string(), Decimal::new(5, 1)),
+                        ("participation".to_string(), Decimal::new(1, 1)),
+                    ]
+                };
+
+                Self {
+                    grading_system: "percentage".to_string(),
+                    calculation_inputs,
+                    passing_threshold_percentage: passing_score,
+                    honors_threshold_percentage: honors_score,
+                    minimum_final_exam_score: Some(Decimal::from(10)),
+                    max_failed_subjects_for_conditional_pass: 2,
+                    min_attendance_rate: Decimal::from(75),
+                    ranking_scope: RankingScope::Class,
+                    tie_policy: TiePolicy::StandardCompetition,
+                    rounding_mode: RoundingMode::RoundHalfUp,
+                    decimal_places: 2,
+                    max_class_size_default: 30,
+                    allow_late_enrollment: false,
+                    number_prefix: "STD".to_string(),
+                    grade_bands,
+                }
+            }
             InstitutionType::University => Self {
                 grading_system: "gpa".to_string(),
                 calculation_inputs: vec![
                     ("continuous_assessment".to_string(), Decimal::new(4, 1)),
                     ("final_assessment".to_string(), Decimal::new(6, 1)),
                 ],
-                passing_threshold_percentage: Decimal::from(60),
-                honors_threshold_percentage: Decimal::from(90),
+                passing_threshold_percentage: passing_score,
+                honors_threshold_percentage: honors_score,
                 minimum_final_exam_score: Some(Decimal::from(15)),
                 max_failed_subjects_for_conditional_pass: 1,
                 min_attendance_rate: Decimal::from(75),
@@ -84,6 +168,7 @@ impl InstitutionBlueprintConfig {
                 max_class_size_default: 50,
                 allow_late_enrollment: true,
                 number_prefix: "UNI".to_string(),
+                grade_bands,
             },
             InstitutionType::Institute => Self {
                 grading_system: "percentage".to_string(),
@@ -92,8 +177,8 @@ impl InstitutionBlueprintConfig {
                     ("practical".to_string(), Decimal::new(5, 1)),
                     ("competency".to_string(), Decimal::new(2, 1)),
                 ],
-                passing_threshold_percentage: Decimal::from(50),
-                honors_threshold_percentage: Decimal::from(85),
+                passing_threshold_percentage: passing_score,
+                honors_threshold_percentage: honors_score,
                 minimum_final_exam_score: Some(Decimal::from(10)),
                 max_failed_subjects_for_conditional_pass: 2,
                 min_attendance_rate: Decimal::from(80),
@@ -104,6 +189,7 @@ impl InstitutionBlueprintConfig {
                 max_class_size_default: 25,
                 allow_late_enrollment: false,
                 number_prefix: "INS".to_string(),
+                grade_bands,
             },
         }
     }
@@ -129,33 +215,7 @@ impl InstitutionBlueprintConfig {
             },
             pass_at_or_above: Some(self.passing_threshold_percentage),
             honors_at_or_above: Some(self.honors_threshold_percentage),
-            grade_bands: vec![
-                GradeBand {
-                    code: "A".to_string(),
-                    label: "Excellent".to_string(),
-                    minimum_score: Decimal::from(90),
-                },
-                GradeBand {
-                    code: "B".to_string(),
-                    label: "Very good".to_string(),
-                    minimum_score: Decimal::from(80),
-                },
-                GradeBand {
-                    code: "C".to_string(),
-                    label: "Good".to_string(),
-                    minimum_score: Decimal::from(70),
-                },
-                GradeBand {
-                    code: "D".to_string(),
-                    label: "Pass".to_string(),
-                    minimum_score: self.passing_threshold_percentage,
-                },
-                GradeBand {
-                    code: "F".to_string(),
-                    label: "Not passed".to_string(),
-                    minimum_score: Decimal::ZERO,
-                },
-            ],
+            grade_bands: self.grade_bands.clone(),
         });
         settings.academic.ranking_enabled = true;
         settings.academic.max_displayed_rank = None;
@@ -189,9 +249,7 @@ impl InstitutionBlueprintConfig {
                         .calculation_inputs
                         .iter()
                         .map(|(name, weight)| WeightedItem {
-                            node: AstNode::Variable {
-                                name: name.clone(),
-                            },
+                            node: AstNode::Variable { name: name.clone() },
                             weight: *weight,
                         })
                         .collect(),
@@ -243,6 +301,7 @@ fn all_admin_permission_pairs() -> Vec<(&'static str, &'static str)> {
         ),
         ("org_unit", &["read", "write", "delete"][..]),
         ("class", &["read", "write", "delete"][..]),
+        ("section", &["read", "write", "delete"][..]),
         ("subject", &["read", "write", "delete"][..]),
         ("schedule", &["read", "write", "delete"][..]),
         ("assessment", &["read", "write", "delete"][..]),
@@ -556,16 +615,21 @@ impl BootstrapService {
 
         let org_id = org.id;
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
+        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(
+            req.country_code.as_deref(),
+        );
 
         // ── Step 4: Initialize organization settings ──────────
-        self.initialize_settings(org_id, &institution_type, &req)
+        self.initialize_settings(org_id, &institution_type, &country_profile, &req)
             .await?;
 
         // ── Step 5: Seed system reference currencies ──────────
-        self.seed_system_currencies(org_id, &req).await?;
+        self.seed_system_currencies(org_id, &country_profile, &req)
+            .await?;
 
         // ── Step 6: Initialize Chart of Accounts scaffold ─────
-        self.initialize_chart_of_accounts(org_id, &req).await?;
+        self.initialize_chart_of_accounts(org_id, &country_profile, &req)
+            .await?;
 
         // ── Step 7: Create system roles ───────────────────────
         self.create_system_roles(org_id).await?;
@@ -679,15 +743,30 @@ impl BootstrapService {
             final_slug = format!("{}-{}", target_slug, counter);
         }
 
+        let country_profile = orbis_domain::entities::country_profile::CountryProfile::resolve(
+            req.country_code.as_deref(),
+        );
         let institution_type = InstitutionType::from_str_loose(&req.institution_type);
         let now = Utc::now();
+
+        let effective_tz = if req.timezone.trim().is_empty() {
+            country_profile.default_timezone.clone()
+        } else {
+            req.timezone.clone()
+        };
+        let effective_locale = if req.locale.trim().is_empty() {
+            country_profile.default_locale.clone()
+        } else {
+            req.locale.clone()
+        };
 
         let mut org = Organization::new(
             req.organization_name.clone(),
             final_slug.clone(),
-            req.timezone.clone(),
-            req.locale.clone(),
+            effective_tz,
+            effective_locale,
         )?;
+        org.institution_type = institution_type.as_str().to_string();
 
         // Apply optional fields from bootstrap request
         org.name_ar = req.organization_name_ar.clone();
@@ -721,17 +800,35 @@ impl BootstrapService {
         org.date_format = req.date_format.clone().or(Some("YYYY-MM-DD".to_string()));
         org.format_locale = req.format_locale.clone();
         org.time_format = req.time_format.clone();
-        org.is_hijri_enabled = req.is_hijri_enabled.unwrap_or(false);
-        org.base_currency_code = req.base_currency_code.clone();
+        org.is_hijri_enabled = req
+            .is_hijri_enabled
+            .unwrap_or(country_profile.country_code == "YE");
+        org.base_currency_code = req
+            .base_currency_code
+            .clone()
+            .or_else(|| Some(country_profile.default_currency.clone()));
         org.primary_color = req.primary_color.clone().or(Some("#4f46e5".to_string()));
         org.is_verified = true; // Bootstrap-created org is verified
+
+        let resolved_ministry = req.ministry_name.clone().or_else(|| {
+            country_profile
+                .authority_for(institution_type.as_str())
+                .map(|a| a.ministry_name_ar.clone())
+        });
+        let resolved_country_name = req
+            .country_name
+            .clone()
+            .unwrap_or_else(|| country_profile.name.clone());
+
         org.metadata = Some(serde_json::json!({
             "institution_type": institution_type.as_str(),
             "educational_track": req.educational_track,
             "organization_size": req.organization_size,
-            "country_code": req.country_code,
-            "country_name": req.country_name,
-            "ministry_name": req.ministry_name,
+            "country_code": country_profile.country_code,
+            "country_name": resolved_country_name,
+            "country_name_ar": country_profile.name_ar,
+            "country_profile_version": country_profile.version,
+            "ministry_name": resolved_ministry,
             "region_name": req.region_name,
             "city": req.city,
             "phone": req.phone,
@@ -759,10 +856,14 @@ impl BootstrapService {
         &self,
         org_id: Uuid,
         institution_type: &InstitutionType,
+        country_profile: &orbis_domain::entities::country_profile::CountryProfile,
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let mut settings = OrganizationSettings::default();
-        let blueprint = InstitutionBlueprintConfig::from_institution_type(institution_type);
+        let blueprint = InstitutionBlueprintConfig::from_institution_type_and_profile(
+            institution_type,
+            country_profile,
+        );
         blueprint.apply_to_settings(&mut settings);
 
         // 1. Academic Policies & Evaluation Defaults
@@ -949,13 +1050,14 @@ impl BootstrapService {
     async fn seed_system_currencies(
         &self,
         org_id: Uuid,
+        country_profile: &orbis_domain::entities::country_profile::CountryProfile,
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let now = Utc::now();
         let base_code = req
             .base_currency_code
             .as_deref()
-            .unwrap_or("SAR")
+            .unwrap_or(&country_profile.default_currency)
             .to_uppercase();
 
         let standard_currencies = [
@@ -1020,12 +1122,13 @@ impl BootstrapService {
     async fn initialize_chart_of_accounts(
         &self,
         org_id: Uuid,
+        country_profile: &orbis_domain::entities::country_profile::CountryProfile,
         req: &BootstrapRequest,
     ) -> Result<(), DomainError> {
         let currency_code = req
             .base_currency_code
             .clone()
-            .unwrap_or_else(|| "SAR".to_string());
+            .unwrap_or_else(|| country_profile.default_currency.clone());
 
         let accounts =
             match CoaBlueprintLoader::parse_accounts(org_id, &currency_code, &req.institution_type)
@@ -1665,7 +1768,7 @@ pub fn transliterate_arabic(text: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{default_org_admin_group_permissions, InstitutionBlueprintConfig};
+    use super::{InstitutionBlueprintConfig, default_org_admin_group_permissions};
     use crate::services::calculation_engine::AcademicCalculationEngine;
     use orbis_domain::entities::organization::InstitutionType;
     use orbis_domain::entities::settings::OrganizationSettings;

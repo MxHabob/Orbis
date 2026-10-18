@@ -41,7 +41,7 @@ let {
     </p>
   </div>
 
-  <Card class="max-w-3xl">
+  <Card class="mx-auto max-w-3xl">
     <CardContent class="space-y-6 p-5 text-start sm:p-7">
       <BilingualNameFields
         arId="org-name-ar"

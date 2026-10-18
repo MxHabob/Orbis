@@ -156,7 +156,7 @@ function isActive(href: string, match: "exact" | "prefix"): boolean {
 		<div class="flex flex-col gap-2 items-center w-full relative">
 			<div class="flex flex-col items-center w-8 gap-1.5">
 				<OnboardingPopover {orgId} />
-				<GitIntegrationPopover />
+				<GitIntegrationPopover {orgId} />
 				<UpgradeButton />
 				<AutomationStatusPopover {orgId} />
         <MoreActionsDropdown orgName={orgNameDisplay} />

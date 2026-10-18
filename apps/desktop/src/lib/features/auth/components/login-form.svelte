@@ -11,10 +11,13 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
 import { loginInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import MfaChallengeModal from "./mfa-challenge-modal.svelte";
 
 // No props needed
 
 let showPassword = $state(false);
+let showMfaChallenge = $state(false);
+let mfaToken = $state("");
 const form = new FormController({
   initialValues: { identifier: "", password: "" },
   schema: loginInputSchema,
@@ -27,7 +30,15 @@ function fieldError(field: string): string | undefined {
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const submitted = await form.submit(async (payload) => {
-    await authStore.login(payload.identifier, payload.password);
+    const result = await authStore.login(payload.identifier, payload.password);
+    if (result.mfa_required) {
+      if (!result.mfa_token) {
+        throw new Error(m.auth_login_failed());
+      }
+      mfaToken = result.mfa_token;
+      showMfaChallenge = true;
+      return;
+    }
     const targetOrgId = authStore.orgId || "default";
     await goto(localizeHref(`/${targetOrgId}`), {
       invalidateAll: true,
@@ -129,3 +140,19 @@ function handleForgotPassword() {
 		</Button>
 	</div>
 </form>
+
+<MfaChallengeModal
+  bind:open={showMfaChallenge}
+  {mfaToken}
+  onSuccess={async (result) => {
+    await authStore.setSession(result);
+    await goto(localizeHref(`/${authStore.orgId || "default"}`), {
+      invalidateAll: true,
+      replaceState: true,
+    });
+  }}
+  onClose={() => {
+    showMfaChallenge = false;
+    mfaToken = "";
+  }}
+/>

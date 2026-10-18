@@ -115,7 +115,7 @@ export const teacherSubjectImportProfile: BulkImportProfile<
   async buildReferenceData(): Promise<BulkReferenceData> {
     const [classesResponse, subjectsResponse, periodsResponse, firstEmployeePage] =
       await Promise.all([
-        api.listClasses(),
+        api.listSections(),
         api.listSubjects(),
         api.listAcademicPeriods(),
         api.listEmployees({ status: "active", page: 1, page_size: 100 }),
@@ -211,10 +211,10 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       for (const assignment of assignments.flat()) {
         if (assignment.is_active) {
           existingSectionSubjectAssignments.push({
-            classId: assignment.class_id,
+            classId: assignment.section_id,
             subjectId: assignment.subject_id,
             periodId: assignment.period_id,
-            teacherId: assignment.primary_teacher_id,
+            teacherId: assignment.instructor_id ?? "",
           });
         }
       }
@@ -421,10 +421,10 @@ export const teacherSubjectImportProfile: BulkImportProfile<
       try {
         const weeklyHoursText = String(row.weekly_hours ?? "").trim();
         await api.assignSectionSubject({
-          class_id: classItem.id,
+          section_id: classItem.id,
           subject_id: subjectItem.id,
           period_id: periodItem.id,
-          primary_teacher_id: teacherItem.id,
+          instructor_id: teacherItem.id,
           weekly_hours: weeklyHoursText ? Number(weeklyHoursText) : undefined,
         });
         refData.existingSectionSubjectAssignments.push({

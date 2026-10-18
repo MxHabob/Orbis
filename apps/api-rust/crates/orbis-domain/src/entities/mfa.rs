@@ -58,7 +58,6 @@ pub struct MfaEnrollmentResult {
     pub factor_id: Uuid,
     pub secret: String,
     pub qr_code_uri: String,
-    pub recovery_codes: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

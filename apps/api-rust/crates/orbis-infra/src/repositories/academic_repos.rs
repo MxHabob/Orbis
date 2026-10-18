@@ -1,8 +1,8 @@
 use async_trait::async_trait;
-use orbis_app::ports::repositories::{ClassRepository, SectionSubjectRepository, SubjectRepository};
-use orbis_domain::entities::section::Section as DomainSection;
-use orbis_domain::entities::section_subject::SectionSubject as DomainSectionSubject;
-use orbis_domain::entities::subject::Subject as DomainSubject;
+use orbis_app::ports::repositories::{
+    SectionRepository, SectionSubjectRepository, SubjectRepository,
+};
+use orbis_domain::entities::{section::Section, section_subject::SectionSubject, subject::Subject};
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter,
@@ -11,7 +11,7 @@ use sea_orm::{
 use uuid::Uuid;
 
 use crate::models::{
-    class::{self, Entity as SectionEntity},
+    section::{self, Entity as SectionEntity},
     section_subject::{self, Entity as SectionSubjectEntity},
     subject::{self, Entity as SubjectEntity},
 };
@@ -22,7 +22,7 @@ pub struct AcademicRepoImpl {
 
 #[async_trait]
 impl SubjectRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSubject>, DomainError> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Subject>, DomainError> {
         let model = SubjectEntity::find_by_id(id)
             .one(&self.db)
             .await
@@ -30,7 +30,7 @@ impl SubjectRepository for AcademicRepoImpl {
         Ok(model.map(map_subject_model_to_domain))
     }
 
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSubject>, DomainError> {
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Subject>, DomainError> {
         let models = SubjectEntity::find()
             .filter(subject::Column::OrgId.eq(org_id))
             .all(&self.db)
@@ -46,7 +46,7 @@ impl SubjectRepository for AcademicRepoImpl {
         &self,
         org_id: Uuid,
         filter: orbis_domain::queries::filters::SubjectFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSubject>, DomainError> {
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<Subject>, DomainError> {
         let mut query = SubjectEntity::find().filter(subject::Column::OrgId.eq(org_id));
         if let Some(is_active) = filter.is_active {
             query = query.filter(subject::Column::IsActive.eq(is_active));
@@ -82,7 +82,7 @@ impl SubjectRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, subject: &DomainSubject) -> Result<(), DomainError> {
+    async fn save(&self, subject: &Subject) -> Result<(), DomainError> {
         let active = subject::ActiveModel {
             id: Set(subject.id),
             org_id: Set(subject.org_id),
@@ -91,13 +91,15 @@ impl SubjectRepository for AcademicRepoImpl {
             name: Set(subject.name.clone()),
             name_ar: Set(subject.name_ar.clone()),
             description: Set(subject.description.clone()),
+            subject_type: Set(subject.subject_type.clone()),
             is_core: Set(subject.is_core),
             is_elective: Set(subject.is_elective),
-            credit_hours: Set(subject.credit_hours),
+            credit_units: Set(subject.credit_units),
+            workload_units: Set(subject.workload_units),
             theory_hours: Set(subject.theory_hours),
             practical_hours: Set(subject.practical_hours),
             is_lab_required: Set(subject.is_lab_required),
-            max_students_per_class: Set(subject.max_students_per_class.map(|v| v as i32)),
+            max_students_per_section: Set(subject.max_students_per_section.map(|v| v as i32)),
             color: Set(subject.color.clone()),
             icon: Set(subject.icon.clone()),
             sort_order: Set(subject.sort_order),
@@ -127,47 +129,67 @@ impl SubjectRepository for AcademicRepoImpl {
 }
 
 #[async_trait]
-impl ClassRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSection>, DomainError> {
+impl SectionRepository for AcademicRepoImpl {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Section>, DomainError> {
         let model = SectionEntity::find_by_id(id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(map_class_model_to_domain))
+        Ok(model.map(map_section_model_to_domain))
     }
 
-    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
-        let models = SectionEntity::find()
-            .filter(class::Column::PeriodId.eq(period_id))
+    async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<Section>, DomainError> {
+        let section_subjects = SectionSubjectEntity::find()
+            .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_class_model_to_domain).collect())
-    }
-
-    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<DomainSection>, DomainError> {
+        let section_ids: Vec<Uuid> = section_subjects.into_iter().map(|s| s.section_id).collect();
         let models = SectionEntity::find()
-            .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::IsDeleted.eq(false))
+            .filter(section::Column::Id.is_in(section_ids))
+            .filter(section::Column::IsDeleted.eq(false))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models.into_iter().map(map_class_model_to_domain).collect())
+        Ok(models
+            .into_iter()
+            .map(map_section_model_to_domain)
+            .collect())
+    }
+
+    async fn find_by_org(&self, org_id: Uuid) -> Result<Vec<Section>, DomainError> {
+        let models = SectionEntity::find()
+            .filter(section::Column::OrgId.eq(org_id))
+            .filter(section::Column::IsDeleted.eq(false))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models
+            .into_iter()
+            .map(map_section_model_to_domain)
+            .collect())
     }
 
     async fn list(
         &self,
         org_id: Uuid,
-        filter: orbis_domain::queries::filters::ClassFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSection>, DomainError> {
+        filter: orbis_domain::queries::filters::SectionFilter,
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<Section>, DomainError> {
         let mut query = SectionEntity::find()
-            .filter(class::Column::OrgId.eq(org_id))
-            .filter(class::Column::IsDeleted.eq(false));
+            .filter(section::Column::OrgId.eq(org_id))
+            .filter(section::Column::IsDeleted.eq(false));
         if let Some(period_id) = filter.period_id {
-            query = query.filter(class::Column::PeriodId.eq(period_id));
+            let section_subjects = SectionSubjectEntity::find()
+                .filter(section_subject::Column::PeriodId.eq(period_id))
+                .all(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?;
+            let section_ids: Vec<Uuid> =
+                section_subjects.into_iter().map(|s| s.section_id).collect();
+            query = query.filter(section::Column::Id.is_in(section_ids));
         }
         if let Some(ref lvl) = filter.level {
-            query = query.filter(class::Column::Level.eq(lvl.clone()));
+            query = query.filter(section::Column::Level.eq(lvl.clone()));
         }
         let pagination = filter.pagination.unwrap_or_default();
         let page = pagination.page();
@@ -181,7 +203,7 @@ impl ClassRepository for AcademicRepoImpl {
             .fetch_page(page - 1)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        let items = rows.into_iter().map(map_class_model_to_domain).collect();
+        let items = rows.into_iter().map(map_section_model_to_domain).collect();
         Ok(orbis_domain::queries::filters::PaginatedList::new(
             items,
             total_count,
@@ -190,29 +212,27 @@ impl ClassRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, class: &DomainSection) -> Result<(), DomainError> {
-        let active = class::ActiveModel {
-            id: Set(class.id),
-            org_id: Set(class.org_id),
-            unit_id: Set(class.unit_id),
-            period_id: Set(class.period_id),
-            name: Set(class.name.clone()),
-            name_ar: Set(class.name_ar.clone()),
-            level: Set(class.level.clone()),
-            division: Set(class.division.clone()),
-            homeroom_teacher_id: Set(class.homeroom_teacher_id),
-            capacity: Set(class.capacity),
-            current_students: Set(class.current_students),
-            room_id: Set(class.room_id),
-            color: Set(class.color.clone()),
-            is_active: Set(class.is_active),
-            is_deleted: Set(class.is_deleted),
-            deleted_at: Set(class.deleted_at),
-            created_at: Set(class.created_at),
-            updated_at: Set(class.updated_at),
+    async fn save(&self, section: &Section) -> Result<(), DomainError> {
+        let active = section::ActiveModel {
+            id: Set(section.id),
+            org_id: Set(section.org_id),
+            org_unit_id: Set(section.org_unit_id),
+            section_type: Set(section.section_type.clone()),
+            code: Set(section.code.clone()),
+            name: Set(section.name.clone()),
+            name_ar: Set(section.name_ar.clone()),
+            level: Set(section.level.clone()),
+            track: Set(section.track.clone()),
+            capacity: Set(section.capacity),
+            color: Set(section.color.clone()),
+            is_active: Set(section.is_active),
+            is_deleted: Set(section.is_deleted),
+            deleted_at: Set(section.deleted_at),
+            created_at: Set(section.created_at),
+            updated_at: Set(section.updated_at),
         };
 
-        if SectionEntity::find_by_id(class.id)
+        if SectionEntity::find_by_id(section.id)
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?
@@ -234,7 +254,7 @@ impl ClassRepository for AcademicRepoImpl {
 
 #[async_trait]
 impl SectionSubjectRepository for AcademicRepoImpl {
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<DomainSectionSubject>, DomainError> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<SectionSubject>, DomainError> {
         let model = SectionSubjectEntity::find_by_id(id)
             .one(&self.db)
             .await
@@ -242,9 +262,9 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         Ok(model.map(map_section_subject_model_to_domain))
     }
 
-    async fn find_by_class(&self, class_id: Uuid) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    async fn find_by_section(&self, section_id: Uuid) -> Result<Vec<SectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
-            .filter(section_subject::Column::ClassId.eq(class_id))
+            .filter(section_subject::Column::SectionId.eq(section_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -254,13 +274,13 @@ impl SectionSubjectRepository for AcademicRepoImpl {
             .collect())
     }
 
-    async fn find_by_class_and_period(
+    async fn find_by_section_and_period(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    ) -> Result<Vec<SectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
-            .filter(section_subject::Column::ClassId.eq(class_id))
+            .filter(section_subject::Column::SectionId.eq(section_id))
             .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
             .await
@@ -275,13 +295,13 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         &self,
         teacher_id: Uuid,
         period_id: Uuid,
-    ) -> Result<Vec<DomainSectionSubject>, DomainError> {
+    ) -> Result<Vec<SectionSubject>, DomainError> {
         let models = SectionSubjectEntity::find()
             .filter(
-                section_subject::Column::PrimaryTeacherId
+                section_subject::Column::InstructorId
                     .eq(teacher_id)
-                    .or(section_subject::Column::AssistantTeacherId.eq(teacher_id))
-                    .or(section_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+                    .or(section_subject::Column::AssistantInstructorId.eq(teacher_id))
+                    .or(section_subject::Column::SubstituteInstructorId.eq(teacher_id)),
             )
             .filter(section_subject::Column::PeriodId.eq(period_id))
             .all(&self.db)
@@ -297,11 +317,10 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         &self,
         _org_id: Uuid,
         filter: orbis_domain::queries::filters::SectionSubjectFilter,
-    ) -> Result<orbis_domain::queries::filters::PaginatedList<DomainSectionSubject>, DomainError>
-    {
+    ) -> Result<orbis_domain::queries::filters::PaginatedList<SectionSubject>, DomainError> {
         let mut query = SectionSubjectEntity::find();
-        if let Some(class_id) = filter.class_id {
-            query = query.filter(section_subject::Column::ClassId.eq(class_id));
+        if let Some(class_id) = filter.section_id {
+            query = query.filter(section_subject::Column::SectionId.eq(class_id));
         }
         if let Some(subject_id) = filter.subject_id {
             query = query.filter(section_subject::Column::SubjectId.eq(subject_id));
@@ -311,10 +330,10 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         }
         if let Some(teacher_id) = filter.teacher_id {
             query = query.filter(
-                section_subject::Column::PrimaryTeacherId
+                section_subject::Column::InstructorId
                     .eq(teacher_id)
-                    .or(section_subject::Column::AssistantTeacherId.eq(teacher_id))
-                    .or(section_subject::Column::SubstituteTeacherId.eq(teacher_id)),
+                    .or(section_subject::Column::AssistantInstructorId.eq(teacher_id))
+                    .or(section_subject::Column::SubstituteInstructorId.eq(teacher_id)),
             );
         }
         let pagination = filter.pagination.unwrap_or_default();
@@ -341,24 +360,28 @@ impl SectionSubjectRepository for AcademicRepoImpl {
         ))
     }
 
-    async fn save(&self, section_subject: &DomainSectionSubject) -> Result<(), DomainError> {
+    async fn save(&self, section_subject: &SectionSubject) -> Result<(), DomainError> {
+        let now = chrono::Utc::now();
         let active = section_subject::ActiveModel {
             id: Set(section_subject.id),
-            class_id: Set(section_subject.class_id),
+            org_id: Set(section_subject.org_id),
+            section_id: Set(section_subject.section_id),
             subject_id: Set(section_subject.subject_id),
             period_id: Set(section_subject.period_id),
-            primary_teacher_id: Set(section_subject.primary_teacher_id),
-            assistant_teacher_id: Set(section_subject.assistant_teacher_id),
-            substitute_teacher_id: Set(section_subject.substitute_teacher_id),
-            grade_groups: Set(section_subject.grade_groups.clone()),
+            instructor_id: Set(section_subject.instructor_id),
+            assistant_instructor_id: Set(section_subject.assistant_instructor_id),
+            substitute_instructor_id: Set(section_subject.substitute_instructor_id),
+            scheme_id: Set(section_subject.scheme_id),
             weekly_hours: Set(section_subject.weekly_hours),
             theory_hours: Set(section_subject.theory_hours),
             practical_hours: Set(section_subject.practical_hours),
             assessment_config: Set(section_subject.assessment_config.clone()),
-            scheme_id: Set(section_subject.scheme_id),
+            grade_groups: Set(section_subject.grade_groups.clone()),
+            capacity: Set(section_subject.capacity),
+            status: Set(section_subject.status.clone()),
             is_active: Set(section_subject.is_active),
-            created_at: Set(section_subject.created_at),
-            updated_at: Set(section_subject.updated_at),
+            created_at: Set(section_subject.created_at.unwrap_or(now)),
+            updated_at: Set(section_subject.updated_at.unwrap_or(now)),
         };
 
         if SectionSubjectEntity::find_by_id(section_subject.id)
@@ -381,8 +404,8 @@ impl SectionSubjectRepository for AcademicRepoImpl {
     }
 }
 
-fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
-    DomainSubject {
+fn map_subject_model_to_domain(m: subject::Model) -> Subject {
+    Subject {
         id: m.id,
         org_id: m.org_id,
         unit_id: m.unit_id,
@@ -390,13 +413,15 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
         name: m.name,
         name_ar: m.name_ar,
         description: m.description,
+        subject_type: m.subject_type,
         is_core: m.is_core,
         is_elective: m.is_elective,
-        credit_hours: m.credit_hours,
+        credit_units: m.credit_units,
+        workload_units: m.workload_units,
         theory_hours: m.theory_hours,
         practical_hours: m.practical_hours,
         is_lab_required: m.is_lab_required,
-        max_students_per_class: m.max_students_per_class.map(|v| v as u32),
+        max_students_per_section: m.max_students_per_section.map(|v| v as u32),
         color: m.color,
         icon: m.icon,
         sort_order: m.sort_order,
@@ -406,20 +431,18 @@ fn map_subject_model_to_domain(m: subject::Model) -> DomainSubject {
     }
 }
 
-fn map_class_model_to_domain(m: class::Model) -> DomainSection {
-    DomainSection {
+fn map_section_model_to_domain(m: section::Model) -> Section {
+    Section {
         id: m.id,
         org_id: m.org_id,
-        unit_id: m.unit_id,
-        period_id: m.period_id,
+        org_unit_id: m.org_unit_id,
+        section_type: m.section_type,
+        code: m.code,
         name: m.name,
         name_ar: m.name_ar,
         level: m.level,
-        division: m.division,
-        homeroom_teacher_id: m.homeroom_teacher_id,
+        track: m.track,
         capacity: m.capacity,
-        current_students: m.current_students,
-        room_id: m.room_id,
         color: m.color,
         is_active: m.is_active,
         is_deleted: m.is_deleted,
@@ -429,24 +452,27 @@ fn map_class_model_to_domain(m: class::Model) -> DomainSection {
     }
 }
 
-fn map_section_subject_model_to_domain(m: section_subject::Model) -> DomainSectionSubject {
-    DomainSectionSubject {
+fn map_section_subject_model_to_domain(m: section_subject::Model) -> SectionSubject {
+    SectionSubject {
         id: m.id,
-        class_id: m.class_id,
+        org_id: m.org_id,
+        section_id: m.section_id,
         subject_id: m.subject_id,
         period_id: m.period_id,
-        primary_teacher_id: m.primary_teacher_id,
-        assistant_teacher_id: m.assistant_teacher_id,
-        substitute_teacher_id: m.substitute_teacher_id,
-        grade_groups: m.grade_groups,
+        instructor_id: m.instructor_id,
+        assistant_instructor_id: m.assistant_instructor_id,
+        substitute_instructor_id: m.substitute_instructor_id,
+        scheme_id: m.scheme_id,
         weekly_hours: m.weekly_hours,
         theory_hours: m.theory_hours,
         practical_hours: m.practical_hours,
         assessment_config: m.assessment_config,
-        scheme_id: m.scheme_id,
+        grade_groups: m.grade_groups,
+        capacity: m.capacity,
+        status: m.status,
         is_active: m.is_active,
-        created_at: m.created_at,
-        updated_at: m.updated_at,
+        created_at: Some(m.created_at),
+        updated_at: Some(m.updated_at),
     }
 }
 
@@ -455,73 +481,66 @@ impl orbis_app::ports::repositories::PrerequisiteRepository for AcademicRepoImpl
     async fn find_by_subject(
         &self,
         subject_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError>
-    {
+    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError> {
         let models = crate::models::prerequisite::Entity::find()
             .filter(crate::models::prerequisite::Column::SubjectId.eq(subject_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::prerequisite::Prerequisite {
-            id: m.id,
-            org_id: m.org_id,
-            subject_id: m.subject_id,
-            prerequisite_subject_id: m.prerequisite_subject_id,
-            requirement_type: match m.requirement_type.as_str() {
-                "recommended" => orbis_domain::entities::prerequisite::PrerequisiteType::Recommended,
-                "corequisite" => orbis_domain::entities::prerequisite::PrerequisiteType::Corequisite,
-                _ => orbis_domain::entities::prerequisite::PrerequisiteType::Enforce,
-            },
-            min_grade: m.min_grade,
-            min_score: m.min_score,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| orbis_domain::entities::prerequisite::Prerequisite {
+                id: m.id,
+                org_id: m.org_id,
+                subject_id: m.subject_id,
+                prerequisite_subject_id: m.prerequisite_subject_id,
+                requirement_type: m.requirement_type,
+                min_grade: m.min_grade,
+                min_score: m.min_score,
+            })
+            .collect())
     }
 
     async fn find_by_org(
         &self,
         org_id: Uuid,
-    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError>
-    {
+    ) -> Result<Vec<orbis_domain::entities::prerequisite::Prerequisite>, DomainError> {
         let models = crate::models::prerequisite::Entity::find()
             .filter(crate::models::prerequisite::Column::OrgId.eq(org_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models.into_iter().map(|m| orbis_domain::entities::prerequisite::Prerequisite {
-            id: m.id,
-            org_id: m.org_id,
-            subject_id: m.subject_id,
-            prerequisite_subject_id: m.prerequisite_subject_id,
-            requirement_type: match m.requirement_type.as_str() {
-                "recommended" => orbis_domain::entities::prerequisite::PrerequisiteType::Recommended,
-                "corequisite" => orbis_domain::entities::prerequisite::PrerequisiteType::Corequisite,
-                _ => orbis_domain::entities::prerequisite::PrerequisiteType::Enforce,
-            },
-            min_grade: m.min_grade,
-            min_score: m.min_score,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }).collect())
+        Ok(models
+            .into_iter()
+            .map(|m| orbis_domain::entities::prerequisite::Prerequisite {
+                id: m.id,
+                org_id: m.org_id,
+                subject_id: m.subject_id,
+                prerequisite_subject_id: m.prerequisite_subject_id,
+                requirement_type: m.requirement_type,
+                min_grade: m.min_grade,
+                min_score: m.min_score,
+            })
+            .collect())
     }
 
     async fn save(
         &self,
         prereq: &orbis_domain::entities::prerequisite::Prerequisite,
     ) -> Result<(), DomainError> {
+        let now = chrono::Utc::now();
         let active = crate::models::prerequisite::ActiveModel {
             id: Set(prereq.id),
             org_id: Set(prereq.org_id),
             subject_id: Set(prereq.subject_id),
             prerequisite_subject_id: Set(prereq.prerequisite_subject_id),
-            requirement_type: Set(prereq.requirement_type.to_string()),
+            requirement_type: Set(prereq.requirement_type.clone()),
             min_grade: Set(prereq.min_grade.clone()),
             min_score: Set(prereq.min_score),
-            created_at: Set(prereq.created_at),
-            updated_at: Set(prereq.updated_at),
+            created_at: Set(now),
+            updated_at: Set(now),
         };
 
         if crate::models::prerequisite::Entity::find_by_id(prereq.id)

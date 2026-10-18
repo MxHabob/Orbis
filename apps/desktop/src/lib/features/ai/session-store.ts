@@ -3,9 +3,12 @@ import type { AiToolResult, AiProposedAction, AiStoredSession, AiStoredMessage }
 import { api } from "$lib/api";
 
 export interface ActionWithStatus extends AiProposedAction {
-  status?: "pending" | "executed" | "rejected";
+  status?: "pending" | "processing" | "executed" | "rejected" | "failed";
   executedAt?: number;
   resultMessage?: string;
+  reportJobId?: string;
+  reportOutputFormat?: string;
+  reportChecking?: boolean;
 }
 
 export interface UnpaidFeeUiRow {
@@ -102,7 +105,9 @@ export async function saveFileSession(session: AiChatSession): Promise<boolean> 
         content: m.content,
         timestamp: m.timestamp,
         executed_tools: m.executedTools,
-        proposed_actions: m.proposedActions as any,
+        proposed_actions: m.proposedActions?.map(
+          ({ reportChecking: _reportChecking, ...action }) => action,
+        ),
       })),
     };
     return await api.aiSaveSession(stored);

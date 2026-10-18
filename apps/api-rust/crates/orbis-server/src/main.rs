@@ -17,24 +17,43 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize tracing
     tracing_subscriber::fmt::init();
 
-    // Canonical Database URL Resolution (Shared with Desktop & CLI)
-    let db_url = orbis_infra::config::resolve_database_url();
-    tracing::info!("Connecting to database: {}", db_url);
-    println!("Connecting to database: {}", db_url);
+    // The API server owns its database configuration. Never discover a Desktop
+    // user's local database or log credentials embedded in a database URL.
+    let db_url = orbis_infra::config::resolve_database_url()?;
+    tracing::info!("Connecting to configured server database");
 
     // Connect to database
     let db = Database::connect(&db_url).await?;
 
-    // Run Migrations
     use orbis_infra::migration::Migrator;
-    use sea_orm_migration::MigratorTrait;
-    Migrator::up(&db, None).await?;
+    use sea_orm_migration::{MigratorTrait, SchemaManager};
+    let schema_manager = SchemaManager::new(&db);
+    if !schema_manager.has_table("seaql_migrations").await? {
+        return Err(std::io::Error::other(
+            "Orbis database schema is not initialized. Connect the Desktop to this database and apply migrations before starting the API server.",
+        )
+        .into());
+    }
+    let pending = Migrator::get_pending_migrations(&db).await?;
+    if !pending.is_empty() {
+        return Err(std::io::Error::other(format!(
+            "The Orbis database has {} pending migration(s). Apply them from the Desktop before starting the API server.",
+            pending.len()
+        ))
+        .into());
+    }
 
     let license_data_dir = std::env::var_os("ORBIS_LICENSE_DATA_DIR")
         .map(std::path::PathBuf::from)
         .unwrap_or(std::env::current_dir()?.join(".orbis-license"));
     let app_version = env!("CARGO_PKG_VERSION").to_string();
     let mulverse_url = std::env::var("MULVERSE_API_URL").ok();
+    let mulverse_client = Arc::new(match mulverse_url.as_deref() {
+        Some(url) => orbis_infra::adapters::mulverse_client::MulverseClient::with_base_url(url)
+            .map_err(std::io::Error::other)?,
+        None => orbis_infra::adapters::mulverse_client::MulverseClient::new()
+            .map_err(std::io::Error::other)?,
+    });
     let license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime> = Arc::new(
         orbis_infra::adapters::license_runtime::MulverseLicenseRuntime::new(
             &license_data_dir,
@@ -63,6 +82,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     let student_repo =
         Arc::new(orbis_infra::repositories::student_repos::StudentRepoImpl { db: db.clone() });
+    let employee_repo =
+        Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
     let scheduling_repo = Arc::new(
         orbis_infra::repositories::scheduling_repos::SchedulingRepoImpl { db: db.clone() },
     );
@@ -104,6 +125,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     let jwt_secret = std::env::var("JWT_SECRET")
         .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
+    let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
+        Ok(key) if !key.trim().is_empty() => key,
+        _ if std::env::var("APP_ENV")
+            .map(|environment| environment != "production")
+            .unwrap_or(true) =>
+        {
+            tracing::warn!(
+                "MFA_ENCRYPTION_KEY is unset; deriving the MFA key from JWT_SECRET for development"
+            );
+            jwt_secret.clone()
+        }
+        _ => return Err("MFA_ENCRYPTION_KEY is required in production".into()),
+    };
     let token_service = Arc::new(JwtTokenService::new(jwt_secret));
     let password_hasher = Arc::new(BcryptHasher);
 
@@ -132,7 +166,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Arc::new(orbis_infra::repositories::mfa_repo::MfaRecoveryCodeRepoImpl { db: db.clone() });
     let device_repo =
         Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
-    let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+    let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl::new(
+        &mfa_encryption_key,
+    ));
     let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
     // ── Reporting System Wiring ─────────────────────────────────
@@ -156,7 +192,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_provider(Box::new(ExamAttendanceSheetDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(PaymentReceiptDataProvider { db: db.clone() }));
     provider_registry.register_provider(Box::new(StudentStatementDataProvider { db: db.clone() }));
-    provider_registry.register_provider(Box::new(AcademicCertificateDataProvider { db: db.clone() }));
+    provider_registry
+        .register_provider(Box::new(AcademicCertificateDataProvider { db: db.clone() }));
     let provider_registry = Arc::new(provider_registry);
 
     // Build renderer registry — register all available renderers
@@ -275,6 +312,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(student_repo.clone()),
             Some(student_repo.clone()),
             Some(student_repo.clone()),
+        )
+        .with_teaching_scope_repos(
+            employee_repo.clone(),
+            academic_repo.clone(),
+            academic_repo.clone(),
         ),
     );
 
@@ -297,6 +339,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
         scheduling_repo.clone(),
+        org_unit_repo.clone(),
         scheduling_repo.clone(),
         scheduling_repo.clone(),
         exam_repo.clone(),
@@ -386,8 +429,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_notification_port(notification_adapter.clone()),
     );
 
-    let employee_repo =
-        Arc::new(orbis_infra::repositories::employee_repo::EmployeeRepoImpl { db: db.clone() });
     let ai_service = Arc::new(
         orbis_app::services::AiOrchestrationService::new(
             integration_resolver.clone(),
@@ -482,6 +523,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Build AppState
     let state = AppState {
+        mulverse_client,
         db: db.clone(),
         org_repo: org_repo.clone(),
         org_unit_repo,
@@ -493,7 +535,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         period_type_repo: calendar_repo,
         academic_framework_repo,
         subject_repo: academic_repo.clone(),
-        class_repo: academic_repo.clone(),
+        section_repo: academic_repo.clone(),
         section_subject_repo: academic_repo.clone(),
         enrollment_repo: student_repo.clone(),
         student_repo: student_repo.clone(),

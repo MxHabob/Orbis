@@ -157,6 +157,32 @@ impl IntegrationRepository for IntegrationRepoImpl {
         }))
     }
 
+    async fn find_configs_by_provider(
+        &self,
+        provider_name: &str,
+    ) -> Result<Vec<DomainIntegrationConfig>, DomainError> {
+        let models = integration_config::Entity::find()
+            .filter(integration_config::Column::ProviderName.eq(provider_name))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(models
+            .into_iter()
+            .map(|m| DomainIntegrationConfig {
+                id: m.id,
+                org_id: m.org_id,
+                provider_name: m.provider_name,
+                category: m.category,
+                is_enabled: m.is_enabled,
+                env: m.env,
+                settings: m.settings.map(|v| v.into()),
+                created_at: m.created_at.into(),
+                updated_at: m.updated_at.into(),
+            })
+            .collect())
+    }
+
     async fn delete_config(&self, config_id: Uuid) -> Result<(), DomainError> {
         // Delete secrets first
         integration_secret::Entity::delete_many()

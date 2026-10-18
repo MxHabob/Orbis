@@ -153,9 +153,9 @@ progress tracking, and academic cycle status for the school year.
           href: `/${orgId}/academics/exams`,
         },
         {
-          id: "academics_classes",
+          id: "academics_sections",
           label: m.common_search_group_classes(),
-          href: `/${orgId}/academics/classes`,
+          href: `/${orgId}/academics/sections`,
         },
         {
           id: "settings_academic_calendars",

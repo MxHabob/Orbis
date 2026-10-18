@@ -188,8 +188,10 @@ function handleOpenHub() {
         {@const isCompleted = step.status === "completed"}
         {@const isActive = step.id === nextStep?.id && !isReady}
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           disabled={!step.isAccessible}
           onclick={() => handleNavigate(step)}
           class="group w-full flex items-start gap-3 p-2.5 rounded-xl text-start transition-colors hover:bg-muted/40 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
@@ -238,7 +240,7 @@ function handleOpenHub() {
               </p>
             {/if}
           </div>
-        </button>
+        </Button>
       {/each}
     </div>
 

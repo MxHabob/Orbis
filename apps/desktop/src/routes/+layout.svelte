@@ -3,25 +3,21 @@ import type { Pathname } from "$app/types";
 import { resolve } from "$app/paths";
 import { page } from "$app/state";
 import { locales, localizeHref, getLocale, getTextDirection } from "$lib/paraglide/runtime";
-import { appearanceStore, themeStore } from "$lib/stores";
-import { isDesktopApp } from "$lib/api";
+import { appearanceStore } from "$lib/stores/appearance.svelte";
+import "$lib/stores/theme.svelte";
+import { isDesktopApp } from "$lib/api/runtime";
 import { onMount } from "svelte";
 import { QueryClientProvider } from "@tanstack/svelte-query";
-import { queryClient } from "$lib/api";
+import { queryClient } from "$lib/api/query-client";
 import "./layout.css";
 import favicon from "$lib/assets/favicon.svg";
 import { Toaster } from "@orbis/ui";
-import { localeState } from "$lib/core/i18n";
+import { localeState } from "$lib/core/i18n/locale-state.svelte";
 
 let { children } = $props();
 
-// Apply theme on mount
-$effect(() => {
-  themeStore.applyToDOM();
-});
-
-// Apply lang & dir to documentElement
-$effect(() => {
+// Keep document metadata in sync before the next DOM update after locale changes.
+$effect.pre(() => {
   localeState.revision;
   const currentLocale = getLocale();
   const dir = getTextDirection(currentLocale);

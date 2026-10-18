@@ -95,11 +95,25 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
             query = query.filter(report_definition::Column::Category.eq(c));
         }
 
-        let models = query
+        let mut models = query
+            .clone()
             .order_by_asc(report_definition::Column::SortOrder)
             .all(&self.db)
             .await
             .map_err(db_err)?;
+
+        if models.is_empty() {
+            let now = chrono::Utc::now().to_rfc3339();
+            let _ =
+                super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now)
+                    .await;
+            models = query
+                .order_by_asc(report_definition::Column::SortOrder)
+                .all(&self.db)
+                .await
+                .map_err(db_err)?;
+        }
+
         Ok(models.into_iter().map(model_to_definition).collect())
     }
 
@@ -236,11 +250,25 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
             query = query.filter(report_template::Column::EntityType.eq(et));
         }
 
-        let models = query
+        let mut models = query
+            .clone()
             .order_by_desc(report_template::Column::UpdatedAt)
             .all(&self.db)
             .await
             .map_err(db_err)?;
+
+        if models.is_empty() {
+            let now = chrono::Utc::now().to_rfc3339();
+            let _ =
+                super::template_catalog::provision_master_templates(&self.db, org_id, org_id, &now)
+                    .await;
+            models = query
+                .order_by_desc(report_template::Column::UpdatedAt)
+                .all(&self.db)
+                .await
+                .map_err(db_err)?;
+        }
+
         Ok(models.into_iter().map(model_to_template).collect())
     }
 

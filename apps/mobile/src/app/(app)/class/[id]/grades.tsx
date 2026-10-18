@@ -12,7 +12,7 @@ import { useEffectiveContext } from "@/providers/effective-context";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 export default function ClassGradesScreen() {
@@ -20,12 +20,16 @@ export default function ClassGradesScreen() {
   const classId = typeof id === "string" ? id : undefined;
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
   const [scores, setScores] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
   const classQuery = useTeacherClassDataQuery(classId);
-  const classSubjects = classQuery.data?.classSubjects ?? [];
+  const classSubjects = classQuery.data?.SectionSubject ?? [];
   const selectedClassSubject =
     classSubjects.find((item) => item.id === selectedSubjectId) ??
     classSubjects[0];
-  const gradesQuery = useClassGradesQuery(selectedClassSubject?.id);
+  const gradesQuery = useClassGradesQuery(
+    selectedClassSubject?.id,
+    classQuery.isInScope,
+  );
   const mutation = useBatchRecordGradesMutation();
   const { hasPermission } = useEffectiveContext();
   const { t, isArabic, formatDate } = useI18n();
@@ -44,25 +48,20 @@ export default function ClassGradesScreen() {
     [gradesQuery.data, classQuery.data?.classItem.period_id],
   );
 
-  useEffect(() => {
-    if (
-      selectedSubjectId &&
-      !classSubjects.some((item) => item.id === selectedSubjectId)
-    ) {
-      setSelectedSubjectId("");
-    }
-  }, [classSubjects, selectedSubjectId]);
 
   const isPending =
-    classQuery.isPending ||
-    Boolean(selectedClassSubject) && gradesQuery.isPending;
+    classQuery.isInScope &&
+    (classQuery.isPending ||
+      Boolean(selectedClassSubject) && gradesQuery.isPending);
   const isError =
+    !classQuery.isInScope ||
     classQuery.isError ||
     Boolean(selectedClassSubject) && gradesQuery.isError;
 
   const saveGrades = async () => {
     const classItem = classQuery.data?.classItem;
     if (!selectedClassSubject || !classItem || !canRecord) return;
+    setSaveError(null);
     const invalidStudentIds: string[] = [];
     const items = (classQuery.data?.roster ?? []).flatMap(
       ({ student, enrollment }) => {
@@ -73,12 +72,16 @@ export default function ClassGradesScreen() {
           invalidStudentIds.push(student.id);
           return [];
       }
+      if (!classItem.period_id) {
+        invalidStudentIds.push(student.id);
+        return [];
+      }
       return [
           {
             period_id: classItem.period_id,
             student_id: student.id,
             enrollment_id: enrollment.id,
-            class_subject_id: selectedClassSubject.id,
+            section_subject_id: selectedClassSubject.id,
             score: String(numericScore),
             max_score: "100",
           },
@@ -86,11 +89,11 @@ export default function ClassGradesScreen() {
       },
     );
     if (invalidStudentIds.length > 0) {
-      toast.error(t("teacher_invalid_scores"));
+      setSaveError(t("teacher_invalid_scores"));
       return;
     }
     if (items.length === 0) {
-      toast.warning(t("teacher_no_records_to_save"));
+      setSaveError(t("teacher_no_records_to_save"));
       return;
     }
     try {
@@ -98,7 +101,7 @@ export default function ClassGradesScreen() {
       setScores({});
       toast.success(t("teacher_save_success"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("common_error"));
+      setSaveError(error instanceof Error ? error.message : t("common_error"));
     }
   };
 
@@ -107,6 +110,10 @@ export default function ClassGradesScreen() {
       title={t("teacher_record_grades")}
       isPending={isPending}
       isError={!classId || isError}
+      canRetry={classQuery.isInScope}
+      errorDescription={
+        classQuery.isInScope ? undefined : t("class_access_denied")
+      }
       onRetry={() => {
         void classQuery.refetch();
         void gradesQuery.refetch();
@@ -140,8 +147,9 @@ export default function ClassGradesScreen() {
                   onPress={() => {
                     setSelectedSubjectId(classSubject.id);
                     setScores({});
+                    setSaveError(null);
                   }}
-                  className={`min-h-10 items-center justify-center rounded-lg border px-three py-two ${
+                  className={`min-h-10 items-center justify-center rounded-md border px-three py-two ${
                     isSelected
                       ? "border-primary bg-primary/10"
                       : "border-border bg-card"
@@ -194,12 +202,13 @@ export default function ClassGradesScreen() {
                         <Input
                           label={t("teacher_score")}
                           value={scores[student.id] ?? ""}
-                          onChangeText={(value) =>
+                          onChangeText={(value) => {
+                            setSaveError(null);
                             setScores((current) => ({
                               ...current,
                               [student.id]: value,
-                            }))
-                          }
+                            }));
+                          }}
                           keyboardType="decimal-pad"
                           inputMode="decimal"
                           maxLength={6}
@@ -216,6 +225,14 @@ export default function ClassGradesScreen() {
               ) ? (
                 <Text className="text-sm text-muted-foreground">
                   {t("teacher_no_grade_entries")}
+                </Text>
+              ) : null}
+              {saveError ? (
+                <Text
+                  accessibilityRole="alert"
+                  className="text-start text-xs leading-4 font-medium text-destructive"
+                >
+                  {saveError}
                 </Text>
               ) : null}
               <Button

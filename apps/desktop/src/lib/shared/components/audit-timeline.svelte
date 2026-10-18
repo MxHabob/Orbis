@@ -1,5 +1,4 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import { api } from "$lib/api/client";
 import type { AuditLogDto } from "$lib/api/types";
 import { orgContext } from "$lib/stores";
@@ -39,14 +38,8 @@ async function loadAuditHistory() {
   }
 }
 
-onMount(() => {
-  loadAuditHistory();
-});
-
 $effect(() => {
-  if (entityId) {
-    loadAuditHistory();
-  }
+  void loadAuditHistory();
 });
 
 function formatActionLabel(action: string): string {

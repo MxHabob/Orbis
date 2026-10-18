@@ -21,7 +21,10 @@ let {
 </script>
 
 <Sheet bind:open>
-	<SheetContent class="flex flex-col h-full sm:max-w-md">
+	<SheetContent
+		contentClass="data-[side=end]:sm:!max-w-md"
+		class="flex flex-col h-full"
+	>
 		<SheetHeader class="text-start select-none">
 			<SheetTitle class="text-xl font-bold text-foreground flex items-center gap-2">
 				<Document size={18} class="text-primary" />

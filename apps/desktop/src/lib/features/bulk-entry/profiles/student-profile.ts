@@ -305,7 +305,7 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
 
   async buildReferenceData(_orgId: string): Promise<BulkReferenceData> {
     const [classesRes, feeTemplatesRes, groupsRes, org] = await Promise.all([
-      api.listClasses(),
+      api.listSections(),
       api.listFeeTemplates(),
       api.listGroups(),
       api.getCurrentOrg(),

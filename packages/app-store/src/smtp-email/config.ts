@@ -4,104 +4,64 @@ import type { OrbisApp } from "../types";
 const config: OrbisApp = {
   logo: Logo,
   id: "smtp-email",
-  name: "Email (SMTP)",
-  name_ar: "البريد الإلكتروني (SMTP)",
+  name: "Email (SendGrid)",
+  name_ar: "البريد الإلكتروني (SendGrid)",
   category: "communication",
-  active: false,
+  active: true,
   icon: "Mail",
   short_description:
-    "Send automated email notifications to parents, teachers, and staff via SMTP.",
+    "Send automated email notifications through SendGrid.",
   short_description_ar:
-    "إرسال إشعارات بريد إلكتروني تلقائية لأولياء الأمور والمعلمين والموظفين.",
-  description: `Connect your SMTP email server to enable automated email notifications across Orbis.
+    "إرسال إشعارات البريد الإلكتروني تلقائياً عبر SendGrid.",
+  description: `Connect a SendGrid API key to send email notifications through Orbis.
 
 **Automated Notifications**
-Send grade reports, attendance alerts, fee reminders, and enrollment confirmations automatically.
-
-**HTML Templates**
-Rich HTML email templates with school branding for professional communication.
-
-**Bulk Sending**
-Send notifications to entire classes, grade levels, or the whole school at once.
-
-**Delivery Tracking**
-Track email delivery status and handle bounces gracefully.`,
-  description_ar: `ربط خادم البريد الإلكتروني SMTP لتفعيل الإشعارات التلقائية في Orbis.
-
-**إشعارات تلقائية**
-إرسال تقارير الدرجات، تنبيهات الحضور، تذكيرات الرسوم تلقائياً.
-
-**إرسال جماعي**
-إرسال إشعارات لفصول كاملة أو المدرسة بأكملها.`,
+Send grade reports, attendance alerts, fee reminders, and enrollment confirmations through the configured SendGrid account.`,
+  description_ar: `اربط مفتاح API من SendGrid لإرسال إشعارات البريد الإلكتروني عبر Orbis، مثل تقارير الدرجات وتنبيهات الحضور وتذكيرات الرسوم وتأكيدات التسجيل.`,
   features: [
     "Automated email notifications",
-    "HTML templates with school branding",
-    "Bulk sending to classes or school-wide",
+    "SendGrid API integration",
     "Grade reports and attendance alerts",
-    "Fee reminders and payment receipts",
-    "Delivery status tracking",
+    "Fee reminders and enrollment confirmations",
   ],
   settings: [
     {
-      id: "host",
-      label: "SMTP Host",
-      label_ar: "خادم SMTP",
-      description: "The SMTP server hostname.",
-      type: "text",
-      required: true,
-      value: "",
-      placeholder: "smtp.gmail.com",
-    },
-    {
-      id: "port",
-      label: "SMTP Port",
-      label_ar: "منفذ SMTP",
-      description: "SMTP port (587 for TLS, 465 for SSL, 25 for unencrypted).",
-      type: "number",
-      required: true,
-      value: 587,
-      validation: { min: 1, max: 65535 },
-    },
-    {
-      id: "username",
-      label: "Username",
-      label_ar: "اسم المستخدم",
-      description: "SMTP authentication username (usually your email).",
-      type: "text",
-      required: true,
-      value: "",
-      placeholder: "school@example.com",
-    },
-    {
-      id: "password",
-      label: "Password",
-      label_ar: "كلمة المرور",
-      description: "SMTP authentication password or app password.",
+      id: "api_key",
+      label: "SendGrid API Key",
+      label_ar: "مفتاح API من SendGrid",
+      description: "API key used by Orbis to authenticate with SendGrid.",
+      description_ar:
+        "مفتاح API بصلاحية Mail Send وUser Profile Read لإرسال البريد والتحقق من الاتصال.",
       type: "password",
       required: true,
       value: "",
     },
     {
+      id: "from_email",
+      label: "Verified Sender Email",
+      label_ar: "بريد المرسل المعتمد",
+      description:
+        "A sender email address verified in your SendGrid account.",
+      description_ar: "عنوان بريد مرسل تم اعتماده في حساب SendGrid.",
+      type: "email",
+      required: true,
+      value: "",
+      placeholder: "notifications@your-school.edu",
+    },
+    {
       id: "from_name",
       label: "Sender Name",
       label_ar: "اسم المرسل",
-      description: "Display name for outgoing emails.",
+      description: "Optional display name shown to email recipients.",
+      description_ar: "اسم اختياري يظهر للمستلمين كاسم المرسل.",
       type: "text",
       required: false,
       value: "",
       placeholder: "Orbis School",
     },
-    {
-      id: "use_tls",
-      label: "Use TLS",
-      label_ar: "استخدام TLS",
-      description: "Enable TLS encryption for secure email delivery.",
-      type: "switch",
-      required: false,
-      value: true,
-    },
   ],
-  adapter_name: undefined,
+  adapter_name: "sendgrid",
+  legacy_provider_name: "smtp-email",
   provider_trait: "NotificationProvider",
   notification_channels: ["email"],
 };

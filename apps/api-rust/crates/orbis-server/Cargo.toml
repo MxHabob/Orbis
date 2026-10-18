@@ -23,6 +23,8 @@ tracing-subscriber.workspace = true
 sea-orm.workspace = true
 sea-orm-migration = { version = "1.1.0", features = ["sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls"] }
 uuid.workspace = true
+hex.workspace = true
+aes-gcm = "0.10"
 rust_decimal.workspace = true
 utoipa = { version = "4.2.3", features = ["axum_extras", "uuid", "chrono", "decimal"] }
 utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }

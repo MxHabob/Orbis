@@ -5,28 +5,34 @@
  *
  * Orbis screen header.
  *
- * A left floating control (back / profile), an optional centered floating
- * title pill, and a right floating control (custom action / crown).
+ * A minimal safe-area-aware bar with a centered title and optional circular
+ * actions. The container itself is transparent so content can scroll beneath.
  */
 
-import { ChevronLeft, ChevronRight, User, AppNotification } from "@orbis/icons/native";
-import { useRouter } from "expo-router";
-import React from "react";
 import {
-  Animated,
-  Easing,
+  AppNotification,
+  ChevronLeft,
+  ChevronRight,
+} from "@orbis/icons/native";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { useRouter } from "expo-router";
+import type React from "react";
+import {
+  Platform,
   Pressable,
-  StyleProp,
+  type StyleProp,
   StyleSheet,
   Text,
   View,
-  ViewStyle,
-  useWindowDimensions,
+  type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
+import { Avatar } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+
+export const HEADER_CONTENT_OFFSET = 36;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,8 +67,6 @@ type HeaderProps = {
   /** Show crown on the right. */
   showCrown?: boolean;
 
-  transparent?: boolean;
-
   style?: StyleProp<ViewStyle>;
   children?: React.ReactNode;
 };
@@ -87,59 +91,21 @@ export function Header({
   largeTitle = false,
 
   showTitle = true,
-  showCrown = true,
-  transparent = false,
+  showCrown = false,
 
   style,
   children,
 }: HeaderProps) {
-
   const router = useRouter();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { user } = useAuth();
   const { t, isArabic } = useI18n();
+  const useNativeGlass = Platform.OS === "ios" && isLiquidGlassAvailable();
 
-  const sideSize = width < 360 ? 46 : 48;
-
-  const titleWidth = Math.min(Math.max(width * 0.42, 128), 160);
-
-  const marqueeX = React.useRef(new Animated.Value(0)).current;
-  const estimatedTitleWidth = Math.max((title?.length ?? 0) * 8.6, 0);
-  const shouldAnimateTitle = Boolean(title) && estimatedTitleWidth > titleWidth;
-
-  React.useEffect(() => {
-    if (!shouldAnimateTitle) {
-      marqueeX.stopAnimation();
-      marqueeX.setValue(0);
-      return;
-    }
-
-    const distance = Math.max(estimatedTitleWidth - titleWidth + 18, 20);
-
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(marqueeX, {
-          toValue: -distance,
-          duration: 3800 + distance * 14,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-        Animated.delay(800),
-        Animated.timing(marqueeX, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    animation.start();
-
-    return () => {
-      animation.stop();
-    };
-  }, [estimatedTitleWidth, marqueeX, shouldAnimateTitle, titleWidth]);
+  const sideSize = 44;
+  const headerHeight =
+    insets.top + HEADER_CONTENT_OFFSET + (largeTitle && title ? 58 : 0);
 
   const handleBack = () => {
     if (onBack) {
@@ -172,18 +138,28 @@ export function Header({
 
   return (
     <View
-      className="z-10 w-full bg-transparent"
+      pointerEvents="box-none"
+      className="w-full bg-background"
       style={[
         {
-          paddingTop: insets.top + 8,
+          position: "relative",
+          paddingTop: insets.top + 4,
           paddingHorizontal: 16,
+          paddingBottom: 4,
         },
         style,
       ]}
     >
-      <View className="min-h-12 w-full flex-row items-center justify-between gap-2">
+      <View
+        pointerEvents="box-none"
+        className="min-h-11 w-full flex-row items-center justify-between"
+      >
         {/* LEFT */}
-        <View className="shrink-0 items-center justify-center" style={{ width: sideSize, height: sideSize }}>
+        <View
+          pointerEvents="box-none"
+          className="shrink-0 items-center justify-center"
+          style={{ width: sideSize, height: sideSize }}
+        >
           {leftAction ? (
             leftAction
           ) : (
@@ -197,35 +173,56 @@ export function Header({
                 {
                   width: sideSize,
                   height: sideSize,
+                  minWidth: sideSize,
+                  minHeight: sideSize,
+                  flexShrink: 0,
+                  aspectRatio: 1,
                   borderRadius: sideSize / 2,
-                  backgroundColor: transparent
-                    ? "rgba(255,255,255,0.10)"
-                    : theme.card,
-                  borderColor: transparent
-                    ? "rgba(255,255,255,0.16)"
-                    : theme.border,
-                  shadowColor: theme.text,
+                  overflow: "hidden",
                 },
-                pressed && { transform: [{ scale: 0.94 }] },
+                pressed && styles.pressed,
               ]}
-              className="items-center justify-center"
             >
+              {showBack && useNativeGlass ? (
+                <GlassView
+                  pointerEvents="none"
+                  glassEffectStyle="regular"
+                  tintColor={theme.cardElevated}
+                  style={[
+                    StyleSheet.absoluteFill,
+                    styles.glassSurface,
+                    { borderColor: theme.cardBorder },
+                  ]}
+                />
+              ) : showBack ? (
+                <View
+                  pointerEvents="none"
+                  style={[
+                    StyleSheet.absoluteFill,
+                    styles.glassSurface,
+                    {
+                      backgroundColor: theme.cardElevated,
+                      borderColor: theme.cardBorder,
+                      opacity: 0.76,
+                    },
+                  ]}
+                />
+              ) : null}
               {showBack ? (
                 isArabic ? (
-                  <ChevronRight
-                    size={21}
-                    color={transparent ? "#FFFFFF" : theme.text}
-                  />
+                  <ChevronRight size={21} color={theme.foreground} />
                 ) : (
-                  <ChevronLeft
-                    size={21}
-                    color={transparent ? "#FFFFFF" : theme.text}
-                  />
+                  <ChevronLeft size={21} color={theme.foreground} />
                 )
               ) : (
-                <User
-                  size={21}
-                  color={transparent ? "#FFFFFF" : theme.text}
+                <Avatar
+                  name={
+                    isArabic
+                      ? user?.full_name_ar || user?.full_name
+                      : user?.full_name
+                  }
+                  imageUrl={user?.avatar_url}
+                  size={32}
                 />
               )}
             </Pressable>
@@ -233,67 +230,51 @@ export function Header({
         </View>
 
         {/* CENTER — PAGE TITLE */}
-        <View className="mx-three h-12 flex-1 items-center justify-center">
+        <View
+          pointerEvents="none"
+          style={[
+            styles.titleContainer,
+          ]}
+        >
           {showTitle && title && !largeTitle ? (
-            <View
-              className="h-11 items-center justify-center overflow-hidden rounded-full px-3"
-              style={[
-                styles.floatingSurface,
-                {
-                  width: titleWidth,
-                  backgroundColor: transparent
-                    ? "rgba(255,255,255,0.10)"
-                    : theme.card,
-                  borderColor: transparent
-                    ? "rgba(255,255,255,0.16)"
-                    : theme.border,
-                  shadowColor: theme.text,
-                },
-              ]}
-            >
-              <View className="max-w-full items-center justify-center overflow-hidden">
-                <Animated.View
-                  pointerEvents="none"
+            <View className="max-w-full items-center justify-center">
+              <Text
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className="text-center font-semibold"
+                style={[styles.pageTitle, { color: theme.foreground }]}
+              >
+                {title}
+              </Text>
+              {subtitle ? (
+                <Text
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  className="text-center"
                   style={[
-                    {
-                      width: shouldAnimateTitle ? estimatedTitleWidth + 28 : "100%",
-                      transform: [{ translateX: shouldAnimateTitle ? marqueeX : 0 }],
-                    },
+                    styles.pageSubtitle,
+                    { color: theme.mutedForeground },
                   ]}
                 >
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    className="text-center font-semibold"
-                    style={{ color: transparent ? "#FFFFFF" : theme.text }}
-                  >
-                    {title}
-                  </Text>
-                </Animated.View>
-
-                {subtitle ? (
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    className="mt-px text-center"
-                    style={{ color: transparent ? "rgba(255,255,255,0.72)" : theme.textSecondary }}
-                  >
-                    {subtitle}
-                  </Text>
-                ) : null}
-              </View>
+                  {subtitle}
+                </Text>
+              ) : null}
             </View>
           ) : null}
         </View>
 
         {/* RIGHT */}
-        <View className="shrink-0 items-center justify-center" style={{ width: sideSize, height: sideSize }}>
+        <View
+          pointerEvents="box-none"
+          className="shrink-0 items-center justify-center"
+          style={{ width: sideSize, height: sideSize }}
+        >
           {rightAction ? (
             rightAction
           ) : showCrown ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Notifications"
+              accessibilityLabel={t("home_notifications")}
               hitSlop={8}
               onPress={handleCrown}
               style={({ pressed }) => [
@@ -301,36 +282,33 @@ export function Header({
                 {
                   width: sideSize,
                   height: sideSize,
+                  flexShrink: 0,
                   borderRadius: sideSize / 2,
-                  backgroundColor: transparent
-                    ? "rgba(255,255,255,0.10)"
-                    : theme.card,
-                  borderColor: transparent
-                    ? "rgba(255,255,255,0.16)"
-                    : theme.border,
-                  shadowColor: theme.text,
-                  opacity: 1,
+                  backgroundColor: theme.cardElevated,
                 },
-                pressed && { transform: [{ scale: 0.94 }] },
+                pressed && styles.pressed,
               ]}
               className="items-center justify-center"
             >
-              <AppNotification
-                size={20}
-                color={transparent ? "#FFFFFF" : theme.text}
-              />
+              <AppNotification size={20} color={theme.foreground} />
             </Pressable>
           ) : (
-            <View className="shrink-0" style={{ width: sideSize, height: sideSize }} />
+            <View
+              className="shrink-0"
+              style={{ width: sideSize, height: sideSize }}
+            />
           )}
         </View>
       </View>
 
       {largeTitle && title ? (
-        <View className="mt-3 px-1">
+        <View pointerEvents="none" className="mt-3 px-1">
           <Text
             style={[
-              { color: transparent ? "#FFFFFF" : theme.text, ...{"fontSize":24,"lineHeight":30,"fontWeight":"800"} },
+              {
+                color: theme.foreground,
+                ...{ fontSize: 24, lineHeight: 30, fontWeight: "800" },
+              },
             ]}
           >
             {title}
@@ -339,10 +317,8 @@ export function Header({
             <Text
               style={[
                 {
-                  color: transparent
-                    ? "rgba(255,255,255,0.72)"
-                    : theme.textSecondary,
-                  ...{"fontSize":13,"lineHeight":18,"fontWeight":"400"},
+                  color: theme.mutedForeground,
+                  ...{ fontSize: 13, lineHeight: 18, fontWeight: "400" },
                   marginTop: 2,
                 },
               ]}
@@ -356,7 +332,6 @@ export function Header({
       {children}
     </View>
   );
-
 }
 
 // ---------------------------------------------------------------------------
@@ -364,13 +339,33 @@ export function Header({
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
-  floatingSurface: {
+  glassSurface: {
+    borderRadius: 9999,
     borderWidth: StyleSheet.hairlineWidth,
-    elevation: 4,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
+  },
+  floatingSurface: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  titleContainer: {
+    position: "absolute",
+    left: 56,
+    right: 56,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  pageTitle: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontWeight: "700",
+    maxWidth: "100%",
+  },
+  pageSubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  pressed: {
+    transform: [{ scale: 0.96 }],
   },
 });
 

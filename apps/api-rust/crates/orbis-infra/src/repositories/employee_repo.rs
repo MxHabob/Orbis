@@ -1,8 +1,9 @@
 use async_trait::async_trait;
 use sea_orm::sea_query::{Expr, Func};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, IntoActiveModel,
-    PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, Condition, DatabaseConnection, EntityTrait, IntoActiveModel,
+    JoinType, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
+    TransactionTrait,
 };
 use uuid::Uuid;
 
@@ -75,9 +76,7 @@ impl EmployeeRepoImpl {
             national_id: m.national_id,
             passport_number: m.passport_number,
             gender: m.gender,
-            birth_date: m
-                .birth_date
-                .and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
+            birth_date: m.birth_date,
             place_of_birth: m.place_of_birth,
             nationality: m.nationality,
             blood_type: m.blood_type,
@@ -354,6 +353,40 @@ impl EmployeeRepository for EmployeeRepoImpl {
             query = query.filter(employee::Column::OrgUnitId.eq(ouid));
         }
 
+        if let Some(search) = filter.search.as_deref() {
+            let terms: Vec<_> = search
+                .split_whitespace()
+                .filter(|term| !term.is_empty())
+                .collect();
+            if !terms.is_empty() {
+                query = query.join(JoinType::InnerJoin, employee::Relation::Person.def());
+
+                let mut all_terms = Condition::all();
+                for term in terms {
+                    let search_pat = format!("%{term}%");
+                    all_terms = all_terms.add(
+                        Condition::any()
+                            .add(employee::Column::EmployeeNumber.like(&search_pat))
+                            .add(employee::Column::EmployeeType.like(&search_pat))
+                            .add(employee::Column::JobTitle.like(&search_pat))
+                            .add(employee::Column::Department.like(&search_pat))
+                            .add(person::Column::FirstName.like(&search_pat))
+                            .add(person::Column::MiddleName.like(&search_pat))
+                            .add(person::Column::LastName.like(&search_pat))
+                            .add(person::Column::FirstNameAr.like(&search_pat))
+                            .add(person::Column::MiddleNameAr.like(&search_pat))
+                            .add(person::Column::LastNameAr.like(&search_pat))
+                            .add(person::Column::DisplayName.like(&search_pat))
+                            .add(person::Column::NationalId.like(&search_pat))
+                            .add(person::Column::PassportNumber.like(&search_pat))
+                            .add(person::Column::Email.like(&search_pat))
+                            .add(person::Column::Phone.like(&search_pat)),
+                    );
+                }
+                query = query.filter(all_terms);
+            }
+        }
+
         query = query.order_by_desc(employee::Column::CreatedAt);
 
         let limit = filter.limit.unwrap_or(50);
@@ -407,37 +440,6 @@ impl EmployeeRepository for EmployeeRepoImpl {
                     created_at: chrono::Utc::now(),
                     updated_at: chrono::Utc::now(),
                 });
-
-            // If search query is provided, check if person name or employee number matches
-            if let Some(ref search_term) = filter.search {
-                let term = search_term.trim().to_lowercase();
-                if !term.is_empty() {
-                    let matches_num = emp.employee_number.to_lowercase().contains(&term);
-                    let matches_name = person.full_name().to_lowercase().contains(&term)
-                        || person
-                            .full_name_ar()
-                            .unwrap_or_default()
-                            .to_lowercase()
-                            .contains(&term)
-                        || person
-                            .email
-                            .as_deref()
-                            .unwrap_or("")
-                            .to_lowercase()
-                            .contains(&term)
-                        || person.phone.as_deref().unwrap_or("").contains(&term)
-                        || person.national_id.as_deref().unwrap_or("").contains(&term)
-                        || emp
-                            .job_title
-                            .as_deref()
-                            .unwrap_or("")
-                            .to_lowercase()
-                            .contains(&term);
-                    if !matches_num && !matches_name {
-                        continue;
-                    }
-                }
-            }
 
             let user = if let Some(uid) = emp.user_id {
                 UserEntity::find_by_id(uid)

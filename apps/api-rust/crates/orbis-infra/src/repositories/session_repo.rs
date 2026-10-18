@@ -83,4 +83,15 @@ impl SessionRepository for SessionRepoImpl {
             .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(())
     }
+
+    async fn consume_mfa_challenge(&self, token: &str) -> Result<bool, DomainError> {
+        let result = SessionEntity::delete_many()
+            .filter(user_session::Column::Token.eq(token))
+            .filter(user_session::Column::IsMfaVerified.eq(false))
+            .filter(user_session::Column::ExpiresAt.gt(chrono::Utc::now()))
+            .exec(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(result.rows_affected == 1)
+    }
 }

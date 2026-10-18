@@ -8,6 +8,7 @@ interactive tool inspections, and consequential action approvals.
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { api, isDesktopApp } from "$lib/api";
+  import type { AiCustomReportRequest } from "$lib/api/types";
   import { formatAiErrorMessage } from "$lib/features/ai/error-formatter";
   import {
     type ActionWithStatus,
@@ -25,6 +26,10 @@ interactive tool inspections, and consequential action approvals.
   import Resizer from "$lib/shell/resizer.svelte";
   import { academicContext, aiContext, authStore, uiStore } from "$lib/stores";
   import { toast } from "@orbis/ui";
+  import {
+    applyTemplateAiDesign,
+    getTemplateAiEditorContext,
+  } from "$lib/features/templates/template-ai-bridge";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import AgentCockpit from "../components/agent-cockpit.svelte";
@@ -51,10 +56,19 @@ interactive tool inspections, and consequential action approvals.
   let viewMode = $state<"chat" | "cockpit">("chat");
   let isThinking = $state(false);
   let inputValue = $state(page.url.searchParams.get("ask_orbis") || "");
-  let selectedModel = $state<string>("");
-  let selectedProvider = $state<string>("");
+  const aiPreferences = $derived(uiStore.getAiProviderModel(currentOrgId));
+  const selectedModel = $derived(aiPreferences.model);
+  const selectedProvider = $derived(aiPreferences.provider);
   let chatContainer = $state<HTMLDivElement>();
   let sidebarDiv = $state<HTMLDivElement>();
+
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      !Array.isArray(value)
+    );
+  }
 
   function pxToRem(px: number): number {
     if (typeof document === "undefined") return px / 16;
@@ -119,13 +133,6 @@ interactive tool inspections, and consequential action approvals.
         await saveFileSession(initial);
       }
 
-      // Persist screen context to disk
-      if (aiContext.context) {
-        await saveFileContext(
-          currentOrgId,
-          aiContext.context as Record<string, unknown>,
-        );
-      }
     }
 
     initStorage();
@@ -235,7 +242,8 @@ interactive tool inspections, and consequential action approvals.
           content: m.content,
         }));
 
-      const activeUiContext = aiContext.context
+      const templateEditorContext = getTemplateAiEditorContext();
+      const baseUiContext = aiContext.context
         ? {
             route: page.url.pathname,
             screen: aiContext.context.screen || aiContext.context.pageName,
@@ -264,6 +272,15 @@ interactive tool inspections, and consequential action approvals.
             class_id: academicContext.selectedClassId || undefined,
             subject_id: academicContext.selectedSubjectId || undefined,
           };
+      const activeUiContext = templateEditorContext
+        ? {
+            ...baseUiContext,
+            screen: "Template Editor",
+            domain: "template",
+            entity_type: templateEditorContext.entityType,
+            metadata: { template_editor_active: true },
+          }
+        : baseUiContext;
 
       const activeAcademicContext = {
         calendar_id: academicContext.currentYear?.id || null,
@@ -276,7 +293,9 @@ interactive tool inspections, and consequential action approvals.
 
       const response = await api.aiChat({
         messages: aiMessages,
-        screen_context: (aiContext.context as Record<string, unknown>) || null,
+        screen_context: templateEditorContext
+          ? { template_editor: templateEditorContext }
+          : (aiContext.context as Record<string, unknown>) || null,
         ui_context: activeUiContext,
         academic_context: activeAcademicContext,
         model: selectedModel ? selectedModel : undefined,
@@ -320,6 +339,19 @@ interactive tool inspections, and consequential action approvals.
     } finally {
       isThinking = false;
       scrollToBottom();
+    }
+  }
+
+  function handleApplyTemplateDesign(content: string) {
+    try {
+      applyTemplateAiDesign(content);
+      toast.success(m.template_ai_design_applied());
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : m.template_ai_no_active_editor(),
+      );
     }
   }
 
@@ -446,19 +478,172 @@ interactive tool inspections, and consequential action approvals.
     action: ActionWithStatus,
     status: "executed" | "rejected",
   ) {
-    action.status = status;
-    action.executedAt = Date.now();
-    if (status === "executed") {
-      action.resultMessage = m.ai_ui_action_approved({ title: action.title });
-      toast.success(m.ai_ui_action_approved({ title: action.title }));
-    } else {
-      toast.info(m.ai_ui_action_cancelled_title({ title: action.title }));
-    }
-
-    if (activeSession) {
+    const persistAction = async () => {
+      if (!activeSession) return;
       activeSession.updatedAt = Date.now();
       sessions = [...sessions];
       await saveFileSession(activeSession);
+    };
+
+    if (status === "rejected") {
+      action.status = "rejected";
+      action.executedAt = Date.now();
+      action.resultMessage = m.ai_ui_action_cancelled_title({
+        title: action.title,
+      });
+      toast.info(m.ai_ui_action_cancelled_title({ title: action.title }));
+      await persistAction();
+      return;
+    }
+
+    if (action.tool_name === "create_custom_report") {
+      action.status = "processing";
+      action.reportChecking = true;
+      action.resultMessage = m.ai_ui_report_submitted();
+      await persistAction();
+      try {
+        if (!action.reportJobId) {
+          const request = parseCustomReportRequest(action.payload);
+          if (!request) {
+            throw new Error("The proposed report request is invalid.");
+          }
+          const created = await api.aiCreateCustomReport(request);
+          action.reportJobId = created.job_id;
+          action.reportOutputFormat = created.output_format;
+          await persistAction();
+        }
+
+        let reportStatus = await api.getReportJobStatus(action.reportJobId);
+        for (
+          let attempt = 0;
+          attempt < 60 &&
+          (reportStatus.status === "pending" ||
+            reportStatus.status === "processing");
+          attempt += 1
+        ) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          reportStatus = await api.getReportJobStatus(action.reportJobId);
+        }
+
+        if (reportStatus.status === "completed") {
+          action.status = "executed";
+          action.executedAt = Date.now();
+          action.resultMessage = m.ai_ui_report_ready();
+          toast.success(m.ai_ui_report_ready());
+        } else if (
+          reportStatus.status === "failed" ||
+          reportStatus.status === "cancelled"
+        ) {
+          const error = reportStatus.error_message || m.ai_ui_failed();
+          action.status = "failed";
+          action.executedAt = Date.now();
+          action.resultMessage = m.ai_ui_report_creation_failed({ error });
+          toast.error(action.resultMessage);
+        } else {
+          action.status = "processing";
+          action.resultMessage = m.ai_ui_report_still_processing();
+        }
+      } catch (error) {
+        const message = formatAiErrorMessage(error);
+        if (action.reportJobId) {
+          action.status = "processing";
+          action.resultMessage = message;
+          toast.error(message);
+        } else {
+          action.status = "failed";
+          action.executedAt = Date.now();
+          action.resultMessage = m.ai_ui_report_creation_failed({
+            error: message,
+          });
+          toast.error(action.resultMessage);
+        }
+      } finally {
+        action.reportChecking = false;
+        await persistAction();
+      }
+      return;
+    }
+
+    action.status = "executed";
+    action.executedAt = Date.now();
+    action.resultMessage = m.ai_ui_action_approved({ title: action.title });
+    toast.success(m.ai_ui_action_approved({ title: action.title }));
+    await persistAction();
+  }
+
+  function parseCustomReportRequest(
+    payload: unknown,
+  ): AiCustomReportRequest | null {
+    if (!isRecord(payload)) return null;
+    const request = payload;
+    const columns = Array.isArray(request.columns)
+      ? request.columns.filter(
+          (column): column is string => typeof column === "string",
+        )
+      : [];
+    if (
+      typeof request.report_code !== "string" ||
+      typeof request.title !== "string" ||
+      !Array.isArray(request.columns) ||
+      columns.length !== request.columns.length ||
+      columns.length === 0 ||
+      typeof request.output_format !== "string"
+    ) {
+      return null;
+    }
+    const parameters = request.parameters;
+    if (
+      parameters !== undefined &&
+      parameters !== null &&
+      !isRecord(parameters)
+    ) {
+      return null;
+    }
+    const templateId = request.template_id;
+    if (
+      templateId !== undefined &&
+      templateId !== null &&
+      typeof templateId !== "string"
+    ) {
+      return null;
+    }
+
+    return {
+      report_code: request.report_code,
+      title: request.title,
+      columns,
+      parameters: isRecord(parameters) ? parameters : {},
+      output_format: request.output_format,
+      locale:
+        typeof request.locale === "string" ? request.locale : getLocale(),
+      template_id: typeof templateId === "string" ? templateId : null,
+    };
+  }
+
+  async function downloadActionReport(action: ActionWithStatus) {
+    if (!action.reportJobId) return;
+    try {
+      const bytes = await api.downloadReportFile(action.reportJobId);
+      const format = action.reportOutputFormat || "pdf";
+      const mimeTypes: Record<string, string> = {
+        pdf: "application/pdf",
+        xlsx:
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        csv: "text/csv;charset=utf-8",
+        json: "application/json",
+        html: "text/html;charset=utf-8",
+      };
+      const url = URL.createObjectURL(
+        new Blob([bytes], { type: mimeTypes[format] || "application/octet-stream" }),
+      );
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `orbis-report-${action.reportJobId}.${format}`;
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      const message = formatAiErrorMessage(error);
+      toast.error(message);
     }
   }
 
@@ -504,8 +689,8 @@ interactive tool inspections, and consequential action approvals.
     {sessions}
     currentSessionId={activeSessionId}
     pendingActionsCount={pendingActions.length}
-    bind:selectedModel
-    bind:selectedProvider
+    {selectedModel}
+    {selectedProvider}
     onToggleView={() => (viewMode = viewMode === "chat" ? "cockpit" : "chat")}
     onClose={handleClose}
     onOpenStandalone={openStandaloneWindow}
@@ -539,8 +724,10 @@ interactive tool inspections, and consequential action approvals.
         bind:chatContainer
         onLinkClick={handleLinkClick}
         onActionResponse={handleActionResponse}
+        onReportDownload={downloadActionReport}
         onRetry={handleRetry}
         onEditUserMessage={handleEditUserMessage}
+        onApplyTemplateDesign={handleApplyTemplateDesign}
       />
     {/if}
 
@@ -549,8 +736,6 @@ interactive tool inspections, and consequential action approvals.
       bind:value={inputValue}
       {isThinking}
       messagesLength={messages.length}
-      bind:selectedModel
-      bind:selectedProvider
       orgId={currentOrgId}
       onsubmit={submitMessage}
       onnewchat={() => handleNewChat()}

@@ -1,640 +1,549 @@
 <!--
 @component PromotionWizard
-Multi-step wizard for the academic promotion workflow.
-Steps: Configuration → Class Mapping → Preview → Execute.
+Reviews server-evaluated cohort progression and submits one confirmed promotion request.
 -->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
-import { api } from "$lib/api";
-import { extractErrorMessage } from "$lib/api";
-import { toast } from "@orbis/ui";
-import { academicContext } from "$lib/stores";
-import { onMount } from "svelte";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@orbis/ui/card";
+import { api, extractErrorMessage, type AcademicPeriodDto, type SectionDto, type StudentProgressionItemInput, type PromoteCohortInput, type progressionJobDto } from "$lib/api";
+import { toast, FormField, LoadingIndicator } from "@orbis/ui";
+import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
-import { Switch } from "@orbis/ui/switch";
-import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import {
   AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
   AlertDialogAction,
   AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@orbis/ui/alert-dialog";
-import { Progress } from "@orbis/ui/progress";
-import { AdjustmentsHorizontal, ArrowLeft, ArrowPath, ArrowRight, BookOpen, Check, Play, Plus, Trash, User, UserBadgeCheck, UserMinus, Users } from "@orbis/icons";
-import type { PromotionConfig } from "@orbis/sdk";
+import { Check, ChevronLeft, ChevronRight, Play, Refresh, Users } from "@orbis/icons";
+import { z } from "zod";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { createPeriodsQuery, createSectionsQuery } from "./queries";
+import { l } from "$lib/core/i18n";
 
-// ── Wizard State ────────────────────────────────────────────────
+let { orgId }: { orgId: string } = $props();
 
-let currentStep = $state(0);
-const steps = [
-  { key: "config", label: () => m.common_word_settings() },
-  { key: "mapping", label: () => m.common_promo_mapping() },
-  { key: "preview", label: () => m.common_action_preview() },
-  { key: "execute", label: () => m.common_promo_execute() },
-];
-
-const progressValue = $derived(((currentStep + 1) / steps.length) * 100);
-
-// ── Config Form ─────────────────────────────────────────────────────
-
-let config = $state<PromotionConfig>({
-  source_period_id: academicContext.effectivePeriodId ?? "",
-  target_year_name: "",
-  target_year_name_ar: null,
-  target_start_date: "",
-  target_end_date: "",
-  passing_score: 50,
-  min_attendance_rate: 75,
-  auto_graduate_final_level: true,
-  final_level: null,
-  exclude_withdrawn: true,
-  carry_over_outstanding_fees: false,
-  carry_over_guardians: true,
-  class_mapping: [],
+const PAGE_SIZE = 40;
+const form = new FormController({
+  initialValues: {
+    source_period_id: "",
+    target_period_id: "",
+    job_name: "",
+  },
+  schema: z
+    .object({
+      source_period_id: z.string().min(1, m.common_form_error_required_fields()),
+      target_period_id: z.string().min(1, m.common_form_error_required_fields()),
+      job_name: z.string().trim().min(1, m.common_form_error_required_fields()),
+    })
+    .refine((values) => values.source_period_id !== values.target_period_id, {
+      path: ["target_period_id"],
+      message: m.common_form_error_required_fields(),
+    }),
 });
 
-let policyLoaded = $state(false);
-
-// Load promotion policy and apply defaults (Policy-Driven Architecture)
-onMount(async () => {
-  policyLoaded = true;
-});
-
-// ── Preview State ───────────────────────────────────────────────
-
-let isAnalyzing = $state(false);
-let previewJob = $state<any>(null);
-let previewDetails = $state<any[]>([]);
-let previewStats = $state({
-  total: 0,
-  promoted: 0,
-  retained: 0,
-  graduated: 0,
-  excluded: 0,
-});
-
-// ── Execute State ───────────────────────────────────────────────
-
-let isExecuting = $state(false);
-let showExecuteConfirm = $state(false);
-let executionResult = $state<any>(null);
-
-// ── Config step valid ───────────────────────────────────────────
-
-const isConfigValid = $derived(
-  config.source_period_id &&
-    config.target_year_name &&
-    config.target_start_date &&
-    config.target_end_date,
+const periodsQuery = createPeriodsQuery(() => orgId);
+const sectionsQuery = createSectionsQuery(() => orgId);
+const periods = $derived(periodsQuery.data ?? []);
+const sections = $derived(
+  (sectionsQuery.data ?? []).filter((section) => section.is_active),
+);
+const targetPeriods = $derived(
+  periods.filter(
+    (period) =>
+      period.id !== form.values.source_period_id && !period.is_locked,
+  ),
+);
+const targetSections = $derived(
+  sections.filter(
+    (section) =>
+      section.period_id === form.values.target_period_id
+      || !section.period_id,
+  ),
 );
 
-const isMappingValid = $derived(config.class_mapping.length > 0);
+let step = $state<"setup" | "review" | "complete">("setup");
+let cohort = $state<StudentProgressionItemInput[]>([]);
+let sourceSectionTargets = $state<Record<string, string>>({});
+let page = $state(0);
+let isEvaluating = $state(false);
+let showExecuteConfirm = $state(false);
+let result = $state<progressionJobDto | null>(null);
 
-// ── Actions ─────────────────────────────────────────────────────
+const sourceSectionIds = $derived(
+  [...new Set(cohort.map((item) => item.source_section_id).filter(
+    (sectionId): sectionId is string => !!sectionId,
+  ))],
+);
+const promotedCount = $derived(
+  cohort.filter((item) => item.decision === "promote").length,
+);
+const retainedCount = $derived(
+  cohort.filter((item) => item.decision === "retain").length,
+);
+const graduatedCount = $derived(
+  cohort.filter((item) => item.decision === "graduate").length,
+);
+const excludedCount = $derived(
+  cohort.filter((item) => item.decision === "exclude").length,
+);
+const missingTargetCount = $derived(
+  cohort.filter(
+    (item) =>
+      item.decision === "promote"
+      && !!item.source_section_id
+      && !item.target_section_id,
+  ).length,
+);
+const pageCount = $derived(Math.max(1, Math.ceil(cohort.length / PAGE_SIZE)));
+const pageItems = $derived(
+  cohort.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+);
 
-function addMapping() {
-  config.class_mapping = [
-    ...config.class_mapping,
-    {
-      source_level: "",
-      target_level: "",
-      target_class_names: [""],
-      distribution_strategy: "balanced",
-    },
-  ];
+function periodLabel(period: AcademicPeriodDto): string {
+  return l(period.name_ar, period.name);
 }
 
-function removeMapping(index: number) {
-  config.class_mapping = config.class_mapping.filter((_, i) => i !== index);
+function sectionLabel(sectionId: string): string {
+  const section = sections.find((item) => item.id === sectionId);
+  return section
+    ? l(section.name_ar, section.name) || section.code
+    : sectionId;
 }
 
-async function runDryRun() {
-  isAnalyzing = true;
-  try {
-    previewJob = await api.promoteCohort({
-      source_period_id: config.source_period_id,
-      target_period_id: config.target_period_id || config.source_period_id,
-      job_name: config.target_year_name || "Promotion",
-      items: [],
-    });
-    if (previewJob) {
-      previewStats = {
-        total: previewJob.total_students || 0,
-        promoted: previewJob.promoted_count || 0,
-        retained: previewJob.retained_count || 0,
-        graduated: previewJob.graduated_count || 0,
-        excluded: previewJob.excluded_count || 0,
-      };
-    }
-    currentStep = 2; // Move to preview
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isAnalyzing = false;
+function setSourcePeriod(value: string | undefined) {
+  form.setField("source_period_id", value ?? "");
+  form.markTouched("source_period_id");
+  cohort = [];
+  sourceSectionTargets = {};
+  if (form.values.target_period_id === value) {
+    form.setField("target_period_id", "");
   }
+}
+
+function setTargetPeriod(value: string | undefined) {
+  form.setField("target_period_id", value ?? "");
+  form.markTouched("target_period_id");
+  cohort = [];
+  sourceSectionTargets = {};
+  const targetName = periods.find((period) => period.id === value);
+  if (!form.values.job_name.trim() && targetName) {
+    form.setField("job_name", `${periodLabel(targetName)} — ${m.common_promo_execute()}`);
+  }
+}
+
+async function evaluateCohort() {
+  form.formError = undefined;
+  if (!form.validate()) return;
+
+  isEvaluating = true;
+  try {
+    const evaluated = await api.evaluateCohort(form.values.source_period_id);
+    cohort = evaluated.map((item) => ({ ...item }));
+    sourceSectionTargets = {};
+    page = 0;
+    step = "review";
+  } catch (error: unknown) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isEvaluating = false;
+  }
+}
+
+function setSectionTarget(sourceSectionId: string, targetSectionId: string) {
+  sourceSectionTargets = {
+    ...sourceSectionTargets,
+    [sourceSectionId]: targetSectionId,
+  };
+  cohort = cohort.map((item) =>
+    item.source_section_id === sourceSectionId
+      ? { ...item, target_section_id: targetSectionId || null }
+      : item,
+  );
+}
+
+function setDecision(index: number, decision: string) {
+  const itemIndex = page * PAGE_SIZE + index;
+  const item = cohort[itemIndex];
+  if (!item) return;
+  cohort[itemIndex] = {
+    ...item,
+    decision,
+    target_section_id:
+      decision === "promote" && item.source_section_id
+        ? sourceSectionTargets[item.source_section_id] || null
+        : item.target_section_id,
+  };
 }
 
 async function executePromotion() {
-  if (!previewJob) return;
   showExecuteConfirm = false;
-  isExecuting = true;
-  try {
-    executionResult = await api.promoteCohort({
-      source_period_id: config.source_period_id,
-      target_period_id: config.target_period_id || config.source_period_id,
-      job_name: config.target_year_name || "Promotion Execution",
-      items: [],
-    });
+  if (missingTargetCount > 0) {
+    toast.error(m.common_form_error_required_fields());
+    return;
+  }
+
+  const submitted = await form.submit(async (values) => {
+    const request: PromoteCohortInput = {
+      source_period_id: values.source_period_id,
+      target_period_id: values.target_period_id,
+      job_name: values.job_name,
+      items: cohort.map((item) => ({
+        student_id: item.student_id,
+        enrollment_id: item.enrollment_id,
+        source_section_id: item.source_section_id,
+        target_section_id: item.target_section_id,
+        decision: item.decision,
+        reason: item.reason,
+      })),
+    };
+    result = await api.promoteCohort(request);
+    step = "complete";
     toast.success(m.common_promo_complete());
-    currentStep = 3; // Move to results
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isExecuting = false;
+  });
+
+  if (!submitted && form.formError) toast.error(form.formError);
+  else if (!submitted) {
+    toast.error(Object.values(form.errors).flat()[0] || m.common_form_error_required_fields());
   }
 }
 
-function decisionVariant(d: string) {
-  switch (d) {
-    case "promoted":
-      return "success" as const;
-    case "retained":
-      return "destructive" as const;
-    case "graduated":
-      return "brand" as const;
-    case "excluded":
-      return "secondary" as const;
-    default:
-      return "outline" as const;
-  }
+function changeItemDecision(index: number, value: string | undefined) {
+  setDecision(index, value ?? "promote");
 }
-
-function decisionLabel(d: string) {
-  switch (d) {
-    case "promoted":
-      return m.common_promo_promoted();
-    case "retained":
-      return m.common_promo_retained();
-    case "graduated":
-      return m.common_form_status_graduated();
-    case "excluded":
-      return m.common_promo_excluded();
-    default:
-      return d;
-  }
-}
-
-const previewColumns: OrbisColumnDef[] = [
-  {
-    id: "student_name",
-    prop: "student_name",
-    header: m.common_word_student(),
-    name: m.common_word_student(),
-    width: 280,
-    size: 280,
-    cellClass: "font-semibold text-foreground",
-  },
-  {
-    id: "decision",
-    prop: "decision",
-    header: m.common_promo_decision(),
-    name: m.common_promo_decision(),
-    width: 160,
-    size: 160,
-    cell: BadgeCell,
-  },
-];
-
-const previewGridRows = $derived(
-  (previewDetails || []).map((detail, idx) => ({
-    id: detail.student_id || `promo-preview-${idx}`,
-    student_name: detail.student_name || "—",
-    decision: detail.decision || "promoted",
-  }))
-);
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background/50 scrollbar-hide pb-10">
-  <div class="w-full px-6 py-6 flex flex-col gap-6">
-    <div class="w-full max-w-md mx-auto mb-8 px-4 flex flex-col gap-2 items-center select-none">
-      <Progress value={progressValue} class="h-1" />
-      <span class="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
-        {m.common_onboarding_progress_label()} {currentStep + 1} / {steps.length}: {steps[currentStep].label()}
-      </span>
-    </div>
-
-    <!-- Step: Configuration -->
-    {#if currentStep === 0}
-      <div class="w-full space-y-6">
-        <!-- General Config Card -->
-        <Card class="w-full">
-          <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
-            <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.common_word_settings()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent class="p-0">
-            <div class="flex flex-col divide-y divide-border">
-              <!-- Target Year -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_year_name" class="text-xs font-semibold text-foreground">{m.common_promo_target_year()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year()}</span>
-                </div>
-                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                  <Input id="target_year_name" bind:value={config.target_year_name} placeholder={m.common_year_name_placeholder()} class="h-9 w-full bg-background" />
-                </div>
-              </div>
-
-              <!-- Target Year Arabic -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_year_name_ar" class="text-xs font-semibold text-foreground">{m.common_year_name_ar()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_year_ar()}</span>
-                </div>
-                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                  <Input id="target_year_name_ar" bind:value={config.target_year_name_ar} class="h-9 w-full bg-background" />
-                </div>
-              </div>
-
-              <!-- Start Date -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_start_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_start()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_start()}</span>
-                </div>
-                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                  <Input id="target_start_date" type="date" bind:value={config.target_start_date} class="h-9 w-full bg-background" />
-                </div>
-              </div>
-
-              <!-- End Date -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="target_end_date" class="text-xs font-semibold text-foreground">{m.common_promo_target_end()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_target_end()}</span>
-                </div>
-                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                  <Input id="target_end_date" type="date" bind:value={config.target_end_date} class="h-9 w-full bg-background" />
-                </div>
-              </div>
-
-              <!-- Passing Score -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="passing_score" class="text-xs font-semibold text-foreground">{m.common_promo_passing_score()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_passing_score()}</span>
-                </div>
-                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                  <Input id="passing_score" type="number" bind:value={config.passing_score} min={0} max={100} class="h-9 w-full bg-background" />
-                </div>
-              </div>
-
-              <!-- Min Attendance Rate -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="min_attendance_rate" class="text-xs font-semibold text-foreground">{m.common_promo_min_attendance()}</Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_min_attendance()}</span>
-                </div>
-                <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                  <Input id="min_attendance_rate" type="number" bind:value={config.min_attendance_rate} min={0} max={100} class="h-9 w-full bg-background" />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- Policies / Switches Card -->
-        <Card class="w-full">
-          <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
-            <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none font-serif">
-              {m.common_promo_desc_policies_title()}
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent class="p-0">
-            <div class="flex flex-col divide-y divide-border">
-              <!-- Auto Graduate Final Level -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="auto_graduate" class="text-xs font-semibold text-foreground">
-                    {m.common_promo_auto_graduate()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_auto_graduate()}</span>
-                </div>
-                <div class="shrink-0">
-                  <Switch id="auto_graduate" bind:checked={config.auto_graduate_final_level} />
-                </div>
-              </div>
-
-              {#if config.auto_graduate_final_level}
-                <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-muted/5">
-                  <div class="flex flex-col gap-1 text-start">
-                    <Label for="final_level" class="text-xs font-semibold text-foreground">
-                      {m.common_promo_final_level()}
-                    </Label>
-                    <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_final_level()}</span>
-                  </div>
-                  <div class="w-full md:w-120 shrink-0 flex items-center justify-end">
-                    <Input id="final_level" bind:value={config.final_level} placeholder={m.common_promo_final_level_placeholder()} class="h-9 w-full bg-background" />
-                  </div>
-                </div>
-              {/if}
-
-              <!-- Exclude Withdrawn -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="exclude_withdrawn" class="text-xs font-semibold text-foreground">
-                    {m.common_promo_exclude_withdrawn()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_promo_desc_exclude_withdrawn()}</span>
-                </div>
-                <div class="shrink-0">
-                  <Switch id="exclude_withdrawn" bind:checked={config.exclude_withdrawn} />
-                </div>
-              </div>
-
-              <!-- Carry Fees -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="carry_fees" class="text-xs font-semibold text-foreground">
-                    {m.common_promo_carry_fees()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed font-sans">{m.common_promo_desc_carry_fees()}</span>
-                </div>
-                <div class="shrink-0">
-                  <Switch id="carry_fees" bind:checked={config.carry_over_outstanding_fees} />
-                </div>
-              </div>
-
-              <!-- Carry Guardians -->
-              <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div class="flex flex-col gap-1 text-start">
-                  <Label for="carry_guardians" class="text-xs font-semibold text-foreground">
-                    {m.common_promo_carry_guardians()}
-                  </Label>
-                  <span class="text-[11px] text-muted-foreground leading-relaxed font-sans">{m.common_promo_desc_carry_guardians()}</span>
-                </div>
-                <div class="shrink-0">
-                  <Switch id="carry_guardians" bind:checked={config.carry_over_guardians} />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+<div class="min-h-full w-full overflow-y-auto bg-background">
+  <div class="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+    <header class="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 pb-4">
+      <div class="space-y-1 text-start">
+        <h1 class="text-xl font-semibold text-foreground">{m.common_promo_execute()}</h1>
+        <p class="text-sm text-muted-foreground">{m.common_promo_desc_history_subtitle()}</p>
       </div>
+      {#if step !== "complete"}
+        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+          <span class:font-semibold={step === "setup"} class:text-foreground={step === "setup"}>1</span>
+          <span aria-hidden="true">/</span>
+          <span class:font-semibold={step === "review"} class:text-foreground={step === "review"}>2</span>
+        </div>
+      {/if}
+    </header>
 
-    <!-- Step: Class Mapping -->
-    {:else if currentStep === 1}
-      <div class="w-full space-y-6">
-        <div class="flex justify-end gap-4">
-          <Button variant="outline" size="sm" onclick={addMapping} class="border-border">
-            <Plus class="size-4 me-2" />
-            {m.common_promo_add_mapping()}
-          </Button>
+    {#if step === "setup"}
+      <Card>
+        <CardHeader class="border-b border-border/60 px-4 py-4 sm:px-6">
+          <CardTitle class="text-base">{m.common_word_settings()}</CardTitle>
+        </CardHeader>
+        <CardContent class="grid gap-5 p-4 sm:grid-cols-2 sm:p-6">
+          <FormField
+            id="promotion-source-period"
+            label={m.student_registration_active_period()}
+            error={form.errors.source_period_id?.[0]}
+            required
+          >
+            {#snippet children()}
+              <Select
+                type="single"
+                value={form.values.source_period_id}
+                onValueChange={setSourcePeriod}
+              >
+                <SelectTrigger id="promotion-source-period" class="h-10 w-full">
+                  {periods.find((period) => period.id === form.values.source_period_id)
+                    ? periodLabel(periods.find((period) => period.id === form.values.source_period_id)!)
+                    : m.common_metrics_period()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each periods as period (period.id)}
+                    <SelectItem value={period.id}>{periodLabel(period)}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            {/snippet}
+          </FormField>
+
+          <FormField
+            id="promotion-target-period"
+            label={m.common_metrics_period()}
+            error={form.errors.target_period_id?.[0]}
+            required
+          >
+            {#snippet children()}
+              <Select
+                type="single"
+                value={form.values.target_period_id}
+                onValueChange={setTargetPeriod}
+              >
+                <SelectTrigger id="promotion-target-period" class="h-10 w-full">
+                  {targetPeriods.find((period) => period.id === form.values.target_period_id)
+                    ? periodLabel(targetPeriods.find((period) => period.id === form.values.target_period_id)!)
+                    : m.common_metrics_period()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each targetPeriods as period (period.id)}
+                    <SelectItem value={period.id}>{periodLabel(period)}</SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            {/snippet}
+          </FormField>
+
+          <div class="sm:col-span-2">
+            <FormField
+              id="promotion-job-name"
+              label={m.common_cycle_form_name()}
+              error={form.errors.job_name?.[0]}
+              required
+            >
+              {#snippet children()}
+                <Input
+                  id="promotion-job-name"
+                  value={form.values.job_name}
+                  oninput={(event) => form.setField("job_name", event.currentTarget.value)}
+                  onblur={() => form.markTouched("job_name")}
+                  maxlength={120}
+                  class="h-10"
+                />
+              {/snippet}
+            </FormField>
+          </div>
+          {#if periodsQuery.isLoading || sectionsQuery.isLoading}
+            <div class="sm:col-span-2 flex items-center gap-2 text-sm text-muted-foreground" role="status">
+              <LoadingIndicator size={16} />
+              {m.common_loading()}
+            </div>
+          {:else if periodsQuery.isError || sectionsQuery.isError}
+            <div class="sm:col-span-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive" role="alert">
+              {extractErrorMessage(periodsQuery.error || sectionsQuery.error)}
+            </div>
+          {/if}
+        </CardContent>
+      </Card>
+
+      <div class="flex justify-end">
+        <Button
+          variant="lime"
+          disabled={isEvaluating || periodsQuery.isLoading || sectionsQuery.isLoading || periodsQuery.isError || sectionsQuery.isError}
+          onclick={evaluateCohort}
+        >
+          {#if isEvaluating}
+            <LoadingIndicator class="me-2" size={16} />
+            {m.common_promo_running()}
+          {:else}
+            <Play class="me-2 size-4" />
+            {m.common_action_preview()}
+          {/if}
+        </Button>
+      </div>
+    {:else if step === "review"}
+      <section class="flex flex-col gap-5">
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {#each [
+            { label: m.common_promo_total(), value: cohort.length },
+            { label: m.common_promo_promoted(), value: promotedCount },
+            { label: m.common_promo_retained(), value: retainedCount },
+            { label: m.common_form_status_graduated(), value: graduatedCount },
+          ] as stat (stat.label)}
+            <div class="rounded-lg border border-border/70 bg-card px-4 py-3">
+              <p class="text-xs text-muted-foreground">{stat.label}</p>
+              <p class="mt-1 text-xl font-semibold tabular-nums">{stat.value}</p>
+            </div>
+          {/each}
         </div>
 
-        {#if config.class_mapping.length === 0}
-          <div class="text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
-            <p>{m.common_promo_add_mapping()}</p>
+        {#if cohort.length === 0}
+          <div class="rounded-lg border border-dashed border-border px-6 py-12 text-center">
+            <Users class="mx-auto mb-3 size-8 text-muted-foreground" />
+            <p class="font-medium">{m.common_promo_no_jobs_desc()}</p>
           </div>
         {:else}
-          <div class="space-y-6">
-            {#each config.class_mapping as mapping, i}
-              <Card class="w-full">
-                <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border flex flex-row items-center justify-between">
-                  <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase select-none">
-                    {m.common_promo_source_level()} &rarr; {m.common_promo_target_level()}
-                  </CardTitle>
-                  <Button variant="ghost" size="icon-xs" onclick={() => removeMapping(i)} class="text-destructive hover:text-destructive hover:bg-destructive/5 shrink-0">
-                    <Trash class="size-3.5" />
-                  </Button>
-                </CardHeader>
-                <CardContent class="p-0">
-                  <div class="flex flex-col divide-y divide-border">
-                    <!-- Source Level -->
-                    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div class="flex flex-col gap-1 text-start">
-                        <Label class="text-xs font-semibold text-foreground">{m.common_promo_source_level()}</Label>
-                        <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_source_level()}</span>
-                      </div>
-                      <div class="w-full md:w-120 shrink-0">
-                        <Input bind:value={mapping.source_level} placeholder={m.common_promo_source_level_placeholder()} class="h-9 w-full bg-background" />
-                      </div>
-                    </div>
-                    
-                    <!-- Target Level -->
-                    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div class="flex flex-col gap-1 text-start">
-                        <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_level()}</Label>
-                        <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_level()}</span>
-                      </div>
-                      <div class="w-full md:w-120 shrink-0">
-                        <Input bind:value={mapping.target_level} placeholder={m.common_promo_target_level_placeholder()} class="h-9 w-full bg-background" />
-                      </div>
-                    </div>
-
-                    <!-- Target Classes -->
-                    <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div class="flex flex-col gap-1 text-start">
-                        <Label class="text-xs font-semibold text-foreground">{m.common_promo_target_classes()}</Label>
-                        <span class="text-[11px] text-muted-foreground">{m.common_promo_desc_target_classes()}</span>
-                      </div>
-                      <div class="w-full md:w-120 shrink-0">
-                        <Input
-                          value={mapping.target_class_names.join(", ")}
-                          oninput={(e) => {
-                            mapping.target_class_names = e.currentTarget.value.split(",").map(s => s.trim()).filter(Boolean);
-                          }}
-                          placeholder={m.common_promo_target_classes_placeholder()}
-                          class="h-9 w-full bg-background"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-    <!-- Step: Preview -->
-    {:else if currentStep === 2}
-      <div class="w-full space-y-6">
-        <!-- Summary Cards Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-          <!-- Total -->
-          <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <Users class="size-5 mx-auto text-muted-foreground" />
-            <div>
-              <div class="text-2xl font-bold text-foreground">{previewStats.total}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_total()}</div>
-            </div>
-          </div>
-          <!-- Promoted -->
-          <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <UserBadgeCheck class="size-5 mx-auto text-primary" />
-            <div>
-              <div class="text-2xl font-bold text-primary">{previewStats.promoted}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_promoted()}</div>
-            </div>
-          </div>
-          <!-- Retained -->
-          <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <UserMinus class="size-5 mx-auto text-destructive" />
-            <div>
-              <div class="text-2xl font-bold text-destructive">{previewStats.retained}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_retained()}</div>
-            </div>
-          </div>
-          <!-- Graduated -->
-          <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <BookOpen class="size-5 mx-auto text-foreground" />
-            <div>
-              <div class="text-2xl font-bold text-foreground">{previewStats.graduated}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_form_status_graduated()}</div>
-            </div>
-          </div>
-          <!-- Excluded -->
-          <div class="p-4 rounded-xl border border-border bg-card text-center flex flex-col justify-between h-28 select-none">
-            <AdjustmentsHorizontal class="size-5 mx-auto text-muted-foreground" />
-            <div>
-              <div class="text-2xl font-bold text-foreground">{previewStats.excluded}</div>
-              <div class="text-[10px] text-muted-foreground font-semibold uppercase">{m.common_promo_excluded()}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Student Details Grid Card -->
-        <Card class="w-full">
-          <CardHeader class="bg-muted/50 px-6 py-3 border-b border-border">
-            <CardTitle class="text-[11px] font-bold text-muted-foreground tracking-wider uppercase text-start select-none">
-              {m.common_word_student()} {m.common_promo_decision()}
-            </CardTitle>
-          </CardHeader>
-          <CardContent class="p-0">
-            <OrbisGrid
-              columns={previewColumns}
-              source={previewGridRows}
-              minHeight="260px"
-              maxHeight="440px"
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-    <!-- Step: Execute / Results -->
-    {:else if currentStep === 3}
-      <div class="w-full space-y-6">
-        {#if isExecuting}
-          <div class="border border-border rounded-xl bg-card flex flex-col items-center justify-center py-16 text-center select-none">
-            <LoadingIndicator class="size-12 text-primary mb-4"  size={48} />
-            <h3 class="text-lg font-semibold text-foreground font-serif">{m.common_promo_executing()}</h3>
-            <p class="text-sm text-muted-foreground mt-1">{m.common_promo_execute_confirm()}</p>
-          </div>
-        {:else if executionResult}
-          <div class="border border-primary/20 rounded-xl bg-card flex flex-col items-center justify-center py-12 text-center">
-            <div class="size-16 rounded-full bg-primary/10 flex items-center justify-center mb-6 select-none">
-              <Check class="size-8 text-primary" />
-            </div>
-            <h3 class="text-xl font-bold text-foreground font-serif select-none">{m.common_promo_complete()}</h3>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8 w-full max-w-md px-6 select-none">
-              <div class="text-center p-3 rounded-lg border border-border/50">
-                <div class="text-2xl font-bold text-primary font-sans">{executionResult.promoted_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_promoted()}</div>
-              </div>
-              <div class="text-center p-3 rounded-lg border border-border/50">
-                <div class="text-2xl font-bold text-destructive font-sans">{executionResult.retained_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_retained()}</div>
-              </div>
-              <div class="text-center p-3 rounded-lg border border-border/50">
-                <div class="text-2xl font-bold text-foreground font-sans">{executionResult.graduated_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{m.common_form_status_graduated()}</div>
-              </div>
-              <div class="text-center p-3 rounded-lg border border-border/50">
-                <div class="text-2xl font-bold text-muted-foreground font-sans">{executionResult.excluded_count ?? 0}</div>
-                <div class="text-xs text-muted-foreground mt-1">{m.common_promo_excluded()}</div>
-              </div>
-            </div>
-          </div>
-        {/if}
-      </div>
-    {/if}
-
-    <!-- Bottom Actions Control Bar (onboarding-footer style) -->
-    {#if currentStep < 3}
-      <div class="w-full border-t border-border/60 bg-muted/5 py-4 px-6 shrink-0 mt-8 rounded-xl">
-        <div class="w-full flex justify-between items-center">
-          <!-- Back button -->
-          <Button
-            variant="outline"
-            onclick={() => { if (currentStep > 0) currentStep -= 1; }}
-            disabled={currentStep === 0 || isAnalyzing || isExecuting}
-            class="border-border text-muted-foreground hover:text-foreground hover:bg-muted flex gap-2 items-center select-none"
-          >
-            <ArrowRight class="w-4 h-4 rtl:rotate-180" />
-            <span>{m.common_onboarding_prev_btn()}</span>
-          </Button>
-
-          <!-- Next / Action Button -->
-          {#if currentStep === 0}
-            <Button
-              variant="lime"
-              disabled={!isConfigValid}
-              onclick={() => currentStep = 1}
-              class="flex gap-2 items-center font-bold select-none"
-            >
-              <span>{m.common_promo_step_mapping()}</span>
-              <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
-            </Button>
-          {:else if currentStep === 1}
-            <Button
-              variant="lime"
-              disabled={!isMappingValid || isAnalyzing}
-              onclick={runDryRun}
-              class="flex gap-2 items-center font-bold select-none"
-            >
-              {#if isAnalyzing}
-                <LoadingIndicator class="size-4"  size={16} />
-                <span>{m.common_promo_running()}</span>
-              {:else}
-                <Play class="size-4" />
-                <span>{m.common_promo_dry_run()}</span>
-              {/if}
-            </Button>
-          {:else if currentStep === 2}
-            <Button
-              variant="lime"
-              disabled={isExecuting}
-              onclick={() => showExecuteConfirm = true}
-              class="flex gap-2 items-center font-bold select-none"
-            >
-              <span>{m.common_promo_execute()}</span>
-              <ArrowLeft class="w-4 h-4 rtl:rotate-180" />
-            </Button>
+          {#if sourceSectionIds.length > 0}
+            <Card>
+              <CardHeader class="border-b border-border/60 px-4 py-4 sm:px-6">
+                <CardTitle class="text-base">{m.common_promo_mapping()}</CardTitle>
+              </CardHeader>
+              <CardContent class="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
+                {#each sourceSectionIds as sourceSectionId (sourceSectionId)}
+                  <FormField
+                    id={`promotion-section-${sourceSectionId}`}
+                    label={sectionLabel(sourceSectionId)}
+                    required
+                  >
+                    {#snippet children()}
+                      <Select
+                        type="single"
+                        value={sourceSectionTargets[sourceSectionId] ?? ""}
+                        onValueChange={(value) => setSectionTarget(sourceSectionId, value ?? "")}
+                      >
+                        <SelectTrigger id={`promotion-section-${sourceSectionId}`} class="h-10 w-full">
+                          {targetSections.find((section) => section.id === sourceSectionTargets[sourceSectionId])
+                            ? sectionLabel(sourceSectionTargets[sourceSectionId])
+                            : m.common_form_select_class()}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {#each targetSections as section (section.id)}
+                            <SelectItem value={section.id}>
+                              {l(section.name_ar, section.name) || section.code}
+                            </SelectItem>
+                          {/each}
+                        </SelectContent>
+                      </Select>
+                    {/snippet}
+                  </FormField>
+                {/each}
+              </CardContent>
+            </Card>
           {/if}
+
+          {#if missingTargetCount > 0}
+            <div class="rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-800 dark:text-amber-200" role="status">
+              {m.common_form_error_required_fields()}
+            </div>
+          {/if}
+
+          <div class="overflow-hidden rounded-lg border border-border/70">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
+              <div>
+                <h2 class="text-sm font-semibold">{m.common_word_student()} · {m.common_promo_decision()}</h2>
+                <p class="text-xs text-muted-foreground">{m.common_promo_total()}: {cohort.length}</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onclick={() => page -= 1}
+                  aria-label={m.common_onboarding_prev_btn()}
+                >
+                  <ChevronLeft class="size-4 rtl:rotate-180" />
+                </Button>
+                <span class="min-w-16 text-center text-xs tabular-nums text-muted-foreground">
+                  {page + 1} / {pageCount}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page + 1 >= pageCount}
+                  onclick={() => page += 1}
+                  aria-label={m.common_action_preview()}
+                >
+                  <ChevronRight class="size-4 rtl:rotate-180" />
+                </Button>
+              </div>
+            </div>
+
+            <div class="divide-y divide-border/60">
+              {#each pageItems as item, index (item.enrollment_id)}
+                <div class="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1fr)_minmax(10rem,0.7fr)_minmax(12rem,0.8fr)] md:items-center">
+                  <div class="min-w-0 text-start">
+                    <p class="truncate text-sm font-medium">
+                      {item.student_number || item.student_id}
+                    </p>
+                    <p class="mt-0.5 text-xs text-muted-foreground">
+                      {item.source_section_id ? sectionLabel(item.source_section_id) : "—"}
+                    </p>
+                    {#if item.reason}
+                      <p class="mt-1 text-xs text-muted-foreground">{item.reason}</p>
+                    {/if}
+                  </div>
+
+                  <Select
+                    type="single"
+                    value={item.decision}
+                    onValueChange={(value) => changeItemDecision(index, value)}
+                  >
+                    <SelectTrigger class="h-9 w-full" aria-label={m.common_promo_decision()}>
+                      {item.decision === "promote"
+                        ? m.common_promo_promoted()
+                        : item.decision === "retain"
+                          ? m.common_promo_retained()
+                          : item.decision === "graduate"
+                            ? m.common_form_status_graduated()
+                            : m.common_promo_excluded()}
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="promote">{m.common_promo_promoted()}</SelectItem>
+                      <SelectItem value="retain">{m.common_promo_retained()}</SelectItem>
+                      <SelectItem value="graduate">{m.common_form_status_graduated()}</SelectItem>
+                      <SelectItem value="exclude">{m.common_promo_excluded()}</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <p class="text-xs text-muted-foreground md:text-end">
+                    {item.target_section_id ? sectionLabel(item.target_section_id) : "—"}
+                  </p>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-4">
+          <Button variant="outline" onclick={() => (step = "setup")}>
+            <ChevronLeft class="me-2 size-4 rtl:rotate-180" />
+            {m.common_onboarding_prev_btn()}
+          </Button>
+          <Button
+            variant="lime"
+            disabled={cohort.length === 0 || missingTargetCount > 0 || form.isSubmitting}
+            onclick={() => (showExecuteConfirm = true)}
+          >
+            {#if form.isSubmitting}
+              <LoadingIndicator class="me-2" size={16} />
+            {:else}
+              <Check class="me-2 size-4" />
+            {/if}
+            {m.common_promo_execute()}
+          </Button>
         </div>
+      </section>
+    {:else if result}
+      <Card>
+        <CardContent class="flex flex-col items-center gap-5 px-4 py-10 text-center sm:px-8">
+          <div class="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Check class="size-6" />
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold">{m.common_promo_complete()}</h2>
+            <p class="mt-1 text-sm text-muted-foreground">{result.name}</p>
+          </div>
+          <div class="grid w-full max-w-3xl grid-cols-2 gap-3 sm:grid-cols-5">
+            <div class="rounded-md border border-border p-3"><strong class="block text-xl tabular-nums">{result.total_students}</strong><span class="text-xs text-muted-foreground">{m.common_promo_total()}</span></div>
+            <div class="rounded-md border border-border p-3"><strong class="block text-xl tabular-nums">{result.promoted_count}</strong><span class="text-xs text-muted-foreground">{m.common_promo_promoted()}</span></div>
+            <div class="rounded-md border border-border p-3"><strong class="block text-xl tabular-nums">{result.retained_count}</strong><span class="text-xs text-muted-foreground">{m.common_promo_retained()}</span></div>
+            <div class="rounded-md border border-border p-3"><strong class="block text-xl tabular-nums">{result.graduated_count}</strong><span class="text-xs text-muted-foreground">{m.common_form_status_graduated()}</span></div>
+            <div class="rounded-md border border-border p-3"><strong class="block text-xl tabular-nums">{result.excluded_count}</strong><span class="text-xs text-muted-foreground">{m.common_promo_excluded()}</span></div>
+          </div>
+        </CardContent>
+      </Card>
+      <div class="flex justify-end">
+        <Button variant="outline" onclick={() => {
+          cohort = [];
+          result = null;
+          step = "setup";
+          form.reset({
+            source_period_id: form.values.target_period_id,
+            target_period_id: "",
+            job_name: "",
+          });
+        }}>
+          <Refresh class="me-2 size-4" />
+          {m.common_promo_execute()}
+        </Button>
       </div>
     {/if}
   </div>
 </div>
 
-<!-- Execute Confirmation -->
 <AlertDialog bind:open={showExecuteConfirm}>
   <AlertDialogContent>
     <AlertDialogHeader>

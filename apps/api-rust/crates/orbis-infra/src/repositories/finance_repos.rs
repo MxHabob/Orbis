@@ -530,11 +530,12 @@ fn build_student_fee_list_query(
              OR LOWER(CAST(student_fees.fee_template_id AS TEXT)) LIKE LOWER({}) \
              OR LOWER(CAST(student_fees.status AS TEXT)) LIKE LOWER({}) \
              OR EXISTS (SELECT 1 FROM students s \
+               INNER JOIN persons p ON s.person_id = p.id \
                WHERE s.id = student_fees.student_id \
                  AND s.org_id = student_fees.org_id \
                  AND (LOWER(s.student_number) LIKE LOWER({}) \
-                   OR LOWER(s.full_name) LIKE LOWER({}) \
-                   OR LOWER(s.name_ar) LIKE LOWER({}))) \
+                   OR LOWER(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) LIKE LOWER({}) \
+                   OR LOWER(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')) LIKE LOWER({}))) \
              OR EXISTS (SELECT 1 FROM fee_templates ft \
                WHERE ft.id = student_fees.fee_template_id \
                  AND ft.org_id = student_fees.org_id \
@@ -608,11 +609,12 @@ fn build_payment_list_query(
              OR LOWER(payments.notes) LIKE LOWER({}) \
              OR LOWER(payments.method) LIKE LOWER({}) \
              OR EXISTS (SELECT 1 FROM students s \
+               INNER JOIN persons p ON s.person_id = p.id \
                WHERE s.id = payments.student_id \
                  AND s.org_id = payments.org_id \
                  AND (LOWER(s.student_number) LIKE LOWER({}) \
-                   OR LOWER(s.full_name) LIKE LOWER({}) \
-                   OR LOWER(s.name_ar) LIKE LOWER({}))))",
+                   OR LOWER(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) LIKE LOWER({}) \
+                   OR LOWER(COALESCE(p.first_name_ar, '') || ' ' || COALESCE(p.last_name_ar, '')) LIKE LOWER({}))))",
                 placeholder(1),
                 placeholder(2),
                 placeholder(3),

@@ -1,60 +1,105 @@
 //! Configuration and Environment Resolution for Orbis Infrastructure.
 //!
-//! Provides deterministic database path discovery shared across Desktop (Tauri),
-//! HTTP Server (Axum), and CLI commands.
+//! Resolves the API database configuration and the Desktop database in development.
 
-use std::path::PathBuf;
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
 
-/// Resolve the canonical SQLite or PostgreSQL database connection URL.
-///
-/// Priority Order:
-/// 1. `DATABASE_URL` environment variable (if explicitly defined)
-/// 2. Active Desktop App SQLite database in user data dir (`%APPDATA%/com.mulverse.orbis.dev/orbis.db` or prod)
-/// 3. Standard fallback `sqlite://orbis.db?mode=rwc`
-pub fn resolve_database_url() -> String {
-    if let Ok(url) = std::env::var("DATABASE_URL") {
-        let trimmed = url.trim();
-        if !trimmed.is_empty() {
-            return trimmed.to_string();
-        }
-    }
+const SERVER_CONFIG_FILE: &str = "server.json";
+const SERVER_CONFIG_ENV: &str = "ORBIS_SERVER_CONFIG_FILE";
 
-    // 1. Windows standard AppData Roaming paths
-    if let Ok(appdata) = std::env::var("APPDATA") {
-        let dev_db = PathBuf::from(&appdata)
-            .join("com.mulverse.orbis.dev")
-            .join("orbis.db");
-        if is_non_empty_file(&dev_db) {
-            return format!("sqlite://{}?mode=rwc", dev_db.display());
-        }
-        let prod_db = PathBuf::from(&appdata)
-            .join("com.mulverse.orbis")
-            .join("orbis.db");
-        if is_non_empty_file(&prod_db) {
-            return format!("sqlite://{}?mode=rwc", prod_db.display());
-        }
-    }
-
-    // 2. macOS & Linux Application Support / Local Share paths
-    if let Ok(home) = std::env::var("HOME") {
-        let mac_db = PathBuf::from(&home)
-            .join("Library/Application Support/com.mulverse.orbis.dev/orbis.db");
-        if is_non_empty_file(&mac_db) {
-            return format!("sqlite://{}?mode=rwc", mac_db.display());
-        }
-        let linux_db = PathBuf::from(&home).join(".local/share/com.mulverse.orbis.dev/orbis.db");
-        if is_non_empty_file(&linux_db) {
-            return format!("sqlite://{}?mode=rwc", linux_db.display());
-        }
-    }
-
-    // 3. Current Working Directory fallback
-    "sqlite://orbis.db?mode=rwc".to_string()
+/// Resolve the API database URL from the protected server-side configuration file.
+pub fn resolve_database_url() -> Result<String, String> {
+    let path = match std::env::var_os(SERVER_CONFIG_ENV) {
+        Some(path) if !path.is_empty() => PathBuf::from(path),
+        _ => default_server_config_path()?,
+    };
+    resolve_database_url_from_config(&path)
 }
 
-fn is_non_empty_file(path: &PathBuf) -> bool {
-    path.is_file()
-        && std::fs::metadata(path)
-            .map(|metadata| metadata.len() > 0)
-            .unwrap_or(false)
+#[derive(Deserialize)]
+struct ServerConfig {
+    database_url: String,
+}
+
+fn resolve_database_url_from_config(path: &Path) -> Result<String, String> {
+    let contents = std::fs::read_to_string(path).map_err(|error| {
+        format!(
+            "Unable to read Orbis server configuration at {}: {error}",
+            path.display()
+        )
+    })?;
+    let config: ServerConfig = serde_json::from_str(&contents).map_err(|error| {
+        format!(
+            "Unable to parse Orbis server configuration at {}: {error}",
+            path.display()
+        )
+    })?;
+    let database_url = config.database_url.trim();
+    if database_url.is_empty() {
+        return Err(format!(
+            "database_url cannot be empty in Orbis server configuration at {}",
+            path.display()
+        ));
+    }
+    Ok(database_url.to_string())
+}
+
+fn default_server_config_path() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let program_data = std::env::var_os("PROGRAMDATA").ok_or_else(|| {
+            "PROGRAMDATA is not set; cannot locate Orbis server configuration".to_string()
+        })?;
+        return Ok(PathBuf::from(program_data)
+            .join("Orbis")
+            .join(SERVER_CONFIG_FILE));
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        return Ok(PathBuf::from("/Library/Application Support/Orbis").join(SERVER_CONFIG_FILE));
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        return Ok(PathBuf::from("/etc/orbis").join(SERVER_CONFIG_FILE));
+    }
+
+    #[allow(unreachable_code)]
+    Err(
+        "Unsupported operating system; set ORBIS_SERVER_CONFIG_FILE to the server config path"
+            .to_string(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reads_database_url_from_server_config_file() {
+        let config_path =
+            std::env::temp_dir().join(format!("orbis-server-config-{}.json", uuid::Uuid::new_v4()));
+        std::fs::write(
+            &config_path,
+            r#"{"database_url":"postgres://localhost/orbis"}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            resolve_database_url_from_config(&config_path).unwrap(),
+            "postgres://localhost/orbis"
+        );
+        std::fs::remove_file(config_path).unwrap();
+    }
+
+    #[test]
+    fn rejects_empty_database_url_in_server_config_file() {
+        let config_path =
+            std::env::temp_dir().join(format!("orbis-server-config-{}.json", uuid::Uuid::new_v4()));
+        std::fs::write(&config_path, r#"{"database_url":"  "}"#).unwrap();
+        let error = resolve_database_url_from_config(&config_path).unwrap_err();
+        assert!(error.contains("database_url cannot be empty"));
+        std::fs::remove_file(config_path).unwrap();
+    }
 }

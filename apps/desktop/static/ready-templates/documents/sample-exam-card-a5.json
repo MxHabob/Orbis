@@ -1,0 +1,123 @@
+{
+  "version": "2.0",
+  "meta": {
+    "name": "Sample Exam Card",
+    "nameAr": "بطاقة اختبار تجريبية",
+    "documentType": "EXAM_CARD",
+    "entityType": "student",
+    "locale": "ar",
+    "pageSetup": {
+      "size": "A5",
+      "orientation": "landscape",
+      "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+      "unit": "mm"
+    }
+  },
+  "variables": {},
+  "assets": {},
+  "pages": [
+    {
+      "type": "Page",
+      "id": "exam-card-page",
+      "children": [
+        {
+          "type": "Shape",
+          "id": "exam-card-border",
+          "name": "إطار البطاقة",
+          "props": {
+            "shapeType": "rounded-rect",
+            "position": { "x": 8, "y": 8, "width": 194, "height": 122 },
+            "fill": "transparent",
+            "stroke": "#7862A8",
+            "strokeWidth": 0.8,
+            "borderRadius": 2
+          }
+        },
+        {
+          "type": "Text",
+          "id": "exam-card-title",
+          "name": "عنوان البطاقة",
+          "props": {
+            "content": "بطاقة دخول الاختبار",
+            "position": { "x": 20, "y": 17, "width": 170, "height": 13 },
+            "fontSize": 18,
+            "fontFamily": "Rubik",
+            "fontWeight": "bold",
+            "color": "#594582",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Shape",
+          "id": "exam-card-divider",
+          "name": "فاصل",
+          "props": {
+            "shapeType": "line",
+            "position": { "x": 20, "y": 36, "width": 170, "height": 0 },
+            "stroke": "#B8ADD0",
+            "strokeWidth": 0.5
+          }
+        },
+        {
+          "type": "Text",
+          "id": "exam-card-student",
+          "name": "بيانات الطالب",
+          "props": {
+            "content": "اسم الطالب: _______________________    الصف: ______________",
+            "position": { "x": 20, "y": 48, "width": 170, "height": 10 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "color": "#303944",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "exam-card-subject",
+          "name": "بيانات المادة",
+          "props": {
+            "content": "المادة: ____________________________    القاعة: ______________",
+            "position": { "x": 20, "y": 68, "width": 170, "height": 10 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "color": "#303944",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "exam-card-date",
+          "name": "موعد الاختبار",
+          "props": {
+            "content": "التاريخ: __________________________    الوقت: ______________",
+            "position": { "x": 20, "y": 88, "width": 170, "height": 10 },
+            "fontSize": 10,
+            "fontFamily": "Rubik",
+            "color": "#303944",
+            "textAlign": "end",
+            "direction": "rtl"
+          }
+        },
+        {
+          "type": "Text",
+          "id": "exam-card-note",
+          "name": "تنبيه",
+          "props": {
+            "content": "يرجى الحضور قبل موعد الاختبار بوقت كافٍ.",
+            "position": { "x": 20, "y": 111, "width": 170, "height": 8 },
+            "fontSize": 9,
+            "fontFamily": "Rubik",
+            "color": "#594582",
+            "textAlign": "center",
+            "direction": "rtl"
+          }
+        }
+      ]
+    }
+  ],
+  "components": {},
+  "styles": {}
+}

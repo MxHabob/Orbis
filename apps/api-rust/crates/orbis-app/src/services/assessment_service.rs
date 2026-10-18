@@ -2,9 +2,9 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, AssessmentSchemeRepository,
-    AttendanceRepository, BehaviorRecordRepository, ClassRepository, SectionSubjectRepository,
-    EnrollmentRepository, GpaRecordRepository, GradeRepository, SettingsRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, AssessmentSchemeRepository,
+    AttendanceRepository, BehaviorRecordRepository, EnrollmentRepository, GpaRecordRepository,
+    GradeRepository, SectionRepository, SectionSubjectRepository, SettingsRepository,
     StudentRepository, SubjectRepository,
 };
 use crate::services::calculation_engine::{
@@ -14,7 +14,8 @@ use chrono::{NaiveDate, Utc};
 use orbis_domain::entities::academic_period::PeriodKind;
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicStatus, ComponentScore, PeriodAssessmentResult, PeriodComponentScores,
-    StudentAnnualReportCard, StudentTermReportCard, SubjectTermResult,
+    StudentAnnualReportCard, StudentCertificateReportCard, StudentTermReportCard,
+    SubjectTermResult,
 };
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
@@ -63,7 +64,7 @@ pub struct AssessmentService {
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
     pub period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
-    pub class_repo: Option<Arc<dyn ClassRepository>>,
+    pub section_repo: Option<Arc<dyn SectionRepository>>,
     pub student_repo: Option<Arc<dyn StudentRepository>>,
     pub year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
@@ -93,7 +94,7 @@ impl AssessmentService {
             section_subject_repo,
             subject_repo,
             period_repo: None,
-            class_repo: None,
+            section_repo: None,
             student_repo: None,
             year_repo: None,
             enrollment_repo: None,
@@ -107,14 +108,14 @@ impl AssessmentService {
     pub fn with_academic_repos(
         mut self,
         period_repo: Option<Arc<dyn AcademicPeriodRepository>>,
-        class_repo: Option<Arc<dyn ClassRepository>>,
+        section_repo: Option<Arc<dyn SectionRepository>>,
         student_repo: Option<Arc<dyn StudentRepository>>,
         year_repo: Option<Arc<dyn AcademicCalendarRepository>>,
         enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
         settings_repo: Option<Arc<dyn SettingsRepository>>,
     ) -> Self {
         self.period_repo = period_repo;
-        self.class_repo = class_repo;
+        self.section_repo = section_repo;
         self.student_repo = student_repo;
         self.year_repo = year_repo;
         self.enrollment_repo = enrollment_repo;
@@ -379,7 +380,14 @@ impl AssessmentService {
         let mut term_earned = Decimal::ZERO;
         let mut term_points = Decimal::ZERO;
 
+        let policy = self.resolve_policy(org_id, None).await;
+        let pass_threshold = policy.passing_threshold_percentage;
+
         for g in &term_grades {
+            if g.is_exempt || g.is_excused {
+                continue;
+            }
+
             // Resolve actual subject credit hours
             let credit = if let Some(cs) = self
                 .section_subject_repo
@@ -387,7 +395,7 @@ impl AssessmentService {
                 .await?
             {
                 if let Some(subj) = self.subject_repo.find_by_id(cs.subject_id).await? {
-                    subj.credit_hours.unwrap_or(Decimal::from(3))
+                    subj.credit_units.unwrap_or(Decimal::from(3))
                 } else {
                     Decimal::from(3)
                 }
@@ -395,12 +403,18 @@ impl AssessmentService {
                 Decimal::from(3)
             };
 
+            let pct = if g.max_score > Decimal::ZERO {
+                (g.score / g.max_score) * Decimal::from(100)
+            } else {
+                g.score
+            };
+
             term_attempted += credit;
-            if g.score >= Decimal::from(60) {
+            if pct >= pass_threshold {
                 term_earned += credit;
             }
-            let course_gpa_point = (g.score / Decimal::from(100)) * Decimal::from(4);
-            term_points += course_gpa_point * credit;
+            let eval = policy.evaluate_percentage(pct);
+            term_points += eval.grade_points * credit;
         }
 
         let term_gpa = if term_attempted > Decimal::ZERO {
@@ -483,7 +497,7 @@ impl AssessmentService {
         _org_id: Uuid,
         _period_id: Uuid,
         student_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         section_subject_id: Option<Uuid>,
         date: NaiveDate,
         status: String,
@@ -499,7 +513,7 @@ impl AssessmentService {
         let attendance = Attendance {
             id: att_id,
             student_id,
-            class_id,
+            section_id,
             section_subject_id,
             scheduled_lesson_id: None,
             attendance_date: date,
@@ -519,7 +533,7 @@ impl AssessmentService {
                 &DomainEvent::AttendanceMarked {
                     attendance_id: att_id,
                     student_id,
-                    class_id,
+                    section_id,
                     section_subject_id,
                     scheduled_lesson_id: None,
                     status,
@@ -536,7 +550,7 @@ impl AssessmentService {
         &self,
         ctx: &RequestContext,
         _org_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         date: NaiveDate,
         items: Vec<BatchAttendanceItem>,
     ) -> Result<Vec<Attendance>, DomainError> {
@@ -552,7 +566,7 @@ impl AssessmentService {
             attendances.push(Attendance {
                 id: att_id,
                 student_id: item.student_id,
-                class_id: Some(class_id),
+                section_id: Some(section_id),
                 section_subject_id: item.section_subject_id,
                 scheduled_lesson_id: item.scheduled_lesson_id,
                 attendance_date: date,
@@ -574,7 +588,7 @@ impl AssessmentService {
                     &DomainEvent::AttendanceMarked {
                         attendance_id: a.id,
                         student_id: a.student_id,
-                        class_id: a.class_id,
+                        section_id: a.section_id,
                         section_subject_id: a.section_subject_id,
                         scheduled_lesson_id: a.scheduled_lesson_id,
                         status: a.status.clone(),
@@ -660,6 +674,13 @@ impl AssessmentService {
             components: components.unwrap_or_default(),
             is_default,
             is_system: false,
+            source_document: None,
+            source_authority: None,
+            verification_status: None,
+            effective_date: None,
+            policy_version: 0,
+            min_attendance_ratio: None,
+            pass_threshold: None,
             created_at: now,
             updated_at: now,
         };
@@ -941,7 +962,7 @@ impl AssessmentService {
         org_id: Uuid,
         student_id: Uuid,
         period_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         policy: Option<AcademicPolicy>,
     ) -> Result<StudentTermReportCard, DomainError> {
         self.permission_checker
@@ -986,21 +1007,21 @@ impl AssessmentService {
         };
 
         // 3. Resolve class
-        let resolved_class_id = if let Some(cid) = class_id {
+        let resolved_section_id = if let Some(cid) = section_id {
             cid
         } else if let Some(er) = &self.enrollment_repo {
             let enrollments = er.find_by_student(student_id).await?;
             enrollments
                 .into_iter()
                 .find(|e| e.period_id == period_id || e.status == EnrollmentStatus::Active)
-                .and_then(|e| e.class_id)
+                .and_then(|e| e.section_id)
                 .unwrap_or_else(Uuid::nil)
         } else {
             Uuid::nil()
         };
 
-        let class_name = if let Some(cr) = &self.class_repo {
-            if let Some(cls) = cr.find_by_id(resolved_class_id).await? {
+        let class_name = if let Some(cr) = &self.section_repo {
+            if let Some(cls) = cr.find_by_id(resolved_section_id).await? {
                 cls.name
             } else {
                 "Class".to_string()
@@ -1010,14 +1031,14 @@ impl AssessmentService {
         };
 
         // 4. Resolve class subjects
-        let section_subjects = if resolved_class_id != Uuid::nil() {
+        let section_subjects = if resolved_section_id != Uuid::nil() {
             let cs_list = self
                 .section_subject_repo
-                .find_by_class_and_period(resolved_class_id, period_id)
+                .find_by_section_and_period(resolved_section_id, period_id)
                 .await?;
             if cs_list.is_empty() {
                 self.section_subject_repo
-                    .find_by_class(resolved_class_id)
+                    .find_by_section(resolved_section_id)
                     .await?
             } else {
                 cs_list
@@ -1031,12 +1052,12 @@ impl AssessmentService {
 
         for cs in &section_subjects {
             let subject = self.subject_repo.find_by_id(cs.subject_id).await?;
-            let (subject_code, subject_name, subject_name_ar, credit_hours) = match &subject {
+            let (subject_code, subject_name, subject_name_ar, credit_units) = match &subject {
                 Some(s) => (
                     s.code.clone(),
                     s.name.clone(),
                     s.name_ar.clone(),
-                    s.credit_hours.unwrap_or(Decimal::ONE),
+                    s.credit_units.unwrap_or(Decimal::ONE),
                 ),
                 None => (
                     "SUBJ".to_string(),
@@ -1148,7 +1169,7 @@ impl AssessmentService {
                 subject_code,
                 subject_name,
                 subject_name_ar,
-                credit_hours,
+                credit_units,
                 monthly_results,
                 term_final_exam,
                 &policy,
@@ -1158,7 +1179,7 @@ impl AssessmentService {
 
         // 6. Aggregate student term report card
         let total_score: Decimal = subject_results.iter().map(|s| s.term_total).sum();
-        let max_possible_score = Decimal::from(subject_results.len() * 50);
+        let max_possible_score = Decimal::from(subject_results.len()) * policy.term_max_score;
         let raw_pct = if max_possible_score > Decimal::ZERO {
             (total_score / max_possible_score) * Decimal::from(100)
         } else {
@@ -1167,10 +1188,26 @@ impl AssessmentService {
         let overall_percentage =
             apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
 
-        let status = if overall_percentage >= policy.honors_threshold_percentage {
-            AcademicStatus::PassedWithHonors
-        } else if overall_percentage >= policy.passing_threshold_percentage {
-            AcademicStatus::Passed
+        let failed_count = subject_results
+            .iter()
+            .filter(|s| s.status == AcademicStatus::Failed)
+            .count();
+        let any_incomplete = subject_results
+            .iter()
+            .any(|s| s.status == AcademicStatus::Incomplete);
+
+        let status = if any_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_count == 0 {
+            if overall_percentage >= policy.honors_threshold_percentage {
+                AcademicStatus::PassedWithHonors
+            } else if overall_percentage >= policy.passing_threshold_percentage {
+                AcademicStatus::Passed
+            } else {
+                AcademicStatus::Failed
+            }
+        } else if failed_count <= policy.max_failed_subjects_for_conditional_pass {
+            AcademicStatus::ConditionalPass
         } else {
             AcademicStatus::Failed
         };
@@ -1179,7 +1216,7 @@ impl AssessmentService {
             student_id,
             student_name,
             student_number,
-            class_id: resolved_class_id,
+            section_id: resolved_section_id,
             class_name,
             period_id,
             period_name,
@@ -1204,7 +1241,7 @@ impl AssessmentService {
         org_id: Uuid,
         student_id: Uuid,
         calendar_id: Uuid,
-        class_id: Option<Uuid>,
+        section_id: Option<Uuid>,
         policy: Option<AcademicPolicy>,
     ) -> Result<StudentAnnualReportCard, DomainError> {
         self.permission_checker
@@ -1241,7 +1278,7 @@ impl AssessmentService {
                     org_id,
                     student_id,
                     t1.id,
-                    class_id,
+                    section_id,
                     Some(policy.clone()),
                 )
                 .await?,
@@ -1258,7 +1295,7 @@ impl AssessmentService {
                     org_id,
                     student_id,
                     t2.id,
-                    class_id,
+                    section_id,
                     Some(policy.clone()),
                 )
                 .await?,
@@ -1278,11 +1315,11 @@ impl AssessmentService {
             .and_then(|c| c.student_number.clone())
             .or_else(|| term_2_card.as_ref().and_then(|c| c.student_number.clone()));
 
-        let resolved_class_id = class_id.unwrap_or_else(|| {
+        let resolved_section_id = section_id.unwrap_or_else(|| {
             term_1_card
                 .as_ref()
-                .map(|c| c.class_id)
-                .or_else(|| term_2_card.as_ref().map(|c| c.class_id))
+                .map(|c| c.section_id)
+                .or_else(|| term_2_card.as_ref().map(|c| c.section_id))
                 .unwrap_or_else(Uuid::nil)
         });
 
@@ -1330,7 +1367,7 @@ impl AssessmentService {
         }
 
         let total_score: Decimal = annual_subjects.iter().map(|s| s.annual_total).sum();
-        let max_possible_score = Decimal::from(annual_subjects.len() * 100);
+        let max_possible_score = Decimal::from(annual_subjects.len()) * policy.annual_max_score;
         let raw_pct = if max_possible_score > Decimal::ZERO {
             (total_score / max_possible_score) * Decimal::from(100)
         } else {
@@ -1339,10 +1376,26 @@ impl AssessmentService {
         let overall_percentage =
             apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
 
-        let status = if overall_percentage >= policy.honors_threshold_percentage {
-            AcademicStatus::PassedWithHonors
-        } else if overall_percentage >= policy.passing_threshold_percentage {
-            AcademicStatus::Passed
+        let failed_count = annual_subjects
+            .iter()
+            .filter(|s| s.status == AcademicStatus::Failed)
+            .count();
+        let any_incomplete = annual_subjects
+            .iter()
+            .any(|s| s.status == AcademicStatus::Incomplete);
+
+        let status = if any_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_count == 0 {
+            if overall_percentage >= policy.honors_threshold_percentage {
+                AcademicStatus::PassedWithHonors
+            } else if overall_percentage >= policy.passing_threshold_percentage {
+                AcademicStatus::Passed
+            } else {
+                AcademicStatus::Failed
+            }
+        } else if failed_count <= policy.max_failed_subjects_for_conditional_pass {
+            AcademicStatus::ConditionalPass
         } else {
             AcademicStatus::Failed
         };
@@ -1351,7 +1404,7 @@ impl AssessmentService {
             student_id,
             student_name,
             student_number,
-            class_id: resolved_class_id,
+            section_id: resolved_section_id,
             class_name,
             calendar_id,
             academic_calendar_name: year_name,
@@ -1374,7 +1427,7 @@ impl AssessmentService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         period_id: Uuid,
         policy: Option<AcademicPolicy>,
     ) -> Result<Vec<StudentTermReportCard>, DomainError> {
@@ -1385,7 +1438,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_class(class_id).await?
+            er.find_by_section(section_id).await?
         } else {
             vec![]
         };
@@ -1398,7 +1451,7 @@ impl AssessmentService {
                     org_id,
                     en.student_id,
                     period_id,
-                    Some(class_id),
+                    Some(section_id),
                     Some(policy.clone()),
                 )
                 .await?;
@@ -1437,7 +1490,7 @@ impl AssessmentService {
         &self,
         ctx: &RequestContext,
         org_id: Uuid,
-        class_id: Uuid,
+        section_id: Uuid,
         calendar_id: Uuid,
         policy: Option<AcademicPolicy>,
     ) -> Result<Vec<StudentAnnualReportCard>, DomainError> {
@@ -1448,7 +1501,7 @@ impl AssessmentService {
         let policy = self.resolve_policy(org_id, policy).await;
 
         let enrollments = if let Some(er) = &self.enrollment_repo {
-            er.find_by_class(class_id).await?
+            er.find_by_section(section_id).await?
         } else {
             vec![]
         };
@@ -1461,7 +1514,7 @@ impl AssessmentService {
                     org_id,
                     en.student_id,
                     calendar_id,
-                    Some(class_id),
+                    Some(section_id),
                     Some(policy.clone()),
                 )
                 .await?;
@@ -1493,5 +1546,204 @@ impl AssessmentService {
         }
 
         Ok(cards)
+    }
+
+    /// Calculate certificate examination report card (Grade 9 basic / Grade 12 Thanawiya).
+    ///
+    /// For each subject, the certificate result combines:
+    /// - Ministerial exam score (from grades marked as `is_final = true`)
+    /// - Cumulative prior-year contribution (from grades with component code "cumulative_prior_years")
+    ///
+    /// The `certificate_type` parameter should be "basic_grade9" or "secondary_thanawiya".
+    pub async fn calculate_student_certificate_report_card(
+        &self,
+        ctx: &RequestContext,
+        org_id: Uuid,
+        student_id: Uuid,
+        calendar_id: Uuid,
+        section_id: Option<Uuid>,
+        certificate_type: String,
+        policy: Option<AcademicPolicy>,
+    ) -> Result<StudentCertificateReportCard, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::GradeRead)
+            .await?;
+
+        let policy = self.resolve_policy(org_id, policy).await;
+
+        // 1. Resolve student
+        let (student_name, student_number) = if let Some(sr) = &self.student_repo {
+            if let Some(detail) = sr.find_detail_by_id(student_id).await? {
+                (
+                    detail.person.full_name(),
+                    Some(detail.student.student_number),
+                )
+            } else if let Some(st) = sr.find_by_id(student_id).await? {
+                (
+                    format!("Student {}", &st.id.to_string()[..8]),
+                    Some(st.student_number),
+                )
+            } else {
+                ("Student".to_string(), None)
+            }
+        } else {
+            ("Student".to_string(), None)
+        };
+
+        // 2. Resolve section
+        let resolved_section_id = if let Some(cid) = section_id {
+            cid
+        } else if let Some(er) = &self.enrollment_repo {
+            let enrollments = er.find_by_student(student_id).await?;
+            enrollments
+                .into_iter()
+                .find(|e| e.status == EnrollmentStatus::Active)
+                .and_then(|e| e.section_id)
+                .unwrap_or_else(Uuid::nil)
+        } else {
+            Uuid::nil()
+        };
+
+        let class_name = if let Some(cr) = &self.section_repo {
+            if let Some(cls) = cr.find_by_id(resolved_section_id).await? {
+                cls.name
+            } else {
+                "Class".to_string()
+            }
+        } else {
+            "Class".to_string()
+        };
+
+        // 3. Resolve calendar name
+        let calendar_name = if let Some(yr) = &self.year_repo {
+            if let Some(cal) = yr.find_by_id(calendar_id).await? {
+                cal.name
+            } else {
+                "Academic Year".to_string()
+            }
+        } else {
+            "Academic Year".to_string()
+        };
+
+        // 4. Get section subjects
+        let section_subjects = if resolved_section_id != Uuid::nil() {
+            self.section_subject_repo
+                .find_by_section(resolved_section_id)
+                .await?
+        } else {
+            vec![]
+        };
+
+        // 5. Calculate certificate result per subject
+        let mut subject_results = Vec::with_capacity(section_subjects.len());
+
+        for cs in &section_subjects {
+            let subject = self.subject_repo.find_by_id(cs.subject_id).await?;
+            let (subject_code, subject_name, subject_name_ar, credit_units) = match &subject {
+                Some(s) => (
+                    s.code.clone(),
+                    s.name.clone(),
+                    s.name_ar.clone(),
+                    s.credit_units.unwrap_or(Decimal::ONE),
+                ),
+                None => (
+                    "SUBJ".to_string(),
+                    "Subject".to_string(),
+                    None,
+                    Decimal::ONE,
+                ),
+            };
+
+            // Fetch all grades for this student + subject
+            let all_grades = self
+                .grade_repo
+                .find_by_student_and_subject(student_id, cs.id)
+                .await?;
+
+            // Exam score = grade marked as is_final
+            let exam_score = all_grades.iter().find(|g| g.is_final).map(|g| g.score);
+
+            // Cumulative score = grade with component matching cumulative pattern
+            let cumulative_score = all_grades
+                .iter()
+                .find(|g| {
+                    g.component_id.is_none() && !g.is_final
+                        || g.notes
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains("cumulative")
+                })
+                .filter(|g| !g.is_final)
+                .map(|g| g.score);
+
+            let res = AcademicCalculationEngine::calculate_certificate_result(
+                cs.subject_id,
+                subject_code,
+                subject_name,
+                subject_name_ar,
+                credit_units,
+                exam_score,
+                cumulative_score,
+                &policy,
+            )?;
+            subject_results.push(res);
+        }
+
+        // 6. Aggregate
+        let total_score: Decimal = subject_results.iter().map(|s| s.term_total).sum();
+        let max_possible_score: Decimal = subject_results.iter().map(|s| s.term_max).sum();
+        let raw_pct = if max_possible_score > Decimal::ZERO {
+            (total_score / max_possible_score) * Decimal::from(100)
+        } else {
+            Decimal::ZERO
+        };
+        let overall_percentage =
+            apply_rounding(raw_pct, policy.rounding_mode, policy.decimal_places);
+
+        let failed_count = subject_results
+            .iter()
+            .filter(|s| s.status == AcademicStatus::Failed)
+            .count();
+        let any_incomplete = subject_results
+            .iter()
+            .any(|s| s.status == AcademicStatus::Incomplete);
+
+        let status = if any_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_count == 0 {
+            if overall_percentage >= policy.honors_threshold_percentage {
+                AcademicStatus::PassedWithHonors
+            } else if overall_percentage >= policy.passing_threshold_percentage {
+                AcademicStatus::Passed
+            } else {
+                AcademicStatus::Failed
+            }
+        } else if failed_count <= policy.max_failed_subjects_for_conditional_pass {
+            AcademicStatus::ConditionalPass
+        } else {
+            AcademicStatus::Failed
+        };
+
+        Ok(StudentCertificateReportCard {
+            student_id,
+            student_name,
+            student_number,
+            section_id: resolved_section_id,
+            class_name,
+            calendar_id,
+            academic_calendar_name: calendar_name,
+            certificate_type,
+            subjects: subject_results,
+            total_score,
+            max_possible_score,
+            overall_percentage,
+            rank_in_class: None,
+            rank_in_grade: None,
+            total_students_in_class: 0,
+            total_students_in_grade: 0,
+            status,
+            calculated_at: Utc::now(),
+        })
     }
 }

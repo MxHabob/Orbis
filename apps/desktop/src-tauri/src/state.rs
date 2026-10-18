@@ -6,15 +6,15 @@ use orbis_app::ports::reporting::{
     ReportJobRepository, ReportTemplateRepository,
 };
 use orbis_app::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, AccountRepository,
-    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, ClassRepository,
-    SectionSubjectRepository, PrerequisiteRepository, CurrencyRepository, DashboardRepository,
-    DiscountTemplateRepository, DocumentRepository, EnrollmentRepository, ExamProctorRepository,
-    ExamScheduleRepository, ExamSessionRepository, FeeTemplateRepository, GpaRecordRepository,
-    GradeRepository, IntegrationRepository, JournalEntryRepository, OrgUnitRepository,
-    OrganizationRepository, OverrideRequestRepository, PaymentRepository, PeriodTypeRepository,
-    PersonRepository, PolicyRepository, PromotionRepository, RoomRepository,
-    ScheduledLessonRepository, SeatingNumberRepository, SecretNumberRepository, SessionRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, AccountRepository,
+    AssessmentSchemeRepository, AttendanceRepository, BehaviorRecordRepository, CurrencyRepository,
+    DashboardRepository, DiscountTemplateRepository, DocumentRepository, EnrollmentRepository,
+    ExamProctorRepository, ExamScheduleRepository, ExamSessionRepository, FeeTemplateRepository,
+    GpaRecordRepository, GradeRepository, IntegrationRepository, JournalEntryRepository,
+    OrgUnitRepository, OrganizationRepository, OverrideRequestRepository, PaymentRepository,
+    PeriodTypeRepository, PersonRepository, PolicyRepository, PrerequisiteRepository,
+    PromotionRepository, RoomRepository, ScheduledLessonRepository, SeatingNumberRepository,
+    SecretNumberRepository, SectionRepository, SectionSubjectRepository, SessionRepository,
     SettingsRepository, StudentFeeRepository, StudentGuardianRepository, SubjectRepository,
     SystemRepository, TimeSlotRepository, UserRepository, WorkflowRepository,
 };
@@ -48,7 +48,7 @@ pub struct AppState {
     pub period_repo: Arc<dyn AcademicPeriodRepository>,
     pub period_type_repo: Arc<dyn PeriodTypeRepository>,
     pub subject_repo: Arc<dyn SubjectRepository>,
-    pub class_repo: Arc<dyn ClassRepository>,
+    pub section_repo: Arc<dyn SectionRepository>,
     pub section_subject_repo: Arc<dyn SectionSubjectRepository>,
     pub student_repo: Arc<dyn orbis_app::ports::repositories::StudentRepository>,
     pub enrollment_repo: Arc<dyn EnrollmentRepository>,
@@ -118,6 +118,7 @@ pub struct AppState {
     pub folder_service: Arc<orbis_app::services::FolderService>,
     pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
     pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
+    pub notification_adapter: Arc<orbis_infra::adapters::notification::NotificationAdapter>,
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
@@ -142,19 +143,40 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn init(app_data_dir: &std::path::Path) -> Result<Self, String> {
-        let db_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
-            let db_path = app_data_dir.join("orbis.db");
-            format!("sqlite://{}?mode=rwc", db_path.display())
-        });
-        let db = sea_orm::Database::connect(&db_url)
+    pub async fn init(
+        app_data_dir: &std::path::Path,
+        db_url: &str,
+        migrate: bool,
+    ) -> Result<Self, String> {
+        let db = sea_orm::Database::connect(db_url)
             .await
             .map_err(|e| e.to_string())?;
 
-        // Run migrations
         use orbis_infra::migration::Migrator;
-        use sea_orm_migration::MigratorTrait;
-        Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
+        use sea_orm_migration::{MigratorTrait, SchemaManager};
+        if migrate {
+            Migrator::up(&db, None).await.map_err(|e| e.to_string())?;
+        } else {
+            if !SchemaManager::new(&db)
+                .has_table("seaql_migrations")
+                .await
+                .map_err(|e| e.to_string())?
+            {
+                let pending_count = Migrator::migrations().len();
+                return Err(format!(
+                    "SCHEMA_MIGRATION_REQUIRED:{pending_count}:Orbis schema has not been initialized"
+                ));
+            }
+            let pending = Migrator::get_pending_migrations(&db)
+                .await
+                .map_err(|e| e.to_string())?;
+            if !pending.is_empty() {
+                return Err(format!(
+                    "SCHEMA_MIGRATION_REQUIRED:{}:Database schema updates are required",
+                    pending.len()
+                ));
+            }
+        }
 
         let active_session = Arc::new(std::sync::RwLock::new(None));
 
@@ -266,6 +288,7 @@ impl AppState {
         // Generate or load a per-installation JWT secret.
         // Stored as a file in AppData — never hardcoded.
         let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
+        let mfa_encryption_key = Self::load_or_generate_mfa_encryption_key(app_data_dir)?;
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
 
@@ -289,7 +312,9 @@ impl AppState {
         );
         let device_repo =
             Arc::new(orbis_infra::repositories::device_repo::UserDeviceRepoImpl { db: db.clone() });
-        let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl);
+        let totp_service = Arc::new(orbis_infra::security::totp::TotpServiceImpl::new(
+            &mfa_encryption_key,
+        ));
         let oidc_service = Arc::new(orbis_infra::adapters::identity::GoogleIdentityAdapter::new());
 
         let sequence_repo = Arc::new(
@@ -436,6 +461,7 @@ impl AppState {
 
         let scheduling_service = Arc::new(orbis_app::services::SchedulingService::new(
             scheduling_repo.clone(),
+            org_unit_repo.clone(),
             scheduling_repo.clone(),
             scheduling_repo.clone(),
             exam_repo.clone(),
@@ -648,7 +674,7 @@ impl AppState {
             period_repo: calendar_repo.clone(),
             period_type_repo: calendar_repo,
             subject_repo: academic_repo.clone(),
-            class_repo: academic_repo.clone(),
+            section_repo: academic_repo.clone(),
             section_subject_repo: academic_repo.clone(),
             student_repo: student_repo.clone(),
             enrollment_repo: student_repo.clone(),
@@ -716,6 +742,7 @@ impl AppState {
             folder_service: folder_service.clone(),
             file_storage_service,
             storage_resolver,
+            notification_adapter,
             integration_service,
             workflow_service,
             report_service,
@@ -805,6 +832,31 @@ impl AppState {
             std::fs::write(&secret_path, &secret)
                 .map_err(|e| format!("Failed to write JWT secret: {e}"))?;
             Ok(secret)
+        }
+    }
+
+    fn load_or_generate_mfa_encryption_key(
+        app_data_dir: &std::path::Path,
+    ) -> Result<String, String> {
+        let key_path = app_data_dir.join("mfa_encryption_key");
+        if key_path.exists() {
+            std::fs::read_to_string(&key_path)
+                .map(|key| key.trim().to_string())
+                .map_err(|error| format!("Failed to read MFA encryption key: {error}"))
+        } else {
+            use rand::Rng;
+            let key: String = rand::thread_rng()
+                .sample_iter(&rand::distributions::Alphanumeric)
+                .take(64)
+                .map(char::from)
+                .collect();
+            if let Some(parent) = key_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|error| format!("Failed to create AppData dir: {error}"))?;
+            }
+            std::fs::write(&key_path, &key)
+                .map_err(|error| format!("Failed to write MFA encryption key: {error}"))?;
+            Ok(key)
         }
     }
 }

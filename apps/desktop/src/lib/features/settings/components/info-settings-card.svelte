@@ -8,6 +8,7 @@ import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   slug: string;
+  code: string;
   name: string;
   nameAr: string;
   organizationId: string;
@@ -16,6 +17,7 @@ interface Props {
 
 let {
   slug,
+  code = $bindable(),
   name = $bindable(),
   nameAr = $bindable(),
   organizationId,
@@ -41,6 +43,22 @@ let {
           value={slug}
           disabled
           class="h-9 w-full bg-muted/40 text-muted-foreground border-border/80"
+        />
+      {/snippet}
+    </SettingsRow>
+
+    <SettingsRow
+      title={m.settings_general_code()}
+      description={m.settings_general_code_desc()}
+      labelFor="org_code"
+    >
+      {#snippet children()}
+        <Input
+          id="org_code"
+          type="text"
+          bind:value={code}
+          disabled={isSaving}
+          class="h-9 w-full font-mono uppercase"
         />
       {/snippet}
     </SettingsRow>

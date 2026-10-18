@@ -7,6 +7,7 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { mmToPx } from "@docforge/core/canvas";
+import type { Position } from "@docforge/core";
 import {
   Tooltip,
   TooltipTrigger,
@@ -19,12 +20,16 @@ let {
   store,
   offsetX = 0,
   offsetY = 0,
-  canvasRect,
+  pageSizePx,
+  containerSize,
+  rulersVisible = false,
 }: {
   store: EditorStore;
   offsetX?: number;
   offsetY?: number;
-  canvasRect?: DOMRect;
+  pageSizePx: { width: number; height: number };
+  containerSize: { width: number; height: number };
+  rulersVisible?: boolean;
 } = $props();
 
 const node = $derived(store.selectedNode);
@@ -33,18 +38,38 @@ const vp = $derived(store.viewport);
 
 // Calculate position in screen px based on element bounds
 const pos = $derived.by(() => {
-  if (!node || !("position" in node)) return null;
-  const p = (node as any).position;
+  if (!node) return null;
+  const p = (
+    "props" in node ? (node.props as { position?: Position }).position : undefined
+  ) ?? (node as { position?: Position }).position;
   if (!p) return null;
 
-  const x = mmToPx(p.x ?? 0, vp.dpi, vp.zoom) + offsetX;
-  const y = mmToPx(p.y ?? 0, vp.dpi, vp.zoom) + offsetY;
-  const w =
-    typeof p.width === "number" ? mmToPx(p.width, vp.dpi, vp.zoom) : 100;
+  const pageOriginX = offsetX + (rulersVisible ? 24 : 0);
+  const pageOriginY = offsetY + (rulersVisible ? 24 : 0);
+  const x = pageOriginX + mmToPx(p.x ?? 0, vp.dpi, vp.zoom);
+  const y = pageOriginY + mmToPx(p.y ?? 0, vp.dpi, vp.zoom);
+  const w = typeof p.width === "string" && p.width.endsWith("%")
+    ? (Number.parseFloat(p.width) / 100) * pageSizePx.width
+    : mmToPx(Number(p.width) || 50, vp.dpi, vp.zoom);
+  const h = p.height == null
+    ? mmToPx(20, vp.dpi, vp.zoom)
+    : typeof p.height === "string" && p.height.endsWith("%")
+      ? (Number.parseFloat(p.height) / 100) * pageSizePx.height
+      : mmToPx(Number(p.height) || 20, vp.dpi, vp.zoom);
+  const halfBarWidth = 92;
+  const localX = x + w / 2;
+  const clampedX = Math.max(
+    halfBarWidth,
+    Math.min(containerSize.width - halfBarWidth, localX),
+  );
+  const aboveY = y - 40;
+  const localY = aboveY >= (rulersVisible ? 24 : 0)
+    ? aboveY
+    : y + h + 8;
 
   return {
-    x: x + w / 2, // center horizontally
-    y: y - 40, // above the element
+    x: clampedX,
+    y: Math.min(localY, containerSize.height - 40),
   };
 });
 
@@ -119,10 +144,10 @@ const isLocked = $derived(node?.locked ?? false);
     align-items: center;
     gap: 1px;
     background: var(--color-popover);
-    border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
-    border-radius: 8px;
-    padding: 3px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--color-foreground) 12%, transparent);
     z-index: 50;
     pointer-events: auto;
     animation: fab-pop 0.15s ease-out;
@@ -134,14 +159,14 @@ const isLocked = $derived(node?.locked ?? false);
   }
 
   .fab-btn {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: transparent;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     color: var(--color-muted-foreground);
     cursor: pointer;
     transition: all 0.1s;

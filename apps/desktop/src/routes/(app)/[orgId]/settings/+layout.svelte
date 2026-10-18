@@ -21,6 +21,7 @@ import {
   GlobeAlt,
   Keyframes,
   Lock,
+  Merge,
   Pin,
   ReceiptPercent,
   Scale,
@@ -38,7 +39,6 @@ let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
 
 const basePath = $derived(`/${data.orgId}/settings`);
-
 const navGroups = $derived([
   {
     title: m.settings_sidebar_general(),
@@ -52,6 +52,11 @@ const navGroups = $derived([
         path: "notifications",
         label: m.common_nav_notifications(),
         icon: AppNotification,
+      },
+      {
+        path: "mulverse",
+        label: m.settings_nav_orbis_mobile(),
+        icon: Merge,
       },
       {
         path: "login-rules",

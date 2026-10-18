@@ -15,19 +15,54 @@ fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
 pub struct ExamSessionDto {
     pub id: String,
     pub org_id: String,
-    pub academic_period_id: String,
+    pub period_id: String,
     pub name: String,
+    pub name_ar: Option<String>,
+    pub session_type: String,
     pub start_date: String,
     pub end_date: String,
     pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 #[derive(Deserialize)]
 pub struct CreateExamSessionInput {
+    #[serde(alias = "period_id")]
     pub academic_period_id: String,
     pub name: String,
+    pub name_ar: Option<String>,
+    #[serde(default = "default_exam_session_type")]
+    pub session_type: String,
     pub start_date: String,
     pub end_date: String,
+}
+
+fn default_exam_session_type() -> String {
+    "final".to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CreateExamSessionInput;
+
+    #[test]
+    fn create_request_accepts_the_generated_period_id_field() {
+        let request: CreateExamSessionInput = serde_json::from_value(serde_json::json!({
+            "period_id": "00000000-0000-0000-0000-000000000001",
+            "name": "Final Exams",
+            "name_ar": "الاختبارات النهائية",
+            "session_type": "final",
+            "start_date": "2026-10-16",
+            "end_date": "2026-10-28"
+        }))
+        .unwrap();
+
+        assert_eq!(
+            request.academic_period_id,
+            "00000000-0000-0000-0000-000000000001"
+        );
+    }
 }
 
 #[derive(Serialize)]
@@ -118,6 +153,8 @@ pub async fn exam_create_session(
             ctx.tenant_id,
             period_id,
             request.name,
+            request.name_ar,
+            request.session_type,
             start_date,
             end_date,
         )
@@ -127,11 +164,15 @@ pub async fn exam_create_session(
     Ok(ok(ExamSessionDto {
         id: s.id.to_string(),
         org_id: s.org_id.to_string(),
-        academic_period_id: s.period_id.to_string(),
+        period_id: s.period_id.to_string(),
         name: s.name,
+        name_ar: s.name_ar,
+        session_type: s.session_type,
         start_date: s.start_date.to_string(),
         end_date: s.end_date.to_string(),
         status: s.status,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }))
 }
 
@@ -151,11 +192,15 @@ pub async fn exam_list_sessions(
         .map(|s| ExamSessionDto {
             id: s.id.to_string(),
             org_id: s.org_id.to_string(),
-            academic_period_id: s.period_id.to_string(),
+            period_id: s.period_id.to_string(),
             name: s.name,
+            name_ar: s.name_ar,
+            session_type: s.session_type,
             start_date: s.start_date.to_string(),
             end_date: s.end_date.to_string(),
             status: s.status,
+            created_at: s.created_at.to_rfc3339(),
+            updated_at: s.updated_at.to_rfc3339(),
         })
         .collect()))
 }
@@ -175,11 +220,15 @@ pub async fn exam_get_session(
     Ok(ok(ExamSessionDto {
         id: s.id.to_string(),
         org_id: s.org_id.to_string(),
-        academic_period_id: s.period_id.to_string(),
+        period_id: s.period_id.to_string(),
         name: s.name,
+        name_ar: s.name_ar,
+        session_type: s.session_type,
         start_date: s.start_date.to_string(),
         end_date: s.end_date.to_string(),
         status: s.status,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }))
 }
 
@@ -444,6 +493,8 @@ pub async fn exam_generate_secrets(
 #[derive(Deserialize)]
 pub struct UpdateExamSessionInput {
     pub name: Option<String>,
+    pub name_ar: Option<String>,
+    pub session_type: Option<String>,
     pub start_date: Option<String>,
     pub end_date: Option<String>,
     pub status: Option<String>,
@@ -478,6 +529,8 @@ pub async fn exam_update_session(
             &ctx,
             session_id,
             request.name,
+            request.name_ar,
+            request.session_type,
             start_date,
             end_date,
             request.status,
@@ -488,11 +541,15 @@ pub async fn exam_update_session(
     Ok(ok(ExamSessionDto {
         id: s.id.to_string(),
         org_id: s.org_id.to_string(),
-        academic_period_id: s.period_id.to_string(),
+        period_id: s.period_id.to_string(),
         name: s.name,
+        name_ar: s.name_ar,
+        session_type: s.session_type,
         start_date: s.start_date.to_string(),
         end_date: s.end_date.to_string(),
         status: s.status,
+        created_at: s.created_at.to_rfc3339(),
+        updated_at: s.updated_at.to_rfc3339(),
     }))
 }
 

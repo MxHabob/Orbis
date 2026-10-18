@@ -7,11 +7,19 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Textarea } from "@orbis/ui/textarea";
 import { Badge } from "@orbis/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@orbis/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +59,14 @@ interface Props {
 let { orgId }: Props = $props();
 
 let searchQuery = $state("");
+
+function displayGroupName(name: string): string {
+  return name
+    .trim()
+    .replace(/[_-]+/g, " ")
+    .toLocaleLowerCase()
+    .replace(/\b\p{L}/gu, (letter) => letter.toLocaleUpperCase());
+}
 
 // Queries & Mutations
 const groupsQuery = createGroupsQuery(() => orgId);
@@ -144,66 +160,75 @@ async function promptDeleteGroup(group: GroupDetailDto) {
 </script>
 
 <div class="h-full w-full overflow-hidden flex flex-col p-6 gap-4 text-start">
-  <!-- Top Settings Toolbar -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-    <div class="relative w-48 sm:w-64">
-      <Search size={14} class="absolute start-2.5 top-2.5 text-muted-foreground pointer-events-none" />
+  <div class="flex items-start justify-between gap-4 shrink-0">
+    <div class="flex min-w-0 items-start gap-3">
+      <div class="min-w-0">
+        <h1 class="text-lg font-bold tracking-tight text-foreground">{m.groups_nav_title()}</h1>
+        <p class="mt-0.5 text-xs text-muted-foreground">{m.iam_resource_group_description()}</p>
+      </div>
+    </div>
+    <Button
+      variant="lime"
+      size="sm"
+      onclick={openCreateDialog}
+      class="h-9 shrink-0 text-xs font-semibold cursor-pointer"
+    >
+      <Plus size={14} class="me-1.5" />
+      {m.groups_create_btn()}
+    </Button>
+  </div>
+
+  <div class="flex items-center justify-between gap-3 shrink-0">
+    <div class="relative w-full max-w-sm">
+      <Search size={14} class="absolute start-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
       <Input
         type="search"
         placeholder={m.ui_copy_search_groups_d05b5ef5()}
-        class="ps-8 h-9 text-xs bg-card"
+        class="ps-8 h-9 text-xs bg-card border-border/60"
         bind:value={searchQuery}
       />
     </div>
-
-    <!-- Actions -->
-    <div class="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onclick={() => groupsQuery.refetch()}
-        class="h-9 w-9 cursor-pointer"
-        title={m.common_control_refresh()}
-      >
-        {#if groupsQuery.isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
-      </Button>
-
-      <Button
-        variant="lime"
-        size="sm"
-        onclick={openCreateDialog}
-        class="h-9 text-xs flex items-center gap-1.5 font-bold cursor-pointer"
-      >
-        <Plus size={14} />
-        <span>{m.groups_create_btn()}</span>
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      onclick={() => groupsQuery.refetch()}
+      class="text-muted-foreground"
+      title={m.common_control_refresh()}
+      aria-label={m.common_control_refresh()}
+    >
+      {#if groupsQuery.isLoading}<LoadingIndicator size={14} />{:else}<Refresh size={14} />{/if}
+    </Button>
   </div>
 
   <!-- Content Area -->
   <div class="flex-1 min-h-0 overflow-y-auto">
     {#if groupsQuery.isLoading}
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4" aria-busy="true">
         <span class="sr-only">{m.ui_copy_loading_user_groups_ff96ce28()}</span>
         {#each Array.from({ length: 6 }) as _, index (index)}
-          <div class="flex min-h-56 flex-col justify-between rounded-xl border border-border/80 bg-card p-5 shadow-xs">
-            <div class="flex flex-col gap-4">
+          <Card class="flex h-full min-w-0 flex-col">
+            <CardHeader class="p-4 pb-2">
               <div class="flex items-start justify-between gap-3">
-                <Skeleton class="h-5 w-2/3" />
-                <Skeleton class="h-5 w-16 rounded-full" />
+                <Skeleton class="h-5 w-2/3 rounded" />
+                <Skeleton class="h-5 w-16 rounded" />
               </div>
-              <Skeleton class="h-3 w-full" />
-              <Skeleton class="h-3 w-4/5" />
-              <div class="flex gap-4 pt-2">
-                <Skeleton class="h-4 w-20" />
-                <Skeleton class="h-4 w-24" />
+            </CardHeader>
+            <CardContent class="flex grow flex-col gap-3 px-4 pb-4">
+              <Skeleton class="mt-1 h-4 w-full rounded" />
+              <Skeleton class="h-4 w-3/4 rounded" />
+              <div class="mt-auto flex gap-2 pt-1">
+                <Skeleton class="h-5 w-20 rounded" />
+                <Skeleton class="h-5 w-24 rounded" />
               </div>
-            </div>
-            <div class="flex justify-end gap-2 pt-5">
-              <Skeleton class="h-8 w-20" />
-              <Skeleton class="h-8 w-8" />
-            </div>
-          </div>
+            </CardContent>
+            <CardFooter class="flex items-center justify-between gap-2 border-t border-border/40 bg-muted/10 p-3">
+              <Skeleton class="h-7 w-24 rounded-md" />
+              <div class="flex gap-1.5">
+                <Skeleton class="h-7 w-7 rounded-md" />
+                <Skeleton class="h-7 w-7 rounded-md" />
+              </div>
+            </CardFooter>
+          </Card>
         {/each}
       </div>
     {:else if groupsQuery.error}
@@ -214,10 +239,7 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         </Button>
       </div>
     {:else if groups.length === 0}
-      <div class="h-full w-full flex flex-col items-center justify-center p-16 text-center gap-3 select-none border border-border/70 rounded-xl bg-card">
-        <div class="size-14 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-2">
-          <UserGroup size={28} />
-        </div>
+      <div class="h-full w-full flex flex-col items-center justify-center p-8 text-center gap-3 select-none border border-border/70 rounded-xl bg-card">
         <h3 class="text-sm font-bold text-foreground">{m.ui_copy_no_groups_found_fd77c6df()}</h3>
         <p class="text-xs text-muted-foreground max-w-xs">{m.ui_copy_create_groups_to_organize_staff_4874538a()}</p>
         <Button variant="lime" size="sm" class="text-xs mt-2 font-bold cursor-pointer" onclick={openCreateDialog}>
@@ -226,83 +248,88 @@ async function promptDeleteGroup(group: GroupDetailDto) {
         </Button>
       </div>
     {:else}
-      <!-- Groups Grid -->
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4 text-start">
         {#each groups as group (group.id)}
-          <div class="flex flex-col justify-between rounded-xl border border-border/80 bg-card p-5 shadow-xs hover:border-border transition-all">
-            <div class="flex flex-col gap-3">
-              <!-- Top Card Header -->
-              <div class="flex items-start justify-between gap-2">
-                <div class="flex flex-col min-w-0">
-                  <h3 class="text-sm font-bold text-foreground truncate">
-                    {l(group.name_ar || "", group.name)}
-                  </h3>
+          <Card class="flex h-full min-w-0 flex-col transition-colors hover:border-border">
+            <CardHeader class="border-0 bg-transparent p-4 pb-3 text-foreground normal-case tracking-normal">
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-start gap-x-2 gap-y-1">
+                    <CardTitle
+                      class="min-w-0 flex-1 whitespace-normal break-words text-sm font-bold leading-5 text-foreground"
+                      title={l(group.name_ar || "", group.name)}
+                    >
+                      {l(group.name_ar || "", group.name)}
+                    </CardTitle>
+                    {#if group.is_system}
+                      <Badge variant="secondary" class="h-5 shrink-0 px-1.5 text-[10px] leading-none">
+                        {m.groups_system_badge()}
+                      </Badge>
+                    {/if}
+                  </div>
                   {#if group.name_ar && group.name}
-                    <span class="text-[11px] font-mono text-muted-foreground truncate">{group.name}</span>
+                    <p dir="ltr" class="mt-1 break-words text-end text-xs leading-4 text-muted-foreground">
+                      {displayGroupName(group.name)}
+                    </p>
                   {/if}
                 </div>
-
-                {#if group.is_system}
-                  <Badge variant="secondary" class="text-[10px] shrink-0 font-medium">
-                    {m.groups_system_badge()}
-                  </Badge>
-                {/if}
               </div>
+            </CardHeader>
 
-              <!-- Description -->
-              <p class="text-xs text-muted-foreground min-h-10 line-clamp-2 leading-relaxed">
+            <CardContent class="flex flex-col gap-3 px-4 pb-4">
+              <p class="line-clamp-2 min-h-10 break-words text-xs leading-5 text-muted-foreground">
                 {group.description || m.ui_copy_no_description_provided_081f8206()}
               </p>
 
-              <!-- Metrics -->
-              <div class="flex items-center gap-3 pt-2 text-xs text-muted-foreground border-t border-border/50">
-                <span class="flex items-center gap-1.5 font-medium text-foreground">
-                  <Users size={13} class="text-primary" />
-                  {formatNumber(group.member_count)} {m.groups_members_count()}
-                </span>
-                <span>•</span>
-                <span class="flex items-center gap-1.5 font-mono">
-                  <Keyframes size={13} />
-                  {formatNumber(group.permissions.length)} {m.ui_copy_perms_dd19d499()}
-                </span>
+              <div class="flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" class="h-6 max-w-full gap-1 px-2 text-[11px] font-normal">
+                  <Users size={11} />
+                  <span>{formatNumber(group.member_count)} {m.groups_members_count()}</span>
+                </Badge>
+                <Badge variant="secondary" class="h-6 max-w-full gap-1 px-2 text-[11px] font-normal">
+                  <Keyframes size={11} />
+                  <span>{formatNumber(group.permissions.length)} {m.ui_copy_perms_dd19d499()}</span>
+                </Badge>
               </div>
-            </div>
+            </CardContent>
 
-            <!-- Action Buttons Footer -->
-            <div class="flex items-center justify-between pt-4 mt-3 border-t border-border/60">
+            <CardFooter class="flex flex-wrap items-center justify-between gap-2 border-t border-border/40 bg-muted/10 p-3">
               <Button
-                variant="default"
+                variant="outline"
                 size="sm"
-                class="text-xs h-8 px-3 cursor-pointer"
-                onclick={() => goto(localizeHref(`/${orgId}/settings/groups/${group.id}`))}
+                class="h-7 shrink-0 cursor-pointer rounded-md px-2.5 text-xs"
+                onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups/${group.id}`)))}
               >
                 <Pencil size={12} class="me-1.5" />
                 {m.ui_copy_members_permissions_bd07beaa()}
               </Button>
 
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1.5">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  class="size-8 cursor-pointer"
+                  variant="outline"
+                  size="icon-xs"
+                  class="h-7 w-7 shrink-0 cursor-pointer rounded-md"
                   onclick={() => openEditDialog(group)}
+                  title={m.common_action_edit()}
+                  aria-label={m.common_action_edit()}
                 >
                   <Pencil size={13} />
                 </Button>
-
                 {#if !group.is_system}
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    class="size-8 cursor-pointer text-destructive hover:text-destructive"
+                    variant="outline"
+                    size="icon-xs"
+                    class="h-7 w-7 shrink-0 cursor-pointer rounded-md text-destructive hover:text-destructive"
                     onclick={() => promptDeleteGroup(group)}
+                    title={m.common_action_delete()}
+                    aria-label={m.common_action_delete()}
                   >
                     <Trash size={13} />
                   </Button>
                 {/if}
               </div>
-            </div>
-          </div>
+            </CardFooter>
+          </Card>
         {/each}
       </div>
     {/if}

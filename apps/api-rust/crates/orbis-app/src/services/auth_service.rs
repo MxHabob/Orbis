@@ -16,9 +16,10 @@ use crate::context::RequestContext;
 use crate::ports::event_bus::EventBus;
 use crate::ports::iam::PermissionCheckerPort;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, EnrollmentRepository, IntegrationRepository, MfaFactorRepository,
-    MfaRecoveryCodeRepository, PersonRepository, SessionRepository, StudentGuardianRepository,
-    StudentRepository, UserDeviceRepository, UserIdentityRepository, UserRepository,
+    AcademicPeriodRepository, EmployeeRepository, EnrollmentRepository, IntegrationRepository,
+    MfaFactorRepository, MfaRecoveryCodeRepository, PersonRepository, SectionRepository,
+    SectionSubjectRepository, SessionRepository, StudentGuardianRepository, StudentRepository,
+    UserDeviceRepository, UserIdentityRepository, UserRepository,
 };
 use crate::ports::security::{OidcService, PasswordHasher, TokenService, TotpService};
 
@@ -41,16 +42,28 @@ pub struct EffectiveContextDto {
     pub roles: Vec<String>,
     pub permissions: Vec<String>,
     pub active_period_id: Option<Uuid>,
+    pub student_id: Option<Uuid>,
     pub dependents: Vec<LinkedDependentDto>,
+    pub teaching_classes: Vec<TeachingClassDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TeachingClassDto {
+    pub class_id: Uuid,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub level: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LoginResponse {
-    pub token: String,
-    pub refresh_token: String,
+    pub token: Option<String>,
+    pub refresh_token: Option<String>,
     pub user: User,
     pub person: Option<Person>,
-    pub effective_context: EffectiveContextDto,
+    pub effective_context: Option<EffectiveContextDto>,
+    pub mfa_required: bool,
+    pub mfa_token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,14 +78,17 @@ pub struct SessionResponse {
 pub struct VerifiedSessionResponse {
     pub token: String,
     pub refresh_token: String,
+    pub user_id: Uuid,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GoogleLoginResult {
-    pub token: String,
-    pub refresh_token: String,
+    pub token: Option<String>,
+    pub refresh_token: Option<String>,
     pub user_id: Uuid,
     pub org_id: Uuid,
+    pub mfa_required: bool,
+    pub mfa_token: Option<String>,
 }
 
 pub struct AuthService {
@@ -92,6 +108,9 @@ pub struct AuthService {
     pub student_guardian_repo: Option<Arc<dyn StudentGuardianRepository>>,
     pub student_repo: Option<Arc<dyn StudentRepository>>,
     pub enrollment_repo: Option<Arc<dyn EnrollmentRepository>>,
+    pub employee_repo: Option<Arc<dyn EmployeeRepository>>,
+    pub section_subject_repo: Option<Arc<dyn SectionSubjectRepository>>,
+    pub section_repo: Option<Arc<dyn SectionRepository>>,
     pub event_bus: Arc<dyn EventBus>,
     pub permission_checker: Arc<dyn PermissionCheckerPort>,
 }
@@ -130,6 +149,9 @@ impl AuthService {
             student_guardian_repo: None,
             student_repo: None,
             enrollment_repo: None,
+            employee_repo: None,
+            section_subject_repo: None,
+            section_repo: None,
             event_bus,
             permission_checker,
         }
@@ -149,6 +171,18 @@ impl AuthService {
         self
     }
 
+    pub fn with_teaching_scope_repos(
+        mut self,
+        employee_repo: Arc<dyn EmployeeRepository>,
+        section_subject_repo: Arc<dyn SectionSubjectRepository>,
+        section_repo: Arc<dyn SectionRepository>,
+    ) -> Self {
+        self.employee_repo = Some(employee_repo);
+        self.section_subject_repo = Some(section_subject_repo);
+        self.section_repo = Some(section_repo);
+        self
+    }
+
     /// Build effective context (roles, permissions, active period, linked dependents)
     pub async fn build_effective_context(
         &self,
@@ -158,13 +192,11 @@ impl AuthService {
         let permissions = self
             .permission_checker
             .get_user_permissions(user.id, user.org_id)
-            .await
-            .unwrap_or_default();
+            .await?;
         let roles = self
             .permission_checker
             .get_user_roles(user.id, user.org_id)
-            .await
-            .unwrap_or_default();
+            .await?;
 
         let effective_role = if roles.contains(&"super_admin".to_string()) {
             "super_admin".to_string()
@@ -181,19 +213,21 @@ impl AuthService {
         } else if let Some(first) = roles.first() {
             first.clone()
         } else {
-            "org_admin".to_string()
+            "guest".to_string()
         };
 
         let active_period_id = if let Some(ref pr) = self.academic_period_repo {
-            pr.find_by_org(user.org_id).await.ok().and_then(|periods| {
-                periods.into_iter().find(|p| {
+            pr.find_by_org(user.org_id)
+                .await?
+                .into_iter()
+                .find(|p| {
                     matches!(
                         p.state,
                         orbis_domain::entities::academic_period::AcademicPeriodState::ActiveTeaching
                             | orbis_domain::entities::academic_period::AcademicPeriodState::EnrollmentOpen
                     )
-                }).map(|p| p.id)
-            })
+                })
+                .map(|p| p.id)
         } else {
             None
         };
@@ -204,28 +238,80 @@ impl AuthService {
             self.student_guardian_repo.as_ref(),
             self.student_repo.as_ref(),
         ) {
-            if let Ok(guardianships) = gr.find_by_guardian(person.id).await {
-                for g in guardianships {
-                    if let Ok(Some(student)) = sr.find_by_id(g.student_id).await {
-                        let (full_name, full_name_ar) = if let Ok(Some(st_person)) =
-                            self.person_repo.find_by_id(student.person_id).await
-                        {
-                            (st_person.full_name(), st_person.full_name_ar())
-                        } else {
-                            (format!("Student {}", student.student_number), None)
-                        };
+            for guardianship in gr.find_by_guardian(person.id).await? {
+                if let Some(student) = sr.find_by_id(guardianship.student_id).await? {
+                    let student_person = self.person_repo.find_by_id(student.person_id).await?;
+                    let (full_name, full_name_ar) = student_person
+                        .map(|student_person| {
+                            (student_person.full_name(), student_person.full_name_ar())
+                        })
+                        .unwrap_or_else(|| (format!("Student {}", student.student_number), None));
 
-                        dependents.push(LinkedDependentDto {
-                            student_id: student.id,
-                            full_name,
-                            full_name_ar,
-                            relationship: g.relationship,
-                            is_primary_contact: g.is_primary,
-                            is_emergency_contact: g.is_emergency_contact,
-                            is_fee_payer: g.is_payer,
-                            current_grade_level: None,
-                            current_section_name: None,
-                        });
+                    dependents.push(LinkedDependentDto {
+                        student_id: student.id,
+                        full_name,
+                        full_name_ar,
+                        relationship: guardianship.relationship,
+                        is_primary_contact: guardianship.is_primary,
+                        is_emergency_contact: guardianship.is_emergency_contact,
+                        is_fee_payer: guardianship.is_payer,
+                        current_grade_level: None,
+                        current_section_name: None,
+                    });
+                }
+            }
+        }
+
+        let student_id = if roles.iter().any(|role| role == "student") {
+            if let Some(student_repo) = self.student_repo.as_ref() {
+                student_repo
+                    .find_by_user_id(user.org_id, user.id)
+                    .await?
+                    .map(|student| student.id)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let mut teaching_classes = Vec::new();
+        if roles.iter().any(|role| role == "teacher") {
+            if let (
+                Some(period_id),
+                Some(employee_repo),
+                Some(section_subject_repo),
+                Some(section_repo),
+            ) = (
+                active_period_id,
+                self.employee_repo.as_ref(),
+                self.section_subject_repo.as_ref(),
+                self.section_repo.as_ref(),
+            ) {
+                if let Some(employee) = employee_repo.find_by_user_id(user.org_id, user.id).await? {
+                    let assignments = section_subject_repo
+                        .find_by_teacher(employee.id, period_id)
+                        .await?;
+                    let mut seen_class_ids = std::collections::HashSet::new();
+                    for assignment in assignments.into_iter().filter(|item| item.is_active) {
+                        if !seen_class_ids.insert(assignment.section_id) {
+                            continue;
+                        }
+                        if let Some(section) =
+                            section_repo.find_by_id(assignment.section_id).await?
+                        {
+                            if section.org_id == user.org_id
+                                && section.is_active
+                                && !section.is_deleted
+                            {
+                                teaching_classes.push(TeachingClassDto {
+                                    class_id: section.id,
+                                    name: section.name,
+                                    name_ar: section.name_ar,
+                                    level: section.level,
+                                });
+                            }
+                        }
                     }
                 }
             }
@@ -236,7 +322,9 @@ impl AuthService {
             roles,
             permissions,
             active_period_id,
+            student_id,
             dependents,
+            teaching_classes,
         })
     }
 
@@ -270,6 +358,34 @@ impl AuthService {
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
         let role_str = effective_context.effective_role.clone();
+
+        let has_verified_mfa = self
+            .mfa_factor_repo
+            .find_by_user(user.id)
+            .await?
+            .iter()
+            .any(|factor| factor.is_verified);
+        if user.is_mfa_enabled || has_verified_mfa {
+            if !has_verified_mfa {
+                return Err(DomainError::Internal(
+                    "MFA is enabled but no verified factor is available".into(),
+                ));
+            }
+            let mfa_token = self
+                .token_service
+                .generate_mfa_token(&user_id_str, &org_id_str, &role_str)
+                .await?;
+            self.save_mfa_challenge_session(user.id, &mfa_token).await?;
+            return Ok(LoginResponse {
+                token: None,
+                refresh_token: None,
+                user,
+                person,
+                effective_context: Some(effective_context),
+                mfa_required: true,
+                mfa_token: Some(mfa_token),
+            });
+        }
 
         let access_token = self
             .token_service
@@ -311,11 +427,13 @@ impl AuthService {
         self.event_bus.publish(ctx, &event).await?;
 
         Ok(LoginResponse {
-            token: access_token,
-            refresh_token,
+            token: Some(access_token),
+            refresh_token: Some(refresh_token),
             user,
             person,
-            effective_context,
+            effective_context: Some(effective_context),
+            mfa_required: false,
+            mfa_token: None,
         })
     }
 
@@ -425,6 +543,32 @@ impl AuthService {
         self.user_repo.find_by_id(id).await
     }
 
+    async fn save_mfa_challenge_session(
+        &self,
+        user_id: Uuid,
+        token: &str,
+    ) -> Result<(), DomainError> {
+        let now = Utc::now();
+        self.session_repo
+            .save(&Session {
+                id: Uuid::new_v4(),
+                user_id,
+                token: token.to_string(),
+                refresh_token: None,
+                device_id: None,
+                family_id: None,
+                is_revoked: false,
+                is_current: false,
+                is_trusted: false,
+                is_mfa_verified: false,
+                expires_at: now + chrono::Duration::minutes(5),
+                refresh_expires_at: None,
+                last_active_at: Some(now),
+                created_at: now,
+            })
+            .await
+    }
+
     /// List users in an organization
     pub async fn list_users(&self, org_id: Uuid) -> Result<Vec<User>, DomainError> {
         self.user_repo.find_by_org(org_id).await
@@ -485,13 +629,17 @@ impl AuthService {
             .await?
             .ok_or_else(|| DomainError::NotFound("User not found".into()))?;
 
+        for factor in self.mfa_factor_repo.find_by_user(user_id).await? {
+            if !factor.is_verified {
+                self.mfa_factor_repo.delete(factor.id).await?;
+            }
+        }
+
         let secret = self.totp_service.generate_secret();
         let account_name = user.email.clone().unwrap_or_else(|| user.id.to_string());
         let qr_code_uri = self
             .totp_service
             .generate_qr_uri("Orbis", &account_name, &secret);
-
-        let raw_recovery_codes = self.totp_service.generate_recovery_codes(8);
 
         let factor_id = Uuid::new_v4();
         let now = Utc::now();
@@ -501,7 +649,7 @@ impl AuthService {
             user_id,
             factor_type: MfaType::Totp,
             factor_name: factor_name.unwrap_or_else(|| "Authenticator App".to_string()),
-            secret_encrypted: secret.clone(),
+            secret_encrypted: self.totp_service.encrypt_secret(&secret)?,
             is_verified: false,
             is_default: true,
             created_at: now,
@@ -509,27 +657,10 @@ impl AuthService {
         };
         self.mfa_factor_repo.save(&factor).await?;
 
-        let mut recovery_code_entities = Vec::new();
-        for code in &raw_recovery_codes {
-            let code_hash = self.password_hasher.hash(code).await?;
-            recovery_code_entities.push(MfaRecoveryCode {
-                id: Uuid::new_v4(),
-                user_id,
-                code_hash,
-                is_used: false,
-                created_at: now,
-                used_at: None,
-            });
-        }
-        self.mfa_recovery_code_repo
-            .save_all(&recovery_code_entities)
-            .await?;
-
         Ok(MfaEnrollmentResult {
             factor_id,
             secret,
             qr_code_uri,
-            recovery_codes: raw_recovery_codes,
         })
     }
 
@@ -539,7 +670,7 @@ impl AuthService {
         ctx: &RequestContext,
         factor_id: Uuid,
         code: &str,
-    ) -> Result<bool, DomainError> {
+    ) -> Result<Vec<String>, DomainError> {
         let user_id = ctx
             .actor
             .id()
@@ -553,41 +684,88 @@ impl AuthService {
         if factor.user_id != user_id {
             return Err(DomainError::Forbidden("Invalid factor".into()));
         }
+        if factor.is_verified {
+            return Err(DomainError::Conflict(
+                "MFA factor has already been activated".into(),
+            ));
+        }
 
-        let is_valid = self
-            .totp_service
-            .verify_code(&factor.secret_encrypted, code);
+        let secret = self.totp_service.decrypt_secret(&factor.secret_encrypted)?;
+        let is_valid = self.totp_service.verify_code(&secret, code);
         if !is_valid {
             return Err(DomainError::Validation("Invalid verification code".into()));
         }
 
+        let now = Utc::now();
+        let raw_recovery_codes = self.totp_service.generate_recovery_codes(8);
+        let mut recovery_code_entities = Vec::with_capacity(raw_recovery_codes.len());
+        for code in &raw_recovery_codes {
+            recovery_code_entities.push(MfaRecoveryCode {
+                id: Uuid::new_v4(),
+                user_id,
+                code_hash: self.password_hasher.hash(code).await?,
+                is_used: false,
+                created_at: now,
+                used_at: None,
+            });
+        }
+        self.mfa_recovery_code_repo
+            .save_all(&recovery_code_entities)
+            .await?;
+
         let mut updated_factor = factor;
+        if !updated_factor.secret_encrypted.starts_with("v1:") {
+            let secret = self
+                .totp_service
+                .decrypt_secret(&updated_factor.secret_encrypted)?;
+            updated_factor.secret_encrypted = self.totp_service.encrypt_secret(&secret)?;
+        }
         updated_factor.is_verified = true;
-        updated_factor.last_used_at = Some(Utc::now());
+        updated_factor.last_used_at = Some(now);
         self.mfa_factor_repo.save(&updated_factor).await?;
 
         if let Some(mut user) = self.user_repo.find_by_id(user_id).await? {
             user.is_mfa_enabled = true;
-            user.updated_at = Utc::now();
+            user.updated_at = now;
             self.user_repo.save(&user).await?;
         }
 
-        Ok(true)
+        Ok(raw_recovery_codes)
     }
 
     /// Verify MFA challenge and issue session tokens
     pub async fn verify_mfa_challenge(
         &self,
-        user_id: Uuid,
+        mfa_token: &str,
         code: &str,
         device_id: Option<String>,
         remember_device: bool,
     ) -> Result<VerifiedSessionResponse, DomainError> {
+        let claims = self.token_service.validate_mfa_token(mfa_token).await?;
+        let user_id = Uuid::parse_str(&claims.sub)
+            .map_err(|_| DomainError::Unauthorized("Invalid MFA token subject".into()))?;
         let user = self
             .user_repo
             .find_by_id(user_id)
             .await?
             .ok_or_else(|| DomainError::NotFound("User not found".into()))?;
+        if user.org_id.to_string() != claims.org_id {
+            return Err(DomainError::Unauthorized("Invalid MFA token scope".into()));
+        }
+        let challenge_exists = self
+            .session_repo
+            .find_by_token(mfa_token)
+            .await?
+            .is_some_and(|session| {
+                session.user_id == user_id
+                    && !session.is_mfa_verified
+                    && session.expires_at > Utc::now()
+            });
+        if !challenge_exists {
+            return Err(DomainError::Unauthorized(
+                "MFA challenge has expired or was already used".into(),
+            ));
+        }
 
         let factors = self.mfa_factor_repo.find_by_user(user_id).await?;
         let verified_factor = factors.into_iter().find(|f| f.is_verified);
@@ -595,12 +773,14 @@ impl AuthService {
         let mut authenticated = false;
 
         if let Some(mut factor) = verified_factor {
-            if self
-                .totp_service
-                .verify_code(&factor.secret_encrypted, code)
-            {
+            let secret = self.totp_service.decrypt_secret(&factor.secret_encrypted)?;
+            if self.totp_service.verify_code(&secret, code) {
+                if !factor.secret_encrypted.starts_with("v1:") {
+                    let secret = self.totp_service.decrypt_secret(&factor.secret_encrypted)?;
+                    factor.secret_encrypted = self.totp_service.encrypt_secret(&secret)?;
+                }
                 factor.last_used_at = Some(Utc::now());
-                let _ = self.mfa_factor_repo.save(&factor).await;
+                self.mfa_factor_repo.save(&factor).await?;
                 authenticated = true;
             }
         }
@@ -611,15 +791,11 @@ impl AuthService {
                 .find_active_by_user(user_id)
                 .await?;
             for rc in active_codes {
-                if self
-                    .password_hasher
-                    .verify(code, &rc.code_hash)
-                    .await
-                    .unwrap_or(false)
-                {
-                    let _ = self.mfa_recovery_code_repo.mark_used(rc.id).await;
-                    authenticated = true;
-                    break;
+                if self.password_hasher.verify(code, &rc.code_hash).await? {
+                    authenticated = self.mfa_recovery_code_repo.mark_used(rc.id).await?;
+                    if authenticated {
+                        break;
+                    }
                 }
             }
         }
@@ -627,6 +803,12 @@ impl AuthService {
         if !authenticated {
             return Err(DomainError::Unauthorized(
                 "Invalid authentication code or recovery code".into(),
+            ));
+        }
+
+        if !self.session_repo.consume_mfa_challenge(mfa_token).await? {
+            return Err(DomainError::Unauthorized(
+                "MFA challenge has expired or was already used".into(),
             ));
         }
 
@@ -680,6 +862,7 @@ impl AuthService {
         Ok(VerifiedSessionResponse {
             token: access_token,
             refresh_token,
+            user_id,
         })
     }
 
@@ -783,6 +966,38 @@ impl AuthService {
         self.verify_org_identity_config(user.org_id, "google", &provider_user_id)
             .await?;
 
+        let effective_role = "org_admin";
+        let verified_factor_exists = self
+            .mfa_factor_repo
+            .find_by_user(user.id)
+            .await?
+            .iter()
+            .any(|factor| factor.is_verified);
+        if user.is_mfa_enabled || verified_factor_exists {
+            if !verified_factor_exists {
+                return Err(DomainError::Internal(
+                    "MFA is enabled but no verified factor is available".into(),
+                ));
+            }
+            let mfa_token = self
+                .token_service
+                .generate_mfa_token(
+                    &user.id.to_string(),
+                    &user.org_id.to_string(),
+                    effective_role,
+                )
+                .await?;
+            self.save_mfa_challenge_session(user.id, &mfa_token).await?;
+            return Ok(GoogleLoginResult {
+                token: None,
+                refresh_token: None,
+                user_id: user.id,
+                org_id: user.org_id,
+                mfa_required: true,
+                mfa_token: Some(mfa_token),
+            });
+        }
+
         let user_id_str = user.id.to_string();
         let org_id_str = user.org_id.to_string();
         let role_str = "org_admin".to_string();
@@ -816,10 +1031,12 @@ impl AuthService {
         self.session_repo.save(&session).await?;
 
         Ok(GoogleLoginResult {
-            token: access_token,
-            refresh_token,
+            token: Some(access_token),
+            refresh_token: Some(refresh_token),
             user_id: user.id,
             org_id: user.org_id,
+            mfa_required: false,
+            mfa_token: None,
         })
     }
 

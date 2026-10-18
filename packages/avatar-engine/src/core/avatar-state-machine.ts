@@ -38,7 +38,7 @@ export class AvatarStateMachine {
     // Trigger exit callbacks for current state
     const exitCallbacks = this.onExitCallbacks.get(from);
     if (exitCallbacks) {
-      for (const cb of exitCallbacks) {
+      for (const cb of [...exitCallbacks]) {
         cb(from);
       }
     }
@@ -48,13 +48,13 @@ export class AvatarStateMachine {
     // Trigger enter callbacks for new state
     const enterCallbacks = this.onEnterCallbacks.get(to);
     if (enterCallbacks) {
-      for (const cb of enterCallbacks) {
+      for (const cb of [...enterCallbacks]) {
         cb(to);
       }
     }
 
     // Trigger global transition callbacks
-    for (const cb of this.onTransitionCallbacks) {
+    for (const cb of [...this.onTransitionCallbacks]) {
       cb(from, to);
     }
 

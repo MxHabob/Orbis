@@ -16,14 +16,17 @@ import { Card } from "@orbis/ui/card";
 import { CheckCircle, InfoCircle, Refresh } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import BackgroundPattern from "$lib/features/auth/components/background-pattern.svelte";
+import MfaChallengeModal from "$lib/features/auth/components/mfa-challenge-modal.svelte";
 
 let { provider }: { provider?: string } = $props();
 
-type AuthStatus = "idle" | "authenticating" | "linking" | "success" | "error";
+type AuthStatus = "idle" | "authenticating" | "linking" | "mfa_challenge" | "success" | "error";
 
 let status = $state<AuthStatus>("authenticating");
 let errorMessage = $state<string>("");
 let isLinking = $state(false);
+let showMfaChallenge = $state(false);
+let mfaToken = $state("");
 
 const providerParam = $derived(provider?.toLowerCase() || page.params.provider?.toLowerCase() || "google");
 
@@ -56,6 +59,38 @@ const providerConfig = $derived.by(() => {
       };
   }
 });
+
+async function completeProviderLogin(res: any) {
+  if (res?.mfa_required && res?.mfa_token) {
+    mfaToken = res.mfa_token;
+    showMfaChallenge = true;
+    status = "mfa_challenge";
+    return;
+  }
+  if (!res?.token || !res?.user) {
+    throw new Error(m.auth_ui_invalid_login_response());
+  }
+
+  await authStore.setSession(res);
+  if (typeof window !== "undefined") {
+    localStorage.setItem(`orbis_${providerParam}_linked`, "true");
+    if (res.user.email) {
+      localStorage.setItem(`orbis_${providerParam}_email`, res.user.email);
+    }
+    if (res.user.is_mfa_enabled) {
+      localStorage.setItem("orbis_mfa_enabled", "true");
+    }
+  }
+  status = "success";
+  toast.success(m.auth_provider_login_success({ provider: providerConfig.name }));
+  setTimeout(() => {
+    if (window.opener) {
+      window.close();
+    } else {
+      goto(localizeHref(`/${res.user.org_id}`), { replaceState: true });
+    }
+  }, 1000);
+}
 
 function parseHashParams(hash: string): Record<string, string> {
   const cleanHash = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -165,36 +200,7 @@ async function processAuth() {
           );
         }
 
-        if (res?.token && res?.user) {
-          await authStore.setSession(res);
-          if (typeof window !== "undefined") {
-            localStorage.setItem(`orbis_${providerParam}_linked`, "true");
-            if (res.user.email) {
-              localStorage.setItem(
-                `orbis_${providerParam}_email`,
-                res.user.email,
-              );
-            }
-            if (res.user?.mfa_enabled) {
-              localStorage.setItem("orbis_mfa_enabled", "true");
-            }
-          }
-          status = "success";
-          toast.success(
-            m.auth_provider_login_success({ provider: providerConfig.name }),
-          );
-
-          setTimeout(() => {
-            if (window.opener) {
-              window.close();
-            } else {
-              const targetUrl = `/${res.user.org_id}`;
-              goto(localizeHref(targetUrl), { replaceState: true });
-            }
-          }, 1000);
-        } else {
-          throw new Error(m.auth_ui_invalid_login_response());
-        }
+        await completeProviderLogin(res);
       }
     } catch (err: any) {
       status = "error";
@@ -228,16 +234,7 @@ async function processAuth() {
           `/api/v1/auth/identities/${providerParam}/callback`,
           { code },
         );
-        if (res?.token && res?.user) {
-          await authStore.setSession(res);
-          status = "success";
-          toast.success(
-            m.auth_provider_login_success({ provider: providerConfig.name }),
-          );
-          setTimeout(() => {
-            goto(localizeHref(`/${res.user.org_id}`), { replaceState: true });
-          }, 1000);
-        }
+        await completeProviderLogin(res);
       }
     } catch (err: any) {
       status = "error";
@@ -310,39 +307,14 @@ async function handleInitiateOAuth() {
         );
       }
 
-      if (res?.token && res?.user) {
-        await authStore.setSession(res);
-        if (typeof window !== "undefined") {
-          localStorage.setItem(`orbis_${providerParam}_linked`, "true");
-          if (res.user.email) {
-            localStorage.setItem(
-              `orbis_${providerParam}_email`,
-              res.user.email,
-            );
-          }
-          if (res.user?.mfa_enabled) {
-            localStorage.setItem("orbis_mfa_enabled", "true");
-          }
-        }
-        status = "success";
-        toast.success(
-          m.auth_provider_login_success({ provider: providerConfig.name }),
-        );
-
-        setTimeout(() => {
-          if (window.opener) {
-            window.close();
-          } else {
-            const targetUrl = `/${res.user.org_id}`;
-            goto(localizeHref(targetUrl), { replaceState: true });
-          }
-        }, 1000);
-      }
+      await completeProviderLogin(res);
     }
   } catch (err: any) {
-    status = "error";
-    errorMessage = err?.message || m.auth_provider_failed();
-    toast.error(errorMessage);
+    if (!showMfaChallenge) {
+      status = "error";
+      errorMessage = err?.message || m.auth_provider_failed();
+      toast.error(errorMessage);
+    }
   }
 }
 
@@ -479,3 +451,31 @@ onMount(() => {
     </Card>
   </div>
 </div>
+
+<MfaChallengeModal
+  bind:open={showMfaChallenge}
+  {mfaToken}
+  onSuccess={async (result) => {
+    await authStore.setSession(result);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`orbis_${providerParam}_linked`, "true");
+      if (result.user.email) {
+        localStorage.setItem(`orbis_${providerParam}_email`, result.user.email);
+      }
+      localStorage.setItem("orbis_mfa_enabled", "true");
+    }
+    status = "success";
+    setTimeout(() => {
+      if (window.opener) {
+        window.close();
+      } else {
+        goto(localizeHref(`/${result.user.org_id}`), { replaceState: true });
+      }
+    }, 1000);
+  }}
+  onClose={() => {
+    showMfaChallenge = false;
+    mfaToken = "";
+    goto(localizeHref("/login"), { replaceState: true });
+  }}
+/>

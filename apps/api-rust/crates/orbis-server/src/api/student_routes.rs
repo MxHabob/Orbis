@@ -1,9 +1,9 @@
 //! Student routes — Registrations, Enrollments, Study Mode changes, Status updates, Guardians, Bulk registration.
 
 use axum::{
+    Json, Router,
     extract::{Path, Query, State},
     routing::{delete, get, patch, post},
-    Json, Router,
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -132,9 +132,11 @@ pub struct RegisterStudentRequest {
     pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub initial_period_id: Option<Uuid>,
-    pub initial_class_id: Option<Uuid>,
+    pub initial_section_id: Option<Uuid>,
     pub study_mode: Option<String>,
     pub bypass_capacity_check: Option<bool>,
+    #[serde(default)]
+    pub is_draft: bool,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -167,7 +169,7 @@ pub struct EnrollmentDto {
     pub org_id: Uuid,
     pub period_id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub student_number: String,
     pub study_mode: String,
     pub status: String,
@@ -189,7 +191,7 @@ impl From<Enrollment> for EnrollmentDto {
             org_id: e.org_id,
             period_id: e.period_id,
             student_id: e.student_id,
-            class_id: e.class_id,
+            section_id: e.section_id,
             student_number: e.student_number,
             study_mode: e.study_mode.to_string(),
             status: e.status.to_string(),
@@ -210,7 +212,7 @@ impl From<Enrollment> for EnrollmentDto {
 pub struct EnrollStudentRequest {
     pub period_id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub student_number: String,
     pub study_mode: Option<String>,
 }
@@ -223,7 +225,7 @@ pub struct ChangeStudyModeRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct TransferClassRequest {
-    pub target_class_id: Uuid,
+    pub target_section_id: Uuid,
     pub reason: Option<String>,
 }
 
@@ -273,7 +275,7 @@ pub struct GuardianDto {
 #[derive(Deserialize, utoipa::IntoParams)]
 pub struct StudentQuery {
     pub period_id: Option<Uuid>,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub status: Option<String>,
     pub standing: Option<String>,
     pub search: Option<String>,
@@ -285,7 +287,7 @@ pub struct StudentQuery {
 
 #[derive(Deserialize, utoipa::IntoParams)]
 pub struct EnrollmentQuery {
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
 }
 
@@ -416,9 +418,10 @@ pub async fn register_student(
         address: p.address,
         avatar_url: p.avatar_url,
         initial_period_id: p.initial_period_id,
-        initial_class_id: p.initial_class_id,
+        initial_section_id: p.initial_section_id,
         study_mode,
         bypass_capacity_check: p.bypass_capacity_check,
+        is_draft: p.is_draft,
     };
 
     let result = state
@@ -439,9 +442,10 @@ pub async fn list_students(
 ) -> Result<Json<ApiResponse<Vec<StudentDto>>>, ApiError> {
     let domain_filter = StudentFilter {
         period_id: q.period_id,
-        class_id: q.class_id,
+        section_id: q.section_id,
         status: q.status.as_deref().and_then(|s| match s {
             "active" => Some(StudentStatus::Active),
+            "inactive" => Some(StudentStatus::Inactive),
             "on_leave" => Some(StudentStatus::OnLeave),
             "suspended" => Some(StudentStatus::Suspended),
             "withdrawn" => Some(StudentStatus::Withdrawn),
@@ -530,6 +534,7 @@ pub async fn update_student_status(
     Json(p): Json<UpdateStudentStatusRequest>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
     let new_status = match p.status.as_str() {
+        "inactive" => StudentStatus::Inactive,
         "on_leave" => StudentStatus::OnLeave,
         "suspended" => StudentStatus::Suspended,
         "withdrawn" => StudentStatus::Withdrawn,
@@ -683,9 +688,10 @@ pub async fn bulk_register_students(
             address: item.registration.address,
             avatar_url: item.registration.avatar_url,
             initial_period_id: item.registration.initial_period_id,
-            initial_class_id: item.registration.initial_class_id,
+            initial_section_id: item.registration.initial_section_id,
             study_mode,
             bypass_capacity_check: item.registration.bypass_capacity_check,
+            is_draft: item.registration.is_draft,
         };
 
         domain_items.push(
@@ -751,7 +757,7 @@ pub async fn enroll_student(
             ctx.tenant_id,
             p.period_id,
             p.student_id,
-            p.class_id,
+            p.section_id,
             p.student_number,
             study_mode,
         )
@@ -769,8 +775,8 @@ pub async fn list_enrollments(
     State(state): State<AppState>,
     Query(q): Query<EnrollmentQuery>,
 ) -> Result<Json<ApiResponse<Vec<EnrollmentDto>>>, ApiError> {
-    let enrollments = if let Some(class_id) = q.class_id {
-        state.enrollment_repo.find_by_class(class_id).await?
+    let enrollments = if let Some(class_id) = q.section_id {
+        state.enrollment_repo.find_by_section(class_id).await?
     } else if let Some(student_id) = q.student_id {
         state.enrollment_repo.find_by_student(student_id).await?
     } else {
@@ -827,7 +833,7 @@ pub async fn transfer_class(
 ) -> Result<Json<ApiResponse<EnrollmentDto>>, ApiError> {
     let e = state
         .student_service
-        .transfer_class(&ctx, id, p.target_class_id, p.reason)
+        .transfer_class(&ctx, id, p.target_section_id, p.reason)
         .await?;
     Ok(ApiResponse::ok(e.into()))
 }

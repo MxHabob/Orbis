@@ -59,6 +59,73 @@ impl NotificationAdapter {
         self
     }
 
+    pub async fn check_connection(
+        &self,
+        org_id: uuid::Uuid,
+        provider_name: &str,
+        category: &str,
+        settings: &serde_json::Value,
+        secrets: &std::collections::HashMap<String, String>,
+    ) -> Result<(), DomainError> {
+        let channels = settings
+            .get("__notification_channels")
+            .and_then(serde_json::Value::as_array)
+            .ok_or_else(|| {
+                DomainError::Validation(
+                    "Notification integration must declare at least one channel".into(),
+                )
+            })?;
+        if channels.is_empty() {
+            return Err(DomainError::Validation(
+                "Notification integration must declare at least one channel".into(),
+            ));
+        }
+
+        let now = chrono::Utc::now();
+        let integration = IntegrationConfig {
+            id: uuid::Uuid::new_v4(),
+            org_id,
+            provider_name: provider_name.to_string(),
+            category: category.to_string(),
+            is_enabled: true,
+            env: "production".to_string(),
+            settings: Some(settings.clone()),
+            created_at: now,
+            updated_at: now,
+        };
+        let integration_secrets = secrets
+            .iter()
+            .map(|(key_name, secret_key)| IntegrationSecret {
+                id: uuid::Uuid::new_v4(),
+                config_id: integration.id,
+                key_name: key_name.clone(),
+                secret_key: secret_key.clone(),
+                created_at: now,
+                updated_at: now,
+            })
+            .collect::<Vec<_>>();
+
+        for channel in channels {
+            let channel = channel.as_str().ok_or_else(|| {
+                DomainError::Validation("Notification integration channels must be strings".into())
+            })?;
+            let provider = self
+                .providers
+                .iter()
+                .find(|provider| provider.supports(&integration, channel))
+                .ok_or_else(|| {
+                    DomainError::Validation(format!(
+                        "No connection verifier is available for '{}' notifications",
+                        channel
+                    ))
+                })?;
+            provider
+                .check_connection(&integration, &integration_secrets)
+                .await?;
+        }
+        Ok(())
+    }
+
     async fn resolve_integration(
         &self,
         ctx: &RequestContext,
@@ -156,6 +223,8 @@ fn notification_check_failure_reason(error: &DomainError) -> &'static str {
     let error = error.to_string();
     if error.contains("missing a required credential") {
         "missing_credentials"
+    } else if error.contains("missing the required 'from_email' setting") {
+        "missing_sender_email"
     } else if error.contains("sender number is required") {
         "missing_sender_number"
     } else if error.contains("HTTP 401") || error.contains("HTTP 403") {
@@ -290,10 +359,11 @@ impl NotificationProviderAdapter for SendGridNotificationProvider {
 
     async fn check_connection(
         &self,
-        _integration: &IntegrationConfig,
+        integration: &IntegrationConfig,
         secrets: &[IntegrationSecret],
     ) -> Result<(), DomainError> {
         let api_key = required_secret(secrets, &["api_key", "secret_key", "token"], "SendGrid")?;
+        required_setting(integration, "from_email", "SendGrid")?;
         let response = reqwest::Client::new()
             .get("https://api.sendgrid.com/v3/user/profile")
             .bearer_auth(api_key)
@@ -313,15 +383,24 @@ impl NotificationProviderAdapter for SendGridNotificationProvider {
     async fn send(
         &self,
         ctx: &RequestContext,
-        _integration: &IntegrationConfig,
+        integration: &IntegrationConfig,
         secrets: &[IntegrationSecret],
         request: &NotificationRequest,
     ) -> Result<(), DomainError> {
         let api_key = required_secret(secrets, &["api_key", "secret_key", "token"], "SendGrid")?;
+        let from_email = required_setting(integration, "from_email", "SendGrid")?;
+        let from_name = integration
+            .settings
+            .as_ref()
+            .and_then(|settings| settings.get("from_name"))
+            .and_then(|value| value.as_str())
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_string);
         let subject = request.subject.as_deref().ok_or_else(|| {
             DomainError::Validation("Email notification subject is required".into())
         })?;
-        EmailAdapter::new(api_key)
+        EmailAdapter::new(api_key, from_email, from_name)
             .send_email(ctx, &request.recipient, subject, &request.body)
             .await
     }
@@ -436,6 +515,27 @@ fn required_secret(
             DomainError::Validation(format!(
                 "The {} integration is missing a required credential",
                 provider
+            ))
+        })
+}
+
+fn required_setting(
+    integration: &IntegrationConfig,
+    name: &str,
+    provider: &str,
+) -> Result<String, DomainError> {
+    integration
+        .settings
+        .as_ref()
+        .and_then(|settings| settings.get(name))
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .ok_or_else(|| {
+            DomainError::Validation(format!(
+                "The {} integration is missing the required '{}' setting",
+                provider, name
             ))
         })
 }
@@ -600,6 +700,23 @@ mod tests {
         let provider = SendGridNotificationProvider;
         assert!(provider.supports(&sendgrid, "email"));
         assert!(!provider.supports(&sendgrid, "push"));
+    }
+
+    #[test]
+    fn sendgrid_requires_a_verified_sender_email_setting() {
+        let mut sendgrid = integration(uuid::Uuid::new_v4(), "sendgrid");
+        let error = required_setting(&sendgrid, "from_email", "SendGrid")
+            .expect_err("SendGrid must require a sender email");
+        assert_eq!(
+            notification_check_failure_reason(&error),
+            "missing_sender_email"
+        );
+
+        sendgrid.settings = Some(json!({"from_email": " notices@example.org "}));
+        assert_eq!(
+            required_setting(&sendgrid, "from_email", "SendGrid").unwrap(),
+            "notices@example.org"
+        );
     }
 
     #[tokio::test]

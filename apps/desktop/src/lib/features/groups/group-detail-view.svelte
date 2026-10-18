@@ -7,9 +7,11 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Badge } from "@orbis/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import {
   ArrowLeft,
   ArrowPath,
@@ -303,49 +305,42 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
   {:else if groupQuery.error || !group}
     <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3">
       <p class="text-xs text-destructive font-semibold">{extractErrorMessage(groupQuery.error) || "Group not found"}</p>
-      <Button variant="outline" size="sm" class="text-xs" onclick={() => goto(localizeHref(`/${orgId}/settings/groups`))}>
+      <Button variant="outline" size="sm" class="text-xs" onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups`)))}>
         {m.ui_copy_back_to_groups_f1d6a091()}
       </Button>
     </div>
   {:else}
-    <!-- Header Bar -->
-    <div class="border-b border-border bg-card px-6 py-4 flex items-center justify-between shrink-0 shadow-2xs">
+    <div class="shrink-0 border-b border-border bg-background px-6 pt-5">
       <div class="flex items-center gap-3">
         <Button
           variant="ghost"
-          size="icon"
-          class="size-8 cursor-pointer"
-          onclick={() => goto(localizeHref(`/${orgId}/settings/groups`))}
+          size="icon-sm"
+          class="shrink-0 text-muted-foreground"
+          onclick={() => goto(resolve(localizeHref(`/${orgId}/settings/groups`)))}
+          title={m.ui_copy_back_to_groups_f1d6a091()}
+          aria-label={m.ui_copy_back_to_groups_f1d6a091()}
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={16} class="rtl:rotate-180" />
         </Button>
-
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <UserGroup size={20} />
-        </div>
-
-        <div class="flex flex-col">
-          <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold text-foreground truncate">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h1 class="truncate text-lg font-bold tracking-tight text-foreground">
               {group.name_ar || group.name}
             </h1>
             {#if group.is_system}
-              <Badge variant="secondary" class="text-[10px]">
-                {m.groups_system_badge()}
-              </Badge>
+              <Badge variant="secondary" class="text-[10px]">{m.groups_system_badge()}</Badge>
             {/if}
           </div>
-          <span class="text-xs text-muted-foreground">
+          <p class="mt-0.5 truncate text-xs text-muted-foreground">
             {group.description || m.ui_copy_manage_members_and_permissions_18487d56()}
-          </span>
+          </p>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <div class="flex items-center gap-1 bg-muted/60 p-1 rounded-lg border border-border/60">
+      <div class="mt-4 flex items-center gap-5">
         <button
           type="button"
-          class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'members' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+          class="relative flex items-center gap-1.5 border-b-2 px-1 pb-3 text-xs font-medium transition-colors cursor-pointer {activeTab === 'members' ? 'border-primary text-foreground font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           onclick={() => (activeTab = "members")}
         >
           <Users size={13} />
@@ -354,7 +349,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
 
         <button
           type="button"
-          class="px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer flex items-center gap-1.5 {activeTab === 'permissions' ? 'bg-card text-foreground shadow-2xs font-semibold' : 'text-muted-foreground hover:text-foreground'}"
+          class="relative flex items-center gap-1.5 border-b-2 px-1 pb-3 text-xs font-medium transition-colors cursor-pointer {activeTab === 'permissions' ? 'border-primary text-foreground font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground'}"
           onclick={() => (activeTab = "permissions")}
         >
           <Keyframes size={13} />
@@ -368,19 +363,21 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
 
     <!-- Content Area -->
     <div class="flex-1 min-h-0 overflow-y-auto p-6">
-      <div class="max-w-5xl mx-auto flex flex-col gap-6 pb-20">
+      <div class="flex flex-col gap-5 pb-20">
 
         <!-- TAB 1: MEMBERS MANAGEMENT -->
         {#if activeTab === "members"}
-          <div class="flex flex-col gap-4 bg-card border border-border rounded-xl p-5 shadow-xs">
-            <div class="flex items-center justify-between border-b border-border/60 pb-3">
+          <Card class="flex flex-col">
+            <CardHeader class="flex flex-row items-center justify-between gap-3 border-b border-border/50 bg-transparent p-4 pb-3 text-foreground normal-case tracking-normal">
               <div class="flex items-center gap-2">
                 <Users size={16} class="text-primary" />
-                <h2 class="text-xs font-bold text-foreground uppercase tracking-wider">{m.ui_copy_group_members_558b5bd6()}</h2>
+                <CardTitle class="text-sm font-semibold text-foreground">
+                  {m.ui_copy_group_members_558b5bd6()}
+                </CardTitle>
               </div>
 
               <Button
-                variant="default"
+                variant="outline"
                 size="sm"
                 class="text-xs cursor-pointer gap-1.5"
                 onclick={() => (bulkAssignOpen = true)}
@@ -388,13 +385,14 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                 <Plus size={13} />
                 <span>{m.groups_bulk_assign()}</span>
               </Button>
-            </div>
+            </CardHeader>
 
+            <CardContent class="px-4 pb-4">
             {#if membersQuery.isLoading}
-              <div class="divide-y divide-border/40 overflow-hidden rounded-lg border border-border/60" aria-busy="true">
+              <div class="divide-y divide-border/50 border-t border-border/50" aria-busy="true">
                 <span class="sr-only">{m.ui_copy_loading_members_a59e1afa()}</span>
                 {#each Array.from({ length: 5 }) as _, index (index)}
-                  <div class="flex items-center justify-between gap-4 bg-card p-3">
+                  <div class="flex items-center justify-between gap-4 py-3">
                     <div class="flex min-w-0 flex-1 items-center gap-3">
                       <Skeleton class="h-9 w-9 shrink-0 rounded-full" />
                       <div class="flex min-w-0 flex-1 flex-col gap-2">
@@ -415,9 +413,9 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                 </Button>
               </div>
             {:else}
-              <div class="divide-y divide-border/40 border border-border/60 rounded-lg overflow-hidden">
+              <div class="divide-y divide-border/50 border-t border-border/50">
                 {#each members as member (member.user_id)}
-                  <div class="flex items-center justify-between p-3 bg-card hover:bg-muted/20 transition-colors">
+                  <div class="flex items-center justify-between gap-3 py-3 transition-colors hover:bg-muted/20">
                     <div class="flex items-center gap-3 min-w-0">
                       <UserAvatar
                         name={member.full_name || member.full_name_ar || member.email}
@@ -453,7 +451,8 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                 {/each}
               </div>
             {/if}
-          </div>
+            </CardContent>
+          </Card>
         {/if}
 
         <!-- TAB 2: 2D PERMISSIONS MATRIX (Interactive Group Permissions Editor) -->
@@ -481,7 +480,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
               </div>
 
               <!-- Matrix Summary Stats -->
-              <div class="flex items-center gap-2 bg-card p-1.5 rounded-lg border border-border/50 text-xs shrink-0">
+              <div class="flex items-center gap-2 text-xs shrink-0">
                 <div class="flex flex-col items-center px-3 py-1">
                   <span class="text-[10px] text-muted-foreground uppercase">{m.ui_copy_domains_3ba7f409()}</span>
                   <span class="font-mono font-bold text-foreground">{activeDomainsCount} / {IAM_DOMAINS.length}</span>
@@ -570,7 +569,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
             {:else}
               <div class="flex flex-col gap-4">
                 {#each visibleDomains as domain (domain.id)}
-                  <div class="flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-5 shadow-xs">
+                  <div class="flex flex-col gap-3 rounded-lg border border-border/70 bg-card p-4">
                     <!-- Domain Header -->
                     <div class="flex items-center justify-between border-b border-border/60 pb-3">
                       <div class="flex items-center gap-2.5">
@@ -624,7 +623,7 @@ async function promptRemoveMember(member: GroupMemberInfoDto) {
                     <!-- Resources & 2D Action Matrix -->
                     <div class="flex flex-col gap-3 pt-1">
                       {#each domain.filteredResources as res (res.key)}
-                        <div class="flex flex-col gap-2 p-3 rounded-lg bg-muted/20 border border-border/40">
+                        <div class="flex flex-col gap-2 border-t border-border/40 pt-3 first:border-t-0 first:pt-0">
                           <!-- Resource Title & Key -->
                           <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">

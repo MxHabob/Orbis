@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::AcademicFrameworkRepository;
 use orbis_domain::entities::academic_calendar::{
-    AcademicCalendar, AcademicPeriod, AcademicCalendarStatus, PeriodType,
+    AcademicCalendar, AcademicCalendarStatus, AcademicPeriod, PeriodType,
 };
-use orbis_domain::entities::subject::Course;
-use orbis_domain::entities::enrollment::{Enrollment, Enrollmentstatus};
-use orbis_domain::entities::section_subject::{SectionSubject, SectionSubjectstatus};
+use orbis_domain::entities::enrollment::Enrollment;
+use orbis_domain::entities::section_subject::SectionSubject;
+use orbis_domain::entities::subject::Subject;
 use orbis_domain::errors::DomainError;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder, Set,
@@ -15,10 +15,10 @@ use uuid::Uuid;
 use crate::models::{
     academic_calendar::{self, Entity as CalendarEntity},
     academic_period::{self, Entity as CalendarPeriodEntity},
-    period_type::{self, Entity as PeriodTypeEntity},
-    course::{self, Entity as SubjectEntity},
     enrollment::{self, Entity as EnrollmentEntity},
+    period_type::{self, Entity as PeriodTypeEntity},
     section_subject::{self, Entity as SectionSubjectEntity},
+    subject::{self, Entity as SubjectEntity},
 };
 
 pub struct AcademicFrameworkRepoImpl {
@@ -69,9 +69,21 @@ fn map_calendar(m: academic_calendar::Model) -> Result<AcademicCalendar, DomainE
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
-        starts_at: m.starts_at,
-        ends_at: m.ends_at,
+        start_date: m.start_date,
+        end_date: m.end_date,
+        starts_at: Some(m.start_date),
+        ends_at: Some(m.end_date),
+        hijri_start: m.hijri_start,
+        hijri_end: m.hijri_end,
         status,
+        is_locked: m.is_locked,
+        locked_at: m.locked_at,
+        locked_by: m.locked_by,
+        lock_reason: m.lock_reason,
+        current_period_id: m.current_period_id,
+        archived_at: m.archived_at,
+        archived_by: m.archived_by,
+        notes: m.notes,
         created_at: m.created_at,
         updated_at: m.updated_at,
     })
@@ -100,16 +112,16 @@ fn map_calendar_period(m: academic_period::Model) -> AcademicPeriod {
         code: m.code,
         name: m.name,
         name_ar: m.name_ar,
-        starts_at: m.starts_at,
-        ends_at: m.ends_at,
-        sort_order: m.sort_order,
+        starts_at: m.start_date,
+        ends_at: m.end_date,
+        sort_order: m.sort_order.unwrap_or(0),
         created_at: m.created_at,
         updated_at: m.updated_at,
     }
 }
 
-fn map_course(m: course::Model) -> Course {
-    Course {
+fn map_course(m: subject::Model) -> Subject {
+    Subject {
         id: m.id,
         org_id: m.org_id,
         unit_id: m.unit_id,
@@ -117,8 +129,18 @@ fn map_course(m: course::Model) -> Course {
         name: m.name,
         name_ar: m.name_ar,
         description: m.description,
+        subject_type: m.subject_type,
+        is_core: m.is_core,
+        is_elective: m.is_elective,
         credit_units: m.credit_units,
         workload_units: m.workload_units,
+        theory_hours: m.theory_hours,
+        practical_hours: m.practical_hours,
+        is_lab_required: m.is_lab_required,
+        max_students_per_section: m.max_students_per_section.map(|v| v as u32),
+        color: m.color,
+        icon: m.icon,
+        sort_order: m.sort_order,
         is_active: m.is_active,
         created_at: m.created_at,
         updated_at: m.updated_at,
@@ -126,71 +148,63 @@ fn map_course(m: course::Model) -> Course {
 }
 
 fn map_offering(m: section_subject::Model) -> Result<SectionSubject, DomainError> {
-    let status = match m.status.as_str() {
-        "draft" => SectionSubjectstatus::Draft,
-        "open" => SectionSubjectstatus::Open,
-        "in_progress" => SectionSubjectstatus::InProgress,
-        "completed" => SectionSubjectstatus::Completed,
-        "cancelled" => SectionSubjectstatus::Cancelled,
-        other => {
-            return Err(DomainError::Internal(format!(
-                "Unknown course offering status '{}'",
-                other
-            )));
-        }
-    };
-    let capacity = m
-        .capacity
-        .map(u32::try_from)
-        .transpose()
-        .map_err(|error| DomainError::Internal(error.to_string()))?;
     Ok(SectionSubject {
         id: m.id,
         org_id: m.org_id,
-        course_id: m.course_id,
+        section_id: m.section_id,
+        subject_id: m.subject_id,
         period_id: m.period_id,
-        section_code: m.section_code,
-        name: m.name,
-        status,
-        capacity,
-        starts_at: m.starts_at,
-        ends_at: m.ends_at,
-        created_at: m.created_at,
-        updated_at: m.updated_at,
+        instructor_id: m.instructor_id,
+        assistant_instructor_id: m.assistant_instructor_id,
+        substitute_instructor_id: m.substitute_instructor_id,
+        scheme_id: m.scheme_id,
+        weekly_hours: m.weekly_hours,
+        theory_hours: m.theory_hours,
+        practical_hours: m.practical_hours,
+        assessment_config: m.assessment_config,
+        grade_groups: m.grade_groups,
+        capacity: m.capacity,
+        status: m.status,
+        is_active: m.is_active,
+        created_at: Some(m.created_at),
+        updated_at: Some(m.updated_at),
     })
 }
 
 fn map_enrollment(m: enrollment::Model) -> Result<Enrollment, DomainError> {
-    let status = match m.status.as_str() {
-        "pending" => Enrollmentstatus::Pending,
-        "active" => Enrollmentstatus::Active,
-        "withdrawn" => Enrollmentstatus::Withdrawn,
-        "completed" => Enrollmentstatus::Completed,
-        "failed" => Enrollmentstatus::Failed,
-        "exempt" => Enrollmentstatus::Exempt,
-        other => {
-            return Err(DomainError::Internal(format!(
-                "Unknown course enrollment status '{}'",
-                other
-            )));
-        }
-    };
-    let attempt_number = u32::try_from(m.attempt_number)
-        .map_err(|error| DomainError::Internal(error.to_string()))?;
     Ok(Enrollment {
         id: m.id,
         org_id: m.org_id,
-        offering_id: m.offering_id,
+        period_id: m.period_id,
         student_id: m.student_id,
-        attempt_number,
-        status,
-        enrolled_at: m.enrolled_at,
-        withdrawn_at: m.withdrawn_at,
+        section_id: m.section_id,
+        attempt_number: m.attempt_number,
+        student_number: m.student_number,
+        study_mode: match m.study_mode.as_deref().unwrap_or("regular") {
+            "homeschooled" => orbis_domain::entities::enrollment::StudyMode::Homeschooled,
+            "auditor" => orbis_domain::entities::enrollment::StudyMode::Auditor,
+            "visiting" => orbis_domain::entities::enrollment::StudyMode::Visiting,
+            _ => orbis_domain::entities::enrollment::StudyMode::Regular,
+        },
+        status: match m.status.as_str() {
+            "pending_approval" => {
+                orbis_domain::entities::enrollment::EnrollmentStatus::PendingApproval
+            }
+            "withdrawn" => orbis_domain::entities::enrollment::EnrollmentStatus::Withdrawn,
+            "graduated" => orbis_domain::entities::enrollment::EnrollmentStatus::Graduated,
+            "suspended" => orbis_domain::entities::enrollment::EnrollmentStatus::Suspended,
+            _ => orbis_domain::entities::enrollment::EnrollmentStatus::Active,
+        },
+        is_attendance_exempt: m.is_attendance_exempt.unwrap_or(false),
+        is_grade_exempt: m.is_grade_exempt.unwrap_or(false),
+        enrolled_at: m.enrolled_at.into(),
+        withdrawn_at: m.withdrawn_at.map(Into::into),
         withdrawal_reason: m.withdrawal_reason,
+        meta: m.meta.unwrap_or_default(),
         created_by: m.created_by,
         updated_by: m.updated_by,
-        created_at: m.created_at,
-        updated_at: m.updated_at,
+        created_at: m.created_at.into(),
+        updated_at: m.updated_at.into(),
     })
 }
 
@@ -199,7 +213,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     async fn list_calendars(&self, org_id: Uuid) -> Result<Vec<AcademicCalendar>, DomainError> {
         CalendarEntity::find()
             .filter(academic_calendar::Column::OrgId.eq(org_id))
-            .order_by_asc(academic_calendar::Column::StartsAt)
+            .order_by_asc(academic_calendar::Column::StartDate)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?
@@ -242,9 +256,20 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             code: Set(calendar.code.clone()),
             name: Set(calendar.name.clone()),
             name_ar: Set(calendar.name_ar.clone()),
-            starts_at: Set(calendar.starts_at),
-            ends_at: Set(calendar.ends_at),
+            start_date: Set(calendar.start_date),
+            end_date: Set(calendar.end_date),
+            hijri_start: Set(calendar.hijri_start.clone()),
+            hijri_end: Set(calendar.hijri_end.clone()),
             status: Set(calendar.status.to_string()),
+            is_locked: Set(calendar.is_locked),
+            locked_at: Set(calendar.locked_at),
+            locked_by: Set(calendar.locked_by),
+            lock_reason: Set(calendar.lock_reason.clone()),
+            current_period_id: Set(calendar.current_period_id),
+            archived_at: Set(calendar.archived_at),
+            archived_by: Set(calendar.archived_by),
+            notes: Set(calendar.notes.clone()),
+            metadata: Set(None),
             created_at: Set(calendar.created_at),
             updated_at: Set(calendar.updated_at),
         };
@@ -323,10 +348,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         Ok(model.map(map_calendar_period))
     }
 
-    async fn save_calendar_period(
-        &self,
-        period: &AcademicPeriod,
-    ) -> Result<(), DomainError> {
+    async fn save_calendar_period(&self, period: &AcademicPeriod) -> Result<(), DomainError> {
         let active = academic_period::ActiveModel {
             id: Set(period.id),
             org_id: Set(period.org_id),
@@ -336,9 +358,25 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             code: Set(period.code.clone()),
             name: Set(period.name.clone()),
             name_ar: Set(period.name_ar.clone()),
-            starts_at: Set(period.starts_at),
-            ends_at: Set(period.ends_at),
-            sort_order: Set(period.sort_order),
+            period_kind: Set("teaching".to_string()),
+            start_date: Set(period.starts_at),
+            end_date: Set(period.ends_at),
+            hijri_start: Set(None),
+            hijri_end: Set(None),
+            enrollment_starts_at: Set(None),
+            enrollment_ends_at: Set(None),
+            is_enrollment_open: Set(false),
+            grade_entry_starts_at: Set(None),
+            grade_entry_ends_at: Set(None),
+            is_grade_entry_open: Set(false),
+            exam_starts_at: Set(None),
+            exam_ends_at: Set(None),
+            status: Set("active".to_string()),
+            is_locked: Set(false),
+            locked_at: Set(None),
+            locked_by: Set(None),
+            sort_order: Set(Some(period.sort_order)),
+            metadata: Set(None),
             created_at: Set(period.created_at),
             updated_at: Set(period.updated_at),
         };
@@ -361,19 +399,19 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             .map(|models| models.into_iter().map(map_calendar_period).collect())
     }
 
-    async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Course>, DomainError> {
+    async fn find_course(&self, org_id: Uuid, id: Uuid) -> Result<Option<Subject>, DomainError> {
         let model = SubjectEntity::find_by_id(id)
-            .filter(course::Column::OrgId.eq(org_id))
+            .filter(subject::Column::OrgId.eq(org_id))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
         Ok(model.map(map_course))
     }
 
-    async fn list_courses(&self, org_id: Uuid) -> Result<Vec<Course>, DomainError> {
+    async fn list_courses(&self, org_id: Uuid) -> Result<Vec<Subject>, DomainError> {
         SubjectEntity::find()
-            .filter(course::Column::OrgId.eq(org_id))
-            .order_by_asc(course::Column::Code)
+            .filter(subject::Column::OrgId.eq(org_id))
+            .order_by_asc(subject::Column::Code)
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))
@@ -384,18 +422,18 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         &self,
         org_id: Uuid,
         code: &str,
-    ) -> Result<Option<Course>, DomainError> {
+    ) -> Result<Option<Subject>, DomainError> {
         let model = SubjectEntity::find()
-            .filter(course::Column::OrgId.eq(org_id))
-            .filter(course::Column::Code.eq(code))
+            .filter(subject::Column::OrgId.eq(org_id))
+            .filter(subject::Column::Code.eq(code))
             .one(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
         Ok(model.map(map_course))
     }
 
-    async fn save_course(&self, course: &Course) -> Result<(), DomainError> {
-        let active = course::ActiveModel {
+    async fn save_course(&self, course: &Subject) -> Result<(), DomainError> {
+        let active = subject::ActiveModel {
             id: Set(course.id),
             org_id: Set(course.org_id),
             unit_id: Set(course.unit_id),
@@ -403,8 +441,18 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             name: Set(course.name.clone()),
             name_ar: Set(course.name_ar.clone()),
             description: Set(course.description.clone()),
+            subject_type: Set(course.subject_type.clone()),
+            is_core: Set(course.is_core),
+            is_elective: Set(course.is_elective),
             credit_units: Set(course.credit_units),
             workload_units: Set(course.workload_units),
+            theory_hours: Set(course.theory_hours),
+            practical_hours: Set(course.practical_hours),
+            is_lab_required: Set(course.is_lab_required),
+            max_students_per_section: Set(course.max_students_per_section.map(|v| v as i32)),
+            color: Set(course.color.clone()),
+            icon: Set(course.icon.clone()),
+            sort_order: Set(course.sort_order),
             is_active: Set(course.is_active),
             created_at: Set(course.created_at),
             updated_at: Set(course.updated_at),
@@ -431,10 +479,10 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
         org_id: Uuid,
         course_id: Option<Uuid>,
     ) -> Result<Vec<SectionSubject>, DomainError> {
-        let mut query = SectionSubjectEntity::find()
-            .filter(section_subject::Column::OrgId.eq(org_id));
+        let mut query =
+            SectionSubjectEntity::find().filter(section_subject::Column::OrgId.eq(org_id));
         if let Some(course_id) = course_id {
-            query = query.filter(section_subject::Column::CourseId.eq(course_id));
+            query = query.filter(section_subject::Column::SubjectId.eq(course_id));
         }
         query
             .order_by_asc(section_subject::Column::CreatedAt)
@@ -447,24 +495,27 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     }
 
     async fn save_section_subject(&self, offering: &SectionSubject) -> Result<(), DomainError> {
-        let capacity = offering
-            .capacity
-            .map(i32::try_from)
-            .transpose()
-            .map_err(|error| DomainError::Validation(error.to_string()))?;
+        let now = chrono::Utc::now();
         let active = section_subject::ActiveModel {
             id: Set(offering.id),
             org_id: Set(offering.org_id),
-            course_id: Set(offering.course_id),
+            section_id: Set(offering.section_id),
+            subject_id: Set(offering.subject_id),
             period_id: Set(offering.period_id),
-            section_code: Set(offering.section_code.clone()),
-            name: Set(offering.name.clone()),
-            status: Set(offering.status.to_string()),
-            capacity: Set(capacity),
-            starts_at: Set(offering.starts_at),
-            ends_at: Set(offering.ends_at),
-            created_at: Set(offering.created_at),
-            updated_at: Set(offering.updated_at),
+            instructor_id: Set(offering.instructor_id),
+            assistant_instructor_id: Set(offering.assistant_instructor_id),
+            substitute_instructor_id: Set(offering.substitute_instructor_id),
+            scheme_id: Set(offering.scheme_id),
+            weekly_hours: Set(offering.weekly_hours),
+            theory_hours: Set(offering.theory_hours),
+            practical_hours: Set(offering.practical_hours),
+            assessment_config: Set(offering.assessment_config.clone()),
+            grade_groups: Set(offering.grade_groups.clone()),
+            capacity: Set(offering.capacity),
+            status: Set(offering.status.clone()),
+            is_active: Set(offering.is_active),
+            created_at: Set(offering.created_at.unwrap_or(now)),
+            updated_at: Set(offering.updated_at.unwrap_or(now)),
         };
         save_active_model!(
             self,
@@ -487,7 +538,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             .map_err(|error| DomainError::Validation(error.to_string()))?;
         let model = EnrollmentEntity::find()
             .filter(enrollment::Column::OrgId.eq(org_id))
-            .filter(enrollment::Column::OfferingId.eq(offering_id))
+            .filter(enrollment::Column::SectionId.eq(Some(offering_id)))
             .filter(enrollment::Column::StudentId.eq(student_id))
             .filter(enrollment::Column::AttemptNumber.eq(attempt_number))
             .one(&self.db)
@@ -503,7 +554,7 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
     ) -> Result<Vec<Enrollment>, DomainError> {
         EnrollmentEntity::find()
             .filter(enrollment::Column::OrgId.eq(org_id))
-            .filter(enrollment::Column::OfferingId.eq(offering_id))
+            .filter(enrollment::Column::SectionId.eq(Some(offering_id)))
             .order_by_asc(enrollment::Column::EnrolledAt)
             .all(&self.db)
             .await
@@ -513,26 +564,28 @@ impl AcademicFrameworkRepository for AcademicFrameworkRepoImpl {
             .collect()
     }
 
-    async fn save_enrollment(
-        &self,
-        enrollment: &Enrollment,
-    ) -> Result<(), DomainError> {
-        let attempt_number = i32::try_from(enrollment.attempt_number)
-            .map_err(|error| DomainError::Validation(error.to_string()))?;
+    async fn save_enrollment(&self, enrollment: &Enrollment) -> Result<(), DomainError> {
         let active = enrollment::ActiveModel {
             id: Set(enrollment.id),
             org_id: Set(enrollment.org_id),
-            offering_id: Set(enrollment.offering_id),
+            period_id: Set(enrollment.period_id),
             student_id: Set(enrollment.student_id),
-            attempt_number: Set(attempt_number),
+            section_id: Set(enrollment.section_id),
+            student_number: Set(enrollment.student_number.clone()),
             status: Set(enrollment.status.to_string()),
-            enrolled_at: Set(enrollment.enrolled_at),
-            withdrawn_at: Set(enrollment.withdrawn_at),
+            study_mode: Set(Some(enrollment.study_mode.to_string())),
+            attempt_number: Set(enrollment.attempt_number),
+            enrollment_type: Set(None),
+            is_attendance_exempt: Set(Some(enrollment.is_attendance_exempt)),
+            is_grade_exempt: Set(Some(enrollment.is_grade_exempt)),
+            enrolled_at: Set(enrollment.enrolled_at.into()),
+            withdrawn_at: Set(enrollment.withdrawn_at.map(Into::into)),
             withdrawal_reason: Set(enrollment.withdrawal_reason.clone()),
+            meta: Set(Some(enrollment.meta.clone())),
             created_by: Set(enrollment.created_by),
             updated_by: Set(enrollment.updated_by),
-            created_at: Set(enrollment.created_at),
-            updated_at: Set(enrollment.updated_at),
+            created_at: Set(enrollment.created_at.into()),
+            updated_at: Set(enrollment.updated_at.into()),
         };
         save_active_model!(
             self,

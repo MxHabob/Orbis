@@ -83,7 +83,10 @@ impl PermissionCheckerPort for DbPermissionChecker {
                 if r_res == permission {
                     return true;
                 }
-                let res_ok = r_res == target_resource || r_res == "*";
+                let res_ok = r_res == target_resource
+                    || r_res == "*"
+                    || (r_res == "class" && target_resource == "section")
+                    || (r_res == "section" && target_resource == "class");
                 let act_ok = r_act == target_action
                     || r_act == "*"
                     || r_act == "admin"
@@ -122,7 +125,10 @@ impl PermissionCheckerPort for DbPermissionChecker {
                 let g_res = gp_parts.next().unwrap_or("");
                 let g_act = gp_parts.next().unwrap_or("");
 
-                let res_ok = g_res == target_resource || g_res == "*";
+                let res_ok = g_res == target_resource
+                    || g_res == "*"
+                    || (g_res == "class" && target_resource == "section")
+                    || (g_res == "section" && target_resource == "class");
                 let act_ok = g_act == target_action
                     || g_act == "*"
                     || g_act == "admin"

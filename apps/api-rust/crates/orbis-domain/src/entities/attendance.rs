@@ -6,7 +6,7 @@ use uuid::Uuid;
 pub struct Attendance {
     pub id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
     pub attendance_date: NaiveDate,

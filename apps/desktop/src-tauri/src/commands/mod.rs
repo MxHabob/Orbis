@@ -17,6 +17,7 @@ pub mod group_cmds;
 pub mod iam_cmds;
 pub mod integration_cmds;
 pub mod license_cmds;
+pub mod mulverse_cmds;
 pub mod onboarding_cmds;
 pub mod org_cmds;
 pub mod progression_cmds;
@@ -169,14 +170,21 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         calendar_cmds::calendar_unlock_period,
         calendar_cmds::calendar_close_period,
         calendar_cmds::calendar_list_period_types,
+        calendar_cmds::calendar_list_official_templates,
+        calendar_cmds::calendar_apply_template,
+        calendar_cmds::calendar_get_defaults,
         // ── Academic ────────────────────────────────────────────
         academic_cmds::academic_create_subject,
+        academic_cmds::academic_update_subject,
         academic_cmds::academic_list_subjects,
         academic_cmds::academic_get_subject,
-        academic_cmds::academic_create_class,
-        academic_cmds::academic_list_classes,
-        academic_cmds::academic_get_class,
+        academic_cmds::academic_create_section,
+        academic_cmds::academic_update_section,
+        academic_cmds::academic_list_sections,
+        academic_cmds::academic_get_section,
         academic_cmds::academic_assign_section_subject,
+        academic_cmds::academic_get_section_subject,
+        academic_cmds::academic_update_section_subject,
         academic_cmds::academic_list_section_subjects,
         academic_cmds::academic_check_prerequisites,
         // ── Student ─────────────────────────────────────────────
@@ -276,6 +284,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         assessment_cmds::assessment_get_student_annual_results,
         assessment_cmds::assessment_get_class_term_results,
         assessment_cmds::assessment_get_class_annual_results,
+        assessment_cmds::assessment_get_student_certificate_results,
         // ── Exam ────────────────────────────────────────────────
         exam_cmds::exam_create_session,
         exam_cmds::exam_list_sessions,
@@ -377,6 +386,15 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         integration_cmds::integration_get_status,
         integration_cmds::integration_disconnect,
         integration_cmds::integration_toggle,
+        mulverse_cmds::mulverse_get_connection,
+        mulverse_cmds::mulverse_connect,
+        mulverse_cmds::mulverse_disconnect,
+        mulverse_cmds::mulverse_list_deployments,
+        mulverse_cmds::mulverse_create_deployment,
+        mulverse_cmds::mulverse_update_deployment,
+        mulverse_cmds::mulverse_list_endpoints,
+        mulverse_cmds::mulverse_create_endpoint,
+        mulverse_cmds::mulverse_update_endpoint,
         // ── Academic Override & Workflow ────────────────────────
         workflow_cmds::workflow_submit_override,
         workflow_cmds::workflow_approve_override,
@@ -411,6 +429,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         window_cmds::open_agent_window,
         window_cmds::open_connection_window,
         window_cmds::open_changelog_window,
+        window_cmds::open_standalone_window,
         window_cmds::check_for_updates,
         // ── Connection ──────────────────────────────────────────
         connection_cmds::connection_get_config,
@@ -419,6 +438,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         connection_cmds::connection_validate,
         connection_cmds::connection_check_remote_health,
         connection_cmds::connection_connect,
+        connection_cmds::connection_run_migrations,
         // ── Database Management ─────────────────────────────────
         database_cmds::database_get_status,
         database_cmds::database_create_local,
@@ -455,6 +475,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         // ── AI Platform ─────────────────────────────────────────
         ai_cmds::ai_chat,
         ai_cmds::ai_list_tools,
+        ai_cmds::ai_create_custom_report,
         ai_cmds::ai_save_session,
         ai_cmds::ai_load_sessions,
         ai_cmds::ai_delete_session,
@@ -507,6 +528,7 @@ fn required_feature(command: &str) -> Option<&'static str> {
                 | "assessment_list_student_behavior_records"
                 | "assessment_get_student_term_results"
                 | "assessment_get_student_annual_results"
+                | "assessment_get_student_certificate_results"
         )
     {
         Some("students")

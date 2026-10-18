@@ -55,10 +55,12 @@ pub struct EffectiveContextDto {
 
 #[derive(Serialize)]
 pub struct LoginResponse {
-    pub token: String,
-    pub refresh_token: String,
+    pub token: Option<String>,
+    pub refresh_token: Option<String>,
     pub user: UserDto,
-    pub effective_context: EffectiveContextDto,
+    pub effective_context: Option<EffectiveContextDto>,
+    pub mfa_required: bool,
+    pub mfa_token: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -166,22 +168,26 @@ pub async fn auth_login(
         .await
         .map_err(|e| e.to_string())?;
 
-    state.set_active_session(crate::state::ActiveSession {
-        user_id: res.user.id,
-        org_id: res.user.org_id,
-        active_unit_id: None,
-        token: res.token.clone(),
-    });
+    if let Some(token) = res.token.as_ref() {
+        state.set_active_session(crate::state::ActiveSession {
+            user_id: res.user.id,
+            org_id: res.user.org_id,
+            active_unit_id: None,
+            token: token.clone(),
+        });
+    }
 
     let roles = get_roles_for_user(&state.db, res.user.id).await;
     let user_dto = user_to_dto(res.user, res.person.as_ref(), roles);
-    let effective_context = map_effective_context(res.effective_context);
+    let effective_context = res.effective_context.map(map_effective_context);
 
     Ok(ok(LoginResponse {
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_dto,
         effective_context,
+        mfa_required: res.mfa_required,
+        mfa_token: res.mfa_token,
     }))
 }
 
@@ -829,7 +835,6 @@ pub struct MfaEnrollResponse {
     pub factor_id: String,
     pub secret: String,
     pub qr_code_uri: String,
-    pub recovery_codes: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -869,7 +874,6 @@ pub async fn auth_mfa_enroll(
         factor_id: res.factor_id.to_string(),
         secret: res.secret,
         qr_code_uri: res.qr_code_uri,
-        recovery_codes: res.recovery_codes,
     }))
 }
 
@@ -877,19 +881,19 @@ pub async fn auth_mfa_enroll(
 pub async fn auth_mfa_verify_enrollment(
     request: serde_json::Value,
     state: State<'_, AppState>,
-) -> Result<ApiResponse<bool>, String> {
+) -> Result<ApiResponse<Vec<String>>, String> {
     let ctx = make_ctx(&state);
     let factor_id_str = request["factor_id"]
         .as_str()
         .ok_or("factor_id is required")?;
     let factor_id = Uuid::parse_str(factor_id_str).map_err(|_| "Invalid factor_id")?;
     let code = request["code"].as_str().ok_or("code is required")?;
-    let verified = state
+    let recovery_codes = state
         .auth_service
         .verify_totp_enrollment(&ctx, factor_id, code)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(verified))
+    Ok(ok(recovery_codes))
 }
 
 #[tauri::command]
@@ -897,17 +901,20 @@ pub async fn auth_mfa_challenge(
     request: serde_json::Value,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<LoginResponse>, String> {
-    let user_id_str = request["user_id"].as_str().ok_or("user_id is required")?;
-    let user_id = Uuid::parse_str(user_id_str).map_err(|_| "Invalid user_id")?;
+    let mfa_token = request["mfa_token"]
+        .as_str()
+        .ok_or("mfa_token is required")?;
     let code = request["code"].as_str().ok_or("code is required")?;
     let device_id = request["device_id"].as_str().map(|s| s.to_string());
     let remember_device = request["remember_device"].as_bool().unwrap_or(false);
 
     let res = state
         .auth_service
-        .verify_mfa_challenge(user_id, code, device_id, remember_device)
+        .verify_mfa_challenge(mfa_token, code, device_id, remember_device)
         .await
         .map_err(|e| e.to_string())?;
+
+    let user_id = res.user_id;
     let user = state
         .auth_service
         .get_user(user_id)
@@ -935,10 +942,12 @@ pub async fn auth_mfa_challenge(
     let roles = get_roles_for_user(&state.db, user.id).await;
 
     Ok(ok(LoginResponse {
-        token: res.token,
-        refresh_token: res.refresh_token,
+        token: Some(res.token),
+        refresh_token: Some(res.refresh_token),
         user: user_to_dto(user, person.as_ref(), roles),
-        effective_context: map_effective_context(eff),
+        effective_context: Some(map_effective_context(eff)),
+        mfa_required: false,
+        mfa_token: None,
     }))
 }
 
@@ -981,12 +990,14 @@ pub async fn auth_login_google(
         .map_err(|e| e.to_string())?
         .ok_or_else(|| "User not found".to_string())?;
 
-    state.set_active_session(crate::state::ActiveSession {
-        user_id: user.id,
-        org_id: user.org_id,
-        active_unit_id: None,
-        token: res.token.clone(),
-    });
+    if let Some(token) = res.token.as_ref() {
+        state.set_active_session(crate::state::ActiveSession {
+            user_id: user.id,
+            org_id: user.org_id,
+            active_unit_id: None,
+            token: token.clone(),
+        });
+    }
 
     let person = state
         .person_repo
@@ -1004,7 +1015,9 @@ pub async fn auth_login_google(
         token: res.token,
         refresh_token: res.refresh_token,
         user: user_to_dto(user, person.as_ref(), roles),
-        effective_context: map_effective_context(eff),
+        effective_context: Some(map_effective_context(eff)),
+        mfa_required: res.mfa_required,
+        mfa_token: res.mfa_token,
     }))
 }
 

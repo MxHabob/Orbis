@@ -4,18 +4,21 @@
  * Polished empty state indicator with icons, explanatory text, and optional action button.
  */
 
-import React from "react";
-import { View, Text, type ViewStyle } from "react-native";
 import { ArchiveBox } from "@orbis/icons/native";
+import type React from "react";
+import { Text, View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
 import { Button } from "./button";
 
 export interface EmptyStateProps {
-  icon?: React.ComponentType<{ size?: number; color?: string }> | React.ReactNode;
+  icon?:
+    | React.ComponentType<{ size?: number; color?: string }>
+    | React.ReactNode;
   title: string;
   description?: string;
   actionTitle?: string;
   onAction?: () => void;
+  fullScreen?: boolean;
   style?: ViewStyle;
 }
 
@@ -25,18 +28,20 @@ export function EmptyState({
   description,
   actionTitle,
   onAction,
+  fullScreen = false,
   style,
 }: EmptyStateProps) {
   const theme = useTheme();
 
   return (
     <View
-      className="items-center justify-center gap-two px-five py-six"
-      style={style}
+      className={`items-center justify-center gap-two px-five py-six ${fullScreen ? "w-full flex-1" : ""}`}
+      style={[
+        fullScreen ? { flex: 1, alignSelf: "stretch" } : undefined,
+        style,
+      ]}
     >
-      <View
-        className="mb-two h-[68px] w-[68px] items-center justify-center rounded-full bg-background-element"
-      >
+      <View className="mb-two h-[68px] w-[68px] items-center justify-center rounded-full bg-background-element">
         {IconComponent ? (
           typeof IconComponent === "function" ? (
             <IconComponent size={36} color={theme.textSecondary} />

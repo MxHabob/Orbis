@@ -10,14 +10,16 @@ use axum::{
     http::Request,
     middleware::{self, Next},
     response::{IntoResponse, Response},
+    routing::get,
 };
+use sea_orm::ConnectionTrait;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use api::{
     academic_framework_routes, academic_routes, ai_routes, assessment_routes, autopilot_routes,
     bootstrap_routes, calendar_routes, document_routes, employee_routes, exam_routes,
-    finance_routes, folder_routes, group_routes, iam_routes, integration_routes,
+    finance_routes, folder_routes, group_routes, iam_routes, integration_routes, mulverse_routes,
     onboarding_routes, org_routes, override_routes, progression_routes, report_routes,
     scheduling_routes, storage_routes, student_routes,
 };
@@ -123,12 +125,16 @@ use api::{
         api::academic_framework_routes::enroll_student,
         // Academic
         api::academic_routes::create_subject,
+        api::academic_routes::update_subject,
         api::academic_routes::list_subjects,
         api::academic_routes::get_subject,
-        api::academic_routes::create_class,
-        api::academic_routes::list_classes,
-        api::academic_routes::get_class,
+        api::academic_routes::create_section,
+        api::academic_routes::update_section,
+        api::academic_routes::list_sections,
+        api::academic_routes::get_section,
         api::academic_routes::assign_section_subject,
+        api::academic_routes::get_section_subject,
+        api::academic_routes::update_section_subject,
         api::academic_routes::list_section_subjects,
         // Student
         api::student_routes::register_student,
@@ -310,6 +316,15 @@ use api::{
         api::integration_routes::get_integration_status,
         api::integration_routes::disconnect_app,
         api::integration_routes::toggle_integration,
+        api::mulverse_routes::get_status,
+        api::mulverse_routes::connect,
+        api::mulverse_routes::disconnect,
+        api::mulverse_routes::list_deployments,
+        api::mulverse_routes::create_deployment,
+        api::mulverse_routes::update_deployment,
+        api::mulverse_routes::list_endpoints,
+        api::mulverse_routes::create_endpoint,
+        api::mulverse_routes::update_endpoint,
         // Report & Templates
         api::report_routes::list_templates,
         api::report_routes::create_template,
@@ -327,6 +342,7 @@ use api::{
         api::report_routes::list_template_bindings,
         api::report_routes::create_template_binding,
         api::report_routes::generate_report,
+        api::report_routes::create_custom_report,
         api::report_routes::get_report_job_status,
         api::report_routes::cancel_report_job,
         api::report_routes::download_report_file,
@@ -394,7 +410,7 @@ use api::{
             api::org_routes::AutopilotSettingsDto,
             api::org_routes::DashboardCountsDto,
             // Calendar
-            api::calendar_routes::AcademicYearDto,
+            api::calendar_routes::AcademicCalendarDto,
             api::calendar_routes::AcademicPeriodDto,
             orbis_domain::entities::academic_period::PeriodKind,
             orbis_domain::entities::academic_period::PeriodType,
@@ -420,10 +436,13 @@ use api::{
             // Academic
             api::academic_routes::SubjectDto,
             api::academic_routes::CreateSubjectRequest,
-            api::academic_routes::ClassDto,
-            api::academic_routes::CreateClassRequest,
+            api::academic_routes::UpdateSubjectRequest,
+            api::academic_routes::SectionDto,
+            api::academic_routes::CreateSectionRequest,
+            api::academic_routes::UpdateSectionRequest,
             api::academic_routes::SectionSubjectDto,
             api::academic_routes::AssignSectionSubjectRequest,
+            api::academic_routes::UpdateSectionSubjectRequest,
             // Student
             api::student_routes::StudentDto,
             api::student_routes::RegisterStudentRequest,
@@ -548,6 +567,14 @@ use api::{
             api::integration_routes::ToggleIntegrationRequest,
             api::integration_routes::NotificationIntegrationQuery,
             api::integration_routes::NotificationIntegrationCheckDto,
+            api::mulverse_routes::MulverseConnectionDto,
+            api::mulverse_routes::ConnectMulverseRequest,
+            api::mulverse_routes::DeploymentDto,
+            api::mulverse_routes::EndpointDto,
+            api::mulverse_routes::CreateDeploymentRequest,
+            api::mulverse_routes::UpdateDeploymentRequest,
+            api::mulverse_routes::CreateEndpointRequest,
+            api::mulverse_routes::UpdateEndpointRequest,
             // Report & Template
             api::report_routes::TemplateDto,
             api::report_routes::CreateTemplateRequest,
@@ -557,6 +584,8 @@ use api::{
             api::report_routes::CreateTemplateBindingRequest,
             api::report_routes::GenerateReportRequest,
             api::report_routes::GenerateReportResponse,
+            orbis_domain::entities::ai::AiCustomReportRequest,
+            orbis_domain::entities::ai::AiCustomReportResponse,
             api::report_routes::ReportJobStatusResponse,
             api::report_routes::CancelReportResponse,
             api::report_routes::BatchPrintRequest,
@@ -640,6 +669,7 @@ pub struct ApiDoc;
 
 pub fn app_router(state: state::AppState) -> Router {
     Router::new()
+        .route("/api/v1/health", get(api_health))
         .merge(iam_routes::routes())
         .merge(org_routes::routes())
         .merge(calendar_routes::routes())
@@ -658,6 +688,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(storage_routes::routes())
         .merge(folder_routes::folder_routes())
         .merge(integration_routes::routes())
+        .merge(mulverse_routes::routes())
         .merge(report_routes::routes())
         .merge(ai_routes::routes())
         .merge(autopilot_routes::routes())
@@ -672,6 +703,25 @@ pub fn app_router(state: state::AppState) -> Router {
         .with_state(state)
 }
 
+async fn api_health(State(state): State<state::AppState>) -> Response {
+    let database_connected = state.db.execute_unprepared("SELECT 1").await.is_ok();
+    let status = if database_connected {
+        axum::http::StatusCode::OK
+    } else {
+        axum::http::StatusCode::SERVICE_UNAVAILABLE
+    };
+    (
+        status,
+        axum::Json(serde_json::json!({
+            "status": if database_connected { "ok" } else { "degraded" },
+            "version": env!("CARGO_PKG_VERSION"),
+            "api_version": "1.0.0",
+            "database_connected": database_connected,
+        })),
+    )
+        .into_response()
+}
+
 async fn enforce_api_license(
     State(state): State<state::AppState>,
     request: Request<Body>,
@@ -682,6 +732,7 @@ async fn enforce_api_license(
         || path.starts_with("/api/v1/bootstrap")
         || path == "/api/v1/system/readiness"
         || path == "/api/v1/system/has-organization"
+        || path == "/api/v1/health"
         || path.starts_with("/swagger-ui")
         || path.starts_with("/api-docs")
     {

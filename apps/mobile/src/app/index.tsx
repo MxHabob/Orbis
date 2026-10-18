@@ -5,28 +5,28 @@
  * the public visitor experience when signed out.
  */
 
-import { View, ActivityIndicator } from "react-native";
 import { Redirect } from "expo-router";
+import { View } from "react-native";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 import { useAuth } from "@/lib/api";
-import { useTheme } from "@/hooks/use-theme";
 
 export default function IndexGate() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const theme = useTheme();
+  const { isAuthenticated, isInitializing, selectedInstitution } = useAuth();
 
-  if (isLoading) {
+  if (isInitializing) {
     return (
-      <View
-        className="flex-1 items-center justify-center bg-background"
-      >
-        <ActivityIndicator size="large" color={theme.primary} />
+      <View className="flex-1 items-center justify-center bg-background">
+        <LoadingIndicator size="lg" />
       </View>
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(app)/(tabs)" />;
+  if (!selectedInstitution) {
+    return <Redirect href="/institution-select" />;
   }
-
-  return <Redirect href="/(auth)/explore" />;
+  return isAuthenticated ? (
+    <Redirect href="/(app)/(tabs)" />
+  ) : (
+    <Redirect href="/(auth)/sign-in" />
+  );
 }

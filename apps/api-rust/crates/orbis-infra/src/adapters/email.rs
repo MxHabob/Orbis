@@ -5,13 +5,17 @@ use serde_json::json;
 
 pub struct EmailAdapter {
     pub api_key: String,
+    pub from_email: String,
+    pub from_name: Option<String>,
     pub client: Client,
 }
 
 impl EmailAdapter {
-    pub fn new(api_key: String) -> Self {
+    pub fn new(api_key: String, from_email: String, from_name: Option<String>) -> Self {
         Self {
             api_key,
+            from_email,
+            from_name,
             client: Client::new(),
         }
     }
@@ -23,11 +27,19 @@ impl EmailAdapter {
         subject: &str,
         body: &str,
     ) -> Result<(), DomainError> {
+        let from = match self
+            .from_name
+            .as_deref()
+            .filter(|name| !name.trim().is_empty())
+        {
+            Some(name) => json!({"email": &self.from_email, "name": name}),
+            None => json!({"email": &self.from_email}),
+        };
         let payload = json!({
             "personalizations": [{
                 "to": [{"email": to}]
             }],
-            "from": {"email": "no-reply@orbis-edu.com"},
+            "from": from,
             "subject": subject,
             "content": [{
                 "type": "text/html",

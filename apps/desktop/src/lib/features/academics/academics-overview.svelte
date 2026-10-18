@@ -26,29 +26,63 @@ import {
 import { localizeHref } from "$lib/paraglide/runtime";
 
 import {
-  createClassesQuery,
-  createSubjectsQuery,
+  createSectionsQuery,
   createPeriodsQuery,
+  createacademicCalendarsQuery,
 } from "$lib/features/academics";
 import { createprogressionJobsQuery } from "$lib/features/academics/promotion-queries";
 import { academicContext, licenseStore } from "$lib/stores";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
-import { extractErrorMessage } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
+import { createQuery } from "@tanstack/svelte-query";
 
 let { orgId }: { orgId: string } = $props();
 
 // TanStack Queries
-const classesQuery = createClassesQuery(() => orgId);
-const subjectsQuery = createSubjectsQuery(() => orgId);
+const yearsQuery = createacademicCalendarsQuery(() => orgId);
+const sectionsQuery = createSectionsQuery(() => orgId);
 const periodsQuery = createPeriodsQuery(() => orgId);
 const progressionJobsQuery = createprogressionJobsQuery(() => orgId);
+const teachersQuery = createQuery(() => ({
+  queryKey: ["employees", orgId, { employee_type: "teacher", status: "active" }],
+  queryFn: () => api.listEmployees({ employee_type: "teacher", status: "active" }),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
 
 // Derived Data
-const classes = $derived(classesQuery.data ?? []);
-const subjects = $derived(subjectsQuery.data ?? []);
+const years = $derived(yearsQuery.data ?? academicContext.allYears ?? []);
+const sections = $derived(sectionsQuery.data ?? []);
 const periods = $derived(periodsQuery.data ?? []);
-const currentYear = $derived(academicContext.currentYear);
 const progressionJobs = $derived(progressionJobsQuery.data ?? []);
+const teachersCount = $derived(teachersQuery.data?.length ?? 0);
+
+// Find active year: check query data first, then academicContext, then fallback to first available
+const currentYear = $derived(
+  years.find((y) => y.status === "active" || y.is_active) ??
+    academicContext.currentYear ??
+    years[0] ??
+    null,
+);
+
+const activeYearName = $derived(
+  currentYear?.name_ar || currentYear?.name || academicContext.yearLabelAr || "",
+);
+
+// Keep academicContext synced with the resolved active year
+$effect(() => {
+  if (currentYear && !academicContext.currentYear) {
+    academicContext.currentYear = currentYear;
+    academicContext.allYears = years;
+  }
+});
+
+// Ensure global academicContext is resolved on mount if not ready
+$effect(() => {
+  if (orgId && !academicContext.isInitialized) {
+    void academicContext.resolveContext(orgId);
+  }
+});
 
 // Find active period / term
 const activePeriod = $derived(
@@ -70,32 +104,34 @@ const examSessionsQuery = createExamSessionsQuery(() =>
 const examSessions = $derived(examSessionsQuery.data ?? []);
 
 const isLoading = $derived(
-  classesQuery.isLoading ||
-    subjectsQuery.isLoading ||
+  yearsQuery.isLoading ||
+    sectionsQuery.isLoading ||
     periodsQuery.isLoading ||
     progressionJobsQuery.isLoading ||
+    teachersQuery.isLoading ||
     (canViewExams && examSessionsQuery.isLoading),
 );
 
 const error = $derived.by(() => {
   const queryError =
-    classesQuery.error ||
-    subjectsQuery.error ||
+    yearsQuery.error ||
+    sectionsQuery.error ||
     periodsQuery.error ||
     progressionJobsQuery.error ||
+    teachersQuery.error ||
     (canViewExams ? examSessionsQuery.error : null);
   return queryError ? extractErrorMessage(queryError) : null;
 });
 
 function refetchAll() {
-  classesQuery.refetch();
-  subjectsQuery.refetch();
+  yearsQuery.refetch();
+  sectionsQuery.refetch();
   periodsQuery.refetch();
   progressionJobsQuery.refetch();
+  teachersQuery.refetch();
   if (canViewExams) examSessionsQuery.refetch();
+  academicContext.resolveContext(orgId);
 }
-
-const activeYearName = $derived(academicContext.yearLabelAr);
 
 // Grade entry status (based on active period/term)
 const isGradeEntryOpen = $derived(
@@ -109,31 +145,23 @@ const isGradeEntryOpen = $derived(
 // Dynamic counters for KPIs
 const kpiStats = $derived([
   {
-    label: m.common_card_active_classes(),
-    value: currentYear?.class_count ?? classes.length,
-  },
-  {
-    label: m.academics_overview_kpi_total_subjects(),
-    value: currentYear?.subject_count ?? subjects.length,
+    label: m.common_search_group_classes(),
+    value: sections.length,
   },
   {
     label: m.academics_overview_kpi_total_teachers(),
-    value: currentYear?.teacher_count ?? 0,
-  },
-  {
-    label: m.common_classes_enrolled_students(),
-    value: currentYear?.student_count ?? 0,
+    value: teachersCount,
   },
 ]);
 
 // Navigation directories configuration mapping to active sub-routes
 const directoryItems = $derived([
   {
-    path: `/${orgId}/academics/classes`,
+    path: `/${orgId}/academics/sections`,
     title: m.common_search_group_classes(),
     desc: m.academics_overview_card_classes_desc(),
     icon: BookOpen,
-    badge: m.academics_overview_card_classes_badge({ count: classes.length }),
+    badge: String(sections.length),
   },
   {
     path: `/${orgId}/academics/schedule`,
@@ -180,10 +208,10 @@ const advisorInsights = $derived.by(() => {
   insights.push({
     id: "schedule",
     text:
-      classes.length > 0
+      sections.length > 0
         ? m.academics_overview_insight_schedule_ok()
         : m.academics_overview_insight_schedule_warn(),
-    variant: classes.length > 0 ? ("success" as const) : ("warning" as const),
+    variant: sections.length > 0 ? ("success" as const) : ("warning" as const),
     icon: Calendar,
   });
 

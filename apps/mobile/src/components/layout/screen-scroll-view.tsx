@@ -4,14 +4,13 @@
  * Screen layout with integrated ScrollView, pull-to-refresh, safe areas, and keyboard handling.
  */
 
-import React from "react";
 import {
-  ScrollView,
-  type ScrollViewProps,
-  type ViewStyle,
   RefreshControl,
   type RefreshControlProps,
+  type ScrollViewProps,
+  type ViewStyle,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { Screen, type ScreenProps } from "./screen";
 
 type SpacingScale =
@@ -135,7 +134,7 @@ export function ScreenScrollView({
 
   return (
     <Screen {...screenProps}>
-      <ScrollView
+      <KeyboardAwareScrollView
         className="flex-1"
         contentContainerClassName={contentClasses}
         contentContainerStyle={[dynamicPadding, contentContainerStyle]}
@@ -145,7 +144,7 @@ export function ScreenScrollView({
         {...scrollViewProps}
       >
         {children}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </Screen>
   );
 }

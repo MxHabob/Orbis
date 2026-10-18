@@ -7,6 +7,7 @@ pub mod autopilot_service;
 pub mod bootstrap_service;
 pub mod calculation_engine;
 pub mod calendar_service;
+pub mod calendar_templates;
 pub mod coa_loader;
 pub mod document_service;
 pub mod employee_service;
@@ -37,7 +38,10 @@ pub use bootstrap_service::{
 pub use calculation_engine::{
     AcademicCalculationEngine, AstNode, CalcEngine, WeightedItem, apply_rounding,
 };
-pub use calendar_service::CalendarService;
+pub use calendar_service::{
+    AssessmentSchemeSummaryDto, CalendarDefaultsDto, CalendarService, PeriodSummaryDto,
+    TimeSlotSummaryDto,
+};
 pub use coa_loader::{CoaBlueprintLoader, CoaFile, CoaMetadata, CoaNode};
 pub use document_service::{
     CreateDocumentInput, CreateDocumentRequirementInput, DocumentService,

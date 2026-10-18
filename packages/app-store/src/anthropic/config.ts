@@ -59,13 +59,7 @@ Native tool-use capabilities with rigorous adherence to JSON schemas and complex
       description_ar: "النموذج الافتراضي لتنفيذ العمليات.",
       type: "select",
       required: true,
-      value: "claude-3-7-sonnet-20250219",
-      options: [
-        { label: "Claude 3.7 Sonnet (Latest & Recommended)", value: "claude-3-7-sonnet-20250219" },
-        { label: "Claude 3.5 Sonnet", value: "claude-3-5-sonnet-20241022" },
-        { label: "Claude 3.5 Haiku (Ultra Fast)", value: "claude-3-5-haiku-20241022" },
-        { label: "Claude 3 Opus", value: "claude-3-opus-20240229" },
-      ],
+      value: "",
     },
     {
       id: "endpoint_url",

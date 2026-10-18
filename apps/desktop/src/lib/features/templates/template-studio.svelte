@@ -1,33 +1,34 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import { goto } from "$app/navigation";
 import { api } from "$lib/api/client";
 import type { TemplateDto, UpdateTemplateRequest } from "$lib/api/types";
-import { Button } from "@orbis/ui/button";
-import { toast } from "@orbis/ui";
 import { l } from "$lib/core/i18n";
-import {
-  createDocument,
-  deserializeDocument,
-  serializeDocument,
-  type TemplateDocument,
-} from "@docforge/core";
-import { createEditorStore } from "./stores/editor-store.svelte";
-import {
-  copyNodes,
-  cutNodes,
-  pasteNodes,
-} from "./stores/clipboard-manager";
-import CanvasRoot from "./canvas/canvas-root.svelte";
-import CanvasContextMenu from "./canvas/canvas-context-menu.svelte";
 import * as m from "$lib/paraglide/messages";
-import SideRail from "./layout/side-rail.svelte";
-import FlyoutPanel from "./layout/flyout-panel.svelte";
-import ContextToolbar from "./layout/context-toolbar.svelte";
-import StatusBar from "./layout/status-bar.svelte";
-import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
 import ErrorState from "$lib/shared/components/error-state.svelte";
+import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
+import {
+    createDocument,
+    deserializeDocument,
+    serializeDocument,
+    type TemplateDocument,
+} from "@docforge/core";
+import { toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { onMount } from "svelte";
+import CanvasContextMenu from "./canvas/canvas-context-menu.svelte";
+import CanvasRoot from "./canvas/canvas-root.svelte";
+import ContextToolbar from "./layout/context-toolbar.svelte";
+import FlyoutPanel from "./layout/flyout-panel.svelte";
+import SideRail from "./layout/side-rail.svelte";
+import StatusBar from "./layout/status-bar.svelte";
 import PropertiesInspector from "./panels/properties-inspector.svelte";
+import {
+    copyNodes,
+    cutNodes,
+    pasteNodes,
+} from "./stores/clipboard-manager";
+import { createEditorStore } from "./stores/editor-store.svelte";
+import { registerTemplateAiEditor } from "./template-ai-bridge";
 
 let { orgId, templateId }: { orgId: string; templateId: string } = $props();
 
@@ -36,6 +37,7 @@ let templateRecord = $state<TemplateDto | null>(null);
 let isSaving = $state(false);
 let isPreviewLoading = $state(false);
 let previewPdfUrl = $state<string | null>(null);
+let isPropertiesOpen = $state(false);
 let contextMenuVisible = $state(false);
 let contextMenuX = $state(0);
 let contextMenuY = $state(0);
@@ -60,8 +62,23 @@ let store = createEditorStore({
   pages: [{ type: "Page", id: "page-root", children: [] }],
 });
 
+let propertiesWidth = $state(300);
 let isLoading = $state(true);
 let error = $state<string | null>(null);
+let unregisterTemplateAiEditor: (() => void) | null = null;
+
+$effect(() => {
+  if (store.selectedIds.length > 0) {
+    isPropertiesOpen = true;
+    store.activeRailPanel = null;
+  }
+});
+
+function toggleProperties() {
+  const shouldOpen = !isPropertiesOpen;
+  isPropertiesOpen = shouldOpen;
+  if (shouldOpen) store.activeRailPanel = null;
+}
 
 // Initialize
 async function initEditor() {
@@ -109,116 +126,130 @@ async function initEditor() {
     store.setSystemSchemas({
       student: {
         type: "object",
-        label: "بيانات الطالب",
+        label: m.template_schema_student_group(),
         properties: {
-          name: { type: "string", label: "اسم الطالب الرباعي" },
-          student_number: { type: "string", label: "الرقم الأكاديمي" },
-          national_id: { type: "string", label: "رقم الهوية / الإقامة" },
-          seat_number: { type: "string", label: "رقم الجلوس" },
-          class_name: { type: "string", label: "الصف والشعبة" },
-          grade_level: { type: "string", label: "المرحلة الدراسية" },
-          academic_calendar: { type: "string", label: "العام الدراسي" },
-          birth_date: { type: "string", label: "تاريخ الميلاد" },
-          birth_place: { type: "string", label: "مكان الميلاد" },
-          nationality: { type: "string", label: "الجنسية" },
-          guardian_name: { type: "string", label: "اسم ولي الأمر" },
+          name: { type: "string", label: m.template_schema_student_full_name() },
+          student_number: { type: "string", label: m.template_schema_student_number() },
+          national_id: { type: "string", label: m.template_schema_student_national_id() },
+          seat_number: { type: "string", label: m.template_schema_student_seat_number() },
+          class_name: { type: "string", label: m.template_schema_student_class_section() },
+          grade_level: { type: "string", label: m.template_schema_student_grade_level() },
+          academic_calendar: { type: "string", label: m.template_schema_academic_year() },
+          birth_date: { type: "string", label: m.template_schema_birth_date() },
+          birth_place: { type: "string", label: m.template_schema_birth_place() },
+          nationality: { type: "string", label: m.template_schema_nationality() },
+          guardian_name: { type: "string", label: m.template_schema_guardian_name() },
         },
       },
       academic: {
         type: "object",
-        label: "البيانات الأكاديمية والدرجات",
+        label: m.template_schema_academic_group(),
         properties: {
           subjects: {
             type: "array",
-            label: "جدول المواد والدرجات",
+            label: m.template_schema_subjects_grades_table(),
             items: { type: "object" },
           },
-          annual_total: { type: "number", label: "المجموع السنوي العام" },
-          max_score: { type: "number", label: "النهاية الكبرى العامة" },
-          min_score: { type: "number", label: "النهاية الصغرى العامة" },
-          percentage: { type: "string", label: "المعدل التراكمي / النسبة المئوية" },
-          appreciation: { type: "string", label: "التقدير العام" },
-          status: { type: "string", label: "النتيجة النهائية" },
-          rank_in_class: { type: "string", label: "الترتيب على الصف" },
+          annual_total: { type: "number", label: m.template_schema_annual_total() },
+          max_score: { type: "number", label: m.template_schema_maximum_score() },
+          min_score: { type: "number", label: m.template_schema_minimum_score() },
+          percentage: { type: "string", label: m.template_schema_cumulative_percentage() },
+          appreciation: { type: "string", label: m.template_schema_overall_grade() },
+          status: { type: "string", label: m.template_schema_final_result() },
+          rank_in_class: { type: "string", label: m.template_schema_class_rank() },
         },
       },
       summary: {
         type: "object",
-        label: "ملخص النتيجة والإحصائيات",
+        label: m.template_schema_summary_group(),
         properties: {
-          total_score: { type: "number", label: "مجموع الدرجات المحصلة" },
-          percentage: { type: "string", label: "النسبة المئوية العامة" },
-          status: { type: "string", label: "الحالة والقرار الأكاديمي" },
-          appreciation: { type: "string", label: "التقدير التراكمي" },
-          rank_in_class: { type: "string", label: "الترتيب الأكاديمي" },
+          total_score: { type: "number", label: m.template_schema_total_score() },
+          percentage: { type: "string", label: m.template_schema_overall_percentage() },
+          status: { type: "string", label: m.template_schema_academic_status_decision() },
+          appreciation: { type: "string", label: m.template_schema_cumulative_grade() },
+          rank_in_class: { type: "string", label: m.template_schema_academic_rank() },
         },
       },
       report: {
         type: "object",
-        label: "بيانات التقرير والاعتماد",
+        label: m.template_schema_report_group(),
         properties: {
-          period_name: { type: "string", label: "فترة التقرير / الفصل الدراسي" },
-          academic_calendar: { type: "string", label: "العام الدراسي" },
-          issued_date: { type: "string", label: "تاريخ الإصدار والطباعة" },
-          principal_name: { type: "string", label: "مدير المدرسة" },
-          class_teacher: { type: "string", label: "مربي الصف" },
-          verification_url: { type: "string", label: "رابط التحقق الرقمي QR" },
+          period_name: { type: "string", label: m.template_schema_report_period() },
+          academic_calendar: { type: "string", label: m.template_schema_academic_year() },
+          issued_date: { type: "string", label: m.template_schema_issued_date() },
+          principal_name: { type: "string", label: m.template_schema_principal_name() },
+          class_teacher: { type: "string", label: m.template_schema_class_teacher() },
+          verification_url: { type: "string", label: m.template_schema_verification_qr() },
         },
       },
       exam: {
         type: "object",
-        label: "بيانات الامتحانات واللجان",
+        label: m.template_schema_exam_group(),
         properties: {
-          session_name: { type: "string", label: "اسم الدورة الاختبارية" },
-          hall_name: { type: "string", label: "قاعة الاختبار / مقر اللجنة" },
-          seating_number: { type: "string", label: "رقم الجلوس الرسمي" },
-          desk_number: { type: "string", label: "رقم المقعد" },
-          subject_name: { type: "string", label: "المادة الدراسية" },
-          exam_date: { type: "string", label: "تاريخ ووقت الاختبار" },
-          total_count: { type: "string", label: "إجمالي الطلاب باللجنة" },
+          session_name: { type: "string", label: m.template_schema_exam_session_name() },
+          hall_name: { type: "string", label: m.template_schema_exam_hall() },
+          seating_number: { type: "string", label: m.template_schema_official_seat_number() },
+          desk_number: { type: "string", label: m.template_schema_desk_number() },
+          subject_name: { type: "string", label: m.template_schema_subject_name() },
+          exam_date: { type: "string", label: m.template_schema_exam_date_time() },
+          total_count: { type: "string", label: m.template_schema_committee_student_count() },
         },
       },
       employee: {
         type: "object",
-        label: "بيانات الموظف والكادر",
+        label: m.template_schema_employee_group(),
         properties: {
-          name: { type: "string", label: "اسم الموظف" },
-          job_title: { type: "string", label: "المسمى الوظيفي" },
-          employee_number: { type: "string", label: "الرقم الوظيفي" },
-          department: { type: "string", label: "القسم / الإدارة" },
+          name: { type: "string", label: m.template_schema_employee_name() },
+          job_title: { type: "string", label: m.template_schema_job_title() },
+          employee_number: { type: "string", label: m.template_schema_employee_number() },
+          department: { type: "string", label: m.template_schema_department() },
         },
       },
       receipt: {
         type: "object",
-        label: "بيانات السندات المالية",
+        label: m.template_schema_receipt_group(),
         properties: {
-          number: { type: "string", label: "رقم السند" },
-          date: { type: "string", label: "تاريخ السند" },
-          payer_name: { type: "string", label: "اسم الدافع / المستلم منه" },
-          student_name: { type: "string", label: "اسم الطالب" },
-          amount: { type: "number", label: "المبلغ رقماً" },
-          amount_words: { type: "string", label: "المبلغ كتابة" },
-          description: { type: "string", label: "البيان" },
-          payment_method: { type: "string", label: "طريقة الدفع" },
-          cashier_name: { type: "string", label: "أمين الصندوق" },
+          number: { type: "string", label: m.template_schema_receipt_number() },
+          date: { type: "string", label: m.template_schema_receipt_date() },
+          payer_name: { type: "string", label: m.template_schema_payer_recipient() },
+          student_name: { type: "string", label: m.template_schema_student_name() },
+          amount: { type: "number", label: m.template_schema_amount_numeric() },
+          amount_words: { type: "string", label: m.template_schema_amount_words() },
+          description: { type: "string", label: m.template_schema_description() },
+          payment_method: { type: "string", label: m.template_schema_payment_method() },
+          cashier_name: { type: "string", label: m.template_schema_cashier_name() },
+        },
+      },
+      org: {
+        type: "object",
+        label: m.template_schema_organization_group(),
+        properties: {
+          country_name: { type: "string", label: m.template_schema_country_name() },
+          ministry_name: { type: "string", label: m.template_schema_ministry_name() },
+          region_name: { type: "string", label: m.template_schema_region_name() },
+          name_ar: { type: "string", label: m.template_schema_organization_name_ar() },
+          name: { type: "string", label: m.template_schema_organization_name_en() },
+          logo_url: { type: "string", label: m.template_schema_organization_logo() },
+          emblem_url: { type: "string", label: m.template_schema_ministry_emblem() },
         },
       },
       $org: {
         type: "object",
-        label: "بيانات المنشأة والوزارة",
+        label: m.template_schema_organization_group(),
         properties: {
-          country_name: { type: "string", label: "اسم الدولة" },
-          ministry_name: { type: "string", label: "اسم الوزارة" },
-          region_name: { type: "string", label: "المكتب / المحافظة / المديرية" },
-          name_ar: { type: "string", label: "اسم المنشأة التعليمية (عربي)" },
-          name: { type: "string", label: "اسم المنشأة التعليمية (English)" },
-          logo_url: { type: "string", label: "شعار المنشأة" },
-          emblem_url: { type: "string", label: "شعار الوزارة أو الجمهورية" },
+          country_name: { type: "string", label: m.template_schema_country_name() },
+          ministry_name: { type: "string", label: m.template_schema_ministry_name() },
+          region_name: { type: "string", label: m.template_schema_region_name() },
+          name_ar: { type: "string", label: m.template_schema_organization_name_ar() },
+          name: { type: "string", label: m.template_schema_organization_name_en() },
+          logo_url: { type: "string", label: m.template_schema_organization_logo() },
+          emblem_url: { type: "string", label: m.template_schema_ministry_emblem() },
         },
       },
     });
 
     store.loadDocument(doc);
+    unregisterTemplateAiEditor = registerTemplateAiEditor(store);
     isLoading = false;
   } catch (e: unknown) {
     const msg = (e as any)?.message || m.shared_ui_template_editor_initialize_failed();
@@ -308,8 +339,14 @@ async function generatePreview() {
       {},
       templateRecord?.locale ?? "ar",
     );
+    const isPdf =
+      pdfBytes.length >= 4 &&
+      pdfBytes[0] === 0x25 &&
+      pdfBytes[1] === 0x50 &&
+      pdfBytes[2] === 0x44 &&
+      pdfBytes[3] === 0x46;
     const blob = new Blob([pdfBytes as unknown as BlobPart], {
-      type: "application/pdf",
+      type: isPdf ? "application/pdf" : "text/html;charset=utf-8",
     });
     if (previewPdfUrl) URL.revokeObjectURL(previewPdfUrl);
     previewPdfUrl = URL.createObjectURL(blob);
@@ -431,6 +468,7 @@ onMount(() => {
   window.addEventListener("keydown", handleKeydown);
   return () => {
     window.removeEventListener("keydown", handleKeydown);
+    unregisterTemplateAiEditor?.();
     store.destroy();
   };
 });
@@ -449,11 +487,13 @@ onMount(() => {
     </div>
   {:else}
     <div class="editor-main">
-      <SideRail {store} />
+      <SideRail {store} onopen={() => isPropertiesOpen = false} />
 
       <div class="canvas-area">
         <ContextToolbar
           {store}
+          isPropertiesVisible={isPropertiesOpen}
+          ontoggleproperties={toggleProperties}
           templateName={templateRecord ? l(templateRecord.name_ar, templateRecord.name) : "..."}
           onback={goBack}
           onsave={saveTemplate}
@@ -474,11 +514,14 @@ onMount(() => {
           <CanvasRoot {store} />
         {/if}
 
-        <FlyoutPanel {store} />
+        <FlyoutPanel {store} {orgId} />
       </div>
-
-      {#if store.editorMode === "design"}
-        <PropertiesInspector {store} />
+      {#if store.editorMode === "design" && isPropertiesOpen}
+        <PropertiesInspector
+          {store}
+          bind:width={propertiesWidth}
+          onclose={() => isPropertiesOpen = false}
+        />
       {/if}
     </div>
     <StatusBar {store} />
@@ -499,7 +542,7 @@ onMount(() => {
     width: 100%;
     display: flex;
     flex-direction: column;
-    background: var(--color-background);
+    background: var(--color-muted);
     overflow: hidden;
   }
 
@@ -508,13 +551,18 @@ onMount(() => {
     display: flex;
     overflow: hidden;
     position: relative;
+    min-width: 0;
+    min-height: 0;
+    background: var(--color-muted);
   }
 
   .canvas-area {
-    flex-grow: 1;
+    flex: 1 1 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     position: relative;
+    min-width: 0;
+    background: var(--color-muted);
   }
 </style>

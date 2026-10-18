@@ -16,6 +16,7 @@
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env"],
       "dependsOn": ["^build"],
+      "env": ["EXPO_PUBLIC_MULVERSE_API_URL"],
       "outputs": [
         ".next/**",
         "!.next/cache/**",
@@ -54,7 +55,10 @@
         "MAX_REQUEST_BYTES",
         "TAURI_DEV_HOST",
         "VITE_API_URL",
-        "EXPO_PUBLIC_API_URL"
+        "EXPO_PUBLIC_API_URL",
+        "MULVERSE_API_URL",
+        "MULVERSE_ORBIS_ENCRYPTION_KEY",
+        "EXPO_PUBLIC_MULVERSE_API_URL"
       ],
       "passThroughEnv": [
         "DATABASE_URL",

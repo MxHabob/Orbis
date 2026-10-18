@@ -10,159 +10,34 @@ import { Input } from "@orbis/ui/input";
 import { ArrowForward, ArrowUpTray, BookOpen, DocumentChartBar, Plus, Printer, Search, XMark } from "@orbis/icons";
 import { fly } from "svelte/transition";
 import { quintOut } from "svelte/easing";
-import { studentsStore } from "$lib/features/students";
-import { createClassesQuery } from "$lib/features/academics";
 import { academicContext } from "$lib/stores";
 import StudentsTableSkeleton from "$lib/shared/skeletons/students-table-skeleton.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import StudentTable from "$lib/features/students/student-table.svelte";
-import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
 import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
-import { api, queryKeys } from "$lib/api";
-import type { StudentDetailDto } from "$lib/api/types";
-
 import { localizeHref } from "$lib/paraglide/runtime";
-import { formatNumber, formatDate, l } from "$lib/core/i18n";
-import { extractErrorMessage } from "$lib/api";
-import { debounce } from "$lib/shared/utils/debounce";
-import { exportToCsv } from "$lib/shared/utils/export";
+import { formatNumber, l } from "$lib/core/i18n";
+import { createStudentDirectoryQuery } from "$lib/features/students";
 
 let { orgId }: { orgId: string } = $props();
-
-// TanStack Queries
-const studentFilter = $derived({
-  class_id: studentsStore.selectedClassId ?? undefined,
-  status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
-  search: studentsStore.searchQuery.trim() || undefined,
-});
-const studentsQuery = createInfiniteQuery(() => ({
-  queryKey: queryKeys.student.list(orgId, studentFilter as Record<string, unknown>),
-  queryFn: ({ pageParam }) =>
-    api.listStudents({ ...studentFilter, page: pageParam, page_size: 50 }),
-  initialPageParam: 1,
-  getNextPageParam: (lastPage) =>
-    lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
-  enabled: !!orgId,
-  staleTime: 2 * 60 * 1000,
-}));
-const classesQuery = createClassesQuery(() => orgId);
-
-// Derived data from queries
+const directory = createStudentDirectoryQuery(() => orgId);
 const students = $derived(
-  studentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
+  directory.studentsQuery.data?.pages.flatMap((page) => page.items) ?? [],
 );
-const classes = $derived<any[]>(
-  Array.isArray(classesQuery.data)
-    ? classesQuery.data
-    : (classesQuery.data as any)?.items ?? [],
-);
-const filteredStudents = $derived(students);
-
-async function loadMoreStudents() {
-  const result = await studentsQuery.fetchNextPage();
-  if (result.isError) throw result.error;
-}
+const classes = $derived(directory.classesQuery.data ?? []);
 
 let showOverrideDialog = $state(false);
-const isLoading = $derived(
-  studentsQuery.isLoading || classesQuery.isLoading,
-);
-const error = $derived(
-  (studentsQuery.data?.pages.length ? undefined : studentsQuery.error) ||
-    classesQuery.error,
-);
 
 // Local search input with debounce
 let localSearch = $state("");
-const updateSearch = debounce((q: string) => {
-  studentsStore.searchQuery = q;
-}, 150);
-
-function setStatusFilter(status: string) {
-  studentsStore.statusFilter = status;
-}
-
-function setClassFilter(classId: string | null) {
-  studentsStore.selectedClassId = classId;
-}
-
-// Clear active filters
-function clearFilters() {
-  studentsStore.selectedClassId = null;
-  studentsStore.statusFilter = "active";
-  studentsStore.searchQuery = "";
-}
-
-const hasActiveFilters = $derived(
-  studentsStore.selectedClassId !== null ||
-    studentsStore.statusFilter !== "active" ||
-    studentsStore.searchQuery !== "",
-);
 
 let printDialogOpen = $state(false);
 let selectedStudentIds = $state<Set<string>>(new Set());
-
-async function handleExportStudents() {
-  try {
-    let dataset: StudentDetailDto[];
-    if (selectedStudentIds.size > 0) {
-      dataset = await Promise.all(
-        [...selectedStudentIds].map((id) => api.getStudent(id)),
-      );
-    } else {
-      const filter = {
-        class_id: studentsStore.selectedClassId ?? undefined,
-        status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
-        search: studentsStore.searchQuery.trim() || undefined,
-        page_size: 100,
-      };
-      const firstPage = await api.listStudents({ ...filter, page: 1 });
-      dataset = [...firstPage.items];
-      for (let page = 2; page <= firstPage.total_pages; page += 1) {
-        const nextPage = await api.listStudents({ ...filter, page });
-        dataset.push(...nextPage.items);
-      }
-    }
-
-    exportToCsv(
-      `Students_Roster_${orgId}`,
-      dataset,
-      [
-        { header: m.operations_ui_student_number(), accessor: (s) => s.student?.student_number || "—" },
-        {
-          header: m.operations_ui_student_name(),
-          accessor: (s) =>
-            (s.person?.first_name && s.person?.last_name
-              ? `${s.person.first_name} ${s.person.last_name}`
-              : "") ||
-            s.person?.full_name ||
-            m.operations_ui_student_fallback(),
-        },
-        {
-          header: m.operations_ui_class(),
-          accessor: (s) =>
-            classes.find((c) => c.id === s.enrollment?.class_id)?.name ||
-            s.enrollment?.class_id ||
-            "—",
-        },
-        { header: m.operations_ui_status(), accessor: (s) => s.student?.status || "active" },
-        {
-          header: m.operations_ui_admission_date(),
-          accessor: (s) =>
-            s.student?.admitted_at ? formatDate(s.student.admitted_at, "date") : "—",
-        },
-      ],
-    );
-    toast.success(m.operations_ui_student_export_success());
-  } catch (error) {
-    toast.error(extractErrorMessage(error));
-  }
-}
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">
@@ -180,18 +55,23 @@ async function handleExportStudents() {
             items: [
               {
                 label: m.common_filter_all(),
-                isActive: studentsStore.statusFilter === 'all',
-                onclick: () => setStatusFilter('all')
+                isActive: directory.statusFilter === 'all',
+                onclick: () => directory.setStatusFilter('all')
               },
               {
                 label: m.common_filter_active(),
-                isActive: studentsStore.statusFilter === 'active',
-                onclick: () => setStatusFilter('active')
+                isActive: directory.statusFilter === 'active',
+                onclick: () => directory.setStatusFilter('active')
+              },
+              {
+                label: m.operations_ui_inactive(),
+                isActive: directory.statusFilter === 'inactive',
+                onclick: () => directory.setStatusFilter('inactive')
               },
               {
                 label: m.common_filter_withdrawn(),
-                isActive: studentsStore.statusFilter === 'withdrawn',
-                onclick: () => setStatusFilter('withdrawn')
+                isActive: directory.statusFilter === 'withdrawn',
+                onclick: () => directory.setStatusFilter('withdrawn')
               }
             ]
           },
@@ -200,14 +80,14 @@ async function handleExportStudents() {
             items: [
               {
                 label: m.common_filter_all_classes(),
-                isActive: studentsStore.selectedClassId === null,
-                onclick: () => setClassFilter(null)
+                isActive: directory.selectedClassId === null,
+                onclick: () => directory.setClassFilter(null)
               },
               ...classes.map(c => ({
                 key: String(c.id),
                 label: String(l(c.name_ar, c.name) || c.name || c.id),
-                isActive: studentsStore.selectedClassId === c.id,
-                onclick: () => setClassFilter(String(c.id))
+                isActive: directory.selectedClassId === c.id,
+                onclick: () => directory.setClassFilter(String(c.id))
               }))
             ]
           }
@@ -216,8 +96,8 @@ async function handleExportStudents() {
           {
             label: m.common_filter_clear(),
             icon: XMark,
-            onclick: clearFilters,
-            disabled: !hasActiveFilters
+            onclick: directory.clearFilters,
+            disabled: !directory.hasActiveFilters
           }
         ]}
       />
@@ -234,7 +114,7 @@ async function handleExportStudents() {
               placeholder={m.students_search_placeholder()}
               class="input-sunken ps-9 text-xs py-2"
               bind:value={localSearch}
-              oninput={() => updateSearch(localSearch)}
+              oninput={() => directory.updateSearch(localSearch)}
             />
           </div>
 
@@ -251,7 +131,7 @@ async function handleExportStudents() {
                   id: "export",
                   label: m.common_export(),
                   icon: DocumentChartBar,
-                  onSelect: handleExportStudents,
+                  onSelect: () => directory.exportStudents(selectedStudentIds),
                 },
               ]}
             />
@@ -259,7 +139,7 @@ async function handleExportStudents() {
               <PeriodGateAction
                 gateType="enrollment"
                 periodId={academicContext.effectivePeriodId}
-                classId={studentsStore.selectedClassId ?? undefined}
+                classId={directory.selectedClassId ?? undefined}
                 label={m.common_new()}
                 size="lg"
                 onAction={() => goto(localizeHref(`/${orgId}/students/new`))}
@@ -281,21 +161,21 @@ async function handleExportStudents() {
 
         <!-- Student Grid -->
         <div class="flex-1 min-h-0 flex flex-col">
-          {#if isLoading}
+          {#if directory.studentsQuery.isLoading || directory.classesQuery.isLoading}
             <StudentsTableSkeleton />
-          {:else if error}
+          {:else if directory.error}
             <div class="h-full w-full flex flex-col items-center justify-center p-6 text-center gap-3 bg-card border border-border rounded-lg">
-              <p class="text-xs text-destructive font-semibold">{m.students_load_error({ error: extractErrorMessage(error) })}</p>
-              <Button variant="outline" class="text-xs" onclick={() => { studentsQuery.refetch(); classesQuery.refetch(); }}>{m.common_retry()}</Button>
+              <p class="text-xs text-destructive font-semibold">{directory.errorMessage}</p>
+              <Button variant="outline" class="text-xs" onclick={directory.retry}>{m.common_retry()}</Button>
             </div>
           {:else}
             <StudentTable
-              students={filteredStudents}
-              classes={classes}
+              {students}
+              {classes}
               enableSelection={true}
               bind:selectedIds={selectedStudentIds}
-              hasMore={studentsQuery.hasNextPage ?? false}
-              onloadmore={loadMoreStudents}
+              hasMore={directory.hasMore}
+              onloadmore={directory.loadMoreStudents}
               {orgId}
             />
           {/if}
@@ -385,7 +265,7 @@ async function handleExportStudents() {
     {orgId}
     overrideType="late_enrollment"
     entityType="enrollment"
-    entityId={studentsStore.selectedClassId ?? ""}
+    entityId={directory.selectedClassId ?? ""}
     riskLevel="medium"
     onSuccess={() => { toast.success(m.common_override_submitted()); }}
   />

@@ -115,7 +115,9 @@ let { state }: { state: StudentFormState } = $props();
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground flex items-center gap-1">
                 {m.common_word_fullname()}
-                <span class="text-destructive">*</span>
+                {#if !state.admissionPolicy.allowNoGuardian}
+                  <span class="text-destructive">*</span>
+                {/if}
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_fullname_desc()}</span>
             </div>
@@ -129,7 +131,6 @@ let { state }: { state: StudentFormState } = $props();
             <div class="flex flex-col gap-1 text-start">
               <Label class="text-xs font-semibold text-foreground flex items-center gap-1">
                 {m.common_word_phone()}
-                <span class="text-destructive">*</span>
               </Label>
               <span class="text-[11px] text-muted-foreground leading-relaxed">{m.common_form_guardian_phone_desc()}</span>
             </div>

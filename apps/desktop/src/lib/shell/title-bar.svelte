@@ -1,22 +1,53 @@
 <script lang="ts">
   import { isDesktopApp } from "$lib/api";
+  import { api } from "$lib/api/client";
   import { goto } from "$app/navigation";
+  import { resolve } from "$app/paths";
+  import { page } from "$app/state";
   import * as m from "$lib/paraglide/messages";
   import { localizeHref } from "$lib/paraglide/runtime";
   import { authStore, themeStore, uiStore, workflowInbox } from "$lib/stores";
-  import { Bell, Maximize, Minus, Moon, Restore, Search, Sun, XMark } from "@orbis/icons";
+  import {
+    ArrowsPointingOut,
+    Bell,
+    Maximize,
+    Minus,
+    Moon,
+    Restore,
+    Search,
+    Sun,
+    XMark,
+  } from "@orbis/icons";
   import { Button } from "@orbis/ui/button";
+  import { toast } from "@orbis/ui";
   import { Kbd } from "@orbis/ui/kbd";
   import { Logo } from "@orbis/icons";
   import { onMount } from "svelte";
   import TitleBreadcrumbs from "./title-breadcrumbs.svelte";
   import WhatsNewPopover from "./whats-new-popover.svelte";
+  import {
+    isStandaloneWindow,
+    STANDALONE_WINDOW_PARAM,
+  } from "./window-mode";
 
+  const standaloneWindow = $derived(isStandaloneWindow(page.url));
   // Window states
   let appWindow = $state<any>(null);
   let isMaximized = $state(false);
   let isMac = $state(false);
   let isOnline = $state(true);
+
+  async function openCurrentPageInWindow() {
+    const url = new URL(window.location.href);
+    url.searchParams.set(STANDALONE_WINDOW_PARAM, "1");
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    try {
+      await api.openStandaloneWindow(path);
+    } catch (error) {
+      console.error("Failed to open the current page in a separate window:", error);
+      toast.error(m.common_titlebar_standalone_window_failed());
+    }
+  }
 
   onMount(() => {
     isOnline = navigator.onLine;
@@ -108,7 +139,7 @@
 
   <!-- End Side: Header Buttons, Sync Indicator, Theme, Focus Mode, Window Controls -->
   <div class="flex items-center gap-1.5 shrink-0" data-tauri-drag-region>
-    {#if authStore.isAuthenticated}
+    {#if authStore.isAuthenticated && !standaloneWindow}
       <Button
         variant="outline"
         size="default"
@@ -160,7 +191,7 @@
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId)
-              void goto(localizeHref(`/${orgId}/settings/approvals`));
+              void goto(resolve(localizeHref(`/${orgId}/settings/approvals`)));
           }}
         >
           <Bell size={14} class="stroke-[2px]" />
@@ -178,7 +209,7 @@
           onclick={() => {
             const orgId = authStore.orgId;
             if (orgId)
-              void goto(localizeHref(`/${orgId}/settings/approvals`));
+              void goto(resolve(localizeHref(`/${orgId}/settings/approvals`)));
           }}
         >
           <Bell size={14} class="stroke-[2px] text-muted-foreground" />
@@ -187,6 +218,18 @@
 
       <!-- What's New AppNotification (Original Header Design) -->
       <WhatsNewPopover />
+
+      {#if isDesktopApp}
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onclick={openCurrentPageInWindow}
+          title={m.common_titlebar_standalone_window()}
+          aria-label={m.common_titlebar_standalone_window()}
+        >
+          <ArrowsPointingOut size={14} class="text-muted-foreground" />
+        </Button>
+      {/if}
     {/if}
 
     <!-- Theme Toggle -->
@@ -205,7 +248,7 @@
     </Button>
 
     <!-- Focus Mode Toggle -->
-    {#if authStore.isAuthenticated}
+    {#if authStore.isAuthenticated && !standaloneWindow}
       <Button
         variant={uiStore.focusMode ? "default" : "outline"}
         size="default"

@@ -31,7 +31,6 @@ export { default as ScheduleMatrix } from "./components/schedule-matrix.svelte";
 export { default as LessonSheet } from "./components/lesson-sheet.svelte";
 export { default as TimeSlotSheet } from "./components/time-slot-sheet.svelte";
 export { default as SolverDrawer } from "./components/solver-drawer.svelte";
-export { default as ScheduleExportDialog } from "./components/schedule-export-dialog.svelte";
 export { default as ScheduleGeneratorStudio } from "./components/schedule-generator-studio.svelte";
 export { default as ClassCreateSheet } from "./components/class-create-sheet.svelte";
 export { default as ClassForm } from "./components/class-form.svelte";
@@ -50,3 +49,12 @@ export { default as AssessmentForm } from "./components/assessment-form.svelte";
 export { default as TimeSlotForm } from "./components/time-slot-form.svelte";
 export { default as TimeSlotManager } from "./components/time-slot-manager.svelte";
 
+
+// Section aliases aligned with unified domain model
+export { default as SectionsDirectory } from "./classes-directory.svelte";
+export { default as SectionDetails } from "./class-details.svelte";
+export { default as SectionStudents } from "./class-students.svelte";
+export { default as SectionCurriculum } from "./class-curriculum.svelte";
+export { default as SectionSelect } from "./components/class-select.svelte";
+export { default as SectionCreateSheet } from "./components/class-create-sheet.svelte";
+export { default as SectionForm } from "./components/class-form.svelte";

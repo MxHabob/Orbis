@@ -3,6 +3,10 @@
 import { page } from "$app/state";
 
 class UIStore {
+  private aiProviderModels = $state<
+    Record<string, { provider: string; model: string }>
+  >({});
+
   globalLoading = $state(false);
   _showAskOrbis = $state(false);
   showUpgradeDialog = $state(false);
@@ -60,6 +64,25 @@ class UIStore {
   setSystemClock(show: boolean) {
     this.showSystemClock = show;
     localStorage.setItem("orbis_clock_open", String(show));
+  }
+
+  getAiProviderModel(orgId: string): { provider: string; model: string } {
+    const key = encodeURIComponent(orgId);
+    const preferences = this.aiProviderModels[key];
+    if (preferences) return preferences;
+
+    return {
+      provider: localStorage.getItem(`orbis_ai_provider_${key}`) ?? "",
+      model: localStorage.getItem(`orbis_ai_model_${key}`) ?? "",
+    };
+  }
+
+  setAiProviderModel(orgId: string, provider: string, model: string) {
+    if (!orgId) return;
+    const key = encodeURIComponent(orgId);
+    this.aiProviderModels[key] = { provider, model };
+    localStorage.setItem(`orbis_ai_provider_${key}`, provider);
+    localStorage.setItem(`orbis_ai_model_${key}`, model);
   }
 }
 

@@ -6,6 +6,7 @@
  */
 
 import { api } from "$lib/api/client";
+import { configureApiClient } from "$lib/api";
 import type {
   DatabaseStatusDto,
   ConnectionConfig,
@@ -90,6 +91,7 @@ export class DatabaseManagerController {
 
   async saveConnectionConfig(params: {
     mode: ConnectionMode;
+    databaseEngine?: "postgres";
     serverUrl?: string;
     dbFilename?: string;
     customPath?: string;
@@ -108,7 +110,13 @@ export class DatabaseManagerController {
     this.operationSuccess = null;
 
     try {
+      configureApiClient("local");
       this.config = await api.connectionSetConfig(params);
+      if (params.mode === "api") {
+        configureApiClient("api", params.serverUrl);
+      } else {
+        configureApiClient("local");
+      }
       await api.connectionConnect();
       this.operationSuccess = "Connection configuration updated and connected successfully.";
       await this.refresh();
@@ -136,7 +144,9 @@ export class DatabaseManagerController {
     this.operationError = null;
 
     try {
+      configureApiClient("local");
       this.config = await api.connectionReset();
+      configureApiClient("local");
       await api.connectionConnect();
       this.operationSuccess = "Connection reset to default local database.";
       await this.refresh();

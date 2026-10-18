@@ -8,6 +8,7 @@ import {
   type StudentDetailDto,
   type ClassDto,
   type TemplateDto,
+  type OrganizationSettingsDto,
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 
@@ -33,6 +34,30 @@ import { DocumentInfoState } from "./state/document-info.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { parseRegistrationFieldPolicies } from "./registration-fields";
+
+interface AdmissionPolicyState {
+  registrationEnabled: boolean;
+  requiresApproval: boolean;
+  allowWaitlist: boolean;
+  allowNoGuardian: boolean;
+  allowDuplicateNationalId: boolean;
+  autoAssignFees: boolean;
+  allowLateEnrollment: boolean;
+  siblingPriorityEnabled: boolean;
+  maxClassCapacity: number;
+}
+
+const defaultAdmissionPolicy: AdmissionPolicyState = {
+  registrationEnabled: true,
+  requiresApproval: true,
+  allowWaitlist: true,
+  allowNoGuardian: false,
+  allowDuplicateNationalId: false,
+  autoAssignFees: true,
+  allowLateEnrollment: false,
+  siblingPriorityEnabled: true,
+  maxClassCapacity: 30,
+};
 
 export class StudentFormState {
   orgId: string;
@@ -92,6 +117,9 @@ export class StudentFormState {
   });
   registrationStatus = $state("draft");
   createLoginAccount = $state(false);
+  admissionPolicy = $state<AdmissionPolicyState>({ ...defaultAdmissionPolicy });
+  isInitializing = $state(false);
+  initializationFailed = $state(false);
 
   // Warnings for duplicate values
   duplicateWarnings = $state<{
@@ -146,42 +174,30 @@ export class StudentFormState {
   }
 
   async init() {
+    this.isInitializing = true;
+    this.initializationFailed = false;
     try {
-      const [org, classRes] = await Promise.all([
-        api.getCurrentOrg().catch(() => null),
-        api.listClasses().catch(() => []),
+      const [org, settings] = await Promise.all([
+        api.getCurrentOrg(),
+        api.getSettings(),
         this.financial.init(),
         this.document.loadRequirements(),
       ]);
-
-      if (classRes && Array.isArray(classRes)) {
-        this.classes = classRes;
+      this.orgName = String(org.name || org.name_ar || "");
+      const baseCurr = org.base_currency_code || orgContext.baseCurrency;
+      if (baseCurr) {
+        this.currency = baseCurr;
       }
 
-      if (org) {
-        this.orgName = String(org.name || org.name_ar || "");
-        const baseCurr = org.base_currency_code || orgContext.baseCurrency;
-        if (baseCurr) {
-          this.currency = baseCurr;
-        }
-
-        // Parse organization registration configuration
-        const policies = parseRegistrationFieldPolicies(org.settings);
-        for (const [key, policy] of Object.entries(policies)) {
-          this.activeFields[key] = policy.active;
-          this.requiredFields[key] = policy.active && policy.required;
-          this.preventDuplicates[key] = policy.active && policy.preventDuplicate;
-        }
-
-        const settingsObj = typeof org.settings === "string"
-          ? JSON.parse(org.settings || "{}")
-          : (org.settings as Record<string, any>) || {};
-        const reg = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
-        const reqDocs = (reg.required_documents_list || reg.requiredDocumentsList) as Array<{ nameAr?: string; nameEn?: string; name?: string }> | undefined;
-        if (reqDocs && Array.isArray(reqDocs)) {
-          this.document.setRequiredDocuments(reqDocs.map((d) => d.nameAr || d.nameEn || d.name || ""));
-        }
+      const policies = parseRegistrationFieldPolicies(settings);
+      for (const [key, policy] of Object.entries(policies)) {
+        this.activeFields[key] = policy.active;
+        this.requiredFields[key] = policy.active && policy.required;
+        this.preventDuplicates[key] = policy.active && policy.preventDuplicate;
       }
+
+      this.admissionPolicy = this.parseAdmissionPolicy(settings);
+      this.document.setRequiredDocuments(this.getConfiguredRequiredDocuments(org.settings));
 
       // Load document templates for printing
       try {
@@ -216,13 +232,73 @@ export class StudentFormState {
         }
       }
     } catch (e: unknown) {
+      this.initializationFailed = true;
       console.error("Failed to initialize student form state:", e);
       toast.error(
         m.common_form_initialization_error({
           error: extractErrorMessage(e),
         }),
       );
+    } finally {
+      this.isInitializing = false;
     }
+  }
+
+  private parseAdmissionPolicy(settings: OrganizationSettingsDto): AdmissionPolicyState {
+    const admissionPolicy = settings.admission?.policy;
+    const enrollment = settings.enrollment;
+    return {
+      registrationEnabled: enrollment?.registration_enabled ?? defaultAdmissionPolicy.registrationEnabled,
+      requiresApproval: enrollment?.require_admin_approval
+        ?? admissionPolicy?.requires_approval
+        ?? defaultAdmissionPolicy.requiresApproval,
+      allowWaitlist: enrollment?.allow_waitlist
+        ?? admissionPolicy?.allow_waitlist
+        ?? defaultAdmissionPolicy.allowWaitlist,
+      allowNoGuardian: admissionPolicy?.allow_no_guardian
+        ?? defaultAdmissionPolicy.allowNoGuardian,
+      allowDuplicateNationalId: admissionPolicy?.allow_duplicate_national_id
+        ?? defaultAdmissionPolicy.allowDuplicateNationalId,
+      autoAssignFees: admissionPolicy?.auto_assign_fees
+        ?? defaultAdmissionPolicy.autoAssignFees,
+      allowLateEnrollment: enrollment?.allow_late_enrollment
+        ?? admissionPolicy?.allow_late_enrollment
+        ?? defaultAdmissionPolicy.allowLateEnrollment,
+      siblingPriorityEnabled: enrollment?.sibling_priority_enabled
+        ?? admissionPolicy?.sibling_priority_enabled
+        ?? defaultAdmissionPolicy.siblingPriorityEnabled,
+      maxClassCapacity: enrollment?.max_class_size_default
+        ?? admissionPolicy?.max_class_capacity
+        ?? defaultAdmissionPolicy.maxClassCapacity,
+    };
+  }
+
+  private getConfiguredRequiredDocuments(settings: unknown): string[] {
+    let settingsObject: Record<string, unknown> = {};
+    try {
+      settingsObject = typeof settings === "string"
+        ? JSON.parse(settings) as Record<string, unknown>
+        : (settings as Record<string, unknown>) ?? {};
+    } catch (error) {
+      console.error("Failed to parse organization document requirements:", error);
+      return [];
+    }
+
+    const admission = (settingsObject.admission
+      ?? settingsObject.registration
+      ?? settingsObject.registration_config) as Record<string, unknown> | undefined;
+    const requirements = admission?.required_documents_list
+      ?? admission?.requiredDocumentsList;
+    if (!Array.isArray(requirements)) return [];
+
+    return requirements
+      .map((item: unknown) => {
+        if (typeof item === "string") return item;
+        if (!item || typeof item !== "object") return "";
+        const document = item as Record<string, unknown>;
+        return String(document.nameAr ?? document.nameEn ?? document.name ?? "");
+      })
+      .filter(Boolean);
   }
 
   // Live debounced duplicate check triggers using authoritative backend API
@@ -375,13 +451,17 @@ export class StudentFormState {
   }
 
   // Save operation
-  async handleSave(queryClient?: QueryClient) {
+  async handleSave(queryClient?: QueryClient, saveAsDraft = false) {
+    const isCompletingDraft =
+      this.isEditMode
+      && this.originalStudent?.student?.status === "inactive"
+      && !saveAsDraft;
     const displayName = (this.personal.nameAr || this.personal.nameEn || "").trim();
     if (!displayName) {
       toast.error(m.common_form_error_name_required());
       return;
     }
-    if (!this.personal.classId) {
+    if (!saveAsDraft && !this.personal.classId) {
       toast.error(m.common_form_error_class_required());
       return;
     }
@@ -403,6 +483,8 @@ export class StudentFormState {
     };
     requiredValues.sex = this.activeFields.sex ? this.personal.sex : "";
     if (
+      !saveAsDraft
+      &&
       Object.entries(this.requiredFields).some(
         ([key, required]) => required && !String(requiredValues[key] ?? "").trim(),
       )
@@ -411,11 +493,60 @@ export class StudentFormState {
       return;
     }
 
+    const primaryGuardian =
+      this.guardian.linkedGuardians.find((guardian) => guardian.is_primary)
+      ?? this.guardian.linkedGuardians[0];
+    if (
+      (!this.isEditMode || isCompletingDraft)
+      && !saveAsDraft
+      && !this.admissionPolicy.allowNoGuardian
+      && !primaryGuardian?.full_name.trim()
+    ) {
+      toast.error(m.common_form_error_required_fields());
+      return;
+    }
+
+    const unlinkedAdditionalGuardian = this.guardian.linkedGuardians
+      .filter((guardian) => guardian !== primaryGuardian)
+      .find((guardian) =>
+        !guardian.guardian_id
+        && (guardian.full_name.trim() || guardian.phone.trim()),
+      );
+    if ((!this.isEditMode || isCompletingDraft) && !saveAsDraft && unlinkedAdditionalGuardian) {
+      toast.error(m.student_registration_guardian_unlinked());
+      return;
+    }
+
+    const blockingRequirements = this.document.requirements
+      .filter((requirement) => requirement.blocks_enrollment);
+    const missingBlockingRequirements = blockingRequirements.filter((requirement) =>
+      !requirement.is_fulfilled
+      && !this.document.submittedDocs.includes(requirement.code)
+      && !this.document.attachments[requirement.code],
+    );
+    const missingOrganizationDocuments = blockingRequirements.length === 0
+      ? this.document.orgRequiredDocuments.filter((code) =>
+          !this.document.submittedDocs.includes(code)
+          && !this.document.attachments[code],
+        )
+      : [];
+    if (
+      (!this.isEditMode || isCompletingDraft)
+      && !saveAsDraft
+      && (missingBlockingRequirements.length > 0 || missingOrganizationDocuments.length > 0)
+    ) {
+      toast.error(m.student_registration_documents_pending());
+      return;
+    }
+
     // Check duplicate blockers
     if (
-      this.duplicateWarnings.national_id ||
-      this.duplicateWarnings.phone ||
-      this.duplicateWarnings.email
+      !saveAsDraft
+      && (
+        this.duplicateWarnings.national_id ||
+        this.duplicateWarnings.phone ||
+        this.duplicateWarnings.email
+      )
     ) {
       toast.error(m.ui_copy_please_resolve_duplicate_warnings_before_p_d77b26cb());
       return;
@@ -429,54 +560,86 @@ export class StudentFormState {
 
     try {
       if (!this.isEditMode) {
-        // 1. Register Student & initial enrollment atomically via StudentService
         const namePartsAr = splitPersonName(this.personal.nameAr || this.personal.nameEn);
         const namePartsEn = splitPersonName(this.personal.nameEn || this.personal.nameAr);
 
-        const detail = await api.registerStudent({
-          student_number: this.personal.studentNumber || undefined,
-          first_name: namePartsEn.firstName,
-          middle_name: namePartsEn.middleName,
-          last_name: namePartsEn.lastName,
-          first_name_ar: namePartsAr.firstName,
-          middle_name_ar: namePartsAr.middleName,
-          last_name_ar: namePartsAr.lastName,
-          display_name: displayName,
-          national_id: this.activeFields.national_id ? this.personal.nationalId || undefined : undefined,
-          passport_number: this.activeFields.passport_number ? this.personal.passportNumber || undefined : undefined,
-          gender: this.activeFields.sex ? this.personal.sex || undefined : undefined,
-          birth_date: this.activeFields.birth_date ? this.personal.birthDate || undefined : undefined,
-          place_of_birth: this.activeFields.place_of_birth ? this.personal.placeOfBirth || undefined : undefined,
-          nationality: this.activeFields.nationality ? this.personal.nationality || undefined : undefined,
-          blood_type: this.activeFields.blood_type ? this.personal.bloodType || undefined : undefined,
-          medical_notes: this.activeFields.medical_notes ? this.personal.medicalNotes || undefined : undefined,
-          special_needs_notes: this.activeFields.special_needs_notes ? this.personal.specialNeedsNotes || undefined : undefined,
-          phone: this.activeFields.phone ? this.personal.phone || undefined : undefined,
-          email: this.activeFields.email ? this.personal.email.trim() || undefined : undefined,
-          address: this.activeFields.address ? this.personal.address || undefined : undefined,
-          initial_period_id: effectiveContext.currentPeriodId || undefined,
-          initial_class_id: this.personal.classId || undefined,
-          study_mode: this.studyMode,
-        });
-
-        targetStudentId = detail.student.id;
-        if (detail.enrollment?.id) {
-          targetEnrollmentId = detail.enrollment.id;
-        }
-        const registrationArtifacts = await ensureStudentRegistrationArtifacts(
-          targetStudentId,
-          displayName,
+        const registrationResult = await api.bulkRegisterStudents(
+          [{
+            row_index: 0,
+            registration: {
+              student_number: this.personal.studentNumber || undefined,
+              first_name: namePartsEn.firstName,
+              middle_name: namePartsEn.middleName,
+              last_name: namePartsEn.lastName,
+              first_name_ar: namePartsAr.firstName,
+              middle_name_ar: namePartsAr.middleName,
+              last_name_ar: namePartsAr.lastName,
+              display_name: displayName,
+              national_id: this.activeFields.national_id ? this.personal.nationalId || undefined : undefined,
+              passport_number: this.activeFields.passport_number ? this.personal.passportNumber || undefined : undefined,
+              gender: this.activeFields.sex ? this.personal.sex || undefined : undefined,
+              birth_date: this.activeFields.birth_date ? this.personal.birthDate || undefined : undefined,
+              place_of_birth: this.activeFields.place_of_birth ? this.personal.placeOfBirth || undefined : undefined,
+              nationality: this.activeFields.nationality ? this.personal.nationality || undefined : undefined,
+              blood_type: this.activeFields.blood_type ? this.personal.bloodType || undefined : undefined,
+              medical_notes: this.activeFields.medical_notes ? this.personal.medicalNotes || undefined : undefined,
+              special_needs_notes: this.activeFields.special_needs_notes ? this.personal.specialNeedsNotes || undefined : undefined,
+              phone: this.activeFields.phone ? this.personal.phone || undefined : undefined,
+              email: this.activeFields.email ? this.personal.email.trim() || undefined : undefined,
+              address: this.activeFields.address ? this.personal.address || undefined : undefined,
+              initial_period_id: saveAsDraft ? undefined : effectiveContext.currentPeriodId || undefined,
+              initial_section_id: saveAsDraft ? undefined : this.personal.classId || undefined,
+              study_mode: this.studyMode,
+              is_draft: saveAsDraft,
+            },
+            guardian_name: primaryGuardian?.full_name.trim() || undefined,
+            guardian_phone: primaryGuardian?.phone.trim() || undefined,
+            guardian_relationship: primaryGuardian?.relationship || undefined,
+          }],
+          { atomic: true },
         );
-        studentArchiveFolderId = registrationArtifacts.studentFolder?.id;
-        registrationArtifactWarnings.push(
-          ...registrationArtifacts.warnings,
-        );
-        if (registrationArtifacts.folderError) {
-          registrationArtifactWarnings.push(
-            m.students_archive_folder_failed({ error: registrationArtifacts.folderError }),
+        const registrationResultItem = registrationResult.items[0];
+        if (!registrationResultItem?.success || !registrationResultItem.student_id) {
+          throw new Error(
+            registrationResultItem?.error
+            || m.common_form_error_save({ error: "Student registration failed." }),
           );
         }
-        if (this.createLoginAccount) {
+        targetStudentId = registrationResultItem.student_id;
+        if (!saveAsDraft) {
+          try {
+            const detail = await api.getStudent(targetStudentId);
+            targetEnrollmentId = detail.enrollment?.id || "";
+          } catch (error) {
+            console.error("Failed to load the newly registered student:", error);
+            registrationArtifactWarnings.push(extractErrorMessage(error));
+          }
+
+          const registrationArtifacts = await ensureStudentRegistrationArtifacts(
+            targetStudentId,
+            displayName,
+          );
+          studentArchiveFolderId = registrationArtifacts.studentFolder?.id;
+          registrationArtifactWarnings.push(
+            ...registrationArtifacts.warnings,
+          );
+          if (registrationArtifacts.folderError) {
+            registrationArtifactWarnings.push(
+              m.students_archive_folder_failed({ error: registrationArtifacts.folderError }),
+            );
+          }
+        } else {
+          try {
+            studentArchiveFolderId = (
+              await getOrCreateStudentArchiveFolder(targetStudentId, displayName)
+            ).id;
+          } catch (error) {
+            registrationArtifactWarnings.push(
+              m.students_archive_folder_failed({ error: extractErrorMessage(error) }),
+            );
+          }
+        }
+        if (this.createLoginAccount && !saveAsDraft) {
           try {
             const account = await provisionStudentLoginAccount({
               studentId: targetStudentId,
@@ -496,7 +659,11 @@ export class StudentFormState {
             );
           }
         }
-        toast.success(m.common_form_success_create());
+        toast.success(
+          saveAsDraft
+            ? m.student_registration_draft_saved()
+            : m.common_form_success_create(),
+        );
       } else {
         targetStudentId = this.originalStudent?.student?.id || this.studentId!;
         targetEnrollmentId = this.originalStudent?.enrollment?.id || "";
@@ -538,15 +705,22 @@ export class StudentFormState {
           address: this.activeFields.address ? this.personal.address || undefined : undefined,
         });
 
-        toast.success(m.common_form_success_update());
+        if (!saveAsDraft && !isCompletingDraft) {
+          toast.success(m.common_form_success_update());
+        }
       }
 
       // 2. Link existing guardians
-      for (const guardian of this.guardian.linkedGuardians) {
+      const additionalGuardians = this.isEditMode
+        ? this.guardian.linkedGuardians
+        : this.guardian.linkedGuardians.filter(
+            (guardian) => guardian !== primaryGuardian,
+          );
+      for (const guardian of additionalGuardians) {
         if (!guardian.guardian_id || !targetStudentId) continue;
 
-        await api
-          .assignGuardian({
+        try {
+          await api.assignGuardian({
             student_id: targetStudentId,
             guardian_id: guardian.guardian_id,
             relationship: guardian.relationship || "other",
@@ -556,31 +730,14 @@ export class StudentFormState {
             is_authorized_pickup: !!guardian.is_authorized_pickup,
             is_payer: !!guardian.is_payer,
             payment_share_percent: guardian.payment_share_percent ?? 0,
-          })
-          .catch((err) => console.warn("Assign guardian error:", err));
-      }
-
-      // 3. Assign optional fees
-      const activePeriod = effectiveContext.currentPeriodId;
-      const today = new Date().toISOString().slice(0, 10);
-      if (activePeriod && targetStudentId && targetEnrollmentId) {
-        for (const key in this.financial.selectedOptionalFees) {
-          if (this.financial.selectedOptionalFees[key].checked) {
-            try {
-              await api.generateStudentFee({
-                student_id: targetStudentId,
-                enrollment_id: targetEnrollmentId,
-                fee_template_id: key,
-                period_id: activePeriod,
-                due_date: today,
-              });
-            } catch (feeErr) {
-              console.error("Failed to assign optional fee:", key, feeErr);
-            }
-          }
+          });
+        } catch (error) {
+          console.error("Failed to assign guardian:", error);
+          registrationArtifactWarnings.push(extractErrorMessage(error));
         }
       }
-      // 4. Store staged files in the student's archive folder.
+
+      // 3. Store staged files in the student's archive folder.
       if (targetStudentId) {
         if (!studentArchiveFolderId) {
           try {
@@ -595,12 +752,21 @@ export class StudentFormState {
         }
 
         if (studentArchiveFolderId) {
-          registrationArtifactWarnings.push(
-            ...(await this.document.uploadPendingAttachments(
-              targetStudentId,
-              studentArchiveFolderId,
-            )),
+          const uploadWarnings = await this.document.uploadPendingAttachments(
+            targetStudentId,
+            studentArchiveFolderId,
           );
+          registrationArtifactWarnings.push(...uploadWarnings);
+        }
+
+        if (
+          isCompletingDraft
+          && blockingRequirements.some((requirement) => {
+            const attachment = this.document.attachments[requirement.code];
+            return attachment?.file && !attachment.documentId;
+          })
+        ) {
+          throw new Error(m.student_registration_documents_pending());
         }
 
         if (this.avatarFile && studentArchiveFolderId) {
@@ -634,24 +800,43 @@ export class StudentFormState {
         }
       }
 
-      // 5. If saving as pending_review, automatically create an admission approval request
-      if (this.registrationStatus === "pending_review" && targetStudentId) {
-        try {
-          await api.submitOverride({
-            override_type: "admission_approval",
-            risk_level: "medium",
-            entity_type: "student",
-            entity_id: targetStudentId,
-            reason: m.operations_ui_student_enrollment_review_reason({
-              name: displayName,
-              className: this.selectedClassName,
-            }),
-            field_name: "registration_approval",
-            new_value: "approved",
-            old_value: "pending_review",
-          });
-        } catch (overrideErr) {
-          console.warn("Auto-submit admission approval request error:", overrideErr);
+      if (isCompletingDraft) {
+        const enrollment = await api.enrollStudent({
+          period_id: effectiveContext.currentPeriodId!,
+          student_id: targetStudentId,
+          section_id: this.personal.classId,
+          student_number:
+            this.personal.studentNumber
+            || this.originalStudent?.student?.student_number
+            || targetStudentId.slice(0, 8),
+          study_mode: this.studyMode,
+        });
+        targetEnrollmentId = enrollment.id;
+        await api.updateStudentStatus({
+          student_id: targetStudentId,
+          status: "active",
+        });
+        toast.success(m.student_registration_draft_completed());
+      }
+
+      // Assign optional fees after a draft has been enrolled.
+      const activePeriod = effectiveContext.currentPeriodId;
+      const today = new Date().toISOString().slice(0, 10);
+      if (activePeriod && targetStudentId && targetEnrollmentId && !saveAsDraft) {
+        for (const key in this.financial.selectedOptionalFees) {
+          if (this.financial.selectedOptionalFees[key].checked) {
+            try {
+              await api.generateStudentFee({
+                student_id: targetStudentId,
+                enrollment_id: targetEnrollmentId,
+                fee_template_id: key,
+                period_id: activePeriod,
+                due_date: today,
+              });
+            } catch (feeErr) {
+              console.error("Failed to assign optional fee:", key, feeErr);
+            }
+          }
         }
       }
 
@@ -665,7 +850,13 @@ export class StudentFormState {
         toast.warning(registrationArtifactWarnings.join("؛ "));
       }
 
-      goto(localizeHref(`/${this.orgId}/students`));
+      goto(
+        localizeHref(
+          saveAsDraft
+            ? `/${this.orgId}/students/${targetStudentId}/edit`
+            : `/${this.orgId}/students`,
+        ),
+      );
     } catch (e) {
       console.error("Save error:", e);
       toast.error(

@@ -47,7 +47,11 @@ export default function ClassAttendanceScreen() {
     Record<string, string>
   >({});
   const classQuery = useTeacherClassDataQuery(classId);
-  const attendanceQuery = useClassAttendanceQuery(classId, date);
+  const attendanceQuery = useClassAttendanceQuery(
+    classId,
+    date,
+    classQuery.isInScope,
+  );
   const mutation = useBatchMarkAttendanceMutation();
   const { hasPermission } = useEffectiveContext();
   const { t, isArabic, formatDate } = useI18n();
@@ -68,8 +72,11 @@ export default function ClassAttendanceScreen() {
     ({ student }) =>
       !recordedByStudent.has(student.id) && selectedStatuses[student.id],
   ).length;
-  const isPending = classQuery.isPending || attendanceQuery.isPending;
-  const isError = classQuery.isError || attendanceQuery.isError;
+  const isPending =
+    classQuery.isInScope &&
+    (classQuery.isPending || attendanceQuery.isPending);
+  const isError =
+    !classQuery.isInScope || classQuery.isError || attendanceQuery.isError;
 
   const saveAttendance = async () => {
     if (!classId || !canRecord) return;
@@ -78,12 +85,9 @@ export default function ClassAttendanceScreen() {
       if (!status || recordedByStudent.has(student.id)) return [];
       return [{ student_id: student.id, status }];
     });
-    if (items.length === 0) {
-      toast.warning(t("teacher_no_records_to_save"));
-      return;
-    }
+    if (items.length === 0) return;
     try {
-      await mutation.mutateAsync({ class_id: classId, date, items });
+      await mutation.mutateAsync({ section_id: classId, date, items });
       setSelectedStatuses({});
       toast.success(t("teacher_save_success"));
     } catch (error) {
@@ -96,6 +100,10 @@ export default function ClassAttendanceScreen() {
       title={t("teacher_mark_attendance")}
       isPending={isPending}
       isError={!classId || isError}
+      canRetry={classQuery.isInScope}
+      errorDescription={
+        classQuery.isInScope ? undefined : t("class_access_denied")
+      }
       onRetry={() => {
         void classQuery.refetch();
         void attendanceQuery.refetch();
@@ -110,7 +118,7 @@ export default function ClassAttendanceScreen() {
               setDate((current) => shiftDate(current, -1));
               setSelectedStatuses({});
             }}
-            className="rounded-lg border border-border bg-card px-three py-two"
+            className="rounded-md border border-border bg-card px-three py-two"
           >
             <Text className="text-sm font-semibold text-foreground">‹</Text>
           </Pressable>
@@ -131,7 +139,7 @@ export default function ClassAttendanceScreen() {
               setDate((current) => shiftDate(current, 1));
               setSelectedStatuses({});
             }}
-            className="rounded-lg border border-border bg-card px-three py-two"
+            className="rounded-md border border-border bg-card px-three py-two"
           >
             <Text className="text-sm font-semibold text-foreground">›</Text>
           </Pressable>
@@ -192,7 +200,7 @@ export default function ClassAttendanceScreen() {
                                     [student.id]: option.value,
                                   }))
                                 }
-                                className={`min-h-10 items-center justify-center rounded-lg border px-three py-two ${
+                                className={`min-h-10 items-center justify-center rounded-md border px-three py-two ${
                                   isSelected
                                     ? "border-primary bg-primary/10"
                                     : "border-border bg-card"

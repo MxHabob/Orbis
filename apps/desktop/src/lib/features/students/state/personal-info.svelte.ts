@@ -61,7 +61,7 @@ export class PersonalInfoState {
     }
 
     this.sex = p.gender || "male";
-    this.classId = String(e?.class_id || "");
+    this.classId = String(e?.section_id || "");
     this.studentNumber = s.student_number || "";
     this.email = p.email || "";
     this.phone = p.phone || "";

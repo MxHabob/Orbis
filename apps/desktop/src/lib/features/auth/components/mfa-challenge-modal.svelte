@@ -19,12 +19,12 @@ import { Check, UserBadgeCheck } from "@orbis/icons";
 
 interface Props {
   open: boolean;
-  userId: string;
+  mfaToken: string;
   onSuccess: (res: LoginResponse) => void;
   onClose: () => void;
 }
 
-let { open = $bindable(false), userId, onSuccess, onClose }: Props = $props();
+let { open = $bindable(false), mfaToken, onSuccess, onClose }: Props = $props();
 
 let code = $state("");
 let rememberDevice = $state(true);
@@ -33,12 +33,12 @@ let isRecoveryMode = $state(false);
 let errorMessage = $state<string | null>(null);
 
 async function handleSubmitChallenge() {
-  if (!code.trim() || !userId) return;
+  if (!code.trim() || !mfaToken) return;
   isSubmitting = true;
   errorMessage = null;
   try {
     const res = await api.mfaChallenge({
-      user_id: userId,
+      mfa_token: mfaToken,
       code: code.trim(),
       remember_device: rememberDevice,
       device_id:
@@ -77,8 +77,8 @@ async function handleSubmitChallenge() {
       <div class="flex flex-col items-center gap-2 py-2">
         <Input
           type="text"
-          maxlength={isRecoveryMode ? 16 : 6}
-          placeholder={isRecoveryMode ? "XXXXXXXX" : "000000"}
+          maxlength={isRecoveryMode ? 35 : 6}
+          placeholder={isRecoveryMode ? "XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" : "000000"}
           bind:value={code}
           class="w-full text-center tracking-[0.35em] font-mono text-xl font-bold h-11"
         />

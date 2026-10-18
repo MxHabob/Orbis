@@ -39,24 +39,24 @@ function jumpToState(index: number) {
 <TooltipProvider delayDuration={300}>
 <div class="flex flex-col h-full text-start">
   <!-- Header -->
-  <div class="px-3 py-2 border-b border-border/40 flex items-center justify-between">
+  <div class="px-3 py-2.5 border-b border-border flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <ClockRotateRight size={13} class="text-primary" />
-      <h3 class="text-xs font-bold text-foreground">{m.template_panel_history()}</h3>
+      <ClockRotateRight size={15} class="text-muted-foreground" />
+      <h3 class="text-sm font-semibold text-foreground">{m.template_panel_history()}</h3>
     </div>
     <div class="flex items-center gap-1">
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => store.undo()} disabled={!canUndo}>
-            <UndoAction size={11} />
+          <Button variant="ghost" size="icon-sm" class="cursor-pointer" onclick={() => store.undo()} disabled={!canUndo}>
+            <UndoAction size={14} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_history_undo()}</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger>
-          <Button variant="ghost" size="icon-xs" class="cursor-pointer h-5 w-5" onclick={() => store.redo()} disabled={!canRedo}>
-            <ArrowForward size={11} />
+          <Button variant="ghost" size="icon-sm" class="cursor-pointer" onclick={() => store.redo()} disabled={!canRedo}>
+            <ArrowForward size={14} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>{m.template_history_redo()}</TooltipContent>
@@ -69,7 +69,7 @@ function jumpToState(index: number) {
     {#if history.length === 0}
       <div class="flex flex-col items-center justify-center py-8 px-4 gap-2">
         <ClockRotateRight size={20} class="text-muted-foreground/30" />
-        <p class="text-[10px] text-muted-foreground text-center">
+        <p class="text-xs text-muted-foreground text-center">
           {m.template_history_empty()}
         </p>
       </div>
@@ -78,7 +78,7 @@ function jumpToState(index: number) {
         <!-- Initial state -->
         <button
           type="button"
-          class="w-full flex items-center gap-2 px-3 py-1.5 text-start transition-all cursor-pointer
+          class="w-full flex items-center gap-2 px-3 py-2 text-start transition-colors cursor-pointer
             {currentIndex === -1 ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent/30'}"
           onclick={() => jumpToState(-1)}
         >
@@ -89,7 +89,7 @@ function jumpToState(index: number) {
               <CheckCircle size={6} class="text-muted-foreground/30" />
             {/if}
           </div>
-          <span class="text-[10px] font-medium">
+          <span class="text-xs font-medium">
             {m.template_history_initial()}
           </span>
         </button>
@@ -99,7 +99,7 @@ function jumpToState(index: number) {
           {@const isFuture = i > currentIndex}
           <button
             type="button"
-            class="w-full flex items-center gap-2 px-3 py-1.5 text-start transition-all cursor-pointer
+            class="w-full flex items-center gap-2 px-3 py-2 text-start transition-colors cursor-pointer
               {isCurrent ? 'bg-primary/10 text-primary font-medium' : ''}
               {isFuture ? 'text-muted-foreground/40' : 'text-foreground'}
               {!isCurrent && !isFuture ? 'hover:bg-accent/30' : ''}"
@@ -117,18 +117,18 @@ function jumpToState(index: number) {
 
             <!-- Timeline line -->
             <div class="flex flex-col min-w-0 flex-grow">
-              <span class="text-[10px] truncate">
+              <span class="text-xs truncate">
                 {isAr ? (cmd.descriptionAr || cmd.description) : cmd.description}
               </span>
               {#if cmd.timestamp}
-                <span class="text-[7px] text-muted-foreground/50">
+                <span class="text-[10px] text-muted-foreground">
                   {formatDate(cmd.timestamp, "time", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                 </span>
               {/if}
             </div>
 
             <!-- Step number -->
-            <Badge variant={isCurrent ? "success" : "ghost"} class="text-[7px] h-3 px-1 shrink-0">
+            <Badge variant={isCurrent ? "success" : "ghost"} class="text-[9px] h-5 px-1.5 shrink-0">
               {i + 1}
             </Badge>
           </button>
@@ -138,11 +138,11 @@ function jumpToState(index: number) {
   </div>
 
   <!-- Footer stats -->
-  <div class="px-3 py-1.5 border-t border-border/30 bg-muted/10 flex items-center justify-between">
-    <span class="text-[8px] text-muted-foreground">
+  <div class="px-3 py-2 border-t border-border bg-card flex items-center justify-between">
+    <span class="text-[10px] text-muted-foreground">
       {history.length} {m.template_history_commands()}
     </span>
-    <span class="text-[8px] text-muted-foreground">
+    <span class="text-[10px] text-muted-foreground">
       {currentIndex + 1}/{history.length}
     </span>
   </div>

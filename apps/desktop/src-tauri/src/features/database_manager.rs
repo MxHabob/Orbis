@@ -272,7 +272,7 @@ pub async fn get_database_status(
                 })
             }
         }
-        ConnectionMode::Remote => {
+        ConnectionMode::Api => {
             let server_url = config.remote_server_url().unwrap_or("").to_string();
             let health = crate::connection::check_remote_health(&server_url).await;
 
@@ -283,13 +283,9 @@ pub async fn get_database_status(
             };
 
             Ok(DatabaseStatusDto {
-                mode: "remote".to_string(),
+                mode: "api".to_string(),
                 state: state.to_string(),
-                database_name: config
-                    .remote
-                    .as_ref()
-                    .and_then(|r| r.database_name.clone())
-                    .unwrap_or_else(|| "orbis_remote".to_string()),
+                database_name: "orbis_api".to_string(),
                 connection_target: server_url,
                 file_size_bytes: None,
                 file_size_formatted: None,
@@ -312,6 +308,84 @@ pub async fn get_database_status(
                     None
                 },
                 error_message: health.error,
+            })
+        }
+        ConnectionMode::Direct => {
+            let direct = config
+                .direct
+                .as_ref()
+                .ok_or_else(|| "Direct database settings are missing".to_string())?;
+            let mut applied_count = 0;
+            let mut pending_migrations = vec![];
+            let mut schema_version = "unknown".to_string();
+            let mut migration_status_error = None;
+            if let Some(db) = active_db {
+                let has_migration_table = sea_orm_migration::SchemaManager::new(db)
+                    .has_table("seaql_migrations")
+                    .await
+                    .map_err(|error| {
+                        format!("Failed to inspect PostgreSQL migration history: {error}")
+                    })?;
+                if has_migration_table {
+                    let applied = Migrator::get_applied_migrations(db)
+                        .await
+                        .map_err(|error| {
+                            format!("Failed to read PostgreSQL migration history: {error}")
+                        })?;
+                    applied_count = applied.len();
+                    schema_version = applied
+                        .last()
+                        .map(|migration| migration.name().to_string())
+                        .unwrap_or_else(|| "v0.0.0 (uninitialized)".to_string());
+                    let applied_names: std::collections::HashSet<_> = applied
+                        .iter()
+                        .map(|migration| migration.name().to_string())
+                        .collect();
+                    pending_migrations = all_migrations
+                        .iter()
+                        .map(|migration| migration.name().to_string())
+                        .filter(|name| !applied_names.contains(name))
+                        .collect();
+                } else {
+                    pending_migrations = all_migrations
+                        .iter()
+                        .map(|migration| migration.name().to_string())
+                        .collect();
+                    schema_version = "v0.0.0 (uninitialized)".to_string();
+                    migration_status_error =
+                        Some("Orbis schema has not been initialized".to_string());
+                }
+            }
+            let connected = active_db.is_some();
+            let is_compatible = pending_migrations.is_empty();
+            Ok(DatabaseStatusDto {
+                mode: "direct".to_string(),
+                state: if !connected {
+                    "disconnected"
+                } else if !is_compatible {
+                    "migration_required"
+                } else {
+                    "connected"
+                }
+                .to_string(),
+                database_name: direct.database_name.clone(),
+                connection_target: format!(
+                    "{}:{}/{}",
+                    direct.host, direct.port, direct.database_name
+                ),
+                file_size_bytes: None,
+                file_size_formatted: None,
+                schema_version,
+                applied_migrations_count: applied_count,
+                total_migrations_count,
+                pending_migrations,
+                is_compatible,
+                journal_mode: None,
+                integrity_status: None,
+                last_backup_timestamp: None,
+                last_backup_path: None,
+                last_connected_at: connected.then(|| chrono::Utc::now().to_rfc3339()),
+                error_message: migration_status_error,
             })
         }
     }

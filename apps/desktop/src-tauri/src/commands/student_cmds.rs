@@ -92,7 +92,7 @@ pub struct StudentDto {
     pub org_id: String,
     pub person_id: String,
     pub user_id: Option<String>,
-    pub student_number: String,
+    pub student_number: Option<String>,
     pub status: String,
     pub standing: String,
     pub admitted_at: String,
@@ -108,7 +108,7 @@ pub fn student_to_dto(s: Student) -> StudentDto {
         org_id: s.org_id.to_string(),
         person_id: s.person_id.to_string(),
         user_id: s.user_id.map(|u| u.to_string()),
-        student_number: s.student_number,
+        student_number: Some(s.student_number),
         status: s.status.to_string(),
         standing: s.standing.to_string(),
         admitted_at: s.admitted_at.to_rfc3339(),
@@ -156,7 +156,7 @@ pub fn enrollment_to_dto(e: Enrollment) -> EnrollmentDto {
     EnrollmentDto {
         id: e.id.to_string(),
         student_id: e.student_id.to_string(),
-        class_id: e.class_id.map(|c| c.to_string()),
+        class_id: e.section_id.map(|c| c.to_string()),
         period_id: e.period_id.to_string(),
         org_id: e.org_id.to_string(),
         student_number: e.student_number,
@@ -264,8 +264,11 @@ pub struct RegisterStudentRequest {
     pub address: Option<String>,
     pub avatar_url: Option<String>,
     pub initial_period_id: Option<String>,
+    #[serde(alias = "initial_section_id")]
     pub initial_class_id: Option<String>,
     pub study_mode: Option<String>,
+    #[serde(default)]
+    pub is_draft: bool,
 }
 
 #[derive(Deserialize, Default, Debug)]
@@ -324,6 +327,7 @@ pub struct UpdateStudentProfileRequest {
 pub struct EnrollStudentInput {
     pub period_id: String,
     pub student_id: String,
+    #[serde(alias = "section_id")]
     pub class_id: Option<String>,
     pub student_number: String,
     pub study_mode: Option<String>,
@@ -381,6 +385,7 @@ fn parse_study_mode(mode_str: Option<&str>) -> StudyMode {
 fn parse_student_status(status_str: &str) -> Option<StudentStatus> {
     match status_str {
         "active" => Some(StudentStatus::Active),
+        "inactive" => Some(StudentStatus::Inactive),
         "on_leave" => Some(StudentStatus::OnLeave),
         "suspended" => Some(StudentStatus::Suspended),
         "withdrawn" => Some(StudentStatus::Withdrawn),
@@ -470,9 +475,10 @@ pub async fn student_register_student(
         address: request.address,
         avatar_url: request.avatar_url,
         initial_period_id,
-        initial_class_id,
+        initial_section_id: initial_class_id,
         study_mode,
         bypass_capacity_check: None,
+        is_draft: request.is_draft,
     };
 
     let result = state
@@ -493,7 +499,7 @@ pub async fn student_list_students(
     let f = filter.unwrap_or_default();
     let domain_filter = StudentFilter {
         period_id: f.period_id.and_then(|s| Uuid::parse_str(&s).ok()),
-        class_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
+        section_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
         status: f.status.as_deref().and_then(parse_student_status),
         standing: f.standing.as_deref().and_then(parse_academic_standing),
         search: f.search.filter(|s| !s.trim().is_empty()),
@@ -675,7 +681,7 @@ pub async fn student_list_enrollments(
     let f = filter.unwrap_or_default();
     let domain_filter = EnrollmentFilter {
         period_id: f.period_id.and_then(|s| Uuid::parse_str(&s).ok()),
-        class_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
+        section_id: f.class_id.and_then(|s| Uuid::parse_str(&s).ok()),
         student_id: f.student_id.and_then(|s| Uuid::parse_str(&s).ok()),
         study_mode: f.study_mode.as_deref().map(|s| parse_study_mode(Some(s))),
         status: f.status.as_deref().and_then(parse_enrollment_status),
@@ -911,13 +917,14 @@ pub async fn student_bulk_register(
                 .initial_period_id
                 .as_deref()
                 .and_then(|id| Uuid::parse_str(id).ok()),
-            initial_class_id: item
+            initial_section_id: item
                 .registration
                 .initial_class_id
                 .as_deref()
                 .and_then(|id| Uuid::parse_str(id).ok()),
             study_mode: Some(parse_study_mode(item.registration.study_mode.as_deref())),
             bypass_capacity_check: None,
+            is_draft: item.registration.is_draft,
         };
 
         domain_items.push(

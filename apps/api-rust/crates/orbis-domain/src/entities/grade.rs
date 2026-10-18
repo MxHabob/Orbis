@@ -35,4 +35,29 @@ impl Grade {
             None
         }
     }
+
+    pub fn entry_status(&self) -> GradeEntryStatus {
+        if self.is_exempt {
+            GradeEntryStatus::Exempt
+        } else if self.is_excused {
+            GradeEntryStatus::Excused
+        } else if self.notes.as_deref() == Some("ABSENT")
+            || self.change_reason.as_deref() == Some("ABSENT")
+        {
+            GradeEntryStatus::Absent
+        } else {
+            GradeEntryStatus::Recorded
+        }
+    }
+}
+
+/// Status of an individual assessment entry, distinguishing recorded, missing, excused, and absent marks.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GradeEntryStatus {
+    Recorded,
+    Missing,
+    Excused,
+    Exempt,
+    Absent,
 }

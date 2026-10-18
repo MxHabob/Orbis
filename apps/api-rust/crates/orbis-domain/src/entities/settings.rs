@@ -99,6 +99,13 @@ impl AcademicSettings {
             tie_policy: self.tie_policy,
             ranking_enabled: self.ranking_enabled,
             max_displayed_rank: self.max_displayed_rank,
+            coursework_max_score: Decimal::from(20),
+            exam_max_score: Decimal::from(30),
+            term_max_score: Decimal::from(50),
+            annual_max_score: Decimal::from(100),
+            certificate_exam_max_score: Decimal::from(80),
+            certificate_cumulative_max_score: Decimal::from(20),
+            certificate_cumulative_year_count: 3,
         }
     }
 }

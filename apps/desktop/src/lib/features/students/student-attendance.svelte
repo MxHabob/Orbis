@@ -66,15 +66,15 @@ const gridSource = $derived(
   attendanceRecords.map((log: AttendanceDto, i: number) => ({
     ...log,
     __idx: i + 1,
-    date: formatDate(log.date || log.created_at) || "—",
+    date: formatDate(log.date || (log as any).created_at) || "—",
     status: String(log.status || "")
       .toLowerCase()
       .replace("حاضر", "present")
       .replace("غائب", "absent")
-      .replace("متأخر", "late"),
-    subject_name: log.subject_name || log.subject_id || "—",
-    notes: log.remarks || log.notes || "—",
-    recorded_by_name: log.recorded_by_name || "—",
+      .replace("متأخر", "late")
+      .replace("معذور", "excused"),
+    subject_name: (log as any).subject_name || log.section_subject_id || "—",
+    notes: log.notes || (log as any).remarks || "—",
   })),
 );
 

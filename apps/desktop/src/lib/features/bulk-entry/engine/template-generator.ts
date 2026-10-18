@@ -263,7 +263,7 @@ export async function buildTemplateWorkbook(
     [m.bulk_entry_workbook_instructions_title()],
     [""],
     [m.bulk_entry_workbook_organization(), orgName || m.bulk_entry_workbook_current_organization()],
-    [m.bulk_entry_workbook_academic_calendar(), academicCalendar || m.bulk_entry_workbook_current_year()],
+    [m.bulk_entry_workbook_academic_year(), academicCalendar || m.bulk_entry_workbook_current_year()],
     [m.bulk_entry_workbook_template_type(), getBulkEntryProfileName(profile.id)],
     [m.bulk_entry_workbook_template_version(), profile.templateVersion],
     ...(profile.id === "teacher-subjects"

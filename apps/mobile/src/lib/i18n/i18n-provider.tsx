@@ -18,6 +18,7 @@ import {
   setLocale as setStoredLocale,
   loadPersistedLocale,
   setCurrentLocaleInternal,
+  synchronizeLocaleDirection,
   t as translateKey,
   l as localizeValue,
   isAr as checkIsAr,
@@ -33,14 +34,28 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<SupportedLocale>(getLocale());
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
-    loadPersistedLocale().then((savedLocale) => {
-      if (isMounted && savedLocale !== locale) {
-        setLocaleState(savedLocale);
-      }
-    });
+    loadPersistedLocale()
+      .then(async (savedLocale) => {
+        if (!isMounted) return;
+
+        if (savedLocale !== locale) {
+          setLocaleState(savedLocale);
+        }
+
+        await synchronizeLocaleDirection(savedLocale);
+      })
+      .catch((error: unknown) => {
+        console.error("[Orbis Mobile I18n] Failed to load saved locale.", error);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsReady(true);
+        }
+      });
     return () => {
       isMounted = false;
     };
@@ -56,6 +71,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     return {
       locale,
       isArabic: locale === "ar",
+      isReady,
       setLocale: handleSetLocale,
       t: (key, params) => translateKey(key, params),
       l: (arVal, enVal) => localizeValue(arVal, enVal),
@@ -64,7 +80,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       formatPercent: (val) => formatPct(val),
       formatNumber: (val) => formatNum(val),
     };
-  }, [locale, handleSetLocale]);
+  }, [isReady, locale, handleSetLocale]);
 
   return (
     <I18nContext.Provider value={contextValue}>{children}</I18nContext.Provider>
@@ -79,6 +95,7 @@ export function useI18n(): I18nContextValue {
     return {
       locale: activeLocale,
       isArabic: checkIsAr(),
+      isReady: true,
       setLocale: async (loc) => {
         setCurrentLocaleInternal(loc);
         await setStoredLocale(loc);

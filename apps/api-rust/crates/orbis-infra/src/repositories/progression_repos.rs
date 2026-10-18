@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use orbis_app::ports::repositories::PromotionRepository;
 use orbis_domain::entities::progression::{
-    PromotionDecision, ProgressionDetail, ProgressionJob, ProgressionJobStatus,
+    ProgressionDetail, ProgressionJob, ProgressionJobStatus, PromotionDecision,
 };
 use orbis_domain::errors::DomainError;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
@@ -84,7 +84,10 @@ impl PromotionRepository for ProgressionRepoImpl {
             .collect())
     }
 
-    async fn find_details_by_job(&self, job_id: Uuid) -> Result<Vec<ProgressionDetail>, DomainError> {
+    async fn find_details_by_job(
+        &self,
+        job_id: Uuid,
+    ) -> Result<Vec<ProgressionDetail>, DomainError> {
         let models = ProgressionDetailEntity::find()
             .filter(progression_detail::Column::JobId.eq(job_id))
             .all(&self.db)
@@ -97,8 +100,8 @@ impl PromotionRepository for ProgressionRepoImpl {
                 job_id: m.job_id,
                 student_id: m.student_id,
                 enrollment_id: m.enrollment_id,
-                source_class_id: m.source_class_id,
-                target_class_id: m.target_class_id,
+                source_section_id: m.source_section_id,
+                target_section_id: m.target_section_id,
                 decision: match m.decision.as_str() {
                     "retain" => PromotionDecision::Retain,
                     "graduate" => PromotionDecision::Graduate,
@@ -167,8 +170,8 @@ impl PromotionRepository for ProgressionRepoImpl {
             job_id: Set(detail.job_id),
             student_id: Set(detail.student_id),
             enrollment_id: Set(detail.enrollment_id),
-            source_class_id: Set(detail.source_class_id),
-            target_class_id: Set(detail.target_class_id),
+            source_section_id: Set(detail.source_section_id),
+            target_section_id: Set(detail.target_section_id),
             decision: Set(detail.decision.to_string()),
             reason: Set(detail.reason.clone()),
             manual_override: Set(detail.manual_override),

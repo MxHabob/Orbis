@@ -43,7 +43,16 @@ pub struct UpdateRoomInput {
     pub capacity: Option<i32>,
     pub room_type: Option<String>,
     pub floor: Option<i32>,
-    pub org_unit_id: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_nullable_field")]
+    pub org_unit_id: Option<Option<String>>,
+}
+
+fn deserialize_nullable_field<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer).map(Some)
 }
 
 fn default_room_type() -> String {
@@ -195,7 +204,11 @@ pub async fn scheduling_create_room(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<RoomDto>, String> {
     let ctx = make_ctx(&state);
-    let org_unit_id = request.org_unit_id.and_then(|u| Uuid::parse_str(&u).ok());
+    let org_unit_id = request
+        .org_unit_id
+        .map(|id| Uuid::parse_str(&id))
+        .transpose()
+        .map_err(|_| "Invalid org unit ID")?;
     let r = state
         .scheduling_service
         .create_room(
@@ -222,7 +235,11 @@ pub async fn scheduling_update_room(
 ) -> Result<ApiResponse<RoomDto>, String> {
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid room ID")?;
-    let org_unit_id = request.org_unit_id.map(|u| Uuid::parse_str(&u).ok());
+    let org_unit_id = request
+        .org_unit_id
+        .map(|id| id.map(|id| Uuid::parse_str(&id)).transpose())
+        .transpose()
+        .map_err(|_| "Invalid org unit ID")?;
     let r = state
         .scheduling_service
         .update_room(
@@ -582,11 +599,14 @@ pub async fn solver_submit_timetable(
         .map_err(|e| e.to_string())?;
     state.solver_sidecar.increment_active_jobs();
 
-    state
+    if let Err(error) = state
         .integration_resolver
         .submit_timetable(&ctx, &problem)
         .await
-        .map_err(|e| e.to_string())?;
+    {
+        state.solver_sidecar.decrement_active_jobs();
+        return Err(error.to_string());
+    }
 
     Ok(ok(()))
 }

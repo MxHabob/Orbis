@@ -1,88 +1,92 @@
 /**
  * @module @orbis/mobile/app/(auth)/sign-in
  *
- * Ultra-modern, elegant Sign In screen directly modeled after the Mobbin Fuse
- * and minimalist reference designs (Atmospheric radiant glow, rotating capability
- * badges, frosted glass bottom container, sleek pill inputs, and tactile buttons).
+ * Sign in with email/password, optional MFA, and supported account links.
  */
 
-import { Button, Input } from "@/components/ui";
+import React, { useState } from "react";
+import {
+  ImageBackground,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Redirect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import {
-  AcademicCap,
-  ArrowLeft,
-  ArrowRight,
-  Bolt,
-  BuildingLibrary,
-  ChartBar
-} from "@orbis/icons/native";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import {
-  Platform,
-  Text,
-  View
-} from "react-native";
+import { Language, Logo } from "@orbis/icons/native";
 
-const CAPABILITIES = [
-  { labelKey: "auth_capability_teach", icon: AcademicCap, color: "#8B5CF6" },
-  { labelKey: "auth_capability_analyze", icon: ChartBar, color: "#06B6D4" },
-  { labelKey: "auth_capability_automate", icon: Bolt, color: "#84CC16" },
-  { labelKey: "auth_capability_govern", icon: BuildingLibrary, color: "#EC4899" },
-] as const;
+function getMfaUserId(response: unknown): string | undefined {
+  if (typeof response !== "object" || response === null) return undefined;
+
+  const value = response as {
+    mfa_required?: unknown;
+    user_id?: unknown;
+    user?: unknown;
+  };
+  if (value.mfa_required !== true) return undefined;
+
+  const nestedUserId =
+    typeof value.user === "object" &&
+    value.user !== null &&
+    "id" in value.user &&
+    typeof value.user.id === "string"
+      ? value.user.id
+      : undefined;
+
+  return typeof value.user_id === "string" ? value.user_id : nestedUserId;
+}
 
 export default function SignInScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const { t, isArabic } = useI18n();
-  const toast = useToast();
-  const { login, loginWithGoogle } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { t, locale, setLocale, isArabic } = useI18n();
+  const {
+    login,
+    loginWithGoogle,
+    selectedInstitution,
+    institutions,
+  } = useAuth();
 
-  const [authMode, setAuthMode] = useState<"welcome" | "email" | "password">("welcome");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleProceedFromEmail = () => {
-    setErrorMsg(null);
-    const trimmed = email.trim();
-    if (!trimmed || !trimmed.includes("@")) {
-      setErrorMsg(t("auth_error_required"));
-      return;
-    }
-    setAuthMode("password");
-  };
+  if (!selectedInstitution) {
+    return <Redirect href="/institution-select" />;
+  }
 
   const handleSignIn = async () => {
-    setErrorMsg(null);
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      setErrorMsg(t("auth_error_required"));
+      setErrorMessage(t("auth_error_required"));
       return;
     }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
-      const res: any = await login(trimmedEmail, password);
-      if (res?.mfa_required && (res?.user_id || res?.user?.id)) {
+      const response = await login(trimmedEmail, password);
+      const mfaUserId = getMfaUserId(response);
+      if (mfaUserId) {
         router.push({
           pathname: "/(auth)/mfa-challenge",
-          params: { userId: res.user_id || res.user.id },
+          params: { userId: mfaUserId },
         });
         return;
       }
-      router.replace("/(app)/(tabs)");
-    } catch (err: any) {
-      const msg = err?.message || t("auth_error_invalid_credentials");
-      setErrorMsg(msg);
-      toast.error(msg);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : t("auth_error_invalid_credentials");
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -90,158 +94,199 @@ export default function SignInScreen() {
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       await loginWithGoogle("google-token");
-      router.replace("/(app)/(tabs)");
-    } catch (err: any) {
-      toast.error(err?.message || t("auth_error_google"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : t("auth_error_google");
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const ArrowIcon = isArabic ? ArrowRight : ArrowLeft;
+  const toggleLanguage = () => {
+    void setLocale(locale === "ar" ? "en" : "ar");
+  };
 
   return (
-    <View
-      className="flex-1 bg-background"
-    >
-
-      <KeyboardAwareView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingTop: Platform.OS === "ios" ? 80 : 50,
-          paddingBottom: 32,
-        }}
+    <View className="flex-1 bg-primary-dark">
+      <ImageBackground
+        source={require("../../../assets/Dreamy Arrival at the Historic Campus.png")}
+        resizeMode="cover"
+        className="flex-1"
       >
-        <View className="flex-1 items-end justify-center min-h-[220px] gap-2">
-            {CAPABILITIES.map((cap) => {
-              return (
-                    <View key={cap.labelKey}>
-                      <Text className="font-sans text-2xl leading-[30px] font-extrabold text-foreground">
-                        {t(cap.labelKey)}
-                      </Text>
-                    </View>
-                  )})}
-        </View>
-
-
-        <View
-          className="px-6 pt-6 pb-5"
+        <LinearGradient
+          pointerEvents="none"
+          colors={[
+            "rgba(21, 16, 39, 0.24)",
+            "rgba(21, 16, 39, 0.1)",
+            "rgba(21, 16, 39, 0.42)",
+            "rgba(21, 16, 39, 0.56)",
+          ]}
+          locations={[0, 0.28, 0.58, 1]}
+          style={StyleSheet.absoluteFill}
+        />
+        <ThemedStatusBar backgroundColor="transparent" style="light" />
+        <KeyboardAwareView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
         >
-          {authMode === "welcome" && (
-            <View className="gap-3">
-              <Button
-                onPress={handleGoogleSignIn}
-              >
-                <Text
-                  className="font-sans text-sm leading-5 font-semibold text-foreground"
-                >
-                  {t("auth_continue_google")}
+          <View
+            className="flex-1 px-5"
+            style={{
+              paddingTop: insets.top + 8,
+              paddingBottom: Math.max(insets.bottom, 12) + 4,
+            }}
+          >
+            <View className="h-11 flex-row items-center justify-center">
+              <View className="flex-row items-center gap-2">
+                <Logo size={27} color="#FFFFFF" dotColor="#A821D9" />
+                <Text className="text-lg font-bold tracking-tight text-white">
+                  Orbis
                 </Text>
-              </Button>
-
-              {/* Secondary Translucent Pill Button: Email */}
-              <Button
-                onPress={() => setAuthMode("email")}
-                variant="secondary"
-              >
-                <Text
-                  className="font-sans text-sm leading-5 font-semibold text-foreground"
-                >
-                  {t("auth_sign_in")}
-                </Text>
-              </Button>
-            </View>
-          )}
-          {authMode === "email" && (
-            <View className="gap-4">
-                <Input
-                  placeholder={t("auth_email_placeholder")}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoFocus
-                  onSubmitEditing={handleProceedFromEmail}
-                  returnKeyType="next"
-                />
-                <View className="gap-2">
-                <Button onPress={handleProceedFromEmail}>
-                  <ArrowIcon size={16} />
-                </Button>
-              <Button  variant="outline" onPress={() => setAuthMode("welcome")} >
-                <Text>
-                  {t("header_back")}
-                </Text>
-              </Button>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  locale === "ar" ? "Switch to English" : "التبديل إلى العربية"
+                }
+                onPress={toggleLanguage}
+                hitSlop={8}
+                className="absolute end-0 min-h-11 flex-row items-center gap-2 rounded-full border border-white/30 bg-black/10 px-3"
+              >
+                <Language size={16} color="#FFFFFF" />
+                <Text className="text-sm font-medium text-white">
+                  {locale === "ar" ? "English" : "العربية"}
+                </Text>
+              </Pressable>
             </View>
-          )}
 
-          {authMode === "password" && (
-            <View className="gap-4">
+            <View className="min-h-40 flex-1 justify-end gap-3 pb-5 pt-5">
+              <Text className="text-[32px] leading-9.75 font-semibold tracking-tight text-white">
+                {t("visitor_title")}
+              </Text>
+              <Text className="text-base leading-6 text-white/90">
+                {t("visitor_description")}
+              </Text>
+            </View>
+
+            <View className="gap-2 bg-card px-4 py-3 shadow-xl">
+              <Text className="text-xl font-semibold tracking-tight text-foreground">
+                {t("auth_sign_in")}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/institution-select")}
+                hitSlop={8}
+                className="min-h-11 justify-center"
+              >
+                <Text className="text-sm font-semibold text-primary">
+                  {institutions.length > 1
+                    ? t("auth_institution_switch")
+                    : `${t("auth_institution_current")}: ${isArabic && selectedInstitution.name_ar ? selectedInstitution.name_ar : selectedInstitution.name}`}
+                </Text>
+              </Pressable>
+
+              <Input
+                placeholder={t("auth_username_or_email")}
+                value={email}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  setErrorMessage(null);
+                }}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoComplete="email"
+                textContentType="username"
+                returnKeyType="next"
+                style={{ minHeight: 32, fontSize: 12 }}
+              />
+
+              <View>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm font-semibold text-foreground">
+                    {t("auth_password")}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push("/(auth)/forgot-password")}
+                    hitSlop={8}
+                    className="min-h-11 justify-center"
+                  >
+                    <Text className="text-sm font-semibold text-primary">
+                      {t("auth_forgot_password")}
+                    </Text>
+                  </Pressable>
+                </View>
                 <Input
                   placeholder="••••••••"
-                  placeholderTextColor={
-                    isDark ? "rgba(255, 255, 255, 0.4)" : "#94A3B8"
-                  }
                   value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoFocus
-                  onSubmitEditing={handleSignIn}
+                  onChangeText={(value) => {
+                    setPassword(value);
+                    setErrorMessage(null);
+                  }}
+                  secureTextEntry
+                  autoComplete="current-password"
+                  textContentType="password"
                   returnKeyType="go"
+                  onSubmitEditing={() => void handleSignIn()}
+                  style={{ minHeight: 32, fontSize: 12 }}
                 />
-              <View className="gap-2">
-                <Button
-                  onPress={handleSignIn}
-                  disabled={isSubmitting}
-                >
-                  <ArrowIcon size={16} />
-                </Button>
-                <Button variant="outline" onPress={() => setAuthMode("email")}>
-                  <Text>
-                    {t("header_back")}
-                  </Text>
-                </Button>
+              </View>
 
-                <Button variant="outline" onPress={() => router.push("/(auth)/forgot-password")}>
-                  <Text>
-                    {t("auth_forgot_password")}
+              {errorMessage ? (
+                <Text
+                  accessibilityRole="alert"
+                  className="text-start text-xs leading-4 font-medium text-destructive"
+                >
+                  {errorMessage}
+                </Text>
+              ) : null}
+
+              <Button
+                title={t("auth_sign_in")}
+                onPress={() => void handleSignIn()}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                fullWidth
+                size="md"
+              />
+
+              <View className="flex-row items-center gap-3">
+                <View className="h-px flex-1 bg-border" />
+                <Text className="text-sm text-muted-foreground">
+                  {t("auth_or_divider")}
+                </Text>
+                <View className="h-px flex-1 bg-border" />
+              </View>
+
+              <Button
+                title={t("auth_continue_google")}
+                onPress={() => void handleGoogleSignIn()}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+                variant="outline"
+                fullWidth
+                size="md"
+              />
+
+              <View className="items-center pt-1">
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push("/(auth)/explore")}
+                  hitSlop={8}
+                  className="min-h-11 justify-center"
+                >
+                  <Text className="text-sm text-muted-foreground">
+                    {t("visitor_explore")}
                   </Text>
-                </Button>
+                </Pressable>
               </View>
             </View>
-          )}
-
-          {/* Bottom Link: Create Account */}
-          <View className="mt-5 flex-row items-center justify-center">
-            <Text className="font-sans text-sm leading-5 text-foreground">
-              {t("auth_no_account")}
-            </Text>
-            <Button
-              onPress={() => router.push("/(auth)/register")}
-              variant="link"
-            >
-              <Text className="font-sans text-sm leading-5 text-primary">
-                {t("auth_register_title")}
-              </Text>
-            </Button>
           </View>
-          <Button
-            onPress={() => router.push("/(auth)/explore")}
-            variant="link"
-          >
-            <Text className="font-sans text-sm leading-5 text-primary">
-              {t("visitor_explore")}
-            </Text>
-          </Button>
-        </View>
-      </KeyboardAwareView>
+        </KeyboardAwareView>
+      </ImageBackground>
     </View>
   );
 }

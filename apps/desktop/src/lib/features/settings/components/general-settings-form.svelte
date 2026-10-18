@@ -1,4 +1,5 @@
 <script lang="ts">
+import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import InfoSettingsCard from "./info-settings-card.svelte";
 import BrandingSettingsCard from "./branding-settings-card.svelte";
@@ -6,6 +7,8 @@ import RegionalSettingsCard from "./regional-settings-card.svelte";
 import AvatarSettingsCard from "./avatar-settings-card.svelte";
 import DangerZoneSettingsCard from "./danger-zone-settings-card.svelte";
 import BranchSettingsCard from "./branch-settings-card.svelte";
+import OrganizationProfileSettingsCard from "./organization-profile-settings-card.svelte";
+import StaticDataSettingsCard from "./static-data-settings-card.svelte";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { toast } from "@orbis/ui";
@@ -31,7 +34,9 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
 let name = $state("");
 let nameAr = $state("");
 let slug = $state("");
+let code = $state("");
 let logo = $state("");
+let favicon = $state("");
 let primaryColor = $state("#84cc16");
 let currency = $state("YER");
 let timezone = $state("Asia/Aden");
@@ -40,6 +45,18 @@ let dateFormat = $state("YYYY-MM-DD");
 let formatLocale = $state("auto");
 let timeFormat = $state("locale");
 let hijriEnabled = $state(false);
+let institutionType = $state("school");
+let educationalTrack = $state("");
+let organizationSize = $state("");
+let countryCode = $state("");
+let countryName = $state("");
+let ministryName = $state("");
+let regionName = $state("");
+let city = $state("");
+let phone = $state("");
+let website = $state("");
+let taxId = $state("");
+let licenseNumber = $state("");
 
 function entitlementStatusLabel(status?: string): string {
   switch (status) {
@@ -80,37 +97,69 @@ async function loadSettings() {
   }
 }
 
-$effect(() => {
-  if (org && !initialValues) {
-    name = org.name || "";
-    nameAr = org.name_ar || "";
-    slug = org.slug || "";
-    logo = org.logo || "";
-    primaryColor = org.primary_color || "#84cc16";
-    currency = org.base_currency_code || org.currency || "YER";
-    timezone = org.timezone || "Asia/Aden";
-    locale = org.locale || "ar";
-    dateFormat = org.date_format || "YYYY-MM-DD";
-    formatLocale = org.format_locale || "auto";
-    timeFormat = org.time_format || "locale";
-    hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
+onMount(() => {
+  if (!org || initialValues) return;
 
-    loadSettings().finally(() => {
-      initialValues = {
-        name,
-        nameAr,
-        primaryColor,
-        currency,
-        timezone,
-        locale,
-        dateFormat,
-        formatLocale,
-        timeFormat,
-        hijriEnabled,
-      };
-    });
-    systemStore.loadEntitlement();
-  }
+  name = org.name || "";
+  nameAr = org.name_ar || "";
+  slug = org.slug || "";
+  code = org.code || "";
+  logo = org.logo || "";
+  favicon = org.favicon || "";
+  primaryColor = org.primary_color || "#84cc16";
+  currency = org.base_currency_code || org.currency || "YER";
+  timezone = org.timezone || "Asia/Aden";
+  locale = org.locale || "ar";
+  dateFormat = org.date_format || "YYYY-MM-DD";
+  formatLocale = org.format_locale || "auto";
+  timeFormat = org.time_format || "locale";
+  hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
+  const metadata =
+    org.metadata && typeof org.metadata === "object" && !Array.isArray(org.metadata)
+      ? org.metadata
+      : {};
+  institutionType = typeof metadata.institution_type === "string" ? metadata.institution_type : org.institution_type || "school";
+  educationalTrack = typeof metadata.educational_track === "string" ? metadata.educational_track : "";
+  organizationSize = typeof metadata.organization_size === "string" ? metadata.organization_size : "";
+  countryCode = typeof metadata.country_code === "string" ? metadata.country_code : "";
+  countryName = typeof metadata.country_name === "string" ? metadata.country_name : "";
+  ministryName = typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
+  regionName = typeof metadata.region_name === "string" ? metadata.region_name : "";
+  city = typeof metadata.city === "string" ? metadata.city : "";
+  phone = typeof metadata.phone === "string" ? metadata.phone : "";
+  website = typeof metadata.website === "string" ? metadata.website : "";
+  taxId = typeof metadata.tax_id === "string" ? metadata.tax_id : "";
+  licenseNumber = typeof metadata.license_number === "string" ? metadata.license_number : "";
+
+  loadSettings().finally(() => {
+    initialValues = {
+      name,
+      nameAr,
+      code,
+      primaryColor,
+      favicon,
+      currency,
+      timezone,
+      locale,
+      dateFormat,
+      formatLocale,
+      timeFormat,
+      hijriEnabled,
+      institutionType,
+      educationalTrack,
+      organizationSize,
+      countryCode,
+      countryName,
+      ministryName,
+      regionName,
+      city,
+      phone,
+      website,
+      taxId,
+      licenseNumber,
+    };
+  });
+  systemStore.loadEntitlement();
 });
 
 const isDirty = $derived.by(() => {
@@ -118,14 +167,28 @@ const isDirty = $derived.by(() => {
   return (
     name !== initialValues.name ||
     nameAr !== initialValues.nameAr ||
+    code !== initialValues.code ||
     primaryColor !== initialValues.primaryColor ||
+    favicon !== initialValues.favicon ||
     currency !== initialValues.currency ||
     timezone !== initialValues.timezone ||
     locale !== initialValues.locale ||
     dateFormat !== initialValues.dateFormat ||
     formatLocale !== initialValues.formatLocale ||
     timeFormat !== initialValues.timeFormat ||
-    hijriEnabled !== initialValues.hijriEnabled
+    hijriEnabled !== initialValues.hijriEnabled ||
+    institutionType !== initialValues.institutionType ||
+    educationalTrack !== initialValues.educationalTrack ||
+    organizationSize !== initialValues.organizationSize ||
+    countryCode !== initialValues.countryCode ||
+    countryName !== initialValues.countryName ||
+    ministryName !== initialValues.ministryName ||
+    regionName !== initialValues.regionName ||
+    city !== initialValues.city ||
+    phone !== initialValues.phone ||
+    website !== initialValues.website ||
+    taxId !== initialValues.taxId ||
+    licenseNumber !== initialValues.licenseNumber
   );
 });
 
@@ -133,7 +196,9 @@ function handleReset() {
   if (!initialValues) return;
   name = initialValues.name;
   nameAr = initialValues.nameAr;
+  code = initialValues.code;
   primaryColor = initialValues.primaryColor;
+  favicon = initialValues.favicon;
   currency = initialValues.currency;
   timezone = initialValues.timezone;
   locale = initialValues.locale;
@@ -141,6 +206,35 @@ function handleReset() {
   formatLocale = initialValues.formatLocale;
   timeFormat = initialValues.timeFormat;
   hijriEnabled = initialValues.hijriEnabled;
+  institutionType = initialValues.institutionType;
+  educationalTrack = initialValues.educationalTrack;
+  organizationSize = initialValues.organizationSize;
+  countryCode = initialValues.countryCode;
+  countryName = initialValues.countryName;
+  ministryName = initialValues.ministryName;
+  regionName = initialValues.regionName;
+  city = initialValues.city;
+  phone = initialValues.phone;
+  website = initialValues.website;
+  taxId = initialValues.taxId;
+  licenseNumber = initialValues.licenseNumber;
+}
+
+function getProfileMetadata() {
+  return {
+    institution_type: institutionType,
+    educational_track: educationalTrack.trim() || null,
+    organization_size: organizationSize.trim() || null,
+    country_code: countryCode.trim() || null,
+    country_name: countryName.trim() || null,
+    ministry_name: ministryName.trim() || null,
+    region_name: regionName.trim() || null,
+    city: city.trim() || null,
+    phone: phone.trim() || null,
+    website: website.trim() || null,
+    tax_id: taxId.trim() || null,
+    license_number: licenseNumber.trim() || null,
+  };
 }
 
 async function handleSubmit(e?: Event) {
@@ -150,7 +244,9 @@ async function handleSubmit(e?: Event) {
     await onsave({
       name: result.name,
       name_ar: nameAr || null,
+      code: code.trim(),
       logo: logo || null,
+      favicon: favicon.trim(),
       primary_color: primaryColor,
       base_currency_code: result.currency,
       timezone: result.timezone,
@@ -159,6 +255,7 @@ async function handleSubmit(e?: Event) {
       format_locale: result.formatLocale,
       time_format: result.timeFormat,
       is_hijri_enabled: hijriEnabled,
+      metadata: getProfileMetadata(),
     });
 
     if (rawSettings) {
@@ -180,7 +277,9 @@ async function handleSubmit(e?: Event) {
     initialValues = {
       name,
       nameAr,
+      code,
       primaryColor,
+      favicon,
       currency,
       timezone,
       locale,
@@ -188,6 +287,18 @@ async function handleSubmit(e?: Event) {
       formatLocale,
       timeFormat,
       hijriEnabled,
+      institutionType,
+      educationalTrack,
+      organizationSize,
+      countryCode,
+      countryName,
+      ministryName,
+      regionName,
+      city,
+      phone,
+      website,
+      taxId,
+      licenseNumber,
     };
   } else {
     toast.error(
@@ -200,7 +311,9 @@ async function handleLanguageChange(newLocale: string) {
   return await onlanguagechange(newLocale, {
     name,
     name_ar: nameAr || null,
+    code: code.trim(),
     logo: logo || null,
+    favicon: favicon.trim(),
     primary_color: primaryColor,
     currency,
     timezone,
@@ -208,7 +321,8 @@ async function handleLanguageChange(newLocale: string) {
     date_format: dateFormat,
     format_locale: formatLocale,
     time_format: timeFormat,
-    hijri_enabled: hijriEnabled,
+    is_hijri_enabled: hijriEnabled,
+    metadata: getProfileMetadata(),
   });
 }
 
@@ -223,6 +337,7 @@ function handleSaveAvatar(e: Event) {
     <form onsubmit={handleSubmit} class="flex flex-col gap-6">
       <InfoSettingsCard
         {slug}
+        bind:code
         bind:name
         bind:nameAr
         organizationId={orgId}
@@ -231,6 +346,23 @@ function handleSaveAvatar(e: Event) {
 
       <BrandingSettingsCard
         bind:primaryColor
+        bind:favicon
+        {isSaving}
+      />
+
+      <OrganizationProfileSettingsCard
+        bind:institutionType
+        bind:educationalTrack
+        bind:organizationSize
+        bind:countryCode
+        bind:countryName
+        bind:ministryName
+        bind:regionName
+        bind:city
+        bind:phone
+        bind:website
+        bind:taxId
+        bind:licenseNumber
         {isSaving}
       />
 
@@ -300,6 +432,8 @@ function handleSaveAvatar(e: Event) {
         {/if}
       {/if}
     </form>
+
+    <StaticDataSettingsCard />
 
     <AvatarSettingsCard
       bind:logo

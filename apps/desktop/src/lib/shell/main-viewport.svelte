@@ -27,6 +27,8 @@ import Resizer from "./resizer.svelte";
 import SashLayer from "./sash-layer.svelte";
 import type { Snippet } from "svelte";
     import { m } from "$lib/paraglide/messages";
+import { page } from "$app/state";
+import { isStandaloneWindow } from "./window-mode";
 
 type PanelSize = {
   default: number;
@@ -53,6 +55,7 @@ let {
   rightLabel?: string;
 } = $props();
 
+const standaloneWindow = $derived(isStandaloneWindow(page.url));
 const COLLAPSED_WIDTH = 3;
 
 // Convert px to rem using root font-size (cached to avoid DOM reads per render)
@@ -112,7 +115,7 @@ function getFallbackLabel(
 
 <SashLayer>
 	<div class="relative flex h-full w-full flex-1 items-stretch">
-		{#if left}
+		{#if left && !standaloneWindow}
 			<div
 				class="relative flex h-full shrink-0 flex-col"
 				class:me-2={finalLeftWidth > COLLAPSED_WIDTH}
@@ -176,11 +179,14 @@ function getFallbackLabel(
 			</div>
 		{/if}
 
-		<div class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden" class:no-left={!left}>
+		<div
+			class="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden"
+			class:no-left={!left || standaloneWindow}
+		>
 			{@render middle()}
 		</div>
 
-		{#if right}
+		{#if right && !standaloneWindow}
 			<div
 				class="relative flex h-full shrink-0 flex-col"
 				class:ms-2={finalRightWidth > COLLAPSED_WIDTH}

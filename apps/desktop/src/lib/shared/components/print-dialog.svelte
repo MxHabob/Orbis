@@ -108,11 +108,28 @@ async function loadTemplates() {
   if (!entityType || !orgId) return;
   loadingTemplates = true;
   try {
-    const list = await api.listTemplates({
+    let list = await api.listTemplates({
       entityType: entityType,
       documentType,
       status: "published",
     });
+    if ((!list || list.length === 0) && documentType) {
+      list = await api.listTemplates({
+        documentType,
+        status: "published",
+      });
+    }
+    if (!list || list.length === 0) {
+      list = await api.listTemplates({
+        entityType,
+        status: "published",
+      });
+    }
+    if (!list || list.length === 0) {
+      list = await api.listTemplates({
+        status: "published",
+      });
+    }
     templates = Array.isArray(list) ? list : [];
     if (templates.length > 0) {
       const defaultTemplate = templates.find((template) => template.is_default);
@@ -254,16 +271,16 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
     const classIds = [
       ...new Set(
         students
-          .map(({ enrollment }) => enrollment?.class_id)
+          .map(({ enrollment }) => enrollment?.section_id)
           .filter((id): id is string => Boolean(id)),
       ),
     ];
-    const classes = await Promise.all(classIds.map((id) => api.getClass(id)));
+    const classes = await Promise.all(classIds.map((id) => api.getSection(id)));
     const classesById = new Map(classes.map((item) => [item.id, item]));
 
     return students.map(({ student, person, enrollment }, index) => {
-      const classInfo = enrollment?.class_id
-        ? classesById.get(enrollment.class_id)
+      const classInfo = enrollment?.section_id
+        ? classesById.get(enrollment.section_id)
         : undefined;
       return {
         student: {
@@ -273,7 +290,7 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
           studentNumber: student.student_number,
           nationalId: person.national_id ?? student.national_id,
           avatarUrl: student.avatar_url,
-          classId: enrollment?.class_id,
+          classId: enrollment?.section_id,
           className: classInfo?.name,
           classNameAr: classInfo?.name_ar,
           level: classInfo?.level,
@@ -321,6 +338,8 @@ async function generatePdf(): Promise<boolean> {
     generatingPdf = false;
   }
 }
+
+const generatePreview = () => generatePdf();
 
 // ── Print Action ─────────────────────────────────────────────
 

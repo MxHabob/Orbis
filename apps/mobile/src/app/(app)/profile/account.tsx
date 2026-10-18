@@ -1,10 +1,26 @@
+/**
+ * @module @orbis/mobile/app/(app)/profile/account
+ *
+ * Read-only account details displayed in the shared settings-panel style.
+ */
+
+import React from "react";
+import { Text, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
+import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import {
+  SettingsPanelDivider,
+  SettingsPanelTitle,
+} from "@/components/ui/settings-panel";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
-import { Text, View } from "react-native";
 
 const roleKeys: Record<string, TranslationKey> = {
   teacher: "auth_role_teacher",
@@ -15,101 +31,172 @@ const roleKeys: Record<string, TranslationKey> = {
 };
 
 export default function AccountScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t, isArabic, formatDate } = useI18n();
 
   if (!user) {
     return (
-      <ScreenScrollView
-        horizontalPadding="five"
-        verticalPadding="four"
-        scrollViewProps={{ contentContainerClassName: "flex-grow justify-center" }}
-      >
-        <EmptyState
-          title={t("common_error")}
-          description={t("profile_account_unavailable")}
+      <View className="flex-1 bg-background">
+        <Header
+          title={t("profile_menu_account")}
+          showBack
+          onBack={() => router.back()}
         />
-      </ScreenScrollView>
+        <View
+          className="flex-1 items-center justify-center p-four"
+          style={{ paddingTop: insets.top + HEADER_CONTENT_OFFSET }}
+        >
+          <EmptyState
+            title={t("common_error")}
+            description={t("profile_account_unavailable")}
+          />
+        </View>
+      </View>
     );
   }
 
+  const displayName = isArabic
+    ? user.full_name_ar || user.full_name
+    : user.full_name;
   const roles = (user.roles ?? []).map((role) => {
     const key = roleKeys[role.toLowerCase()];
     return key ? t(key) : role;
   });
 
   return (
-    <ScreenScrollView
-      horizontalPadding="five"
-      verticalPadding="four"
-      scrollViewProps={{ contentContainerClassName: "gap-four pb-10" }}
-    >
-      <View className="gap-one">
-        <Text className="text-2xl font-bold text-foreground">
-          {t("profile_menu_account")}
-        </Text>
-        <Text className="text-sm text-muted-foreground">
-          {t("profile_account_read_only")}
-        </Text>
-      </View>
-
-      <Card variant="outline" padding="four">
-        <View className="gap-three">
-          <AccountField
+    <View className="flex-1 bg-background">
+      <Header
+        title={t("profile_menu_account")}
+        showBack
+        onBack={() => router.back()}
+      />
+      <ScreenScrollView
+        edges={["bottom", "left", "right"]}
+        contentContainerStyle={{
+          paddingTop: insets.top + HEADER_CONTENT_OFFSET,
+        }}
+        scrollViewProps={{
+          contentContainerClassName: "gap-six px-four pb-eight",
+        }}
+      >
+        <Card variant="default" padding="none">
+          <SettingsPanelTitle title={t("profile_title")} />
+          <View
+            className={`min-h-24 flex-row items-center gap-four px-four py-three ${
+              isArabic ? "flex-row-reverse" : ""
+            }`}
+          >
+            <Avatar
+              name={displayName}
+              imageUrl={user.avatar_url}
+              size="xl"
+            />
+            <View className="min-w-0 flex-1 gap-half">
+              <Text
+                numberOfLines={2}
+                className="text-start text-base font-semibold text-foreground"
+              >
+                {displayName}
+              </Text>
+              <Text
+                numberOfLines={2}
+                className="text-start text-xs text-muted-foreground"
+              >
+                {roles.length > 0
+                  ? roles.join(isArabic ? "، " : ", ")
+                  : t("common_unknown")}
+              </Text>
+            </View>
+          </View>
+          <SettingsPanelDivider />
+          <AccountRow
             label={t("auth_full_name")}
-            value={
-              isArabic
-                ? user.full_name_ar || user.full_name
-                : user.full_name
-            }
+            description={t("profile_account_description")}
+            value={displayName}
           />
-          <AccountField
+          <SettingsPanelDivider />
+          <AccountRow
             label={t("profile_email")}
+            description={
+              user.is_email_verified
+                ? t("profile_verified")
+                : t("profile_not_verified")
+            }
             value={user.email || t("common_unknown")}
           />
-          <AccountField
+          <SettingsPanelDivider />
+          <AccountRow
             label={t("profile_phone")}
+            description={t("profile_phone")}
             value={user.phone || t("common_unknown")}
           />
-          <AccountField
+          <SettingsPanelDivider />
+          <AccountRow
             label={t("profile_roles")}
+            description={t("profile_role")}
             value={
               roles.length > 0
                 ? roles.join(isArabic ? "، " : ", ")
                 : t("common_unknown")
             }
           />
-          <AccountField
+          {user.created_at ? (
+            <>
+              <SettingsPanelDivider />
+              <AccountRow
+                label={t("profile_account_created")}
+                description={t("profile_account_read_only")}
+                value={formatDate(user.created_at)}
+              />
+            </>
+          ) : null}
+          <SettingsPanelDivider />
+          <AccountRow
             label={t("profile_account_status")}
+            description={t("profile_account_status")}
             value={
               user.is_active
                 ? t("profile_account_active")
                 : t("profile_account_inactive")
             }
           />
-          <AccountField
-            label={t("profile_email_verified")}
-            value={
-              user.is_email_verified
-                ? t("profile_verified")
-                : t("profile_not_verified")
-            }
-          />
-          <AccountField
-            label={t("profile_account_created")}
-            value={formatDate(user.created_at) || t("common_unknown")}
-          />
-        </View>
-      </Card>
-    </ScreenScrollView>
+        </Card>
+      </ScreenScrollView>
+    </View>
   );
 }
 
-function AccountField({ label, value }: { label: string; value: string }) {
+function AccountRow({
+  label,
+  description,
+  value,
+}: {
+  label: string;
+  description: string;
+  value: string;
+}) {
   return (
-    <View className="flex-row items-start justify-between gap-three border-b border-border pb-two">
-      <Text className="flex-1 text-sm text-muted-foreground">{label}</Text>
-      <Text className="flex-1 text-end text-sm font-medium text-foreground">
+    <View className="min-h-16 flex-row items-center justify-between gap-four px-four py-three">
+      <View className="min-w-0 flex-1 items-start gap-half">
+        <Text
+          numberOfLines={2}
+          className="text-start text-xs font-medium text-foreground"
+        >
+          {label}
+        </Text>
+        <Text
+          numberOfLines={2}
+          className="text-start text-xs leading-4 text-muted-foreground"
+        >
+          {description}
+        </Text>
+      </View>
+      <Text
+        numberOfLines={2}
+        className="min-w-0 flex-1 text-sm text-foreground"
+      >
         {value}
       </Text>
     </View>

@@ -47,7 +47,7 @@ impl Default for ToolCategory {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct TeachingAssignmentInfo {
     pub section_subject_id: uuid::Uuid,
-    pub class_id: uuid::Uuid,
+    pub section_id: uuid::Uuid,
     pub class_name: String,
     pub subject_id: uuid::Uuid,
     pub subject_name: String,
@@ -81,7 +81,7 @@ pub struct AcademicAiContext {
     pub period_id: Option<uuid::Uuid>,
     pub period_name: Option<String>,
     pub period_state: Option<String>,
-    pub class_id: Option<uuid::Uuid>,
+    pub section_id: Option<uuid::Uuid>,
     pub class_name: Option<String>,
     pub subject_id: Option<uuid::Uuid>,
     pub subject_name: Option<String>,
@@ -101,7 +101,7 @@ pub struct UiContext {
     pub metadata: Option<serde_json::Value>,
     // Academic hierarchy from current UI view
     pub period_id: Option<uuid::Uuid>,
-    pub class_id: Option<uuid::Uuid>,
+    pub section_id: Option<uuid::Uuid>,
     pub subject_id: Option<uuid::Uuid>,
     pub section_subject_id: Option<uuid::Uuid>,
 }
@@ -150,6 +150,26 @@ pub struct AiChatResponse {
     pub resolved_user_context: Option<UserAiContext>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolved_academic_context: Option<AcademicAiContext>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AiCustomReportRequest {
+    pub report_code: String,
+    pub title: String,
+    pub columns: Vec<String>,
+    pub parameters: serde_json::Value,
+    pub output_format: String,
+    pub locale: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub template_id: Option<uuid::Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct AiCustomReportResponse {
+    pub job_id: uuid::Uuid,
+    pub status: String,
+    pub title: String,
+    pub output_format: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -12,26 +12,20 @@ import {
   View,
   TextInput,
   Pressable,
-  Platform,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 import { XMark, ShieldCheck, KeyframePlus } from "@orbis/icons/native";
 
 export default function MFAChallengeScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ userId?: string }>();
   const theme = useTheme();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { t } = useI18n();
-  const toast = useToast();
   const { mfaChallenge, userId: sessionUserId } = useAuth();
 
   const targetUserId = params.userId || sessionUserId || "";
@@ -105,13 +99,9 @@ export default function MFAChallengeScreen() {
         code: codeToSubmit,
       });
 
-      toast.success(t("auth_verify"));
-
-      router.replace("/(app)/(tabs)");
     } catch (err: any) {
       const msg = err?.message || t("auth_error_invalid_credentials");
       setErrorMsg(msg);
-      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -137,26 +127,13 @@ export default function MFAChallengeScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Radiant Atmospheric Purple/Violet Top Glow */}
-      <LinearGradient
-        colors={
-          isDark
-            ? (["#581C87", "#2E1065", "rgba(9,9,11,0)"] as const)
-            : (["#C4B5FD", "#EDE9FE", "rgba(248,250,252,0)"] as const)
-        }
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.6 }}
-        className="absolute inset-0"
-        pointerEvents="none"
-      />
-
       <KeyboardAwareView
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingTop: Platform.OS === "ios" ? 54 : 36,
+          paddingHorizontal: 24,
+          paddingTop: 48,
           paddingBottom: 32,
         }}
       >
@@ -169,7 +146,7 @@ export default function MFAChallengeScreen() {
           </Text>
           <Pressable
             onPress={() => router.back()}
-            className="h-8 w-8 items-center justify-center rounded-full bg-muted"
+            className="h-11 w-11 items-center justify-center"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <XMark size={16} color={theme.foreground} />
@@ -195,7 +172,7 @@ export default function MFAChallengeScreen() {
         {/* Main Content Area */}
         <View className="flex-1 justify-center">
           <Text
-            className="mb-one text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground"
+            className="mb-one text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground"
           >
             {isBackupMode ? t("auth_mfa_backup_code") : t("auth_setup_step_recovery")}
           </Text>
@@ -245,7 +222,7 @@ export default function MFAChallengeScreen() {
                     ref={(el) => {
                       inputRefs.current[idx] = el;
                     }}
-                    className={`h-[58px] w-12 rounded-xl border-[1.5px] bg-background-element text-center text-[22px] font-extrabold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
+                    className={`h-14.5 w-12 rounded-md border bg-background-element text-center text-[22px] font-bold text-foreground ${digit ? "border-primary" : isCurrent ? "border-primary-dark" : "border-border"}`}
                     style={{
                       shadowColor: digit ? theme.primary : "#000000",
                       shadowOffset: { width: 0, height: 2 },
@@ -300,19 +277,14 @@ export default function MFAChallengeScreen() {
 
         {/* Bottom Tactile Pill Button */}
         <View className="mt-six">
-          <Pressable
+          <Button
+            title={t("auth_verify")}
             onPress={handleManualSubmit}
             disabled={isSubmitting}
-            className="h-[54px] items-center justify-center rounded-full bg-foreground shadow-md"
-            style={({ pressed }) => ({
-              transform: [{ scale: pressed ? 0.98 : 1 }],
-              opacity: isSubmitting ? 0.7 : 1,
-            })}
-          >
-            <Text className="text-base leading-5 font-bold text-background">
-              {t("auth_verify")}
-            </Text>
-          </Pressable>
+            loading={isSubmitting}
+            fullWidth
+            size="lg"
+          />
         </View>
       </KeyboardAwareView>
     </View>

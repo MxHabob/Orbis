@@ -43,9 +43,7 @@ pub async fn storage_upload_file(
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|e| Uuid::parse_str(&e).ok());
     let folder_id = request.folder_id.and_then(|f| Uuid::parse_str(&f).ok());
-    let calendar_id = request
-        .calendar_id
-        .and_then(|y| Uuid::parse_str(&y).ok());
+    let calendar_id = request.calendar_id.and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let input = UploadFileInput {

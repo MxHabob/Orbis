@@ -72,6 +72,7 @@ export const bootstrapFormSchema: z.ZodType<OnboardingFormModel> = z
       ),
     adminConfirmPassword: z.string(),
     adminPhone: z.string(),
+    enableMfa: z.boolean(),
   })
   .superRefine((form, context) => {
     if (form.adminPassword !== form.adminConfirmPassword) {

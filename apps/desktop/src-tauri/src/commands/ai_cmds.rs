@@ -4,7 +4,8 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use orbis_domain::entities::ai::{
-    AiChatRequest, AiChatResponse, AiStoredSession, AiToolDefinition,
+    AiChatRequest, AiChatResponse, AiCustomReportRequest, AiCustomReportResponse, AiStoredSession,
+    AiToolDefinition,
 };
 use std::path::{Path, PathBuf};
 use tauri::State;
@@ -56,6 +57,20 @@ pub async fn ai_list_tools(
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(tools))
+}
+
+#[tauri::command]
+pub async fn ai_create_custom_report(
+    state: State<'_, AppState>,
+    request: AiCustomReportRequest,
+) -> Result<ApiResponse<AiCustomReportResponse>, String> {
+    let ctx = make_ctx(&state);
+    let response = state
+        .ai_service
+        .create_custom_report(&ctx, request)
+        .await
+        .map_err(|error| error.to_string())?;
+    Ok(ok(response))
 }
 
 /// Saves an AI conversation session as a file on disk: `<app_data>/ai_conversations/<org_id>/<session_id>.json`

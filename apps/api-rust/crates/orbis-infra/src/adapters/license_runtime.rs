@@ -278,12 +278,7 @@ impl MulverseLicenseRuntime {
                 return;
             }
 
-            if now < se.payload.issued_at {
-                snapshot.state = LicenseState::Pending;
-                return;
-            }
-
-            // Use the server-signed issuance time, not the editable local sync timestamp.
+            // `valid_from` controls activation; signed issuance time anchors sync freshness and grace.
             let grace_days = se
                 .payload
                 .offline_grace_period_days
@@ -305,7 +300,15 @@ impl MulverseLicenseRuntime {
                 return;
             }
 
-            if now > se.payload.issued_at {
+            let verification_interval_hours = se
+                .payload
+                .verification_interval_hours
+                .filter(|hours| *hours > 0)
+                .map(i64::from)
+                .unwrap_or(i64::from(DEFAULT_VERIFICATION_INTERVAL_HOURS));
+            let verification_due_at =
+                se.payload.issued_at + chrono::Duration::hours(verification_interval_hours);
+            if now > verification_due_at {
                 snapshot.state = LicenseState::OfflineGrace;
                 return;
             }
@@ -1259,6 +1262,49 @@ mod tests {
         runtime.evaluate_state(&mut snapshot);
 
         assert_eq!(snapshot.state, LicenseState::Pending);
+        cleanup_test_data(app_data_dir);
+    }
+
+    #[test]
+    fn future_issued_at_does_not_delay_an_entitlement_past_valid_from() {
+        let (runtime, app_data_dir) = test_runtime();
+        let mut snapshot = runtime.current_snapshot();
+        let mut entitlement = signed_entitlement(
+            &snapshot.installation_id,
+            Utc::now() - chrono::Duration::seconds(1),
+        );
+        entitlement.payload.issued_at = Utc::now() + chrono::Duration::seconds(5);
+        snapshot.signed_entitlement = Some(entitlement);
+
+        runtime.evaluate_state(&mut snapshot);
+
+        assert_eq!(snapshot.state, LicenseState::Active);
+        cleanup_test_data(app_data_dir);
+    }
+
+    #[test]
+    fn offline_grace_begins_after_the_signed_verification_interval() {
+        let (runtime, app_data_dir) = test_runtime();
+        let now = Utc::now();
+        let mut snapshot = runtime.current_snapshot();
+        let mut entitlement =
+            signed_entitlement(&snapshot.installation_id, now - chrono::Duration::days(1));
+        entitlement.payload.issued_at = now - chrono::Duration::hours(23);
+        entitlement.payload.verification_interval_hours = Some(24);
+        snapshot.signed_entitlement = Some(entitlement);
+
+        runtime.evaluate_state(&mut snapshot);
+
+        assert_eq!(snapshot.state, LicenseState::Active);
+
+        let mut entitlement = snapshot.signed_entitlement.clone().unwrap();
+        entitlement.payload.issued_at = now - chrono::Duration::hours(25);
+        let mut stale_snapshot = snapshot;
+        stale_snapshot.signed_entitlement = Some(entitlement);
+
+        runtime.evaluate_state(&mut stale_snapshot);
+
+        assert_eq!(stale_snapshot.state, LicenseState::OfflineGrace);
         cleanup_test_data(app_data_dir);
     }
 

@@ -155,11 +155,13 @@ const shouldRunClientQuery = $derived(
     (clientQuery || Boolean(search) || Boolean(filter) || sorts.length > 0),
 );
 
+const safeSource = $derived(Array.isArray(source) ? source : []);
+
 const visibleCols = $derived(columns.filter((c) => !c.hidden));
 const displayRows = $derived(
   shouldRunClientQuery
-    ? queryClient(source, visibleCols, { filter, search, sorts })
-    : source,
+    ? queryClient(safeSource, visibleCols, { filter, search, sorts })
+    : safeSource,
 );
 
 let lastServerQueryKey = "";
@@ -378,7 +380,11 @@ function requestMoreIfNeeded(force = false) {
 }
 
 $effect(() => {
-  source.length;
+  if (!Array.isArray(source)) {
+    source = [];
+  }
+
+  safeSource.length;
   hasMore;
   loading;
   requestAnimationFrame(requestMoreIfNeeded);
@@ -501,7 +507,7 @@ function cutSelection() {
   copySelection();
   if (readonly) return;
   const selected = normalizeRange(currentRange());
-  const rows = clearRange(source, visibleCols, selected);
+  const rows = clearRange(safeSource, visibleCols, selected);
   updateRows(
     rows,
     "cut",
@@ -647,7 +653,7 @@ function handleKeydown(e: KeyboardEvent) {
     case "delete":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = clearRange(source, visibleCols, selected);
+        const rows = clearRange(safeSource, visibleCols, selected);
         updateRows(
           rows,
           "delete",
@@ -691,7 +697,7 @@ function handleKeydown(e: KeyboardEvent) {
     case "fillDown":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = fillDown(source, visibleCols, selected);
+        const rows = fillDown(safeSource, visibleCols, selected);
         updateRows(
           rows,
           "fill-down",
@@ -702,7 +708,7 @@ function handleKeydown(e: KeyboardEvent) {
     case "fillRight":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = fillRight(source, visibleCols, selected);
+        const rows = fillRight(safeSource, visibleCols, selected);
         updateRows(
           rows,
           "fill-right",
@@ -787,7 +793,7 @@ function runMenu(id: string) {
     case "delete":
       if (!readonly) {
         const selected = normalizeRange(currentRange());
-        const rows = clearRange(source, visibleCols, selected);
+        const rows = clearRange(safeSource, visibleCols, selected);
         updateRows(
           rows,
           "delete",
@@ -797,8 +803,8 @@ function runMenu(id: string) {
       break;
     case "duplicate":
       if (!readonly) {
-        const rows = duplicateRows(source, [active.row], () => crypto.randomUUID());
-        updateRows(rows, "duplicate", rows.slice(source.length));
+        const rows = duplicateRows(safeSource, [active.row], () => crypto.randomUUID());
+        updateRows(rows, "duplicate", rows.slice(safeSource.length));
       }
       break;
     case "select-row": {

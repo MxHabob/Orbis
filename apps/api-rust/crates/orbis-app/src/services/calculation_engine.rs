@@ -230,7 +230,7 @@ fn validate_name(name: &str, kind: &str) -> Result<(), DomainError> {
 fn validate_unit(unit: &CalculationUnit) -> Result<(), DomainError> {
     if matches!(
         unit,
-        CalculationUnit::Custom(name) | CalculationUnit::Score { scale: name }
+        CalculationUnit::Custom { scale: name } | CalculationUnit::Score { scale: name }
             if name.trim().is_empty()
     ) {
         return Err(DomainError::Validation(
@@ -817,6 +817,14 @@ impl AcademicCalculationEngine {
         });
         values.insert("term_exam".into(), term_final_exam.unwrap_or(Decimal::ZERO));
 
+        let coursework_max = policy.coursework_max_score;
+        let exam_max = policy.exam_max_score;
+        let term_max = if policy.term_max_score > Decimal::ZERO {
+            policy.term_max_score
+        } else {
+            coursework_max + exam_max
+        };
+
         let monthly_average_expression = if month_nodes.is_empty() {
             AstNode::MeasureLiteral {
                 value: Decimal::ZERO,
@@ -836,7 +844,7 @@ impl AcademicCalculationEngine {
                     }),
                 },
                 AstNode::MeasureLiteral {
-                    value: Decimal::from(20),
+                    value: coursework_max,
                     unit: term_unit.clone(),
                 },
             ],
@@ -849,7 +857,7 @@ impl AcademicCalculationEngine {
                     name: "term_exam".into(),
                 },
                 AstNode::MeasureLiteral {
-                    value: Decimal::from(30),
+                    value: exam_max,
                     unit: exam_unit.clone(),
                 },
             ],
@@ -871,7 +879,7 @@ impl AcademicCalculationEngine {
                 AstNode::Divide {
                     left: Box::new(raw_term_total.clone()),
                     right: Box::new(AstNode::MeasureLiteral {
-                        value: Decimal::from(50),
+                        value: term_max,
                         unit: term_unit.clone(),
                     }),
                 },
@@ -918,7 +926,20 @@ impl AcademicCalculationEngine {
         let term_total = output_value(&calculated, "term_total")?;
         let percentage = output_value(&calculated, "percentage")?;
 
-        let status = if percentage >= policy.honors_threshold_percentage {
+        let is_incomplete = term_final_exam.is_none();
+        let failed_min_exam = if let (Some(min_exam), Some(exam_score)) =
+            (policy.minimum_final_exam_score, term_final_exam)
+        {
+            exam_score < min_exam
+        } else {
+            false
+        };
+
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if failed_min_exam {
+            AcademicStatus::Failed
+        } else if percentage >= policy.honors_threshold_percentage {
             AcademicStatus::PassedWithHonors
         } else if percentage >= policy.passing_threshold_percentage {
             AcademicStatus::Passed
@@ -937,11 +958,11 @@ impl AcademicCalculationEngine {
             monthly_results,
             monthly_average: monthly_avg,
             monthly_contribution,
-            monthly_contribution_max: Decimal::from(20),
+            monthly_contribution_max: coursework_max,
             term_final_exam,
-            term_final_exam_max: Decimal::from(30),
+            term_final_exam_max: exam_max,
             term_total,
-            term_max: Decimal::from(50),
+            term_max,
             percentage,
             letter_grade: Some(letter_grade),
             status,
@@ -1032,7 +1053,7 @@ impl AcademicCalculationEngine {
                                     name: "annual_total".into(),
                                 }),
                                 right: Box::new(AstNode::MeasureLiteral {
-                                    value: Decimal::from(100),
+                                    value: policy.annual_max_score,
                                     unit: annual_unit.clone(),
                                 }),
                             },
@@ -1051,7 +1072,11 @@ impl AcademicCalculationEngine {
         let result = Self::calculate_plan(&plan, &values)?;
         let annual_total = output_value(&result, "annual_total")?;
         let percentage = output_value(&result, "percentage")?;
-        let status = if percentage >= policy.honors_threshold_percentage {
+
+        let is_incomplete = term_1_result.is_none() && term_2_result.is_none();
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if percentage >= policy.honors_threshold_percentage {
             AcademicStatus::PassedWithHonors
         } else if percentage >= policy.passing_threshold_percentage {
             AcademicStatus::Passed
@@ -1070,7 +1095,187 @@ impl AcademicCalculationEngine {
             term_1_result,
             term_2_result,
             annual_total,
-            annual_max: Decimal::from(100),
+            annual_max: policy.annual_max_score,
+            percentage,
+            letter_grade: Some(letter_grade),
+            status,
+        })
+    }
+
+    /// Calculates a vocational training module result combining theory, practical skills, and mandatory competency gate.
+    pub fn calculate_vocational_module_result(
+        subject_id: uuid::Uuid,
+        subject_code: String,
+        subject_name: String,
+        subject_name_ar: Option<String>,
+        theory_score: Option<Decimal>,
+        practical_score: Option<Decimal>,
+        competency_mastered: bool,
+        policy: &AcademicPolicy,
+    ) -> Result<SubjectTermResult, DomainError> {
+        let theory = theory_score.unwrap_or(Decimal::ZERO);
+        let practical = practical_score.unwrap_or(Decimal::ZERO);
+        let theory_max = policy.coursework_max_score; // e.g. 40
+        let practical_max = policy.exam_max_score; // e.g. 60
+        let total_max = theory_max + practical_max;
+
+        let total_score = theory.min(theory_max) + practical.min(practical_max);
+        let percentage = if total_max > Decimal::ZERO {
+            apply_rounding(
+                (total_score / total_max) * Decimal::from(100),
+                policy.rounding_mode,
+                policy.decimal_places,
+            )
+        } else {
+            Decimal::ZERO
+        };
+
+        let is_incomplete = theory_score.is_none() || practical_score.is_none();
+        let min_practical_met = if let Some(min_p) = policy.minimum_final_exam_score {
+            practical >= min_p
+        } else {
+            true
+        };
+
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if !competency_mastered || !min_practical_met {
+            AcademicStatus::Failed
+        } else if percentage >= policy.honors_threshold_percentage {
+            AcademicStatus::PassedWithHonors
+        } else if percentage >= policy.passing_threshold_percentage {
+            AcademicStatus::Passed
+        } else {
+            AcademicStatus::Failed
+        };
+
+        let letter_grade = Self::resolve_letter_grade(percentage);
+
+        Ok(SubjectTermResult {
+            subject_id,
+            subject_code,
+            subject_name,
+            subject_name_ar,
+            credit_hours: Decimal::from(3),
+            monthly_results: vec![],
+            monthly_average: theory,
+            monthly_contribution: theory,
+            monthly_contribution_max: theory_max,
+            term_final_exam: practical_score,
+            term_final_exam_max: practical_max,
+            term_total: total_score,
+            term_max: total_max,
+            percentage,
+            letter_grade: Some(letter_grade),
+            status,
+        })
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Certificate Examination (Thanawiya / Basic Certificate)
+    // ═══════════════════════════════════════════════════════════════
+
+    /// Resolves the cumulative prior-year contribution score.
+    ///
+    /// Implements the verified Sana'a MoE formula:
+    ///   cumulative = avg(prior_year_annual_scores) / divisor
+    ///
+    /// For Thanawiya (Grade 12):
+    ///   - prior_year_annual_scores = [Grade 9 annual, Grade 10 annual, Grade 11 annual]
+    ///   - Each out of 100
+    ///   - divisor = 5 (100 → 20 scale)
+    ///   - Result: max 20 points
+    ///
+    /// Returns `None` if no prior-year scores are available.
+    pub fn resolve_cumulative_score(
+        prior_year_annual_scores: &[Decimal],
+        cumulative_max_score: Decimal,
+        annual_max_score: Decimal,
+        policy: &AcademicPolicy,
+    ) -> Option<Decimal> {
+        if prior_year_annual_scores.is_empty() || annual_max_score == Decimal::ZERO {
+            return None;
+        }
+
+        let sum: Decimal = prior_year_annual_scores.iter().copied().sum();
+        let count = Decimal::from(prior_year_annual_scores.len());
+        let average = sum / count;
+
+        // Normalize: average (out of annual_max) → cumulative_max scale
+        // e.g., avg=80 out of 100, cumulative_max=20 → 80/100*20 = 16
+        let cumulative = (average / annual_max_score) * cumulative_max_score;
+        let rounded = apply_rounding(cumulative, policy.rounding_mode, policy.decimal_places);
+        Some(rounded.min(cumulative_max_score))
+    }
+
+    /// Calculates a certificate examination result for a single subject.
+    ///
+    /// Combines the ministerial exam score and the cumulative prior-year
+    /// contribution into a final certificate score.
+    ///
+    /// For Yemen Thanawiya (Grade 12):
+    ///   - exam_score: out of 80 (ministerial exam)
+    ///   - cumulative_score: out of 20 (resolved from prior years)
+    ///   - total: out of 100
+    pub fn calculate_certificate_result(
+        subject_id: uuid::Uuid,
+        subject_code: String,
+        subject_name: String,
+        subject_name_ar: Option<String>,
+        credit_hours: Decimal,
+        exam_score: Option<Decimal>,
+        cumulative_score: Option<Decimal>,
+        policy: &AcademicPolicy,
+    ) -> Result<SubjectTermResult, DomainError> {
+        let exam_max = policy.certificate_exam_max_score; // 80
+        let cumul_max = policy.certificate_cumulative_max_score; // 20
+        let total_max = exam_max + cumul_max; // 100
+
+        let exam = exam_score.unwrap_or(Decimal::ZERO).min(exam_max);
+        let cumul = cumulative_score.unwrap_or(Decimal::ZERO).min(cumul_max);
+        let total_score = exam + cumul;
+
+        let percentage = if total_max > Decimal::ZERO {
+            apply_rounding(
+                (total_score / total_max) * Decimal::from(100),
+                policy.rounding_mode,
+                policy.decimal_places,
+            )
+        } else {
+            Decimal::ZERO
+        };
+
+        let is_incomplete = exam_score.is_none();
+        let status = if is_incomplete {
+            AcademicStatus::Incomplete
+        } else if percentage >= policy.honors_threshold_percentage {
+            AcademicStatus::PassedWithHonors
+        } else if percentage >= policy.passing_threshold_percentage {
+            AcademicStatus::Passed
+        } else {
+            AcademicStatus::Failed
+        };
+
+        let letter_grade = Self::resolve_letter_grade(percentage);
+
+        // Map onto SubjectTermResult — reuse the existing structure:
+        //   monthly_contribution = cumulative_score (prior-year contribution)
+        //   term_final_exam = exam_score (ministerial exam)
+        //   term_total = total (certificate result)
+        Ok(SubjectTermResult {
+            subject_id,
+            subject_code,
+            subject_name,
+            subject_name_ar,
+            credit_hours,
+            monthly_results: vec![], // No monthly breakdown for certificates
+            monthly_average: cumul,  // cumulative score
+            monthly_contribution: cumul,
+            monthly_contribution_max: cumul_max,
+            term_final_exam: exam_score,
+            term_final_exam_max: exam_max,
+            term_total: total_score,
+            term_max: total_max,
             percentage,
             letter_grade: Some(letter_grade),
             status,
@@ -1327,7 +1532,9 @@ mod tests {
         .unwrap();
         assert_eq!(university_gpa, d("3.5666666666666666666666666667"));
 
-        let competency_unit = CalculationUnit::Custom("competency-level".into());
+        let competency_unit = CalculationUnit::Custom {
+            scale: "competency-level".into(),
+        };
         let institute = CalculationPlan {
             version: 1,
             inputs: vec![
@@ -1376,7 +1583,9 @@ mod tests {
         assert_eq!(institute_result.outputs[0].value, d("4.5"));
         assert_eq!(
             institute_result.outputs[1].unit,
-            CalculationUnit::Custom("competency-level".into())
+            CalculationUnit::Custom {
+                scale: "competency-level".into(),
+            }
         );
         assert_eq!(institute_result.outputs[1].value, d("3"));
     }
@@ -1839,5 +2048,106 @@ mod tests {
             )
             .is_err()
         );
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Certificate calculation tests
+    // ═══════════════════════════════════════════════════════════
+
+    #[test]
+    fn test_cumulative_score_resolution_thanawiya_example() {
+        // Worked example from MoE: avg of 80/100 across 3 years → 16/20
+        let policy = AcademicPolicy {
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            ..Default::default()
+        };
+        let prior_scores = vec![d("80"), d("85"), d("75")]; // avg = 80
+        let result = AcademicCalculationEngine::resolve_cumulative_score(
+            &prior_scores,
+            d("20"),  // cumulative_max
+            d("100"), // annual_max
+            &policy,
+        );
+        assert_eq!(result, Some(d("16.00")));
+    }
+
+    #[test]
+    fn test_cumulative_score_empty_returns_none() {
+        let policy = AcademicPolicy::default();
+        let result =
+            AcademicCalculationEngine::resolve_cumulative_score(&[], d("20"), d("100"), &policy);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_certificate_result_thanawiya_passed() {
+        let policy = AcademicPolicy {
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            certificate_exam_max_score: d("80"),
+            certificate_cumulative_max_score: d("20"),
+            ..Default::default()
+        };
+        let result = AcademicCalculationEngine::calculate_certificate_result(
+            Uuid::new_v4(),
+            "MATH".into(),
+            "Mathematics".into(),
+            Some("الرياضيات".into()),
+            d("1"),
+            Some(d("75")), // exam: 75/80
+            Some(d("16")), // cumulative: 16/20
+            &policy,
+        )
+        .unwrap();
+
+        assert_eq!(result.term_total, d("91")); // 75 + 16 = 91
+        assert_eq!(result.term_max, d("100")); // 80 + 20
+        assert_eq!(result.percentage, d("91.00"));
+        assert_eq!(result.status, AcademicStatus::PassedWithHonors);
+    }
+
+    #[test]
+    fn test_certificate_result_failed() {
+        let policy = AcademicPolicy {
+            rounding_mode: RoundingMode::RoundHalfUp,
+            decimal_places: 2,
+            certificate_exam_max_score: d("80"),
+            certificate_cumulative_max_score: d("20"),
+            ..Default::default()
+        };
+        let result = AcademicCalculationEngine::calculate_certificate_result(
+            Uuid::new_v4(),
+            "PHYS".into(),
+            "Physics".into(),
+            None,
+            d("1"),
+            Some(d("30")), // exam: 30/80
+            Some(d("10")), // cumulative: 10/20
+            &policy,
+        )
+        .unwrap();
+
+        assert_eq!(result.term_total, d("40")); // 30 + 10
+        assert_eq!(result.percentage, d("40.00"));
+        assert_eq!(result.status, AcademicStatus::Failed);
+    }
+
+    #[test]
+    fn test_certificate_result_incomplete_without_exam() {
+        let policy = AcademicPolicy::default();
+        let result = AcademicCalculationEngine::calculate_certificate_result(
+            Uuid::new_v4(),
+            "ARAB".into(),
+            "Arabic".into(),
+            None,
+            d("1"),
+            None, // no exam score
+            Some(d("15")),
+            &policy,
+        )
+        .unwrap();
+
+        assert_eq!(result.status, AcademicStatus::Incomplete);
     }
 }

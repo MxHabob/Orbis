@@ -33,11 +33,13 @@ let {
   orgId,
   orgName,
   licenseReady,
+  standalone = false,
   children,
 }: {
   orgId: string;
   orgName?: string;
   licenseReady: boolean;
+  standalone?: boolean;
   children: Snippet;
 } = $props();
 
@@ -68,14 +70,14 @@ function handleKeyDown(e: KeyboardEvent) {
   if (!licenseStore.isOperational) return;
 
   // Ctrl/Cmd + / -> Toggle Ask Orbis AI
-  if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+  if (!standalone && (e.ctrlKey || e.metaKey) && e.key === "/") {
     e.preventDefault();
     uiStore.toggleAskOrbis();
     return;
   }
 
   // Ctrl/Cmd + K -> Toggle global quick search
-  if ((e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+  if (!standalone && (e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
     e.preventDefault();
     uiStore.toggleSearch();
     return;
@@ -107,13 +109,15 @@ function handleKeyDown(e: KeyboardEvent) {
   className="h-full w-full min-w-0 flex-1 overflow-hidden"
 >
 <div class="flex h-full max-w-full bg-background">
-	{#if !uiStore.focusMode}
+	{#if !standalone && !uiStore.focusMode}
 		<div transition:slide={{ axis: 'x', duration: 200 }} class="overflow-hidden h-full flex shrink-0">
 			<AppSidebar {orgId} {orgName} />
 		</div>
 	{/if}
 	<div class="flex flex-1 flex-col overflow-hidden relative">
-		<LicenseBanner />
+		{#if !standalone}
+			<LicenseBanner />
+		{/if}
 		<div
 			class="flex flex-1 min-w-0 items-stretch overflow-hidden"
 		>
@@ -123,7 +127,7 @@ function handleKeyDown(e: KeyboardEvent) {
 				</LicenseFeatureGate>
 			</div>
 		</div>
-		{#if uiStore.showAskOrbis}
+		{#if !standalone && uiStore.showAskOrbis}
 			{#key page.url.searchParams.get("ask_orbis")}
 				<div
 					class="absolute inset-y-0 inset-e-0 z-50"

@@ -113,7 +113,7 @@ function handleGridAction(event: GridActionEvent) {
   if (event.actionId === "dblclick" && event.row.id) {
     goto(
       localizeHref(
-        `/${orgId}/academics/classes/${classId}/curriculum/${event.row.id}`,
+        `/${orgId}/academics/sections/${classId}/curriculum/${event.row.id}`,
       ),
     );
   }

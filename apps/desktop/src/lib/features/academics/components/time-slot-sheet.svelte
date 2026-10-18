@@ -1,382 +1,430 @@
 <script lang="ts">
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from "@orbis/ui/sheet";
-import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
-import { FormField } from "@orbis/ui";
-import { Label } from "@orbis/ui/label";
-import { Checkbox } from "@orbis/ui/checkbox";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-} from "@orbis/ui/select";
-import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
-import { api, extractErrorMessage, type CreateTimeSlotRequest, type UpdateTimeSlotRequest } from "$lib/api";
-import { toast } from "@orbis/ui";
-import * as m from "$lib/paraglide/messages";
-import { createTimeSlotInputSchema } from "@orbis/schemas";
-import { FormController } from "$lib/shared/forms/form-controller.svelte";
-import TimeSlotForm from "./time-slot-form.svelte";
-import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
-import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+  import { toast } from "@orbis/ui";
+  import { api, extractErrorMessage, type TimeSlotDto } from "$lib/api";
+  import { Badge } from "@orbis/ui/badge";
+  import { Button } from "@orbis/ui/button";
+  import { Input } from "@orbis/ui/input";
+  import { Label } from "@orbis/ui/label";
+  import {
+    Sheet,
+    SheetContent,
+    SheetFooter,
+    SheetHeader,
+    SheetTitle,
+  } from "@orbis/ui/sheet";
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+  } from "@orbis/ui/select";
+  import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
+  import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+  import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+  import * as m from "$lib/paraglide/messages";
 
-interface Props {
-  open: boolean;
-  periodId: string;
-  timeSlots: any[];
-  onSuccess?: () => void;
-}
-
-let {
-  open = $bindable(false),
-  periodId,
-  timeSlots = [],
-  onSuccess,
-}: Props = $props();
-
-let editingSlotId = $state<string | null>(null);
-let isAdding = $state(false);
-
-// Form State
-let nameAr = $state("");
-let name = $state("");
-let startTime = $state("08:00");
-let endTime = $state("08:45");
-let isBreak = $state(false);
-let breakType = $state("recess");
-let isSubmitting = $state(false);
-
-const form = new FormController({
-  initialValues: {
-    period_id: "",
-    slot_number: 1,
-    name: "",
-    name_ar: "",
-    start_time: "08:00",
-    end_time: "08:45",
-    duration_minutes: 45,
-    is_break: false,
-    applicable_days: "1,2,3,4,5",
-  },
-  schema: createTimeSlotInputSchema,
-});
-
-function resetForm() {
-  editingSlotId = null;
-  isAdding = false;
-  nameAr = "";
-  name = "";
-  startTime = "08:00";
-  endTime = "08:45";
-  isBreak = false;
-  breakType = "recess";
-}
-
-function startEdit(slot: any) {
-  editingSlotId = String(slot.id);
-  isAdding = false;
-  nameAr = slot.name_ar || "";
-  name = slot.name || "";
-  startTime = String(slot.start_time || "").slice(0, 5);
-  endTime = String(slot.end_time || "").slice(0, 5);
-  isBreak = Boolean(slot.is_break);
-  breakType = slot.break_type || "recess";
-}
-
-function startAdd() {
-  resetForm();
-  isAdding = true;
-  const nextSlotNum =
-    timeSlots
-      .filter((s) => !s.is_break)
-      .reduce((max, s) => Math.max(max, Number(s.slot_number) || 0), 0) + 1;
-  nameAr = m.academics_schedule_placeholder_period({ number: nextSlotNum });
-  name = m.academics_schedule_placeholder_period_en({ number: nextSlotNum });
-}
-
-function calcDuration(start: string, end: string): number {
-  const [sh, sm] = start.split(":").map(Number);
-  const [eh, em] = end.split(":").map(Number);
-  return eh * 60 + em - (sh * 60 + sm);
-}
-
-async function handleSaveSlot(e: SubmitEvent) {
-  e.preventDefault();
-  form.values = {
-    period_id: periodId,
-    slot_number:
-      timeSlots.reduce(
-        (max, s) => Math.max(max, Number(s.slot_number) || 0),
-        0,
-      ) + 1,
-    name: name.trim() || nameAr.trim(),
-    name_ar: nameAr.trim(),
-    start_time: startTime,
-    end_time: endTime,
-    duration_minutes: calcDuration(startTime, endTime),
-    is_break: isBreak,
-    applicable_days: "1,2,3,4,5",
-  };
-  if (!form.validate()) {
-    toast.error(m.academics_schedule_time_slot_end_error());
-    return;
+  interface Props {
+    open: boolean;
+    periodId: string;
+    timeSlots: TimeSlotDto[];
+    onSuccess?: () => void;
   }
 
-  isSubmitting = true;
-  try {
-    if (editingSlotId) {
-      // Update
-      const request: UpdateTimeSlotRequest = {
-        name: name.trim() || nameAr.trim(),
-        name_ar: nameAr.trim(),
-        start_time: startTime,
-        end_time: endTime,
-        is_break: isBreak,
-        break_type: isBreak ? breakType : null,
-      };
-      await api.updateTimeSlot(editingSlotId, request);
-      toast.success(m.academics_schedule_time_slot_updated());
-    } else {
-      // Create
-      const slotNumber =
-        timeSlots.reduce(
-          (max, s) => Math.max(max, Number(s.slot_index || s.slot_number) || 0),
-          0,
-        ) + 1;
+  let {
+    open = $bindable(false),
+    periodId,
+    timeSlots = [],
+    onSuccess,
+  }: Props = $props();
 
-      const request: CreateTimeSlotRequest = {
-        period_id: periodId,
-        day_of_week: 1,
-        slot_index: slotNumber,
-        name: name.trim() || nameAr.trim(),
-        name_ar: nameAr.trim(),
-        start_time: startTime,
-        end_time: endTime,
-        is_break: isBreak,
-        break_type: isBreak ? breakType : null,
-      };
-      await api.createTimeSlot(request);
-      toast.success(m.academics_schedule_time_slot_added());
+  const weekdays = [
+    { value: 7, label: m.common_day_saturday() },
+    { value: 1, label: m.common_day_sunday() },
+    { value: 2, label: m.common_day_monday() },
+    { value: 3, label: m.common_day_tuesday() },
+    { value: 4, label: m.common_day_wednesday() },
+    { value: 5, label: m.common_day_thursday() },
+    { value: 6, label: m.common_day_friday() },
+  ];
+
+  let isEditing = $state(false);
+  let editingSlot = $state<TimeSlotDto | null>(null);
+  let nameAr = $state("");
+  let name = $state("");
+  let startTime = $state("08:00");
+  let endTime = $state("08:45");
+  let slotIndex = $state("1");
+  let selectedDays = $state<number[]>([7, 1, 2, 3, 4, 5]);
+  let isBreak = $state(false);
+  let breakType = $state("recess");
+  let isSubmitting = $state(false);
+
+  const sortedTimeSlots = $derived(
+    [...timeSlots].sort((left, right) => {
+      const dayOrder = [7, 1, 2, 3, 4, 5, 6];
+      return (
+        dayOrder.indexOf(left.day_of_week) - dayOrder.indexOf(right.day_of_week) ||
+        left.slot_index - right.slot_index
+      );
+    }),
+  );
+  const duration = $derived.by(() => {
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const [endHour, endMinute] = endTime.split(":").map(Number);
+    return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+  });
+
+  function resetForm() {
+    isEditing = false;
+    editingSlot = null;
+    nameAr = "";
+    name = "";
+    startTime = "08:00";
+    endTime = "08:45";
+    slotIndex = String(
+      Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1,
+    );
+    selectedDays = [7, 1, 2, 3, 4, 5];
+    isBreak = false;
+    breakType = "recess";
+  }
+
+  function startAdd() {
+    resetForm();
+    isEditing = true;
+    const nextIndex =
+      Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1;
+    slotIndex = String(nextIndex);
+    nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
+    name = m.academics_schedule_placeholder_period_en({ number: nextIndex });
+  }
+
+  function startEdit(slot: TimeSlotDto) {
+    editingSlot = slot;
+    isEditing = true;
+    nameAr = slot.name_ar ?? "";
+    name = slot.name ?? "";
+    startTime = slot.start_time.slice(0, 5);
+    endTime = slot.end_time.slice(0, 5);
+    slotIndex = String(slot.slot_index);
+    selectedDays = [slot.day_of_week];
+    isBreak = slot.is_break;
+    breakType = slot.break_type ?? "recess";
+  }
+
+  function toggleDay(day: number) {
+    if (editingSlot) {
+      selectedDays = [day];
+      return;
+    }
+    selectedDays = selectedDays.includes(day)
+      ? selectedDays.filter((selected) => selected !== day)
+      : [...selectedDays, day];
+  }
+
+  async function handleSave(event: SubmitEvent) {
+    event.preventDefault();
+    const index = Number(slotIndex);
+    const label = name.trim() || nameAr.trim();
+    if (
+      !periodId ||
+      !label ||
+      !nameAr.trim() ||
+      !startTime ||
+      !endTime ||
+      duration <= 0 ||
+      !Number.isInteger(index) ||
+      index < 1 ||
+      selectedDays.length === 0 ||
+      (editingSlot && selectedDays.length !== 1)
+    ) {
+      toast.error(m.academics_schedule_time_slot_required());
+      return;
     }
 
-    resetForm();
-    onSuccess?.();
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
-  } finally {
-    isSubmitting = false;
+    isSubmitting = true;
+    try {
+      if (editingSlot) {
+        await api.updateTimeSlot(editingSlot.id, {
+          day_of_week: selectedDays[0],
+          slot_index: index,
+          name: label,
+          name_ar: nameAr.trim(),
+          start_time: startTime,
+          end_time: endTime,
+          is_break: isBreak,
+          break_type: isBreak ? breakType : null,
+        });
+        toast.success(m.academics_schedule_time_slot_updated());
+      } else {
+        const slots = selectedDays.map((day) => ({
+          day_of_week: day,
+          slot_index: index,
+          name: label,
+          name_ar: nameAr.trim(),
+          start_time: startTime,
+          end_time: endTime,
+          is_break: isBreak,
+          break_type: isBreak ? breakType : null,
+        }));
+        await api.batchCreateTimeSlots({ period_id: periodId, slots });
+        toast.success(m.academics_schedule_time_slot_added());
+      }
+      resetForm();
+      onSuccess?.();
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      isSubmitting = false;
+    }
   }
-}
 
-async function handleDeleteSlot(id: string) {
-  try {
-    await api.deleteTimeSlot(id);
-    toast.success(m.academics_schedule_time_slot_deleted());
-    if (editingSlotId === id) resetForm();
-    onSuccess?.();
-  } catch (err) {
-    toast.error(extractErrorMessage(err));
+  async function handleDelete(slotId: string) {
+    try {
+      await api.deleteTimeSlot(slotId);
+      toast.success(m.academics_schedule_time_slot_deleted());
+      if (editingSlot?.id === slotId) resetForm();
+      onSuccess?.();
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
   }
-}
+
+  function getWeekdayLabel(day: number): string {
+    return weekdays.find((item) => item.value === day)?.label ?? String(day);
+  }
+
+  function getDuration(slot: TimeSlotDto): number {
+    const [startHour, startMinute] = slot.start_time.split(":").map(Number);
+    const [endHour, endMinute] = slot.end_time.split(":").map(Number);
+    return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+  }
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="w-full sm:max-w-lg overflow-y-auto flex flex-col p-6 text-start">
-    <SheetHeader>
-      <SheetTitle>
-        {m.academics_schedule_time_slots_heading()}
-      </SheetTitle>
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-xl"
+    class="flex h-full w-full flex-col overflow-hidden p-0 text-start"
+  >
+    <SheetHeader class="border-b border-border/50 px-5 py-4">
+      <SheetTitle>{m.academics_schedule_time_slots_heading()}</SheetTitle>
+      <p class="text-xs text-muted-foreground">{m.academics_studio_manage_slots()}</p>
     </SheetHeader>
 
-    <div class="mt-4 flex-1 flex flex-col gap-4">
-      <!-- Add Slot Form / Editor -->
-      {#if editingSlotId}
-        <form onsubmit={handleSaveSlot} class="rounded-xl border border-primary/30 bg-card p-4 flex flex-col gap-3 shadow-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-primary">
-              {editingSlotId ? m.academics_schedule_time_slot_edit() : m.academics_schedule_time_slot_new()}
-            </span>
-            <Button variant="ghost" size="icon" class="h-6 w-6" onclick={resetForm}>
-              <XMark size={12} />
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+      {#if isEditing}
+        <form class="space-y-4 rounded-xl border border-primary/20 bg-card p-4 shadow-xs" onsubmit={handleSave}>
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-foreground">
+              {editingSlot ? m.academics_schedule_time_slot_edit() : m.academics_schedule_time_slot_new()}
+            </h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              class="h-7 w-7"
+              onclick={resetForm}
+              aria-label={m.common_action_cancel()}
+            >
+              <XMark size={14} />
             </Button>
           </div>
 
-          <div>
-            <BilingualNameFields
-              arId="slot-name-ar"
-              enId="slot-name-en"
-              arLabel={m.academics_schedule_name_ar()}
-              enLabel={m.academics_schedule_name_en()}
-              bind:arValue={nameAr}
-              bind:enValue={name}
-              arPlaceholder={m.academics_schedule_placeholder_period({ number: 1 })}
-              enPlaceholder={m.academics_schedule_placeholder_period_en({ number: 1 })}
-              arError={form.errors.name_ar?.[0]}
-              enError={form.errors.name?.[0]}
-              kind="label"
-              requestSuggestion={suggestLocalTranslation}
-              arRequired
-              disabled={isSubmitting}
-              loadingMessage={m.bilingual_entry_loading()}
-              failureMessage={m.bilingual_entry_failure()}
-            />
+          <BilingualNameFields
+            arId="studio-slot-name-ar"
+            enId="studio-slot-name-en"
+            arLabel={m.academics_schedule_name_ar()}
+            enLabel={m.academics_schedule_name_en()}
+            bind:arValue={nameAr}
+            bind:enValue={name}
+            arPlaceholder={m.academics_schedule_name_ar()}
+            enPlaceholder={m.academics_schedule_name_en()}
+            kind="label"
+            requestSuggestion={suggestLocalTranslation}
+            arRequired
+            disabled={isSubmitting}
+            loadingMessage={m.bilingual_entry_loading()}
+            failureMessage={m.bilingual_entry_failure()}
+          />
+
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="space-y-1.5">
+              <Label for="studio-slot-index" class="text-xs">{m.academics_studio_slot_index()}</Label>
+              <Input
+                id="studio-slot-index"
+                type="number"
+                min="1"
+                step="1"
+                bind:value={slotIndex}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="studio-slot-start" class="text-xs">{m.academics_schedule_start_time()}</Label>
+              <Input
+                id="studio-slot-start"
+                type="time"
+                bind:value={startTime}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
+            <div class="space-y-1.5">
+              <Label for="studio-slot-end" class="text-xs">{m.academics_schedule_end_time()}</Label>
+              <Input
+                id="studio-slot-end"
+                type="time"
+                bind:value={endTime}
+                disabled={isSubmitting}
+                required
+              />
+            </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
-            <FormField label={m.academics_schedule_start_time()} error={form.errors.start_time?.[0]} required>
-              {#snippet children()}
-              <Input type="time" bind:value={startTime} class="h-8 text-xs font-mono" required />
-              {/snippet}
-            </FormField>
-            <FormField label={m.academics_schedule_end_time()} error={form.errors.end_time?.[0]} required>
-              {#snippet children()}
-              <Input type="time" bind:value={endTime} class="h-8 text-xs font-mono" required />
-              {/snippet}
-            </FormField>
-          </div>
+          <fieldset class="space-y-2">
+            <legend class="text-xs font-medium text-foreground">{m.academics_studio_teaching_days()}</legend>
+            <div class="flex flex-wrap gap-1.5">
+              {#each weekdays as day (day.value)}
+                <button
+                  type="button"
+                  aria-pressed={selectedDays.includes(day.value)}
+                  disabled={isSubmitting}
+                  class="rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors {selectedDays.includes(day.value)
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border/60 bg-background text-muted-foreground hover:bg-muted'}"
+                  onclick={() => toggleDay(day.value)}
+                >
+                  {day.label}
+                </button>
+              {/each}
+            </div>
+          </fieldset>
 
-          <div class="flex items-center gap-2 pt-1">
-            <Checkbox id="is-break-check" checked={isBreak} onCheckedChange={(val: boolean | "indeterminate") => (isBreak = Boolean(val))} />
-            <Label for="is-break-check" class="text-xs cursor-pointer font-medium">
+          <div class="flex flex-wrap items-center gap-4">
+            <label class="flex items-center gap-2 text-xs font-medium text-foreground">
+              <input
+                type="checkbox"
+                bind:checked={isBreak}
+                disabled={isSubmitting}
+                class="size-4 accent-primary"
+              />
               {m.academics_schedule_break_slot()}
-            </Label>
+            </label>
+            {#if isBreak}
+              <div class="min-w-48 flex-1">
+                <Select
+                  type="single"
+                  value={breakType}
+                  onValueChange={(value) => (breakType = value ?? "recess")}
+                >
+                  <SelectTrigger class="h-9 text-xs">
+                    <span>{m.academics_schedule_break_type()}</span>
+                  </SelectTrigger>
+                  <SelectContent class="text-start">
+                    <SelectItem value="recess" class="text-xs">{m.common_onboarding_break_recess()}</SelectItem>
+                    <SelectItem value="lunch" class="text-xs">{m.common_onboarding_break_lunch()}</SelectItem>
+                    <SelectItem value="prayer" class="text-xs">{m.common_onboarding_break_prayer()}</SelectItem>
+                    <SelectItem value="morning" class="text-xs">{m.academics_schedule_morning_assembly()}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            {/if}
           </div>
 
-          {#if isBreak}
-            <FormField label={m.academics_schedule_break_type()}>
-              {#snippet children()}
-              <Select type="single" value={breakType} onValueChange={(val: string | undefined) => (breakType = val ?? "recess")}>
-                <SelectTrigger class="h-8 text-xs">
-                  <span>
-                    {breakType === "recess"
-                      ? m.common_onboarding_break_recess()
-                      : breakType === "lunch"
-                        ? m.common_onboarding_break_lunch()
-                        : breakType === "prayer"
-                          ? m.common_onboarding_break_prayer()
-                          : m.academics_schedule_morning_assembly()}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recess" class="text-xs">{m.common_onboarding_break_recess()}</SelectItem>
-                  <SelectItem value="lunch" class="text-xs">{m.common_onboarding_break_lunch()}</SelectItem>
-                  <SelectItem value="prayer" class="text-xs">{m.common_onboarding_break_prayer()}</SelectItem>
-                  <SelectItem value="morning" class="text-xs">{m.academics_schedule_morning_assembly()}</SelectItem>
-                </SelectContent>
-              </Select>
-              {/snippet}
-            </FormField>
-          {/if}
-
-          <div class="flex items-center justify-end gap-2 pt-2 border-t border-border/40">
-            <Button type="button" variant="outline" size="sm" class="h-8 text-xs" onclick={resetForm}>
-              {m.common_action_cancel()}
-            </Button>
-            <Button type="submit" size="sm" class="h-8 text-xs font-semibold" disabled={isSubmitting}>
-              <FloppyDisk size={13} class="me-1" />
-              {m.academics_schedule_save_slot()}
-            </Button>
+          <div class="flex items-center justify-between border-t border-border/50 pt-3">
+            <span class="text-xs text-muted-foreground">
+              {m.academics_schedule_minutes()}: {duration > 0 ? duration : "—"}
+            </span>
+            <div class="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onclick={resetForm}>
+                {m.common_action_cancel()}
+              </Button>
+              <Button type="submit" size="sm" class="gap-1.5" disabled={isSubmitting}>
+                <FloppyDisk size={14} />
+                {m.academics_schedule_save_slot()}
+              </Button>
+            </div>
           </div>
         </form>
       {:else}
         <Button
           type="button"
           variant="outline"
-          class="w-full border-dashed gap-1.5 text-xs font-semibold text-primary hover:bg-primary/5"
+          class="w-full gap-2 border-dashed text-xs"
+          disabled={!periodId}
           onclick={startAdd}
         >
           <Plus size={14} />
-          <span>{m.academics_schedule_add_slot()}</span>
+          {m.academics_schedule_add_slot()}
         </Button>
       {/if}
 
-      <!-- List of Existing Slots -->
-      <div class="flex flex-col gap-1.5 mt-2">
-        <span class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-          {m.academics_schedule_current_slots()} ({timeSlots.length})
-        </span>
-
-        {#if timeSlots.length === 0}
-          <div class="flex flex-col items-center justify-center p-8 border border-dashed border-border/60 rounded-xl bg-muted/10 text-center gap-2">
-            <ClockRotateRight size={24} class="text-muted-foreground/60" />
-            <p class="text-xs text-muted-foreground">
-              {m.academics_schedule_no_slots()}
-            </p>
+      <section class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-semibold text-foreground">{m.academics_schedule_current_slots()}</h3>
+          <Badge variant="secondary">{timeSlots.length}</Badge>
+        </div>
+        {#if sortedTimeSlots.length === 0}
+          <div class="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border/60 p-8 text-center">
+            <ClockRotateRight size={22} class="text-muted-foreground/70" />
+            <p class="text-xs text-muted-foreground">{m.academics_schedule_no_slots()}</p>
           </div>
         {:else}
-          {#each timeSlots as slot (slot.id)}
-            {@const isSlotBreak = Boolean(slot.is_break)}
-            <div
-              class="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-card transition-colors hover:border-primary/40 {isSlotBreak ? 'bg-amber-500/5 border-amber-500/30' : ''}"
-            >
-              <div class="flex items-center gap-2.5 min-w-0">
-                <div
-                  class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md font-bold text-xs {isSlotBreak ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-primary/10 text-primary'}"
-                >
-                  {#if isSlotBreak}
-                    <Heart size={13} />
-                  {:else}
-                    {slot.slot_number}
-                  {/if}
-                </div>
-
-                <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-bold text-foreground truncate">
-                    {slot.name_ar || slot.name || m.academics_schedule_placeholder_period_en({ number: slot.slot_number })}
+          <div class="space-y-2">
+            {#each sortedTimeSlots as slot (slot.id)}
+              <article class="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card p-3 {slot.is_break ? 'border-amber-500/30 bg-amber-500/[0.03]' : ''}">
+                <div class="flex min-w-0 items-center gap-3">
+                  <span class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-xs font-bold text-foreground">
+                    {#if slot.is_break}
+                      <Heart size={14} class="text-amber-600" />
+                    {:else}
+                      {slot.slot_index}
+                    {/if}
                   </span>
-                  <span class="text-[10px] text-muted-foreground font-mono">
-                    {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)} ({slot.duration_minutes || calcDuration(slot.start_time, slot.end_time)} {m.academics_schedule_minutes()})
-                  </span>
+                  <div class="min-w-0">
+                    <p class="truncate text-xs font-semibold text-foreground">
+                      {getWeekdayLabel(slot.day_of_week)} · {slot.name_ar || slot.name || m.academics_schedule_placeholder_period_en({ number: slot.slot_index })}
+                    </p>
+                    <p class="mt-1 font-mono text-[10px] text-muted-foreground">
+                      {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+                      · {m.academics_schedule_minutes()}: {getDuration(slot)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              <div class="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  onclick={() => startEdit(slot)}
-                  aria-label={m.academics_schedule_edit()}
-                >
-                  <Pencil size={12} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-7 w-7 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                  onclick={() => handleDeleteSlot(String(slot.id))}
-                  aria-label={m.common_action_delete()}
-                >
-                  <Trash size={12} />
-                </Button>
-              </div>
-            </div>
-          {/each}
+                <div class="flex shrink-0 items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="size-8"
+                    onclick={() => startEdit(slot)}
+                    aria-label={m.academics_schedule_edit()}
+                  >
+                    <Pencil size={13} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    class="size-8 text-destructive hover:bg-destructive/10"
+                    onclick={() => handleDelete(slot.id)}
+                    aria-label={m.common_action_delete()}
+                  >
+                    <Trash size={13} />
+                  </Button>
+                </div>
+              </article>
+            {/each}
+          </div>
         {/if}
-      </div>
+      </section>
     </div>
 
-    <SheetFooter class="mt-6 border-t border-border/40 pt-4">
-      <Button variant="outline" size="sm" class="w-full text-xs" onclick={() => (open = false)}>
+    <SheetFooter class="border-t border-border/50 p-4">
+      <Button variant="outline" class="w-full" onclick={() => (open = false)}>
         {m.common_action_close()}
       </Button>
     </SheetFooter>
   </SheetContent>
 </Sheet>
-
-<TimeSlotForm
-  bind:open={isAdding}
-  {periodId}
-  nextSlotNumber={timeSlots.filter((slot) => !slot.is_break).reduce((max, slot) => Math.max(max, Number(slot.slot_number) || 0), 0) + 1}
-  onSuccess={() => {
-    isAdding = false;
-    onSuccess?.();
-  }}
-/> 

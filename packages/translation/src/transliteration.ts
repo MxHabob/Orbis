@@ -277,6 +277,8 @@ const commonNames: Readonly<Record<string, string>> = {
   شهاب: "Shehab",
   شعيب: "Shoaib",
   ضياء: "Diaa",
+  ملاك: "Malak",
+  مارسا: "maryia",
 
   // Compound Names
   عبدالله: "Abdullah",
@@ -423,6 +425,8 @@ const commonNames: Readonly<Record<string, string>> = {
   "آل خليفة": "Al Khalifa",
   "آل صباح": "Al Sabah",
   "الهبوب": "Al Haboob",
+  "السالمي": "Al Salmi",
+  "العميسي": "Al amisi",
 
   // Female Names
   فاطمة: "Fatimah",
@@ -574,6 +578,7 @@ const commonNames: Readonly<Record<string, string>> = {
 
   // Titles
   الشيخ: "Sheikh",
+  صنعاء: "sana'a",
   الدكتور: "Dr.",
   الدكتورة: "Dr.",
   الاستاذ: "Mr.",
@@ -634,7 +639,7 @@ function transliterateLatinWord(word: string): string {
     .toLocaleLowerCase("en");
   let output = "";
 
-  for (let index = 0; index < normalized.length; ) {
+  for (let index = 0; index < normalized.length;) {
     const digraph = normalized.slice(index, index + 2);
     if (latinDigraphs[digraph]) {
       output += latinDigraphs[digraph];
@@ -671,7 +676,7 @@ function transliterateText(
     { text: string; endPartIndex: number }
   >();
 
-  for (let wordIndex = 0; wordIndex < wordIndexes.length; ) {
+  for (let wordIndex = 0; wordIndex < wordIndexes.length;) {
     let matchedEnd = -1;
     let matchedValue: string | undefined;
 
@@ -728,7 +733,7 @@ function transliterateText(
   }
 
   let output = "";
-  for (let index = 0; index < parts.length; ) {
+  for (let index = 0; index < parts.length;) {
     const replacement = replacements.get(index);
     if (replacement) {
       output += replacement.text;

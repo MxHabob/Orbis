@@ -36,7 +36,7 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  academicCalendarDto,
+  AcademicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
   PeriodTypeDto,
@@ -45,11 +45,14 @@ import type {
   CreatePeriodRequest,
   UpdatePeriodRequest,
   SubjectDto,
-  ClassDto,
+  SectionDto,
   SectionSubjectDto,
+  CreateSectionRequest,
+  UpdateSectionRequest,
   CreateSubjectRequest,
-  CreateClassRequest,
+  UpdateSubjectRequest,
   AssignSectionSubjectRequest,
+  UpdateSectionSubjectRequest,
   EnrollmentDto,
   StudentDto,
   EnrollStudentRequest,
@@ -80,7 +83,7 @@ import type {
   ResolveOverrideRequest,
   ApprovalStepDto,
   StudentProgressionItemInput,
-  progressionJobDto,
+  ProgressionJobDto,
   PromoteCohortRequest,
   EvaluateCohortRequest,
   RoomDto,
@@ -187,6 +190,12 @@ import type {
 // SHARED ENVELOPES & ALIASES
 // ═══════════════════════════════════════════════════════════════
 
+export type ClassDto = SectionDto;
+export type CreateClassRequest = CreateSectionRequest;
+export type UpdateClassRequest = UpdateSectionRequest;
+export type academicCalendarDto = AcademicCalendarDto;
+export type progressionJobDto = ProgressionJobDto;
+
 export interface ApiResponse<T> {
   data: T;
   requestId?: string;
@@ -206,6 +215,102 @@ export interface PaginatedList<T> {
   page: number;
   page_size: number;
   total_pages: number;
+}
+
+export type TimetableSolveMode = "full" | "incremental";
+export type TimetableSolveStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface TimetableProblem {
+  job_id: string;
+  org_id: string;
+  period_id: string;
+  mode: TimetableSolveMode;
+  time_slots: Array<{
+    id: string;
+    slot_number: number;
+    start_time: string;
+    end_time: string;
+    is_break: boolean;
+    applicable_days: number[] | null;
+  }>;
+  rooms: Array<{
+    id: string;
+    name: string;
+    capacity: number | null;
+    room_type: string;
+  }>;
+  assignments: Array<{
+    id: string;
+    section_subject_id: string;
+    section_id: string;
+    subject_id: string;
+    teacher_id: string;
+    hour_index: number;
+    time_slot_id?: string | null;
+    day_of_week?: number | null;
+    room_id?: string | null;
+  }>;
+  pinned_lessons: Array<{
+    id: string;
+    section_id: string;
+    teacher_id: string;
+    subject_id: string;
+    section_subject_id: string;
+    time_slot_id: string;
+    day_of_week: number;
+    room_id: string | null;
+  }>;
+  unavailable_slots: Array<{
+    teacher_id: string;
+    day_of_week: number;
+    time_slot_id: string;
+  }>;
+}
+
+export interface TimetableSolveStatusDto {
+  job_id: string;
+  status: TimetableSolveStatus;
+  score: string | null;
+  best_solution: {
+    job_id: string;
+    assignments: TimetableProblem["assignments"];
+    score: string | null;
+  } | null;
+  error: string | null;
+}
+
+export interface TimetableSolverWireStatusDto {
+  job_id: string;
+  status: TimetableSolveStatus;
+  score: string | null;
+  best_solution: {
+    job_id: string;
+    assignments: Array<
+      Omit<
+        TimetableProblem["assignments"][number],
+        "section_subject_id" | "section_id"
+      > & {
+        class_subject_id: string;
+        class_id: string;
+      }
+    >;
+    score: string | null;
+  } | null;
+  error: string | null;
+}
+
+export interface SolverSidecarStatusDto {
+  is_running: boolean;
+  is_healthy: boolean;
+  endpoint_url: string;
+  pid: number | null;
+  active_jobs: number;
+  idle_seconds: number;
 }
 
 export interface PersonDto {
@@ -302,8 +407,10 @@ export interface RegisterStudentInput {
   email?: string;
   address?: string;
   initial_period_id?: string;
+  initial_section_id?: string;
   initial_class_id?: string;
   study_mode?: string;
+  is_draft?: boolean;
   // Aliases for compatibility
   personId?: string;
   userId?: string;
@@ -419,6 +526,23 @@ export interface ReportJobStatusDto {
   status: string;
   output_size_bytes?: number | null;
   error_message?: string | null;
+}
+
+export interface AiCustomReportRequest {
+  report_code: string;
+  title: string;
+  columns: string[];
+  parameters: Record<string, unknown>;
+  output_format: string;
+  locale: string;
+  template_id?: string | null;
+}
+
+export interface AiCustomReportResponse {
+  job_id: string;
+  status: string;
+  title: string;
+  output_format: string;
 }
 
 export interface BatchPrintParams {
@@ -645,6 +769,47 @@ export interface IntegrationStatusResponse {
   config?: IntegrationDto | null;
 }
 
+export interface MulverseConnectionDto {
+  connected: boolean;
+  organization_id: string | null;
+  product_organization_id: string | null;
+}
+
+export interface MulverseDeploymentDto {
+  id: string;
+  name: string;
+  environment: string;
+  status: string;
+  verification_status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MulverseEndpointDto {
+  id: string;
+  deployment_id: string;
+  url: string;
+  network_scope: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MulverseDeploymentRequest {
+  name: string;
+  environment: string;
+}
+
+export interface MulverseEndpointRequest {
+  url: string;
+  network_scope: "public" | "local_network";
+}
+
+export interface MulverseEndpointUpdateRequest {
+  url?: string;
+  status?: "active" | "pending" | "disabled";
+}
+
 // ── Document & Storage Types ──────────────────────────────────────────────
 
 export interface StorageUploadRequest {
@@ -665,7 +830,7 @@ export interface StorageUploadRequest {
 
 // ── Connection & Database Management Types (Desktop / Hybrid) ─────────────
 
-export type ConnectionMode = "local" | "remote";
+export type ConnectionMode = "local" | "direct" | "api";
 
 export interface LocalConfig {
   db_filename: string;
@@ -674,15 +839,18 @@ export interface LocalConfig {
   busy_timeout_ms?: number;
 }
 
-export interface RemoteConfig {
+export interface ApiConfig {
   server_url: string;
-  host?: string;
-  port?: number;
-  database_name?: string;
-  username?: string;
-  password?: string;
+}
+
+export interface DirectConfig {
+  engine: "postgres";
+  host: string;
+  port: number;
+  database_name: string;
+  username: string;
   ssl_mode?: string;
-  api_key?: string;
+  credential_id: string;
 }
 
 export interface DatabaseSettingsDto {
@@ -698,7 +866,8 @@ export interface DatabaseSettingsDto {
 export interface ConnectionConfig {
   mode: ConnectionMode;
   local?: LocalConfig;
-  remote?: RemoteConfig;
+  api?: ApiConfig;
+  direct?: DirectConfig;
   settings?: DatabaseSettingsDto;
 }
 
@@ -720,7 +889,7 @@ export interface RemoteHealthResult {
 }
 
 export interface DatabaseStatusDto {
-  mode: "local" | "remote";
+  mode: "local" | "direct" | "api" | "remote";
   state: "connected" | "disconnected" | "connecting" | "migration_required" | "warning" | "error" | "not_found";
   database_name: string;
   connection_target: string;
@@ -1186,6 +1355,8 @@ export interface ProvisionDefaultsReqDto {
   provision_discount_templates?: boolean;
   provision_hijri_school_calendar?: boolean;
   hijri_start_year?: number;
+  hijri_start_month?: number;
+  hijri_start_day?: number;
   hijri_month_lengths?: number[];
   provision_time_slots?: boolean;
   enable_period_autopilot?: boolean;
@@ -1195,6 +1366,69 @@ export interface ProvisionDefaultsResultDto {
   success: boolean;
   created_items: string[];
   state: OnboardingStateDto;
+}
+
+export interface OfficialCalendarTemplateDto {
+  code: string;
+  name: string;
+  name_ar: string;
+  country: string;
+  country_name: string;
+  country_name_ar: string;
+  hijri_year: number;
+  gregorian_years: string;
+  decision_number?: string;
+  decision_date?: string;
+  authority: string;
+  authority_ar: string;
+}
+
+export interface ApplyCalendarTemplateRequest {
+  template_code: string;
+}
+
+export interface CalendarDefaultsDto {
+  suggested_name: string;
+  suggested_name_ar: string;
+  start_date: string;
+  end_date: string;
+  hijri_start_year: number;
+  hijri_start_month: number;
+  hijri_start_day: number;
+  hijri_month_lengths: number[];
+  selected_study_days: number[];
+  periods_summary: PeriodSummaryDto[];
+  assessment_schemes: AssessmentSchemeSummaryDto[];
+  timetable_slots: TimeSlotSummaryDto[];
+}
+
+export interface PeriodSummaryDto {
+  code: string;
+  name: string;
+  name_ar: string;
+  period_type: string;
+  period_kind: string;
+  sort_order: number;
+  parent_code?: string;
+}
+
+export interface AssessmentSchemeSummaryDto {
+  name: string;
+  name_ar: string;
+  scheme_type: string;
+  max_score: number;
+  passing_score: number;
+  description_ar: string;
+}
+
+export interface TimeSlotSummaryDto {
+  slot_index: number;
+  name: string;
+  name_ar: string;
+  start_time: string;
+  end_time: string;
+  is_break: boolean;
+  break_type?: string;
 }
 
 export type RoundingMode = 'round_half_up' | 'round_up' | 'round_down' | 'truncate';
@@ -1300,6 +1534,28 @@ export interface StudentAnnualReportCard {
   max_possible_score: number;
   overall_percentage: number;
   cumulative_gpa?: number | null;
+  rank_in_class?: number | null;
+  rank_in_grade?: number | null;
+  total_students_in_class: number;
+  total_students_in_grade: number;
+  status: AcademicStatus;
+  calculated_at: string;
+}
+
+export interface StudentCertificateReportCard {
+  student_id: string;
+  student_name: string;
+  student_number?: string | null;
+  section_id: string;
+  class_name: string;
+  calendar_id: string;
+  academic_calendar_name: string;
+  /** "basic_grade9" or "secondary_thanawiya" */
+  certificate_type: string;
+  subjects: SubjectTermResult[];
+  total_score: number;
+  max_possible_score: number;
+  overall_percentage: number;
   rank_in_class?: number | null;
   rank_in_grade?: number | null;
   total_students_in_class: number;
@@ -1515,7 +1771,7 @@ export interface OrbisApiClient {
   getSession(): Promise<SessionResponse>;
   logout(): Promise<void>;
   mfaEnroll(req?: MfaEnrollRequest): Promise<MfaEnrollResponse>;
-  mfaVerifyEnrollment(req: MfaVerifyEnrollmentRequest): Promise<boolean>;
+  mfaVerifyEnrollment(req: MfaVerifyEnrollmentRequest): Promise<string[]>;
   mfaChallenge(req: MfaChallengeRequest): Promise<LoginResponse>;
   linkGoogle(req: GoogleAuthRequest): Promise<UserIdentityDto>;
   loginWithGoogle(req: GoogleAuthRequest): Promise<LoginResponse>;
@@ -1553,14 +1809,14 @@ export interface OrbisApiClient {
   selectOrgUnit(id?: string): Promise<void>;
 
   // ── Calendar ────────────────────────────────────────────────
-  createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto>;
-  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<academicCalendarDto>;
-  listacademicCalendars(): Promise<academicCalendarDto[]>;
+  createacademicCalendar(req: CreateYearRequest): Promise<AcademicCalendarDto>;
+  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<AcademicCalendarDto>;
+  listacademicCalendars(): Promise<AcademicCalendarDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
-  getacademicCalendar(id: string): Promise<academicCalendarDto>;
-  activateacademicCalendar(id: string): Promise<academicCalendarDto>;
-  closeacademicCalendar(id: string): Promise<academicCalendarDto>;
-  archiveacademicCalendar(id: string): Promise<academicCalendarDto>;
+  getacademicCalendar(id: string): Promise<AcademicCalendarDto>;
+  activateacademicCalendar(id: string): Promise<AcademicCalendarDto>;
+  closeacademicCalendar(id: string): Promise<AcademicCalendarDto>;
+  archiveacademicCalendar(id: string): Promise<AcademicCalendarDto>;
   deleteacademicCalendar(id: string): Promise<boolean>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
   updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
@@ -1571,15 +1827,25 @@ export interface OrbisApiClient {
   unlockAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
+  listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
+  applyCalendarTemplate(yearId: string, req: ApplyCalendarTemplateRequest): Promise<AcademicPeriodDto[]>;
+  getCalendarDefaults(orgId?: string): Promise<CalendarDefaultsDto>;
 
   // ── Academic ────────────────────────────────────────────────
   createSubject(req: CreateSubjectRequest): Promise<SubjectDto>;
+  updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto>;
   listSubjects(): Promise<SubjectDto[]>;
   getSubject(id: string): Promise<SubjectDto>;
-  createClass(req: CreateClassRequest): Promise<ClassDto>;
-  listClasses(): Promise<ClassDto[]>;
-  getClass(id: string): Promise<ClassDto>;
+  createSection(req: CreateSectionRequest): Promise<SectionDto>;
+  updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
+  listSections(): Promise<SectionDto[]>;
+  getSection(id: string): Promise<SectionDto>;
   assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto>;
+  getSectionSubject(id: string): Promise<SectionSubjectDto>;
+  updateSectionSubject(
+    id: string,
+    req: UpdateSectionSubjectRequest,
+  ): Promise<SectionSubjectDto>;
   listSectionSubjects(
     classId: string,
     periodId: string,
@@ -1659,6 +1925,9 @@ export interface OrbisApiClient {
         },
     SectionSubjectId?: string,
   ): Promise<ScheduledLessonDto[]>;
+  getSolverSidecarStatus(): Promise<SolverSidecarStatusDto>;
+  submitTimetable(problem: TimetableProblem): Promise<void>;
+  getTimetableSolveStatus(jobId: string): Promise<TimetableSolveStatusDto>;
 
   // ── Assessment ──────────────────────────────────────────────
   createAssessmentScheme(
@@ -1706,6 +1975,12 @@ export interface OrbisApiClient {
     classId: string,
     yearId: string,
   ): Promise<StudentAnnualReportCard[]>;
+  getStudentCertificateResults(
+    studentId: string,
+    calendarId: string,
+    certificateType: string,
+    classId?: string,
+  ): Promise<StudentCertificateReportCard>;
   markAttendance(req: MarkAttendanceRequest): Promise<AttendanceDto>;
   batchMarkAttendance(
     req: BatchMarkAttendanceRequest,
@@ -1720,9 +1995,9 @@ export interface OrbisApiClient {
 
   // ── Student Cohort Progression ──────────────────────────────
   evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;
-  promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto>;
-  listprogressionJobs(): Promise<progressionJobDto[]>;
-  getprogressionJob(id: string): Promise<progressionJobDto>;
+  promoteCohort(req: PromoteCohortInput): Promise<ProgressionJobDto>;
+  listprogressionJobs(): Promise<ProgressionJobDto[]>;
+  getprogressionJob(id: string): Promise<ProgressionJobDto>;
 
   // ── Workflow & Academic Overrides ───────────────────────────
   submitOverride(req: SubmitOverrideRequestInput): Promise<OverrideRequestDto>;
@@ -1854,6 +2129,24 @@ export interface OrbisApiClient {
   ): Promise<IntegrationStatusResponse>;
   disconnectApp(providerName: string): Promise<boolean>;
   toggleIntegration(providerName: string, isEnabled: boolean): Promise<boolean>;
+  getMulverseConnection(): Promise<MulverseConnectionDto>;
+  connectMulverse(apiKey: string): Promise<MulverseConnectionDto>;
+  disconnectMulverse(): Promise<boolean>;
+  listMulverseDeployments(): Promise<MulverseDeploymentDto[]>;
+  createMulverseDeployment(req: MulverseDeploymentRequest): Promise<MulverseDeploymentDto>;
+  updateMulverseDeployment(
+    id: string,
+    req: Partial<MulverseDeploymentRequest>,
+  ): Promise<MulverseDeploymentDto>;
+  listMulverseEndpoints(deploymentId: string): Promise<MulverseEndpointDto[]>;
+  createMulverseEndpoint(
+    deploymentId: string,
+    req: MulverseEndpointRequest,
+  ): Promise<MulverseEndpointDto>;
+  updateMulverseEndpoint(
+    id: string,
+    req: MulverseEndpointUpdateRequest,
+  ): Promise<MulverseEndpointDto>;
 
   // ── Templates ───────────────────────────────────────────────
   createTemplate(req: CreateTemplateRequest): Promise<TemplateDto>;
@@ -1923,6 +2216,7 @@ export interface OrbisApiClient {
   systemInstallUpdate(): Promise<void>;
   openChangelogWindow(): Promise<void>;
   openAgentWindow(): Promise<void>;
+  openStandaloneWindow(path: string): Promise<void>;
 
   // ── License & Activation ────────────────────────────────
   licenseGetState(): Promise<LicenseStateDto>;
@@ -1952,6 +2246,7 @@ export interface OrbisApiClient {
   connectionGetConfig(): Promise<ConnectionConfig>;
   connectionSetConfig(params: {
     mode: ConnectionMode;
+    databaseEngine?: "postgres";
     serverUrl?: string;
     dbFilename?: string;
     customPath?: string;
@@ -1968,6 +2263,7 @@ export interface OrbisApiClient {
   connectionValidate(): Promise<ConnectionValidation>;
   connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult>;
   connectionConnect(): Promise<ConnectResult>;
+  connectionRunMigrations(): Promise<MigrationResultDto>;
   connectionOpenWindow(): Promise<void>;
 
   databaseGetStatus(): Promise<DatabaseStatusDto>;
@@ -1988,6 +2284,7 @@ export interface OrbisApiClient {
   // ── AI Platform ─────────────────────────────────────────────
   aiChat(req: AiChatRequest): Promise<AiChatResponse>;
   aiListTools(): Promise<AiToolDefinition[]>;
+  aiCreateCustomReport(req: AiCustomReportRequest): Promise<AiCustomReportResponse>;
   aiSaveSession(session: AiStoredSession): Promise<boolean>;
   aiLoadSessions(orgId: string): Promise<AiStoredSession[]>;
   aiDeleteSession(orgId: string, sessionId: string): Promise<boolean>;

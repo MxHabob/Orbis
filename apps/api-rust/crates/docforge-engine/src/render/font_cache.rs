@@ -56,6 +56,109 @@ impl FontCache {
         }
     }
 
+    /// Create a font cache pre-loaded with standard OS Arabic and Latin fonts
+    pub fn with_system_fonts() -> Self {
+        let mut cache = FontCache::new("Noto Sans Arabic");
+
+        let candidates = [
+            // Windows
+            (
+                "Tahoma",
+                400,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\tahoma.ttf",
+            ),
+            (
+                "Tahoma",
+                700,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\tahomabd.ttf",
+            ),
+            (
+                "Arial",
+                400,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\arial.ttf",
+            ),
+            (
+                "Arial",
+                700,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\arialbd.ttf",
+            ),
+            (
+                "Segoe UI",
+                400,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\segoeui.ttf",
+            ),
+            (
+                "Segoe UI",
+                700,
+                FontStyleKind::Normal,
+                "C:\\Windows\\Fonts\\segoeuib.ttf",
+            ),
+            // Linux
+            (
+                "DejaVu Sans",
+                400,
+                FontStyleKind::Normal,
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ),
+            (
+                "Noto Sans Arabic",
+                400,
+                FontStyleKind::Normal,
+                "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+            ),
+            // macOS
+            (
+                "Arial",
+                400,
+                FontStyleKind::Normal,
+                "/System/Library/Fonts/Supplemental/Arial.ttf",
+            ),
+            (
+                "Geeza Pro",
+                400,
+                FontStyleKind::Normal,
+                "/System/Library/Fonts/GeezaPro.ttc",
+            ),
+        ];
+
+        let mut loaded_any = false;
+        for (family, weight, style, path) in candidates {
+            if Path::new(path).exists() {
+                if let Ok(()) = cache.load_font_file(family, weight, style, path) {
+                    loaded_any = true;
+                    // Also alias under Noto Sans Arabic if not yet loaded
+                    let alias_key = FontKey {
+                        family: "Noto Sans Arabic".to_string(),
+                        weight,
+                        style,
+                    };
+                    if !cache.fonts.contains_key(&alias_key) {
+                        if let Ok(data) = std::fs::read(path) {
+                            cache.load_font_bytes(
+                                "Noto Sans Arabic",
+                                weight,
+                                style,
+                                data,
+                                PathBuf::from(path),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        if !loaded_any {
+            tracing::warn!("FontCache: No system fonts could be found at standard paths");
+        }
+
+        cache
+    }
+
     /// Add a directory to search for fonts
     pub fn add_search_dir(&mut self, dir: impl AsRef<Path>) {
         self.search_dirs.push(dir.as_ref().to_path_buf());
@@ -141,7 +244,9 @@ impl FontCache {
             weight: 400,
             style: FontStyleKind::Normal,
         };
-        self.fonts.get(&default_key)
+        self.fonts
+            .get(&default_key)
+            .or_else(|| self.fonts.values().next())
     }
 
     /// Get the default font, panics if no fonts loaded

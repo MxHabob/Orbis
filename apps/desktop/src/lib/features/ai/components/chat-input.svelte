@@ -8,8 +8,6 @@ let {
   value = $bindable(""),
   isThinking = false,
   messagesLength = 0,
-  selectedModel = $bindable(""),
-  selectedProvider = $bindable(""),
   orgId = "",
   onsubmit,
   onnewchat,
@@ -18,8 +16,6 @@ let {
   value?: string;
   isThinking?: boolean;
   messagesLength?: number;
-  selectedModel?: string;
-  selectedProvider?: string;
   orgId?: string;
   onsubmit: (query: string) => void;
   onnewchat: (agentType?: string) => void;
@@ -153,8 +149,6 @@ function handleCommandSelect(prompt: string) {
 
         <!-- Responsive Provider & Model Selector -->
         <ProviderModelPicker
-          bind:selectedModel={selectedModel}
-          bind:selectedProvider={selectedProvider}
           orgId={orgId}
           onOpenSettings={onOpenSettings}
         />

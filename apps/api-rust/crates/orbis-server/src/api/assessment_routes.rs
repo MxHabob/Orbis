@@ -16,12 +16,10 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_domain::entities::academic_calculation::{CalculationOutputOutcome, CalculationPreview};
 use orbis_domain::entities::academic_policy::{
     AcademicPolicy, AcademicResultView, ResultSnapshot, StudentAnnualReportCard,
-    StudentTermReportCard, TiePolicy,
-};
-use orbis_domain::entities::academic_calculation::{
-    CalculationPreview, CalculationOutputOutcome,
+    StudentCertificateReportCard, StudentTermReportCard, TiePolicy,
 };
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
@@ -138,7 +136,7 @@ pub struct BatchRecordGradesResponseDto {
 pub struct AttendanceDto {
     pub id: Uuid,
     pub student_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
     pub section_subject_id: Option<Uuid>,
     pub scheduled_lesson_id: Option<Uuid>,
     pub date: NaiveDate,
@@ -152,7 +150,7 @@ pub struct AttendanceDto {
 #[derive(Deserialize, ToSchema)]
 pub struct MarkAttendanceRequest {
     pub student_id: Uuid,
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub date: NaiveDate,
     pub status: String,
     pub notes: Option<String>,
@@ -169,7 +167,7 @@ pub struct MarkAttendanceItemRequest {
 
 #[derive(Deserialize, ToSchema)]
 pub struct BatchMarkAttendanceRequest {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub date: NaiveDate,
     pub items: Vec<MarkAttendanceItemRequest>,
 }
@@ -314,7 +312,7 @@ pub struct GradeQuery {
 
 #[derive(Deserialize)]
 pub struct AttendanceQuery {
-    pub class_id: Uuid,
+    pub section_id: Uuid,
     pub date: NaiveDate,
 }
 
@@ -347,7 +345,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
     AttendanceDto {
         id: a.id,
         student_id: a.student_id,
-        class_id: a.class_id,
+        section_id: a.section_id,
         section_subject_id: a.section_subject_id,
         scheduled_lesson_id: a.scheduled_lesson_id,
         date: a.attendance_date,
@@ -569,10 +567,11 @@ pub async fn preview_configured_calculation(
         .calculation_plan
         .as_ref()
         .ok_or_else(|| ApiError::bad_request("No calculation plan is configured"))?;
-    let result = orbis_app::services::calculation_engine::AcademicCalculationEngine::calculate_plan(
-        plan,
-        &request.values,
-    )?;
+    let result =
+        orbis_app::services::calculation_engine::AcademicCalculationEngine::calculate_plan(
+            plan,
+            &request.values,
+        )?;
     let mut outcomes = Vec::new();
     if let Some(policy) = settings.academic.outcome_policy.as_ref() {
         for output in &result.outputs {
@@ -768,7 +767,7 @@ pub async fn mark_attendance(
             ctx.tenant_id,
             Uuid::nil(),
             p.student_id,
-            Some(p.class_id),
+            Some(p.section_id),
             None,
             p.date,
             p.status,
@@ -799,7 +798,7 @@ pub async fn batch_mark_attendance(
 
     let list = state
         .assessment_service
-        .batch_mark_attendance(&ctx, ctx.tenant_id, p.class_id, p.date, items)
+        .batch_mark_attendance(&ctx, ctx.tenant_id, p.section_id, p.date, items)
         .await?;
     let dtos: Vec<AttendanceDto> = list.into_iter().map(attendance_to_dto).collect();
     let count = dtos.len();
@@ -834,7 +833,7 @@ pub async fn list_attendance(
 ) -> Result<Json<ApiResponse<Vec<AttendanceDto>>>, ApiError> {
     let list = state
         .attendance_repo
-        .find_by_class_and_date(q.class_id, q.date)
+        .find_by_section_and_date(q.section_id, q.date)
         .await?;
     let dtos = list.into_iter().map(attendance_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
@@ -961,13 +960,13 @@ pub async fn list_student_behavior(
 #[derive(Deserialize, ToSchema)]
 pub struct StudentTermResultQuery {
     pub period_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, ToSchema)]
 pub struct StudentAnnualResultQuery {
     pub year_id: Uuid,
-    pub class_id: Option<Uuid>,
+    pub section_id: Option<Uuid>,
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -978,6 +977,14 @@ pub struct ClassTermResultQuery {
 #[derive(Deserialize, ToSchema)]
 pub struct ClassAnnualResultQuery {
     pub year_id: Uuid,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct StudentCertificateResultQuery {
+    pub calendar_id: Uuid,
+    pub section_id: Option<Uuid>,
+    /// "basic_grade9" or "secondary_thanawiya"
+    pub certificate_type: String,
 }
 
 #[utoipa::path(get, path = "/api/v1/students/{id}/term-results",
@@ -1000,7 +1007,7 @@ pub async fn get_student_term_results(
             ctx.tenant_id,
             student_id,
             q.period_id,
-            q.class_id,
+            q.section_id,
             None,
         )
         .await?;
@@ -1027,7 +1034,36 @@ pub async fn get_student_annual_results(
             ctx.tenant_id,
             student_id,
             q.year_id,
-            q.class_id,
+            q.section_id,
+            None,
+        )
+        .await?;
+    Ok(ApiResponse::ok(report))
+}
+
+#[utoipa::path(get, path = "/api/v1/students/{id}/certificate-results",
+    params(
+        ("id" = Uuid, Path, description = "Student ID"),
+        ("calendar_id" = Uuid, Query, description = "Academic Year/Calendar ID"),
+        ("section_id" = Option<Uuid>, Query, description = "Optional Class ID"),
+        ("certificate_type" = String, Query, description = "Certificate type: basic_grade9 or secondary_thanawiya"),
+    ),
+    responses((status = 200, body = StudentCertificateReportCard)), security(("bearer" = [])), tag = "Assessment")]
+pub async fn get_student_certificate_results(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(student_id): Path<Uuid>,
+    Query(q): Query<StudentCertificateResultQuery>,
+) -> Result<Json<ApiResponse<StudentCertificateReportCard>>, ApiError> {
+    let report = state
+        .assessment_service
+        .calculate_student_certificate_report_card(
+            &ctx,
+            ctx.tenant_id,
+            student_id,
+            q.calendar_id,
+            q.section_id,
+            q.certificate_type,
             None,
         )
         .await?;
@@ -1043,12 +1079,12 @@ pub async fn get_student_annual_results(
 pub async fn get_class_term_results(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Path(class_id): Path<Uuid>,
+    Path(section_id): Path<Uuid>,
     Query(q): Query<ClassTermResultQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentTermReportCard>>>, ApiError> {
     let reports = state
         .assessment_service
-        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, class_id, q.period_id, None)
+        .calculate_class_term_report_cards(&ctx, ctx.tenant_id, section_id, q.period_id, None)
         .await?;
     Ok(ApiResponse::ok(reports))
 }
@@ -1062,12 +1098,12 @@ pub async fn get_class_term_results(
 pub async fn get_class_annual_results(
     ctx: AuthContext,
     State(state): State<AppState>,
-    Path(class_id): Path<Uuid>,
+    Path(section_id): Path<Uuid>,
     Query(q): Query<ClassAnnualResultQuery>,
 ) -> Result<Json<ApiResponse<Vec<StudentAnnualReportCard>>>, ApiError> {
     let reports = state
         .assessment_service
-        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, class_id, q.year_id, None)
+        .calculate_class_annual_report_cards(&ctx, ctx.tenant_id, section_id, q.year_id, None)
         .await?;
     Ok(ApiResponse::ok(reports))
 }
@@ -1132,4 +1168,8 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/api/v1/behavior/:id", delete(delete_behavior))
         .route("/api/v1/students/:id/behavior", get(list_student_behavior))
+        .route(
+            "/api/v1/students/:id/certificate-results",
+            get(get_student_certificate_results),
+        )
 }

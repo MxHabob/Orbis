@@ -1,8 +1,6 @@
 <!--
   @component StepAdmin
-  Step 4: Initial Primary Administrator Account.
-  Spacious 2-column layout with a real user avatar preview and real-time password strength,
-  and elevated design tokens.
+  Step 4: Create the initial primary administrator account.
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
@@ -12,6 +10,7 @@ import { Label } from "@orbis/ui/label";
 import UserAvatar from "$lib/shared/components/user-avatar.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { Card, CardContent } from "@orbis/ui/card";
+import { ShieldCheck, UserBadgeCheck } from "@orbis/icons";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 let {
@@ -42,50 +41,43 @@ const strengthLabel = $derived.by(() => {
 });
 </script>
 
-<div class="space-y-6 max-w-5xl mx-auto py-2">
-  <div class="space-y-2 text-start">
-    <p class="text-sm text-muted-foreground max-w-2xl leading-relaxed">
+<section class="mx-auto w-full max-w-3xl space-y-6 py-2 text-start">
+  <header class="space-y-2">
+    <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
       {m.operations_ui_admin_account_description()}
     </p>
-  </div>
+  </header>
 
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-start">
-    <!-- Left Column: Avatar & Role Identity Preview -->
-    <Card class="lg:col-span-4">
-      <CardContent class="flex flex-col items-center justify-between p-6 text-center">
-      <div class="space-y-4 w-full flex flex-col items-center">
-        <UserAvatar
-          name={`${form.adminFirstNameAr || form.adminFirstName} ${form.adminLastNameAr || form.adminLastName}`.trim() || m.ui_onboarding_admin_administrator()}
-          size="lg"
-          class="size-20 border-2 border-primary/30 shadow-sm ring-4 ring-primary/10"
-        />
-
-        <div class="space-y-1 w-full">
-          <div class="text-sm font-bold text-foreground truncate">
-            {form.adminFirstNameAr || form.adminFirstName || (m.ui_onboarding_admin_administrator())} {form.adminLastNameAr || form.adminLastName || ""}
+  <Card>
+    <CardContent class="space-y-6 p-5 sm:p-7">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <UserBadgeCheck class="size-5 shrink-0 text-primary" aria-hidden="true" />
+          <div class="min-w-0">
+            <h2 class="text-base font-semibold tracking-tight text-foreground">
+              {m.ui_onboarding_admin_administrator_credentials()}
+            </h2>
           </div>
-          <div class="text-xs font-mono text-muted-foreground truncate">
-            {form.adminEmail || "admin@institution.edu"}
+        </div>
+
+        <div class="flex min-w-0 items-center gap-3">
+          <UserAvatar
+            name={`${form.adminFirstNameAr || form.adminFirstName} ${form.adminLastNameAr || form.adminLastName}`.trim() || m.ui_onboarding_admin_administrator()}
+            size="sm"
+            class="size-10 shrink-0"
+          />
+          <div class="min-w-0">
+            <p class="truncate text-sm font-semibold text-foreground">
+              {`${form.adminFirstNameAr || form.adminFirstName} ${form.adminLastNameAr || form.adminLastName}`.trim() || m.ui_onboarding_admin_administrator()}
+            </p>
+            <p class="truncate text-xs text-muted-foreground">
+              {form.adminEmail || "admin@institution.edu"}
+            </p>
           </div>
         </div>
       </div>
 
-      <div class="w-full mt-6 pt-4 border-t border-border/40 text-xs text-muted-foreground leading-relaxed">
-        {m.operations_ui_admin_password_security_notice()}
-      </div>
-      </CardContent>
-    </Card>
-
-    <!-- Right Column: Form Inputs -->
-    <Card class="lg:col-span-8">
-      <CardContent class="space-y-5 p-6">
-      <div class="border-b border-border/40 pb-3">
-        <h3 class="text-sm font-bold text-foreground uppercase tracking-wider font-mono">
-          {m.ui_onboarding_admin_administrator_credentials()}
-        </h3>
-      </div>
-
-      <div class="space-y-4">
+      <div class="space-y-5">
         <BilingualNameFields
           arId="admin-fn-ar"
           enId="admin-fn-en"
@@ -103,6 +95,7 @@ const strengthLabel = $derived.by(() => {
           loadingMessage={m.bilingual_entry_loading()}
           failureMessage={m.bilingual_entry_failure()}
         />
+
         <BilingualNameFields
           arId="admin-ln-ar"
           enId="admin-ln-en"
@@ -122,105 +115,121 @@ const strengthLabel = $derived.by(() => {
         />
       </div>
 
-      <!-- Email Address -->
-      <div class="space-y-1.5">
-        <Label for="admin-email" class="text-xs font-medium text-foreground">
-          {m.ui_onboarding_admin_primary_email_address()}
-          <span class="text-destructive" aria-hidden="true"> *</span>
-        </Label>
-        <Input
-          id="admin-email"
-          type="email"
-          placeholder="admin@institution.edu"
-          bind:value={form.adminEmail}
-          required
-          aria-invalid={errors.adminEmail ? "true" : undefined}
-          aria-describedby={errors.adminEmail ? "admin-email-error" : undefined}
-          class="h-9 text-xs font-mono"
-        />
-        {#if errors.adminEmail}
-          <p id="admin-email-error" class="text-[11px] text-destructive" role="alert">
-            {errors.adminEmail}
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="space-y-1.5 sm:col-span-2">
+          <Label for="admin-email" class="text-xs font-medium text-foreground">
+            {m.ui_onboarding_admin_primary_email_address()}
+            <span class="text-destructive" aria-hidden="true"> *</span>
+          </Label>
+          <Input
+            id="admin-email"
+            type="email"
+            placeholder="admin@institution.edu"
+            bind:value={form.adminEmail}
+            required
+            aria-invalid={errors.adminEmail ? "true" : undefined}
+            aria-describedby={errors.adminEmail ? "admin-email-error" : undefined}
+            class="h-10"
+          />
+          {#if errors.adminEmail}
+            <p id="admin-email-error" class="text-xs text-destructive" role="alert">
+              {errors.adminEmail}
+            </p>
+          {/if}
+        </div>
+
+        <div class="space-y-1.5 sm:col-span-2">
+          <Label for="admin-phone" class="text-xs font-medium text-foreground">
+            {m.setup_bootstrap_admin_phone_optional()}
+          </Label>
+          <Input
+            id="admin-phone"
+            type="tel"
+            autocomplete="tel"
+            bind:value={form.adminPhone}
+            class="h-10"
+          />
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 text-muted-foreground">
+          <ShieldCheck class="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+          <p class="text-xs leading-relaxed text-muted-foreground">
+            {m.operations_ui_admin_password_security_notice()}
           </p>
-        {/if}
-      </div>
+        </div>
 
-      <div class="space-y-1.5">
-        <Label for="admin-phone" class="text-xs font-medium text-foreground">
-          {m.setup_bootstrap_admin_phone_optional()}
-        </Label>
-        <Input
-          id="admin-phone"
-          type="tel"
-          autocomplete="tel"
-          bind:value={form.adminPhone}
-          class="h-9 text-xs"
-        />
-      </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="space-y-1.5">
+            <Label for="admin-pwd" class="text-xs font-medium text-foreground">
+              {m.ui_onboarding_admin_password()}
+              <span class="text-destructive" aria-hidden="true"> *</span>
+            </Label>
+            <Input
+              id="admin-pwd"
+              type="password"
+              placeholder="••••••••••••"
+              bind:value={form.adminPassword}
+              required
+              aria-invalid={errors.adminPassword ? "true" : undefined}
+              aria-describedby={errors.adminPassword ? "admin-pwd-error" : undefined}
+              autocomplete="new-password"
+              class="h-10"
+            />
+            {#if errors.adminPassword}
+              <p id="admin-pwd-error" class="text-xs text-destructive" role="alert">
+                {errors.adminPassword}
+              </p>
+            {/if}
 
-      <!-- Password and Confirmation -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="space-y-1.5">
-          <Label for="admin-pwd" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_admin_password()}
-            <span class="text-destructive" aria-hidden="true"> *</span>
-          </Label>
-          <Input
-            id="admin-pwd"
-            type="password"
-            placeholder="••••••••••••"
-            bind:value={form.adminPassword}
-            required
-            aria-invalid={errors.adminPassword ? "true" : undefined}
-            aria-describedby={errors.adminPassword ? "admin-pwd-error" : undefined}
-            class="h-9 text-xs"
-          />
-          {#if errors.adminPassword}
-            <p id="admin-pwd-error" class="text-[11px] text-destructive" role="alert">
-              {errors.adminPassword}
-            </p>
-          {/if}
-
-          <!-- Real-Time Password Strength Meter -->
-          {#if form.adminPassword}
-            <div class="space-y-1 pt-1">
-              <div class="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            {#if form.adminPassword}
+              <div class="space-y-1.5 pt-1">
                 <div
-                  class="h-full {strengthLabel.color} transition-all duration-300"
-                  style="width: {strengthLabel.width};"
-                ></div>
+                  class="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                  role="meter"
+                  aria-label={m.ui_onboarding_admin_strength()}
+                  aria-valuemin={0}
+                  aria-valuemax={5}
+                  aria-valuenow={passwordStrength}
+                >
+                  <div
+                    class="h-full {strengthLabel.color} transition-all duration-300"
+                    style="width: {strengthLabel.width};"
+                  ></div>
+                </div>
+                <div class="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{m.ui_onboarding_admin_strength()}</span>
+                  <span class="font-semibold text-foreground">{strengthLabel.text}</span>
+                </div>
               </div>
-              <div class="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
-                <span>{m.ui_onboarding_admin_strength()}</span>
-                <span class="font-bold">{strengthLabel.text}</span>
-              </div>
-            </div>
-          {/if}
-        </div>
+            {/if}
+          </div>
 
-        <div class="space-y-1.5">
-          <Label for="admin-pwd-confirm" class="text-xs font-medium text-foreground">
-            {m.ui_onboarding_admin_confirm_password()}
-            <span class="text-destructive" aria-hidden="true"> *</span>
-          </Label>
-          <Input
-            id="admin-pwd-confirm"
-            type="password"
-            placeholder="••••••••••••"
-            bind:value={form.adminConfirmPassword}
-            required
-            aria-invalid={errors.adminConfirmPassword ? "true" : undefined}
-            aria-describedby={errors.adminConfirmPassword ? "admin-pwd-confirm-error" : undefined}
-            class="h-9 text-xs"
-          />
-          {#if errors.adminConfirmPassword}
-            <p id="admin-pwd-confirm-error" class="text-[11px] text-destructive" role="alert">
-              {errors.adminConfirmPassword}
-            </p>
-          {/if}
+          <div class="space-y-1.5">
+            <Label for="admin-pwd-confirm" class="text-xs font-medium text-foreground">
+              {m.ui_onboarding_admin_confirm_password()}
+              <span class="text-destructive" aria-hidden="true"> *</span>
+            </Label>
+            <Input
+              id="admin-pwd-confirm"
+              type="password"
+              placeholder="••••••••••••"
+              bind:value={form.adminConfirmPassword}
+              required
+              aria-invalid={errors.adminConfirmPassword ? "true" : undefined}
+              aria-describedby={errors.adminConfirmPassword ? "admin-pwd-confirm-error" : undefined}
+              autocomplete="new-password"
+              class="h-10"
+            />
+            {#if errors.adminConfirmPassword}
+              <p id="admin-pwd-confirm-error" class="text-xs text-destructive" role="alert">
+                {errors.adminConfirmPassword}
+              </p>
+            {/if}
+          </div>
         </div>
       </div>
-      </CardContent>
-      </Card>
-    </div>
-</div>
+    </CardContent>
+  </Card>
+</section>

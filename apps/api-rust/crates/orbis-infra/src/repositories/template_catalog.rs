@@ -66,6 +66,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
                  'academic.student-certificate-yemeni', \
                  'academic.official-transcript', \
                  'academic.student-term-report-card', \
+                 'academic.class-schedule', \
                  'administration.enrollment-certificate', \
                  'administration.student-id-card', \
                  'administration.staff-id-card', \
@@ -76,6 +77,7 @@ pub async fn provision_master_templates<C: ConnectionTrait>(
                  'finance.payment-receipt', \
                  'finance.disbursement-voucher', \
                  'finance.journal-voucher', \
+                 'finance.account-statement', \
                  'administration.organization-letterhead' \
              ) THEN 1 \
              ELSE 0 \
@@ -136,14 +138,14 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "bg-base",
-                            "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#e2e8f0", "strokeWidth": 0.5, "borderRadius": 4 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#e2e8f0", "strokeWidth": 0.5, "borderRadius": 4 },
                             "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
                         },
                         // Header Banner Shape
                         {
                             "type": "Shape",
                             "id": "header-banner",
-                            "props": { "shape": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 3 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 3 },
                             "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
                         },
                         // Institution Name in Header
@@ -169,7 +171,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "photo-border",
-                            "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
+                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
                             "position": { "x": 4, "y": 14, "width": 22, "height": 26 }
                         },
                         // Student Name
@@ -218,7 +220,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "footer-accent",
-                            "props": { "shape": "rectangle", "fillColor": "#2563eb", "strokeColor": "#2563eb", "strokeWidth": 0, "borderRadius": 1 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#2563eb", "strokeColor": "#2563eb", "strokeWidth": 0, "borderRadius": 1 },
                             "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
                         },
                         {
@@ -264,13 +266,13 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "bg-card",
-                            "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
                             "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
                         },
                         {
                             "type": "Shape",
                             "id": "header-bg",
-                            "props": { "shape": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
                             "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
                         },
                         {
@@ -330,7 +332,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "footer-strip",
-                            "props": { "shape": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
                             "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
                         },
                         {
@@ -378,13 +380,13 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "outer-border",
-                            "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.5, "borderRadius": 4 },
+                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.5, "borderRadius": 4 },
                             "position": { "x": 10, "y": 10, "width": 190, "height": 277 }
                         },
                         {
                             "type": "Shape",
                             "id": "inner-border",
-                            "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#d97706", "strokeWidth": 0.5, "borderRadius": 2 },
+                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#d97706", "strokeWidth": 0.5, "borderRadius": 2 },
                             "position": { "x": 13, "y": 13, "width": 184, "height": 271 }
                         },
                         // Header Institutional Details
@@ -445,7 +447,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "stamp-circle",
-                            "props": { "shape": "circle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 1 },
+                            "props": { "shapeType": "circle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 1 },
                             "position": { "x": 92, "y": 200, "width": 26, "height": 26 }
                         },
                         {
@@ -506,7 +508,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "header-card",
-                            "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#e2e8f0", "strokeWidth": 1, "borderRadius": 3 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#e2e8f0", "strokeWidth": 1, "borderRadius": 3 },
                             "position": { "x": 10, "y": 10, "width": 190, "height": 34 }
                         },
                         {
@@ -531,7 +533,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "info-box",
-                            "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
                             "position": { "x": 10, "y": 48, "width": 190, "height": 18 }
                         },
                         {
@@ -581,7 +583,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "summary-box",
-                            "props": { "shape": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 2 },
                             "position": { "x": 10, "y": 200, "width": 190, "height": 28 }
                         },
                         {
@@ -665,14 +667,14 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "rcpt-border",
-                            "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#d8e2eb", "strokeWidth": 0.7, "borderRadius": 4 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#d8e2eb", "strokeWidth": 0.7, "borderRadius": 4 },
                             "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
                         },
                         // Branded header
                         {
                             "type": "Shape",
                             "id": "rcpt-header-bg",
-                            "props": { "shape": "rectangle", "fillColor": "#0f766e", "strokeColor": "#0f766e", "strokeWidth": 0, "borderRadius": 4 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#0f766e", "strokeColor": "#0f766e", "strokeWidth": 0, "borderRadius": 4 },
                             "position": { "x": 8, "y": 8, "width": 194, "height": 42 }
                         },
                         {
@@ -719,7 +721,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "rcpt-amount-bg",
-                            "props": { "shape": "rectangle", "fillColor": "#f0fdfa", "strokeColor": "#cce9e3", "strokeWidth": 0.5, "borderRadius": 3 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#f0fdfa", "strokeColor": "#cce9e3", "strokeWidth": 0.5, "borderRadius": 3 },
                             "position": { "x": 22, "y": 84, "width": 166, "height": 34 }
                         },
                         {
@@ -821,7 +823,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "exam-card-bg",
-                            "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1, "borderRadius": 3 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1, "borderRadius": 3 },
                             "position": { "x": 6, "y": 6, "width": 136, "height": 198 }
                         },
                         {
@@ -840,7 +842,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "seat-box",
-                            "props": { "shape": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
                             "position": { "x": 12, "y": 30, "width": 124, "height": 18 }
                         },
                         {
@@ -941,7 +943,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "outer-frame",
-                            "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.2, "borderRadius": 2 },
+                            "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.2, "borderRadius": 2 },
                             "position": { "x": 10, "y": 10, "width": 190, "height": 277 }
                         },
                         {
@@ -966,7 +968,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "st-info-bar",
-                            "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 1 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 1 },
                             "position": { "x": 12, "y": 40, "width": 186, "height": 16 }
                         },
                         {
@@ -1016,7 +1018,7 @@ pub fn get_master_template_definitions() -> Vec<(
                         {
                             "type": "Shape",
                             "id": "t-summary-box",
-                            "props": { "shape": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 1 },
+                            "props": { "shapeType": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 1 },
                             "position": { "x": 12, "y": 240, "width": 186, "height": 18 }
                         },
                         {
@@ -1063,6 +1065,8 @@ pub fn get_master_template_definitions() -> Vec<(
         "إلى الحساب",
     ));
     templates.extend(default_grade_certificate_templates());
+    templates.push(default_class_schedule_template());
+    templates.push(default_account_statement_template());
     templates
 }
 
@@ -1125,13 +1129,13 @@ fn default_finance_voucher_template(
                     {
                         "type": "Shape",
                         "id": "voucher-frame",
-                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.7, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.7, "borderRadius": 3 },
                         "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
                     },
                     {
                         "type": "Shape",
                         "id": "voucher-header",
-                        "props": { "shape": "rectangle", "fillColor": accent, "strokeColor": accent, "strokeWidth": 0, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": accent, "strokeColor": accent, "strokeWidth": 0, "borderRadius": 3 },
                         "position": { "x": 8, "y": 8, "width": 194, "height": 42 }
                     },
                     {
@@ -1167,7 +1171,7 @@ fn default_finance_voucher_template(
                     {
                         "type": "Shape",
                         "id": "voucher-amount-bg",
-                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 3 },
                         "position": { "x": 20, "y": 145, "width": 170, "height": 32 }
                     },
                     {
@@ -1263,7 +1267,7 @@ fn default_grade_certificate_templates() -> Vec<(
                 vec![json!({
                         "type": "Shape",
                         "id": "certificate-decoration",
-                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#d6b66a", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#d6b66a", "strokeWidth": 0.8, "borderRadius": 3 },
                         "position": { "x": 4, "y": 4, "width": 202, "height": 140 }
                     })]
             };
@@ -1527,13 +1531,13 @@ fn default_yemeni_academic_certificate_template() -> (
                     {
                         "type": "Shape",
                         "id": "cert-outer-border",
-                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.5, "borderRadius": 4 },
+                        "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.5, "borderRadius": 4 },
                         "position": { "x": 6, "y": 6, "width": 198, "height": 285 }
                     },
                     {
                         "type": "Shape",
                         "id": "cert-inner-border",
-                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 0.5, "borderRadius": 2 },
                         "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
                     },
                     // Institutional Header (Right: Arabic, Center: Logo/Emblem, Left: English)
@@ -1591,7 +1595,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     {
                         "type": "Shape",
                         "id": "cert-title-banner",
-                        "props": { "shape": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 3 },
                         "position": { "x": 42, "y": 39, "width": 126, "height": 9 }
                     },
                     {
@@ -1626,7 +1630,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     {
                         "type": "Shape",
                         "id": "cert-student-box",
-                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.8, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.8, "borderRadius": 2 },
                         "position": { "x": 14, "y": 57, "width": 182, "height": 22 }
                     },
                     {
@@ -1714,7 +1718,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     {
                         "type": "Shape",
                         "id": "cert-summary-box",
-                        "props": { "shape": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#94a3b8", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#94a3b8", "strokeWidth": 0.8, "borderRadius": 3 },
                         "position": { "x": 14, "y": 206, "width": 182, "height": 22 }
                     },
                     {
@@ -1767,7 +1771,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     {
                         "type": "Shape",
                         "id": "cert-stamp-circle",
-                        "props": { "shape": "circle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 1.0 },
+                        "props": { "shapeType": "circle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 1.0 },
                         "position": { "x": 16, "y": 232, "width": 24, "height": 24 }
                     },
                     {
@@ -1800,7 +1804,7 @@ fn default_yemeni_academic_certificate_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -1853,13 +1857,13 @@ fn default_exam_hall_register_template() -> (
                     {
                         "type": "Shape",
                         "id": "reg-outer-border",
-                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.2, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#0f172a", "strokeWidth": 1.2, "borderRadius": 2 },
                         "position": { "x": 8, "y": 8, "width": 194, "height": 281 }
                     },
                     {
                         "type": "Shape",
                         "id": "reg-inner-border",
-                        "props": { "shape": "rectangle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 0.5, "borderRadius": 1 },
+                        "props": { "shapeType": "rectangle", "fillColor": "transparent", "strokeColor": "#94a3b8", "strokeWidth": 0.5, "borderRadius": 1 },
                         "position": { "x": 10, "y": 10, "width": 190, "height": 277 }
                     },
                     {
@@ -1895,7 +1899,7 @@ fn default_exam_hall_register_template() -> (
                     {
                         "type": "Shape",
                         "id": "reg-title-bg",
-                        "props": { "shape": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#0f172a", "strokeColor": "#0f172a", "strokeWidth": 0, "borderRadius": 2 },
                         "position": { "x": 14, "y": 35, "width": 182, "height": 8.5 }
                     },
                     {
@@ -1915,7 +1919,7 @@ fn default_exam_hall_register_template() -> (
                     {
                         "type": "Shape",
                         "id": "reg-meta-box",
-                        "props": { "shape": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.6, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#cbd5e1", "strokeWidth": 0.6, "borderRadius": 2 },
                         "position": { "x": 14, "y": 46, "width": 182, "height": 13 }
                     },
                     {
@@ -1981,7 +1985,7 @@ fn default_exam_hall_register_template() -> (
                     {
                         "type": "Shape",
                         "id": "reg-footer-box",
-                        "props": { "shape": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.6, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#f1f5f9", "strokeColor": "#cbd5e1", "strokeWidth": 0.6, "borderRadius": 2 },
                         "position": { "x": 14, "y": 253, "width": 182, "height": 28 }
                     },
                     {
@@ -2018,7 +2022,7 @@ fn default_exam_hall_register_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2065,7 +2069,7 @@ fn default_exam_hall_seating_card_template() -> (
                     {
                         "type": "Shape",
                         "id": "exam-card-bg",
-                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1.0, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f172a", "strokeWidth": 1.0, "borderRadius": 3 },
                         "position": { "x": 6, "y": 6, "width": 136, "height": 198 }
                     },
                     {
@@ -2083,7 +2087,7 @@ fn default_exam_hall_seating_card_template() -> (
                     {
                         "type": "Shape",
                         "id": "seat-box",
-                        "props": { "shape": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#fee2e2", "strokeColor": "#dc2626", "strokeWidth": 0.8, "borderRadius": 2 },
                         "position": { "x": 12, "y": 30, "width": 124, "height": 18 }
                     },
                     {
@@ -2146,7 +2150,7 @@ fn default_exam_hall_seating_card_template() -> (
                     }
                 ]
             }]
-        })
+        }),
     )
 }
 
@@ -2192,13 +2196,13 @@ fn default_user_id_card_template() -> (
                     {
                         "type": "Shape",
                         "id": "bg-card",
-                        "props": { "shape": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#cbd5e1", "strokeWidth": 0.5, "borderRadius": 4 },
                         "position": { "x": 1, "y": 1, "width": 83.6, "height": 52 }
                     },
                     {
                         "type": "Shape",
                         "id": "header-bg",
-                        "props": { "shape": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#1e1b4b", "strokeColor": "#1e1b4b", "strokeWidth": 0, "borderRadius": 3 },
                         "position": { "x": 1.5, "y": 1.5, "width": 82.6, "height": 11 }
                     },
                     {
@@ -2258,7 +2262,7 @@ fn default_user_id_card_template() -> (
                     {
                         "type": "Shape",
                         "id": "footer-strip",
-                        "props": { "shape": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
+                        "props": { "shapeType": "rectangle", "fillColor": "#4338ca", "strokeColor": "#4338ca", "strokeWidth": 0, "borderRadius": 1 },
                         "position": { "x": 1.5, "y": 48.5, "width": 82.6, "height": 4.5 }
                     },
                     {
@@ -2269,7 +2273,296 @@ fn default_user_id_card_template() -> (
                     }
                 ]
             }]
-        })
+        }),
+    )
+}
+
+fn default_class_schedule_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "academic.class-schedule",
+        "Weekly Class Timetable Schedule",
+        "جدول الحصص الأسبوعي الدراسي المعتمد",
+        "schedule",
+        "SCHEDULE",
+        "A4",
+        "landscape",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Weekly Class Timetable Schedule",
+                "nameAr": "جدول الحصص الأسبوعي الدراسي المعتمد",
+                "documentType": "SCHEDULE",
+                "entityType": "schedule",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "landscape",
+                    "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "schedule.title": { "source": "schedule.title", "type": "string", "label": "Schedule Title", "labelAr": "عنوان الجدول" },
+                "schedule.periodName": { "source": "schedule.period_name", "type": "string", "label": "Academic Period", "labelAr": "الفصل الدراسي" },
+                "schedule.date": { "source": "schedule.date", "type": "string", "label": "Date", "labelAr": "تاريخ الطباعة" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "sched-border",
+                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f766e", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "position": { "x": 6, "y": 6, "width": 285, "height": 198 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "sched-header",
+                        "props": { "shapeType": "rectangle", "fillColor": "#0f766e", "strokeColor": "#0f766e", "strokeWidth": 0, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 8, "width": 281, "height": 24 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-org",
+                        "props": { "content": "{{$org.name_ar}}\n{{$org.name}}", "fontSize": 9.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "start", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 190, "y": 10, "width": 95, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-title",
+                        "props": { "content": "جدول الحصص الدراسية الأسبوعي\n{{schedule.title}}", "fontSize": 12.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 75, "y": 9, "width": 137, "height": 18 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-meta",
+                        "props": { "content": "الفصل: {{schedule.periodName}}\nالتاريخ: {{schedule.date}}", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#ccfbf1", "textAlign": "start", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 12, "y": 10, "width": 60, "height": 18 }
+                    },
+                    {
+                        "type": "Table",
+                        "id": "sched-matrix",
+                        "props": {
+                            "dataSource": "matrix",
+                            "columns": [
+                                { "header": "الحصة / التوقيت", "headerAr": "الحصة / التوقيت", "field": "slotName", "width": "16%", "alignment": "center" },
+                                { "header": "السبت", "headerAr": "السبت", "field": "day_6", "width": "14%", "alignment": "center" },
+                                { "header": "الأحد", "headerAr": "الأحد", "field": "day_0", "width": "14%", "alignment": "center" },
+                                { "header": "الإثنين", "headerAr": "الإثنين", "field": "day_1", "width": "14%", "alignment": "center" },
+                                { "header": "الثلاثاء", "headerAr": "الثلاثاء", "field": "day_2", "width": "14%", "alignment": "center" },
+                                { "header": "الأربعاء", "headerAr": "الأربعاء", "field": "day_3", "width": "14%", "alignment": "center" },
+                                { "header": "الخميس", "headerAr": "الخميس", "field": "day_4", "width": "14%", "alignment": "center" }
+                            ],
+                            "showHeader": true,
+                            "showTotals": false,
+                            "showGrid": true,
+                            "showBorder": true,
+                            "direction": "rtl",
+                            "style": {
+                                "headerBgColor": "#0f766e",
+                                "headerTextColor": "#ffffff",
+                                "alternateRowBgColor": "#f0fdfa",
+                                "borderColor": "#cbd5e1",
+                                "borderWidth": 0.6,
+                                "headerFontSize": 8.5,
+                                "fontSize": 8.0,
+                                "rowHeight": 18.0
+                            }
+                        },
+                        "position": { "x": 8, "y": 36, "width": 281, "height": 142 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-sig-1",
+                        "props": { "content": "وكيل الشؤون التعليمية\n...................................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 190, "y": 184, "width": 80, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-sig-2",
+                        "props": { "content": "المشرف الأكاديمي\n...................................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 105, "y": 184, "width": 80, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "sched-sig-3",
+                        "props": { "content": "مدير المدرسة / الاعتماد\n...................................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 20, "y": 184, "width": 80, "height": 14 }
+                    }
+                ]
+            }]
+        }),
+    )
+}
+
+fn default_account_statement_template() -> (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    serde_json::Value,
+) {
+    (
+        "finance.account-statement",
+        "Official General Ledger Account Statement",
+        "كشف حساب مالي رسمي معتمد",
+        "statement",
+        "STATEMENT",
+        "A4",
+        "portrait",
+        json!({
+            "version": "2.0",
+            "meta": {
+                "name": "Official General Ledger Account Statement",
+                "nameAr": "كشف حساب مالي رسمي معتمد",
+                "documentType": "STATEMENT",
+                "entityType": "statement",
+                "locale": "ar",
+                "pageSetup": {
+                    "size": "A4",
+                    "orientation": "portrait",
+                    "margins": { "top": 8, "bottom": 8, "left": 8, "right": 8 },
+                    "unit": "mm"
+                }
+            },
+            "variables": {
+                "account.code": { "source": "account.code", "type": "string", "label": "Account Code", "labelAr": "رقم الحساب" },
+                "account.nameAr": { "source": "account.name_ar", "type": "string", "label": "Account Name", "labelAr": "اسم الحساب" },
+                "account.currency": { "source": "account.currency", "type": "string", "label": "Currency", "labelAr": "العملة" },
+                "summary.closingBalanceFormatted": { "source": "summary.closing_balance_formatted", "type": "string", "label": "Closing Balance", "labelAr": "الرصيد النهائي" }
+            },
+            "assets": {},
+            "pages": [{
+                "type": "Page",
+                "id": "p1",
+                "children": [
+                    {
+                        "type": "Shape",
+                        "id": "stmt-border",
+                        "props": { "shapeType": "rectangle", "fillColor": "#ffffff", "strokeColor": "#0f2942", "strokeWidth": 0.8, "borderRadius": 3 },
+                        "position": { "x": 6, "y": 6, "width": 198, "height": 285 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "stmt-header",
+                        "props": { "shapeType": "rectangle", "fillColor": "#0f2942", "strokeColor": "#0f2942", "strokeWidth": 0, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 8, "width": 194, "height": 26 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-title",
+                        "props": { "content": "{{$org.name_ar}}\nكشف حساب الأستاذ العام المعتمد | STATEMENT OF ACCOUNT", "fontSize": 10.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#ffffff", "textAlign": "center", "direction": "rtl", "lineHeight": 1.3 },
+                        "position": { "x": 10, "y": 9, "width": 190, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-details",
+                        "props": { "content": "الحساب: {{account.code}} - {{account.nameAr}} | العملة: {{account.currency}} | الفترة: {{period.startDateFormatted}} - {{period.endDateFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "normal", "color": "#94a3b8", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 10, "y": 24, "width": 190, "height": 8 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "box-deb",
+                        "props": { "shapeType": "rectangle", "fillColor": "#f0fdf4", "strokeColor": "#16a34a", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 138, "y": 37, "width": 64, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "txt-deb",
+                        "props": { "content": "إجمالي المدين: {{summary.totalDebitFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#166534", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 138, "y": 41, "width": 64, "height": 6 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "box-crd",
+                        "props": { "shapeType": "rectangle", "fillColor": "#fff1f2", "strokeColor": "#e11d48", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 73, "y": 37, "width": 62, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "txt-crd",
+                        "props": { "content": "إجمالي الدائن: {{summary.totalCreditFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#9f1239", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 73, "y": 41, "width": 62, "height": 6 }
+                    },
+                    {
+                        "type": "Shape",
+                        "id": "box-bal",
+                        "props": { "shapeType": "rectangle", "fillColor": "#f8fafc", "strokeColor": "#0f2942", "strokeWidth": 0.5, "borderRadius": 2 },
+                        "position": { "x": 8, "y": 37, "width": 62, "height": 13 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "txt-bal",
+                        "props": { "content": "الرصيد: {{summary.closingBalanceFormatted}}", "fontSize": 7.5, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f2942", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 8, "y": 41, "width": 62, "height": 6 }
+                    },
+                    {
+                        "type": "Table",
+                        "id": "stmt-table",
+                        "props": {
+                            "dataSource": "rows",
+                            "columns": [
+                                { "header": "#", "headerAr": "#", "field": "index", "width": "6%", "alignment": "center" },
+                                { "header": "التاريخ", "headerAr": "التاريخ", "field": "date", "width": "15%", "alignment": "center" },
+                                { "header": "رقم المرجع", "headerAr": "رقم المرجع", "field": "ref", "width": "16%", "alignment": "center" },
+                                { "header": "البيان والتفاصيل", "headerAr": "البيان والتفاصيل", "field": "description", "width": "33%", "alignment": "right" },
+                                { "header": "مدين", "headerAr": "مدين", "field": "debitFormatted", "width": "10%", "alignment": "center" },
+                                { "header": "دائن", "headerAr": "دائن", "field": "creditFormatted", "width": "10%", "alignment": "center" },
+                                { "header": "الرصيد", "headerAr": "الرصيد", "field": "balanceFormatted", "width": "10%", "alignment": "center" }
+                            ],
+                            "showHeader": true,
+                            "showTotals": false,
+                            "showGrid": true,
+                            "showBorder": true,
+                            "direction": "rtl",
+                            "style": {
+                                "headerBgColor": "#0f2942",
+                                "headerTextColor": "#ffffff",
+                                "alternateRowBgColor": "#f8fafc",
+                                "borderColor": "#cbd5e1",
+                                "borderWidth": 0.6,
+                                "headerFontSize": 7.5,
+                                "fontSize": 7.0,
+                                "rowHeight": 15.0
+                            }
+                        },
+                        "position": { "x": 8, "y": 53, "width": 194, "height": 208 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-sig-1",
+                        "props": { "content": "المحاسب المالي\n...............................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 135, "y": 268, "width": 60, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-sig-2",
+                        "props": { "content": "المراجعة والتدقيق\n...............................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 75, "y": 268, "width": 60, "height": 14 }
+                    },
+                    {
+                        "type": "Text",
+                        "id": "stmt-sig-3",
+                        "props": { "content": "المدير المالي والختم\n...............................", "fontSize": 8.0, "fontFamily": "Rubik", "fontWeight": "bold", "color": "#0f172a", "textAlign": "center", "direction": "rtl" },
+                        "position": { "x": 12, "y": 268, "width": 60, "height": 14 }
+                    }
+                ]
+            }]
+        }),
     )
 }
 
@@ -2450,8 +2743,7 @@ mod tests {
             .find(|t| t.3 == "student" && t.4 == "REPORT")
             .expect("first student REPORT template");
         assert_eq!(
-            first_report.0,
-            "academic.student-certificate-yemeni",
+            first_report.0, "academic.student-certificate-yemeni",
             "Official Yemeni academic certificate must be the first (REPORT, student) template to receive is_default = 1"
         );
     }

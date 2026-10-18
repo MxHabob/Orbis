@@ -7,10 +7,15 @@ import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 interface Props {
   primaryColor: string;
+  favicon: string;
   isSaving?: boolean;
 }
 
-let { primaryColor = $bindable(), isSaving = false }: Props = $props();
+let {
+  primaryColor = $bindable(),
+  favicon = $bindable(),
+  isSaving = false,
+}: Props = $props();
 </script>
 
 <Card>
@@ -18,6 +23,23 @@ let { primaryColor = $bindable(), isSaving = false }: Props = $props();
     <CardTitle>{m.settings_general_section_branding()}</CardTitle>
   </CardHeader>
   <CardContent>
+    <SettingsRow
+      title={m.settings_general_favicon()}
+      description={m.settings_general_favicon_desc()}
+      labelFor="org_favicon"
+    >
+      {#snippet children()}
+        <Input
+          id="org_favicon"
+          type="url"
+          bind:value={favicon}
+          placeholder="https://example.com/favicon.ico"
+          class="h-9 w-full"
+          disabled={isSaving}
+        />
+      {/snippet}
+    </SettingsRow>
+
     <!-- Primary Color -->
     <SettingsRow
       description={m.settings_general_color_desc()}

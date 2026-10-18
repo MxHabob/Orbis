@@ -132,14 +132,14 @@ const relatedActionGroups = $derived<ActionGroup[]>(classData ? [
         id: "class_roster",
         label: m.ui_copy_class_roster_students_7c634c5e(),
         icon: Users,
-        href: `/${orgId}/academics/classes/${classId}/students`,
+        href: `/${orgId}/academics/sections/${classId}/students`,
         badge: students.length,
       },
       {
         id: "class_curriculum",
         label: m.ui_copy_curriculum_subjects_70041ea1(),
         icon: BookOpen,
-        href: `/${orgId}/academics/classes/${classId}/curriculum`,
+        href: `/${orgId}/academics/sections/${classId}/curriculum`,
       },
       {
         id: "class_schedule",

@@ -97,9 +97,7 @@ pub async fn folder_create(
     let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
     let entity_id = request.entity_id.and_then(|e| Uuid::parse_str(&e).ok());
     let org_unit_id = request.org_unit_id.and_then(|u| Uuid::parse_str(&u).ok());
-    let calendar_id = request
-        .calendar_id
-        .and_then(|y| Uuid::parse_str(&y).ok());
+    let calendar_id = request.calendar_id.and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let input = CreateFolderInput {
@@ -218,9 +216,7 @@ pub async fn folder_get_or_create_curriculum(
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<FolderDto>, String> {
     let ctx = make_ctx(&state);
-    let calendar_id = request
-        .calendar_id
-        .and_then(|y| Uuid::parse_str(&y).ok());
+    let calendar_id = request.calendar_id.and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let folder = state
@@ -247,9 +243,7 @@ pub async fn folder_update(
     let ctx = make_ctx(&state);
     let uid = Uuid::parse_str(&id).map_err(|_| "Invalid Folder ID")?;
     let parent_id = request.parent_id.and_then(|p| Uuid::parse_str(&p).ok());
-    let calendar_id = request
-        .calendar_id
-        .and_then(|y| Uuid::parse_str(&y).ok());
+    let calendar_id = request.calendar_id.and_then(|y| Uuid::parse_str(&y).ok());
     let term_id = request.term_id.and_then(|t| Uuid::parse_str(&t).ok());
 
     let input = UpdateFolderInput {

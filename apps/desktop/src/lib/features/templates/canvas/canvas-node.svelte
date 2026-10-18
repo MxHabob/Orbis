@@ -1,7 +1,6 @@
 <script lang="ts">
-import { Grid } from "@orbis/icons";
+import * as m from "$lib/paraglide/messages";
 import CanvasNode from "./canvas-node.svelte";
-
 /**
  * CanvasNode — Recursive node renderer for the SVG canvas.
  * Renders each node type (Text, Image, Shape, Frame, Barcode, QR, etc.)
@@ -260,7 +259,7 @@ function getCellDisplayText(col: any, rowIdx: number, runtimeRows?: any[]): stri
 
 function getTotalDisplayText(col: any): string {
   if (col.total) {
-    if (col.total === "label") return col.totalLabel || col.total_label || col.headerAr || "المجموع";
+    if (col.total === "label") return col.totalLabel || col.total_label || col.headerAr || m.template_inspector_total_label();
     return `Σ (${col.total})`;
   }
   if (col.totalLabel || col.total_label) return col.totalLabel || col.total_label;
@@ -300,13 +299,15 @@ function getTotalDisplayText(col: any): string {
               min-height: {h}px;
               font-size: {mmToPx((nodeProps.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
               font-family: {nodeProps.fontFamily || 'Rubik'}, sans-serif;
-              font-weight: {nodeProps.fontWeight || '400'};
+              font-weight: {nodeProps.fontWeight === 'bold' ? 700 : nodeProps.fontWeight === 'light' ? 300 : nodeProps.fontWeight || 400};
               font-style: {nodeProps.fontStyle || 'normal'};
               text-decoration: {nodeProps.textDecoration || 'none'};
               color: {nodeProps.color || '#000000'};
               text-align: {nodeProps.textAlign || 'start'};
-              direction: {nodeProps.direction || 'inherit'};
+              direction: {nodeProps.direction === 'auto' ? 'inherit' : nodeProps.direction || 'inherit'};
               line-height: {nodeProps.lineHeight || 1.4};
+              letter-spacing: {nodeProps.letterSpacing || 0}px;
+              text-transform: {nodeProps.textTransform || 'none'};
               overflow: visible;
               word-wrap: break-word;
               padding: 2px;
@@ -327,23 +328,28 @@ function getTotalDisplayText(col: any): string {
               height: {h}px;
               font-size: {mmToPx((nodeProps.fontSize ?? 12) * 0.352778, vp.dpi, vp.zoom)}px;
               font-family: {nodeProps.fontFamily || 'Rubik'}, sans-serif;
-              font-weight: {nodeProps.fontWeight || '400'};
+              font-weight: {nodeProps.fontWeight === 'bold' ? 700 : nodeProps.fontWeight === 'light' ? 300 : nodeProps.fontWeight || 400};
               font-style: {nodeProps.fontStyle || 'normal'};
               text-decoration: {nodeProps.textDecoration || 'none'};
               color: {nodeProps.color || '#000000'};
               text-align: {nodeProps.textAlign || 'start'};
-              direction: {nodeProps.direction || 'inherit'};
+              direction: {nodeProps.direction === 'auto' ? 'inherit' : nodeProps.direction || 'inherit'};
               line-height: {nodeProps.lineHeight || 1.4};
-              display: flex;
+              letter-spacing: {nodeProps.letterSpacing || 0}px;
+              text-transform: {nodeProps.textTransform || 'none'};
+              background: {nodeProps.backgroundColor || 'transparent'};
+              display: {nodeProps.maxLines ? '-webkit-box' : 'flex'};
               flex-direction: column;
               justify-content: {nodeProps.verticalAlign === 'center' ? 'center' : nodeProps.verticalAlign === 'bottom' ? 'flex-end' : 'flex-start'};
-              overflow: hidden;
+              overflow: {nodeProps.overflow === 'visible' ? 'visible' : 'hidden'};
+              -webkit-line-clamp: {nodeProps.maxLines || 'unset'};
+              -webkit-box-orient: vertical;
               word-wrap: break-word;
               padding: 0;
               margin: 0;
             "
           >
-            <span style="display: inline;">{#each textSegments as seg}{#if seg.type === "variable"}<span style="background: #dbeafe; color: #1d4ed8; border-radius: 3px; padding: 0 3px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">{`{{${seg.key}}}`}</span>{:else}{seg.value}{/if}{/each}{#if textSegments.length === 0}{nodeProps.content || ""}{/if}</span>
+            <span style="display: inline;">{#each textSegments as seg, i (i)}{#if seg.type === "variable"}<span style="background: #dbeafe; color: #1d4ed8; border-radius: 3px; padding: 0 3px; font-size: 0.85em; font-weight: 600; white-space: nowrap;">{`{{${seg.key}}}`}</span>{:else}{seg.value}{/if}{/each}{#if textSegments.length === 0}{nodeProps.content || ""}{/if}</span>
           </div>
         {/if}
       </foreignObject>
@@ -359,6 +365,16 @@ function getTotalDisplayText(col: any): string {
             height={h}
             preserveAspectRatio={nodeProps.fit === "cover" ? "xMidYMid slice" : nodeProps.fit === "fill" ? "none" : "xMidYMid meet"}
           />
+          {#if nodeProps.borderWidth > 0}
+            <rect
+              width={w}
+              height={h}
+              rx={mmToPx(nodeProps.borderRadius ?? 0, vp.dpi, vp.zoom)}
+              fill="none"
+              stroke={nodeProps.borderColor || "#000000"}
+              stroke-width={nodeProps.borderWidth}
+            />
+          {/if}
         {:catch error}
           {@const _imageError = console.error("Failed to load template image:", error)}
           <rect width={w} height={h} fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,2" rx="2" />
@@ -371,23 +387,28 @@ function getTotalDisplayText(col: any): string {
 
     {:else if node.type === "Shape"}
       <!-- Shape Node -->
-      {#if nodeProps.shape === "circle" || nodeProps.shape === "ellipse"}
+      {@const shapeType = nodeProps.shapeType || nodeProps.shape}
+      {@const fill = nodeProps.fill || nodeProps.fillColor || "transparent"}
+      {@const stroke = nodeProps.stroke || nodeProps.strokeColor || "#000"}
+      {#if shapeType === "circle" || shapeType === "ellipse"}
         <ellipse
           cx={w / 2}
           cy={h / 2}
           rx={w / 2}
           ry={h / 2}
-          fill={nodeProps.fillColor || "transparent"}
-          stroke={nodeProps.strokeColor || "#000"}
+          fill={fill}
+          stroke={stroke}
           stroke-width={nodeProps.strokeWidth || 1}
         />
+      {:else if shapeType === "line"}
+        <line x1="0" y1={h / 2} x2={w} y2={h / 2} stroke={stroke} stroke-width={nodeProps.strokeWidth || 1} />
       {:else}
         <rect
           width={w}
           height={h}
-          rx={mmToPx(nodeProps.borderRadius ?? 0, vp.dpi, vp.zoom)}
-          fill={nodeProps.fillColor || "transparent"}
-          stroke={nodeProps.strokeColor || "#000"}
+          rx={mmToPx(shapeType === "rounded-rect" ? (nodeProps.borderRadius ?? 4) : (nodeProps.borderRadius ?? 0), vp.dpi, vp.zoom)}
+          fill={fill}
+          stroke={stroke}
           stroke-width={nodeProps.strokeWidth || 1}
         />
       {/if}
@@ -408,7 +429,7 @@ function getTotalDisplayText(col: any): string {
       <!-- Barcode placeholder -->
       <rect width={w} height={h} fill="white" stroke="#e2e8f0" stroke-width="1" rx="2" />
       <g transform="translate(4, 2)">
-        {#each Array(12) as _, i}
+        {#each Array(12) as _, i (i)}
           <rect x={i * ((w - 8) / 12)} y="0" width={((w - 8) / 12) * 0.6} height={h - 10} fill="#000" />
         {/each}
       </g>
@@ -433,7 +454,7 @@ function getTotalDisplayText(col: any): string {
         <!-- Header Row -->
         {#if tbl.showHeader}
           <rect x="0" y="0" width={w} height={tbl.headerH} fill={tbl.headerBgColor} />
-          {#each tbl.colPositions as cp}
+          {#each tbl.colPositions as cp, i (cp.col.id || i)}
             {@const align = cp.col.alignment || cp.col.align || "center"}
             {@const textX = align === "right" ? cp.x + cp.width - 4 : align === "left" ? cp.x + 4 : cp.x + cp.width / 2}
             {@const textAnchor = align === "right" ? "end" : align === "left" ? "start" : "middle"}
@@ -452,12 +473,12 @@ function getTotalDisplayText(col: any): string {
         {/if}
 
         <!-- Data Rows -->
-        {#each Array(tbl.numRows) as _, ri}
+        {#each Array(tbl.numRows) as _, ri (ri)}
           {@const rowY = tbl.headerH + ri * tbl.rowH}
           {#if ri % 2 === 1}
             <rect x="0" y={rowY} width={w} height={tbl.rowH} fill={tbl.alternateRowBgColor} />
           {/if}
-          {#each tbl.colPositions as cp}
+          {#each tbl.colPositions as cp, i (cp.col.id || i)}
             {@const align = cp.col.alignment || cp.col.align || "center"}
             {@const textX = align === "right" ? cp.x + cp.width - 4 : align === "left" ? cp.x + 4 : cp.x + cp.width / 2}
             {@const textAnchor = align === "right" ? "end" : align === "left" ? "start" : "middle"}
@@ -481,7 +502,7 @@ function getTotalDisplayText(col: any): string {
         {#if tbl.showTotals}
           {@const totY = tbl.headerH + tbl.numRows * tbl.rowH}
           <rect x="0" y={totY} width={w} height={tbl.totalsH} fill="#f1f5f9" />
-          {#each tbl.colPositions as cp}
+          {#each tbl.colPositions as cp, i (cp.col.id || i)}
             {@const align = cp.col.alignment || cp.col.align || "center"}
             {@const textX = align === "right" ? cp.x + cp.width - 4 : align === "left" ? cp.x + 4 : cp.x + cp.width / 2}
             {@const textAnchor = align === "right" ? "end" : align === "left" ? "start" : "middle"}
@@ -504,7 +525,7 @@ function getTotalDisplayText(col: any): string {
 
         <!-- Vertical Grid Dividers -->
         {#if tbl.showGrid}
-          {#each tbl.colPositions.slice(1) as cp}
+          {#each tbl.colPositions.slice(1) as cp, i (cp.col.id || i)}
             <line x1={cp.x} y1="0" x2={cp.x} y2={h} stroke={tbl.borderColor} stroke-width={tbl.borderWidth} />
           {/each}
         {/if}
@@ -517,7 +538,7 @@ function getTotalDisplayText(col: any): string {
         <!-- Fallback empty table placeholder -->
         <rect width={w} height={h} fill="white" stroke="#d1d5db" stroke-width="1" />
         <text x={w / 2} y={h / 2} text-anchor="middle" dominant-baseline="central" fill="#94a3b8" font-size="9">
-          جدول بدون أعمدة (انقر لإضافة أعمدة في لوحة الخصائص)
+          {m.template_inspector_empty_table_placeholder()}
         </text>
       {/if}
 

@@ -11,7 +11,7 @@ class StudentsStore {
   // Filters state
   searchQuery = $state("");
   selectedClassId = $state<string | null>(null);
-  statusFilter = $state<string>("active"); // active, withdrawn, graduated, suspended, all
+  statusFilter = $state<string>("active"); // active, inactive, withdrawn, graduated, suspended, all
 
   /**
    * Helper to filter a student list using the store's current filters.
@@ -27,8 +27,8 @@ class StudentsStore {
 
       const isStudentDetail = "student" in item;
       const classId = isStudentDetail
-        ? (item as StudentDetailDto).enrollment?.class_id
-        : (item as EnrollmentDto).class_id;
+        ? (item as StudentDetailDto).enrollment?.section_id
+        : (item as EnrollmentDto).section_id;
 
       // 2. Class Match
       if (this.selectedClassId) {

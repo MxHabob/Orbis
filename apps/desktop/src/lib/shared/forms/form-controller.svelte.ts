@@ -121,6 +121,27 @@ export class FormController<Values, Payload = Values> {
     this.validate([field]);
   }
 
+  get isValid(): boolean {
+    const candidate = this.options.normalize
+      ? this.options.normalize(this.values)
+      : this.values;
+    const result = this.options.schema.safeParse(candidate);
+    return result.success;
+  }
+
+  get canSubmit(): boolean {
+    return this.isValid && !this.isSubmitting;
+  }
+
+  get firstError(): string | undefined {
+    const candidate = this.options.normalize
+      ? this.options.normalize(this.values)
+      : this.values;
+    const result = this.options.schema.safeParse(candidate);
+    if (result.success) return undefined;
+    return result.error.issues[0]?.message;
+  }
+
   validate(fields?: string[]): boolean {
     this.syncToTanStack();
     const candidate = this.options.normalize
@@ -137,6 +158,9 @@ export class FormController<Values, Payload = Values> {
           ),
         )
       : nextErrors;
+    if (!result.success) {
+      this.formError = result.error.issues[0]?.message;
+    }
     return Object.keys(this.errors).length === 0;
   }
 
@@ -157,22 +181,25 @@ export class FormController<Values, Payload = Values> {
   async submit(
     submit: (payload: Payload) => Promise<unknown>,
   ): Promise<boolean> {
+    if (this.isSubmitting) return false;
+
     this.formError = undefined;
     this.touched = { ...this.touched, __form: true };
-    if (!this.validate()) return false;
-    if (!(await this.validateAsync())) return false;
-
-    const candidate = this.options.normalize
-      ? this.options.normalize(this.values)
-      : this.values;
-    const parsed = this.options.schema.safeParse(candidate);
-    if (!parsed.success) {
-      this.errors = zodErrors(parsed.error);
-      return false;
-    }
-
     this.isSubmitting = true;
     try {
+      if (!this.validate()) return false;
+      if (!(await this.validateAsync())) return false;
+
+      const candidate = this.options.normalize
+        ? this.options.normalize(this.values)
+        : this.values;
+      const parsed = this.options.schema.safeParse(candidate);
+      if (!parsed.success) {
+        this.errors = zodErrors(parsed.error);
+        this.formError = parsed.error.issues[0]?.message;
+        return false;
+      }
+
       await submit(parsed.data);
       return true;
     } catch (error) {

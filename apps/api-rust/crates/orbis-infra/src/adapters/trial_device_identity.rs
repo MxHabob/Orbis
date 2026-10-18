@@ -10,12 +10,58 @@ use zeroize::{Zeroize, Zeroizing};
 const TRIAL_KEY_SERVICE: &str = "com.mulverse.orbis.trial-device";
 const TRIAL_KEY_ACCOUNT: &str = "device";
 const INSTALLATION_ID_ACCOUNT: &str = "installation-id";
+const DEPLOYMENT_KEY_SERVICE: &str = "com.mulverse.orbis.deployment";
+const DEPLOYMENT_KEY_ACCOUNT: &str = "identity";
 #[cfg(windows)]
 const LEGACY_TRIAL_KEY_FILE: &str = "trial_device_key.dpapi";
 const TRIAL_KEY_LOCK_FILE: &str = ".trial-device-key.lock";
 
 pub fn load_or_create(app_data_dir: &Path, installation_id: &str) -> Result<SigningKey, String> {
     load_or_create_with_service(app_data_dir, installation_id, TRIAL_KEY_SERVICE)
+}
+
+/// Load Orbis's deployment identity from the OS key store, creating it only
+/// when the key store explicitly reports that no identity exists.
+pub fn load_or_create_deployment_identity(app_data_dir: &Path) -> Result<SigningKey, String> {
+    let lock = lock_identity_store(app_data_dir)?;
+    let result = (|| {
+        let entry =
+            Entry::new(DEPLOYMENT_KEY_SERVICE, DEPLOYMENT_KEY_ACCOUNT).map_err(|error| {
+                format!("Failed to open the operating system's secure key store: {error}")
+            })?;
+        match entry.get_password() {
+            Ok(encoded_seed) => decode_seed(&encoded_seed),
+            Err(KeyringError::NoEntry) => {
+                let mut seed = Zeroizing::new([0_u8; 32]);
+                rand::rngs::OsRng.fill_bytes(&mut *seed);
+                store_seed(&entry, &seed)?;
+                Ok(SigningKey::from_bytes(&seed))
+            }
+            Err(error) => Err(format!(
+                "Failed to read the deployment identity from the operating system's secure key store: {error}"
+            )),
+        }
+    })();
+    let unlock_result = FileExt::unlock(&lock)
+        .map_err(|error| format!("Failed to unlock deployment identity: {error}"));
+    match (result, unlock_result) {
+        (Err(error), _) => Err(error),
+        (Ok(_), Err(error)) => Err(error),
+        (Ok(key), Ok(())) => Ok(key),
+    }
+}
+
+pub fn load_deployment_identity() -> Result<SigningKey, String> {
+    let entry = Entry::new(DEPLOYMENT_KEY_SERVICE, DEPLOYMENT_KEY_ACCOUNT).map_err(|error| {
+        format!("Failed to open the operating system's secure key store: {error}")
+    })?;
+    match entry.get_password() {
+        Ok(encoded_seed) => decode_seed(&encoded_seed),
+        Err(KeyringError::NoEntry) => Err("The deployment identity is not initialized".to_owned()),
+        Err(error) => Err(format!(
+            "Failed to read the deployment identity from the operating system's secure key store: {error}"
+        )),
+    }
 }
 
 pub fn load_or_create_installation_id(app_data_dir: &Path) -> Result<String, String> {

@@ -4,8 +4,8 @@ use super::make_ctx;
 use super::org_cmds::ApiResponse;
 use crate::state::AppState;
 use chrono::NaiveDate;
-use orbis_app::services::calculation_engine::AcademicCalculationEngine;
 use orbis_app::services::assessment_service::{BatchAttendanceItem, BatchGradeItem};
+use orbis_app::services::calculation_engine::AcademicCalculationEngine;
 use orbis_domain::entities::academic_calculation::{
     CalculationPlan, CalculationPreview, OutcomePolicy,
 };
@@ -13,8 +13,8 @@ use orbis_domain::entities::academic_policy::{RankingScope, TiePolicy};
 use orbis_domain::entities::assessment_scheme::{
     AssessmentComponent, AssessmentLevel, AssessmentScheme, InstitutionScope,
 };
-use rust_decimal::prelude::ToPrimitive;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tauri::State;
@@ -318,7 +318,7 @@ fn attendance_to_dto(a: orbis_domain::entities::attendance::Attendance) -> Atten
     AttendanceDto {
         id: a.id.to_string(),
         student_id: a.student_id.to_string(),
-        class_id: a.class_id.map(|c| c.to_string()),
+        class_id: a.section_id.map(|c| c.to_string()),
         section_subject_id: a.section_subject_id.map(|c| c.to_string()),
         scheduled_lesson_id: a.scheduled_lesson_id.map(|s| s.to_string()),
         date: a.attendance_date.to_string(),
@@ -683,15 +683,17 @@ pub async fn assessment_preview_calculation(
     if let Some(policy) = settings.academic.outcome_policy.as_ref() {
         for output in &result.outputs {
             if output.unit == policy.unit {
-                outcomes.push(orbis_domain::entities::academic_calculation::CalculationOutputOutcome {
-                    output_name: output.name.clone(),
-                    outcome: AcademicCalculationEngine::evaluate_outcome(
-                        output.value,
-                        &output.unit,
-                        policy,
-                    )
-                    .map_err(|error| error.to_string())?,
-                });
+                outcomes.push(
+                    orbis_domain::entities::academic_calculation::CalculationOutputOutcome {
+                        output_name: output.name.clone(),
+                        outcome: AcademicCalculationEngine::evaluate_outcome(
+                            output.value,
+                            &output.unit,
+                            policy,
+                        )
+                        .map_err(|error| error.to_string())?,
+                    },
+                );
             }
         }
     }
@@ -753,10 +755,7 @@ pub async fn assessment_calculate_rankings(
         scores.push((uid, item.score));
     }
 
-    let ranked = AcademicCalculationEngine::compute_rankings(
-        &scores,
-        settings.academic.tie_policy,
-    );
+    let ranked = AcademicCalculationEngine::compute_rankings(&scores, settings.academic.tie_policy);
     let dtos = ranked
         .into_iter()
         .map(|(id, rank)| {
@@ -765,7 +764,9 @@ pub async fn assessment_calculate_rankings(
                     id: id.to_string(),
                     rank,
                 })
-                .ok_or_else(|| "Rank value cannot be represented by the Desktop contract".to_string())
+                .ok_or_else(|| {
+                    "Rank value cannot be represented by the Desktop contract".to_string()
+                })
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -872,7 +873,7 @@ pub async fn assessment_list_attendance(
         .map_err(|_| "Invalid date format, use YYYY-MM-DD")?;
     let items = state
         .attendance_repo
-        .find_by_class_and_date(cid, parsed_date)
+        .find_by_section_and_date(cid, parsed_date)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(items.into_iter().map(attendance_to_dto).collect()))
@@ -1043,4 +1044,37 @@ pub async fn assessment_get_class_annual_results(
         .map_err(|e| e.to_string())?;
 
     Ok(ok(reports))
+}
+
+#[tauri::command]
+pub async fn assessment_get_student_certificate_results(
+    student_id: String,
+    calendar_id: String,
+    certificate_type: String,
+    class_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<
+    ApiResponse<orbis_domain::entities::academic_policy::StudentCertificateReportCard>,
+    String,
+> {
+    let ctx = make_ctx(&state);
+    let sid = Uuid::parse_str(&student_id).map_err(|_| "Invalid student ID")?;
+    let cal_id = Uuid::parse_str(&calendar_id).map_err(|_| "Invalid calendar ID")?;
+    let cid = class_id.and_then(|c| Uuid::parse_str(&c).ok());
+
+    let report = state
+        .assessment_service
+        .calculate_student_certificate_report_card(
+            &ctx,
+            ctx.tenant_id,
+            sid,
+            cal_id,
+            cid,
+            certificate_type,
+            None,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(ok(report))
 }

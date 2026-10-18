@@ -12,7 +12,8 @@ use crate::ports::reporting::{
 };
 use orbis_domain::entities::report::{
     ExportResult, JobStatus, OrgReportContext, OutputFormat, ParamType, ParamValue, ParameterDef,
-    ReportAuditEntry, ReportDefinition, ReportJob, ReportLocale, ReportTemplate, TemplateStatus,
+    ReportAuditEntry, ReportDataset, ReportDefinition, ReportJob, ReportLocale, ReportTemplate,
+    TemplateStatus,
 };
 use orbis_domain::errors::DomainError;
 
@@ -114,6 +115,9 @@ pub struct GenerateReportInput {
     pub parameters: HashMap<String, ParamValue>,
     pub output_format: OutputFormat,
     pub locale: ReportLocale,
+    pub title: Option<String>,
+    pub selected_columns: Option<Vec<String>>,
+    pub template_id: Option<Uuid>,
 }
 
 #[derive(Clone)]
@@ -179,6 +183,42 @@ impl ReportService {
         self.definition_repo.find_by_code(org_id, code).await
     }
 
+    pub async fn inspect_report_source(
+        &self,
+        ctx: &RequestContext,
+        report_code: &str,
+        parameters: &HashMap<String, ParamValue>,
+        locale: &ReportLocale,
+    ) -> Result<(ReportDefinition, ReportDataset, Vec<ReportTemplate>), DomainError> {
+        let definition = self
+            .definition_repo
+            .find_by_code(ctx.tenant_id, report_code)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Report definition not found".into()))?;
+        if !definition.is_active {
+            return Err(DomainError::Validation(
+                "Report definition is inactive".into(),
+            ));
+        }
+        validate_parameters(parameters, &definition.parameters)?;
+
+        let dataset = self
+            .fetch_report_dataset(ctx, &definition, parameters, locale)
+            .await?;
+        let templates = self
+            .template_repo
+            .list_by_org(ctx.tenant_id, Some("published"), None, None)
+            .await?
+            .into_iter()
+            .filter(|template| {
+                template.document_type.eq_ignore_ascii_case("report")
+                    && template.deleted_at.is_none()
+            })
+            .collect();
+
+        Ok((definition, dataset, templates))
+    }
+
     /// Generate report pipeline
     pub async fn generate_report(
         &self,
@@ -217,12 +257,15 @@ impl ReportService {
             )));
         }
         validate_parameters(&input.parameters, &definition.parameters)?;
+        let template = self
+            .resolve_report_template(ctx, &definition, &input)
+            .await?;
 
         let job = ReportJob {
             id: job_id,
             org_id: ctx.tenant_id,
             report_definition_id: definition.id,
-            template_id: None,
+            template_id: template.map(|template| template.id),
             requested_by: ctx.actor.id().unwrap_or_default(),
             report_code: input.report_code.clone(),
             parameters: serde_json::to_value(&input.parameters)
@@ -467,83 +510,59 @@ impl ReportService {
 
         let start_time = Utc::now();
 
-        // 6. Resolve org branding context
-        let org_context = self.org_context_resolver.resolve(ctx.tenant_id).await?;
-
-        // 7. Fetch data from data provider
-        let dataset = match self
-            .provider_registry
-            .get_provider(&definition.data_provider_key)
+        // 6. Fetch data and apply only server-validated report fields.
+        let mut dataset = match self
+            .fetch_report_dataset(ctx, &definition, &input.parameters, &input.locale)
+            .await
         {
-            Some(provider) => {
-                match provider
-                    .fetch_data(
-                        ctx.tenant_id,
-                        &org_context,
-                        &input.parameters,
-                        &input.locale,
-                    )
-                    .await
-                {
-                    Ok(ds) => ds,
-                    Err(e) => {
-                        let err_msg = format!("Data provider failed: {}", e);
-                        self.job_repo
-                            .update_status(
-                                job.id,
-                                &JobStatus::Failed,
-                                None,
-                                None,
-                                Some(err_msg.clone()),
-                            )
-                            .await?;
-                        job.status = JobStatus::Failed;
-                        job.error_message = Some(err_msg);
-                        return Err(e);
-                    }
-                }
-            }
-            None => {
-                let err_msg = format!(
-                    "Data provider not registered: {}",
-                    definition.data_provider_key
-                );
+            Ok(dataset) => dataset,
+            Err(error) => {
                 self.job_repo
                     .update_status(
                         job.id,
                         &JobStatus::Failed,
                         None,
                         None,
-                        Some(err_msg.clone()),
+                        Some(format!("Data provider failed: {error}")),
                     )
                     .await?;
-                job.status = JobStatus::Failed;
-                job.error_message = Some(err_msg.clone());
-                return Err(DomainError::Internal(err_msg));
+                return Err(error);
             }
         };
+        if let Some(title) = input
+            .title
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+        {
+            dataset.report_name = title.to_string();
+            dataset.report_name_ar = title.to_string();
+        }
+        if let Some(columns) = input.selected_columns.as_deref() {
+            select_report_columns(&mut dataset, columns)?;
+        }
 
-        // 8. Resolve template (if binding exists)
-        let binding = self
-            .template_repo
-            .find_binding(
-                definition.id,
-                input.locale.primary_lang(),
-                &input.output_format,
-            )
+        // 8. Resolve the explicitly selected or report-bound published template.
+        let template = self
+            .resolve_report_template(ctx, &definition, &input)
             .await?;
-
-        let template = if let Some(b) = binding {
-            self.template_repo.find_by_id(b.template_id).await?
+        let master_template = if let Some(master_id) = template
+            .as_ref()
+            .and_then(|template| template.master_template_id)
+        {
+            let master = self
+                .template_repo
+                .find_by_id(master_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Master template not found".into()))?;
+            ensure_published_template(&master, ctx.tenant_id)?;
+            Some(master)
         } else {
             None
         };
+        job.template_id = template.as_ref().map(|template| template.id);
 
-        if let Some(ref t) = template {
-            job.template_id = Some(t.id);
-        }
-
-        // 9. Render output
+        // 9. Render output.
         let renderer = self
             .renderer_registry
             .get_renderer(&input.output_format)
@@ -554,7 +573,10 @@ impl ReportService {
                 ))
             })?;
 
-        let export_result = match renderer.render(&dataset, template.as_ref(), None).await {
+        let export_result = match renderer
+            .render(&dataset, template.as_ref(), master_template.as_ref())
+            .await
+        {
             Ok(res) => res,
             Err(e) => {
                 let err_msg = format!("Renderer failed: {}", e);
@@ -615,6 +637,73 @@ impl ReportService {
         Ok((job, export_result))
     }
 
+    async fn fetch_report_dataset(
+        &self,
+        ctx: &RequestContext,
+        definition: &ReportDefinition,
+        parameters: &HashMap<String, ParamValue>,
+        locale: &ReportLocale,
+    ) -> Result<ReportDataset, DomainError> {
+        let org_context = self.org_context_resolver.resolve(ctx.tenant_id).await?;
+        let provider = self
+            .provider_registry
+            .get_provider(&definition.data_provider_key)
+            .ok_or_else(|| {
+                DomainError::Internal(format!(
+                    "Data provider not registered: {}",
+                    definition.data_provider_key
+                ))
+            })?;
+        provider
+            .fetch_data(ctx.tenant_id, &org_context, parameters, locale)
+            .await
+    }
+
+    async fn resolve_report_template(
+        &self,
+        ctx: &RequestContext,
+        definition: &ReportDefinition,
+        input: &GenerateReportInput,
+    ) -> Result<Option<ReportTemplate>, DomainError> {
+        let template = if let Some(template_id) = input.template_id {
+            Some(
+                self.template_repo
+                    .find_by_id(template_id)
+                    .await?
+                    .ok_or_else(|| DomainError::NotFound("Report template not found".into()))?,
+            )
+        } else if let Some(binding) = self
+            .template_repo
+            .find_binding(
+                definition.id,
+                input.locale.primary_lang(),
+                &input.output_format,
+            )
+            .await?
+        {
+            self.template_repo.find_by_id(binding.template_id).await?
+        } else {
+            None
+        };
+
+        if let Some(template) = &template {
+            ensure_published_template(template, ctx.tenant_id)?;
+            if !template.document_type.eq_ignore_ascii_case("report") {
+                return Err(DomainError::Validation(
+                    "Selected template is not a report template".into(),
+                ));
+            }
+            if input.output_format == OutputFormat::Html
+                && serde_json::from_str::<serde_json::Value>(&template.document_json).is_ok()
+            {
+                return Err(DomainError::Validation(
+                    "A DocForge template cannot be used for HTML output".into(),
+                ));
+            }
+        }
+        Ok(template)
+    }
+
     /// List templates for organization
     pub async fn list_templates(&self, org_id: Uuid) -> Result<Vec<ReportTemplate>, DomainError> {
         self.template_repo
@@ -654,9 +743,7 @@ impl ReportService {
             ));
         }
 
-        self.template_repo
-            .set_default(ctx.tenant_id, id)
-            .await?;
+        self.template_repo.set_default(ctx.tenant_id, id).await?;
         self.template_repo
             .find_by_id(id)
             .await?
@@ -774,6 +861,82 @@ impl ReportService {
         self.template_repo.save(&template).await?;
         Ok(template)
     }
+}
+
+fn ensure_published_template(
+    template: &ReportTemplate,
+    tenant_id: Uuid,
+) -> Result<(), DomainError> {
+    if template.org_id != tenant_id
+        || template.status != TemplateStatus::Published
+        || template.deleted_at.is_some()
+    {
+        return Err(DomainError::NotFound(
+            "Published report template not found".into(),
+        ));
+    }
+    Ok(())
+}
+
+fn select_report_columns(
+    dataset: &mut ReportDataset,
+    selected_columns: &[String],
+) -> Result<(), DomainError> {
+    if selected_columns.is_empty() {
+        return Err(DomainError::Validation(
+            "At least one report column must be selected".into(),
+        ));
+    }
+
+    let mut seen = std::collections::HashSet::new();
+    if selected_columns
+        .iter()
+        .any(|column| !seen.insert(column.as_str()))
+    {
+        return Err(DomainError::Validation(
+            "Duplicate report columns are not allowed".into(),
+        ));
+    }
+
+    let available: HashMap<_, _> = dataset
+        .columns
+        .iter()
+        .filter(|column| column.visible)
+        .map(|column| (column.key.as_str(), column))
+        .collect();
+    if selected_columns
+        .iter()
+        .any(|column| !available.contains_key(column.as_str()))
+    {
+        return Err(DomainError::Validation(
+            "A selected report column is not available".into(),
+        ));
+    }
+
+    let selected = selected_columns
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    dataset.columns.sort_by_key(|column| {
+        selected
+            .iter()
+            .position(|key| *key == column.key)
+            .unwrap_or(usize::MAX)
+    });
+    dataset
+        .columns
+        .retain(|column| selected.contains(&column.key.as_str()));
+    for row in &mut dataset.rows {
+        if let Some(values) = row.as_object_mut() {
+            values.retain(|key, _| selected.contains(&key.as_str()));
+        }
+    }
+    if let Some(aggregations) = &mut dataset.aggregations {
+        if let Some(totals) = aggregations.totals.as_object_mut() {
+            totals.retain(|key, _| selected.contains(&key.as_str()));
+        }
+    }
+    Ok(())
 }
 
 fn validate_parameters(

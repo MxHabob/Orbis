@@ -4,10 +4,11 @@ use uuid::Uuid;
 
 use crate::context::RequestContext;
 use crate::ports::repositories::{
-    AcademicPeriodRepository, AcademicCalendarRepository, EnrollmentRepository, PolicyRepository,
+    AcademicCalendarRepository, AcademicPeriodRepository, EnrollmentRepository, PolicyRepository,
     StudentFeeRepository,
 };
 use orbis_domain::autopilot::task::{AutopilotTask, RiskLevel, TaskType};
+use orbis_domain::entities::academic_calendar::AcademicCalendarStatus;
 use orbis_domain::entities::academic_period::PeriodKind;
 use orbis_domain::entities::settings::OrganizationSettings;
 use orbis_domain::errors::DomainError;
@@ -55,7 +56,9 @@ impl AutopilotEvaluator {
         // ── 1. Academic Year Lifecycle ──────────────────────────────────
         let years = self.year_repo.find_by_org(org_id).await?;
         for year in &years {
-            if year.status == "planning" && year.start_date <= now {
+            if year.status == AcademicCalendarStatus::Planning
+                && year.starts_at.map_or(false, |d| d <= now)
+            {
                 tasks.push(AutopilotTask::new(
                     org_id,
                     TaskType::YearActivate,
@@ -70,7 +73,7 @@ impl AutopilotEvaluator {
                 ));
             }
 
-            if year.status == "active" {
+            if year.status == AcademicCalendarStatus::Active {
                 let periods = self.period_repo.find_by_year(year.id).await?;
                 if !periods.is_empty()
                     && periods
@@ -92,7 +95,7 @@ impl AutopilotEvaluator {
                 }
             }
 
-            if year.status == "closing" && settings.autopilot.auto_promotion {
+            if year.status == AcademicCalendarStatus::Closed && settings.autopilot.auto_promotion {
                 tasks.push(AutopilotTask::new(
                     org_id,
                     TaskType::PromotionDryRun,

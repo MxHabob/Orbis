@@ -72,10 +72,10 @@ const breadcrumbs = $derived.by(() => {
       href: `/${currentOrgId}/academics`,
     });
 
-    if (pathname.includes("/classes")) {
+    if (pathname.includes("/sections") || pathname.includes("/classes")) {
       items.push({
         label: m.common_search_group_classes(),
-        href: `/${currentOrgId}/academics/classes`,
+        href: `/${currentOrgId}/academics/sections`,
       });
     } else if (pathname.includes("/schedule")) {
       items.push({

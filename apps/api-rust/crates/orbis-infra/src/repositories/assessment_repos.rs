@@ -44,6 +44,17 @@ fn map_scheme_model_to_domain(m: assessment_scheme::Model) -> DomainAssessmentSc
         components,
         is_default: m.is_default,
         is_system: m.is_system,
+        source_document: m.source_document,
+        source_authority: m.source_authority,
+        verification_status: m.verification_status,
+        effective_date: m.effective_date,
+        policy_version: m.policy_version as u32,
+        min_attendance_ratio: m
+            .min_attendance_ratio
+            .map(|v| rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default()),
+        pass_threshold: m
+            .pass_threshold
+            .map(|v| rust_decimal::Decimal::from_f64_retain(v).unwrap_or_default()),
         created_at: m.created_at,
         updated_at: m.updated_at,
     }
@@ -85,6 +96,13 @@ impl AssessmentSchemeRepository for AssessmentRepoImpl {
             ),
             is_default: Set(scheme.is_default),
             is_system: Set(scheme.is_system),
+            source_document: Set(scheme.source_document.clone()),
+            source_authority: Set(scheme.source_authority.clone()),
+            verification_status: Set(scheme.verification_status.clone()),
+            effective_date: Set(scheme.effective_date),
+            policy_version: Set(scheme.policy_version as i32),
+            min_attendance_ratio: Set(scheme.min_attendance_ratio.and_then(|v| v.to_f64())),
+            pass_threshold: Set(scheme.pass_threshold.and_then(|v| v.to_f64())),
             created_at: Set(scheme.created_at),
             updated_at: Set(scheme.updated_at),
         };
@@ -124,30 +142,7 @@ impl GradeRepository for AssessmentRepoImpl {
             .one(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(model.map(|m| DomainGrade {
-            id: m.id,
-            org_id: m.org_id.unwrap_or_default(),
-            period_id: m.period_id.unwrap_or_default(),
-            student_id: m.student_id,
-            enrollment_id: m.enrollment_id,
-            section_subject_id: m.section_subject_id,
-            component_id: m.component_id,
-            score: m.score,
-            max_score: m
-                .max_score
-                .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
-            weight: m.weight,
-            letter_grade: m.letter_grade,
-            is_final: m.is_final.unwrap_or(false),
-            is_excused: m.is_excused,
-            is_exempt: m.is_exempt.unwrap_or(false),
-            change_reason: m.change_reason,
-            recorded_by: m.recorded_by,
-            updated_by: m.updated_by,
-            notes: m.notes,
-            created_at: m.created_at,
-            updated_at: m.updated_at,
-        }))
+        Ok(model.map(map_grade_model_to_domain))
     }
 
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
@@ -156,33 +151,7 @@ impl GradeRepository for AssessmentRepoImpl {
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
-        Ok(models
-            .into_iter()
-            .map(|m| DomainGrade {
-                id: m.id,
-                org_id: m.org_id.unwrap_or_default(),
-                period_id: m.period_id.unwrap_or_default(),
-                student_id: m.student_id,
-                enrollment_id: m.enrollment_id,
-                section_subject_id: m.section_subject_id,
-                component_id: m.component_id,
-                score: m.score,
-                max_score: m
-                    .max_score
-                    .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
-                weight: m.weight,
-                letter_grade: m.letter_grade,
-                is_final: m.is_final.unwrap_or(false),
-                is_excused: m.is_excused,
-                is_exempt: m.is_exempt.unwrap_or(false),
-                change_reason: m.change_reason,
-                recorded_by: m.recorded_by,
-                updated_by: m.updated_by,
-                notes: m.notes,
-                created_at: m.created_at,
-                updated_at: m.updated_at,
-            })
-            .collect())
+        Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
     async fn find_by_student_and_subject(
@@ -197,33 +166,7 @@ impl GradeRepository for AssessmentRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
-        Ok(models
-            .into_iter()
-            .map(|m| DomainGrade {
-                id: m.id,
-                org_id: m.org_id.unwrap_or_default(),
-                period_id: m.period_id.unwrap_or_default(),
-                student_id: m.student_id,
-                enrollment_id: m.enrollment_id,
-                section_subject_id: m.section_subject_id,
-                component_id: m.component_id,
-                score: m.score,
-                max_score: m
-                    .max_score
-                    .unwrap_or_else(|| rust_decimal::Decimal::from(100)),
-                weight: m.weight,
-                letter_grade: m.letter_grade,
-                is_final: m.is_final.unwrap_or(false),
-                is_excused: m.is_excused,
-                is_exempt: m.is_exempt.unwrap_or(false),
-                change_reason: m.change_reason,
-                recorded_by: m.recorded_by,
-                updated_by: m.updated_by,
-                notes: m.notes,
-                created_at: m.created_at,
-                updated_at: m.updated_at,
-            })
-            .collect())
+        Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
     async fn find_by_student_and_period(
@@ -303,7 +246,7 @@ impl GradeRepository for AssessmentRepoImpl {
     async fn save(&self, grade: &DomainGrade) -> Result<(), DomainError> {
         let active = grade::ActiveModel {
             id: Set(grade.id),
-            org_id: Set(Some(grade.org_id)),
+            org_id: Set(grade.org_id),
             period_id: Set(Some(grade.period_id)),
             student_id: Set(grade.student_id),
             enrollment_id: Set(grade.enrollment_id),
@@ -363,7 +306,7 @@ fn map_attendance_model_to_domain(m: attendance::Model) -> DomainAttendance {
     DomainAttendance {
         id: m.id,
         student_id: m.student_id,
-        class_id: m.class_id,
+        section_id: m.section_id,
         section_subject_id: m.section_subject_id,
         scheduled_lesson_id: m.scheduled_lesson_id,
         attendance_date: m.attendance_date,
@@ -385,13 +328,13 @@ impl AttendanceRepository for AssessmentRepoImpl {
         Ok(model.map(map_attendance_model_to_domain))
     }
 
-    async fn find_by_class_and_date(
+    async fn find_by_section_and_date(
         &self,
-        class_id: Uuid,
+        section_id: Uuid,
         date: chrono::NaiveDate,
     ) -> Result<Vec<DomainAttendance>, DomainError> {
         let models = AttendanceEntity::find()
-            .filter(attendance::Column::ClassId.eq(class_id))
+            .filter(attendance::Column::SectionId.eq(section_id))
             .filter(attendance::Column::AttendanceDate.eq(date))
             .all(&self.db)
             .await
@@ -426,8 +369,8 @@ impl AttendanceRepository for AssessmentRepoImpl {
         if let Some(student_id) = filter.student_id {
             query = query.filter(attendance::Column::StudentId.eq(student_id));
         }
-        if let Some(class_id) = filter.class_id {
-            query = query.filter(attendance::Column::ClassId.eq(class_id));
+        if let Some(section_id) = filter.section_id {
+            query = query.filter(attendance::Column::SectionId.eq(section_id));
         }
         if let Some(date) = filter.date {
             query = query.filter(attendance::Column::AttendanceDate.eq(date));
@@ -459,8 +402,9 @@ impl AttendanceRepository for AssessmentRepoImpl {
     async fn save(&self, attendance: &DomainAttendance) -> Result<(), DomainError> {
         let active = attendance::ActiveModel {
             id: Set(attendance.id),
+            org_id: Set(None),
             student_id: Set(attendance.student_id),
-            class_id: Set(attendance.class_id),
+            section_id: Set(attendance.section_id),
             section_subject_id: Set(attendance.section_subject_id),
             scheduled_lesson_id: Set(attendance.scheduled_lesson_id),
             attendance_date: Set(attendance.attendance_date),
@@ -509,7 +453,7 @@ impl AttendanceRepository for AssessmentRepoImpl {
 fn map_grade_model_to_domain(m: grade::Model) -> DomainGrade {
     DomainGrade {
         id: m.id,
-        org_id: m.org_id.unwrap_or_default(),
+        org_id: m.org_id,
         period_id: m.period_id.unwrap_or_default(),
         student_id: m.student_id,
         enrollment_id: m.enrollment_id,

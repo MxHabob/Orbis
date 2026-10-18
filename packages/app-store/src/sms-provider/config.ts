@@ -45,7 +45,7 @@ Send notifications to entire classes or the whole school at once.`,
     {
       id: "account_sid",
       label: "Account SID",
-      type: "text",
+      type: "password",
       required: true,
       value: "",
       description: "Your SMS provider account identifier.",

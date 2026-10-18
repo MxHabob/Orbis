@@ -13,6 +13,7 @@ export type { TranslationKey };
 export interface I18nContextValue {
   locale: SupportedLocale;
   isArabic: boolean;
+  isReady: boolean;
   setLocale: (nextLocale: SupportedLocale) => Promise<void>;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
   l: <T>(arValue: T, enValue: T) => T;

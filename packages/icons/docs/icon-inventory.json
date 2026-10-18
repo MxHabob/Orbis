@@ -1,8 +1,8 @@
 {
-  "iconCount": 211,
+  "iconCount": 218,
   "platformExports": {
-    "svelte": 211,
-    "native": 211
+    "svelte": 212,
+    "native": 218
   },
   "nativeDefaultAliases": [
     {
@@ -31,8 +31,8 @@
     }
   ],
   "platformSourceFiles": {
-    "svelte": 211,
-    "native": 211
+    "svelte": 212,
+    "native": 215
   },
   "usage": {
     "desktop": {
@@ -40,28 +40,13 @@
       "importedIcons": [
         {
           "name": "Plus",
-          "count": 51,
-          "files": 51
+          "count": 52,
+          "files": 52
         },
         {
           "name": "Refresh",
-          "count": 49,
-          "files": 49
-        },
-        {
-          "name": "AdjustmentsHorizontal",
-          "count": 45,
-          "files": 45
-        },
-        {
-          "name": "Search",
-          "count": 43,
-          "files": 43
-        },
-        {
-          "name": "CheckCircle",
-          "count": 42,
-          "files": 42
+          "count": 50,
+          "files": 50
         },
         {
           "name": "InfoCircle",
@@ -69,19 +54,34 @@
           "files": 42
         },
         {
-          "name": "ArrowPath",
+          "name": "Search",
+          "count": 42,
+          "files": 42
+        },
+        {
+          "name": "Sparkles",
+          "count": 42,
+          "files": 42
+        },
+        {
+          "name": "CheckCircle",
           "count": 41,
           "files": 41
         },
         {
-          "name": "Sparkles",
-          "count": 38,
-          "files": 38
+          "name": "AdjustmentsHorizontal",
+          "count": 39,
+          "files": 39
+        },
+        {
+          "name": "ArrowPath",
+          "count": 36,
+          "files": 36
         },
         {
           "name": "Trash",
-          "count": 36,
-          "files": 36
+          "count": 35,
+          "files": 35
         },
         {
           "name": "XMark",
@@ -90,38 +90,43 @@
         },
         {
           "name": "UserBadgeCheck",
-          "count": 33,
-          "files": 33
-        },
-        {
-          "name": "BookOpen",
-          "count": 31,
-          "files": 31
+          "count": 28,
+          "files": 28
         },
         {
           "name": "Users",
-          "count": 30,
-          "files": 30
+          "count": 28,
+          "files": 28
         },
         {
-          "name": "Check",
-          "count": 29,
-          "files": 29
-        },
-        {
-          "name": "DocumentPage",
-          "count": 29,
-          "files": 29
+          "name": "BookOpen",
+          "count": 27,
+          "files": 27
         },
         {
           "name": "ClockRotateRight",
+          "count": 27,
+          "files": 27
+        },
+        {
+          "name": "Check",
           "count": 26,
           "files": 26
         },
         {
           "name": "ChartBar",
-          "count": 24,
-          "files": 24
+          "count": 25,
+          "files": 25
+        },
+        {
+          "name": "DocumentPage",
+          "count": 25,
+          "files": 25
+        },
+        {
+          "name": "Calendar",
+          "count": 23,
+          "files": 23
         },
         {
           "name": "ArrowRight",
@@ -129,19 +134,9 @@
           "files": 22
         },
         {
-          "name": "Calendar",
-          "count": 21,
-          "files": 21
-        },
-        {
           "name": "Lock",
           "count": 21,
           "files": 21
-        },
-        {
-          "name": "Download",
-          "count": 19,
-          "files": 19
         },
         {
           "name": "User",
@@ -154,7 +149,12 @@
           "files": 18
         },
         {
-          "name": "Eye",
+          "name": "ChevronRight",
+          "count": 17,
+          "files": 17
+        },
+        {
+          "name": "Download",
           "count": 17,
           "files": 17
         },
@@ -164,9 +164,9 @@
           "files": 17
         },
         {
-          "name": "ChevronRight",
-          "count": 16,
-          "files": 16
+          "name": "ChevronDown",
+          "count": 15,
+          "files": 15
         },
         {
           "name": "Printer",
@@ -174,14 +174,19 @@
           "files": 14
         },
         {
-          "name": "ShieldCheck",
-          "count": 14,
-          "files": 14
-        },
-        {
-          "name": "Clipboard",
+          "name": "Eye",
           "count": 13,
           "files": 13
+        },
+        {
+          "name": "GlobeAlt",
+          "count": 13,
+          "files": 13
+        },
+        {
+          "name": "AcademicCap",
+          "count": 12,
+          "files": 12
         },
         {
           "name": "ArrowLeft",
@@ -189,7 +194,7 @@
           "files": 12
         },
         {
-          "name": "BuildingOffice",
+          "name": "ShieldCheck",
           "count": 12,
           "files": 12
         },
@@ -199,7 +204,7 @@
           "files": 11
         },
         {
-          "name": "ChevronDown",
+          "name": "BuildingOffice",
           "count": 11,
           "files": 11
         },
@@ -209,37 +214,22 @@
           "files": 11
         },
         {
-          "name": "GlobeAlt",
-          "count": 11,
-          "files": 11
-        },
-        {
           "name": "Keyframes",
           "count": 11,
           "files": 11
         },
         {
-          "name": "AcademicCap",
-          "count": 10,
-          "files": 10
+          "name": "ArrowUpTray",
+          "count": 9,
+          "files": 9
         },
         {
           "name": "BuildingLibrary",
-          "count": 10,
-          "files": 10
+          "count": 9,
+          "files": 9
         },
         {
           "name": "Document",
-          "count": 10,
-          "files": 10
-        },
-        {
-          "name": "FloppyDisk",
-          "count": 10,
-          "files": 10
-        },
-        {
-          "name": "ArrowUpTray",
           "count": 9,
           "files": 9
         },
@@ -259,6 +249,16 @@
           "files": 9
         },
         {
+          "name": "Clipboard",
+          "count": 8,
+          "files": 8
+        },
+        {
+          "name": "FloppyDisk",
+          "count": 8,
+          "files": 8
+        },
+        {
           "name": "FolderOpen",
           "count": 8,
           "files": 8
@@ -269,27 +269,12 @@
           "files": 8
         },
         {
-          "name": "Play",
-          "count": 8,
-          "files": 8
-        },
-        {
-          "name": "TaskList",
-          "count": 8,
-          "files": 8
-        },
-        {
-          "name": "ArrowForward",
-          "count": 7,
-          "files": 7
-        },
-        {
-          "name": "Expand",
-          "count": 7,
-          "files": 7
-        },
-        {
           "name": "Info",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "Play",
           "count": 7,
           "files": 7
         },
@@ -299,12 +284,17 @@
           "files": 7
         },
         {
+          "name": "TaskList",
+          "count": 7,
+          "files": 7
+        },
+        {
           "name": "AppNotification",
           "count": 6,
           "files": 6
         },
         {
-          "name": "ArchiveBox",
+          "name": "ArrowForward",
           "count": 6,
           "files": 6
         },
@@ -314,7 +304,7 @@
           "files": 6
         },
         {
-          "name": "EyeSlash",
+          "name": "Expand",
           "count": 6,
           "files": 6
         },
@@ -329,32 +319,17 @@
           "files": 6
         },
         {
-          "name": "LockClosed",
-          "count": 6,
-          "files": 6
-        },
-        {
           "name": "Photo",
           "count": 6,
           "files": 6
         },
         {
-          "name": "Scale",
-          "count": 6,
-          "files": 6
-        },
-        {
-          "name": "Bold",
+          "name": "ArchiveBox",
           "count": 5,
           "files": 5
         },
         {
-          "name": "CheckSquare",
-          "count": 5,
-          "files": 5
-        },
-        {
-          "name": "ChevronLeft",
+          "name": "Bars3BottomLeft",
           "count": 5,
           "files": 5
         },
@@ -364,52 +339,42 @@
           "files": 5
         },
         {
-          "name": "Collapse",
-          "count": 5,
-          "files": 5
-        },
-        {
           "name": "CreditCard",
           "count": 5,
           "files": 5
         },
         {
-          "name": "Cube",
+          "name": "EllipsisHorizontal",
           "count": 5,
           "files": 5
         },
         {
-          "name": "Minus",
+          "name": "EyeSlash",
           "count": 5,
           "files": 5
         },
         {
-          "name": "ReceiptPercent",
+          "name": "LockClosed",
           "count": 5,
           "files": 5
         },
         {
-          "name": "Wrench",
+          "name": "Scale",
           "count": 5,
           "files": 5
         },
         {
-          "name": "ArrowDownTray",
+          "name": "Bold",
           "count": 4,
           "files": 4
         },
         {
-          "name": "Bars3BottomLeft",
+          "name": "CheckSquare",
           "count": 4,
           "files": 4
         },
         {
-          "name": "BarsArrowUp",
-          "count": 4,
-          "files": 4
-        },
-        {
-          "name": "CheckBox",
+          "name": "Collapse",
           "count": 4,
           "files": 4
         },
@@ -419,22 +384,22 @@
           "files": 4
         },
         {
+          "name": "Cube",
+          "count": 4,
+          "files": 4
+        },
+        {
           "name": "Database",
           "count": 4,
           "files": 4
         },
         {
-          "name": "EllipsisHorizontal",
+          "name": "Logo",
           "count": 4,
           "files": 4
         },
         {
-          "name": "H1",
-          "count": 4,
-          "files": 4
-        },
-        {
-          "name": "QuestionMarkCircle",
+          "name": "Minus",
           "count": 4,
           "files": 4
         },
@@ -444,17 +409,32 @@
           "files": 4
         },
         {
-          "name": "Tag",
+          "name": "Wrench",
           "count": 4,
           "files": 4
         },
         {
-          "name": "UndoAction",
-          "count": 4,
-          "files": 4
+          "name": "ArrowDownTray",
+          "count": 3,
+          "files": 3
         },
         {
-          "name": "AlignVertical",
+          "name": "BarsArrowUp",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "CheckBox",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ChevronLeft",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Code",
           "count": 3,
           "files": 3
         },
@@ -464,12 +444,32 @@
           "files": 3
         },
         {
+          "name": "H1",
+          "count": 3,
+          "files": 3
+        },
+        {
           "name": "Knobs",
           "count": 3,
           "files": 3
         },
         {
-          "name": "Logo",
+          "name": "QuestionMarkCircle",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ReceiptPercent",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Tag",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "UndoAction",
           "count": 3,
           "files": 3
         },
@@ -479,17 +479,12 @@
           "files": 3
         },
         {
-          "name": "AlignHorizontal",
+          "name": "AlignVertical",
           "count": 2,
           "files": 2
         },
         {
           "name": "ArrowsRightLeft",
-          "count": 2,
-          "files": 2
-        },
-        {
-          "name": "ArrowUturnLeft",
           "count": 2,
           "files": 2
         },
@@ -519,16 +514,6 @@
           "files": 2
         },
         {
-          "name": "Code",
-          "count": 2,
-          "files": 2
-        },
-        {
-          "name": "EllipsisVertical",
-          "count": 2,
-          "files": 2
-        },
-        {
           "name": "Funnel",
           "count": 2,
           "files": 2
@@ -549,17 +534,17 @@
           "files": 2
         },
         {
-          "name": "SoundHigh",
-          "count": 2,
-          "files": 2
-        },
-        {
           "name": "UserMinus",
           "count": 2,
           "files": 2
         },
         {
           "name": "AiCenter",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "AlignHorizontal",
           "count": 1,
           "files": 1
         },
@@ -574,7 +559,17 @@
           "files": 1
         },
         {
+          "name": "ArrowUturnLeft",
+          "count": 1,
+          "files": 1
+        },
+        {
           "name": "Bell",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Calculator",
           "count": 1,
           "files": 1
         },
@@ -594,7 +589,7 @@
           "files": 1
         },
         {
-          "name": "CursorArrowRays",
+          "name": "EllipsisVertical",
           "count": 1,
           "files": 1
         },
@@ -674,6 +669,11 @@
           "files": 1
         },
         {
+          "name": "SoundHigh",
+          "count": 1,
+          "files": 1
+        },
+        {
           "name": "Star",
           "count": 1,
           "files": 1
@@ -700,87 +700,164 @@
         }
       ],
       "renderedIconSizes": {
-        "renderedIcons": 1187,
-        "explicitSize": 889,
-        "unspecifiedSize": 298,
+        "renderedIcons": 1085,
+        "explicitSize": 851,
+        "unspecifiedSize": 234,
         "explicitSizeValues": {
+          "5": 1,
+          "6": 2,
           "9": 3,
           "10": 60,
-          "11": 49,
-          "12": 171,
-          "13": 193,
-          "14": 225,
-          "15": 40,
+          "11": 42,
+          "12": 168,
+          "13": 182,
+          "14": 215,
+          "15": 39,
           "16": 39,
           "18": 32,
-          "20": 19,
-          "22": 2,
-          "24": 26,
+          "20": 15,
+          "22": 4,
+          "24": 20,
           "28": 8,
           "32": 7,
           "36": 1,
           "40": 2,
           "48": 5,
+          "100%": 1,
           "compact ? 11 : 13": 1,
           "compact ? 13 : 15": 1,
-          "Math.max(16, size / 3.5)": 1,
           "Math.max(16, size / 2)": 1,
-          "Math.max(16, size / 3)": 3
+          "Math.max(16, size / 3)": 2
         },
         "classSizeValues": {
-          "3": 21,
-          "4": 95,
-          "5": 20,
-          "6": 8,
-          "8": 9,
+          "3": 19,
+          "4": 66,
+          "5": 15,
+          "6": 6,
+          "8": 10,
           "10": 10,
-          "12": 3,
+          "12": 2,
           "4.5": 5,
-          "3.5": 119,
-          "2.5": 4
+          "3.5": 96,
+          "2.5": 2
         }
       }
     },
     "mobile": {
-      "distinctIcons": 25,
+      "distinctIcons": 43,
       "importedIcons": [
         {
-          "name": "CheckCircle",
-          "count": 4,
-          "files": 4
+          "name": "Sparkles",
+          "count": 10,
+          "files": 10
         },
         {
-          "name": "ArrowLeft",
-          "count": 3,
-          "files": 3
-        },
-        {
-          "name": "ArrowRight",
-          "count": 3,
-          "files": 3
+          "name": "AcademicCap",
+          "count": 8,
+          "files": 8
         },
         {
           "name": "ChevronRight",
+          "count": 8,
+          "files": 8
+        },
+        {
+          "name": "Calendar",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "CheckCircle",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "ChevronLeft",
+          "count": 7,
+          "files": 7
+        },
+        {
+          "name": "ShieldCheck",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "User",
+          "count": 6,
+          "files": 6
+        },
+        {
+          "name": "ChartBar",
+          "count": 5,
+          "files": 5
+        },
+        {
+          "name": "ClipboardDocumentCheck",
           "count": 3,
           "files": 3
         },
         {
-          "name": "ChartBar",
+          "name": "Clock",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Document",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ExclamationCircle",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "Phone",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "XMark",
+          "count": 3,
+          "files": 3
+        },
+        {
+          "name": "ArrowLeft",
           "count": 2,
           "files": 2
         },
         {
-          "name": "ChevronLeft",
+          "name": "ArrowRight",
           "count": 2,
           "files": 2
         },
         {
-          "name": "Eye",
+          "name": "Bell",
           "count": 2,
           "files": 2
         },
         {
-          "name": "EyeSlash",
+          "name": "BuildingLibrary",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Check",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Computer",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "CreditCard",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "Envelope",
           "count": 2,
           "files": 2
         },
@@ -790,12 +867,17 @@
           "files": 2
         },
         {
-          "name": "XMark",
+          "name": "Language",
           "count": 2,
           "files": 2
         },
         {
-          "name": "AcademicCap",
+          "name": "Users",
+          "count": 2,
+          "files": 2
+        },
+        {
+          "name": "AdjustmentsHorizontal",
           "count": 1,
           "files": 1
         },
@@ -810,17 +892,7 @@
           "files": 1
         },
         {
-          "name": "Bolt",
-          "count": 1,
-          "files": 1
-        },
-        {
-          "name": "BuildingLibrary",
-          "count": 1,
-          "files": 1
-        },
-        {
-          "name": "Check",
+          "name": "Banknotes",
           "count": 1,
           "files": 1
         },
@@ -835,7 +907,17 @@
           "files": 1
         },
         {
-          "name": "Document",
+          "name": "DocumentText",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Eye",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "EyeSlash",
           "count": 1,
           "files": 1
         },
@@ -850,40 +932,57 @@
           "files": 1
         },
         {
+          "name": "LockClosed",
+          "count": 1,
+          "files": 1
+        },
+        {
+          "name": "Moon",
+          "count": 1,
+          "files": 1
+        },
+        {
           "name": "Search",
           "count": 1,
           "files": 1
         },
         {
-          "name": "ShieldCheck",
+          "name": "SignOut",
           "count": 1,
           "files": 1
         },
         {
-          "name": "Sparkles",
+          "name": "Sun",
           "count": 1,
           "files": 1
         },
         {
-          "name": "User",
+          "name": "Trash",
           "count": 1,
           "files": 1
         }
       ],
       "renderedIconSizes": {
-        "renderedIcons": 27,
-        "explicitSize": 27,
+        "renderedIcons": 90,
+        "explicitSize": 90,
         "unspecifiedSize": 0,
         "explicitSizeValues": {
-          "12": 2,
-          "16": 1,
-          "18": 9,
-          "20": 5,
+          "12": 5,
+          "14": 3,
+          "15": 3,
+          "16": 13,
+          "18": 22,
+          "20": 10,
           "21": 6,
-          "22": 1,
-          "36": 1,
+          "22": 7,
+          "23": 1,
+          "24": 4,
+          "28": 5,
+          "32": 6,
+          "36": 2,
           "40": 1,
-          "44": 1
+          "44": 1,
+          "120": 1
         },
         "classSizeValues": {}
       }
@@ -1419,6 +1518,27 @@
         "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
+        }
+      }
+    },
+    {
+      "name": "ArrowRightOnRectangle",
+      "files": {
+        "native": "sign-out"
+      },
+      "family": "navigation",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": null,
+      "native": {
+        "viewBox": "0 0 20 20",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 2
         }
       }
     },
@@ -2943,6 +3063,27 @@
       }
     },
     {
+      "name": "ClipboardDocumentCheck",
+      "files": {
+        "native": "clipboard-check"
+      },
+      "family": "status",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": null,
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 2
+        }
+      }
+    },
+    {
       "name": "Clock",
       "files": {
         "svelte": "clock",
@@ -3801,6 +3942,27 @@
       }
     },
     {
+      "name": "DocumentText",
+      "files": {
+        "native": "document"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": null,
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 1
+        }
+      }
+    },
+    {
       "name": "Download",
       "files": {
         "svelte": "download",
@@ -3964,6 +4126,50 @@
         "defaultStrokeWidth": "1.75",
         "primitives": {
           "rect": 1,
+          "circle": 1,
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "Envelope",
+      "files": {
+        "native": "envelope"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": null,
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "rect": 1,
+          "path": 1
+        }
+      }
+    },
+    {
+      "name": "ExclamationCircle",
+      "files": {
+        "native": "exclamation-circle"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": null,
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
           "circle": 1,
           "path": 1
         }
@@ -5059,6 +5265,28 @@
         "defaultStrokeWidth": "1.75",
         "primitives": {
           "path": 1
+        }
+      }
+    },
+    {
+      "name": "Language",
+      "files": {
+        "native": "language"
+      },
+      "family": "utility",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": null,
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 1,
+          "circle": 1
         }
       }
     },
@@ -7020,6 +7248,41 @@
       }
     },
     {
+      "name": "TaskCalendar",
+      "files": {
+        "svelte": "task-calendar/task-calendar",
+        "native": "task-calendar/task-calendar"
+      },
+      "family": "education",
+      "variant": "default",
+      "kind": "canonical",
+      "svelte": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "honorsExplicitSize": true,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 4,
+          "rect": 3
+        }
+      },
+      "native": {
+        "viewBox": "0 0 24 24",
+        "defaultSize": 16,
+        "defaultColor": "currentColor",
+        "defaultLineCap": "round",
+        "defaultLineJoin": "round",
+        "defaultStrokeWidth": "1.75",
+        "primitives": {
+          "path": 4,
+          "rect": 3
+        }
+      }
+    },
+    {
       "name": "TaskList",
       "files": {
         "svelte": "task-list",
@@ -7884,5 +8147,54 @@
       }
     }
   ],
-  "errors": []
+  "errors": [
+    "Missing Svelte export for ExclamationCircle",
+    "Missing Svelte export for Envelope",
+    "Missing Svelte export for Language",
+    "Missing Svelte export for ClipboardDocumentCheck",
+    "Missing Svelte export for DocumentText",
+    "Missing Svelte export for ArrowRightOnRectangle",
+    "ViewBox mismatch for ArrowRightOnRectangle",
+    "Unexpected Svelte default size for ArrowRightOnRectangle",
+    "Unexpected Svelte default stroke for ArrowRightOnRectangle",
+    "Explicit Svelte size is overridden by the default class for ArrowRightOnRectangle",
+    "Unexpected Svelte default line cap for ArrowRightOnRectangle",
+    "Unexpected Svelte default line join for ArrowRightOnRectangle",
+    "Missing viewBox for ArrowRightOnRectangle",
+    "ViewBox mismatch for ClipboardDocumentCheck",
+    "Unexpected Svelte default size for ClipboardDocumentCheck",
+    "Unexpected Svelte default stroke for ClipboardDocumentCheck",
+    "Explicit Svelte size is overridden by the default class for ClipboardDocumentCheck",
+    "Unexpected Svelte default line cap for ClipboardDocumentCheck",
+    "Unexpected Svelte default line join for ClipboardDocumentCheck",
+    "Missing viewBox for ClipboardDocumentCheck",
+    "ViewBox mismatch for DocumentText",
+    "Unexpected Svelte default size for DocumentText",
+    "Unexpected Svelte default stroke for DocumentText",
+    "Explicit Svelte size is overridden by the default class for DocumentText",
+    "Unexpected Svelte default line cap for DocumentText",
+    "Unexpected Svelte default line join for DocumentText",
+    "Missing viewBox for DocumentText",
+    "ViewBox mismatch for Envelope",
+    "Unexpected Svelte default size for Envelope",
+    "Unexpected Svelte default stroke for Envelope",
+    "Explicit Svelte size is overridden by the default class for Envelope",
+    "Unexpected Svelte default line cap for Envelope",
+    "Unexpected Svelte default line join for Envelope",
+    "Missing viewBox for Envelope",
+    "ViewBox mismatch for ExclamationCircle",
+    "Unexpected Svelte default size for ExclamationCircle",
+    "Unexpected Svelte default stroke for ExclamationCircle",
+    "Explicit Svelte size is overridden by the default class for ExclamationCircle",
+    "Unexpected Svelte default line cap for ExclamationCircle",
+    "Unexpected Svelte default line join for ExclamationCircle",
+    "Missing viewBox for ExclamationCircle",
+    "ViewBox mismatch for Language",
+    "Unexpected Svelte default size for Language",
+    "Unexpected Svelte default stroke for Language",
+    "Explicit Svelte size is overridden by the default class for Language",
+    "Unexpected Svelte default line cap for Language",
+    "Unexpected Svelte default line join for Language",
+    "Missing viewBox for Language"
+  ]
 }

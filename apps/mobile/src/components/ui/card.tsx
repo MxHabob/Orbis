@@ -1,18 +1,21 @@
 /**
  * @module @orbis/mobile/components/ui/card
  *
- * S.C.R.A.P.S. Tactile Card Component for Orbis Mobile.
- * 100% synchronized with @orbis/ui (packages/ui/globals.css .card-tactile & .card-tactile-interactive).
+ * Native counterpart to the @orbis/ui Card root: a compact, bordered surface
+ * with an optional tactile press affordance for interactive cards.
  */
 
 import React from "react";
 import {
   View,
+  type PressableStateCallbackType,
   type ViewProps,
-  Pressable,
 } from "react-native";
+import { useTheme } from "@/hooks/use-theme";
+import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 type SpacingScale =
+  | "none"
   | "half"
   | "one"
   | "two"
@@ -26,6 +29,7 @@ type SpacingScale =
   | "sixteen";
 
 const paddingClasses: Record<SpacingScale, string> = {
+  none: "p-0",
   half: "p-half",
   one: "p-one",
   two: "p-two",
@@ -43,6 +47,7 @@ export interface CardProps extends ViewProps {
   variant?: "default" | "elevated" | "outline" | "flat" | "interactive";
   onPress?: () => void;
   padding?: SpacingScale;
+  className?: string;
   children?: React.ReactNode;
 }
 
@@ -51,32 +56,56 @@ export const Card = React.memo<CardProps>(
     variant = "default",
     onPress,
     padding = "four",
+    className: customClassName,
     style,
     children,
     ...props
   }) => {
     const variantClasses: Record<NonNullable<CardProps["variant"]>, string> = {
-      default: "bg-card",
-      elevated: "bg-card",
-      outline: "border border-border bg-transparent",
+      default: "overflow-hidden rounded-md border border-border bg-card",
+      elevated:
+        "overflow-hidden rounded-md border border-border bg-card shadow-sm",
+      outline:
+        "overflow-hidden rounded-md border border-border bg-transparent",
       flat: "bg-transparent",
-      interactive: "bg-card",
+      interactive:
+        "overflow-hidden rounded-md border border-border border-b-2 border-b-btn-shadow-secondary bg-card",
     };
-    const className = `rounded-lg ${paddingClasses[padding]} ${variantClasses[variant]}`;
+    const theme = useTheme();
+    const tactilePress = useTactilePress(
+      Boolean(onPress),
+      false,
+      theme.btnShadowSecondary,
+    );
+    const tactileClass =
+      onPress && variant !== "interactive"
+        ? "border border-border border-b-2 border-b-btn-shadow-secondary"
+        : "";
+    const className = [
+      paddingClasses[padding],
+      variantClasses[variant],
+      tactileClass,
+      customClassName,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     if (onPress) {
       return (
-        <Pressable
+        <AnimatedPressable
           className={className}
           onPress={onPress}
-          style={({ pressed }) => [
+          onPressIn={tactilePress.onPressIn}
+          onPressOut={tactilePress.onPressOut}
+          style={({ pressed }: PressableStateCallbackType) => [
+            tactilePress.style,
             style,
-            pressed && { opacity: 0.88, transform: [{ translateY: 1 }] },
+            pressed && { opacity: 0.92 },
           ]}
           {...props}
         >
           {children}
-        </Pressable>
+        </AnimatedPressable>
       );
     }
 

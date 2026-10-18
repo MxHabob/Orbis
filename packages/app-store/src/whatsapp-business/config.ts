@@ -7,91 +7,85 @@ const config: OrbisApp = {
   name: "WhatsApp Business",
   name_ar: "واتساب للأعمال",
   category: "communication",
-  active: false,
+  active: true,
   beta: true,
   icon: "MessageCircle",
   short_description:
-    "Send instant notifications and communicate with parents via WhatsApp Business API.",
+    "Send WhatsApp notifications to parents through your connected Twilio WhatsApp sender.",
   short_description_ar:
-    "إرسال إشعارات فورية والتواصل مع أولياء الأمور عبر واتساب للأعمال.",
-  description: `Connect WhatsApp Business API to reach parents where they are — on their phones.
+    "إرسال إشعارات واتساب إلى أولياء الأمور عبر مرسل Twilio المتصل.",
+  description: `Connect a Twilio WhatsApp-enabled sender to deliver Orbis notifications to parents.
 
-**Instant Notifications**
-Send attendance alerts, grade updates, and fee reminders directly to parents' WhatsApp.
+**Verified Connection**
+Orbis checks your Twilio account credentials before saving the integration. Actual delivery also requires an active WhatsApp sender in Twilio.
 
-**Two-Way Communication**
-Parents can reply to messages, ask questions, and receive AI-powered responses.
+**WhatsApp Delivery**
+Send supported Orbis WhatsApp notifications using the existing notification adapter. Twilio and WhatsApp messaging charges may apply.`,
+  description_ar: `اربط مرسل WhatsApp مفعلاً لدى Twilio لإرسال إشعارات أوربيس إلى أولياء الأمور.
 
-**Template Messages**
-Pre-approved message templates for common notifications ensure compliance with WhatsApp policies.
+**التحقق من الربط**
+يتحقق أوربيس من بيانات حساب Twilio قبل حفظ التكامل. ويتطلب الإرسال الفعلي مرسلاً نشطاً لواتساب في Twilio.
 
-**Rich Media**
-Send report cards as PDFs, photos of school events, and interactive buttons.`,
-  description_ar: `ربط WhatsApp Business API للوصول لأولياء الأمور حيث هم — على هواتفهم.
-
-**إشعارات فورية**
-إرسال تنبيهات الحضور وتحديثات الدرجات مباشرة لواتساب أولياء الأمور.
-
-**تواصل ثنائي الاتجاه**
-يمكن لأولياء الأمور الرد على الرسائل وطرح الأسئلة.`,
+**إرسال رسائل واتساب**
+إرسال إشعارات أوربيس المدعومة عبر موصّل الإشعارات الحالي. قد تُطبق رسوم Twilio وWhatsApp.`,
   features: [
-    "Instant parent notifications",
-    "Two-way messaging with AI responses",
-    "Pre-approved message templates",
-    "Report cards and documents as PDFs",
-    "Attendance and grade alerts",
-    "Bulk messaging to class groups",
+    "Twilio WhatsApp sender integration",
+    "Credential verification before saving",
+    "Send supported Orbis WhatsApp notifications",
+  ],
+  features_ar: [
+    "الربط بمرسل WhatsApp عبر Twilio",
+    "التحقق من بيانات الحساب قبل الحفظ",
+    "إرسال إشعارات أوربيس المدعومة عبر WhatsApp",
   ],
   settings: [
     {
-      id: "phone_number_id",
-      label: "Phone Number ID",
-      label_ar: "معرف رقم الهاتف",
-      description: "Your WhatsApp Business phone number ID from Meta.",
-      type: "text",
+      id: "provider",
+      label: "WhatsApp Provider",
+      label_ar: "مزود WhatsApp",
+      description: "WhatsApp delivery is currently verified through Twilio.",
+      description_ar: "يتم التحقق من إرسال WhatsApp حالياً عبر Twilio.",
+      type: "select",
       required: true,
-      value: "",
-      placeholder: "1234567890",
+      value: "twilio",
+      options: [{ label: "Twilio", value: "twilio" }],
     },
     {
-      id: "access_token",
-      label: "Access Token",
-      label_ar: "رمز الوصول",
-      description: "Permanent access token from Meta Business Suite.",
+      id: "account_sid",
+      label: "Twilio Account SID",
+      label_ar: "معرف حساب Twilio",
+      description: "Account SID for the Twilio account with WhatsApp enabled.",
+      description_ar: "معرف حساب Twilio الذي فُعّل فيه WhatsApp.",
+      type: "password",
+      required: true,
+      value: "",
+      placeholder: "AC...",
+    },
+    {
+      id: "auth_token",
+      label: "Twilio Auth Token",
+      label_ar: "رمز مصادقة Twilio",
+      description: "Authentication token for the Twilio API.",
+      description_ar: "رمز المصادقة الخاص بواجهة Twilio API.",
       type: "password",
       required: true,
       value: "",
     },
     {
-      id: "business_account_id",
-      label: "Business Account ID",
-      label_ar: "معرف حساب الأعمال",
-      description: "Your WhatsApp Business Account ID.",
+      id: "from_number",
+      label: "WhatsApp Sender Number",
+      label_ar: "رقم مرسل WhatsApp",
+      description:
+        "Twilio WhatsApp-enabled sender number in international format, without the whatsapp: prefix.",
+      description_ar:
+        "رقم المرسل المفعّل لواتساب لدى Twilio بالصيغة الدولية، دون بادئة whatsapp:.",
       type: "text",
       required: true,
       value: "",
-    },
-    {
-      id: "auto_attendance",
-      label: "Auto Attendance Alerts",
-      label_ar: "تنبيهات الحضور التلقائية",
-      description:
-        "Automatically notify parents when their child is marked absent.",
-      type: "switch",
-      required: false,
-      value: true,
-    },
-    {
-      id: "auto_grades",
-      label: "Auto Grade Notifications",
-      label_ar: "إشعارات الدرجات التلقائية",
-      description: "Automatically send grade reports when published.",
-      type: "switch",
-      required: false,
-      value: false,
+      placeholder: "+1234567890",
     },
   ],
-  adapter_name: undefined, // Not yet implemented in Rust
+  adapter_name: "whatsapp-business",
   provider_trait: "NotificationProvider",
   notification_channels: ["whatsapp"],
 };

@@ -186,18 +186,25 @@ pub struct ShapeNode {
     pub props: ShapeProps,
 }
 
+fn default_shape_type() -> String {
+    "rectangle".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShapeProps {
+    #[serde(alias = "shape", default = "default_shape_type")]
     pub shape_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "fillColor", skip_serializing_if = "Option::is_none")]
     pub fill: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "strokeColor", skip_serializing_if = "Option::is_none")]
     pub stroke: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "strokeWidth", skip_serializing_if = "Option::is_none")]
     pub stroke_width: Option<f64>,
+    #[serde(alias = "borderRadius", skip_serializing_if = "Option::is_none")]
+    pub border_radius: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -225,23 +232,25 @@ impl TablePropsWrapper {
     pub fn into_typed(self) -> TableProps {
         match self {
             TablePropsWrapper::Typed(props) => props,
-            TablePropsWrapper::Legacy(val) => serde_json::from_value(val).unwrap_or_else(|_| TableProps {
-                columns: Vec::new(),
-                data_source: None,
-                rows: None,
-                show_header: true,
-                show_totals: false,
-                show_subtotals: false,
-                group_by: None,
-                sort_by: None,
-                repeating_header: false,
-                position: None,
-                show_grid: true,
-                show_border: true,
-                direction: None,
-                style: None,
-                conditional_formatting: None,
-            }),
+            TablePropsWrapper::Legacy(val) => {
+                serde_json::from_value(val).unwrap_or_else(|_| TableProps {
+                    columns: Vec::new(),
+                    data_source: None,
+                    rows: None,
+                    show_header: true,
+                    show_totals: false,
+                    show_subtotals: false,
+                    group_by: None,
+                    sort_by: None,
+                    repeating_header: false,
+                    position: None,
+                    show_grid: true,
+                    show_border: true,
+                    direction: None,
+                    style: None,
+                    conditional_formatting: None,
+                })
+            }
         }
     }
 }

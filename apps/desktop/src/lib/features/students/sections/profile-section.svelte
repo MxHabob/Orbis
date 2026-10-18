@@ -12,13 +12,6 @@ import { Checkbox } from "@orbis/ui/checkbox";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@orbis/ui/card";
-import {
   Select,
   SelectTrigger,
   SelectContent,
@@ -50,20 +43,20 @@ const studyModes = [
 ];
 </script>
 
-<Card class="w-full border-border/80 shadow-xs">
-  <CardHeader class="py-3 px-6 border-b border-border/40 flex flex-row items-center justify-between">
+<section class="w-full border-y border-border/60">
+  <div class="flex flex-wrap items-center justify-between gap-2 px-6 py-4">
     <div class="flex items-center gap-2">
       <User class="w-4 h-4 text-primary" />
-      <CardTitle class="text-xs font-bold text-foreground uppercase tracking-wider text-start select-none">
+      <h2 class="text-sm font-semibold text-foreground text-start">
         {m.ui_copy_academic_identity_personal_profile_5a3e9546()}
-      </CardTitle>
+      </h2>
     </div>
     <span class="text-[11px] text-muted-foreground">
       {m.ui_copy_fields_marked_with_are_required_df81f006()}
     </span>
-  </CardHeader>
+  </div>
 
-  <CardContent class="p-0">
+  <div>
     <div class="flex flex-col divide-y divide-border">
       
       <!-- Student Avatar & Study Mode -->
@@ -156,16 +149,23 @@ const studyModes = [
             bind:value={state.personal.classId}
           />
           {#if state.selectedClass}
-            <div class="flex items-center justify-between px-1">
-              <span class="text-[10px] text-muted-foreground">{m.ui_copy_capacity_ebf7f7c9()}</span>
-              <CapacityIndicator 
-                current={state.selectedClass.student_count || 0} 
-                max={state.selectedClass.capacity || 30} 
-                size="sm"
-                class="w-44"
-              />
-            </div>
-          {/if}
+              {@const enrolledCount = state.selectedClass.current_students ?? 0}
+              {@const classCapacity = state.selectedClass.capacity ?? state.admissionPolicy.maxClassCapacity}
+              <div class="flex items-center justify-between px-1">
+                <span class="text-[10px] text-muted-foreground">{m.ui_copy_capacity_ebf7f7c9()}</span>
+                <CapacityIndicator 
+                  current={enrolledCount} 
+                  max={classCapacity} 
+                  size="sm"
+                  class="w-44"
+                />
+              </div>
+              {#if classCapacity > 0 && enrolledCount >= classCapacity}
+                <p class="px-1 text-xs text-amber-600 dark:text-amber-400" role="status">
+                  {m.student_registration_capacity_review()}
+                </p>
+              {/if}
+            {/if}
         </div>
       </div>
 
@@ -456,5 +456,5 @@ const studyModes = [
         </div>
       {/if}
     </div>
-  </CardContent>
-</Card>
+  </div>
+</section>

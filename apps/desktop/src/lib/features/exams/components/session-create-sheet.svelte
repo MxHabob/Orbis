@@ -117,7 +117,10 @@ async function handleSubmit() {
 </script>
 
 <Sheet bind:open>
-  <SheetContent class="flex flex-col h-full sm:max-w-xl overflow-hidden">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-xl"
+    class="flex flex-col h-full overflow-hidden"
+  >
     <SheetHeader class="text-start select-none border-b border-border/40 pb-4">
       <SheetTitle class="text-lg font-bold text-foreground">
         {isEdit ? m.common_action_edit() : m.common_exams_create_title()}

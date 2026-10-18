@@ -111,7 +111,10 @@ async function handleSubmit(e?: Event) {
 </script>
 
 <Sheet bind:open onOpenChange={(value) => value && resetForm()}>
-  <SheetContent class="w-full sm:max-w-lg p-0 flex flex-col justify-between bg-background overflow-y-auto">
+  <SheetContent
+    contentClass="data-[side=end]:sm:!max-w-lg"
+    class="w-full p-0 flex flex-col justify-between bg-background overflow-y-auto"
+  >
     <div class="p-6 flex flex-col gap-6 text-start">
       <SheetHeader class="border-b border-border/40 pb-4">
         <div class="flex items-center gap-2">

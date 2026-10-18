@@ -9,7 +9,7 @@
   - Real backend fee calculation and invoice tracking
 -->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
+import { Card, LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { createInfiniteQuery } from "@tanstack/svelte-query";
@@ -48,6 +48,9 @@ import FinanceInlineFormCard from "$lib/features/finance/components/finance-inli
 import { fade, slide } from "svelte/transition";
 
 let { orgId }: { orgId: string } = $props();
+
+const asArray = <T>(value: T[] | null | undefined): T[] =>
+  Array.isArray(value) ? value : [];
 
 // ── State ──────────────────────────────────────────────────────────────
 let feeTemplates = $state<FeeTemplateDto[]>([]);
@@ -166,14 +169,15 @@ async function loadData(refreshFees = true) {
       api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
     ]);
 
-    feeTemplates = templatesList;
-    discountTemplates = discountsList;
-    students = enrollmentsList.map((e: any) => ({
+    feeTemplates = asArray(templatesList);
+    discountTemplates = asArray(discountsList);
+    const safeEnrollments = asArray(enrollmentsList);
+    students = safeEnrollments.map((e: any) => ({
       id: String(e.id),
       student_id: String(e.student_id),
       full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
     }));
-    periods = periodsList;
+    periods = asArray(periodsList);
 
     if (periods.length > 0 && !formPeriodId) {
       formPeriodId = periods[0].id;
@@ -327,7 +331,7 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
         String(s.id) === String(f.enrollment_id),
     );
     const template = feeTemplates.find((t) => t.id === f.fee_template_id);
-    const templateName = template?.name_ar || template?.name || f.fee_type_name || m.finance_ui_tuition_fees();
+    const templateName = template?.name_ar || template?.name || m.finance_ui_tuition_fees();
 
     const net = Number(f.net_amount ?? f.original_amount ?? 0);
     const paid = Number(f.paid_amount ?? 0);
@@ -346,7 +350,7 @@ function toFeeGridRow(f: StudentFeeDto, idx: number) {
     return {
       ...f,
       __idx: idx + 1,
-      student_display: student?.full_name || f.student_name || m.finance_ui_student_number_fallback({ id: f.enrollment_id }),
+      student_display: student?.full_name || m.finance_ui_student_number_fallback({ id: f.enrollment_id }),
       status_key: f.status === "paid" || balance <= 0 ? "paid" : paid > 0 ? "partially_paid" : f.due_date && new Date(f.due_date) < new Date() ? "overdue" : "pending",
       template_display: templateName,
       net_formatted: formatCurrency(net, curr),

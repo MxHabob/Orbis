@@ -10,15 +10,17 @@
 
 import React from "react";
 import {
-  KeyboardAvoidingView,
-  ScrollView,
-  TouchableWithoutFeedback,
   Keyboard,
   Platform,
-  ViewStyle,
-  StyleProp,
+  type StyleProp,
+  TouchableWithoutFeedback,
   View,
+  type ViewStyle,
 } from "react-native";
+import {
+  KeyboardAvoidingView,
+  KeyboardAwareScrollView,
+} from "react-native-keyboard-controller";
 
 interface KeyboardAwareViewProps {
   children: React.ReactNode;
@@ -42,7 +44,8 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
     if (!scrollable) {
       return (
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior="padding"
+          automaticOffset
           keyboardVerticalOffset={defaultOffset}
           className="flex-1"
           style={style}
@@ -60,24 +63,19 @@ export const KeyboardAwareView = React.memo<KeyboardAwareViewProps>(
     }
 
     return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={defaultOffset}
-        className="flex-1"
-        style={style}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          <ScrollView
-            className="flex-1"
-            contentContainerStyle={contentContainerStyle}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}
-          >
-            {children}
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <KeyboardAwareScrollView
+          className="flex-1"
+          style={style}
+          contentContainerStyle={contentContainerStyle}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          bottomOffset={defaultOffset}
+        >
+          {children}
+        </KeyboardAwareScrollView>
+      </TouchableWithoutFeedback>
     );
   },
 );

@@ -52,7 +52,7 @@ function subjectName(subject: any): string {
         size="xs"
         class="text-primary hover:text-primary hover:bg-primary/10 h-6 text-[11px] font-bold gap-1 px-2"
         onclick={() =>
-          goto(localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`))}
+          goto(localizeHref(`/${orgId}/academics/sections/${classId}/curriculum`))}
       >
         <Plus size={12} />
         {m.ui_section_subjects_link_subject()}
@@ -78,7 +78,7 @@ function subjectName(subject: any): string {
         size="sm"
         class="mt-3 text-xs h-7 font-semibold"
         onclick={() =>
-          goto(localizeHref(`/${orgId}/academics/classes/${classId}/curriculum`))}
+          goto(localizeHref(`/${orgId}/academics/sections/${classId}/curriculum`))}
       >
         <Plus size={12} class="me-1" />
         {m.ui_section_subjects_link_new_subject()}
@@ -88,7 +88,7 @@ function subjectName(subject: any): string {
     <div class="flex flex-col gap-2 overflow-y-auto max-h-80 scrollbar-hide pe-1">
       {#each subjects as subject (subject.id)}
         <a
-          href={localizeHref(`/${orgId}/academics/classes/${classId}/curriculum/${subject.id}`)}
+          href={localizeHref(`/${orgId}/academics/sections/${classId}/curriculum/${subject.id}`)}
           class="flex items-center justify-between p-3 rounded-md bg-muted/10 hover:bg-muted/40 transition-colors group"
         >
           <div class="flex items-center gap-3 min-w-0">

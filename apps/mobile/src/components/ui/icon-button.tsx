@@ -5,13 +5,10 @@
  */
 
 import React from "react";
-import {
-  Pressable,
-  type ViewStyle,
-  ActivityIndicator,
-  View,
-} from "react-native";
+import { View, type ViewStyle } from "react-native";
 import { useTheme } from "@/hooks/use-theme";
+import { LoadingIndicator } from "./loading-indicator";
+import { AnimatedPressable, useTactilePress } from "./tactile-press";
 
 export type IconButtonVariant =
   | "default"
@@ -87,34 +84,51 @@ export const IconButton = React.memo<IconButtonProps>(
     };
 
     const variantStyle = variantClasses[variant];
+    const shadowColor =
+      variant === "destructive"
+        ? theme.btnShadowDestructive
+        : variant === "secondary" || variant === "outline"
+          ? theme.btnShadowSecondary
+          : theme.btnShadowPrimary;
+    const tactilePress = useTactilePress(
+      variant !== "ghost",
+      isDisabled,
+      shadowColor,
+    );
 
     // Hit slop expands smaller buttons to minimum 44px touch area
     const hitSlopAmount = Math.max(0, (44 - dimensions.size) / 2);
 
     return (
-      <Pressable
+      <AnimatedPressable
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         disabled={isDisabled}
         hitSlop={hitSlopAmount}
         onPress={isDisabled ? undefined : onPress}
+        onPressIn={tactilePress.onPressIn}
+        onPressOut={tactilePress.onPressOut}
         className={`items-center justify-center ${rounded ? "rounded-full" : "rounded-md"} ${variantStyle.container}`}
-        style={({ pressed }) => [
+        style={[
+          tactilePress.style,
           {
             width: dimensions.size,
             height: dimensions.size,
             opacity: isDisabled ? 0.45 : 1,
-            transform: [{ scale: pressed && !isDisabled ? 0.94 : 1 }],
           },
           style,
         ]}
       >
         {loading ? (
-          <ActivityIndicator size="small" color={variantStyle.indicatorColor} />
+          <LoadingIndicator
+            size="sm"
+            color={variantStyle.indicatorColor}
+            containerColor="transparent"
+          />
         ) : (
           <View className="items-center justify-center">{icon}</View>
         )}
-      </Pressable>
+      </AnimatedPressable>
     );
   },
 );

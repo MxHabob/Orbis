@@ -59,11 +59,7 @@ High-throughput, cost-efficient model ideal for conversational assistance and ge
       description_ar: "اختر نموذج ديب سيك الافتراضي.",
       type: "select",
       required: true,
-      value: "deepseek-chat",
-      options: [
-        { label: "DeepSeek-V3 (deepseek-chat — General)", value: "deepseek-chat" },
-        { label: "DeepSeek-R1 (deepseek-reasoner — Reasoning)", value: "deepseek-reasoner" },
-      ],
+      value: "",
     },
     {
       id: "endpoint_url",

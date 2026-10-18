@@ -53,7 +53,7 @@ function toggleOrientation() {
   <div class="panel-content">
     <!-- Page Size -->
     <div class="section">
-      <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_prop_page_size()}</Label>
+      <Label class="text-xs font-medium text-foreground">{m.template_prop_page_size()}</Label>
       <div class="size-grid">
         {#each pageSizes as size (size.id)}
           <button
@@ -80,7 +80,7 @@ function toggleOrientation() {
 
     <!-- Orientation -->
     <div class="section">
-      <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_prop_page_orientation()}</Label>
+      <Label class="text-xs font-medium text-foreground">{m.template_prop_page_orientation()}</Label>
       <div class="orientation-row">
         <button
           type="button"
@@ -107,7 +107,7 @@ function toggleOrientation() {
 
     <!-- Margins -->
     <div class="section">
-      <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_prop_margins()}</Label>
+      <Label class="text-xs font-medium text-foreground">{m.template_prop_margins()}</Label>
       <div class="margins-grid">
         <div class="margin-field">
           <span class="margin-label">{m.template_margin_top()}</span>
@@ -115,7 +115,7 @@ function toggleOrientation() {
             type="number"
             value={margins.top}
             oninput={(e) => updateMargin("top", parseFloat(e.currentTarget.value) || 0)}
-            class="h-6 text-[10px] text-center"
+            class="h-8 text-xs text-center"
             min="0" max="100" step="1"
           />
         </div>
@@ -125,7 +125,7 @@ function toggleOrientation() {
             type="number"
             value={margins.bottom}
             oninput={(e) => updateMargin("bottom", parseFloat(e.currentTarget.value) || 0)}
-            class="h-6 text-[10px] text-center"
+            class="h-8 text-xs text-center"
             min="0" max="100" step="1"
           />
         </div>
@@ -157,7 +157,7 @@ function toggleOrientation() {
     <!-- Custom Size (only when Custom is selected) -->
     {#if pageSetup.size === "Custom"}
       <div class="section">
-        <Label class="text-[10px] font-semibold text-muted-foreground">{m.template_prop_custom_dims()}</Label>
+        <Label class="text-xs font-medium text-foreground">{m.template_prop_custom_dims()}</Label>
         <div class="custom-dims">
           <div class="margin-field">
             <span class="margin-label">{m.template_prop_width()}</span>
@@ -165,7 +165,7 @@ function toggleOrientation() {
               type="number"
               value={pageSetup.width ?? 210}
               oninput={(e) => updatePageSetup({ width: parseFloat(e.currentTarget.value) || 210 })}
-              class="h-6 text-[10px] text-center"
+              class="h-8 text-xs text-center"
               min="20" max="1000"
             />
           </div>
@@ -175,7 +175,7 @@ function toggleOrientation() {
               type="number"
               value={pageSetup.height ?? 297}
               oninput={(e) => updatePageSetup({ height: parseFloat(e.currentTarget.value) || 297 })}
-              class="h-6 text-[10px] text-center"
+              class="h-8 text-xs text-center"
               min="20" max="1000"
             />
           </div>
@@ -195,10 +195,10 @@ function toggleOrientation() {
   .panel-content {
     flex-grow: 1;
     overflow-y: auto;
-    padding: 8px 12px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .panel-content::-webkit-scrollbar { display: none; }
@@ -206,36 +206,36 @@ function toggleOrientation() {
   .section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .size-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+    gap: 6px;
   }
 
   .size-card {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
-    border: 1px solid color-mix(in srgb, var(--color-border) 25%, transparent);
-    border-radius: 6px;
-    background: transparent;
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-card);
     cursor: pointer;
-    transition: all 0.12s;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
     text-align: start;
   }
 
   .size-card:hover {
-    background: color-mix(in srgb, var(--color-accent) 60%, transparent);
-    border-color: color-mix(in srgb, var(--color-border) 50%, transparent);
+    background: var(--color-muted);
+    border-color: var(--color-border);
   }
 
   .size-card.active {
-    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 9%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
   }
 
   .size-icon {
@@ -258,7 +258,7 @@ function toggleOrientation() {
   }
 
   .size-name {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--color-foreground);
   }
@@ -272,31 +272,31 @@ function toggleOrientation() {
   .orientation-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 8px;
   }
 
   .orient-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 10px;
-    border: 1px solid color-mix(in srgb, var(--color-border) 25%, transparent);
-    border-radius: 8px;
-    background: transparent;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-card);
     cursor: pointer;
-    font-size: 9px;
+    font-size: 11px;
     color: var(--color-muted-foreground);
-    transition: all 0.12s;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
   }
 
   .orient-btn:hover {
-    background: color-mix(in srgb, var(--color-accent) 60%, transparent);
+    background: var(--color-muted);
   }
 
   .orient-btn.active {
-    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-    border-color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 9%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
     color: var(--color-primary);
   }
 
@@ -318,17 +318,17 @@ function toggleOrientation() {
   .margins-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    gap: 8px;
   }
 
   .margin-field {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
   }
 
   .margin-label {
-    font-size: 8px;
+    font-size: 10px;
     color: var(--color-muted-foreground);
   }
 

@@ -1,5 +1,6 @@
-import { api } from "$lib/api";
 import type { AccountDto, FolderDto, ProvisionUserRequest } from "$lib/api";
+import { api } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
 import { orgContext } from "$lib/stores/org-context.svelte";
 
 interface RegistrationArtifactOptions {
@@ -42,7 +43,7 @@ export async function ensureStudentRegistrationArtifacts(
           account.name_ar?.trim() === "الحسابات المدينة",
       );
       if (!receivables) {
-        throw new Error("تعذر العثور على حساب الذمم المدينة لاستخدامه كحساب أب للطالب");
+        throw new Error(m.student_registration_receivables_missing());
       }
 
       return api.createSubAccount({

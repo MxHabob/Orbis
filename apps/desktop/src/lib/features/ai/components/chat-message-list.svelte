@@ -4,7 +4,7 @@ import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
-import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
+import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, Download, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
 import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
 import { fade } from "svelte/transition";
 
@@ -22,8 +22,10 @@ let {
   chatContainer = $bindable(),
   onLinkClick,
   onActionResponse,
+  onReportDownload,
   onRetry,
   onEditUserMessage,
+  onApplyTemplateDesign,
 }: {
   messages: AiChatMessage[];
   isThinking: boolean;
@@ -32,8 +34,10 @@ let {
   chatContainer?: HTMLDivElement;
   onLinkClick: (href: string) => void;
   onActionResponse?: (action: ActionWithStatus, status: "executed" | "rejected") => void;
+  onReportDownload?: (action: ActionWithStatus) => void;
   onRetry?: (msgId: string) => void;
   onEditUserMessage?: (msgId: string, newText: string) => void;
+  onApplyTemplateDesign?: (content: string) => void;
 } = $props();
 
 let expandedTools = $state<Record<string, boolean>>({});
@@ -82,6 +86,29 @@ function toggleUserMessageExpand(msgId: string) {
 
 function toggleTool(key: string) {
   expandedTools[key] = !expandedTools[key];
+}
+
+function getTemplateDesignSummary(content: string): { name: string } | null {
+  try {
+    const result: unknown = JSON.parse(content);
+    if (
+      typeof result !== "object" ||
+      result === null ||
+      !("document" in result) ||
+      typeof result.document !== "object" ||
+      result.document === null ||
+      !("meta" in result.document) ||
+      typeof result.document.meta !== "object" ||
+      result.document.meta === null ||
+      !("name" in result.document.meta) ||
+      typeof result.document.meta.name !== "string"
+    ) {
+      return null;
+    }
+    return { name: result.document.meta.name };
+  } catch {
+    return null;
+  }
 }
 
 async function copyText(text: string, id: string) {
@@ -285,6 +312,27 @@ function handleContentClick(e: MouseEvent) {
                     </div>
                   {/if}
                 </div>
+                {#if tool.tool_name === "design_template" && !tool.is_error}
+                  {@const designSummary = getTemplateDesignSummary(tool.content)}
+                  <div class="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5">
+                    <div class="min-w-0">
+                      <p class="text-xs font-semibold text-foreground">{m.template_ai_design_ready()}</p>
+                      {#if designSummary}
+                        <p class="mt-0.5 truncate text-[11px] text-muted-foreground">{designSummary.name}</p>
+                      {/if}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      class="shrink-0"
+                      disabled={!onApplyTemplateDesign}
+                      onclick={() => onApplyTemplateDesign?.(tool.content)}
+                    >
+                      <Sparkles size={12} class="me-1" />
+                      {m.template_ai_apply_design()}
+                    </Button>
+                  </div>
+                {/if}
               {/each}
             </div>
           {/if}
@@ -427,10 +475,41 @@ function handleContentClick(e: MouseEvent) {
                       <CheckCircle size={12} />
                       {action.resultMessage || m.ai_ui_action_executed_successfully()}
                     </div>
+                    {#if action.tool_name === "create_custom_report" && action.reportJobId}
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        class="mt-2 h-7.5 rounded-lg px-3 text-[11px]"
+                        onclick={() => onReportDownload?.(action)}
+                      >
+                        <Download size={12} class="me-1" />
+                        {m.ai_ui_report_download()}
+                      </Button>
+                    {/if}
                   {:else if action.status === 'rejected'}
                     <div class="text-[10px] text-muted-foreground italic pt-1">
                       {m.ai_ui_action_dismissed_by_request()}
                     </div>
+                  {:else if action.status === 'failed'}
+                    <div class="text-[10.5px] text-destructive font-semibold pt-1">
+                      {action.resultMessage || m.ai_ui_failed()}
+                    </div>
+                  {:else if action.status === 'processing'}
+                    <div class="text-[10.5px] text-muted-foreground font-medium pt-1">
+                      {action.resultMessage || m.ai_ui_report_submitted()}
+                    </div>
+                    {#if action.tool_name === "create_custom_report" && action.reportJobId}
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        class="mt-2 h-7.5 rounded-lg px-3 text-[11px]"
+                        disabled={action.reportChecking}
+                        onclick={() => onActionResponse?.(action, "executed")}
+                      >
+                        <Refresh size={12} class="me-1" />
+                        {m.ai_ui_report_check_status()}
+                      </Button>
+                    {/if}
                   {:else}
                     <div class="flex items-center gap-2 pt-1">
                       <Button

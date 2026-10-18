@@ -1,231 +1,138 @@
-/**
- * @module @orbis/mobile/app/(auth)/register
- *
- * Minimalist, elegant step-by-step registration directly inspired by Reference Image 3
- * (Single focused question per step, large pill inputs, tactile selection chips,
- * and bottom pill continue buttons).
- */
-
-import{ useState } from "react";
-import {
-  Text,
-  View,
-  Pressable,
-  TextInput,
-  Platform,
-} from "react-native";
-import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Redirect, useRouter } from "expo-router";
+import { Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { api, useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { useTheme } from "@/hooks/use-theme";
-import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
-import { useToast } from "@/components/ui/toast";
-import {
-  ArrowLeft,
-  ArrowRight,
-} from "@orbis/icons/native";
-import { Button } from "@/components/ui/button";
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const theme = useTheme();
-  const { t, isArabic } = useI18n();
-  const toast = useToast();
-  const { login } = useAuth();
-
-  const [step, setStep] = useState<1 | 2 >(1);
+  const insets = useSafeAreaInsets();
+  const { t } = useI18n();
+  const { login, selectedInstitution } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  if (!selectedInstitution) {
+    return <Redirect href="/institution-select" />;
+  }
 
-  const handleNextStep1 = () => {
-    setErrorMsg(null);
-    if (!fullName.trim()) {
-      setErrorMsg(t("auth_error_required"));
-      return;
-    }
-    setStep(2);
-  };
-
-
-  const handleFinalSubmit = async () => {
-    setErrorMsg(null);
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setErrorMsg(t("auth_error_required"));
+  const createAccount = async () => {
+    const normalizedEmail = email.trim();
+    if (!fullName.trim() || !normalizedEmail || !password) {
+      setErrorMessage(t("auth_error_required"));
       return;
     }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
     try {
       await api.registerUser({
         body: {
           full_name: fullName.trim(),
-          email: trimmedEmail,
+          email: normalizedEmail,
           password,
           role: "teacher",
         },
         throwOnError: true,
       });
-
-      toast.success(t("auth_register_success"));
-
       try {
-        await login(trimmedEmail, password);
-        router.replace("/(app)/(tabs)");
+        await login(normalizedEmail, password);
       } catch {
         router.replace("/(auth)/sign-in");
       }
-    } catch (err: any) {
-      const msg = err?.message || t("auth_error_failed");
-      setErrorMsg(msg);
-      toast.error(msg);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : t("auth_error_failed");
+      setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleBack = () => {
-    setErrorMsg(null);
-    if (step === 2) setStep(2);
-    else if (step === 1) setStep(1);
-    else router.back();
-  };
-
-  const BackIcon = isArabic ? ArrowLeft : ArrowRight;
-
   return (
-    <View
-      className="flex-1 bg-background"
-    >
-
+    <View className="flex-1 bg-background">
       <KeyboardAwareView
         style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
           justifyContent: "space-between",
-          paddingHorizontal: 20,
-          paddingTop: Platform.OS === "ios" ? 54 : 36,
-          paddingBottom: 32,
+          paddingHorizontal: 24,
+          paddingTop: insets.top + 24,
+          paddingBottom: Math.max(insets.bottom, 20) + 16,
         }}
       >
-        {/* Minimal Nav Bar */}
-        <View className="mb-6 flex-row items-center justify-between">
-          <Pressable
-            onPress={handleBack}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-          >
-            <BackIcon size={18} color={theme.foreground} />
-          </Pressable>
-
-          {/* Minimal Step Dots Indicator */}
-          <View className="flex-row items-center gap-[6px]">
-            {[1, 2, 3].map((s) => (
-              <View
-                key={s}
-                className={`h-[6px] rounded-[3px] ${s <= step ? "bg-primary" : "bg-border"}`}
-                style={{ width: s === step ? 20 : 6 }}
-              />
-            ))}
-          </View>
-
-          <Pressable
-            onPress={() => router.push("/(auth)/sign-in")}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Text
-              className="font-sans text-xs leading-4 font-semibold text-muted-foreground"
-            >
-              {t("auth_sign_in")}
+        <View className="gap-6">
+          <View className="gap-2">
+            <Text className="font-sans text-[28px] font-extrabold text-foreground">
+              {t("auth_create_account_btn")}
             </Text>
-          </Pressable>
+            <Text className="font-sans text-sm text-muted-foreground">
+              {selectedInstitution.name}
+            </Text>
+          </View>
+          <Input
+            label={t("auth_full_name")}
+            placeholder={t("auth_full_name_ph")}
+            value={fullName}
+            onChangeText={setFullName}
+            autoComplete="name"
+            textContentType="name"
+            autoCapitalize="words"
+            returnKeyType="next"
+          />
+          <Input
+            label={t("auth_email_label")}
+            placeholder={t("auth_email_placeholder")}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            returnKeyType="next"
+          />
+          <Input
+            label={t("auth_password")}
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
+            onSubmitEditing={() => void createAccount()}
+            returnKeyType="go"
+          />
+          {errorMessage ? (
+            <Text accessibilityRole="alert" className="text-sm text-destructive">
+              {errorMessage}
+            </Text>
+          ) : null}
         </View>
-
-        {/* Dynamic Step Content */}
-        <View className="flex-1 justify-center">
-          {/* STEP 1: NAME */}
-          {step === 1 && (
-            <View className="w-full items-end">
-              <View className="mb-6">
-                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground">
-                  {t("auth_full_name")}
-                </Text>
-              </View>
-
-              <View>
-                <TextInput
-                  className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
-                  placeholder={t("auth_full_name_ph")}
-                  placeholderTextColor={theme.textMuted}
-                  value={fullName}
-                  onChangeText={setFullName}
-                  autoFocus
-                  onSubmitEditing={handleNextStep1}
-                  returnKeyType="next"
-                />
-              </View>
-            </View>
-          )}
-
-          {/* STEP 2: CREDENTIALS */}
-          {step === 2 && (
-            <View className="w-full items-end">
-              <View className="mb-6">
-                <Text className="font-sans text-[28px] leading-[34px] font-extrabold tracking-[-0.5px] text-foreground">
-                  {t("auth_email_label")}
-                </Text>
-              </View>
-
-              <View className="gap-3">
-                  <TextInput
-                    className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
-                    placeholder={t("auth_email_placeholder")}
-                    placeholderTextColor={theme.textMuted}
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoFocus
-                    />
-   
-                  <TextInput
-                    className="w-[370px] rounded-[6px] border border-border bg-background-element text-foreground"
-                    placeholder="••••••••"
-                    placeholderTextColor={theme.textMuted}
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    onSubmitEditing={handleFinalSubmit}
-                    returnKeyType="go"
-                  />
-
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Bottom Tactile Pill Button */}
-        <View className="mt-6">
+        <View className="gap-3 pt-6">
           <Button
-            onPress={
-              step === 1
-                ? handleNextStep1
-                  : handleFinalSubmit
-            }
+            onPress={() => void createAccount()}
             disabled={isSubmitting}
+            loading={isSubmitting}
+            fullWidth
           >
-            <Text
-              className="font-sans text-base leading-5 font-bold"
-            >
-              {step === 2
-                ? t("auth_create_account_btn")
-                : t("auth_next_step")}
+            <Text className="font-sans text-base font-bold text-primary-foreground">
+              {t("auth_create_account_btn")}
             </Text>
           </Button>
+          <Button
+            title={t("auth_sign_in")}
+            variant="outline"
+            fullWidth
+            onPress={() => router.replace("/(auth)/sign-in")}
+          />
         </View>
       </KeyboardAwareView>
     </View>

@@ -6,50 +6,49 @@
  * background revalidation, and type-safe query results.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/api";
+import { api } from "@/lib/api/client";
+import { queryKeys } from "@/lib/api/query-keys";
+import { ApiRequestError } from "@/lib/api/types";
+import { useEffectiveContext } from "@/providers/effective-context";
 import type {
-  OrgDto,
-  DashboardCountsDto,
   AcademicContextResponse,
-  ClassDto,
-  ClassSubjectDto,
-  EnrollmentDto,
-  GradeDto,
   AttendanceDto,
-  BehaviorRecordDto,
-  ScheduledLessonDto,
-  ExamScheduleDto,
-  ExamSessionDto,
-  StudentFeeDto,
-  StudentDto,
-  SubjectDto,
-  TimeSlotDto,
-  GuardianDto,
-  UserDto,
-  UserDeviceDto,
-  OrganizationSettingsDto,
-  MarkAttendanceRequest,
   BatchMarkAttendanceRequest,
   BatchRecordGradesRequest,
+  BehaviorRecordDto,
+  DashboardCountsDto,
+  SectionDto,
+  EnrollmentDto,
+  ExamScheduleDto,
+  ExamSessionDto,
+  GradeDto,
+  GuardianDto,
+  MarkAttendanceRequest,
+  OrganizationSettingsDto,
+  OrgDto,
   RecordGradeRequest,
+  ScheduledLessonDto,
+  SectionSubjectDto,
+  StudentDto,
+  StudentFeeDto,
+  SubjectDto,
+  TemplateDto,
+  TimeSlotDto,
+  UserDeviceDto,
+  UserDto,
 } from "@/lib/api/types";
-import { queryKeys } from "@/lib/api/query-keys";
 
 const STALE_TIME = 1000 * 60 * 5; // 5 minutes cache
-const GC_TIME = 1000 * 60 * 15; // 15 minutes garbage collection
+const GC_TIME = 1000 * 60 * 60 * 24 * 7;
 
 /**
  * Helper to safely extract response data from SDK calls
  */
 function extractData<T>(response: unknown): T {
   let data = response;
-  while (
-    typeof data === "object" &&
-    data !== null &&
-    "data" in data
-  ) {
+  while (typeof data === "object" && data !== null && "data" in data) {
     data = data.data;
   }
   return data as T;
@@ -62,12 +61,8 @@ export function useCurrentOrgQuery() {
   return useQuery({
     queryKey: queryKeys.org.current(),
     queryFn: async (): Promise<OrgDto | null> => {
-      try {
-        const res = await api.getCurrentOrg({ throwOnError: true });
-        return extractData<OrgDto>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getCurrentOrg({ throwOnError: true });
+      return extractData<OrgDto>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -114,12 +109,8 @@ export function useDashboardQuery() {
   return useQuery({
     queryKey: queryKeys.org.dashboard(),
     queryFn: async (): Promise<DashboardCountsDto | null> => {
-      try {
-        const res = await api.getDashboard({ throwOnError: true });
-        return extractData<DashboardCountsDto>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getDashboard({ throwOnError: true });
+      return extractData<DashboardCountsDto>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -133,12 +124,8 @@ export function useAcademicContextQuery() {
   return useQuery({
     queryKey: queryKeys.calendar.context(),
     queryFn: async (): Promise<AcademicContextResponse | null> => {
-      try {
-        const res = await api.getCurrentContext({ throwOnError: true });
-        return extractData<AcademicContextResponse>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getCurrentContext({ throwOnError: true });
+      return extractData<AcademicContextResponse>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -146,18 +133,18 @@ export function useAcademicContextQuery() {
 }
 
 /**
- * Fetch Academic Classes List
+ * Fetch Academic Sections List
  */
 export function useClassesQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.academic.classes(),
-    queryFn: async (): Promise<ClassDto[]> => {
-      const res = await api.listClasses({ throwOnError: true });
-      const classes = extractData<ClassDto[]>(res);
-      if (!Array.isArray(classes)) {
-        throw new Error("The classes response was not a list.");
+    queryFn: async (): Promise<SectionDto[]> => {
+      const res = await api.listSections({ throwOnError: true });
+      const sections = extractData<SectionDto[]>(res);
+      if (!Array.isArray(sections)) {
+        throw new Error("The sections response was not a list.");
       }
-      return classes;
+      return sections;
     },
     enabled,
     staleTime: STALE_TIME,
@@ -171,54 +158,71 @@ export interface TeacherRosterEntry {
 }
 
 export interface TeacherClassData {
-  classItem: ClassDto;
+  classItem: SectionDto;
   roster: TeacherRosterEntry[];
-  classSubjects: ClassSubjectDto[];
+  classSubjects: SectionSubjectDto[];
+  SectionSubject?: SectionSubjectDto[];
   subjects: SubjectDto[];
 }
 
 export function useTeacherClassDataQuery(classId?: string) {
-  return useQuery({
+  const { activeRole } = useEffectiveContext();
+  const { effectiveContext } = useAuth();
+  const isInScope = Boolean(
+    activeRole.toLowerCase().includes("teacher") &&
+      classId &&
+      Array.isArray(effectiveContext?.teaching_classes) &&
+      effectiveContext.teaching_classes.some(
+        (classItem) =>
+          typeof classItem === "object" &&
+          classItem !== null &&
+          "section_id" in classItem &&
+          classItem.section_id === classId,
+      ),
+  );
+  const query = useQuery({
     queryKey: queryKeys.academic.classRoster(classId ?? ""),
     queryFn: async (): Promise<TeacherClassData> => {
-      if (!classId) throw new Error("A class ID is required.");
-      const classResponse = await api.getClass({
+      if (!classId) throw new Error("A section ID is required.");
+      const sectionResponse = await api.getSection({
         path: { id: classId },
         throwOnError: true,
       });
-      const classItem = extractData<ClassDto>(classResponse);
+      const classItem = extractData<SectionDto>(sectionResponse);
       if (!classItem) {
-        throw new Error("The class response was invalid.");
+        throw new Error("The section response was invalid.");
       }
-      const [
-        enrollmentsResponse,
-        classSubjectsResponse,
-        subjectsResponse,
-      ] = await Promise.all([
-        api.listEnrollments({
-          query: { class_id: classId },
-          throwOnError: true,
-        }),
-        api.listClassSubjects({
-          query: { class_id: classId, period_id: classItem.period_id },
-          throwOnError: true,
-        }),
-        api.listSubjects({ throwOnError: true }),
-      ]);
+      const [enrollmentsResponse, classSubjectsResponse, subjectsResponse] =
+        await Promise.all([
+          api.listEnrollments2({
+            query: { section_id: classId },
+            throwOnError: true,
+          }),
+          api.listSectionSubjects2({
+            query: {
+              section_id: classId,
+              period_id: classItem.period_id ?? "",
+            },
+            throwOnError: true,
+          }),
+          api.listSubjects({ throwOnError: true }),
+        ]);
       const enrollments = extractData<EnrollmentDto[]>(enrollmentsResponse);
-      const classSubjects = extractData<ClassSubjectDto[]>(classSubjectsResponse);
+      const classSubjects = extractData<SectionSubjectDto[]>(
+        classSubjectsResponse,
+      );
       const subjects = extractData<SubjectDto[]>(subjectsResponse);
       if (
         !Array.isArray(enrollments) ||
         !Array.isArray(classSubjects) ||
         !Array.isArray(subjects)
       ) {
-        throw new Error("The class roster response contained invalid data.");
+        throw new Error("The section roster response contained invalid data.");
       }
       const activeEnrollments = enrollments.filter(
         (enrollment) =>
           enrollment.status === "active" &&
-          enrollment.class_id === classId &&
+          enrollment.section_id === classId &&
           enrollment.period_id === classItem.period_id,
       );
       const activeStudentIds = new Set(
@@ -233,7 +237,7 @@ export function useTeacherClassDataQuery(classId?: string) {
       ) {
         const response = await api.listStudents({
           query: {
-            class_id: classId,
+            section_id: classId,
             period_id: classItem.period_id,
             page,
             page_size: pageSize,
@@ -258,62 +262,66 @@ export function useTeacherClassDataQuery(classId?: string) {
           return student ? [{ student, enrollment }] : [];
         }),
         classSubjects: classSubjects.filter((item) => item.is_active),
+        SectionSubject: classSubjects.filter((item) => item.is_active),
         subjects,
       };
     },
-    enabled: Boolean(classId),
+    enabled: Boolean(classId && isInScope),
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });
+  return { ...query, isInScope };
 }
 
-export function useClassAttendanceQuery(classId?: string, date?: string) {
+export function useClassAttendanceQuery(
+  classId?: string,
+  date?: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: queryKeys.assessment.attendance(classId ?? "", date ?? ""),
     queryFn: async (): Promise<AttendanceDto[]> => {
-      if (!classId || !date) throw new Error("A class and date are required.");
+      if (!classId || !date) throw new Error("A section and date are required.");
       const response = await api.client.get<
         { 200: AttendanceDto[] },
         unknown,
         true
       >({
         url: "/api/v1/attendance",
-        query: { class_id: classId, date },
+        query: { section_id: classId, date },
         throwOnError: true,
       });
       const attendance = extractData<AttendanceDto[]>(response);
       if (!Array.isArray(attendance)) {
-        throw new Error("The class attendance response was not a list.");
+        throw new Error("The section attendance response was not a list.");
       }
       return attendance;
     },
-    enabled: Boolean(classId && date),
+    enabled: enabled && Boolean(classId && date),
     staleTime: 30_000,
     gcTime: GC_TIME,
   });
 }
 
-export function useClassGradesQuery(classSubjectId?: string) {
+export function useClassGradesQuery(classSubjectId?: string, enabled = true) {
   return useQuery({
     queryKey: queryKeys.assessment.classGrades(classSubjectId ?? ""),
     queryFn: async (): Promise<GradeDto[]> => {
       if (!classSubjectId) throw new Error("A class subject is required.");
-      const response = await api.client.get<
-        { 200: GradeDto[] },
-        unknown,
-        true
-      >({
-        url: "/api/v1/grades",
-        query: { class_subject_id: classSubjectId },
-        throwOnError: true,
-      });
+      const response = await api.client.get<{ 200: GradeDto[] }, unknown, true>(
+        {
+          url: "/api/v1/grades",
+          query: { section_subject_id: classSubjectId },
+          throwOnError: true,
+        },
+      );
       const grades = extractData<GradeDto[]>(response);
       if (!Array.isArray(grades)) {
         throw new Error("The class grades response was not a list.");
       }
       return grades;
     },
-    enabled: Boolean(classSubjectId),
+    enabled: enabled && Boolean(classSubjectId),
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
   });
@@ -323,25 +331,32 @@ export function useClassScheduleQuery(classId?: string) {
   return useQuery({
     queryKey: queryKeys.scheduling.lessons({ classSubjectId: classId }),
     queryFn: async (): Promise<StudentScheduleItem[]> => {
-      if (!classId) throw new Error("A class ID is required.");
-      const [classResponse, subjectResponse] = await Promise.all([
-        api.getClass({ path: { id: classId }, throwOnError: true }),
+      if (!classId) throw new Error("A section ID is required.");
+      const [sectionResponse, subjectResponse] = await Promise.all([
+        api.getSection({ path: { id: classId }, throwOnError: true }),
         api.listSubjects({ throwOnError: true }),
       ]);
-      const classItem = extractData<ClassDto>(classResponse);
+      const sectionItem = extractData<SectionDto>(sectionResponse);
       const subjects = extractData<SubjectDto[]>(subjectResponse);
-      if (!classItem || !Array.isArray(subjects)) {
-        throw new Error("The class schedule response was invalid.");
+      if (!sectionItem || !Array.isArray(subjects)) {
+        throw new Error("The section schedule response was invalid.");
       }
-      const classSubjectsResponse = await api.listClassSubjects({
-        query: { class_id: classId, period_id: classItem.period_id },
+      const classSubjectsResponse = await api.listSectionSubjects2({
+        query: {
+          section_id: classId,
+          period_id: sectionItem.period_id ?? "",
+        },
         throwOnError: true,
       });
-      const classSubjects = extractData<ClassSubjectDto[]>(classSubjectsResponse);
+      const classSubjects = extractData<SectionSubjectDto[]>(
+        classSubjectsResponse,
+      );
       if (!Array.isArray(classSubjects)) {
-        throw new Error("The class subject response was not a list.");
+        throw new Error("The section subject response was not a list.");
       }
-      const activeClassSubjects = classSubjects.filter((item) => item.is_active);
+      const activeClassSubjects = classSubjects.filter(
+        (item) => item.is_active,
+      );
       const [lessonResponses, slotResponse] = await Promise.all([
         Promise.all(
           activeClassSubjects.map((classSubject) =>
@@ -354,7 +369,7 @@ export function useClassScheduleQuery(classId?: string) {
         ),
         api.client.get<{ 200: TimeSlotDto[] }, unknown, true>({
           url: "/api/v1/time-slots",
-          query: { period_id: classItem.period_id },
+          query: { period_id: sectionItem.period_id },
           throwOnError: true,
         }),
       ]);
@@ -373,11 +388,13 @@ export function useClassScheduleQuery(classId?: string) {
       const classSubjectsById = new Map(
         activeClassSubjects.map((item) => [item.id, item]),
       );
-      const subjectsById = new Map(subjects.map((subject) => [subject.id, subject]));
+      const subjectsById = new Map(
+        subjects.map((subject) => [subject.id, subject]),
+      );
       return lessons
         .flatMap((lesson) => {
           const timeSlot = timeSlotsById.get(lesson.time_slot_id);
-          const classSubject = classSubjectsById.get(lesson.class_subject_id);
+          const classSubject = classSubjectsById.get(lesson.section_subject_id);
           if (!timeSlot || !classSubject) return [];
           return [
             {
@@ -400,19 +417,18 @@ export function useClassScheduleQuery(classId?: string) {
 }
 
 /**
- * Fetch Single Class Details
+ * Fetch Single Section Details
  */
 export function useClassQuery(classId?: string) {
   return useQuery({
     queryKey: queryKeys.academic.class(classId || ""),
-    queryFn: async (): Promise<ClassDto | null> => {
-      if (!classId) return null;
-      try {
-        const res = await api.getClass({ path: { id: classId }, throwOnError: true });
-        return extractData<ClassDto>(res);
-      } catch {
-        return null;
-      }
+    queryFn: async (): Promise<SectionDto | null> => {
+      if (!classId) throw new Error("A section ID is required.");
+      const res = await api.getSection({
+        path: { id: classId },
+        throwOnError: true,
+      });
+      return extractData<SectionDto>(res);
     },
     enabled: Boolean(classId),
     staleTime: STALE_TIME,
@@ -430,8 +446,8 @@ export function useEnrollmentsQuery(filter?: {
   return useQuery({
     queryKey: queryKeys.student.enrollments(filter),
     queryFn: async (): Promise<EnrollmentDto[]> => {
-      const res = await api.listEnrollments({
-        query: { class_id: filter?.classId, student_id: filter?.studentId },
+      const res = await api.listEnrollments2({
+        query: { section_id: filter?.classId, student_id: filter?.studentId },
         throwOnError: true,
       });
       const enrollments = extractData<EnrollmentDto[]>(res);
@@ -456,16 +472,14 @@ export function useGradesQuery(filter?: {
     queryKey: queryKeys.assessment.grades(filter),
     queryFn: async (): Promise<GradeDto[]> => {
       if (!filter?.studentId && !filter?.classSubjectId) {
-        throw new Error("A student or class subject is required to load grades.");
+        throw new Error(
+          "A student or class subject is required to load grades.",
+        );
       }
       const query = filter.studentId
         ? { student_id: filter.studentId }
-        : { class_subject_id: filter.classSubjectId };
-      const res = await api.client.get<
-        { 200: GradeDto[] },
-        unknown,
-        true
-      >({
+        : { section_subject_id: filter.classSubjectId };
+      const res = await api.client.get<{ 200: GradeDto[] }, unknown, true>({
         url: "/api/v1/grades",
         query,
         throwOnError: true,
@@ -495,15 +509,20 @@ export function useAttendanceQuery(filter?: {
       filter?.date || "",
     ),
     queryFn: async (): Promise<AttendanceDto[]> => {
-      try {
-        const res = await api.listAttendance({
-          query: { class_id: filter?.classId, student_id: filter?.studentId, date: filter?.date } as any,
-          throwOnError: true,
-        });
-        return extractData<AttendanceDto[]>(res) ?? [];
-      } catch {
-        return [];
+      const res = await api.client.get<{ 200: AttendanceDto[] }, unknown, true>({
+        url: "/api/v1/attendance",
+        query: {
+          section_id: filter?.classId,
+          student_id: filter?.studentId,
+          date: filter?.date,
+        },
+        throwOnError: true,
+      });
+      const attendance = extractData<AttendanceDto[]>(res);
+      if (!Array.isArray(attendance)) {
+        throw new Error("The attendance response was not a list.");
       }
+      return attendance;
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -531,21 +550,54 @@ export function useStudentQuery(studentId?: string) {
   });
 }
 
-export function useMyStudentQuery(enabled: boolean) {
+export function useDigitalIdTemplateQuery(organizationId?: string) {
   return useQuery({
-    queryKey: queryKeys.student.detail("me"),
-    queryFn: async (): Promise<StudentDto> => {
-      const response = await api.client.get<
-        { 200: StudentDto },
-        unknown,
-        true
-      >({
-        url: "/api/v1/students/me",
+    queryKey: queryKeys.report.templates({
+      documentType: "ID_CARD",
+      entityType: "student",
+      status: "published",
+      organizationId,
+    }),
+    queryFn: async (): Promise<TemplateDto[]> => {
+      const response = await api.listTemplates({
+        query: {
+          document_type: "ID_CARD",
+          entity_type: "student",
+          status: "published",
+        },
         throwOnError: true,
       });
+      const templates = extractData<TemplateDto[]>(response);
+      if (!Array.isArray(templates)) {
+        throw new Error("The digital ID template response was not a list.");
+      }
+      return templates;
+    },
+    enabled: Boolean(organizationId),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+  });
+}
+
+export function useMyStudentQuery(
+  enabled: boolean,
+  expectedStudentId?: string | null,
+) {
+  return useQuery({
+    queryKey: queryKeys.student.detail(expectedStudentId ?? "me"),
+    queryFn: async (): Promise<StudentDto> => {
+      const response = await api.client.get<{ 200: StudentDto }, unknown, true>(
+        {
+          url: "/api/v1/students/me",
+          throwOnError: true,
+        },
+      );
       const student = extractData<StudentDto>(response);
       if (!student || typeof student.id !== "string") {
         throw new Error("The student profile response was invalid.");
+      }
+      if (expectedStudentId && student.id !== expectedStudentId) {
+        throw new Error("The student profile does not match the active context.");
       }
       return student;
     },
@@ -556,38 +608,68 @@ export function useMyStudentQuery(enabled: boolean) {
 }
 
 export function useLinkedStudentId(requestedId?: string) {
-  const { effectiveContext, user } = useAuth();
-  const roles = [
-    ...(user?.roles ?? []),
-    effectiveContext?.effective_role ?? "",
-    ...(effectiveContext?.roles ?? []),
-  ].map((role) => role.toLowerCase().replace(/[^a-z]/g, ""));
-  const isStudentRole = roles.some((role) => role.includes("student"));
-  const ownStudentQuery = useMyStudentQuery(isStudentRole);
-  const requestedStudentId = requestedId === "me" ? ownStudentQuery.data?.id : requestedId;
+  const {
+    effectiveContext,
+    isLoading: isAuthLoading,
+    refreshSessionData,
+  } = useAuth();
+  const { activeRole } = useEffectiveContext();
+  const normalizedActiveRole = activeRole.toLowerCase();
+  const isStudentRole = normalizedActiveRole.includes("student");
+  const isGuardianRole = ["parent", "guardian", "family"].includes(
+    normalizedActiveRole,
+  );
+  const ownStudentId = isStudentRole
+    ? (effectiveContext?.student_id ?? undefined)
+    : undefined;
+  const resolvedRequestedId = requestedId === "me" ? ownStudentId : requestedId;
   const isDependent = Boolean(
-    requestedStudentId &&
+    isGuardianRole &&
+      resolvedRequestedId &&
       effectiveContext?.dependents.some(
-        (dependent) => dependent.student_id === requestedStudentId,
+        (dependent) => dependent.student_id === resolvedRequestedId,
       ),
   );
   const isOwnStudent =
-    Boolean(requestedStudentId) &&
-    ownStudentQuery.data?.id === requestedStudentId;
-  const isLinked = Boolean(requestedStudentId) && (isDependent || isOwnStudent);
-  const isResolving =
     isStudentRole &&
-    ownStudentQuery.isPending &&
-    (requestedId === "me" || Boolean(requestedId));
+    Boolean(resolvedRequestedId) &&
+    ownStudentId === resolvedRequestedId;
+  const isLinked =
+    Boolean(resolvedRequestedId) && (isDependent || isOwnStudent);
+  const isResolving = isAuthLoading && Boolean(requestedId);
+  const identityMissing =
+    isStudentRole &&
+    !isAuthLoading &&
+    requestedId === "me" &&
+    !ownStudentId;
 
   return {
-    studentId: isLinked ? requestedStudentId : undefined,
+    studentId: isLinked ? resolvedRequestedId : undefined,
     isLinked,
     isResolving,
     isStudentRole,
-    identityError: isStudentRole && ownStudentQuery.isError,
-    retryIdentity: ownStudentQuery.refetch,
+    identityMissing,
+    retryIdentity: refreshSessionData,
   };
+}
+
+export function isApiNotFoundError(error: unknown): boolean {
+  if (error instanceof ApiRequestError) return error.status === 404;
+  if (typeof error !== "object" || error === null) return false;
+
+  const candidate = error as Record<string, unknown>;
+  if (
+    candidate.status === 404 ||
+    candidate.statusCode === 404 ||
+    candidate.code === "NOT_FOUND"
+  ) {
+    return true;
+  }
+  if (typeof candidate.error === "object" && candidate.error !== null) {
+    const nestedError = candidate.error as Record<string, unknown>;
+    return nestedError.code === "NOT_FOUND";
+  }
+  return false;
 }
 
 export function useStudentAttendanceQuery(studentId?: string) {
@@ -643,7 +725,7 @@ export function useStudentExamsQuery(studentId?: string) {
     queryKey: queryKeys.student.exams(studentId ?? ""),
     queryFn: async (): Promise<StudentExamItem[]> => {
       if (!studentId) throw new Error("A student ID is required.");
-      const enrollmentResponse = await api.listEnrollments({
+      const enrollmentResponse = await api.listEnrollments2({
         query: { student_id: studentId },
         throwOnError: true,
       });
@@ -653,26 +735,26 @@ export function useStudentExamsQuery(studentId?: string) {
       }
 
       const activeEnrollments = enrollments.filter(
-        (enrollment) => enrollment.status === "active" && enrollment.class_id,
+        (enrollment) => enrollment.status === "active" && enrollment.section_id,
       );
       if (activeEnrollments.length === 0) return [];
 
       const classSubjectLists = await Promise.all(
         activeEnrollments.map((enrollment) => {
-          if (!enrollment.class_id) {
-            throw new Error("An active enrollment is missing its class.");
+          if (!enrollment.section_id) {
+            throw new Error("An active enrollment is missing its section.");
           }
-          return api.listClassSubjects({
+          return api.listSectionSubjects2({
             query: {
-              class_id: enrollment.class_id,
-              period_id: enrollment.period_id,
+              section_id: enrollment.section_id,
+              period_id: enrollment.period_id ?? "",
             },
             throwOnError: true,
           });
         }),
       );
       const classSubjects = classSubjectLists.flatMap((response) => {
-        const items = extractData<ClassSubjectDto[]>(response);
+        const items = extractData<SectionSubjectDto[]>(response);
         if (!Array.isArray(items)) {
           throw new Error("The class subjects response was not a list.");
         }
@@ -680,7 +762,9 @@ export function useStudentExamsQuery(studentId?: string) {
       });
       if (classSubjects.length === 0) return [];
 
-      const periodIds = [...new Set(activeEnrollments.map((item) => item.period_id))];
+      const periodIds = [
+        ...new Set(activeEnrollments.map((item) => item.period_id)),
+      ];
       const [sessionResponses, subjectsResponse] = await Promise.all([
         Promise.all(
           periodIds.map((periodId) =>
@@ -721,16 +805,22 @@ export function useStudentExamsQuery(studentId?: string) {
         }
         return items;
       });
-      const sessionById = new Map(sessions.map((session) => [session.id, session]));
+      const sessionById = new Map(
+        sessions.map((session) => [session.id, session]),
+      );
       const classSubjectById = new Map(
         classSubjects.map((classSubject) => [classSubject.id, classSubject]),
       );
-      const subjectById = new Map(subjects.map((subject) => [subject.id, subject]));
+      const subjectById = new Map(
+        subjects.map((subject) => [subject.id, subject]),
+      );
 
       return schedules
         .flatMap((schedule) => {
           const session = sessionById.get(schedule.exam_session_id);
-          const classSubject = classSubjectById.get(schedule.class_subject_id);
+          const classSubject = classSubjectById.get(
+            schedule.section_subject_id,
+          );
           if (!session || !classSubject) return [];
           return [
             {
@@ -764,7 +854,7 @@ export function useStudentScheduleQuery(studentId?: string) {
     queryFn: async (): Promise<StudentScheduleItem[]> => {
       if (!studentId) throw new Error("A student ID is required.");
 
-      const enrollmentResponse = await api.listEnrollments({
+      const enrollmentResponse = await api.listEnrollments2({
         query: { student_id: studentId },
         throwOnError: true,
       });
@@ -773,17 +863,17 @@ export function useStudentScheduleQuery(studentId?: string) {
         throw new Error("The enrollments response was not a list.");
       }
       const activeClasses = enrollments.flatMap((enrollment) =>
-        enrollment.status === "active" && enrollment.class_id
-          ? [{ classId: enrollment.class_id, periodId: enrollment.period_id }]
+        enrollment.status === "active" && enrollment.section_id
+          ? [{ classId: enrollment.section_id, periodId: enrollment.period_id ?? "" }]
           : [],
       );
       const classSubjectsByEnrollment = await Promise.all(
         activeClasses.map(async ({ classId, periodId }) => {
-          const response = await api.listClassSubjects({
-            query: { class_id: classId, period_id: periodId },
+          const response = await api.listSectionSubjects2({
+            query: { section_id: classId, period_id: periodId },
             throwOnError: true,
           });
-          const classSubjects = extractData<ClassSubjectDto[]>(response);
+          const classSubjects = extractData<SectionSubjectDto[]>(response);
           if (!Array.isArray(classSubjects)) {
             throw new Error("The class subjects response was not a list.");
           }
@@ -799,7 +889,9 @@ export function useStudentScheduleQuery(studentId?: string) {
       );
       if (classSubjectIds.size === 0) return [];
 
-      const periods = [...new Set(activeClasses.map(({ periodId }) => periodId))];
+      const periods = [
+        ...new Set(activeClasses.map(({ periodId }) => periodId)),
+      ];
       const [lessonResponses, timeSlotResponses, subjectResponse] =
         await Promise.all([
           Promise.all(
@@ -846,14 +938,17 @@ export function useStudentScheduleQuery(studentId?: string) {
       }
 
       const timeSlotsById = new Map(timeSlots.map((slot) => [slot.id, slot]));
-      const subjectsById = new Map(subjects.map((subject) => [subject.id, subject]));
+      const subjectsById = new Map(
+        subjects.map((subject) => [subject.id, subject]),
+      );
       const classSubjectsById = new Map(
         activeClassSubjects.map((item) => [item.id, item]),
       );
-      return lessons.flatMap((lesson) => {
+      return lessons
+        .flatMap((lesson) => {
           const timeSlot = timeSlotsById.get(lesson.time_slot_id);
           if (!timeSlot) return [];
-          const classSubject = classSubjectsById.get(lesson.class_subject_id);
+          const classSubject = classSubjectsById.get(lesson.section_subject_id);
           return [
             {
               lesson,
@@ -883,15 +978,15 @@ export function useSchedulesQuery(sessionId?: string) {
   return useQuery({
     queryKey: queryKeys.scheduling.lessons({ periodId: sessionId }),
     queryFn: async (): Promise<ScheduledLessonDto[]> => {
-      try {
-        const res = await api.listLessons({
-          query: { period_id: sessionId } as any,
-          throwOnError: true,
-        });
-        return extractData<ScheduledLessonDto[]>(res) ?? [];
-      } catch {
-        return [];
+      const res = await api.listLessons({
+        query: { period_id: sessionId } as any,
+        throwOnError: true,
+      });
+      const lessons = extractData<ScheduledLessonDto[]>(res);
+      if (!Array.isArray(lessons)) {
+        throw new Error("The lessons response was not a list.");
       }
+      return lessons;
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -934,16 +1029,16 @@ export function useGuardiansQuery(studentId?: string) {
   return useQuery({
     queryKey: queryKeys.student.guardians(studentId || ""),
     queryFn: async (): Promise<GuardianDto[]> => {
-      if (!studentId) return [];
-      try {
-        const res = await api.listGuardians({
-          query: { student_id: studentId },
-          throwOnError: true,
-        });
-        return extractData<GuardianDto[]>(res) ?? [];
-      } catch {
-        return [];
+      if (!studentId) throw new Error("A student ID is required.");
+      const res = await api.listGuardians({
+        query: { student_id: studentId },
+        throwOnError: true,
+      });
+      const guardians = extractData<GuardianDto[]>(res);
+      if (!Array.isArray(guardians)) {
+        throw new Error("The guardians response was not a list.");
       }
+      return guardians;
     },
     enabled: Boolean(studentId),
     staleTime: STALE_TIME,
@@ -958,16 +1053,12 @@ export function useUserQuery(userId?: string) {
   return useQuery({
     queryKey: queryKeys.auth.user(userId || ""),
     queryFn: async (): Promise<UserDto | null> => {
-      if (!userId) return null;
-      try {
-        const res = await api.getUser({
-          path: { id: userId },
-          throwOnError: true,
-        });
-        return extractData<UserDto>(res);
-      } catch {
-        return null;
-      }
+      if (!userId) throw new Error("A user ID is required.");
+      const res = await api.getUser({
+        path: { id: userId },
+        throwOnError: true,
+      });
+      return extractData<UserDto>(res);
     },
     enabled: Boolean(userId),
     staleTime: STALE_TIME,
@@ -979,12 +1070,8 @@ export function useSystemSettingsQuery() {
   return useQuery({
     queryKey: queryKeys.org.settings(),
     queryFn: async (): Promise<OrganizationSettingsDto | null> => {
-      try {
-        const res = await api.getSettings({ throwOnError: true });
-        return extractData<OrganizationSettingsDto>(res);
-      } catch {
-        return null;
-      }
+      const res = await api.getSettings({ throwOnError: true });
+      return extractData<OrganizationSettingsDto>(res);
     },
     staleTime: STALE_TIME,
     gcTime: GC_TIME,
@@ -998,7 +1085,10 @@ export function useMarkAttendanceMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (variables: MarkAttendanceRequest) => {
-      const res = await api.markAttendance({ body: variables, throwOnError: true });
+      const res = await api.markAttendance({
+        body: variables,
+        throwOnError: true,
+      });
       return extractData<AttendanceDto>(res);
     },
     onSuccess: () => {
@@ -1021,7 +1111,7 @@ export function useBatchMarkAttendanceMutation() {
     onSuccess: async (_data, variables) => {
       await queryClient.invalidateQueries({
         queryKey: queryKeys.assessment.attendance(
-          variables.class_id,
+          variables.section_id,
           variables.date,
         ),
       });
@@ -1044,7 +1134,10 @@ export function useRecordGradeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (variables: RecordGradeRequest) => {
-      const res = await api.recordGrade({ body: variables, throwOnError: true });
+      const res = await api.recordGrade({
+        body: variables,
+        throwOnError: true,
+      });
       return extractData<GradeDto>(res);
     },
     onSuccess: () => {

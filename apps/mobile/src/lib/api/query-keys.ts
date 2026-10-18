@@ -128,6 +128,11 @@ export const queryKeys = {
     list: () => [...queryKeys.document.all, "list"] as const,
     detail: (id: string) => [...queryKeys.document.all, "detail", id] as const,
   },
+  storage: {
+    all: ["storage"] as const,
+    presignedUrl: (id: string) =>
+      [...queryKeys.storage.all, "presignedUrl", id] as const,
+  },
 
   // ── Integration ─────────────────────────────────────────────
   integration: {
@@ -148,6 +153,7 @@ export const queryKeys = {
       documentType?: string;
       entityType?: string;
       status?: string;
+      organizationId?: string;
     }) => [...queryKeys.report.all, "templates", filter ?? {}] as const,
     template: (id: string) =>
       [...queryKeys.report.all, "template", id] as const,

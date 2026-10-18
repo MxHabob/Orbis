@@ -48,7 +48,7 @@ pub async fn get_full_status() -> SystemStatus {
             db_exists: true,
             has_organization: readiness.has_organization,
             has_admin: readiness.has_admin,
-            has_academic_years: readiness.has_academic_year,
+            has_academic_years: readiness.has_academic_calendar,
             org_name: readiness.org_name,
         },
         Err(_) => SystemStatus {

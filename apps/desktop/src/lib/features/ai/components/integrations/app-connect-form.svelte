@@ -4,6 +4,7 @@ Auto-generated settings form from OrbisApp.settings[].
 Renders appropriate input types: text, password, number, url, select, switch.
 -->
 <script lang="ts">
+import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import type { AppSetting } from "@orbis/app-store";
 import { Button } from "@orbis/ui/button";
@@ -14,29 +15,48 @@ import { l } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import { createAppSettingsSchema } from "@orbis/schemas";
 import { open } from "@tauri-apps/plugin-dialog";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
+import {
+  ensureModelCatalog,
+  getModelOptions,
+} from "$lib/features/ai/model-catalog.svelte";
 
 let {
+  appId,
   settings,
   submitting = false,
   onsubmit,
 }: {
+  appId: string;
   settings: AppSetting[];
   submitting?: boolean;
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
 let values = $state<Record<string, any>>({});
+const effectiveSettings = $derived(
+  settings.map((setting) => {
+    if (setting.id !== "model" || setting.type !== "select") return setting;
+    const options = getModelOptions(appId, setting.options ?? []);
+    return {
+      ...setting,
+      type: options.length > 0 ? "select" : "text",
+      options,
+      placeholder: options.length > 0 ? setting.placeholder : "Model ID",
+    };
+  }),
+);
 const isTauri = $derived(
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
 );
 const visibleSettings = $derived(
-  settings
+  effectiveSettings
     .filter((setting) => {
       if (setting.id === "local_path") return values.provider === "local";
       if (
@@ -55,12 +75,16 @@ const visibleSettings = $derived(
     ),
 );
 
-$effect.pre(() => {
-  const nextValues: Record<string, any> = {};
-  for (const s of settings) {
-    nextValues[s.id] = s.value ?? (s.type === "switch" ? false : "");
-  }
-  values = nextValues;
+onMount(() => {
+  values = Object.fromEntries(
+    settings.map((setting) => [
+      setting.id,
+      setting.value ?? (setting.type === "switch" ? false : ""),
+    ]),
+  );
+  ensureModelCatalog(appId).catch((error: unknown) => {
+    console.error("Failed to load AI provider models", error);
+  });
 });
 
 function handleSubmit(e: SubmitEvent) {
@@ -126,6 +150,24 @@ async function browseDirectory(settingId: string) {
             </Button>
           {/if}
         </div>
+        <p class="text-[10px] text-muted-foreground/70">
+          {l(setting.description_ar, setting.description)}
+        </p>
+      {:else if setting.id === "model" && setting.type === "select"}
+        <SearchableSelect
+          value={values[setting.id] as string}
+          items={setting.options ?? []}
+          placeholder={m.ui_copy_select_an_option_0c7b180c()}
+          searchPlaceholder={m.shared_ui_search_placeholder()}
+          emptyText={m.shared_ui_select_no_results()}
+          size="sm"
+          class="w-full min-w-0"
+          getItemValue={(option) => option.value}
+          getItemLabel={(option) => option.label}
+          onchange={(value) => {
+            values[setting.id] = value ?? "";
+          }}
+        />
         <p class="text-[10px] text-muted-foreground/70">
           {l(setting.description_ar, setting.description)}
         </p>

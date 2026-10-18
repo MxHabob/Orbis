@@ -3,7 +3,7 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, type SubjectDto, type ClassDto, type AcademicPeriodDto, type OrgUnitDto } from "$lib/api";
+import { api, type SubjectDto, type ClassDto, type OrgUnitDto } from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
@@ -34,7 +34,6 @@ let successMessage = $state<string | null>(null);
 // Existing Data
 let subjects = $state<SubjectDto[]>([]);
 let classes = $state<ClassDto[]>([]);
-let periods = $state<AcademicPeriodDto[]>([]);
 let orgUnits = $state<OrgUnitDto[]>([]);
 
 // Subject Creation Form
@@ -47,8 +46,8 @@ let subjectCreditHours = $state("3");
 let className = $state("");
 let classNameAr = $state("");
 let classGrade = $state("");
+let classTrack = $state("");
 let classCapacity = $state<number>(30);
-let selectedPeriodId = $state<string>("");
 let selectedUnitId = $state<string>("");
 
 const STANDARD_SUBJECTS = [
@@ -85,7 +84,6 @@ const remainingStandardClasses = $derived(
       !classes.some(
         (classItem) =>
           String(classItem.unit_id) === selectedUnitId &&
-          String(classItem.period_id) === selectedPeriodId &&
           (classItem.name.trim().toLowerCase() === preset.name.toLowerCase() ||
             classItem.name_ar?.trim().toLowerCase() === preset.nameAr.toLowerCase()) &&
           classItem.level.trim().toLowerCase() === preset.grade.toLowerCase(),
@@ -114,19 +112,14 @@ onMount(async () => {
 async function loadData() {
   try {
     isLoading = true;
-    const [subRes, classRes, periodRes, unitRes] = await Promise.all([
+    const [subRes, classRes, unitRes] = await Promise.all([
       api.listSubjects(),
-      api.listClasses(),
-      api.listAcademicPeriods(),
+      api.listSections(),
       api.listOrgUnits(),
     ]);
     subjects = subRes;
     classes = classRes;
-    periods = periodRes;
     orgUnits = unitRes;
-    if (periods.length > 0 && !selectedPeriodId) {
-      selectedPeriodId = String(periods[0].id);
-    }
     if (orgUnits.length > 0 && !selectedUnitId) {
       selectedUnitId = String(orgUnits[0].id);
     }
@@ -212,10 +205,6 @@ async function handleCreateClass() {
     toast.error(m.shared_ui_organizational_unit_required());
     return;
   }
-  if (!selectedPeriodId) {
-    toast.error(m.shared_ui_academic_period_required());
-    return;
-  }
   if (!Number.isInteger(classCapacity) || classCapacity <= 0) {
     toast.error(m.ui_copy_settings_contain_invalid_values_fae2c24c());
     return;
@@ -226,7 +215,6 @@ async function handleCreateClass() {
     classes.some(
       (classItem) =>
         String(classItem.unit_id) === selectedUnitId &&
-        String(classItem.period_id) === selectedPeriodId &&
         (classItem.name.trim().toLowerCase() === resolvedName.toLowerCase() ||
           (!!classNameAr.trim() &&
             classItem.name_ar?.trim().toLowerCase() === classNameAr.trim().toLowerCase())) &&
@@ -241,12 +229,12 @@ async function handleCreateClass() {
   successMessage = null;
 
   try {
-    const newClass = await api.createClass({
+    const newClass = await api.createSection({
       unit_id: selectedUnitId,
-      period_id: selectedPeriodId,
       name: resolvedName,
       name_ar: classNameAr.trim() || undefined,
       level: resolvedLevel,
+      track: classTrack.trim() || undefined,
       capacity: classCapacity,
     });
 
@@ -254,6 +242,7 @@ async function handleCreateClass() {
     className = "";
     classNameAr = "";
     classGrade = "";
+    classTrack = "";
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step4_class_created_success();
   } catch (err: any) {
@@ -265,12 +254,8 @@ async function handleCreateClass() {
 }
 
 async function handleBatchImportClasses() {
-  if (!selectedUnitId || !selectedPeriodId) {
-    toast.error(
-      !selectedUnitId
-        ? m.shared_ui_organizational_unit_required()
-        : m.shared_ui_academic_period_required(),
-    );
+  if (!selectedUnitId) {
+    toast.error(m.shared_ui_organizational_unit_required());
     return;
   }
   const pendingClasses = remainingStandardClasses;
@@ -280,9 +265,8 @@ async function handleBatchImportClasses() {
 
   try {
     for (const cls of pendingClasses) {
-      const created = await api.createClass({
+      const created = await api.createSection({
         unit_id: selectedUnitId,
-        period_id: selectedPeriodId,
         name: cls.name,
         name_ar: cls.nameAr,
         level: cls.grade,
@@ -506,24 +490,6 @@ async function handleBatchImportClasses() {
                 </SelectContent>
               </Select>
             </div>
-            <div class="space-y-1.5">
-              <Label class="text-xs font-medium">{m.common_period_form_title_create()}</Label>
-              <Select
-                type="single"
-                bind:value={selectedPeriodId}
-                disabled={periods.length <= 1 || isSubmittingClass}
-              >
-                <SelectTrigger class="w-full">
-                  {periods.find((period) => String(period.id) === selectedPeriodId)?.name ||
-                    m.common_period_form_title_create()}
-                </SelectTrigger>
-                <SelectContent>
-                  {#each periods as period (period.id)}
-                    <SelectItem value={String(period.id)}>{period.name}</SelectItem>
-                  {/each}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
           <div class="grid gap-3 sm:grid-cols-2">
             <div class="sm:col-span-2">
@@ -562,6 +528,12 @@ async function handleBatchImportClasses() {
                 bind:value={classCapacity}
                 placeholder="30"
               />
+            </div>
+            <div class="space-y-1.5">
+              <Label class="text-xs font-medium">
+                {m.settings_general_educational_track()}
+              </Label>
+              <Input bind:value={classTrack} disabled={isSubmittingClass} />
             </div>
           </div>
 

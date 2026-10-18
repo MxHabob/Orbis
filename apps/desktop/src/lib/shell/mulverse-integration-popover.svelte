@@ -4,6 +4,9 @@ import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@orbis/ui";
 import { Merge } from "@orbis/icons";
+import { localizeHref } from "$lib/paraglide/runtime";
+
+let { orgId }: { orgId: string } = $props();
 </script>
 
 <Popover>
@@ -42,10 +45,10 @@ import { Merge } from "@orbis/icons";
 			</p>
 		</div>
 
-		<Button 
+		<Button
+			href={localizeHref(`/${orgId}/settings/mulverse`)}
 			size="sm"
 			class="w-full text-[10px] h-8 rounded-lg font-semibold"
-			onclick={() => window.open('https://github.com/apps/orbis-seer', '_blank')}
 		>
 			{m.common_sidebar_mulverse_configure()}
 		</Button>

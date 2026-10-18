@@ -182,15 +182,15 @@
     class="flex h-full flex-col overflow-hidden p-0"
   >
     <div
-      class="relative flex h-32 shrink-0 items-center justify-center overflow-hidden bg-muted/30"
+      class="relative flex h-40 shrink-0 items-center justify-center overflow-hidden bg-muted/30"
       aria-hidden="true"
     >
       <div class="absolute inset-0 opacity-40 [background-image:radial-gradient(circle,var(--color-border)_1px,transparent_1px)] [background-size:10px_10px]"></div>
       <AppIcon
         icon={app.icon}
         logo={app.logo}
-        size={64}
-        class="relative z-10 h-16 w-56 justify-center [&>svg]:!h-16 [&>svg]:!w-auto [&>svg]:max-w-full [&>img]:max-h-16 [&>img]:max-w-full"
+        size={80}
+        class="relative z-10 h-20 w-64 justify-center [&>svg]:!h-20 [&>svg]:!w-auto [&>svg]:max-w-full [&>img]:max-h-20 [&>img]:max-w-full"
       />
     </div>
 
@@ -198,7 +198,7 @@
       <SheetHeader class="shrink-0 border-b border-border/50 px-6 py-5 text-start">
         <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
-            <SheetTitle class="truncate text-lg leading-none">
+            <SheetTitle class="truncate text-lg leading-normal">
               {l(app.name_ar, app.name)}
             </SheetTitle>
             <p class="mt-2 text-xs text-muted-foreground">

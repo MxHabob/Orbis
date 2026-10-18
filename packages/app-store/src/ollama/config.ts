@@ -59,8 +59,8 @@ Connect to local Ollama ("http://localhost:11434"), vLLM, LM Studio, or custom i
       description_ar: "اسم النموذج المثبت على السيرفر المحلي.",
       type: "text",
       required: true,
-      value: "llama3.3:latest",
-      placeholder: "llama3.3:latest, qwen2.5:14b, deepseek-r1:8b",
+      value: "",
+      placeholder: "Model identifier on your Ollama server",
     },
     {
       id: "api_key",

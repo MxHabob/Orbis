@@ -30,6 +30,3 @@ pub struct Subject {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
-
-/// Type alias for backward compatibility — Course is now a Subject with subject_type = "course"
-pub type Course = Subject;

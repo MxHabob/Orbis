@@ -29,7 +29,6 @@ import {
   Banknotes,
   BuildingOffice,
   User,
-  UserGroup,
 } from "@orbis/icons";
 import { extractErrorMessage } from "$lib/api";
 import type {
@@ -46,6 +45,8 @@ import { formatNumber } from "$lib/core/i18n";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 import { splitPersonName } from "$lib/shared/utils/person-name";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { z } from "zod";
 
 interface Props {
   orgId: string;
@@ -65,17 +66,24 @@ let {
 
 const initialEmployee = untrack(() => employee);
 
-// Form State (Initialized directly from employee prop without $effect)
-let fullNameEn = $state(
-  [initialEmployee?.first_name, initialEmployee?.middle_name, initialEmployee?.last_name]
-    .filter(Boolean)
-    .join(" "),
-);
-let fullNameAr = $state(
-  [initialEmployee?.first_name_ar, initialEmployee?.middle_name_ar, initialEmployee?.last_name_ar]
-    .filter(Boolean)
-    .join(" "),
-);
+const form = new FormController({
+  initialValues: {
+    fullNameEn: [initialEmployee?.first_name, initialEmployee?.middle_name, initialEmployee?.last_name]
+      .filter(Boolean)
+      .join(" "),
+    fullNameAr: [initialEmployee?.first_name_ar, initialEmployee?.middle_name_ar, initialEmployee?.last_name_ar]
+      .filter(Boolean)
+      .join(" "),
+  },
+  schema: z.object({
+    fullNameEn: z.string(),
+    fullNameAr: z.string(),
+  }).refine(
+    ({ fullNameAr, fullNameEn }) => Boolean(fullNameAr.trim() || fullNameEn.trim()),
+    { path: ["fullNameAr"], message: m.employees_error_name_required() },
+  ),
+});
+
 let createLoginAccount = $state(false);
 let nationalId = $state(initialEmployee?.national_id || "");
 let passportNumber = $state(initialEmployee?.passport_number || "");
@@ -140,130 +148,136 @@ const netPayableSalary = $derived(
 const registerMutation = createRegisterEmployeeMutation();
 const updateMutation = createUpdateEmployeeMutation();
 
-const isSaving = $derived(registerMutation.isPending || updateMutation.isPending);
+const isSaving = $derived(
+  form.isSubmitting || registerMutation.isPending || updateMutation.isPending,
+);
 
 async function handleSubmit() {
-  if (!fullNameAr.trim() && !fullNameEn.trim()) {
+  const submitted = await form.submit(async () => {
+    const { fullNameAr, fullNameEn } = form.values;
+    const namePartsAr = splitPersonName(fullNameAr || fullNameEn, "موظف");
+    const namePartsEn = splitPersonName(fullNameEn || fullNameAr, "Employee");
+
+    const payrollPayload = {
+      basic_salary: Number(basicSalary) || 0,
+      housing_allowance: Number(housingAllowance) || 0,
+      transport_allowance: Number(transportAllowance) || 0,
+      other_allowances: Number(otherAllowances) || 0,
+      gosi_deduction: Number(gosiDeduction) || 0,
+      other_deductions: Number(otherDeductions) || 0,
+      gross_salary: totalGrossSalary,
+      net_salary: netPayableSalary,
+      bank_name: bankName.trim(),
+      bank_iban: bankIban.trim(),
+      payment_method: paymentMethod,
+      text_notes: textNotes.trim(),
+    };
+    const serializedNotes = JSON.stringify(payrollPayload);
+
+    if (mode === "create") {
+      const payload: RegisterEmployeeRequest = {
+        first_name: namePartsEn.firstName,
+        middle_name: namePartsEn.middleName,
+        last_name: namePartsEn.lastName,
+        first_name_ar: namePartsAr.firstName,
+        middle_name_ar: namePartsAr.middleName,
+        last_name_ar: namePartsAr.lastName,
+        display_name: fullNameAr.trim() || fullNameEn.trim(),
+        national_id: nationalId.trim() || undefined,
+        passport_number: passportNumber.trim() || undefined,
+        gender: gender || "male",
+        marital_status: maritalStatus || undefined,
+        birth_date: birthDate || undefined,
+        nationality: nationality.trim() || "Saudi",
+        blood_type: bloodType || undefined,
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        address: address.trim() || undefined,
+
+        employee_number: employeeNumber.trim() || undefined,
+        employee_type: (employeeType || "teacher").toLowerCase(),
+        job_title: jobTitle.trim() || undefined,
+        department: department.trim() || undefined,
+        org_unit_id: orgUnitId.trim() || undefined,
+        hire_date: hireDate || undefined,
+        status: (status || "active").toLowerCase(),
+        employment_type: (employmentType || "full_time").toLowerCase(),
+        work_shift: (workShift || "morning").toLowerCase(),
+        notes: serializedNotes,
+        account: createLoginAccount
+          ? {
+              enabled: true,
+              preferred_username: email.trim() || employeeNumber.trim() || undefined,
+              role: (employeeType || "teacher").toLowerCase() === "teacher" ? "teacher" : "staff",
+              delivery_channel: email.trim() ? "email" : phone.trim() ? "sms" : "manual",
+            }
+          : null,
+      };
+
+      try {
+        const response = await registerMutation.mutateAsync(payload);
+        toast.success(m.employees_save_success());
+        if (response.provisioning) {
+          toast.success(
+            m.employees_login_account_created({
+              username: response.provisioning.username,
+            }),
+          );
+        }
+
+        if (onSuccess) {
+          onSuccess(response.employee);
+        }
+      } catch (err) {
+        toast.error(extractErrorMessage(err));
+        throw err;
+      }
+    } else if (mode === "edit" && employee) {
+      const payload: UpdateEmployeeRequest = {
+        first_name: namePartsEn.firstName,
+        middle_name: namePartsEn.middleName,
+        last_name: namePartsEn.lastName,
+        first_name_ar: namePartsAr.firstName,
+        middle_name_ar: namePartsAr.middleName,
+        last_name_ar: namePartsAr.lastName,
+        display_name: fullNameAr.trim() || fullNameEn.trim(),
+        national_id: nationalId.trim() || undefined,
+        passport_number: passportNumber.trim() || undefined,
+        gender: gender || undefined,
+        marital_status: maritalStatus || undefined,
+        birth_date: birthDate || undefined,
+        nationality: nationality.trim() || undefined,
+        blood_type: bloodType || undefined,
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        address: address.trim() || undefined,
+
+        employee_type: employeeType || undefined,
+        job_title: jobTitle.trim() || undefined,
+        department: department.trim() || undefined,
+        org_unit_id: orgUnitId.trim() || undefined,
+        hire_date: hireDate || undefined,
+        status: status || undefined,
+        employment_type: employmentType || undefined,
+        work_shift: workShift || undefined,
+        notes: serializedNotes,
+      };
+
+      try {
+        const res = await updateMutation.mutateAsync({ id: employee.id, req: payload });
+        toast.success(m.employees_save_success());
+        if (onSuccess) {
+          onSuccess(res.employee);
+        }
+      } catch (err) {
+        toast.error(extractErrorMessage(err));
+        throw err;
+      }
+    }
+  });
+
+  if (!submitted && !form.formError && form.errors.fullNameAr) {
     toast.error(m.employees_error_name_required());
-    return;
-  }
-  const namePartsAr = splitPersonName(fullNameAr || fullNameEn, "موظف");
-  const namePartsEn = splitPersonName(fullNameEn || fullNameAr, "Employee");
-
-  // Serialize payroll + text notes into notes JSON
-  const payrollPayload = {
-    basic_salary: Number(basicSalary) || 0,
-    housing_allowance: Number(housingAllowance) || 0,
-    transport_allowance: Number(transportAllowance) || 0,
-    other_allowances: Number(otherAllowances) || 0,
-    gosi_deduction: Number(gosiDeduction) || 0,
-    other_deductions: Number(otherDeductions) || 0,
-    gross_salary: totalGrossSalary,
-    net_salary: netPayableSalary,
-    bank_name: bankName.trim(),
-    bank_iban: bankIban.trim(),
-    payment_method: paymentMethod,
-    text_notes: textNotes.trim(),
-  };
-  const serializedNotes = JSON.stringify(payrollPayload);
-
-  if (mode === "create") {
-    const payload: RegisterEmployeeRequest = {
-      first_name: namePartsEn.firstName,
-      middle_name: namePartsEn.middleName,
-      last_name: namePartsEn.lastName,
-      first_name_ar: namePartsAr.firstName,
-      middle_name_ar: namePartsAr.middleName,
-      last_name_ar: namePartsAr.lastName,
-      display_name: fullNameAr.trim() || fullNameEn.trim(),
-      national_id: nationalId.trim() || undefined,
-      passport_number: passportNumber.trim() || undefined,
-      gender: gender || "male",
-      marital_status: maritalStatus || undefined,
-      birth_date: birthDate || undefined,
-      nationality: nationality.trim() || "Saudi",
-      blood_type: bloodType || undefined,
-      phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
-      address: address.trim() || undefined,
-
-      employee_number: employeeNumber.trim() || undefined,
-      employee_type: (employeeType || "teacher").toLowerCase(),
-      job_title: jobTitle.trim() || undefined,
-      department: department.trim() || undefined,
-      org_unit_id: orgUnitId.trim() || undefined,
-      hire_date: hireDate || undefined,
-      status: (status || "active").toLowerCase(),
-      employment_type: (employmentType || "full_time").toLowerCase(),
-      work_shift: (workShift || "morning").toLowerCase(),
-      notes: serializedNotes,
-      account: createLoginAccount
-        ? {
-            enabled: true,
-            preferred_username: email.trim() || employeeNumber.trim() || undefined,
-            role: (employeeType || "teacher").toLowerCase() === "teacher" ? "teacher" : "staff",
-            delivery_channel: email.trim() ? "email" : phone.trim() ? "sms" : "manual",
-          }
-        : null,
-    };
-
-    try {
-      const response = await registerMutation.mutateAsync(payload);
-      toast.success(m.employees_save_success());
-      if (response.provisioning) {
-        toast.success(
-          m.employees_login_account_created({
-            username: response.provisioning.username,
-          }),
-        );
-      }
-
-      if (onSuccess) {
-        onSuccess(response.employee);
-      }
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
-  } else if (mode === "edit" && employee) {
-    const payload: UpdateEmployeeRequest = {
-      first_name: namePartsEn.firstName,
-      middle_name: namePartsEn.middleName,
-      last_name: namePartsEn.lastName,
-      first_name_ar: namePartsAr.firstName,
-      middle_name_ar: namePartsAr.middleName,
-      last_name_ar: namePartsAr.lastName,
-      display_name: fullNameAr.trim() || fullNameEn.trim(),
-      national_id: nationalId.trim() || undefined,
-      passport_number: passportNumber.trim() || undefined,
-      gender: gender || undefined,
-      marital_status: maritalStatus || undefined,
-      birth_date: birthDate || undefined,
-      nationality: nationality.trim() || undefined,
-      blood_type: bloodType || undefined,
-      phone: phone.trim() || undefined,
-      email: email.trim() || undefined,
-      address: address.trim() || undefined,
-
-      employee_type: employeeType || undefined,
-      job_title: jobTitle.trim() || undefined,
-      department: department.trim() || undefined,
-      org_unit_id: orgUnitId.trim() || undefined,
-      hire_date: hireDate || undefined,
-      status: status || undefined,
-      employment_type: employmentType || undefined,
-      work_shift: workShift || undefined,
-      notes: serializedNotes,
-    };
-
-    try {
-      const res = await updateMutation.mutateAsync({ id: employee.id, req: payload });
-      toast.success(m.employees_save_success());
-      if (onSuccess) {
-        onSuccess(res.employee);
-      }
-    } catch (err) {
-      toast.error(extractErrorMessage(err));
-    }
   }
 }
 
@@ -295,45 +309,41 @@ function handleCancelClick() {
   <!-- Header matching sheet standards -->
   <Sheet.Header class="px-6 py-4 border-b border-border/40 shrink-0 text-start flex flex-row items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-        <UserGroup size={18} />
-      </div>
       <div class="flex flex-col">
         <Sheet.Title class="text-base font-bold text-foreground">
           {mode === "create" 
             ? (m.employees_new_title()) 
             : (m.employees_edit_title())}
         </Sheet.Title>
-        <span class="text-xs text-muted-foreground">
-          {mode === "create" 
-            ? m.ui_copy_enter_personal_employment_and_payroll_reco_f1caab5e() 
-            : (employee?.full_name || employee?.first_name || "")}
-        </span>
       </div>
     </div>
   </Sheet.Header>
 
   <!-- Scrollable Form Body with Accordion Layout -->
-  <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-    <Accordion type="multiple" value={["personal", "employment", "payroll"]} class="flex flex-col gap-4">
+  <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4 sm:px-5 scrollbar-hide">
+    <Accordion
+      type="multiple"
+      value={["personal", "employment", "payroll"]}
+      class="flex flex-col"
+    >
       
       <!-- 1. PERSONAL INFORMATION -->
-      <AccordionItem value="personal" class="rounded-lg border border-border/40 bg-card/60">
-        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+      <AccordionItem value="personal" class="border-b border-border/50">
+        <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <User size={16} class="text-primary" />
             <span>{m.employees_tab_personal()}</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+        <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
           
           <BilingualNameFields
             arId="employee-full-name-ar"
             enId="employee-full-name-en"
             arLabel={m.common_form_full_name_ar()}
             enLabel={m.common_form_full_name_en()}
-            bind:arValue={fullNameAr}
-            bind:enValue={fullNameEn}
+            bind:arValue={form.values.fullNameAr}
+            bind:enValue={form.values.fullNameEn}
             arPlaceholder={m.common_form_full_name_ar_placeholder()}
             enPlaceholder={m.common_form_full_name_en_placeholder()}
             kind="person-name"
@@ -345,7 +355,7 @@ function handleCancelClick() {
           />
 
           <!-- ID & Demographic Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_national_id()}>
               {#snippet children()}
               <Input
@@ -418,7 +428,7 @@ function handleCancelClick() {
           </div>
 
           <!-- Contact & Nationality -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_phone()}>
               {#snippet children()}
               <Input
@@ -484,7 +494,7 @@ function handleCancelClick() {
           </FormField>
 
           {#if mode === "create"}
-            <div class="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+            <div class="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 p-3 sm:p-4">
               <Checkbox
                 id="employee-create-login-account"
                 checked={createLoginAccount}
@@ -501,14 +511,14 @@ function handleCancelClick() {
       </AccordionItem>
 
       <!-- 2. EMPLOYMENT DETAILS -->
-      <AccordionItem value="employment" class="rounded-lg border border-border/40 bg-card/60">
-        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+      <AccordionItem value="employment" class="border-b border-border/50">
+        <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <BuildingOffice size={16} class="text-primary" />
             <span>{m.employees_tab_employment()}</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+        <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
           
           <div class="grid grid-cols-2 gap-3">
             <FormField label={m.employees_employee_number()}>
@@ -568,7 +578,7 @@ function handleCancelClick() {
             </FormField>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.employees_employment_type()}>
               {#snippet children()}
               <Select type="single" value={employmentType} onValueChange={(v) => { if (v) employmentType = v; }} disabled={isSaving}>
@@ -637,17 +647,17 @@ function handleCancelClick() {
       </AccordionItem>
 
       <!-- 3. PAYROLL & COMPENSATION -->
-      <AccordionItem value="payroll" class="rounded-lg border border-border/40 bg-card/60">
-        <AccordionTrigger class="px-4 py-3 text-sm font-semibold hover:no-underline text-foreground">
+      <AccordionItem value="payroll" class="border-b border-border/50">
+        <AccordionTrigger class="px-1 py-3 text-sm font-semibold hover:no-underline text-foreground">
           <div class="flex items-center gap-2">
             <Banknotes size={16} class="text-emerald-500" />
             <span>{m.ui_copy_payroll_compensation_93b1d7a4()}</span>
           </div>
         </AccordionTrigger>
-        <AccordionContent class="px-4 pb-4 pt-1 flex flex-col gap-4">
+        <AccordionContent class="px-1 pb-5 pt-2 flex flex-col gap-4 [&_label]:text-[13px]">
           
           <!-- Salary & Allowances Grid -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
             <FormField label={m.ui_copy_basic_salary_0385806d()}>
               {#snippet children()}
               <Input
@@ -753,7 +763,7 @@ function handleCancelClick() {
           </div>
 
           <!-- Bank & Routing Details -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <FormField label={m.ui_copy_payment_method_f140647a()}>
               {#snippet children()}
               <Select type="single" value={paymentMethod} onValueChange={(v) => { if (v) paymentMethod = v; }} disabled={isSaving}>
@@ -815,7 +825,7 @@ function handleCancelClick() {
   </div>
 
   <!-- Sticky Bottom Actions -->
-  <div class="px-6 py-3 border-t border-border/40 flex gap-2 shrink-0 bg-background/80 backdrop-blur-xs">
+  <div class="px-4 py-3 sm:px-5 border-t border-border/40 flex gap-3 shrink-0 bg-background/95">
     <Button
       type="button"
       variant="ghost"
