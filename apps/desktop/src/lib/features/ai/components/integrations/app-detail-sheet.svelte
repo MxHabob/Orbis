@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import * as m from "$lib/paraglide/messages";
+  import { localizeHref } from "$lib/paraglide/runtime";
   import { createQuery, useQueryClient } from "@tanstack/svelte-query";
   import type { OrbisApp } from "@orbis/app-store";
   import { api, extractErrorMessage } from "$lib/api";
@@ -136,6 +138,9 @@
       toast.success(m.ui_integration_connected({ name: app.name }));
       connectSheetOpen = false;
       onChange?.();
+      if (app.id === "orbis_mobile") {
+        await goto(localizeHref(`/${orgId}/settings/mulverse`));
+      }
     } catch (error) {
       connectError = extractErrorMessage(error);
       toast.error(connectError);

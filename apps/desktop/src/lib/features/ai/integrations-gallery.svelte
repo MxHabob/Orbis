@@ -15,6 +15,11 @@ let searchQuery = $state("");
 let selectedApp = $state<OrbisApp | null>(null);
 let detailSheetOpen = $state(false);
 
+function selectApp(app: OrbisApp) {
+  selectedApp = app;
+  detailSheetOpen = true;
+}
+
 const filteredApps = $derived.by(() => {
   let result: OrbisApp[] =
     activeCategory === "all" ? apps : getAppsByCategory(activeCategory as any);
@@ -71,10 +76,7 @@ const filteredApps = $derived.by(() => {
         {#each filteredApps as app (app.id)}
           <AppCard
             {app}
-            onselect={() => {
-              selectedApp = app;
-              detailSheetOpen = true;
-            }}
+            onselect={() => selectApp(app)}
           />
         {/each}
       </div>
