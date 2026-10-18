@@ -41,17 +41,25 @@ jobs:
           const fs = require("node:fs");
           const version = process.env.VERSION;
           const desktopVersion = require("./apps/desktop/package.json").version;
+          const mobileVersion = require("./apps/mobile/package.json").version;
+          const mobileConfig = require("./apps/mobile/app.json").expo;
+          const mobileVersionCode = mobileConfig.android?.versionCode;
           const tauriVersion = require("./apps/desktop/src-tauri/tauri.conf.json").version;
           const stagingVersion = require("./apps/desktop/src-tauri/tauri.staging.conf.json").version;
           const cargoVersion = fs.readFileSync("./apps/desktop/src-tauri/Cargo.toml", "utf8").match(/^version = "([^"]+)"/m)?.[1];
           const lockfile = fs.readFileSync("./bun.lock", "utf8");
           const lockfileVersion = lockfile.match(/"apps\/desktop":\s*\{\s*"name":\s*"@orbis\/desktop",\s*"version":\s*"([^"]+)"/)?.[1];
+          const mobileLockfileVersion = lockfile.match(/"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/)?.[1];
           const solverPom = fs.readFileSync("./apps/solver-service/pom.xml", "utf8");
           const solverVersion = solverPom.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1];
-          const versions = { desktopVersion, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, solverVersion };
+          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion, solverVersion };
           if (Object.values(versions).some((candidate) => !candidate || candidate !== version)) {
             throw new Error(`Tag v${version} must match release versions: ${JSON.stringify(versions)}`);
           }
+          if (!Number.isSafeInteger(mobileVersionCode) || mobileVersionCode < 1) {
+            throw new Error(`Android versionCode must be a positive integer; received ${mobileVersionCode}.`);
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `android_version_code=${mobileVersionCode}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           NODE
 
@@ -178,11 +186,123 @@ jobs:
           projectPath: apps/desktop
           args: --config src-tauri/tauri.updater.conf.json --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
 
+  build-android:
+    name: Build and sign Android release
+    needs:
+      - validate
+      - build-desktop
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.22
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Validate Android signing secrets
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [[ -z "$ANDROID_KEYSTORE_BASE64" || -z "$ANDROID_KEY_ALIAS" || -z "$ANDROID_KEYSTORE_PASSWORD" || -z "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "::error::Configure ANDROID_KEYSTORE_BASE64, ANDROID_KEY_ALIAS, ANDROID_KEYSTORE_PASSWORD, and ANDROID_KEY_PASSWORD repository secrets before releasing."
+            exit 1
+          fi
+          keystore_path="$RUNNER_TEMP/orbis-android-release.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
+          echo "ORBIS_ANDROID_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
+          echo "ORBIS_ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ORBIS_ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ORBIS_ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        env:
+          ORBIS_DEV_ALLOW_LOCAL_HTTP: "false"
+        run: bun run expo prebuild --platform android --no-install
+
+      - name: Verify generated Android version
+        working-directory: apps/mobile
+        env:
+          EXPECTED_VERSION: ${{ needs.validate.outputs.version }}
+          EXPECTED_VERSION_CODE: ${{ needs.validate.outputs.android_version_code }}
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const gradle = fs.readFileSync("android/app/build.gradle", "utf8");
+          const versionName = gradle.match(/^\s*versionName\s+"([^"]+)"/m)?.[1];
+          const versionCode = Number(gradle.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1]);
+          if (versionName !== process.env.EXPECTED_VERSION || versionCode !== Number(process.env.EXPECTED_VERSION_CODE)) {
+            throw new Error(`Generated Android version ${versionName} (${versionCode}) does not match the release tag and app config.`);
+          }
+          NODE
+
+      - name: Build release APK and AAB
+        working-directory: apps/mobile/android
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease -PreactNativeArchitectures=arm64-v8a
+
+      - name: Verify signatures and stage release assets
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          apk="apps/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          aab="apps/mobile/android/app/build/outputs/bundle/release/app-release.aab"
+          test -s "$apk"
+          test -s "$aab"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          if [[ -z "$apksigner" ]]; then
+            echo "::error::Android build-tools apksigner was not found."
+            exit 1
+          fi
+          "$apksigner" verify --verbose "$apk"
+          jarsigner -verify "$aab"
+          keytool -printcert -jarfile "$aab" > /dev/null
+          mkdir -p release-output
+          cp "$apk" "release-output/Orbis-${VERSION}-android-arm64.apk"
+          cp "$aab" "release-output/Orbis-${VERSION}-android-arm64.aab"
+
+      - name: Upload Android packages to draft GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ github.ref_name }}" release-output/* --repo "$GITHUB_REPOSITORY" --clobber
+
   prepare-github-release:
     name: Validate and publish GitHub Release
     needs:
       - validate
       - build-desktop
+      - build-android
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -227,6 +347,8 @@ jobs:
             ["macOS updater archive", /\.app\.tar\.gz$/],
             ["Windows NSIS updater archive", /\.nsis\.zip$/],
             ["Tauri updater JSON", /^latest\.json$/],
+            ["Android APK", new RegExp(`^orbis-${version}-android-arm64\\.apk$`, "i")],
+            ["Android App Bundle", new RegExp(`^orbis-${version}-android-arm64\\.aab$`, "i")],
           ]) {
             if (!has(pattern)) throw new Error(`Release is missing ${label}.`);
           }
@@ -255,9 +377,9 @@ jobs:
 
       - name: Summarize published release
         run: |
-          echo "::notice::Build and signed assets validated. The GitHub Release is published and serves desktop updates."
+          echo "::notice::Desktop and Android release assets validated. The GitHub Release is published and serves desktop updates."
           {
             echo "## Release published"
-            echo "Builds, installers, Tauri signatures, and updater metadata passed validation."
+            echo "Desktop installers, signed Android APK/AAB packages, Tauri signatures, and updater metadata passed validation."
             echo "The signed updater metadata and installers are served directly from GitHub Releases."
           } >> "$GITHUB_STEP_SUMMARY"

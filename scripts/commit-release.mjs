@@ -1,7 +1,7 @@
 #!/usr/bin/env node
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { validateReleaseNotes } from "./release-notes-validation.mjs";
 
@@ -54,6 +54,8 @@ function main() {
 
   const files = [
     "apps/desktop/package.json",
+    "apps/mobile/package.json",
+    "apps/mobile/app.json",
     "apps/desktop/src-tauri/Cargo.toml",
     "apps/solver-service/pom.xml",
     "apps/desktop/src-tauri/tauri.conf.json",
