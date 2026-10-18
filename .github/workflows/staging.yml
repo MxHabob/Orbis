@@ -73,9 +73,15 @@ jobs:
 
       - name: Build native Solver sidecar
         working-directory: apps/solver-service
+        shell: bash
         env:
           MAVEN_OPTS: -Xmx6g
-        run: mvn -B package -Dnative -DskipTests -Dquarkus.native.container-build=false -Dorbis.version="${{ steps.app_version.outputs.version }}"
+        run: |
+          mvn -B package \
+            -Dnative \
+            -DskipTests \
+            -Dquarkus.native.container-build=false \
+            "-Dorbis.version=${{ steps.app_version.outputs.version }}"
 
       - name: Stage Solver sidecar
         shell: bash
