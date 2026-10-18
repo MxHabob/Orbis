@@ -95,6 +95,10 @@ const appSpecificSummaries: Record<
   string,
   { en: string; ar: string }
 > = {
+  authen: {
+    en: "Enter your Authen API URL and key. Orbis verifies access with a generated blank test image; no user image is sent, but the check may count toward your Authen usage.",
+    ar: "أدخل عنوان Authen ومفتاح API. يتحقق أوربيس من الوصول بصورة اختبار اصطناعية فارغة؛ لا تُرسل صور مستخدمين، لكن قد يُحتسب الطلب ضمن استخدام Authen.",
+  },
   alkuraimi: {
     en: "Contact Al-Kuraimi to request merchant API specifications and confirm Orbis support before proceeding.",
     ar: "تواصل مع بنك الكريمي لطلب مواصفات API للتجار وتأكد من دعم أوربيس قبل المتابعة.",
