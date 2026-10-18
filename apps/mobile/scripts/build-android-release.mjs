@@ -14,7 +14,24 @@ run("bun", ["run", "expo", "prebuild", "--platform", "android"], projectRoot);
 
 const androidRoot = resolve(projectRoot, "android");
 if (process.platform === "win32") {
-  run(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", "gradlew.bat bundleRelease"], androidRoot);
+  run(
+    process.env.ComSpec ?? "cmd.exe",
+    [
+      "/d",
+      "/s",
+      "/c",
+      "gradlew.bat assembleRelease --offline -PreactNativeArchitectures=arm64-v8a",
+    ],
+    androidRoot,
+  );
 } else {
-  run("./gradlew", ["bundleRelease"], androidRoot);
+  run(
+    "./gradlew",
+    [
+      "assembleRelease",
+      "--offline",
+      "-PreactNativeArchitectures=arm64-v8a",
+    ],
+    androidRoot,
+  );
 }

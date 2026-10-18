@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Alert, Linking, Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import Constants from "expo-constants";
 import {
@@ -11,7 +11,6 @@ import {
   Headphone,
   InfoCircle,
   LockClosed,
-  SignOut,
 } from "@orbis/icons/native";
 
 import { Header } from "@/components/header";
@@ -20,6 +19,14 @@ import { SupportDrawer } from "@/components/support-drawer";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SettingsPanelDivider } from "@/components/ui/settings-panel";
 import { useToast } from "@/components/ui/toast";
 import { useTheme } from "@/hooks/use-theme";
@@ -56,6 +63,13 @@ export default function ProfileScreen() {
   const { t, isArabic, locale } = useI18n();
   const organizationQuery = useCurrentOrgQuery();
   const [isSupportDrawerVisible, setIsSupportDrawerVisible] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<"signOut" | "update" | null>(
+    null,
+  );
+  const [availableRelease, setAvailableRelease] = useState<{
+    version: string;
+    url: string;
+  } | null>(null);
   const DirectionChevron = isArabic ? ChevronLeft : ChevronRight;
   const organizationWebsite = getOrganizationWebsite(organizationQuery.data);
   const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
@@ -99,21 +113,17 @@ export default function ProfileScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert(t("profile_sign_out"), t("profile_sign_out_confirm"), [
-      { text: t("common_cancel"), style: "cancel" },
-      {
-        text: t("profile_sign_out_button"),
-        style: "destructive",
-        onPress: () => {
-          void logout()
-            .then(() => router.replace("/(auth)/sign-in"))
-            .catch((error: unknown) => {
-              console.error("[Orbis Mobile Profile] Failed to sign out.", error);
-              toast.error(t("profile_logout_error"));
-            });
-        },
-      },
-    ]);
+    setActiveDialog("signOut");
+  };
+
+  const confirmSignOut = () => {
+    setActiveDialog(null);
+    void logout()
+      .then(() => router.replace("/(auth)/sign-in"))
+      .catch((error: unknown) => {
+        console.error("[Orbis Mobile Profile] Failed to sign out.", error);
+        toast.error(t("profile_logout_error"));
+      });
   };
 
   const handleCheckForUpdates = async () => {
@@ -134,27 +144,11 @@ export default function ProfileScreen() {
         return;
       }
 
-      Alert.alert(
-        t("updates_available_title"),
-        t("updates_available_message", { version: result.latestVersion }),
-        [
-          { text: t("common_cancel"), style: "cancel" },
-          {
-            text: t("updates_open_release"),
-            onPress: () => {
-              void Linking.openURL(result.releaseUrl).catch(
-                (error: unknown) => {
-                  console.error(
-                    "[Orbis Mobile Updates] Failed to open the mobile release.",
-                    error,
-                  );
-                  toast.error(t("updates_open_release_error"));
-                },
-              );
-            },
-          },
-        ],
-      );
+      setAvailableRelease({
+        version: result.latestVersion,
+        url: result.releaseUrl,
+      });
+      setActiveDialog("update");
     } catch (error: unknown) {
       console.error("[Orbis Mobile Updates] Failed to check for updates.", error);
       toast.error(t("updates_check_error"));
@@ -328,6 +322,70 @@ export default function ProfileScreen() {
         visible={isSupportDrawerVisible}
         onClose={() => setIsSupportDrawerVisible(false)}
       />
+      <Dialog
+        visible={activeDialog === "signOut"}
+        onClose={() => setActiveDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("profile_sign_out")}</DialogTitle>
+            <DialogDescription>
+              {t("profile_sign_out_confirm")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              title={t("common_cancel")}
+              variant="outline"
+              onPress={() => setActiveDialog(null)}
+            />
+            <Button
+              title={t("profile_sign_out_button")}
+              variant="destructive"
+              onPress={confirmSignOut}
+            />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        visible={activeDialog === "update"}
+        onClose={() => setActiveDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("updates_available_title")}</DialogTitle>
+            <DialogDescription>
+              {availableRelease
+                ? t("updates_available_message", {
+                    version: availableRelease.version,
+                  })
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              title={t("common_cancel")}
+              variant="outline"
+              onPress={() => setActiveDialog(null)}
+            />
+            <Button
+              title={t("updates_open_release")}
+              onPress={() => {
+                const releaseUrl = availableRelease?.url;
+                setActiveDialog(null);
+                if (!releaseUrl) return;
+                void Linking.openURL(releaseUrl).catch((error: unknown) => {
+                  console.error(
+                    "[Orbis Mobile Updates] Failed to open the mobile release.",
+                    error,
+                  );
+                  toast.error(t("updates_open_release_error"));
+                });
+              }}
+            />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -110,11 +110,13 @@ bun run build:mobile:android
 ```
 
 This generates the Android native project from the Expo config and builds a
-production Android App Bundle with R8 code shrinking, resource shrinking, and
-PNG crunching enabled. The distributable is
-`apps/mobile/android/app/build/outputs/bundle/release/app-release.aab`.
-Upload the AAB to Google Play; Play generates device-specific downloads from
-it. The AAB is not directly installable like an APK.
+local production APK with R8 code shrinking, resource shrinking, and PNG
+crunching enabled. It builds only the `arm64-v8a` native architecture to keep
+the APK smaller; it is suitable for 64-bit ARM Android phones and will not run
+on x86 devices or 32-bit-only phones. The APK is
+`apps/mobile/android/app/build/outputs/apk/release/app-release.apk`.
+Gradle runs offline, so required Android SDK/NDK and build dependencies must
+already be installed locally.
 
 The build uses the app version in `app.json`. Before publishing a new release,
 update `expo.version` and increase `expo.android.versionCode` so Android and the

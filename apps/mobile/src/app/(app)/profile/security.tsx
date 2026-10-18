@@ -5,13 +5,22 @@
  */
 
 import React, { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { ScreenScrollView } from "@/components/layout/screen-scroll-view";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   SettingsPanelDivider,
@@ -34,6 +43,9 @@ export default function SecurityScreen() {
   const devicesQuery = useDevicesQuery();
   const revokeMutation = useRevokeDeviceMutation();
   const [revokingId, setRevokingId] = useState<string>();
+  const [devicePendingRevocation, setDevicePendingRevocation] = useState<
+    string | null
+  >(null);
   const devices = devicesQuery.data ?? [];
 
   const revokeDevice = async (deviceId: string) => {
@@ -46,18 +58,12 @@ export default function SecurityScreen() {
       toast.error(t("security_device_revoke_error"));
     } finally {
       setRevokingId(undefined);
+      setDevicePendingRevocation(null);
     }
   };
 
   const confirmRevoke = (deviceId: string) => {
-    Alert.alert(t("security_revoke_device"), t("security_revoke_confirm"), [
-      { text: t("common_cancel"), style: "cancel" },
-      {
-        text: t("security_revoke_device"),
-        style: "destructive",
-        onPress: () => void revokeDevice(deviceId),
-      },
-    ]);
+    setDevicePendingRevocation(deviceId);
   };
 
   return (
@@ -178,6 +184,38 @@ export default function SecurityScreen() {
           )}
         </Card>
       </ScreenScrollView>
+      <Dialog
+        visible={devicePendingRevocation !== null}
+        onClose={() => setDevicePendingRevocation(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("security_revoke_device")}</DialogTitle>
+            <DialogDescription>
+              {t("security_revoke_confirm")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              title={t("common_cancel")}
+              variant="outline"
+              onPress={() => setDevicePendingRevocation(null)}
+            />
+            <Button
+              title={t("security_revoke_device")}
+              variant="destructive"
+              loading={
+                devicePendingRevocation !== null &&
+                revokingId === devicePendingRevocation
+              }
+              onPress={() => {
+                const deviceId = devicePendingRevocation;
+                if (deviceId) void revokeDevice(deviceId);
+              }}
+            />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   );
 }
