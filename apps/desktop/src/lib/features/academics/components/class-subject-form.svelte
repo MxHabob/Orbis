@@ -21,6 +21,7 @@ import type {
   SectionSubjectDto,
   AssessmentSchemeDto,
   AssignSectionSubjectRequest,
+  UpdateSectionSubjectRequest,
 } from "$lib/api";
 import { toast } from "@orbis/ui";
 
@@ -36,12 +37,14 @@ import { FormField } from "@orbis/ui";
 let {
   orgId,
   fixedClassId = "",
+  fixedPeriodId = "",
   editData,
   onSuccess,
   onCancel,
 }: {
   orgId: string;
   fixedClassId?: string;
+  fixedPeriodId?: string;
   editData?: SectionSubjectDto | null;
   onSuccess?: () => void;
   onCancel?: () => void;
@@ -51,15 +54,17 @@ const isEditMode = $derived(!!editData);
 
 // Form state
 let classId = $state(
-  untrack(() => fixedClassId || (editData ? String(editData.class_id ?? "") : "")),
+  untrack(() => fixedClassId || (editData ? String(editData.section_id ?? "") : "")),
 );
 let subjectId = $state(untrack(() => editData ? String(editData.subject_id ?? "") : ""));
 let teacherId = $state(
-  untrack(() => editData ? String(editData.primary_teacher_id ?? "") : ""),
+  untrack(() => editData ? String(editData.instructor_id ?? "") : ""),
 );
 let weeklyHours = $state(untrack(() => editData ? Number(editData.weekly_hours ?? 4) : 4));
-let periodId = $state(untrack(() => editData ? String(editData.period_id ?? "") : ""));
-let schemeId = $state("");
+let periodId = $state(
+  untrack(() => fixedPeriodId || (editData ? String(editData.period_id ?? "") : "")),
+);
+let schemeId = $state(untrack(() => String(editData?.scheme_id ?? "")));
 
 // Assessment Schemes Query
 const schemesQuery = createAssessmentSchemesQuery(() => orgId);
@@ -86,18 +91,23 @@ async function handleSubmit() {
     weekly_hours: Number(weeklyHours),
   };
   const submitted = await form.submit(async (values) => {
-    const request: AssignSectionSubjectRequest = {
-      class_id: values.class_id,
-      subject_id: values.subject_id,
-      period_id: values.period_id,
-      primary_teacher_id: values.teacher_id,
-      weekly_hours: values.weekly_hours,
-    };
-
     if (isEditMode && editData?.id) {
-      await api.assignSectionSubject(request);
+      const request: UpdateSectionSubjectRequest = {
+        instructor_id: values.teacher_id,
+        scheme_id: schemeId || undefined,
+        weekly_hours: values.weekly_hours,
+      };
+      await api.updateSectionSubject(editData.id, request);
       toast.success(m.common_cs_update_success());
     } else {
+      const request: AssignSectionSubjectRequest = {
+        section_id: values.class_id,
+        subject_id: values.subject_id,
+        period_id: values.period_id,
+        instructor_id: values.teacher_id,
+        scheme_id: schemeId || undefined,
+        weekly_hours: values.weekly_hours,
+      };
       await api.assignSectionSubject(request);
       toast.success(m.common_cs_create_success());
     }
@@ -124,6 +134,7 @@ async function handleSubmit() {
         <PeriodSelect
           {orgId}
           bind:value={periodId}
+          disabled={!!fixedPeriodId}
           placeholder={m.academics_studio_select_period()}
           class="h-9 text-sm"
         />

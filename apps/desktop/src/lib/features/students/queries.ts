@@ -32,11 +32,13 @@ import { debounce } from "$lib/shared/utils/debounce";
 import { exportToCsv } from "$lib/shared/utils/export";
 import { formatDate } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
+import { academicContext } from "$lib/stores";
 
 /** Query and actions for the students directory screen. */
 export function createStudentDirectoryQuery(orgId: () => string) {
   const getStudentFilter = () => ({
     class_id: studentsStore.selectedClassId ?? undefined,
+    period_id: academicContext.effectivePeriodId || undefined,
     status: studentsStore.statusFilter === "all" ? undefined : studentsStore.statusFilter,
     search: studentsStore.searchQuery.trim() || undefined,
   });
@@ -63,6 +65,34 @@ export function createStudentDirectoryQuery(orgId: () => string) {
     queryFn: () => api.listSections(),
     enabled: !!orgId(),
     staleTime: 5 * 60 * 1000,
+  }));
+  const enrollmentsQuery = createQuery(() => ({
+    queryKey: [
+      ...queryKeys.student.all,
+      "directory-enrollments",
+      orgId(),
+      academicContext.effectivePeriodId,
+    ],
+    queryFn: async () => {
+      const periodId = academicContext.effectivePeriodId;
+      if (!periodId) return [];
+
+      const enrollments = [];
+      let page = 1;
+      let pageItems: Awaited<ReturnType<typeof api.listEnrollments>> = [];
+      do {
+        pageItems = await api.listEnrollments({
+          period_id: periodId,
+          page,
+          page_size: 100,
+        });
+        enrollments.push(...pageItems);
+        page += 1;
+      } while (pageItems.length === 100);
+      return enrollments;
+    },
+    enabled: !!orgId() && !!academicContext.effectivePeriodId,
+    staleTime: 2 * 60 * 1000,
   }));
 
   const updateSearch = debounce((query: string) => {
@@ -165,6 +195,7 @@ export function createStudentDirectoryQuery(orgId: () => string) {
   return {
     studentsQuery,
     classesQuery,
+    enrollmentsQuery,
     get classes() {
       return classesQuery.data ?? [];
     },

@@ -15,7 +15,7 @@ use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
 use orbis_domain::entities::student::{AcademicStanding, StudentDetail, StudentStatus};
-use orbis_domain::queries::filters::{PaginationParams, StudentFilter};
+use orbis_domain::queries::filters::{EnrollmentFilter, PaginationParams, StudentFilter};
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StudentDto {
@@ -287,8 +287,11 @@ pub struct StudentQuery {
 
 #[derive(Deserialize, utoipa::IntoParams)]
 pub struct EnrollmentQuery {
+    pub period_id: Option<Uuid>,
     pub section_id: Option<Uuid>,
     pub student_id: Option<Uuid>,
+    pub page: Option<u64>,
+    pub page_size: Option<u64>,
 }
 
 #[derive(Deserialize, utoipa::IntoParams)]
@@ -771,16 +774,31 @@ pub async fn enroll_student(
     responses((status = 200, body = Vec<EnrollmentDto>)),
     security(("bearer" = [])), tag = "Student")]
 pub async fn list_enrollments(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<EnrollmentQuery>,
 ) -> Result<Json<ApiResponse<Vec<EnrollmentDto>>>, ApiError> {
-    let enrollments = if let Some(class_id) = q.section_id {
-        state.enrollment_repo.find_by_section(class_id).await?
-    } else if let Some(student_id) = q.student_id {
-        state.enrollment_repo.find_by_student(student_id).await?
+    let enrollments = if q.period_id.is_some() || q.section_id.is_some() || q.student_id.is_some() {
+        state
+            .student_service
+            .list_enrollments(
+                ctx.tenant_id,
+                EnrollmentFilter {
+                    period_id: q.period_id,
+                    section_id: q.section_id,
+                    student_id: q.student_id,
+                    pagination: Some(PaginationParams {
+                        page: q.page,
+                        page_size: q.page_size.or(Some(100)),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                },
+            )
+            .await?
+            .items
     } else {
-        vec![]
+        Vec::new()
     };
     let dtos = enrollments.into_iter().map(Into::into).collect();
     Ok(ApiResponse::ok(dtos))

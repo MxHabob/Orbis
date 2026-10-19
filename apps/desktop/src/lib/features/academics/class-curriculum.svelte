@@ -103,7 +103,7 @@ const gridSource = $derived(
   subjects.map((subject) => ({
     ...subject,
     subject_name: subjectName(subject),
-    teacher_display: subject.teacher_name || subject.primary_teacher_id || "-",
+    teacher_display: subject.teacher_name || subject.instructor_id || "-",
     weekly_hours: subject.weekly_hours || "-",
     status: subject.is_active === 0 ? "inactive" : "active",
   })),
@@ -191,6 +191,7 @@ function handleGridAction(event: GridActionEvent) {
     bind:open={showSubjectSheet}
     {orgId}
     {classId}
+    periodId={periodId}
     onSuccess={() => subjectsQuery.refetch()}
   />
 </div>
