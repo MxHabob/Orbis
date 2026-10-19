@@ -778,8 +778,7 @@ pub async fn list_enrollments(
     State(state): State<AppState>,
     Query(q): Query<EnrollmentQuery>,
 ) -> Result<Json<ApiResponse<Vec<EnrollmentDto>>>, ApiError> {
-    let enrollments = if q.period_id.is_some() || q.section_id.is_some() || q.student_id.is_some()
-    {
+    let enrollments = if q.period_id.is_some() || q.section_id.is_some() || q.student_id.is_some() {
         state
             .student_service
             .list_enrollments(
