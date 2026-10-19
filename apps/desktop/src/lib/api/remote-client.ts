@@ -663,7 +663,7 @@ export class RemoteClient implements OrbisApiClient {
 
   async listSectionSubjects(classId: string, periodId: string): Promise<SectionSubjectDto[]> {
     return this.call(
-      sdk.listSectionSubjects({
+      sdk.listSectionSubjects2({
         client: this.client,
         query: { section_id: classId, period_id: periodId },
       }),
@@ -732,6 +732,12 @@ export class RemoteClient implements OrbisApiClient {
     const query: any = { ...filter };
     if (filter?.class_id || filter?.classId) {
       query.section_id = filter.class_id || filter.classId;
+      delete query.class_id;
+      delete query.classId;
+    }
+    if (filter?.period_id || filter?.periodId) {
+      query.period_id = filter.period_id || filter.periodId;
+      delete query.periodId;
     }
     const res = await this.call(sdk.listStudents({ client: this.client, query }));
     if (Array.isArray(res)) {
@@ -831,7 +837,7 @@ export class RemoteClient implements OrbisApiClient {
         }
       : undefined;
     return this.call(
-      sdk.listEnrollments({ client: this.client, query: query as any }),
+      sdk.listEnrollments2({ client: this.client, query: query as any }),
     ) ?? [];
   }
 

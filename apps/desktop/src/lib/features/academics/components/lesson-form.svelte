@@ -105,7 +105,11 @@ const availableTeachers = $derived.by(() => {
       (item: any) =>
         !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
     )
-    .map((item: any) => String(item.primary_teacher_id || item.teacher_id))
+    .map((item: any) =>
+      String(
+        item.instructor_id || item.primary_teacher_id || item.teacher_id || "",
+      ),
+    )
     .filter(Boolean);
   return teachers.filter((teacher: any) =>
     linkedIds.includes(String(teacher.id)),
@@ -129,8 +133,9 @@ function handleSubjectChange(value: string | undefined) {
   const cs = SectionSubjects.find(
     (item: any) => String(item.subject_id) === selectedSubjectId,
   );
-  if (cs?.primary_teacher_id) {
-    selectedTeacherId = String(cs.primary_teacher_id);
+  const teacherId = cs?.instructor_id || cs?.primary_teacher_id || cs?.teacher_id;
+  if (teacherId) {
+    selectedTeacherId = String(teacherId);
   }
 }
 

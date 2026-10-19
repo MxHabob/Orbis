@@ -77,6 +77,13 @@ const classes = $derived((classesQuery.data as SectionDto[] | undefined) ?? []);
 const enrollments = $derived(
   (enrollmentsQuery.data as EnrollmentDto[] | undefined) ?? [],
 );
+const currentEnrollments = $derived(
+  enrollments.filter(
+    (enrollment) =>
+      enrollment.status === "active" ||
+      enrollment.status === "pending_approval",
+  ),
+);
 const error = $derived(
   classesQuery.error ? extractErrorMessage(classesQuery.error) : null,
 );
@@ -91,7 +98,7 @@ function refetchAll() {
 }
 
 function getClassMetric(classId: string): { active_students: number } {
-  const count = enrollments.filter(
+  const count = currentEnrollments.filter(
     (e) => String(e.section_id) === String(classId),
   ).length;
   return { active_students: count };
@@ -99,7 +106,7 @@ function getClassMetric(classId: string): { active_students: number } {
 
 // Compute statistics
 const totalClassesCount = $derived(classes.length);
-const totalStudentsCount = $derived(enrollments.length);
+const totalStudentsCount = $derived(currentEnrollments.length);
 const averageClassSize = $derived(
   totalClassesCount > 0
     ? Math.round(totalStudentsCount / totalClassesCount)
