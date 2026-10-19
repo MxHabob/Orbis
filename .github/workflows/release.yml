@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
+      android_version_code: ${{ steps.meta.outputs.android_version_code }}
       release_notes: ${{ steps.release_notes.outputs.body }}
     steps:
       - name: Checkout full history
