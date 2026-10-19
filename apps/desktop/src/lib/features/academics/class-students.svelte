@@ -33,10 +33,10 @@ const error = $derived(studentsQuery.error);
 
 function studentName(student: any): string {
   return (
-    student.name_ar ||
-    student.full_name ||
-    student.name ||
-    student.student_id ||
+    student.person?.full_name_ar ||
+    student.person?.full_name ||
+    student.person?.display_name ||
+    student.student?.student_number ||
     "-"
   );
 }
@@ -102,21 +102,22 @@ const columns: OrbisColumnDef[] = [
 
 const gridSource = $derived(
   students.map((student) => ({
-    ...student,
+    id: student.student?.id ?? student.id,
     student_name: studentName(student),
-    student_number: student.student_number || student.student_id || student.id,
-    national_id: student.national_id || "—",
-    gender: student.gender || "—",
-    status: student.status || "active",
-    enrolled_date: student.created_at
-      ? formatDate(student.created_at, "date")
+    student_number: student.student?.student_number || "—",
+    national_id:
+      student.person?.national_id || student.person?.passport_number || "—",
+    gender: student.person?.gender || "—",
+    status: student.student?.status || "active",
+    enrolled_date: student.enrollment?.enrollment_date
+      ? formatDate(student.enrollment.enrollment_date, "date")
       : "—",
   })),
 );
 
 function handleGridAction(event: GridActionEvent) {
   if (event.actionId === "dblclick" && event.row.id) {
-    const studentId = event.row.student_id || event.row.id;
+    const studentId = event.row.id;
     goto(localizeHref(`/${orgId}/students/${studentId}`));
   }
 }

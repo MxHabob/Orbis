@@ -94,6 +94,31 @@ impl StudentRepository for StudentRepoImpl {
             .filter(student::Column::OrgId.eq(org_id))
             .filter(student::Column::IsDeleted.eq(false));
 
+        if filter.period_id.is_some() || filter.section_id.is_some() {
+            let mut enrollment_query = EnrollmentEntity::find()
+                .filter(enrollment::Column::OrgId.eq(org_id))
+                .filter(
+                    enrollment::Column::Status
+                        .is_in(["active".to_string(), "pending_approval".to_string()]),
+                );
+            if let Some(period_id) = filter.period_id {
+                enrollment_query =
+                    enrollment_query.filter(enrollment::Column::PeriodId.eq(period_id));
+            }
+            if let Some(section_id) = filter.section_id {
+                enrollment_query =
+                    enrollment_query.filter(enrollment::Column::SectionId.eq(section_id));
+            }
+            let enrolled_student_ids = enrollment_query
+                .all(&self.db)
+                .await
+                .map_err(|e| DomainError::Internal(e.to_string()))?
+                .into_iter()
+                .map(|enrollment| enrollment.student_id)
+                .collect::<Vec<_>>();
+            query = query.filter(student::Column::Id.is_in(enrolled_student_ids));
+        }
+
         if let Some(status) = filter.status {
             query = query.filter(student::Column::Status.eq(status.to_string()));
         }

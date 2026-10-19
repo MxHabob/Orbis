@@ -19,6 +19,7 @@ import {
   type GradeDto,
   type ReportDefinitionDto,
 } from "$lib/api";
+import { academicContext } from "$lib/stores";
 
 /** All academic years for current organization. */
 export function createacademicCalendarsQuery(orgId: () => string) {
@@ -63,15 +64,34 @@ export function createClassQuery(classId: () => string | undefined) {
 /** Students enrolled in a specific class. */
 export function createClassStudentsQuery(classId: () => string | undefined) {
   return createQuery<any[]>(() => ({
-    queryKey: [...queryKeys.student.all, "class-students", classId() ?? ""],
+    queryKey: [
+      ...queryKeys.student.all,
+      "class-students",
+      classId() ?? "",
+      academicContext.effectivePeriodId,
+    ],
     queryFn: async () => {
-      const res = await api.listStudents();
-      const currentClassId = classId();
-      return (res.items || []).filter(
-        (s: any) => String(s.current_class_id) === String(currentClassId),
-      );
+      const sectionId = classId();
+      const periodId = academicContext.effectivePeriodId;
+      if (!sectionId || !periodId) return [];
+
+      const students = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const result = await api.listStudents({
+          class_id: sectionId,
+          period_id: periodId,
+          page,
+          page_size: 100,
+        });
+        students.push(...result.items);
+        totalPages = result.total_pages;
+        page += 1;
+      } while (page <= totalPages);
+      return students;
     },
-    enabled: !!classId(),
+    enabled: !!classId() && !!academicContext.effectivePeriodId,
     staleTime: 3 * 60 * 1000,
   }));
 }
@@ -268,18 +288,7 @@ export function createSectionQuery(sectionId: () => string | undefined) {
 
 /** Students enrolled in a specific section. */
 export function createSectionStudentsQuery(sectionId: () => string | undefined) {
-  return createQuery<any[]>(() => ({
-    queryKey: [...queryKeys.student.all, "section-students", sectionId() ?? ""],
-    queryFn: async () => {
-      const res = await api.listStudents();
-      const currentSectionId = sectionId();
-      return (res.items || []).filter(
-        (s: any) => String(s.current_class_id) === String(currentSectionId) || String(s.section_id) === String(currentSectionId),
-      );
-    },
-    enabled: !!sectionId(),
-    staleTime: 3 * 60 * 1000,
-  }));
+  return createClassStudentsQuery(sectionId);
 }
 
 /** Attendance records for a section on a specific date. */

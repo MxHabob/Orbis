@@ -171,6 +171,7 @@ let selectedStudentIds = $state<Set<string>>(new Set());
           {:else}
             <StudentTable
               {students}
+              enrollments={directory.enrollmentsQuery.data ?? []}
               {classes}
               enableSelection={true}
               bind:selectedIds={selectedStudentIds}

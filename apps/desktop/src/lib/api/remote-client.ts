@@ -820,7 +820,19 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]> {
-    return this.call(sdk.listEnrollments({ client: this.client, query: filter as any })) ?? [];
+    const query = filter
+      ? {
+          period_id: filter.period_id ?? filter.periodId,
+          section_id: filter.class_id ?? filter.classId,
+          student_id: filter.student_id ?? filter.studentId,
+          status: filter.status,
+          page: filter.page,
+          page_size: filter.page_size ?? filter.pageSize,
+        }
+      : undefined;
+    return this.call(
+      sdk.listEnrollments({ client: this.client, query: query as any }),
+    ) ?? [];
   }
 
   async getEnrollment(id: string): Promise<EnrollmentDto> {

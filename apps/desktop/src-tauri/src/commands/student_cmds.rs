@@ -136,7 +136,7 @@ pub fn student_detail_to_dto(d: StudentDetail) -> StudentDetailDto {
 pub struct EnrollmentDto {
     pub id: String,
     pub student_id: String,
-    pub class_id: Option<String>,
+    pub section_id: Option<String>,
     pub period_id: String,
     pub org_id: String,
     pub student_number: String,
@@ -156,7 +156,7 @@ pub fn enrollment_to_dto(e: Enrollment) -> EnrollmentDto {
     EnrollmentDto {
         id: e.id.to_string(),
         student_id: e.student_id.to_string(),
-        class_id: e.section_id.map(|c| c.to_string()),
+        section_id: e.section_id.map(|c| c.to_string()),
         period_id: e.period_id.to_string(),
         org_id: e.org_id.to_string(),
         student_number: e.student_number,

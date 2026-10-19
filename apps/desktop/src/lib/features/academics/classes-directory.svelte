@@ -53,7 +53,22 @@ const periods = $derived(
 
 const enrollmentsQuery = createQuery(() => ({
   queryKey: ["classes-enrollments", orgId, activePeriodId],
-  queryFn: () => api.listEnrollments({ periodId: activePeriodId || undefined }),
+  queryFn: async () => {
+    if (!activePeriodId) return [];
+    const enrollments = [];
+    let page = 1;
+    let pageItems: Awaited<ReturnType<typeof api.listEnrollments>> = [];
+    do {
+      pageItems = await api.listEnrollments({
+        period_id: activePeriodId,
+        page,
+        page_size: 100,
+      });
+      enrollments.push(...pageItems);
+      page += 1;
+    } while (pageItems.length === 100);
+    return enrollments;
+  },
   enabled: !!orgId,
   staleTime: 3 * 60 * 1000,
 }));
@@ -77,7 +92,7 @@ function refetchAll() {
 
 function getClassMetric(classId: string): { active_students: number } {
   const count = enrollments.filter(
-    (e) => String(e.class_id) === String(classId),
+    (e) => String(e.section_id) === String(classId),
   ).length;
   return { active_students: count };
 }

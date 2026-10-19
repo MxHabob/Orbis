@@ -5,19 +5,21 @@
 <script lang="ts">
 import * as Sheet from "@orbis/ui/sheet";
 import SectionSubjectForm from "$lib/features/academics/components/class-subject-form.svelte";
-import type { SectionSubject } from "@orbis/sdk";
+import type { SectionSubjectDto } from "$lib/api";
 
 let {
   open = $bindable(false),
   orgId,
   classId = "",
+  periodId = "",
   editData,
   onSuccess,
 }: {
   open?: boolean;
   orgId: string;
   classId?: string;
-  editData?: SectionSubject | null;
+  periodId?: string;
+  editData?: SectionSubjectDto | null;
   onSuccess?: () => void;
 } = $props();
 
@@ -36,6 +38,7 @@ function handleSuccess() {
     <SectionSubjectForm
       {orgId}
       fixedClassId={classId}
+      fixedPeriodId={periodId}
       {editData}
       onSuccess={handleSuccess}
       onCancel={() => (open = false)}
