@@ -5,18 +5,20 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { api } from "$lib/api";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { fade } from "svelte/transition";
 import { ArrowRight, BookOpen, Calendar, Plus, Search, TaskList, Users } from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
+import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let searchQuery = $state("");
 let isSheetOpen = $state(false);
+let selectedPeriodId = $state("");
 
 const queryClient = useQueryClient();
 const periodsQuery = createQuery(() => ({
@@ -32,7 +34,8 @@ const activePeriodId = $derived.by(() => {
   );
   return String(active?.id || periods[0]?.id || "");
 });
-const sessionsQuery = createExamSessionsQuery(() => activePeriodId);
+const listPeriodId = $derived(selectedPeriodId || activePeriodId);
+const sessionsQuery = createExamSessionsQuery(() => listPeriodId);
 const sessions = $derived((sessionsQuery.data || []) as any[]);
 const isLoading = $derived(sessionsQuery.isLoading);
 
@@ -74,22 +77,46 @@ function getTypeLabel(type: string): string {
 		</Button>
 	</div>
 
-	<!-- Search -->
-	<div class="relative">
-		<Search size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-		<Input
-			placeholder={m.common_exams_sessions_search()}
-			class="ps-9 h-9 text-xs"
-			bind:value={searchQuery}
-		/>
+	<!-- Period and search filters -->
+	<div class="flex gap-2">
+		<div class="w-64 shrink-0">
+			<PeriodSelect
+				value={listPeriodId || null}
+				placeholder={m.operations_ui_academic_session()}
+				disabled={periodsQuery.isLoading}
+				onchange={(periodId) => selectedPeriodId = periodId || ""}
+			/>
+		</div>
+		<div class="relative min-w-0 flex-1">
+			<Search size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+			<Input
+				placeholder={m.common_exams_sessions_search()}
+				class="ps-9 h-9 text-xs"
+				bind:value={searchQuery}
+			/>
+		</div>
 	</div>
 
 	<!-- Loading -->
 	{#if isLoading}
 		<div class="flex flex-col gap-3">
-			{#each Array(3) as _}
+			{#each Array(3) as _, index (index)}
 				<Skeleton class="h-32 w-full rounded-xl" />
 			{/each}
+		</div>
+	{:else if sessionsQuery.error}
+		<div class="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center text-destructive">
+			<p class="text-xs font-semibold">{m.common_load_error()}</p>
+			<p class="text-[10px] text-muted-foreground">
+				{extractErrorMessage(sessionsQuery.error)}
+			</p>
+			<Button
+				variant="outline"
+				class="h-8 px-4 text-xs cursor-pointer"
+				onclick={() => sessionsQuery.refetch()}
+			>
+				{m.common_retry()}
+			</Button>
 		</div>
 	{:else if filtered.length === 0}
 		<!-- Empty State -->
@@ -170,7 +197,8 @@ function getTypeLabel(type: string): string {
 <SessionCreateSheet
 	bind:open={isSheetOpen}
 	{orgId}
-	onSuccess={() => {
-		queryClient.invalidateQueries({ queryKey: ["exam-sessions"] });
+	onSuccess={(periodId) => {
+		if (periodId) selectedPeriodId = periodId;
+		queryClient.invalidateQueries({ queryKey: queryKeys.exam.all });
 	}}
 />

@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import {
@@ -25,9 +25,17 @@ import { DocumentCheck, Refresh } from "@orbis/icons";
 import {
   buildGradeColumns,
   recalculateRowTotals,
+  scoreToGradeLetter,
+  transformMatrixToSource,
+  type GradeCell,
+  type GradeMatrixResponse,
+  type GradeMatrixStudent,
 } from "$lib/features/exams/grade-helpers";
 
-import { createGradesQuery } from "$lib/features/academics/queries";
+import {
+  createClassStudentsQuery,
+  createGradesQuery,
+} from "$lib/features/academics/queries";
 
 let { orgId, classId, SectionSubjectId }: { orgId: string; classId: string; SectionSubjectId: string } = $props();
 
@@ -35,21 +43,96 @@ let { orgId, classId, SectionSubjectId }: { orgId: string; classId: string; Sect
 const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
 const canEnterGrades = $derived(!academicContext.isReadOnly);
 
+const studentsQuery = createClassStudentsQuery(() => classId);
 const gradesQuery = createGradesQuery(() => SectionSubjectId);
-const isMatrixLoading = $derived(gradesQuery.isLoading);
+const isMatrixLoading = $derived(
+  studentsQuery.isLoading || gradesQuery.isLoading,
+);
+const error = $derived(studentsQuery.error || gradesQuery.error);
 
-let gridSource = $state<any[]>([]);
-let assessmentKeys = $state<string[]>([]);
 let isSaving = $state(false);
 let isDirty = $state(false);
 
-const matrixData = $derived.by(() => {
+const matrixData = $derived.by((): GradeMatrixResponse => {
+  const roster = studentsQuery.data ?? [];
   const grades = gradesQuery.data ?? [];
-  return { students: [] };
+  const assessmentConfigs = [
+    { type: "monthly", isFinal: false, max: 20 },
+    { type: "final", isFinal: true, max: 30 },
+  ];
+  const students: GradeMatrixStudent[] = roster.map((student: any) => {
+    const studentId = student.student?.id ?? student.id;
+    const studentGrades = grades.filter(
+      (grade) =>
+        String(grade.student_id) === String(studentId) &&
+        String(grade.period_id) === String(selectedPeriodId),
+    );
+    const cells: GradeCell[] = assessmentConfigs.map(
+      ({ type, isFinal, max }) => {
+        const grade = studentGrades.find(
+          (item) => item.is_final === isFinal,
+        );
+        const gradeMax = Number(grade?.max_score);
+        return {
+          grade_id: grade?.id ?? null,
+          assessment_id: grade?.component_id ?? null,
+          exam_type: type,
+          score: grade ? Number(grade.score) : null,
+          max_score: Number.isFinite(gradeMax) && gradeMax > 0 ? gradeMax : max,
+        };
+      },
+    );
+    const total = cells.reduce((sum, cell) => sum + (cell.score || 0), 0);
+    const maxTotal = cells.reduce((sum, cell) => sum + cell.max_score, 0);
+    const percentage =
+      maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+
+    return {
+      enrollment_id:
+        student.enrollment?.id ??
+        studentGrades.find((grade) => grade.enrollment_id)?.enrollment_id ??
+        "",
+      student_id: studentId,
+      student_name:
+        student.person?.full_name ||
+        student.person?.display_name ||
+        student.student?.student_number ||
+        "",
+      student_name_ar:
+        student.person?.full_name_ar ||
+        student.person?.full_name ||
+        student.person?.display_name ||
+        student.student?.student_number ||
+        null,
+      grades: cells,
+      total,
+      max_total: maxTotal,
+      percentage,
+      grade_letter: scoreToGradeLetter(
+        percentage,
+        academicContext.gradeScaleItems,
+      ),
+    };
+  });
+
+  return {
+    period_id: selectedPeriodId,
+    section_subject_id: SectionSubjectId,
+    students,
+    assessment_types: assessmentConfigs.map(({ type }) => type),
+  };
 });
 
+let gridSource = $derived.by(() =>
+  transformMatrixToSource(
+    matrixData,
+    getLocale(),
+    academicContext.gradeScaleItems,
+  ),
+);
+const assessmentKeys = $derived(matrixData.assessment_types);
+
 const gridColumns = $derived.by(() => {
-  if (!matrixData) return [];
   return buildGradeColumns(matrixData, {
     readonly: !canEnterGrades,
     locale: getLocale(),
@@ -57,6 +140,7 @@ const gridColumns = $derived.by(() => {
 });
 
 function handleRefresh() {
+  studentsQuery.refetch();
   gradesQuery.refetch();
   isDirty = false;
 }
@@ -83,9 +167,10 @@ async function handleSaveAll() {
     const studentsToSave: any[] = [];
     for (const row of gridSource) {
       for (const key of assessmentKeys) {
-        const score = row[`score_${key}`];
-        if (score !== null && score !== undefined) {
+        const score = row[`exam_${key}`];
+        if (score !== null && score !== undefined && score !== "") {
           studentsToSave.push({
+            student_id: row.student_id,
             enrollment_id: row.enrollment_id,
             score: Number(score),
             notes: null,
@@ -103,10 +188,11 @@ async function handleSaveAll() {
     for (const student of studentsToSave) {
       await api.recordGrade({
         period_id: selectedPeriodId,
-        student_id: student.student_id || student.enrollment_id,
-        enrollment_id: student.enrollment_id,
+        student_id: String(student.student_id),
+        enrollment_id: student.enrollment_id || undefined,
         section_subject_id: SectionSubjectId,
-        score: student.score,
+        score: String(student.score),
+        max_score: String(student.exam_type === "final" ? 30 : 20),
         notes: student.notes ?? undefined,
       });
     }
@@ -180,7 +266,17 @@ async function handleSaveAll() {
     
     <!-- Main Grid Canvas -->
     <CardContent class="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-      {#if !gridColumns.length && !isMatrixLoading}
+      {#if error}
+        <div class="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center text-destructive">
+          <p class="text-xs font-semibold">{m.common_load_error()}</p>
+          <p class="text-[10px] text-muted-foreground">
+            {extractErrorMessage(error)}
+          </p>
+          <Button variant="outline" size="sm" class="h-8 mt-2 text-xs" onclick={handleRefresh}>
+            {m.common_retry()}
+          </Button>
+        </div>
+      {:else if !gridColumns.length && !isMatrixLoading}
         <div class="flex flex-col h-full items-center justify-center p-8 text-center bg-muted/5 gap-2">
           <p class="text-xs font-bold text-foreground">
             {m.common_assessment_no_scheme()}

@@ -6,7 +6,7 @@ import * as m from "$lib/paraglide/messages";
  * Connects to api.generateReport, polls status, and fetches PDF bytes.
  * Provides a WYSIWYG preview and triggers the OS native print dialog.
  */
-import { api } from "$lib/api/client";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import {
   Dialog,
@@ -37,6 +37,7 @@ let statusText = $state("");
 let pdfUrl = $state<string | null>(null);
 let errorMessage = $state<string | null>(null);
 let currentJobId = $state<string | null>(null);
+let startedTemplateId = "";
 
 function uint8ArrayToBase64(bytes: Uint8Array): string {
   let binary = "";
@@ -48,7 +49,7 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
 }
 
 async function generateReport() {
-  if (!templateId) return;
+  if (!templateId || isGenerating) return;
 
   isGenerating = true;
   pdfUrl = null;
@@ -76,13 +77,17 @@ async function generateReport() {
       }
 
       const jobStatus = await api.getReportJobStatus(jobId);
+      if (currentJobId !== jobId) return;
 
       if (jobStatus.status === "completed" || jobStatus.status === "Completed") {
         progress = 80;
         statusText = m.shared_ui_fetching_document();
         break;
       } else if (jobStatus.status === "failed" || jobStatus.status === "Failed") {
-        throw new Error(m.shared_ui_report_generation_server_failed());
+        throw new Error(
+          jobStatus.error_message ||
+            m.shared_ui_report_generation_server_failed(),
+        );
       }
 
       await new Promise((r) => setTimeout(r, 1000));
@@ -110,7 +115,7 @@ async function generateReport() {
     }
   } catch (e: any) {
     errorMessage =
-      e.message || m.shared_ui_report_generation_failed();
+      extractErrorMessage(e) || m.shared_ui_report_generation_failed();
     toast.error(errorMessage);
   } finally {
     isGenerating = false;
@@ -119,12 +124,12 @@ async function generateReport() {
 
 // React to dialog open
 $effect(() => {
-  if (open && templateId && !pdfUrl && !isGenerating) {
-    generateReport();
-  }
-
   if (!open) {
+    startedTemplateId = "";
     currentJobId = null; // Cancel polling
+  } else if (templateId && startedTemplateId !== templateId) {
+    startedTemplateId = templateId;
+    void generateReport();
   }
 });
 

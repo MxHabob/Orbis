@@ -32,7 +32,7 @@ let {
   open: boolean;
   orgId: string;
   session?: any;
-  onSuccess: () => void;
+  onSuccess: (periodId?: string) => void;
 } = $props();
 
 const isEdit = $derived(!!session);
@@ -78,6 +78,7 @@ async function handleSubmit() {
     period_id: periodId,
   };
   const submitted = await form.submit(async (payload) => {
+    let savedPeriodId = payload.period_id;
     if (isEdit && session?.id) {
       await api.updateExamSession(session.id, {
         name: payload.name || payload.name_ar,
@@ -89,7 +90,7 @@ async function handleSubmit() {
       });
       toast.success(m.operations_ui_exam_session_update_success());
     } else {
-      await api.createExamSession({
+      const createdSession = await api.createExamSession({
         name: payload.name || payload.name_ar,
         name_ar: payload.name_ar || undefined,
         session_type: payload.session_type,
@@ -97,6 +98,7 @@ async function handleSubmit() {
         end_date: payload.end_date,
         period_id: payload.period_id,
       });
+      savedPeriodId = createdSession.period_id;
       toast.success(m.common_exams_create_success());
     }
     // Reset form
@@ -106,7 +108,7 @@ async function handleSubmit() {
     endDate = "";
     periodId = "";
     open = false;
-    onSuccess();
+    onSuccess(isEdit ? undefined : savedPeriodId);
   });
   if (!submitted && form.formError) toast.error(form.formError);
   else if (!submitted) {
