@@ -1037,7 +1037,7 @@ export interface UpdateCheckResult {
   release_date?: string;
   release_url?: string;
   channel: string;
-  status: "up_to_date" | "update_available" | "checking_failed";
+  status: "up_to_date" | "update_available" | "checking_failed" | "unavailable";
   error_message?: string;
 }
 

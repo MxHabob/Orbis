@@ -62,7 +62,9 @@
     try {
       const res = await api.systemCheckForUpdates();
       updateResult = res;
-      if (!res.has_update) {
+      if (res.status === "unavailable") {
+        toast.info(m.ui_changelog_updates_unavailable_staging());
+      } else if (!res.has_update) {
         toast.info(m.shared_ui_latest_version_installed({ version: res.current_version }));
       }
     } catch (error) {
