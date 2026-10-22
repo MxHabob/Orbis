@@ -55,7 +55,7 @@ const periods = $derived.by(() => {
   if (!periodType) return all;
   if (periodType === "academic_calendar" || periodType === "year") {
     return all.filter(
-      (p) => p.period_type === "academic_calendar" || p.period_type === "year",
+      (p) => p.period_type === "academic_calendar" || p.period_type === "year" || p.period_type === "annual",
     );
   }
   return all.filter((p) => p.period_type === periodType);

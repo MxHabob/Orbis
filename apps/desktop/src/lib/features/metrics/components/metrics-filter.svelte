@@ -34,6 +34,7 @@ const terms = $derived(
   (periodsQuery.data ?? []).filter(
     (c) =>
       c.period_type === "term" ||
+      c.period_type === "annual" ||
       !c.period_type ||
       c.period_type === "academic_calendar",
   ),
@@ -61,7 +62,7 @@ const termName = $derived(() => {
   if (!term) return m.common_filter_all_classes();
   return getLocale() === "ar" && term.name_ar
     ? term.name_ar
-    : term.name || term.name_en || term.name_ar || "";
+    : term.name || term.name || term.name_ar || "";
 });
 
 const className = $derived(() => {
@@ -70,7 +71,7 @@ const className = $derived(() => {
   if (!c) return m.common_filter_all_classes();
   return getLocale() === "ar" && c.name_ar
     ? c.name_ar
-    : c.name || c.name_en || c.name_ar || "";
+    : c.name || c.name || c.name_ar || "";
 });
 </script>
 
