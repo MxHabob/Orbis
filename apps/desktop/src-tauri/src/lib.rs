@@ -191,7 +191,20 @@ pub fn run() {
                 let (width, height) = rgba.dimensions();
                 Image::new_owned(rgba.into_raw(), width, height)
             };
-            let check_updates_item = MenuItem::with_id(app, "check_updates", "Check for Updates...", true, None::<&str>)?;
+            let staging_build =
+                commands::system_cmds::is_staging_build(&app.config().identifier);
+            let check_updates_label = if staging_build {
+                "Updates unavailable for staging builds"
+            } else {
+                "Check for Updates..."
+            };
+            let check_updates_item = MenuItem::with_id(
+                app,
+                "check_updates",
+                check_updates_label,
+                !staging_build,
+                None::<&str>,
+            )?;
             let exit_item = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;
             let tray_menu = Menu::with_items(app, &[&check_updates_item, &exit_item])?;
             let _tray = TrayIconBuilder::new()

@@ -4353,6 +4353,7 @@
   "ui_changelog_release_notes": "Release notes",
   "ui_changelog_release_resources": "Release resources",
   "ui_changelog_update_failed": "Update check failed:",
+  "ui_changelog_updates_unavailable_staging": "Update checks are not available for staging builds.",
   "ui_changelog_what_s_new_releases": "What's New & Releases",
   "ui_class_recommendations_ai_recommendations": "AI Recommendations",
   "ui_class_schedule_full_schedule": "Full Schedule",

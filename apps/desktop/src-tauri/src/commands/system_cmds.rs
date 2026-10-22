@@ -54,6 +54,10 @@ pub struct UpdateCheckResult {
     pub error_message: Option<String>,
 }
 
+pub fn is_staging_build(identifier: &str) -> bool {
+    identifier.ends_with(".staging")
+}
+
 // ═══════════════════════════════════════════════════════════════
 // GitHub Release & Changelog Helpers
 // ═══════════════════════════════════════════════════════════════
@@ -252,6 +256,20 @@ pub async fn system_check_for_updates(app: AppHandle) -> Result<UpdateCheckResul
     use tauri_plugin_updater::UpdaterExt;
 
     let current_version = app.package_info().version.to_string();
+    if is_staging_build(&app.config().identifier) {
+        return Ok(UpdateCheckResult {
+            current_version: current_version.clone(),
+            latest_version: current_version,
+            has_update: false,
+            release_notes: None,
+            release_date: None,
+            release_url: None,
+            channel: "staging".to_string(),
+            status: "unavailable".to_string(),
+            error_message: Some("Updates are not configured for staging builds.".to_string()),
+        });
+    }
+
     let updater = app.updater().map_err(|e| e.to_string())?;
     let update = updater.check().await.map_err(|e| e.to_string())?;
 
@@ -284,6 +302,10 @@ pub async fn system_check_for_updates(app: AppHandle) -> Result<UpdateCheckResul
 #[tauri::command]
 pub async fn system_install_update(app: AppHandle) -> Result<(), String> {
     use tauri_plugin_updater::UpdaterExt;
+
+    if is_staging_build(&app.config().identifier) {
+        return Err("Updates are not configured for staging builds.".to_string());
+    }
 
     let update = app
         .updater()
@@ -344,4 +366,16 @@ pub async fn system_get_entitlement(
         .check_entitlement("orbis_desktop", "default")
         .await
         .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_staging_build;
+
+    #[test]
+    fn staging_identifier_disables_stable_updater() {
+        assert!(is_staging_build("com.mulverse.orbis.staging"));
+        assert!(!is_staging_build("com.mulverse.orbis"));
+        assert!(!is_staging_build("com.mulverse.orbis.dev"));
+    }
 }

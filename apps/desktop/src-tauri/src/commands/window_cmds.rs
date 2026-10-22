@@ -229,6 +229,10 @@ pub async fn check_for_updates<R: tauri::Runtime>(app: tauri::AppHandle<R>) -> R
     use tauri_plugin_updater::UpdaterExt;
     #[cfg(desktop)]
     {
+        if super::system_cmds::is_staging_build(&app.config().identifier) {
+            return Ok(());
+        }
+
         let updater = match app.updater() {
             Ok(updater) => updater,
             Err(error) => {

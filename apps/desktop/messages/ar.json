@@ -4353,6 +4353,7 @@
   "ui_changelog_release_notes": "ملاحظات الإصدار",
   "ui_changelog_release_resources": "موارد الإصدار",
   "ui_changelog_update_failed": "تعذر التحقق من التحديث:",
+  "ui_changelog_updates_unavailable_staging": "التحقق من التحديثات غير متاح في إصدارات Staging.",
   "ui_changelog_what_s_new_releases": "سجل التحديثات وما الجديد",
   "ui_class_recommendations_ai_recommendations": "توصيات الذكاء الاصطناعي",
   "ui_class_schedule_full_schedule": "عرض وإدارة الجدول",

@@ -2,6 +2,8 @@
 
 Desktop updates are signed and distributed through public GitHub Releases. A release tag triggers `.github/workflows/release.yml`, which builds Windows and macOS installers, validates the signed Tauri updater metadata, and publishes the GitHub Release. The desktop updater checks `https://github.com/MxHabob/Orbis/releases/latest/download/latest.json`; the release must be published for that URL to serve update metadata.
 
+Staging builds intentionally do not use the production updater channel. Their update check is disabled so they cannot install production updates.
+
 Android APK and AAB packages are built and attached to the same GitHub Release. They are signed with a dedicated Android release keystore; do not use the debug keystore for public distribution.
 
 ## Configure GitHub Actions
