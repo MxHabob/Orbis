@@ -4,7 +4,11 @@ Manages assessment schemes (weighted grade composition structures).
 -->
 <script lang="ts">
   import * as m from "$lib/paraglide/messages";
-  import { api, extractErrorMessage } from "$lib/api";
+  import {
+    api,
+    extractErrorMessage,
+    type AssessmentComponent,
+  } from "$lib/api";
   import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
   import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
   import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
@@ -27,11 +31,18 @@ Manages assessment schemes (weighted grade composition structures).
 
   interface SchemeComponent {
     id: string;
+    code: string;
     name: string;
+    name_ar?: string | null;
     component_type: string;
     weight: number;
     max_score: number;
     passing_score: number;
+    sort_order: number;
+    is_required: boolean;
+    stored_weight: number | null;
+    stored_component_type: string | null;
+    displayed_weight: number;
   }
 
   // ── Queries ──────────────────────────────────────────────────
@@ -53,14 +64,20 @@ Manages assessment schemes (weighted grade composition structures).
   const schemeComponents = $derived.by<SchemeComponent[]>(() => {
     if (!selectedScheme) return [];
     const formula = selectedScheme.formula as any;
-    let components: unknown[] = [];
-    if (formula) {
-      if (Array.isArray(formula.components)) {
-        components = formula.components;
-      } else if (Array.isArray(formula)) {
-        components = formula;
-      }
-    }
+    const formulaComponents = Array.isArray(formula?.components)
+      ? formula.components
+      : Array.isArray(formula)
+        ? formula
+        : null;
+    const storedComponents: unknown[] = Array.isArray(selectedScheme.components)
+      ? selectedScheme.components
+      : [];
+    const usesSchemeComponents = storedComponents.length > 0;
+    const components =
+      usesSchemeComponents
+        ? storedComponents
+        : formulaComponents ?? storedComponents;
+    const schemeMaxScore = Number(selectedScheme.max_score) || 100;
 
     const usedIds: string[] = [];
     return components.map((component, index) => {
@@ -78,9 +95,125 @@ Manages assessment schemes (weighted grade composition structures).
         id = `${baseId}-${duplicateIndex++}`;
       }
       usedIds.push(id);
-      return { ...value, id } as SchemeComponent;
+
+      const maxScore = Number(value.max_score ?? value.maxScore) || 0;
+      const storedWeight = Number(value.weight) || 0;
+      const storedType = String(
+        value.component_type ?? value.componentType ?? "",
+      );
+      const displayedWeight = usesSchemeComponents
+        ? storedWeight === 1
+          ? schemeMaxScore > 0
+            ? (maxScore / schemeMaxScore) * 100
+            : 0
+          : storedWeight * 100
+        : storedWeight;
+      const componentType =
+        storedType === "assignment"
+          ? "homework"
+          : storedType === "coursework"
+            ? "classwork"
+            : storedType === "final_exam" || storedType === "midterm"
+              ? "exam"
+              : storedType;
+      return {
+        id,
+        code: String(value.code ?? id),
+        name: String(value.name ?? ""),
+        name_ar:
+          typeof value.name_ar === "string"
+            ? value.name_ar
+            : typeof value.nameAr === "string"
+              ? value.nameAr
+              : null,
+        component_type: componentType || "exam",
+        weight: displayedWeight,
+        max_score: maxScore,
+        passing_score: Number(
+          value.passing_score ?? value.min_score ?? value.minScore,
+        ) || 0,
+        sort_order: Number(value.sort_order ?? value.sortOrder) || index + 1,
+        is_required: Boolean(value.is_required ?? value.isRequired ?? true),
+        stored_weight: usesSchemeComponents ? storedWeight : null,
+        stored_component_type: storedType || null,
+        displayed_weight: displayedWeight,
+      };
     });
   });
+
+  function toAssessmentComponents(
+    components: SchemeComponent[],
+  ): AssessmentComponent[] {
+    return components.map((component, index) => {
+      const weight =
+        component.stored_weight !== null &&
+        component.weight === component.displayed_weight
+          ? component.stored_weight
+          : component.weight / 100;
+      const componentType =
+        component.component_type === "homework"
+          ? "assignment"
+          : component.component_type === "classwork"
+            ? "coursework"
+            : component.component_type === "exam"
+              ? "final_exam"
+              : component.component_type;
+
+      return {
+        code: component.code,
+        name: component.name,
+        nameAr: component.name_ar,
+        maxScore: String(component.max_score),
+        weight: String(weight),
+        sortOrder: component.sort_order || index + 1,
+        isRequired: component.is_required,
+        componentType:
+          component.stored_component_type &&
+          component.component_type ===
+            (component.stored_component_type === "assignment"
+              ? "homework"
+              : component.stored_component_type === "coursework"
+                ? "classwork"
+                : component.stored_component_type === "final_exam" ||
+                    component.stored_component_type === "midterm"
+                  ? "exam"
+                  : component.stored_component_type)
+            ? component.stored_component_type
+            : componentType,
+        minScore:
+          component.passing_score > 0
+            ? String(component.passing_score)
+            : null,
+      };
+    });
+  }
+
+  async function saveSchemeComponents(components: SchemeComponent[]) {
+    if (!selectedScheme) return;
+
+    const request: {
+      components: AssessmentComponent[];
+      formula?: unknown;
+    } = {
+      components: toAssessmentComponents(components),
+    };
+    const formula = selectedScheme.formula;
+    if (
+      formula &&
+      typeof formula === "object" &&
+      !Array.isArray(formula) &&
+      Array.isArray((formula as { components?: unknown }).components)
+    ) {
+      request.formula = {
+        ...formula,
+        components,
+      };
+    } else if (Array.isArray(formula)) {
+      request.formula = components;
+    }
+
+    await api.updateAssessmentScheme(selectedScheme.id, request);
+  }
 
   // ── Weight summary ───────────────────────────────────────────
   const totalWeight = $derived(
@@ -181,22 +314,25 @@ Manages assessment schemes (weighted grade composition structures).
           };
         }
       } else {
+        const id = `comp-${Date.now()}`;
         const newComp: SchemeComponent = {
-          id: `comp-${Date.now()}`,
+          id,
+          code: id,
           name: componentForm.name.trim(),
+          name_ar: null,
           component_type: componentForm.component_type,
           weight: Number(componentForm.weight) || 0,
           max_score: Number(componentForm.max_score) || 100,
           passing_score: Number(componentForm.passing_score) || 50,
+          sort_order: current.length + 1,
+          is_required: true,
+          stored_weight: null,
+          stored_component_type: null,
+          displayed_weight: Number(componentForm.weight) || 0,
         };
         current.push(newComp);
       }
-      await api.updateAssessmentScheme(selectedScheme.id, {
-        formula: {
-          type: "weighted_average",
-          components: current,
-        },
-      });
+      await saveSchemeComponents(current);
       await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
       toast.success(
         editingComponentId
@@ -228,12 +364,7 @@ Manages assessment schemes (weighted grade composition structures).
     if (!selectedScheme) return;
     try {
       const updated = schemeComponents.filter((c) => c.id !== id);
-      await api.updateAssessmentScheme(selectedScheme.id, {
-        formula: {
-          type: "weighted_average",
-          components: updated,
-        },
-      });
+      await saveSchemeComponents(updated);
       await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
       toast.success(m.settings_ui_assessment_component_deleted());
     } catch (err: unknown) {

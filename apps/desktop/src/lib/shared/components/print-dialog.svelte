@@ -6,7 +6,7 @@ import * as m from "$lib/paraglide/messages";
  * Supports multiple documents per sheet with WYSIWYG preview.
  */
 import { page } from "$app/state";
-import { api } from "$lib/api";
+import { api, extractErrorMessage } from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import {
@@ -68,6 +68,7 @@ let selectedTemplateId = $state<string>("");
 let loadingTemplates = $state(false);
 let generatingPdf = $state(false);
 let pdfUrl = $state<string | null>(null);
+let previewError = $state<string | null>(null);
 let activeTab = $state("preview");
 
 // Batch progress
@@ -203,6 +204,7 @@ $effect(() => {
   if (open && entityType) {
     loadTemplates();
     pdfUrl = null;
+    previewError = null;
     batchProgress = 0;
     isBatchProcessing = false;
     batchJobId = null;
@@ -311,6 +313,7 @@ async function generatePdf(): Promise<boolean> {
   if (!selectedTemplateId || entityIds.length === 0) return false;
   generatingPdf = true;
   pdfUrl = null;
+  previewError = null;
   try {
     const template = templates.find((t) => t.id === selectedTemplateId);
     if (!template) throw new Error(m.shared_ui_print_preview_failed());
@@ -331,8 +334,9 @@ async function generatePdf(): Promise<boolean> {
     activeTab = "pdf";
     return true;
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_print_preview_failed();
-    toast.error(msg);
+    previewError =
+      extractErrorMessage(e) || m.shared_ui_print_preview_failed();
+    toast.error(previewError);
     return false;
   } finally {
     generatingPdf = false;
@@ -401,8 +405,9 @@ async function handlePrintAction() {
       );
     } catch (e: unknown) {
       printWin.close();
-      const msg = (e as any)?.message || m.shared_ui_print_generation_failed();
-      toast.error(msg);
+      toast.error(
+        extractErrorMessage(e) || m.shared_ui_print_generation_failed(),
+      );
     } finally {
       isBatchProcessing = false;
     }
@@ -570,7 +575,9 @@ function applySuggestion(suggestion: MultiUpLayout) {
               {:else}
                 <div class="text-muted-foreground flex flex-col items-center gap-2 text-[10px]">
                   <DocumentPage size={28} />
-                  <p>{m.common_print_multi_up_preview_empty()}</p>
+                  <p class={previewError ? "text-destructive" : ""}>
+                    {previewError || m.common_print_multi_up_preview_empty()}
+                  </p>
                   <Button
                     variant="outline"
                     size="xs"

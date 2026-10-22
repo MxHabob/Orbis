@@ -31,8 +31,8 @@ pub async fn generate_report(
     let report_code = template_id; // Mapping frontend's 'template_id' to 'report_code'
 
     // Parse parameters
-    let params: HashMap<String, ParamValue> =
-        serde_json::from_value(parameters).unwrap_or_default();
+    let params: HashMap<String, ParamValue> = serde_json::from_value(parameters)
+        .map_err(|error| format!("Invalid report parameters: {error}"))?;
 
     let output_format = if format.is_empty() {
         OutputFormat::DataOnly
@@ -64,30 +64,9 @@ pub async fn generate_report(
         template_id: None,
     };
 
-    let (mut job, export) = state
+    let job = state
         .report_service
-        .generate_report(&ctx, input)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    // Since the frontend expects to download a file later, we write it to a temp dir
-    let temp_dir = std::env::temp_dir().join("orbis_reports");
-    tokio::fs::create_dir_all(&temp_dir)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let file_path = temp_dir.join(format!("{}.{}", job.id, export.filename));
-    tokio::fs::write(&file_path, &export.data)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    // Update job with file path
-    job.output_path = Some(file_path.to_string_lossy().to_string());
-    job.output_size_bytes = Some(export.data.len() as i64);
-
-    state
-        .report_job_repo
-        .save(&job)
+        .enqueue_report(&ctx, input)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -98,6 +77,7 @@ pub async fn generate_report(
 pub struct ReportJobStatus {
     pub job_id: String,
     pub status: String,
+    pub error_message: Option<String>,
 }
 
 #[tauri::command]
@@ -117,6 +97,7 @@ pub async fn get_report_job_status(
     Ok(ReportJobStatus {
         job_id: job.id.to_string(),
         status: job.status.to_string(),
+        error_message: job.error_message,
     })
 }
 

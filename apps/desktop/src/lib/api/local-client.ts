@@ -780,9 +780,14 @@ export class LocalClient implements OrbisApiClient {
         request: {
           id,
           name: req.name,
+          name_ar: req.name_ar,
           description: req.description,
           max_score: req.max_score,
           formula: req.formula,
+          level: req.level,
+          institution_scope: req.institution_scope,
+          components: req.components,
+          is_default: req.is_default,
         },
       }),
     );
