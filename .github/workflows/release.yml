@@ -172,7 +172,29 @@ jobs:
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
         run: |
-          node -e "const fs = require('node:fs'); const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY; const endpoint = 'https://github.com/MxHabob/Orbis/releases/latest/download/latest.json'; const config = { bundle: { createUpdaterArtifacts: true }, plugins: { updater: { pubkey, endpoints: [endpoint] } } }; fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config));"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const base = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8'));
+          const pubkey = process.env.TAURI_UPDATER_PUBLIC_KEY;
+          const endpoint = 'https://github.com/MxHabob/Orbis/releases/latest/download/latest.json';
+          const config = {
+            ...base,
+            bundle: {
+              ...(base.bundle ?? {}),
+              createUpdaterArtifacts: true,
+            },
+            plugins: {
+              ...(base.plugins ?? {}),
+              updater: {
+                ...(base.plugins?.updater ?? {}),
+                pubkey,
+                endpoints: [endpoint],
+                dangerousInsecureTransportProtocol: false,
+              },
+            },
+          };
+          fs.writeFileSync('src-tauri/tauri.updater.conf.json', JSON.stringify(config, null, 2));
+          NODE
 
       - name: Build signed Tauri app and upload to draft release
         uses: tauri-apps/tauri-action@v1
