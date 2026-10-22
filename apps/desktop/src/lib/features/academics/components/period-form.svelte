@@ -91,6 +91,7 @@ function fieldError(field: string): string | undefined {
 
 const periodTypeLabels = $derived({
   year: m.common_cycle_form_type_year(),
+  annual: "Annual",
   term: m.common_period_form_type_term(),
 });
 
@@ -202,13 +203,14 @@ async function handleSubmit(e: SubmitEvent) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="year">{m.common_cycle_form_type_year()}</SelectItem>
+            <SelectItem value="annual">Annual</SelectItem>
             <SelectItem value="term">{m.common_period_form_type_term()}</SelectItem>
           </SelectContent>
         </Select>
         {/snippet}
       </FormField>
 
-      {#if form.values.period_type !== "year"}
+      {#if form.values.period_type !== "year" && form.values.period_type !== "annual"}
         <FormField id="per_parent" label={m.common_period_form_parent()} error={fieldError("parent_id")}>
           {#snippet children()}
           <Select type="single" value={form.values.parent_id} onValueChange={(v) => (form.values.parent_id = v ?? "")} disabled={isEdit}>

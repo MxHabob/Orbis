@@ -962,6 +962,7 @@ async function deleteYear(year: academicCalendarDto) {
                   <span>{periodType}</span>
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="annual">Annual</SelectItem>
                   <SelectItem value="custom">Custom</SelectItem>
                   <SelectItem value="semester">Semester</SelectItem>
                   <SelectItem value="trimester">Trimester</SelectItem>
