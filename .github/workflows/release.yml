@@ -284,7 +284,7 @@ jobs:
           ORBIS_DEV_ALLOW_LOCAL_HTTP: "false"
         run: bun run expo prebuild --platform android --no-install
 
-      - name: Verify generated Android version
+      - name: Verify generated Android release configuration
         working-directory: apps/mobile
         env:
           EXPECTED_VERSION: ${{ needs.validate.outputs.version }}
@@ -293,10 +293,20 @@ jobs:
           node <<'NODE'
           const fs = require("node:fs");
           const gradle = fs.readFileSync("android/app/build.gradle", "utf8");
+          const gradleProperties = fs.readFileSync("android/gradle.properties", "utf8");
           const versionName = gradle.match(/^\s*versionName\s+"([^"]+)"/m)?.[1];
           const versionCode = Number(gradle.match(/^\s*versionCode\s+(\d+)\s*$/m)?.[1]);
           if (versionName !== process.env.EXPECTED_VERSION || versionCode !== Number(process.env.EXPECTED_VERSION_CODE)) {
             throw new Error(`Generated Android version ${versionName} (${versionCode}) does not match the release tag and app config.`);
+          }
+          for (const property of [
+            "android.enableMinifyInReleaseBuilds",
+            "android.enableShrinkResourcesInReleaseBuilds",
+          ]) {
+            const value = gradleProperties.match(new RegExp(`^\\s*${property.replaceAll(".", "\\.")}\\s*=\\s*(\\S+)\\s*$`, "m"))?.[1];
+            if (value !== "false") {
+              throw new Error(`Expected ${property}=false in generated Android release configuration; received ${value ?? "missing"}.`);
+            }
           }
           NODE
 
