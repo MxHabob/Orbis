@@ -168,6 +168,7 @@ jobs:
           fi
 
       - name: Configure signed updater
+        shell: bash
         working-directory: apps/desktop
         env:
           TAURI_UPDATER_PUBLIC_KEY: ${{ vars.TAURI_UPDATER_PUBLIC_KEY }}
