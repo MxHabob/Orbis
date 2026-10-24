@@ -403,16 +403,43 @@ jobs:
           if (metadata.version.replace(/^v/, "") !== version) {
             throw new Error(`Updater metadata version ${metadata.version} does not match ${version}.`);
           }
-          const releaseAssetBase = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${process.env.GITHUB_REF_NAME}/`;
+          const repositoryParts = process.env.GITHUB_REPOSITORY.split("/");
+          if (repositoryParts.length !== 2 || repositoryParts.some((part) => !part)) {
+            throw new Error(`Invalid GitHub repository name: ${process.env.GITHUB_REPOSITORY}.`);
+          }
+          const [repositoryOwner, repositoryName] = repositoryParts;
           for (const target of ["windows-x86_64", "darwin-aarch64"]) {
             const platform = metadata.platforms?.[target];
             if (!platform?.url || !platform?.signature) {
               throw new Error(`Updater metadata is missing a signed ${target} update.`);
             }
-            if (!platform.url.startsWith(releaseAssetBase)) {
-              throw new Error(`Updater URL for ${target} must point to this GitHub Release.`);
+            const updateUrl = new URL(platform.url);
+            const urlParts = updateUrl.pathname.split("/").map(decodeURIComponent);
+            const [
+              urlOwner,
+              urlRepository,
+              releaseSegment,
+              downloadSegment,
+              releaseTag,
+              encodedFileName,
+            ] = urlParts.slice(1);
+            if (
+              updateUrl.protocol !== "https:" ||
+              updateUrl.hostname.toLowerCase() !== "github.com" ||
+              updateUrl.username ||
+              updateUrl.password ||
+              updateUrl.port ||
+              urlOwner?.toLowerCase() !== repositoryOwner.toLowerCase() ||
+              urlRepository?.toLowerCase() !== repositoryName.toLowerCase() ||
+              releaseSegment?.toLowerCase() !== "releases" ||
+              downloadSegment?.toLowerCase() !== "download" ||
+              releaseTag !== process.env.GITHUB_REF_NAME ||
+              !encodedFileName ||
+              urlParts.length !== 7
+            ) {
+              throw new Error(`Updater URL for ${target} must point to this GitHub Release: ${platform.url}`);
             }
-            const fileName = decodeURIComponent(new URL(platform.url).pathname.split("/").pop() ?? "");
+            const fileName = encodedFileName;
             if (!fileName || !nameSet.has(fileName.toLowerCase())) {
               throw new Error(`Updater URL for ${target} does not match a release asset.`);
             }
