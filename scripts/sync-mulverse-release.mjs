@@ -74,16 +74,16 @@ async function digestFile(filePath) {
   return { checksum: hash.digest("hex"), size: fileStat.size };
 }
 
-async function getUpdaterArtifact(globPattern, platform, architecture, label) {
+async function getUpdaterArtifact(filePattern, platform, architecture, label) {
   const names = await readdir(artifactDir);
-  const archives = names.filter((name) => globPattern.test(name));
-  if (archives.length !== 1) {
+  const matches = names.filter((name) => filePattern.test(name));
+  if (matches.length !== 1) {
     throw new Error(
-      `Expected exactly one ${label} updater archive; found ${archives.length}.`,
+      `Expected exactly one ${label} updater artifact; found ${matches.length}.`,
     );
   }
 
-  const fileName = archives[0];
+  const fileName = matches[0];
   const filePath = path.join(artifactDir, fileName);
   const signaturePath = `${filePath}.sig`;
   const signature = (await readFile(signaturePath, "utf8")).trim();
@@ -116,7 +116,7 @@ if (typeof releaseNotes !== "string" || !releaseNotes.trim()) {
 
 const artifacts = [
   await getUpdaterArtifact(
-    /\.nsis\.zip$/i,
+    /-setup\.exe$/i,
     "windows",
     "x86_64",
     "Windows NSIS",
@@ -126,12 +126,18 @@ const artifacts = [
 for (const artifact of artifacts) {
   const expectedTarget =
     artifact.platform === "windows" ? "windows-x86_64" : "darwin-aarch64";
-  if (
-    updaterMetadata.platforms?.[expectedTarget]?.signature?.trim() !==
-    artifact.signature
-  ) {
+  const platform = updaterMetadata.platforms?.[expectedTarget];
+  if (!platform?.url || platform.signature?.trim() !== artifact.signature) {
     throw new Error(
       `Updater metadata has no signed manifest for ${expectedTarget}.`,
+    );
+  }
+  const updateFileName = decodeURIComponent(
+    path.basename(new URL(platform.url).pathname),
+  );
+  if (updateFileName !== artifact.fileName) {
+    throw new Error(
+      `Updater metadata for ${expectedTarget} points to ${updateFileName}, not ${artifact.fileName}.`,
     );
   }
 }
