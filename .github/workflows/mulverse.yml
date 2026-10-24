@@ -64,8 +64,8 @@ jobs:
           gh release download "$RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --dir "$RELEASE_ARTIFACT_DIR" \
-            --pattern "*.nsis.zip" \
-            --pattern "*.nsis.zip.sig" \
+            --pattern "*-setup.exe" \
+            --pattern "*-setup.exe.sig" \
             --pattern "*.app.tar.gz" \
             --pattern "*.app.tar.gz.sig" \
             --pattern "latest.json"

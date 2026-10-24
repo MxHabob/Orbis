@@ -368,7 +368,9 @@ jobs:
           gh release download "${GITHUB_REF_NAME}" \
             --repo "$GITHUB_REPOSITORY" \
             --dir release-check \
-            --pattern latest.json
+            --pattern latest.json \
+            --pattern "*-setup.exe.sig" \
+            --pattern "*.app.tar.gz.sig"
           gh release view "${GITHUB_REF_NAME}" \
             --repo "$GITHUB_REPOSITORY" \
             --json isDraft,assets > release-check/release.json
@@ -383,12 +385,14 @@ jobs:
           const release = JSON.parse(fs.readFileSync("release-check/release.json", "utf8"));
           if (!release.isDraft) throw new Error("Expected the Tauri build to leave a draft GitHub Release.");
           const names = release.assets.map((asset) => asset.name.toLowerCase());
+          const nameSet = new Set(names);
           const has = (pattern) => names.some((name) => pattern.test(name));
           for (const [label, pattern] of [
-            ["Windows installer", /\.exe$/],
+            ["Windows NSIS installer", /-setup\.exe$/],
+            ["Windows NSIS updater signature", /-setup\.exe\.sig$/],
             ["macOS disk image", /\.dmg$/],
             ["macOS updater archive", /\.app\.tar\.gz$/],
-            ["Windows NSIS updater archive", /\.nsis\.zip$/],
+            ["macOS updater signature", /\.app\.tar\.gz\.sig$/],
             ["Tauri updater JSON", /^latest\.json$/],
             ["Android APK", new RegExp(`^orbis-${version}-android-arm64\\.apk$`, "i")],
             ["Android App Bundle", new RegExp(`^orbis-${version}-android-arm64\\.aab$`, "i")],
@@ -407,6 +411,23 @@ jobs:
             }
             if (!platform.url.startsWith(releaseAssetBase)) {
               throw new Error(`Updater URL for ${target} must point to this GitHub Release.`);
+            }
+            const fileName = decodeURIComponent(new URL(platform.url).pathname.split("/").pop() ?? "");
+            if (!fileName || !nameSet.has(fileName.toLowerCase())) {
+              throw new Error(`Updater URL for ${target} does not match a release asset.`);
+            }
+            const signatureFileName = `${fileName}.sig`;
+            if (!nameSet.has(signatureFileName.toLowerCase())) {
+              throw new Error(`Release is missing the updater signature for ${target}.`);
+            }
+            if (fs.readFileSync(`release-check/${signatureFileName}`, "utf8").trim() !== platform.signature.trim()) {
+              throw new Error(`Updater signature for ${target} does not match its release signature asset.`);
+            }
+            if (target === "windows-x86_64" && !/-setup\.exe$/i.test(fileName)) {
+              throw new Error(`Windows updater URL must point to the signed NSIS setup executable; received ${fileName}.`);
+            }
+            if (target === "darwin-aarch64" && !/\.app\.tar\.gz$/i.test(fileName)) {
+              throw new Error(`macOS updater URL must point to the signed app archive; received ${fileName}.`);
             }
           }
           NODE
