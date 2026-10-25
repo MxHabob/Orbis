@@ -1,6 +1,6 @@
 # Desktop releases
 
-Desktop updates are signed and distributed through public GitHub Releases. A release tag triggers `.github/workflows/release.yml`, which builds Windows and macOS installers, validates the signed Tauri updater metadata, and publishes the GitHub Release. The Windows updater artifact is the signed NSIS `*-setup.exe` installer and its `.sig` file; the workflow must not expect a `.nsis.zip` asset. The desktop updater checks `https://github.com/MxHabob/Orbis/releases/latest/download/latest.json`; the release must be published for that URL to serve update metadata.
+Desktop updates are signed and distributed through public GitHub Releases. A release tag triggers `.github/workflows/release.yml`, which builds Windows and macOS installers, validates the signed Tauri updater metadata, and publishes the GitHub Release. The Windows updater artifact is the signed NSIS `*-setup.exe` installer and its `.sig` file; the workflow must not expect a `.nsis.zip` asset. The Tauri Action generates updater asset URLs using GitHub's Releases Assets API, so release validation verifies each asset ID against the tagged release. The desktop updater checks `https://github.com/MxHabob/Orbis/releases/latest/download/latest.json`; the release must be published for that URL to serve update metadata.
 
 Staging builds intentionally do not use the production updater channel. Their update check is disabled so they cannot install production updates.
 
