@@ -13,6 +13,7 @@ jobs:
     name: Validate release source
     runs-on: ubuntu-latest
     outputs:
+      tag: ${{ steps.meta.outputs.tag }}
       version: ${{ steps.meta.outputs.version }}
       android_version_code: ${{ steps.meta.outputs.android_version_code }}
       release_notes: ${{ steps.release_notes.outputs.body }}
@@ -61,12 +62,13 @@ jobs:
             throw new Error(`Android versionCode must be a positive integer; received ${mobileVersionCode}.`);
           }
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `android_version_code=${mobileVersionCode}\n`);
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `tag=${process.env.TAG}\n`);
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\n`);
           NODE
 
       - name: Load and validate release notes
         id: release_notes
-        run: node scripts/github-release-body.mjs "${{ github.ref_name }}"
+        run: node scripts/github-release-body.mjs "${{ steps.meta.outputs.tag }}"
 
   build-desktop:
     name: Build Desktop (${{ matrix.target }})
@@ -93,7 +95,7 @@ jobs:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.validate.outputs.tag }}
 
       - name: Setup GraalVM Mandrel
         uses: graalvm/setup-graalvm@v1
@@ -206,8 +208,8 @@ jobs:
           MULVERSE_LICENSE_PUBLIC_KEY_B64: ${{ vars.MULVERSE_LICENSE_PUBLIC_KEY_B64 }}
           MULVERSE_LICENSE_KEY_ID: ${{ vars.MULVERSE_LICENSE_KEY_ID }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "Orbis Release ${{ github.ref_name }}"
+          tagName: ${{ needs.validate.outputs.tag }}
+          releaseName: "Orbis Release ${{ needs.validate.outputs.tag }}"
           releaseBody: ${{ needs.validate.outputs.release_notes }}
           releaseDraft: true
           prerelease: false
@@ -229,7 +231,7 @@ jobs:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.validate.outputs.tag }}
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -338,7 +340,7 @@ jobs:
       - name: Upload Android packages to draft GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ github.ref_name }}" release-output/* --repo "$GITHUB_REPOSITORY" --clobber
+        run: gh release upload "${{ needs.validate.outputs.tag }}" release-output/* --repo "$GITHUB_REPOSITORY" --clobber
 
   prepare-github-release:
     name: Validate and publish GitHub Release
@@ -353,160 +355,19 @@ jobs:
       - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ needs.validate.outputs.tag }}
 
       - name: Upload versioned release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/upload-release-assets.mjs "${{ github.ref_name }}"
+        run: node scripts/upload-release-assets.mjs "${{ needs.validate.outputs.tag }}"
 
-      - name: Download updater metadata
+      - name: Validate and publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          mkdir -p release-check
-          gh release download "${GITHUB_REF_NAME}" \
-            --repo "$GITHUB_REPOSITORY" \
-            --dir release-check \
-            --pattern latest.json \
-            --pattern "*-setup.exe.sig" \
-            --pattern "*.app.tar.gz.sig"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" > release-check/release.json
-
-      - name: Validate complete release assets
-        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
           RELEASE_VERSION: ${{ needs.validate.outputs.version }}
-        run: |
-          node <<'NODE'
-          const fs = require("node:fs");
-          const version = process.env.RELEASE_VERSION;
-          const release = JSON.parse(fs.readFileSync("release-check/release.json", "utf8"));
-          if (!release.draft) throw new Error("Expected the Tauri build to leave a draft GitHub Release.");
-          const assets = release.assets;
-          if (!Array.isArray(assets)) throw new Error("GitHub Release response is missing its assets.");
-          const names = assets.map((asset) => asset.name.toLowerCase());
-          const nameSet = new Set(names);
-          const has = (pattern) => names.some((name) => pattern.test(name));
-          for (const [label, pattern] of [
-            ["Windows NSIS installer", /-setup\.exe$/],
-            ["Windows NSIS updater signature", /-setup\.exe\.sig$/],
-            ["macOS disk image", /\.dmg$/],
-            ["macOS updater archive", /\.app\.tar\.gz$/],
-            ["macOS updater signature", /\.app\.tar\.gz\.sig$/],
-            ["Tauri updater JSON", /^latest\.json$/],
-            ["Android APK", new RegExp(`^orbis-${version}-android-arm64\\.apk$`, "i")],
-            ["Android App Bundle", new RegExp(`^orbis-${version}-android-arm64\\.aab$`, "i")],
-          ]) {
-            if (!has(pattern)) throw new Error(`Release is missing ${label}.`);
-          }
-          const metadata = JSON.parse(fs.readFileSync("release-check/latest.json", "utf8"));
-          if (metadata.version.replace(/^v/, "") !== version) {
-            throw new Error(`Updater metadata version ${metadata.version} does not match ${version}.`);
-          }
-          const repositoryParts = process.env.GITHUB_REPOSITORY.split("/");
-          if (repositoryParts.length !== 2 || repositoryParts.some((part) => !part)) {
-            throw new Error(`Invalid GitHub repository name: ${process.env.GITHUB_REPOSITORY}.`);
-          }
-          const [repositoryOwner, repositoryName] = repositoryParts;
-          for (const target of ["windows-x86_64", "darwin-aarch64"]) {
-            const platform = metadata.platforms?.[target];
-            if (!platform?.url || !platform?.signature) {
-              throw new Error(`Updater metadata is missing a signed ${target} update.`);
-            }
-            const updateUrl = new URL(platform.url);
-            if (
-              updateUrl.protocol !== "https:" ||
-              updateUrl.username ||
-              updateUrl.password ||
-              updateUrl.port ||
-              updateUrl.search ||
-              updateUrl.hash
-            ) {
-              throw new Error(`Updater URL for ${target} must be a clean HTTPS GitHub asset URL: ${platform.url}`);
-            }
-            const pathParts = updateUrl.pathname.split("/");
-            if (pathParts[0] !== "" || pathParts.slice(1).some((part) => !part)) {
-              throw new Error(`Updater URL for ${target} has an invalid path: ${platform.url}`);
-            }
-            const urlParts = pathParts.slice(1).map(decodeURIComponent);
-            let fileName;
-            if (updateUrl.hostname.toLowerCase() === "github.com") {
-              const [
-                urlOwner,
-                urlRepository,
-                releaseSegment,
-                downloadSegment,
-                releaseTag,
-                urlFileName,
-              ] = urlParts;
-              if (
-                urlParts.length !== 6 ||
-                urlOwner?.toLowerCase() !== repositoryOwner.toLowerCase() ||
-                urlRepository?.toLowerCase() !== repositoryName.toLowerCase() ||
-                releaseSegment !== "releases" ||
-                downloadSegment !== "download" ||
-                releaseTag !== process.env.GITHUB_REF_NAME ||
-                !urlFileName
-              ) {
-                throw new Error(`Updater URL for ${target} must point to this GitHub Release: ${platform.url}`);
-              }
-              fileName = urlFileName;
-            } else if (updateUrl.hostname.toLowerCase() === "api.github.com") {
-              const [
-                reposSegment,
-                urlOwner,
-                urlRepository,
-                releasesSegment,
-                assetsSegment,
-                assetId,
-              ] = urlParts;
-              if (
-                urlParts.length !== 6 ||
-                reposSegment !== "repos" ||
-                urlOwner?.toLowerCase() !== repositoryOwner.toLowerCase() ||
-                urlRepository?.toLowerCase() !== repositoryName.toLowerCase() ||
-                releasesSegment !== "releases" ||
-                assetsSegment !== "assets" ||
-                !/^\d+$/.test(assetId ?? "")
-              ) {
-                throw new Error(`Updater URL for ${target} must point to this GitHub Release: ${platform.url}`);
-              }
-              const asset = assets.find((candidate) => String(candidate.id) === assetId);
-              if (!asset) {
-                throw new Error(`Updater URL for ${target} does not identify an asset in this GitHub Release: ${platform.url}`);
-              }
-              fileName = asset.name;
-            } else {
-              throw new Error(`Updater URL for ${target} must point to this GitHub Release: ${platform.url}`);
-            }
-            if (/[\\/]/.test(fileName)) {
-              throw new Error(`Updater URL for ${target} does not identify a valid release asset filename.`);
-            }
-            if (!fileName || !nameSet.has(fileName.toLowerCase())) {
-              throw new Error(`Updater URL for ${target} does not match a release asset.`);
-            }
-            const signatureFileName = `${fileName}.sig`;
-            if (!nameSet.has(signatureFileName.toLowerCase())) {
-              throw new Error(`Release is missing the updater signature for ${target}.`);
-            }
-            if (fs.readFileSync(`release-check/${signatureFileName}`, "utf8").trim() !== platform.signature.trim()) {
-              throw new Error(`Updater signature for ${target} does not match its release signature asset.`);
-            }
-            if (target === "windows-x86_64" && !/-setup\.exe$/i.test(fileName)) {
-              throw new Error(`Windows updater URL must point to the signed NSIS setup executable; received ${fileName}.`);
-            }
-            if (target === "darwin-aarch64" && !/\.app\.tar\.gz$/i.test(fileName)) {
-              throw new Error(`macOS updater URL must point to the signed app archive; received ${fileName}.`);
-            }
-          }
-          NODE
-
-      - name: Publish validated GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id)"
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false
+        run: node scripts/publish-github-release.mjs
 
       - name: Summarize published release
         run: |
