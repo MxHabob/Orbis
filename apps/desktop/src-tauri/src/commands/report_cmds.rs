@@ -38,7 +38,9 @@ fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
             for item in items {
                 let entry = match item {
                     serde_json::Value::String(s) => s,
-                    _ => return Err("Report parameter id list must contain only strings".to_string()),
+                    _ => {
+                        return Err("Report parameter id list must contain only strings".to_string());
+                    }
                 };
                 values.push(entry);
             }
@@ -51,17 +53,23 @@ fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
                         let from = obj
                             .remove("from")
                             .and_then(serde_json::Value::as_str)
-                            .ok_or_else(|| "date_range parameter requires a 'from' string".to_string())?;
+                            .ok_or_else(|| {
+                                "date_range parameter requires a 'from' string".to_string()
+                            })?;
                         let to = obj
                             .remove("to")
                             .and_then(serde_json::Value::as_str)
-                            .ok_or_else(|| "date_range parameter requires a 'to' string".to_string())?;
-                        Ok(ParamValue::DateRange { from: from.to_string(), to: to.to_string() })
+                            .ok_or_else(|| {
+                                "date_range parameter requires a 'to' string".to_string()
+                            })?;
+                        Ok(ParamValue::DateRange {
+                            from: from.to_string(),
+                            to: to.to_string(),
+                        })
                     }
-                    _ => Ok(ParamValue::Text(
-                        serde_json::to_string(&obj)
-                            .map_err(|err| format!("Failed to coerce report parameter object: {err}"))?,
-                    )),
+                    _ => Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                        |err| format!("Failed to coerce report parameter object: {err}"),
+                    )?)),
                 }
             } else if obj.get("from").is_some() || obj.get("to").is_some() {
                 let from = obj
@@ -72,10 +80,14 @@ fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
                     .remove("to")
                     .and_then(serde_json::Value::as_str)
                     .unwrap_or_default();
-                Ok(ParamValue::DateRange { from: from.to_string(), to: to.to_string() })
+                Ok(ParamValue::DateRange {
+                    from: from.to_string(),
+                    to: to.to_string(),
+                })
             } else {
-                Ok(ParamValue::Text(serde_json::to_string(&obj)
-                    .map_err(|err| format!("Failed to coerce report parameter object: {err}"))?))
+                Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                    |err| format!("Failed to coerce report parameter object: {err}"),
+                )?))
             }
         }
     }
@@ -101,7 +113,9 @@ pub async fn generate_report(
             mapped
         }
         _ => {
-            return Err("Invalid report parameters: report parameters must be an object".to_string());
+            return Err(
+                "Invalid report parameters: report parameters must be an object".to_string(),
+            );
         }
     };
 

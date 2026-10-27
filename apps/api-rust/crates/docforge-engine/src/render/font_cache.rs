@@ -59,8 +59,14 @@ impl FontCache {
             ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
             ("Arial", "C:\\Windows\\Fonts\\arial.ttf"),
             ("Segoe UI", "C:\\Windows\\Fonts\\segoeui.ttf"),
-            ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
-            ("Noto Sans Arabic", "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf"),
+            (
+                "DejaVu Sans",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            ),
+            (
+                "Noto Sans Arabic",
+                "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+            ),
             ("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"),
             ("Geeza Pro", "/System/Library/Fonts/GeezaPro.ttc"),
         ];

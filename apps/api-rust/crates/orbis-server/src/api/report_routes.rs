@@ -832,7 +832,9 @@ pub async fn create_template_binding(
 
 fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue, ApiError> {
     match value {
-        serde_json::Value::Null => Err(ApiError::bad_request("Report parameter value cannot be null")),
+        serde_json::Value::Null => Err(ApiError::bad_request(
+            "Report parameter value cannot be null",
+        )),
         serde_json::Value::String(s) => Ok(ParamValue::Text(s)),
         serde_json::Value::Bool(b) => Ok(ParamValue::Boolean(b)),
         serde_json::Value::Number(n) => {
@@ -841,7 +843,9 @@ fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue,
             } else if let Some(f) = n.as_f64() {
                 Ok(ParamValue::Decimal(f))
             } else {
-                Err(ApiError::bad_request("Unsupported numeric report parameter value"))
+                Err(ApiError::bad_request(
+                    "Unsupported numeric report parameter value",
+                ))
             }
         }
         serde_json::Value::Array(items) => {
@@ -849,7 +853,11 @@ fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue,
             for item in items {
                 let value = match item {
                     serde_json::Value::String(s) => s,
-                    _ => return Err(ApiError::bad_request("Report parameter id list must contain only strings")),
+                    _ => {
+                        return Err(ApiError::bad_request(
+                            "Report parameter id list must contain only strings",
+                        ));
+                    }
                 };
                 values.push(value);
             }
@@ -862,18 +870,26 @@ fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue,
                         let from = obj
                             .remove("from")
                             .and_then(|value| value.as_str().map(str::to_owned))
-                            .ok_or_else(|| ApiError::bad_request("date_range parameter requires a 'from' string"))?;
+                            .ok_or_else(|| {
+                                ApiError::bad_request(
+                                    "date_range parameter requires a 'from' string",
+                                )
+                            })?;
                         let to = obj
                             .remove("to")
                             .and_then(|value| value.as_str().map(str::to_owned))
-                            .ok_or_else(|| ApiError::bad_request("date_range parameter requires a 'to' string"))?;
+                            .ok_or_else(|| {
+                                ApiError::bad_request("date_range parameter requires a 'to' string")
+                            })?;
                         Ok(ParamValue::DateRange { from, to })
                     }
-                    _ => Ok(ParamValue::Text(
-                        serde_json::to_string(&obj).map_err(|error| {
-                            ApiError::bad_request(format!("Failed to coerce report parameter object: {error}"))
-                        })?,
-                    )),
+                    _ => Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                        |error| {
+                            ApiError::bad_request(format!(
+                                "Failed to coerce report parameter object: {error}"
+                            ))
+                        },
+                    )?)),
                 }
             } else if obj.contains_key("from") || obj.contains_key("to") {
                 let from = obj
@@ -886,11 +902,13 @@ fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue,
                     .unwrap_or_default();
                 Ok(ParamValue::DateRange { from, to })
             } else {
-                Ok(ParamValue::Text(
-                    serde_json::to_string(&obj).map_err(|error| {
-                        ApiError::bad_request(format!("Failed to coerce report parameter object: {error}"))
-                    })?,
-                ))
+                Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                    |error| {
+                        ApiError::bad_request(format!(
+                            "Failed to coerce report parameter object: {error}"
+                        ))
+                    },
+                )?))
             }
         }
     }
