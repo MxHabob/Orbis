@@ -49,11 +49,33 @@ pub struct FontCache {
 impl FontCache {
     /// Create a new empty font cache
     pub fn new(default_family: &str) -> Self {
-        FontCache {
+        let mut cache = FontCache {
             fonts: HashMap::new(),
             search_dirs: Vec::new(),
             default_family: default_family.to_string(),
+        };
+
+        let candidate_paths = [
+            ("Tahoma", "C:\\Windows\\Fonts\\tahoma.ttf"),
+            ("Arial", "C:\\Windows\\Fonts\\arial.ttf"),
+            ("Segoe UI", "C:\\Windows\\Fonts\\segoeui.ttf"),
+            ("DejaVu Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+            ("Noto Sans Arabic", "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf"),
+            ("Arial", "/System/Library/Fonts/Supplemental/Arial.ttf"),
+            ("Geeza Pro", "/System/Library/Fonts/GeezaPro.ttc"),
+        ];
+
+        for (family, path) in candidate_paths {
+            if !Path::new(path).exists() {
+                continue;
+            }
+            let _ = cache.load_font_file(family, 400, FontStyleKind::Normal, path);
+            if family == "Tahoma" || family == "DejaVu Sans" || family == "Arial" {
+                let _ = cache.load_font_file(family, 700, FontStyleKind::Normal, path);
+            }
         }
+
+        cache
     }
 
     /// Create a font cache pre-loaded with standard OS Arabic and Latin fonts

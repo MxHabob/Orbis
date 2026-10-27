@@ -19,6 +19,68 @@ fn ok<T: serde::Serialize>(data: T) -> ApiResponse<T> {
 
 // ── Commands ────────────────────────────────────────────────────
 
+fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
+    match value {
+        serde_json::Value::Null => Err("Report parameter value cannot be null".to_string()),
+        serde_json::Value::String(s) => Ok(ParamValue::Text(s)),
+        serde_json::Value::Bool(b) => Ok(ParamValue::Boolean(b)),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                Ok(ParamValue::Integer(i))
+            } else if let Some(f) = n.as_f64() {
+                Ok(ParamValue::Decimal(f))
+            } else {
+                Err("Unsupported numeric report parameter value".to_string())
+            }
+        }
+        serde_json::Value::Array(items) => {
+            let mut values = Vec::with_capacity(items.len());
+            for item in items {
+                let entry = match item {
+                    serde_json::Value::String(s) => s,
+                    _ => return Err("Report parameter id list must contain only strings".to_string()),
+                };
+                values.push(entry);
+            }
+            Ok(ParamValue::IdList(values))
+        }
+        serde_json::Value::Object(mut obj) => {
+            if let Some(kind) = obj.get("type").and_then(serde_json::Value::as_str) {
+                match kind {
+                    "date_range" | "dateRange" => {
+                        let from = obj
+                            .remove("from")
+                            .and_then(serde_json::Value::as_str)
+                            .ok_or_else(|| "date_range parameter requires a 'from' string".to_string())?;
+                        let to = obj
+                            .remove("to")
+                            .and_then(serde_json::Value::as_str)
+                            .ok_or_else(|| "date_range parameter requires a 'to' string".to_string())?;
+                        Ok(ParamValue::DateRange { from: from.to_string(), to: to.to_string() })
+                    }
+                    _ => Ok(ParamValue::Text(
+                        serde_json::to_string(&obj)
+                            .map_err(|err| format!("Failed to coerce report parameter object: {err}"))?,
+                    )),
+                }
+            } else if obj.get("from").is_some() || obj.get("to").is_some() {
+                let from = obj
+                    .remove("from")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default();
+                let to = obj
+                    .remove("to")
+                    .and_then(serde_json::Value::as_str)
+                    .unwrap_or_default();
+                Ok(ParamValue::DateRange { from: from.to_string(), to: to.to_string() })
+            } else {
+                Ok(ParamValue::Text(serde_json::to_string(&obj)
+                    .map_err(|err| format!("Failed to coerce report parameter object: {err}"))?))
+            }
+        }
+    }
+}
+
 #[tauri::command]
 pub async fn generate_report(
     template_id: String, // Actually report_code in the new system, we keep the param name for frontend compat
@@ -30,9 +92,18 @@ pub async fn generate_report(
     let ctx = make_ctx(&state);
     let report_code = template_id; // Mapping frontend's 'template_id' to 'report_code'
 
-    // Parse parameters
-    let params: HashMap<String, ParamValue> = serde_json::from_value(parameters)
-        .map_err(|error| format!("Invalid report parameters: {error}"))?;
+    let params = match parameters {
+        serde_json::Value::Object(obj) => {
+            let mut mapped = HashMap::with_capacity(obj.len());
+            for (key, value) in obj {
+                mapped.insert(key, coerce_param_value(value)?);
+            }
+            mapped
+        }
+        _ => {
+            return Err("Invalid report parameters: report parameters must be an object".to_string());
+        }
+    };
 
     let output_format = if format.is_empty() {
         OutputFormat::DataOnly
