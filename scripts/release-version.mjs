@@ -10,6 +10,7 @@ const paths = {
   mobilePackage: "apps/mobile/package.json",
   mobileConfig: "apps/mobile/app.json",
   cargo: "apps/desktop/src-tauri/Cargo.toml",
+  cargoLock: "apps/desktop/src-tauri/Cargo.lock",
   solver: "apps/solver-service/pom.xml",
   tauri: "apps/desktop/src-tauri/tauri.conf.json",
   staging: "apps/desktop/src-tauri/tauri.staging.conf.json",
@@ -33,6 +34,12 @@ function parseSemver(value) {
 function versionFromCargo(source) {
   const match = /^\[package\][\s\S]*?^version\s*=\s*"([^"]+)"/m.exec(source);
   if (!match) throw new Error("Could not read [package].version from desktop Cargo.toml.");
+  return match[1];
+}
+
+function versionFromCargoLock(source) {
+  const match = /^\[\[package\]\]\r?\nname = "Orbis-Svelte"\r?\nversion = "([^"]+)"/m.exec(source);
+  if (!match) throw new Error("Could not read Orbis-Svelte package version from desktop Cargo.lock.");
   return match[1];
 }
 
@@ -109,6 +116,7 @@ function main() {
     mobilePackage: read(paths.mobilePackage),
     mobileConfig: read(paths.mobileConfig),
     cargo: read(paths.cargo),
+    cargoLock: read(paths.cargoLock),
     solver: read(paths.solver),
     tauri: read(paths.tauri),
     staging: read(paths.staging),
@@ -126,6 +134,7 @@ function main() {
     mobilePackage: mobilePackage.version,
     mobileConfig: mobileConfig.expo?.version,
     cargo: versionFromCargo(original.cargo),
+    cargoLock: versionFromCargoLock(original.cargoLock),
     solver: original.solver.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1],
     tauri: JSON.parse(original.tauri).version,
     staging: JSON.parse(original.staging).version,
@@ -153,6 +162,12 @@ function main() {
       },
     }, null, 2)}\n`,
     cargo: replaceVersion(original.cargo, /(^\[package\][\s\S]*?^version\s*=\s*")([^"]+)(")/m, nextVersion, "Cargo package"),
+    cargoLock: replaceVersion(
+      original.cargoLock,
+      /^(\[\[package\]\]\r?\nname = "Orbis-Svelte"\r?\nversion = ")([^"]+)(")/m,
+      nextVersion,
+      "Cargo lockfile package",
+    ),
     solver: replaceVersion(original.solver, /(<orbis\.version>)([^<]+)(<\/orbis\.version>)/, nextVersion, "Orbis solver"),
     tauri: `${JSON.stringify({ ...JSON.parse(original.tauri), version: nextVersion }, null, 2)}\n`,
     staging: `${JSON.stringify({ ...JSON.parse(original.staging), version: nextVersion }, null, 2)}\n`,
