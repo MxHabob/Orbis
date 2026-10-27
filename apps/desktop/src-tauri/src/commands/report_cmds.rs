@@ -54,20 +54,17 @@ fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
                     "date_range" | "dateRange" => {
                         let from = obj
                             .remove("from")
-                            .and_then(serde_json::Value::as_str)
+                            .and_then(|value| value.as_str().map(str::to_owned))
                             .ok_or_else(|| {
                                 "date_range parameter requires a 'from' string".to_string()
                             })?;
                         let to = obj
                             .remove("to")
-                            .and_then(serde_json::Value::as_str)
+                            .and_then(|value| value.as_str().map(str::to_owned))
                             .ok_or_else(|| {
                                 "date_range parameter requires a 'to' string".to_string()
                             })?;
-                        Ok(ParamValue::DateRange {
-                            from: from.to_string(),
-                            to: to.to_string(),
-                        })
+                        Ok(ParamValue::DateRange { from, to })
                     }
                     _ => Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
                         |err| format!("Failed to coerce report parameter object: {err}"),
@@ -76,16 +73,13 @@ fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
             } else if obj.get("from").is_some() || obj.get("to").is_some() {
                 let from = obj
                     .remove("from")
-                    .and_then(serde_json::Value::as_str)
+                    .and_then(|value| value.as_str().map(str::to_owned))
                     .unwrap_or_default();
                 let to = obj
                     .remove("to")
-                    .and_then(serde_json::Value::as_str)
+                    .and_then(|value| value.as_str().map(str::to_owned))
                     .unwrap_or_default();
-                Ok(ParamValue::DateRange {
-                    from: from.to_string(),
-                    to: to.to_string(),
-                })
+                Ok(ParamValue::DateRange { from, to })
             } else {
                 Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
                     |err| format!("Failed to coerce report parameter object: {err}"),
