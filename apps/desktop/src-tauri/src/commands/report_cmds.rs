@@ -39,7 +39,9 @@ fn coerce_param_value(value: serde_json::Value) -> Result<ParamValue, String> {
                 let entry = match item {
                     serde_json::Value::String(s) => s,
                     _ => {
-                        return Err("Report parameter id list must contain only strings".to_string());
+                        return Err(
+                            "Report parameter id list must contain only strings".to_string()
+                        );
                     }
                 };
                 values.push(entry);
