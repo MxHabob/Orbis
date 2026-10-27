@@ -1051,7 +1051,7 @@ function createDefaultNode(
         props: {
           data: "{{id}}",
           size: 25,
-          errorCorrection: "Medium",
+          errorCorrection: "M",
           ...overrides,
         },
         position: { x: 10, y: 10, width: 25, height: 25 },

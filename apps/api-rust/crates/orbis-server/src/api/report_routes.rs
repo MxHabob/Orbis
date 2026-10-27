@@ -830,6 +830,90 @@ pub async fn create_template_binding(
     ))
 }
 
+fn coerce_report_parameter_value(value: serde_json::Value) -> Result<ParamValue, ApiError> {
+    match value {
+        serde_json::Value::Null => Err(ApiError::bad_request(
+            "Report parameter value cannot be null",
+        )),
+        serde_json::Value::String(s) => Ok(ParamValue::Text(s)),
+        serde_json::Value::Bool(b) => Ok(ParamValue::Boolean(b)),
+        serde_json::Value::Number(n) => {
+            if let Some(i) = n.as_i64() {
+                Ok(ParamValue::Integer(i))
+            } else if let Some(f) = n.as_f64() {
+                Ok(ParamValue::Decimal(f))
+            } else {
+                Err(ApiError::bad_request(
+                    "Unsupported numeric report parameter value",
+                ))
+            }
+        }
+        serde_json::Value::Array(items) => {
+            let mut values = Vec::with_capacity(items.len());
+            for item in items {
+                let value = match item {
+                    serde_json::Value::String(s) => s,
+                    _ => {
+                        return Err(ApiError::bad_request(
+                            "Report parameter id list must contain only strings",
+                        ));
+                    }
+                };
+                values.push(value);
+            }
+            Ok(ParamValue::IdList(values))
+        }
+        serde_json::Value::Object(mut obj) => {
+            if let Some(kind) = obj.get("type").and_then(|value| value.as_str()) {
+                match kind {
+                    "date_range" | "dateRange" => {
+                        let from = obj
+                            .remove("from")
+                            .and_then(|value| value.as_str().map(str::to_owned))
+                            .ok_or_else(|| {
+                                ApiError::bad_request(
+                                    "date_range parameter requires a 'from' string",
+                                )
+                            })?;
+                        let to = obj
+                            .remove("to")
+                            .and_then(|value| value.as_str().map(str::to_owned))
+                            .ok_or_else(|| {
+                                ApiError::bad_request("date_range parameter requires a 'to' string")
+                            })?;
+                        Ok(ParamValue::DateRange { from, to })
+                    }
+                    _ => Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                        |error| {
+                            ApiError::bad_request(format!(
+                                "Failed to coerce report parameter object: {error}"
+                            ))
+                        },
+                    )?)),
+                }
+            } else if obj.contains_key("from") || obj.contains_key("to") {
+                let from = obj
+                    .remove("from")
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .unwrap_or_default();
+                let to = obj
+                    .remove("to")
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .unwrap_or_default();
+                Ok(ParamValue::DateRange { from, to })
+            } else {
+                Ok(ParamValue::Text(serde_json::to_string(&obj).map_err(
+                    |error| {
+                        ApiError::bad_request(format!(
+                            "Failed to coerce report parameter object: {error}"
+                        ))
+                    },
+                )?))
+            }
+        }
+    }
+}
+
 #[utoipa::path(
     post,
     path = "/api/v1/reports/generate",
@@ -847,8 +931,14 @@ pub async fn generate_report(
 
     let params: HashMap<String, ParamValue> = req
         .parameters
-        .and_then(|v| serde_json::from_value(v).ok())
-        .unwrap_or_default();
+        .map(|value| match value {
+            serde_json::Value::Object(object) => object
+                .into_iter()
+                .map(|(key, value)| coerce_report_parameter_value(value).map(|value| (key, value)))
+                .collect::<Result<HashMap<_, _>, _>>(),
+            _ => Err(ApiError::bad_request("Report parameters must be an object")),
+        })
+        .unwrap_or_else(|| Ok(HashMap::new()))?;
 
     let output_format = req
         .format
