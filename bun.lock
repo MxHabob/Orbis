@@ -19,7 +19,7 @@
     },
     "apps/desktop": {
       "name": "@orbis/desktop",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@internationalized/date": "^3.12.0",
@@ -67,7 +67,7 @@
     },
     "apps/mobile": {
       "name": "@orbis/mobile",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "dependencies": {
         "@docforge/core": "workspace:*",
         "@expo/ui": "~57.0.19",
