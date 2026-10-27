@@ -12,12 +12,8 @@ import { Stack, DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { useColorScheme } from "react-native";
-import { useIsRestoring } from "@tanstack/react-query";
 
 import { useTheme } from "@/hooks/use-theme";
-import { useAuth } from "@/lib/api";
-import { useI18n } from "@/lib/i18n";
-import { useEffectiveContext } from "@/providers/effective-context";
 import { AppProviders } from "@/providers/app-providers";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import {
@@ -44,10 +40,6 @@ export default function RootLayout() {
 }
 
 function RootLayoutContent() {
-  const { isInitializing } = useAuth();
-  const { isReady: isI18nReady } = useI18n();
-  const { isReady: isContextReady } = useEffectiveContext();
-  const isQueryCacheRestoring = useIsRestoring();
   const [isThemeReady, setIsThemeReady] = useState(false);
   const hasHiddenSplash = useRef(false);
   const colorScheme = useColorScheme();
@@ -88,16 +80,7 @@ function RootLayoutContent() {
   }, []);
 
   useEffect(() => {
-    if (
-      isInitializing ||
-      isQueryCacheRestoring ||
-      !isContextReady ||
-      !isI18nReady ||
-      !isThemeReady ||
-      hasHiddenSplash.current
-    ) {
-      return;
-    }
+    if (hasHiddenSplash.current) return;
 
     hasHiddenSplash.current = true;
     void SplashScreen.hideAsync().catch((error: unknown) => {
@@ -106,13 +89,7 @@ function RootLayoutContent() {
         error,
       );
     });
-  }, [
-    isContextReady,
-    isI18nReady,
-    isInitializing,
-    isQueryCacheRestoring,
-    isThemeReady,
-  ]);
+  }, []);
 
   useEffect(() => {
     if (!isThemeReady) return;
