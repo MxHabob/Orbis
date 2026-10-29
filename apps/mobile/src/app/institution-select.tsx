@@ -11,7 +11,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  type ListRenderItemInfo,
   Modal,
   Pressable,
   StyleSheet,
@@ -19,6 +18,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import type { ListRenderItemInfo } from "@react-native/virtualized-lists";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
 import { Section } from "@/components/layout/section";

@@ -46,74 +46,6 @@ let isPreviewOpen = $state(false);
 let selectedDocument = $state<DocumentDto | null>(null);
 let selectedDocumentUrl = $state("");
 
-const i18n = {
-  academicsGradesRefresh: m.academics_grades_refresh(),
-  commonLoadingError: m.common_loading_error(),
-  commonRefresh: m.common_refresh(),
-  commonRetry: m.common_retry(),
-  docActionCreateReq: m.common_docs_action_create_req(),
-  docActionOpenFile: m.common_docs_action_open_file(),
-  docActionShowInFolder: m.common_docs_action_show_in_folder(),
-  docAddBtn: m.common_docs_add_btn(),
-  docBtnUpload: m.common_docs_btn_upload(),
-  docColDate: m.common_docs_col_date(),
-  docColName: m.common_docs_col_name(),
-  docCreateSuccess: m.common_docs_create_success(),
-  docDeleteConfirm: m.common_docs_delete_confirm(),
-  docDeleteSuccess: m.common_docs_delete_success(),
-  docDetailDescLabel: m.common_docs_detail_desc_label(),
-  docDetailDocLabel: m.common_docs_detail_doc_label(),
-  docEmpty: m.common_docs_empty(),
-  docEmptyHint: m.common_docs_empty_hint(),
-  docFormDescLabel: m.common_docs_form_desc_label(),
-  docFormDescPlaceholder: m.common_docs_form_desc_placeholder(),
-  docFormNameArLabel: m.common_docs_form_name_ar_label(),
-  docFormNameArPlaceholder: m.common_docs_form_name_ar_placeholder(),
-  docFormNameEnLabel: m.common_docs_form_name_en_label(),
-  docFormNameRequired: m.common_docs_form_name_required(),
-  docFormUrlLabel: m.common_docs_form_url_label(),
-  docFormUrlPlaceholder: m.common_docs_form_url_placeholder(),
-  docStatusPending: m.common_docs_status_pending(),
-  docStatusRequirement: m.common_docs_status_requirement(),
-  docStatusUploaded: m.common_docs_status_uploaded(),
-  docSubtitle: m.common_docs_subtitle(),
-  docTitle: m.common_docs_title(),
-  docUploadDialogTitle: m.common_docs_upload_dialog_title(),
-  docUploadSuccess: m.common_docs_upload_success(),
-  docUploadUrlRequired: m.common_docs_upload_url_required(),
-};
-
-const documentStateLabels = {
-  title: m.common_docs_title(),
-  subtitle: m.common_docs_subtitle(),
-  actionCreateReq: m.common_docs_action_create_req(),
-  actionOpenFile: m.common_docs_action_open_file(),
-  addBtn: m.common_docs_add_btn(),
-  uploadBtn: m.common_docs_btn_upload(),
-  empty: m.common_docs_empty(),
-  emptyHint: m.common_docs_empty_hint(),
-  formNameArLabel: m.common_docs_form_name_ar_label(),
-  formNameArPlaceholder: m.common_docs_form_name_ar_placeholder(),
-  formNameEnLabel: m.common_docs_form_name_en_label(),
-  formDescLabel: m.common_docs_form_desc_label(),
-  formDescPlaceholder: m.common_docs_form_desc_placeholder(),
-  formUrlLabel: m.common_docs_form_url_label(),
-  formUrlPlaceholder: m.common_docs_form_url_placeholder(),
-  statusRequirement: m.common_docs_status_requirement(),
-  statusPending: m.common_docs_status_pending(),
-  statusUploaded: m.common_docs_status_uploaded(),
-  colName: m.common_docs_col_name(),
-  colDate: m.common_docs_col_date(),
-  uploadDialogTitle: m.common_docs_upload_dialog_title(),
-  uploadSuccess: m.common_docs_upload_success(),
-  createSuccess: m.common_docs_create_success(),
-  deleteConfirm: m.common_docs_delete_confirm(),
-  deleteSuccess: m.common_docs_delete_success(),
-  detailDocLabel: m.common_docs_detail_doc_label(),
-  detailDescLabel: m.common_docs_detail_desc_label(),
-  uploadUrlRequired: m.common_docs_upload_url_required(),
-};
-
 const documents = $derived(
   (documentsQuery.data ?? []).filter(
     (document) => !document.deleted_at && !document.is_archived,
@@ -219,8 +151,8 @@ async function handlePreview(document: DocumentDto) {
 
 async function handleDeleteDocument(id: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.common_docs_delete_success(),
-    description: m.common_docs_delete_confirm(),
+    title: m.common_docs_trash_title(),
+    description: m.common_docs_trash_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });
@@ -229,7 +161,7 @@ async function handleDeleteDocument(id: string) {
 
   try {
     await trashMutation.mutateAsync(id);
-    toast.success(m.common_docs_delete_success());
+    toast.success(m.common_docs_trash_success());
     await documentsQuery.refetch();
   } catch (error) {
     toast.error(extractErrorMessage(error));
