@@ -12,14 +12,14 @@ export {
   AvatarStateMachine,
 } from "./core/avatar-state-machine.js";
 export {
-  type AvatarSvgOptions,
   type AvatarSvgElement,
+  type AvatarSvgOptions,
   getAvatarDrawing,
   getAvatarHatDrawing,
   renderAvatarSvg,
 } from "./core/avatar-svg.js";
 export {
-  type AvatarHat,
   ALL_AVATAR_HATS,
+  type AvatarHat,
   resolveAvatarHat,
 } from "./core/types.js";

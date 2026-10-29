@@ -102,7 +102,7 @@ export default function InstitutionSelectScreen() {
 
   const directoryQuery = useQuery({
     queryKey: ["institution-directory"],
-    queryFn: ({ signal }) => searchInstitutionDirectory(undefined, signal),
+    queryFn: ({ signal }: { signal: AbortSignal }) => searchInstitutionDirectory(undefined, signal),
     enabled: !isInitializing,
     staleTime: 5 * 60 * 1000,
   });
