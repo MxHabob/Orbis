@@ -15,6 +15,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ListItem } from "@/components/ui/list-item";
 import { useTeacherClassDataQuery } from "@/hooks/use-api-queries";
+import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import {
@@ -162,7 +163,7 @@ export default function ClassIndexScreen() {
               <EmptyState title={t("teacher_no_students")} />
             ) : (
               <Card variant="default" padding="one">
-                {roster.map(({ student, enrollment }, index) => {
+                {roster.map(({ student, enrollment }: TeacherRosterEntry, index: number) => {
                   const studentName = isArabic
                     ? student.name_ar || student.full_name
                     : student.display_name || student.full_name;

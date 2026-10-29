@@ -224,7 +224,7 @@ export default function ClassGradesScreen() {
                   </Card>
                 );
               })}
-              {classQuery.data?.roster.every(({ student }) =>
+              {classQuery.data?.roster.every(({ student }: TeacherRosterEntry) =>
                 existingGrades.has(student.id),
               ) ? (
                 <Text className="text-sm text-muted-foreground">

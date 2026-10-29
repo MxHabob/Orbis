@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { useClassScheduleQuery } from "@/hooks/use-api-queries";
+import type { StudentScheduleItem } from "@/hooks/use-api-queries";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
 import { useLocalSearchParams } from "expo-router";
@@ -37,7 +38,7 @@ export default function ClassScheduleScreen() {
         <View className="gap-four">
           {weekdayKeys.map((dayKey, index) => {
             const lessons = schedule.filter(
-              (item) => item.timeSlot.day_of_week === index + 1,
+              (item: StudentScheduleItem) => item.timeSlot.day_of_week === index + 1,
             );
             if (lessons.length === 0) return null;
             return (
@@ -45,7 +46,7 @@ export default function ClassScheduleScreen() {
                 <Text className="text-base font-semibold text-foreground">
                   {t(dayKey)}
                 </Text>
-                {lessons.map(({ lesson, timeSlot, subject }) => (
+                {lessons.map(({ lesson, timeSlot, subject }: StudentScheduleItem) => (
                   <Card key={lesson.id} variant="outline" padding="three">
                     <View className="flex-row items-center justify-between gap-three">
                       <View className="flex-1 gap-one">
