@@ -163,40 +163,45 @@ export default function ClassIndexScreen() {
               <EmptyState title={t("teacher_no_students")} />
             ) : (
               <Card variant="default" padding="one">
-                {roster.map(({ student, enrollment }: TeacherRosterEntry, index: number) => {
-                  const studentName = isArabic
-                    ? student.name_ar || student.full_name
-                    : student.display_name || student.full_name;
+                {roster.map(
+                  (
+                    { student, enrollment }: TeacherRosterEntry,
+                    index: number,
+                  ) => {
+                    const studentName = isArabic
+                      ? student.name_ar || student.full_name
+                      : student.display_name || student.full_name;
 
-                  return (
-                    <View key={student.id}>
-                      {index > 0 ? (
-                        <View className="mx-three h-px bg-border" />
-                      ) : null}
-                      <ListItem
-                        title={studentName}
-                        subtitle={
-                          enrollment.student_number ||
-                          `ID: #${student.id.slice(0, 6)}`
-                        }
-                        left={
-                          <Avatar
-                            fallback={(studentName || "S").charAt(0)}
-                            size="sm"
-                            className="bg-primary/10"
-                          />
-                        }
-                        chevron
-                        onPress={() =>
-                          router.push({
-                            pathname: "/(app)/student/[id]",
-                            params: { id: student.id },
-                          })
-                        }
-                      />
-                    </View>
-                  );
-                })}
+                    return (
+                      <View key={student.id}>
+                        {index > 0 ? (
+                          <View className="mx-three h-px bg-border" />
+                        ) : null}
+                        <ListItem
+                          title={studentName}
+                          subtitle={
+                            enrollment.student_number ||
+                            `ID: #${student.id.slice(0, 6)}`
+                          }
+                          left={
+                            <Avatar
+                              fallback={(studentName || "S").charAt(0)}
+                              size="sm"
+                              className="bg-primary/10"
+                            />
+                          }
+                          chevron
+                          onPress={() =>
+                            router.push({
+                              pathname: "/(app)/student/[id]",
+                              params: { id: student.id },
+                            })
+                          }
+                        />
+                      </View>
+                    );
+                  },
+                )}
               </Card>
             )}
           </View>

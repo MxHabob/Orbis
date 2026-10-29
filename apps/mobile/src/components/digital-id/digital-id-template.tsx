@@ -502,7 +502,9 @@ export const DigitalIdTemplate = memo(function DigitalIdTemplate({
       count + collectUnsupportedNodes(currentPage.children),
     0,
   );
-  const assetLoadFailed = assetQueries.some((query) => query.isError);
+  const assetLoadFailed = assetQueries.some(
+    (query: { isError: boolean }) => query.isError,
+  );
   const pageProps =
     page && "props" in page
       ? (page.props as Record<string, unknown> | undefined)

@@ -26,8 +26,9 @@ export default function ClassGradesScreen() {
   const classQuery = useTeacherClassDataQuery(classId);
   const classSubjects = classQuery.data?.SectionSubject ?? [];
   const selectedClassSubject =
-    classSubjects.find((item: SectionSubjectDto) => item.id === selectedSubjectId) ??
-    classSubjects[0];
+    classSubjects.find(
+      (item: SectionSubjectDto) => item.id === selectedSubjectId,
+    ) ?? classSubjects[0];
   const gradesQuery = useClassGradesQuery(
     selectedClassSubject?.id,
     classQuery.isInScope,
@@ -42,7 +43,8 @@ export default function ClassGradesScreen() {
       new Map(
         (gradesQuery.data ?? [])
           .filter(
-            (grade: GradeDto) => grade.period_id === classQuery.data?.classItem.period_id,
+            (grade: GradeDto) =>
+              grade.period_id === classQuery.data?.classItem.period_id,
           )
           .map((grade: GradeDto) => [grade.student_id, grade]),
       ),
@@ -174,58 +176,61 @@ export default function ClassGradesScreen() {
             <EmptyState title={t("teacher_no_students")} />
           ) : (
             <>
-              {classQuery.data?.roster.map(({ student, enrollment }: TeacherRosterEntry) => {
-                const grade = existingGrades.get(student.id);
-                const studentName = isArabic
-                  ? student.name_ar || student.full_name
-                  : student.display_name || student.full_name;
-                return (
-                  <Card key={student.id} variant="outline" padding="three">
-                    <View className="gap-two">
-                      <View className="flex-row items-center justify-between gap-two">
-                        <Text className="flex-1 text-sm font-semibold text-foreground">
-                          {studentName}
-                        </Text>
-                        <Text className="text-xs text-muted-foreground">
-                          {enrollment.student_number}
-                        </Text>
-                      </View>
-                      {grade ? (
+              {classQuery.data?.roster.map(
+                ({ student, enrollment }: TeacherRosterEntry) => {
+                  const grade = existingGrades.get(student.id);
+                  const studentName = isArabic
+                    ? student.name_ar || student.full_name
+                    : student.display_name || student.full_name;
+                  return (
+                    <Card key={student.id} variant="outline" padding="three">
+                      <View className="gap-two">
                         <View className="flex-row items-center justify-between gap-two">
-                          <Text className="text-xs text-muted-foreground">
-                            {t("teacher_grade_already_recorded")}
+                          <Text className="flex-1 text-sm font-semibold text-foreground">
+                            {studentName}
                           </Text>
-                          <Text className="text-sm font-semibold text-primary">
-                            {grade.score} / {grade.max_score}
-                            {grade.created_at
-                              ? ` · ${formatDate(grade.created_at)}`
-                              : ""}
+                          <Text className="text-xs text-muted-foreground">
+                            {enrollment.student_number}
                           </Text>
                         </View>
-                      ) : (
-                        <Input
-                          label={t("teacher_score")}
-                          value={scores[student.id] ?? ""}
-                          onChangeText={(value) => {
-                            setSaveError(null);
-                            setScores((current) => ({
-                              ...current,
-                              [student.id]: value,
-                            }));
-                          }}
-                          keyboardType="decimal-pad"
-                          inputMode="decimal"
-                          maxLength={6}
-                          placeholder="0–100"
-                          accessibilityLabel={`${studentName}, ${t("teacher_score")}`}
-                        />
-                      )}
-                    </View>
-                  </Card>
-                );
-              })}
-              {classQuery.data?.roster.every(({ student }: TeacherRosterEntry) =>
-                existingGrades.has(student.id),
+                        {grade ? (
+                          <View className="flex-row items-center justify-between gap-two">
+                            <Text className="text-xs text-muted-foreground">
+                              {t("teacher_grade_already_recorded")}
+                            </Text>
+                            <Text className="text-sm font-semibold text-primary">
+                              {grade.score} / {grade.max_score}
+                              {grade.created_at
+                                ? ` · ${formatDate(grade.created_at)}`
+                                : ""}
+                            </Text>
+                          </View>
+                        ) : (
+                          <Input
+                            label={t("teacher_score")}
+                            value={scores[student.id] ?? ""}
+                            onChangeText={(value) => {
+                              setSaveError(null);
+                              setScores((current) => ({
+                                ...current,
+                                [student.id]: value,
+                              }));
+                            }}
+                            keyboardType="decimal-pad"
+                            inputMode="decimal"
+                            maxLength={6}
+                            placeholder="0–100"
+                            accessibilityLabel={`${studentName}, ${t("teacher_score")}`}
+                          />
+                        )}
+                      </View>
+                    </Card>
+                  );
+                },
+              )}
+              {classQuery.data?.roster.every(
+                ({ student }: TeacherRosterEntry) =>
+                  existingGrades.has(student.id),
               ) ? (
                 <Text className="text-sm text-muted-foreground">
                   {t("teacher_no_grade_entries")}

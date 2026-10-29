@@ -89,7 +89,7 @@ export function createOfflineQueryPersister(scope: string) {
     key: storageKey,
     throttleTime: 1000,
     storage: {
-      async getItem(key) {
+      async getItem(key: string) {
         try {
           const database = await getDatabase();
           const row = await database.getFirstAsync<{ cache_value: string }>(
@@ -105,7 +105,7 @@ export function createOfflineQueryPersister(scope: string) {
           return fallbackStore.get(key) ?? null;
         }
       },
-      async setItem(key, value) {
+      async setItem(key: string, value: string) {
         try {
           const database = await getDatabase();
           await database.runAsync(
@@ -123,7 +123,7 @@ export function createOfflineQueryPersister(scope: string) {
           fallbackStore.set(key, value);
         }
       },
-      async removeItem(key) {
+      async removeItem(key: string) {
         try {
           const database = await getDatabase();
           await database.runAsync(

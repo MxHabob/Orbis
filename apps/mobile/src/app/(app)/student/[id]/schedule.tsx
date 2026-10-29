@@ -16,6 +16,7 @@ import {
   useLinkedStudentId,
   useStudentScheduleQuery,
 } from "@/hooks/use-api-queries";
+import type { StudentScheduleItem } from "@/hooks/use-api-queries";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
@@ -46,7 +47,8 @@ export default function StudentScheduleScreen() {
   const activeDayOfWeek = selectedDayIndex + 1;
 
   const activeDayLessons = schedule.filter(
-    (item) => item.timeSlot.day_of_week === activeDayOfWeek,
+    (item: StudentScheduleItem) =>
+      item.timeSlot.day_of_week === activeDayOfWeek,
   );
 
   return (
@@ -111,49 +113,51 @@ export default function StudentScheduleScreen() {
         </View>
       ) : (
         <View className="gap-three">
-          {activeDayLessons.map(({ lesson, timeSlot, subject }) => {
-            const subjectName =
-              (isArabic ? subject?.name_ar : subject?.name) ||
-              subject?.name ||
-              t("domain_schedule");
+          {activeDayLessons.map(
+            ({ lesson, timeSlot, subject }: StudentScheduleItem) => {
+              const subjectName =
+                (isArabic ? subject?.name_ar : subject?.name) ||
+                subject?.name ||
+                t("domain_schedule");
 
-            return (
-              <Card key={lesson.id} variant="outline" padding="four">
-                <View className="flex-row items-center justify-between pb-two">
-                  <View className="gap-half flex-1">
-                    <Text className="text-base font-bold text-foreground">
-                      {subjectName}
-                    </Text>
-                    {timeSlot.name ? (
-                      <Text className="text-xs text-muted-foreground">
-                        {isArabic
-                          ? timeSlot.name_ar || timeSlot.name
-                          : timeSlot.name}
+              return (
+                <Card key={lesson.id} variant="outline" padding="four">
+                  <View className="flex-row items-center justify-between pb-two">
+                    <View className="gap-half flex-1">
+                      <Text className="text-base font-bold text-foreground">
+                        {subjectName}
                       </Text>
-                    ) : null}
+                      {timeSlot.name ? (
+                        <Text className="text-xs text-muted-foreground">
+                          {isArabic
+                            ? timeSlot.name_ar || timeSlot.name
+                            : timeSlot.name}
+                        </Text>
+                      ) : null}
+                    </View>
+
+                    <Badge
+                      variant="secondary"
+                      className="flex-row items-center gap-one px-two py-half"
+                    >
+                      <Clock size={12} color={theme.primary} />
+                      <Text className="text-xs font-bold text-primary">
+                        {timeSlot.start_time} – {timeSlot.end_time}
+                      </Text>
+                    </Badge>
                   </View>
 
-                  <Badge
-                    variant="secondary"
-                    className="flex-row items-center gap-one px-two py-half"
-                  >
-                    <Clock size={12} color={theme.primary} />
-                    <Text className="text-xs font-bold text-primary">
-                      {timeSlot.start_time} – {timeSlot.end_time}
-                    </Text>
-                  </Badge>
-                </View>
-
-                {lesson.room_id ? (
-                  <View className="border-t border-border/40 pt-two">
-                    <Text className="text-xs text-muted-foreground">
-                      {t("classroom_label") || "Classroom"}: {lesson.room_id}
-                    </Text>
-                  </View>
-                ) : null}
-              </Card>
-            );
-          })}
+                  {lesson.room_id ? (
+                    <View className="border-t border-border/40 pt-two">
+                      <Text className="text-xs text-muted-foreground">
+                        {t("classroom_label") || "Classroom"}: {lesson.room_id}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Card>
+              );
+            },
+          )}
         </View>
       )}
     </StudentRecordLayout>

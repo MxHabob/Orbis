@@ -16,6 +16,7 @@ import {
   useLinkedStudentId,
   useStudentExamsQuery,
 } from "@/hooks/use-api-queries";
+import type { StudentExamItem } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { AcademicCap, Calendar, Clock, Sparkles } from "@orbis/icons/native";
@@ -82,7 +83,7 @@ export default function StudentExamsScreen() {
         </View>
       ) : (
         <View className="gap-three">
-          {exams.map(({ schedule, session, subject }) => {
+          {exams.map(({ schedule, session, subject }: StudentExamItem) => {
             const subjectName = subject
               ? isArabic
                 ? subject.name_ar || subject.name
