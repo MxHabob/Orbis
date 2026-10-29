@@ -128,6 +128,7 @@ import type {
   PaymentDto,
   ProcessPaymentRequest,
   CurrencyDto,
+  CurrencyInput,
   IntegrationDto,
   IntegrationStatusResponse,
   ConnectAppRequest,
@@ -1279,6 +1280,12 @@ export class LocalClient implements OrbisApiClient {
   }
   async listCurrencies(): Promise<CurrencyDto[]> {
     return unwrap(await invoke("finance_list_currencies"));
+  }
+  async createCurrency(request: CurrencyInput): Promise<void> {
+    unwrap(await invoke("finance_create_currency", { request }));
+  }
+  async updateCurrency(code: string, request: CurrencyInput): Promise<void> {
+    unwrap(await invoke("finance_update_currency", { code, request }));
   }
   async listJournalEntries(): Promise<JournalEntryDto[]> {
     return unwrap(await invoke("finance_list_journal_entries"));

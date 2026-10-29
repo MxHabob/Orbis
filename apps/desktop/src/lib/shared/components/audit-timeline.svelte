@@ -91,7 +91,7 @@ function formatActionLabel(action: string): string {
       {m.shared_ui_audit_trail_title()}
     </AccordionTrigger>
     <AccordionContent>
-      <section aria-label={m.shared_ui_audit_trail_title()}>
+      <section class="mx-3" aria-label={m.shared_ui_audit_trail_title()}>
         <div class="overflow-y-auto" style="max-height: {maxHeight};">
           {#if isLoading}
             <p class="py-2 text-sm text-muted-foreground">{m.shared_ui_refreshing()}</p>

@@ -28,7 +28,7 @@ import { toast } from "@orbis/ui";
 import { goto } from "$app/navigation";
 import PeriodGateAction from "$lib/shared/components/period-gate-action.svelte";
 import OverrideRequestDialog from "$lib/shared/components/override-request-dialog.svelte";
-import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatNumber, l } from "$lib/core/i18n";
 import { createStudentDirectoryQuery } from "$lib/features/students";
@@ -128,7 +128,10 @@ let selectedStudentIds = $state<Set<string>>(new Set());
           </div>
 
           <div class="flex items-center gap-2">
-            <ActionDropdownMenu
+            <SplitActionMenu
+              label={m.common_new()}
+              menuLabel={m.operations_ui_actions()}
+              icon={Plus}
               actions={[
                 {
                   id: "bulk-input",
@@ -143,28 +146,43 @@ let selectedStudentIds = $state<Set<string>>(new Set());
                   onSelect: () => directory.exportStudents(selectedStudentIds),
                 },
               ]}
-            />
-            {#if academicContext.effectivePeriodId}
-              <PeriodGateAction
-                gateType="enrollment"
-                periodId={academicContext.effectivePeriodId}
-                classId={directory.selectedClassId ?? undefined}
-                label={m.common_new()}
-                size="lg"
-                onAction={() => goto(localizeHref(`/${orgId}/students/new`))}
-                onDraft={() => goto(localizeHref(`/${orgId}/students/new?draft=true`))}
-                onOverride={() => { showOverrideDialog = true; }}
-              />
-            {:else}
-              <Button 
-                variant="lime" 
-                class="text-xs h-9 px-3" 
-                onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
-              >
-                <Plus size={14} class="me-1.5" />
-                {m.common_new()}
-              </Button>
-            {/if}
+              onprimary={() => goto(localizeHref(`/${orgId}/students/new`))}
+            >
+              {#snippet primary()}
+                {#if academicContext.effectivePeriodId}
+                  <PeriodGateAction
+                    gateType="enrollment"
+                    periodId={academicContext.effectivePeriodId}
+                    classId={directory.selectedClassId ?? undefined}
+                    label={m.common_new()}
+                    size="sm"
+                    onAction={() => goto(localizeHref(`/${orgId}/students/new`))}
+                    onDraft={() => goto(localizeHref(`/${orgId}/students/new?draft=true`))}
+                    onOverride={() => { showOverrideDialog = true; }}
+                  >
+                    {#snippet allowed()}
+                      <Button
+                        size="sm"
+                        class="rounded-e-none gap-1.5"
+                        onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
+                      >
+                        <Plus class="size-4" />
+                        <span>{m.common_new()}</span>
+                      </Button>
+                    {/snippet}
+                  </PeriodGateAction>
+                {:else}
+                  <Button
+                    size="sm"
+                    class="rounded-e-none gap-1.5"
+                    onclick={() => goto(localizeHref(`/${orgId}/students/new`))}
+                  >
+                    <Plus class="size-4" />
+                    <span>{m.common_new()}</span>
+                  </Button>
+                {/if}
+              {/snippet}
+            </SplitActionMenu>
           </div>
         </div>
 

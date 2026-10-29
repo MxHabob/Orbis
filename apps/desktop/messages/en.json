@@ -3312,6 +3312,8 @@
   "settings_currencies_add_btn": "Add Currency",
   "settings_currencies_add_dialog_title": "Add New Currency",
   "settings_currencies_added_success": "Currency added successfully",
+  "settings_currencies_edit_dialog_title": "Edit Currency",
+  "settings_currencies_updated_success": "Currency ({code}) updated successfully",
   "settings_currencies_already_exists": "This currency already exists",
   "settings_currencies_btn_delete_confirm": "Confirm Delete",
   "settings_currencies_col_rate": "Exchange Rate",

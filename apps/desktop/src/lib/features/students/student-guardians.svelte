@@ -18,8 +18,7 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Pencil, Plus, Trash, Users } from "@orbis/icons";
-import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
-import type { SplitActionItem } from "$lib/shared/components/split-action-menu.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 import {
   api,
@@ -85,24 +84,6 @@ function openEdit(link: GuardianDto) {
   sheetOpen = true;
 }
 
-function getGuardianActions(link: GuardianDto): SplitActionItem[] {
-  return [
-    {
-      id: "edit",
-      label: m.common_action_edit_simple(),
-      icon: Pencil,
-      onSelect: () => openEdit(link),
-    },
-    {
-      id: "unlink",
-      label: m.common_action_unlink(),
-      icon: Trash,
-      destructive: true,
-      onSelect: () => handleDelete(link),
-    },
-  ];
-}
-
 async function handleDelete(link: GuardianDto) {
   const confirmed = await confirmStore.prompt({
     title: m.operations_ui_delete_question_title(),
@@ -166,7 +147,21 @@ async function handleDelete(link: GuardianDto) {
               {m.common_form_guardian_number()} {index + 1}
             </CardTitle>
             <CardAction>
-              <ActionDropdownMenu actions={getGuardianActions(link)} />
+              <SplitActionMenu
+                label={m.common_action_edit_simple()}
+                menuLabel={m.operations_ui_actions()}
+                icon={Pencil}
+                actions={[
+                  {
+                    id: "unlink",
+                    label: m.common_action_unlink(),
+                    icon: Trash,
+                    destructive: true,
+                    onSelect: () => handleDelete(link),
+                  },
+                ]}
+                onprimary={() => openEdit(link)}
+              />
             </CardAction>
           </CardHeader>
 

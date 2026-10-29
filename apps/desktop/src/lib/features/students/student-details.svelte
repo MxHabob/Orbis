@@ -248,8 +248,13 @@ onMount(async () => {
             ) ??
             enrollments[0] ??
             null;
+          const formWasDirtyBeforeEnrollmentUpdate =
+            createFormSnapshot() !== savedFormSnapshot;
           if (activeEnrollment?.section_id) {
             classId = String(activeEnrollment.section_id);
+          }
+          if (!formWasDirtyBeforeEnrollmentUpdate) {
+            savedFormSnapshot = createFormSnapshot();
           }
         } catch (error) {
           console.error("Failed to load student enrollments:", error);
@@ -620,7 +625,7 @@ async function resetStudentDetails() {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-24">
+<div class="h-full w-full overflow-y-auto scrollbar-hide text-start ">
   {#if isLoading}
     <div class="flex flex-col gap-6">
       <Skeleton class="h-32 w-full rounded-xl" />

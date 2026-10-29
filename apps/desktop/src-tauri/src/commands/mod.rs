@@ -325,6 +325,8 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         finance_cmds::finance_list_payments_paginated,
         finance_cmds::finance_delete_payment,
         finance_cmds::finance_list_currencies,
+        finance_cmds::finance_create_currency,
+        finance_cmds::finance_update_currency,
         finance_cmds::finance_list_journal_entries,
         finance_cmds::finance_get_journal_entry,
         finance_cmds::finance_create_journal_entry,

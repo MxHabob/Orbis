@@ -51,15 +51,19 @@ import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
 interface Props {
   open: boolean;
+  currency?: any | null;
   existingCurrencies?: any[];
   onsuccess?: () => void;
 }
 
 let {
   open = $bindable(false),
+  currency = null,
   existingCurrencies = [],
   onsuccess,
 }: Props = $props();
+
+const isEditing = $derived(currency !== null);
 
 // Module-level static cache for Intl instances (created once, zero overhead per render)
 let cachedArDisplayNames: Intl.DisplayNames | null = null;
@@ -122,14 +126,14 @@ function getPresetItemsData() {
 const { items: presetItems, map: presetMap } = getPresetItemsData();
 
 // Form State
-let code = $state("");
-let name = $state("");
-let nameAr = $state("");
-let symbol = $state("");
-let symbolPosition = $state("after"); // "before" | "after"
-let decimalPlaces = $state(2);
-let exchangeRate = $state(1.0);
-let isBase = $state(false);
+let code = $state(currency?.code ?? "");
+let name = $state(currency?.name ?? "");
+let nameAr = $state(currency?.name_ar ?? "");
+let symbol = $state(currency?.symbol ?? "");
+let symbolPosition = $state(currency?.symbol_position ?? "after");
+let decimalPlaces = $state(currency?.decimal_places ?? 2);
+let exchangeRate = $state(Number(currency?.exchange_rate ?? 1));
+let isBase = $state(currency?.is_base === true || currency?.is_base === 1);
 const form = new FormController({
   initialValues: {
     code: "",
@@ -216,7 +220,13 @@ async function handleSubmit(e: Event) {
 
   const cleanCode = code.trim().toUpperCase();
 
-  if (existingCurrencies.some((c) => c.code?.toUpperCase() === cleanCode)) {
+  if (
+    existingCurrencies.some(
+      (c) =>
+        c.code?.toUpperCase() === cleanCode &&
+        c.code?.toUpperCase() !== currency?.code?.toUpperCase(),
+    )
+  ) {
     toast.error(m.settings_currencies_already_exists());
     return;
   }
@@ -232,18 +242,24 @@ async function handleSubmit(e: Event) {
     is_base: isBase,
   };
   const submitted = await form.submit(async (values) => {
-    await api.createCurrency(
-      values.code,
-      values.name,
-      values.name_ar ?? null,
-      values.symbol,
-      values.symbol_position,
-      values.decimal_places,
-      values.exchange_rate,
-      values.is_base,
-    );
+    const request = {
+      code: values.code,
+      name: values.name,
+      name_ar: values.name_ar ?? null,
+      symbol: values.symbol,
+      symbol_position: values.symbol_position,
+      decimal_places: values.decimal_places,
+      exchange_rate: values.exchange_rate,
+      is_base: values.is_base,
+    };
+    if (currency) await api.updateCurrency(currency.code, request);
+    else await api.createCurrency(request);
 
-    toast.success(m.settings_currencies_added_success());
+    toast.success(
+      currency
+        ? m.settings_currencies_updated_success({ code: values.code })
+        : m.settings_currencies_added_success(),
+    );
   });
   if (submitted) {
     open = false;
@@ -260,7 +276,7 @@ async function handleSubmit(e: Event) {
       <div class="flex items-center justify-between">
         <DialogTitle class="text-sm font-semibold flex items-center gap-2">
           <DocumentChartBar size={16} class="text-primary" />
-          <span>{m.settings_currencies_add_dialog_title()}</span>
+          <span>{isEditing ? m.settings_currencies_edit_dialog_title() : m.settings_currencies_add_dialog_title()}</span>
         </DialogTitle>
         {#if code}
           <Badge variant="outline" class="font-mono text-[10px] bg-primary/5 text-primary border-primary/20">
@@ -309,6 +325,7 @@ async function handleSubmit(e: Event) {
             class="text-xs uppercase font-mono h-8"
             required
             disabled={isSubmitting}
+            readonly={isEditing}
           />
           {/snippet}
         </FormField>
@@ -447,7 +464,7 @@ async function handleSubmit(e: Event) {
           {:else}
             <Check size={12} />
           {/if}
-          <span>{m.settings_currencies_add_btn()}</span>
+          <span>{isEditing ? m.common_action_edit() : m.settings_currencies_add_btn()}</span>
         </Button>
       </DialogFooter>
     </form>

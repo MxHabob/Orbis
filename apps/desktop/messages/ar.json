@@ -3312,6 +3312,8 @@
   "settings_currencies_add_btn": "إضافة عملة",
   "settings_currencies_add_dialog_title": "إضافة عملة جديدة",
   "settings_currencies_added_success": "تم إضافة العملة بنجاح",
+  "settings_currencies_edit_dialog_title": "تعديل العملة",
+  "settings_currencies_updated_success": "تم تحديث العملة ({code}) بنجاح",
   "settings_currencies_already_exists": "هذه العملة مضافة بالفعل",
   "settings_currencies_btn_delete_confirm": "تأكيد الحذف",
   "settings_currencies_col_rate": "سعر الصرف",

@@ -15,7 +15,7 @@ import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
-import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 import type { SplitActionItem } from "$lib/shared/components/split-action-menu.svelte";
 import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 import {
@@ -104,12 +104,6 @@ function handleAskOrbis() {
 
 const classHeaderActions = $derived<SplitActionItem[]>([
   {
-    id: "share",
-    label: m.common_action_share(),
-    icon: Share,
-    onSelect: handleShareLink,
-  },
-  {
     id: "ask-orbis",
     label: m.academics_student_evaluation_ask_orbis_btn_short(),
     icon: Sparkles,
@@ -122,7 +116,13 @@ const classHeaderActions = $derived<SplitActionItem[]>([
   <!-- Unified Breadcrumb Header -->
   {#snippet headerActions()}
     {#if classData}
-      <ActionDropdownMenu actions={classHeaderActions} />
+      <SplitActionMenu
+        label={m.common_action_share()}
+        menuLabel={m.operations_ui_actions()}
+        icon={Share}
+        actions={classHeaderActions}
+        onprimary={handleShareLink}
+      />
     {/if}
   {/snippet}
   <DetailPageHeader {backHref} {backLabel} actions={headerActions}>

@@ -36,6 +36,14 @@ function getLocalDate(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function isValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
+}
+
 function shiftDate(value: string, amount: number) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(year, month - 1, day);
@@ -44,10 +52,24 @@ function shiftDate(value: string, amount: number) {
 }
 
 export default function ClassAttendanceScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const {
+    id,
+    lessonId,
+    date: requestedDate,
+  } = useLocalSearchParams<{
+    id: string;
+    lessonId?: string;
+    date?: string;
+  }>();
   const classId = typeof id === "string" ? id : undefined;
-  const [date, setDate] = useState(() => getLocalDate(new Date()));
-  const [selectedLessonId, setSelectedLessonId] = useState("");
+  const initialDate =
+    typeof requestedDate === "string" && isValidDate(requestedDate)
+      ? requestedDate
+      : getLocalDate(new Date());
+  const [date, setDate] = useState(initialDate);
+  const [selectedLessonId, setSelectedLessonId] = useState(
+    typeof lessonId === "string" ? lessonId : "",
+  );
   const [selectedStatuses, setSelectedStatuses] = useState<
     Record<string, string>
   >({});

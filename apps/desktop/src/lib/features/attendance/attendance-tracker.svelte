@@ -57,9 +57,29 @@ interface AttendanceLessonOption {
   label: string;
 }
 
+function getLocalDateValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isValidDateValue(value: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+  );
+}
+
 let classes = $state<any[]>([]);
 let selectedClassId = $state("");
-let selectedDate = $state(new Date().toISOString().slice(0, 10));
+let selectedDate = $state(
+  isValidDateValue(page.url.searchParams.get("date"))
+    ? page.url.searchParams.get("date")!
+    : getLocalDateValue(new Date()),
+);
 let selectedLessonId = $state("");
 let lessonOptions = $state<AttendanceLessonOption[]>([]);
 let rosterStudents = $state<StudentDetailDto[]>([]);
@@ -256,13 +276,17 @@ async function loadRosterAndAttendance() {
 
     rosterStudents = students;
     existingAttendance = records;
-    selectedLessonId = lessonOptions.some(
+    const requestedLessonId = page.url.searchParams.get("lessonId");
+    const requestedLesson = lessonOptions.find(
+      (lesson) => lesson.id === requestedLessonId,
+    );
+    const previousLesson = lessonOptions.find(
       (lesson) => lesson.id === selectedLessonId,
-    )
-      ? selectedLessonId
-      : lessonOptions.length === 1
-        ? lessonOptions[0].id
-        : "";
+    );
+    selectedLessonId =
+      requestedLesson?.id ??
+      previousLesson?.id ??
+      (lessonOptions.length === 1 ? lessonOptions[0].id : "");
     buildAttendanceRows(selectedLessonId);
   } catch (error) {
     rosterLoadError = true;

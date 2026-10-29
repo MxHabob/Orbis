@@ -33,6 +33,7 @@ let currencies = $state<any[]>([]);
 let isLoading = $state(true);
 let searchQuery = $state("");
 let showAddDialog = $state(false);
+let editingCurrency = $state<any | null>(null);
 let activeFilter = $state<UniversalFilter>({
   logic: "AND",
   conditions: [],
@@ -48,6 +49,9 @@ const currencyActions: ActionItem[] = [
     variant: "destructive",
   },
 ];
+const currencyDialogKey = $derived(
+  `${showAddDialog}:${editingCurrency?.code ?? "new"}`,
+);
 
 async function loadCurrencies() {
   if (!orgId) return;
@@ -194,12 +198,15 @@ const columns: OrbisColumnDef[] = [
 ];
 
 function openAdd() {
+  editingCurrency = null;
   showAddDialog = true;
 }
 
 async function handleGridAction(event: GridActionEvent) {
   const c = event.row;
   if (event.actionId === "dblclick" || event.actionId === "edit") {
+    editingCurrency =
+      currencies.find((currency) => currency.code === c.code) ?? c;
     showAddDialog = true;
   } else if (event.actionId === "delete") {
     if (c.is_base === true || c.is_base === 1) {
@@ -273,8 +280,11 @@ async function handleGridAction(event: GridActionEvent) {
   </div>
 </div>
 
-<AddCurrencyDialog
-  bind:open={showAddDialog}
-  existingCurrencies={currencies}
-  onsuccess={loadCurrencies}
-/>
+{#key currencyDialogKey}
+  <AddCurrencyDialog
+    bind:open={showAddDialog}
+    currency={editingCurrency}
+    existingCurrencies={currencies}
+    onsuccess={loadCurrencies}
+  />
+{/key}

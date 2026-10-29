@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Component } from "svelte";
+import type { Component, Snippet } from "svelte";
 import { ChevronDown } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import {
@@ -25,6 +25,7 @@ let {
   icon,
   actions,
   onprimary,
+  primary,
   disabled = false,
 }: {
   label: string;
@@ -32,23 +33,28 @@ let {
   icon?: Component<{ class?: string }>;
   actions: SplitActionItem[];
   onprimary: () => void;
+  primary?: Snippet;
   disabled?: boolean;
 } = $props();
 </script>
 
 <div class="inline-flex items-center">
-  <Button
-    size="sm"
-    class="rounded-e-none gap-1.5"
-    {disabled}
-    onclick={onprimary}
-  >
-    {#if icon}
-      {@const Icon = icon}
-      <Icon class="size-4" />
-    {/if}
-    <span>{label}</span>
-  </Button>
+  {#if primary}
+    {@render primary()}
+  {:else}
+    <Button
+      size="sm"
+      class="rounded-e-none gap-1.5"
+      {disabled}
+      onclick={onprimary}
+    >
+      {#if icon}
+        {@const Icon = icon}
+        <Icon class="size-4" />
+      {/if}
+      <span>{label}</span>
+    </Button>
+  {/if}
 
   <DropdownMenu>
     <DropdownMenuTrigger class="outline-none">
