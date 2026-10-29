@@ -10,6 +10,8 @@ import {
 import { useEffectiveContext } from "@/providers/effective-context";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
+import type { AttendanceDto } from "@/lib/api/types";
+import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useToast } from "@/components/ui/toast";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -60,7 +62,7 @@ export default function ClassAttendanceScreen() {
   const recordedByStudent = useMemo(
     () =>
       new Map(
-        (attendanceQuery.data ?? []).map((record) => [
+        (attendanceQuery.data ?? []).map((record: AttendanceDto) => [
           record.student_id,
           record,
         ]),
