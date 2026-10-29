@@ -1,6 +1,7 @@
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -95,23 +96,22 @@ function getDetailsContent(log: AuditLogDto): string | null {
 }
 </script>
 
-<section
-  class="overflow-hidden rounded-xl border border-border/60 bg-card text-foreground"
-  aria-label={m.shared_ui_audit_trail_title()}
->
+<Card aria-label={m.shared_ui_audit_trail_title()} class="text-card-foreground">
   <Accordion type="single" bind:value={expandedAccordion} collapsible class="w-full">
     <AccordionItem value="audit-history" class="border-0">
-      <div class="flex items-center gap-3 border-b border-border/60 px-4 py-3">
+      <CardHeader class="px-4 py-3 normal-case tracking-normal text-foreground">
         <AccordionTrigger class="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-none px-0 py-0 text-left text-sm text-foreground hover:no-underline">
           <div class="flex min-w-0 items-center gap-3">
             <div class="flex shrink-0 items-center -space-x-2">
               {#each cardUsers as userName, index (userName + '-' + index)}
-                <span class="flex h-7 w-7 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-foreground ring-1 ring-background">
+                <span class="flex size-7 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
                   {userName.slice(0, 1).toUpperCase()}
                 </span>
               {/each}
             </div>
-            <span class="text-[15px] font-semibold text-foreground">{m.shared_ui_audit_trail_title()}</span>
+            <CardTitle class="text-sm font-semibold text-foreground normal-case tracking-normal">
+              {m.shared_ui_audit_trail_title()}
+            </CardTitle>
           </div>
           {#if auditQuery.isSuccess}
             <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
@@ -119,12 +119,12 @@ function getDetailsContent(log: AuditLogDto): string | null {
             </span>
           {/if}
         </AccordionTrigger>
-      </div>
+      </CardHeader>
 
-      <AccordionContent class="px-0">
-        <div class="overflow-y-auto px-3 py-3" style="max-height: {maxHeight};">
+      <AccordionContent>
+        <CardContent class="overflow-y-auto px-0 py-0" style="max-height: {maxHeight};">
           {#if isLoading}
-            <div class="space-y-3">
+            <div class="space-y-3 px-6 py-4">
               {#each [1, 2, 3] as item (item)}
                 <div class="space-y-2 py-2">
                   <div class="h-4 w-2/5 rounded bg-muted/40"></div>
@@ -133,7 +133,7 @@ function getDetailsContent(log: AuditLogDto): string | null {
               {/each}
             </div>
           {:else if auditQuery.isError}
-            <div class="flex items-center justify-between gap-3 py-2">
+            <div class="flex items-center justify-between gap-3 px-6 py-4">
               <p class="text-sm text-destructive">{errorMessage}</p>
               <Button variant="outline" size="sm" onclick={() => auditQuery.refetch()} disabled={auditQuery.isFetching}>
                 {m.common_retry()}
@@ -144,12 +144,12 @@ function getDetailsContent(log: AuditLogDto): string | null {
               {m.shared_ui_no_audit_history()}
             </div>
           {:else}
-            <div class="divide-y divide-border/60">
+            <div class="divide-y divide-border">
               {#each logs as log (log.id)}
                 {@const detailsContent = getDetailsContent(log)}
-                <div class="px-3 py-3 first:pt-1 last:pb-1">
+                <div class="px-6 py-4">
                   <div class="flex items-start justify-between gap-3">
-                    <p class="truncate text-[15px] font-medium text-foreground">
+                    <p class="truncate text-sm font-semibold text-foreground">
                       {formatActionLabel(log.action)}
                     </p>
                     <time datetime={log.created_at} class="shrink-0 text-xs text-muted-foreground">
@@ -162,16 +162,16 @@ function getDetailsContent(log: AuditLogDto): string | null {
                   </div>
 
                   {#if detailsContent}
-                    <div class="mt-2 border-t border-border/50 pt-2">
-                      <pre class="max-h-28 overflow-auto text-[10px] leading-5 whitespace-pre-wrap break-words text-muted-foreground"><code>{detailsContent}</code></pre>
+                    <div class="mt-2 border-t border-border pt-2">
+                      <pre class="max-h-28 overflow-auto text-[11px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground"><code>{detailsContent}</code></pre>
                     </div>
                   {/if}
                 </div>
               {/each}
             </div>
           {/if}
-        </div>
+        </CardContent>
       </AccordionContent>
     </AccordionItem>
   </Accordion>
-</section>
+</Card>

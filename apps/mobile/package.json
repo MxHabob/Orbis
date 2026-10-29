@@ -8,6 +8,7 @@
     "@orbis/avatar-engine": "workspace:*",
     "@orbis/icons": "workspace:*",
     "@orbis/sdk": "workspace:*",
+    "@react-native/virtualized-lists": "0.86.3",
     "@tanstack/query-async-storage-persister": "5.104.2",
     "@tanstack/query-core": "5.104.2",
     "@tanstack/react-query": "5.104.2",
