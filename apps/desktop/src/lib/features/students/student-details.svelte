@@ -323,7 +323,10 @@ const academicStats = $derived.by(() => {
       passed,
       failed,
       gradeLetter: letter,
-      gpa: termReport.gpa != null ? formatDecimal(Number(termReport.gpa), 2) : null,
+      gpa:
+        termReport.gpa != null
+          ? formatDecimal(Number(termReport.gpa), 2)
+          : null,
       rank: termReport.rank_in_class ?? null,
       totalStudents: termReport.total_students_in_class ?? null,
       hasData: true,

@@ -43,10 +43,7 @@ export default function ClassGradesScreen() {
     () =>
       new Map(
         (gradesQuery.data ?? [])
-          .filter(
-            (grade: GradeDto) =>
-              grade.period_id === classItem?.period_id,
-          )
+          .filter((grade: GradeDto) => grade.period_id === classItem?.period_id)
           .map((grade: GradeDto) => [grade.student_id, grade]),
       ),
     [gradesQuery.data, classItem],

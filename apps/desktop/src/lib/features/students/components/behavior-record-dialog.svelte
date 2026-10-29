@@ -10,7 +10,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orbis/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
 import { Textarea } from "@orbis/ui/textarea";
 
 let {

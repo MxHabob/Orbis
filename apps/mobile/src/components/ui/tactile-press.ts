@@ -25,7 +25,7 @@ export function useTactilePress(
               duration: 90,
               easing: Easing.out(Easing.quad),
             })
-          : withSpring(0, { damping: 18, stiffness: 240, mass: 0.7 });
+          : withSpring(0, { damping: 18, stiffness: 240, mass: 0.7 }),
       );
     },
     [progress],

@@ -87,17 +87,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const dismiss = useCallback(() => {
-    translateY.set(withTiming(4, {
-      duration: 120,
-      easing: Easing.out(Easing.ease),
-    }));
-    opacity.set(withTiming(
-      0,
-      { duration: 120, easing: Easing.out(Easing.ease) },
-      () => {
+    translateY.set(
+      withTiming(4, {
+        duration: 120,
+        easing: Easing.out(Easing.ease),
+      }),
+    );
+    opacity.set(
+      withTiming(0, { duration: 120, easing: Easing.out(Easing.ease) }, () => {
         runOnJS(setCurrent)(null);
-      },
-    ));
+      }),
+    );
   }, [opacity, translateY]);
 
   const showToast = useCallback(
@@ -119,14 +119,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         variant,
       });
 
-      opacity.set(withTiming(1, {
-        duration: 140,
-        easing: Easing.out(Easing.ease),
-      }));
-      translateY.set(withTiming(0, {
-        duration: 140,
-        easing: Easing.out(Easing.ease),
-      }));
+      opacity.set(
+        withTiming(1, {
+          duration: 140,
+          easing: Easing.out(Easing.ease),
+        }),
+      );
+      translateY.set(
+        withTiming(0, {
+          duration: 140,
+          easing: Easing.out(Easing.ease),
+        }),
+      );
 
       timeoutRef.current = setTimeout(() => {
         dismiss();

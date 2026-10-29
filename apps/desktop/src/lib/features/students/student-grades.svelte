@@ -4,7 +4,12 @@ import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { academicContext } from "$lib/stores";
-import { formatDate, formatDecimal, formatNumber, formatPercent } from "$lib/core/i18n";
+import {
+  formatDate,
+  formatDecimal,
+  formatNumber,
+  formatPercent,
+} from "$lib/core/i18n";
 import {
   AcademicCap,
   BookOpen,
