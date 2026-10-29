@@ -6,10 +6,10 @@
  * live SSE stream subscriptions, read/dismiss mutations, and toast triggers.
  */
 
-import { api, extractErrorMessage } from "$lib/api";
-import type { NotificationDto } from "$lib/api/types";
 import { toast } from "@orbis/ui";
+import { api, extractErrorMessage } from "$lib/api";
 import { isDesktopApp } from "$lib/api/runtime";
+import type { NotificationDto } from "$lib/api/types";
 
 type NotificationListFilter = {
   category?: string;
@@ -33,8 +33,7 @@ class NotificationStore {
   async init(): Promise<void> {
     if (this.isLoaded) return;
     await Promise.all([this.loadUnreadCount(), this.loadNotifications()]);
-    void this.setupEventListener();
-    this.setupSse();
+    void this.setupLiveUpdates();
   }
 
   async loadNotifications(
@@ -173,16 +172,42 @@ class NotificationStore {
     }
   }
 
-  private setupSse(): void {
-    if (typeof window === "undefined" || typeof EventSource === "undefined")
-      return;
+  private async setupLiveUpdates(): Promise<void> {
+    if (typeof window === "undefined") return;
+    try {
+      let baseUrl = import.meta.env?.VITE_API_URL ?? "http://localhost:3000";
+      if (isDesktopApp) {
+        const connection = await api.connectionGetConfig();
+        if (connection.mode !== "api") {
+          await this.setupEventListener();
+          return;
+        }
+        if (!connection.api?.server_url) {
+          console.warn(
+            "Cannot start notification stream: API server URL is missing.",
+          );
+          return;
+        }
+        baseUrl = connection.api.server_url;
+      }
+
+      this.setupSse(baseUrl);
+    } catch (e: unknown) {
+      console.warn(
+        "Failed to set up notification updates:",
+        extractErrorMessage(e),
+      );
+    }
+  }
+
+  private setupSse(baseUrl: string): void {
+    if (typeof EventSource === "undefined") return;
 
     try {
-      const baseUrl = import.meta.env?.VITE_API_URL ?? "http://localhost:3000";
       const token = localStorage.getItem("orbis_token");
       if (!token) return;
 
-      const url = `${baseUrl}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
+      const url = `${baseUrl.replace(/\/$/, "")}/api/v1/notifications/stream?token=${encodeURIComponent(token)}`;
       const es = new EventSource(url);
       es.addEventListener("notification", (e) => {
         try {
