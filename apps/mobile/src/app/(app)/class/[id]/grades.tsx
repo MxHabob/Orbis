@@ -11,6 +11,8 @@ import {
 import { useEffectiveContext } from "@/providers/effective-context";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/components/ui/toast";
+import type { GradeDto, SectionSubjectDto, SubjectDto } from "@/lib/api/types";
+import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -24,7 +26,7 @@ export default function ClassGradesScreen() {
   const classQuery = useTeacherClassDataQuery(classId);
   const classSubjects = classQuery.data?.SectionSubject ?? [];
   const selectedClassSubject =
-    classSubjects.find((item) => item.id === selectedSubjectId) ??
+    classSubjects.find((item: SectionSubjectDto) => item.id === selectedSubjectId) ??
     classSubjects[0];
   const gradesQuery = useClassGradesQuery(
     selectedClassSubject?.id,
@@ -40,9 +42,9 @@ export default function ClassGradesScreen() {
       new Map(
         (gradesQuery.data ?? [])
           .filter(
-            (grade) => grade.period_id === classQuery.data?.classItem.period_id,
+            (grade: GradeDto) => grade.period_id === classQuery.data?.classItem.period_id,
           )
-          .map((grade) => [grade.student_id, grade]),
+          .map((grade: GradeDto) => [grade.student_id, grade]),
       ),
     [gradesQuery.data, classQuery.data?.classItem.period_id],
   );
@@ -62,7 +64,7 @@ export default function ClassGradesScreen() {
     setSaveError(null);
     const invalidStudentIds: string[] = [];
     const items = (classQuery.data?.roster ?? []).flatMap(
-      ({ student, enrollment }) => {
+      ({ student, enrollment }: TeacherRosterEntry) => {
         const score = scores[student.id]?.trim();
         if (!score || existingGrades.has(student.id)) return [];
         const numericScore = Number(score);
@@ -131,9 +133,9 @@ export default function ClassGradesScreen() {
             {t("teacher_select_subject")}
           </Text>
           <View className="flex-row flex-wrap gap-two">
-            {classSubjects.map((classSubject) => {
+            {classSubjects.map((classSubject: SectionSubjectDto) => {
               const subject = classQuery.data?.subjects.find(
-                (item) => item.id === classSubject.subject_id,
+                (item: SubjectDto) => item.id === classSubject.subject_id,
               );
               const label = subject
                 ? isArabic

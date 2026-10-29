@@ -71,7 +71,7 @@ export default function ClassAttendanceScreen() {
   );
   const roster = classQuery.data?.roster ?? [];
   const markedCount = roster.filter(
-    ({ student }) =>
+    ({ student }: TeacherRosterEntry) =>
       !recordedByStudent.has(student.id) && selectedStatuses[student.id],
   ).length;
   const isPending =
@@ -81,7 +81,7 @@ export default function ClassAttendanceScreen() {
 
   const saveAttendance = async () => {
     if (!classId || !canRecord) return;
-    const items = roster.flatMap(({ student }) => {
+    const items = roster.flatMap(({ student }: TeacherRosterEntry) => {
       const status = selectedStatuses[student.id];
       if (!status || recordedByStudent.has(student.id)) return [];
       return [{ student_id: student.id, status }];
@@ -151,7 +151,7 @@ export default function ClassAttendanceScreen() {
           <EmptyState title={t("teacher_no_students")} />
         ) : (
           <>
-            {roster.map(({ student, enrollment }) => {
+            {roster.map(({ student, enrollment }: TeacherRosterEntry) => {
               const record = recordedByStudent.get(student.id);
               const studentName = isArabic
                 ? student.name_ar || student.full_name
