@@ -2531,9 +2531,18 @@ export class RemoteClient implements OrbisApiClient {
     limit?: number,
     offset?: number,
   ): Promise<AuditLogDto[]> {
-    const logs = await this.listAuditLogs(limit, offset);
-    return logs.filter(
-      (l) => l.entity_type === entityType && l.entity_id === entityId,
+    return (
+      (await this.call(
+        sdk.listAuditLogs({
+          client: this.client,
+          query: {
+            entity_type: entityType,
+            entity_id: entityId,
+            limit,
+            offset,
+          },
+        }),
+      )) ?? []
     );
   }
 

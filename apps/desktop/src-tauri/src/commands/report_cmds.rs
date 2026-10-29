@@ -280,7 +280,7 @@ pub async fn audit_list_logs(
             action: e.action,
             entity_type: e.entity_type,
             entity_id: Some(e.entity_id.to_string()),
-            ip_address: Some("127.0.0.1".to_string()),
+            ip_address: None,
             metadata: e
                 .details
                 .as_ref()
@@ -289,6 +289,50 @@ pub async fn audit_list_logs(
             created_at: e.created_at.to_rfc3339(),
         })
         .collect();
+
+    Ok(ok(dtos))
+}
+
+#[tauri::command]
+pub async fn get_entity_audit(
+    entity_type: String,
+    entity_id: String,
+    limit: Option<u64>,
+    offset: Option<u64>,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<Vec<AuditLogDto>>, String> {
+    let entity_id = Uuid::parse_str(&entity_id).map_err(|_| "Invalid entity ID".to_string())?;
+    let ctx = make_ctx(&state);
+    let entries = state
+        .report_audit_repo
+        .list_by_entity(ctx.tenant_id, &entity_type, entity_id, limit, offset)
+        .await
+        .map_err(|error| error.to_string())?;
+
+    let dtos = entries
+        .into_iter()
+        .map(|entry| {
+            let metadata = entry
+                .details
+                .as_ref()
+                .map(|details| serde_json::to_string_pretty(details))
+                .transpose()
+                .map_err(|error| format!("Failed to serialize audit details: {error}"))?;
+
+            Ok::<AuditLogDto, String>(AuditLogDto {
+                id: entry.id.to_string(),
+                org_id: entry.org_id.to_string(),
+                user_id: Some(entry.actor_id.to_string()),
+                action: entry.action,
+                entity_type: entry.entity_type,
+                entity_id: Some(entry.entity_id.to_string()),
+                ip_address: None,
+                metadata,
+                details: entry.details,
+                created_at: entry.created_at.to_rfc3339(),
+            })
+        })
+        .collect::<Result<Vec<_>, String>>()?;
 
     Ok(ok(dtos))
 }

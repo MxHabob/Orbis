@@ -1,7 +1,6 @@
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import {
   Accordion,
   AccordionContent,
@@ -24,7 +23,7 @@ let {
   maxHeight?: string;
 } = $props();
 
-let expandedAccordion = $state<string | undefined>("audit-history");
+let accordionValue = $state<string | undefined>("activity");
 
 const auditQuery = createQuery(() => ({
   queryKey: ["entity-audit", orgContext.orgId, entityType, entityId],
@@ -47,14 +46,12 @@ const usersQuery = createQuery(() => ({
 
 const logs = $derived(auditQuery.data ?? []);
 const users = $derived<UserDto[]>(usersQuery.data ?? []);
-const usersById = $derived(new Map(users.map((user) => [String(user.id), user])));
-const cardUsers = $derived(
-  logs
-    .map((log) => getActorName(log.user_id))
-    .filter((name) => !!name && name !== m.shared_ui_system_actor())
-    .slice(0, 3),
+const usersById = $derived(
+  new Map(users.map((user) => [String(user.id), user])),
 );
-const isLoading = $derived(Boolean(orgContext.orgId && entityId && auditQuery.isLoading));
+const isLoading = $derived(
+  Boolean(orgContext.orgId && entityId && auditQuery.isLoading),
+);
 const errorMessage = $derived(
   auditQuery.error instanceof Error
     ? auditQuery.error.message
@@ -86,92 +83,51 @@ function formatActionLabel(action: string): string {
   };
   return map[action] || action;
 }
-
-function getDetailsContent(log: AuditLogDto): string | null {
-  if (log.details != null) {
-    if (typeof log.details === "string") return log.details;
-    return JSON.stringify(log.details, null, 2) ?? null;
-  }
-  return log.metadata ?? null;
-}
 </script>
 
-<Card aria-label={m.shared_ui_audit_trail_title()} class="text-card-foreground">
-  <Accordion type="single" bind:value={expandedAccordion} collapsible class="w-full">
-    <AccordionItem value="audit-history" class="border-0">
-      <CardHeader class="px-4 py-3 normal-case tracking-normal text-foreground">
-        <AccordionTrigger class="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-none px-0 py-0 text-left text-sm text-foreground hover:no-underline">
-          <div class="flex min-w-0 items-center gap-3">
-            <div class="flex shrink-0 items-center -space-x-2">
-              {#each cardUsers as userName, index (userName + '-' + index)}
-                <span class="flex size-7 items-center justify-center rounded-full border border-background bg-muted text-[10px] font-semibold text-muted-foreground">
-                  {userName.slice(0, 1).toUpperCase()}
-                </span>
-              {/each}
-            </div>
-            <CardTitle class="text-sm font-semibold text-foreground normal-case tracking-normal">
-              {m.shared_ui_audit_trail_title()}
-            </CardTitle>
-          </div>
-          {#if auditQuery.isSuccess}
-            <span class="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {logs.length}
-            </span>
-          {/if}
-        </AccordionTrigger>
-      </CardHeader>
-
-      <AccordionContent>
-        <CardContent class="overflow-y-auto px-0 py-0" style="max-height: {maxHeight};">
+<Accordion type="single" bind:value={accordionValue} collapsible class="w-full">
+  <AccordionItem value="activity" class="border-0">
+    <AccordionTrigger class="py-2 text-sm font-semibold text-foreground hover:no-underline">
+      {m.shared_ui_audit_trail_title()}
+    </AccordionTrigger>
+    <AccordionContent>
+      <section aria-label={m.shared_ui_audit_trail_title()}>
+        <div class="overflow-y-auto" style="max-height: {maxHeight};">
           {#if isLoading}
-            <div class="space-y-3 px-6 py-4">
-              {#each [1, 2, 3] as item (item)}
-                <div class="space-y-2 py-2">
-                  <div class="h-4 w-2/5 rounded bg-muted/40"></div>
-                  <div class="h-3 w-1/4 rounded bg-muted/30"></div>
-                </div>
-              {/each}
-            </div>
+            <p class="py-2 text-sm text-muted-foreground">{m.shared_ui_refreshing()}</p>
           {:else if auditQuery.isError}
-            <div class="flex items-center justify-between gap-3 px-6 py-4">
+            <div class="flex items-center gap-2 py-2">
               <p class="text-sm text-destructive">{errorMessage}</p>
-              <Button variant="outline" size="sm" onclick={() => auditQuery.refetch()} disabled={auditQuery.isFetching}>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-auto px-1 py-0 text-sm"
+                onclick={() => auditQuery.refetch()}
+                disabled={auditQuery.isFetching}
+              >
                 {m.common_retry()}
               </Button>
             </div>
           {:else if logs.length === 0}
-            <div class="flex min-h-[120px] items-center justify-center py-5 text-center text-sm text-muted-foreground">
-              {m.shared_ui_no_audit_history()}
-            </div>
+            <p class="py-2 text-sm text-muted-foreground">{m.shared_ui_no_audit_history()}</p>
           {:else}
-            <div class="divide-y divide-border">
+            <div class="relative ms-1 border-s border-border py-1">
               {#each logs as log (log.id)}
-                {@const detailsContent = getDetailsContent(log)}
-                <div class="px-6 py-4">
-                  <div class="flex items-start justify-between gap-3">
-                    <p class="truncate text-sm font-semibold text-foreground">
-                      {formatActionLabel(log.action)}
-                    </p>
-                    <time datetime={log.created_at} class="shrink-0 text-xs text-muted-foreground">
-                      {formatDate(log.created_at)}
+                <div class="relative pb-4 ps-5 last:pb-0">
+                  <span class="absolute -start-[4.5px] top-1.5 size-2 rounded-full bg-muted-foreground"></span>
+                  <p class="text-sm leading-relaxed text-foreground">
+                    <span class="font-medium">{formatActionLabel(log.action)}</span>
+                    <span class="text-muted-foreground"> · {m.shared_ui_by()} {getActorName(log.user_id)}</span>
+                    <time datetime={log.created_at} class="text-muted-foreground">
+                      · {formatDate(log.created_at, "relative")}
                     </time>
-                  </div>
-
-                  <div class="mt-1 text-xs text-muted-foreground">
-                    <span class="truncate">{m.shared_ui_by()} {getActorName(log.user_id)}</span>
-                  </div>
-
-                  {#if detailsContent}
-                    <div class="mt-2 border-t border-border pt-2">
-                      <pre class="max-h-28 overflow-auto text-[11px] leading-relaxed whitespace-pre-wrap break-words text-muted-foreground"><code>{detailsContent}</code></pre>
-                    </div>
-                  {/if}
+                  </p>
                 </div>
               {/each}
             </div>
           {/if}
-        </CardContent>
-      </AccordionContent>
-    </AccordionItem>
-  </Accordion>
-</Card>
+        </div>
+      </section>
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

@@ -407,6 +407,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         report_cmds::download_report_file,
         report_cmds::batch_print,
         report_cmds::audit_list_logs,
+        report_cmds::get_entity_audit,
         // ── Template Management ─────────────────────────────────
         template_cmds::template_create,
         template_cmds::template_get,

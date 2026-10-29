@@ -1592,23 +1592,14 @@ export class LocalClient implements OrbisApiClient {
     limit?: number,
     offset?: number,
   ): Promise<AuditLogDto[]> {
-    try {
-      return unwrap(
-        await invoke("get_entity_audit", {
-          entityType,
-          entityId,
-          limit,
-          offset,
-        }),
-      );
-    } catch {
-      const logs = await this.listAuditLogs(limit ?? 50, offset ?? 0);
-      return logs.filter(
-        (l) =>
-          l.entity_type === entityType &&
-          (!entityId || l.entity_id === entityId),
-      );
-    }
+    return unwrap(
+      await invoke("get_entity_audit", {
+        entityType,
+        entityId,
+        limit,
+        offset,
+      }),
+    );
   }
 
   // ── System & Bootstrap ──────────────────────────────────────

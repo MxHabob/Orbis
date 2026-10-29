@@ -3989,7 +3989,7 @@
   "shared_ui_audit_student_created": "Student added",
   "shared_ui_audit_student_status_changed": "Student status changed",
   "shared_ui_audit_student_updated": "Student details updated",
-  "shared_ui_audit_trail_title": "Change history",
+  "shared_ui_audit_trail_title": "Activity",
   "shared_ui_authenticated": "Authenticated",
   "shared_ui_authenticating": "Authenticating",
   "shared_ui_authentication_failed": "Authentication Failed",

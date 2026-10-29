@@ -91,9 +91,14 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
 
         // Auto-provision master report definitions if a known system report is requested
         let catalog = super::report_catalog::get_master_report_catalog();
-        if catalog.iter().any(|entry| codes.iter().any(|c| c == entry.code)) {
+        if catalog
+            .iter()
+            .any(|entry| codes.iter().any(|c| c == entry.code))
+        {
             let now = chrono::Utc::now().to_rfc3339();
-            let _ = super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now).await;
+            let _ =
+                super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now)
+                    .await;
 
             let recheck = report_definition::Entity::find()
                 .filter(report_definition::Column::OrgId.eq(org_id))
@@ -773,6 +778,44 @@ impl ReportAuditRepository for ReportAuditRepoImpl {
         }
         if let Some(o) = offset {
             query = query.offset(o);
+        }
+
+        let models = query.all(&self.db).await.map_err(db_err)?;
+        Ok(models
+            .into_iter()
+            .map(|m| ReportAuditEntry {
+                id: m.id,
+                org_id: m.org_id,
+                actor_id: m.actor_id,
+                action: m.action,
+                entity_type: m.entity_type,
+                entity_id: m.entity_id,
+                details: m.details,
+                created_at: m.created_at.into(),
+            })
+            .collect())
+    }
+
+    async fn list_by_entity(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+        limit: Option<u64>,
+        offset: Option<u64>,
+    ) -> Result<Vec<ReportAuditEntry>, DomainError> {
+        let mut query = report_audit_log::Entity::find()
+            .filter(report_audit_log::Column::OrgId.eq(org_id))
+            .filter(report_audit_log::Column::EntityType.eq(entity_type))
+            .filter(report_audit_log::Column::EntityId.eq(entity_id))
+            .order_by_desc(report_audit_log::Column::CreatedAt)
+            .order_by_desc(report_audit_log::Column::Id);
+
+        if let Some(limit) = limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = offset {
+            query = query.offset(offset);
         }
 
         let models = query.all(&self.db).await.map_err(db_err)?;

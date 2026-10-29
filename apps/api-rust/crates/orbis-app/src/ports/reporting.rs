@@ -118,6 +118,14 @@ pub trait ReportAuditRepository: Send + Sync {
         limit: Option<u64>,
         offset: Option<u64>,
     ) -> Result<Vec<ReportAuditEntry>, DomainError>;
+    async fn list_by_entity(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+        limit: Option<u64>,
+        offset: Option<u64>,
+    ) -> Result<Vec<ReportAuditEntry>, DomainError>;
 }
 
 // ═══════════════════════════════════════════════════════════════

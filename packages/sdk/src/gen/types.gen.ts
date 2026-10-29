@@ -7056,6 +7056,8 @@ export type ListAuditLogsData = {
   query?: {
     limit?: number | null;
     offset?: number | null;
+    entity_type?: string | null;
+    entity_id?: string | null;
   };
   url: "/api/v1/reports/audit-logs";
 };

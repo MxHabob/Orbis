@@ -3989,7 +3989,7 @@
   "shared_ui_audit_student_created": "تمت إضافة الطالب",
   "shared_ui_audit_student_status_changed": "تم تغيير حالة الطالب",
   "shared_ui_audit_student_updated": "تم تحديث بيانات الطالب",
-  "shared_ui_audit_trail_title": "سجل التغييرات",
+  "shared_ui_audit_trail_title": "النشاط",
   "shared_ui_authenticated": "تمت المصادقة",
   "shared_ui_authenticating": "جارٍ التحقق من الهوية",
   "shared_ui_authentication_failed": "Authentication فشل",
