@@ -67,6 +67,6 @@
     "react-native": "0.86.3",
     "react-native-svg": "15.15.4",
     "svelte": "^5.56.1",
-    "typescript": "^7.0.2"
+    "typescript": "catalog:"
   }
 }

@@ -80,11 +80,31 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
 
         let model = report_definition::Entity::find()
             .filter(report_definition::Column::OrgId.eq(org_id))
-            .filter(report_definition::Column::Code.is_in(codes))
+            .filter(report_definition::Column::Code.is_in(codes.clone()))
             .one(&self.db)
             .await
             .map_err(db_err)?;
-        Ok(model.map(model_to_definition))
+
+        if let Some(m) = model {
+            return Ok(Some(model_to_definition(m)));
+        }
+
+        // Auto-provision master report definitions if a known system report is requested
+        let catalog = super::report_catalog::get_master_report_catalog();
+        if catalog.iter().any(|entry| codes.iter().any(|c| c == entry.code)) {
+            let now = chrono::Utc::now().to_rfc3339();
+            let _ = super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now).await;
+
+            let recheck = report_definition::Entity::find()
+                .filter(report_definition::Column::OrgId.eq(org_id))
+                .filter(report_definition::Column::Code.is_in(codes))
+                .one(&self.db)
+                .await
+                .map_err(db_err)?;
+            return Ok(recheck.map(model_to_definition));
+        }
+
+        Ok(None)
     }
 
     async fn list_by_org(

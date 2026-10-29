@@ -710,7 +710,7 @@ const relatedFooterActions = $derived<FooterAction[]>(
 <!-- Print Certificate Dialog -->
 <PdfReportViewer
   bind:open={showPrintCertificate}
-  templateId="student.enrollment_certificate"
+  templateId="administration.enrollment-certificate"
   parameters={{
     student_id: actualStudentId,
     enrollment_id: studentId,
