@@ -8,6 +8,7 @@ use orbis_app::services::student_service::RegisterStudentInput as ServiceRegiste
 use orbis_app::services::student_service::UpdateStudentProfileInput as ServiceUpdateProfileInput;
 use orbis_domain::entities::enrollment::{Enrollment, EnrollmentStatus, StudyMode};
 use orbis_domain::entities::person::Person;
+use orbis_domain::entities::report::ReportAuditEntry;
 use orbis_domain::entities::student::{AcademicStanding, Student, StudentDetail, StudentStatus};
 use orbis_domain::entities::student_guardian::StudentGuardian;
 use orbis_domain::queries::filters::{
@@ -19,6 +20,30 @@ use uuid::Uuid;
 
 fn ok<T: Serialize>(data: T) -> ApiResponse<T> {
     ApiResponse { data }
+}
+
+async fn record_student_audit(
+    state: &AppState,
+    ctx: &orbis_app::context::RequestContext,
+    student_id: Uuid,
+    action: &str,
+    details: serde_json::Value,
+) -> Result<(), String> {
+    let entry = ReportAuditEntry {
+        id: Uuid::new_v4(),
+        org_id: ctx.tenant_id,
+        actor_id: ctx.user_id().unwrap_or_default(),
+        action: action.to_string(),
+        entity_type: "student".to_string(),
+        entity_id: student_id,
+        details: Some(details),
+        created_at: chrono::Utc::now(),
+    };
+    state
+        .report_audit_repo
+        .save(&entry)
+        .await
+        .map_err(|error| format!("Failed to record student audit entry: {error}"))
 }
 
 // ── DTOs ─────────────────────────────────────────────────────────
@@ -486,6 +511,14 @@ pub async fn student_register_student(
         .register_student(&ctx, ctx.tenant_id, input)
         .await
         .map_err(|e| e.to_string())?;
+    record_student_audit(
+        &state,
+        &ctx,
+        result.student.student.id,
+        "student.created",
+        serde_json::json!({}),
+    )
+    .await?;
 
     Ok(ok(student_detail_to_dto(result.student)))
 }
@@ -551,6 +584,14 @@ pub async fn student_update_student_status(
         .update_student_status(&ctx, student_id, status, request.reason)
         .await
         .map_err(|e| e.to_string())?;
+    record_student_audit(
+        &state,
+        &ctx,
+        student_id,
+        "student.status_changed",
+        serde_json::json!({ "status": student.status.to_string() }),
+    )
+    .await?;
 
     Ok(ok(student_to_dto(student)))
 }
@@ -562,9 +603,35 @@ pub async fn student_update_profile(
 ) -> Result<ApiResponse<StudentDetailDto>, String> {
     let ctx = make_ctx(&state);
     let student_id = Uuid::parse_str(&request.student_id).map_err(|_| "Invalid student ID")?;
+    let birth_date_was_set = request.birth_date.is_some();
     let birth_date = request
         .birth_date
         .and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
+    let updated_fields = [
+        ("first_name", request.first_name.is_some()),
+        ("middle_name", request.middle_name.is_some()),
+        ("last_name", request.last_name.is_some()),
+        ("first_name_ar", request.first_name_ar.is_some()),
+        ("middle_name_ar", request.middle_name_ar.is_some()),
+        ("last_name_ar", request.last_name_ar.is_some()),
+        ("display_name", request.display_name.is_some()),
+        ("national_id", request.national_id.is_some()),
+        ("passport_number", request.passport_number.is_some()),
+        ("gender", request.gender.is_some()),
+        ("birth_date", birth_date_was_set),
+        ("place_of_birth", request.place_of_birth.is_some()),
+        ("nationality", request.nationality.is_some()),
+        ("blood_type", request.blood_type.is_some()),
+        ("medical_notes", request.medical_notes.is_some()),
+        ("special_needs_notes", request.special_needs_notes.is_some()),
+        ("phone", request.phone.is_some()),
+        ("email", request.email.is_some()),
+        ("address", request.address.is_some()),
+        ("avatar_url", request.avatar_url.is_some()),
+    ]
+    .into_iter()
+    .filter_map(|(field, is_set)| is_set.then_some(field))
+    .collect::<Vec<_>>();
 
     let input = ServiceUpdateProfileInput {
         first_name: request.first_name,
@@ -594,6 +661,14 @@ pub async fn student_update_profile(
         .update_student_profile(&ctx, student_id, input)
         .await
         .map_err(|e| e.to_string())?;
+    record_student_audit(
+        &state,
+        &ctx,
+        student_id,
+        "student.updated",
+        serde_json::json!({ "updated_fields": updated_fields }),
+    )
+    .await?;
 
     Ok(ok(student_detail_to_dto(detail)))
 }

@@ -15,7 +15,10 @@ const sourceRoot = join(appRoot, "src");
 const messagesRoot = join(appRoot, "messages");
 const requireFromDesktop = createRequire(join(appRoot, "package.json"));
 const { parse } = requireFromDesktop("svelte/compiler") as {
-  parse: (source: string, options?: { filename?: string }) => {
+  parse: (
+    source: string,
+    options?: { filename?: string },
+  ) => {
     html: SvelteNode;
   };
 };
@@ -92,7 +95,7 @@ async function main() {
       if (!namespace) continue;
       const escapedNamespace = namespace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const messageReferencePattern = new RegExp(
-        `\\b${escapedNamespace}\\.([A-Za-z0-9_]+)\\b`,
+        `\\b${escapedNamespace}\\s*\\.([A-Za-z0-9_]+)\\b`,
         "g",
       );
       for (const match of text.matchAll(messageReferencePattern)) {
@@ -113,16 +116,18 @@ async function main() {
     if (allKeys.has(key)) usedKeys.add(key);
   }
   const unusedKeys = [...allKeys].filter((key) => !usedKeys.has(key)).sort();
-  const missingInArabic = [...new Set([
-    ...[...usedKeys].filter((key) => !arabicKeys.has(key)),
-    ...[...englishKeys].filter((key) => !arabicKeys.has(key)),
-  ])]
-    .sort();
-  const missingInEnglish = [...new Set([
-    ...[...usedKeys].filter((key) => !englishKeys.has(key)),
-    ...[...arabicKeys].filter((key) => !englishKeys.has(key)),
-  ])]
-    .sort();
+  const missingInArabic = [
+    ...new Set([
+      ...[...usedKeys].filter((key) => !arabicKeys.has(key)),
+      ...[...englishKeys].filter((key) => !arabicKeys.has(key)),
+    ]),
+  ].sort();
+  const missingInEnglish = [
+    ...new Set([
+      ...[...usedKeys].filter((key) => !englishKeys.has(key)),
+      ...[...arabicKeys].filter((key) => !englishKeys.has(key)),
+    ]),
+  ].sort();
   const placeholderPattern = /\{\s*([A-Za-z0-9_]+)\s*\}/g;
   const placeholderVariables = (message: unknown) =>
     typeof message === "string"
@@ -159,8 +164,12 @@ async function main() {
 
   for (const { file, text } of sourceText) {
     if (
-      file.endsWith(`${"src"}${"\\"}lib${"\\"}shell${"\\"}search-modal.svelte`) ||
-      file.endsWith(`${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}person-name.ts`) ||
+      file.endsWith(
+        `${"src"}${"\\"}lib${"\\"}shell${"\\"}search-modal.svelte`,
+      ) ||
+      file.endsWith(
+        `${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}person-name.ts`,
+      ) ||
       file.includes(".test.") ||
       file.includes(".spec.")
     ) {
@@ -168,7 +177,9 @@ async function main() {
     }
 
     const lines = text.split(/\r?\n/);
-    const remoteMetadataStart = file.endsWith(`${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`)
+    const remoteMetadataStart = file.endsWith(
+      `${"src"}${"\\"}lib${"\\"}api${"\\"}remote-client.ts`,
+    )
       ? text.indexOf("async bootstrapDetectEnvironment")
       : -1;
     const remoteMetadataEnd =
@@ -192,7 +203,9 @@ async function main() {
       if (line.trim().startsWith("//") || line.trim().startsWith("<!--"))
         continue;
       if (
-        file.endsWith(`${"src"}${"\\"}routes${"\\"}(app)${"\\"}[orgId]${"\\"}onboarding${"\\"}+page.svelte`) &&
+        file.endsWith(
+          `${"src"}${"\\"}routes${"\\"}(app)${"\\"}[orgId]${"\\"}onboarding${"\\"}+page.svelte`,
+        ) &&
         /\bacademic_year_name_ar\s*:/.test(line)
       ) {
         skipArabicDataValue = true;
@@ -203,17 +216,25 @@ async function main() {
         continue;
       }
       if (
-        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}templates${"\\"}panels${"\\"}properties-inspector.svelte`) &&
+        (file.endsWith(
+          `${"src"}${"\\"}lib${"\\"}features${"\\"}templates${"\\"}panels${"\\"}properties-inspector.svelte`,
+        ) &&
           /\bheaderAr\s*:/.test(line)) ||
-        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`) &&
+        (file.endsWith(
+          `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`,
+        ) &&
           /\bst\.includes\("[\u0600-\u06ff]+"\)/.test(line)) ||
-        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`) &&
+        (file.endsWith(
+          `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`,
+        ) &&
           /["']؛\s*["']/.test(line))
       ) {
         continue;
       }
       if (
-        file.includes(`${"src"}${"\\"}lib${"\\"}features${"\\"}bulk-entry${"\\"}profiles${"\\"}`)
+        file.includes(
+          `${"src"}${"\\"}lib${"\\"}features${"\\"}bulk-entry${"\\"}profiles${"\\"}`,
+        )
       ) {
         continue;
       }
@@ -227,19 +248,28 @@ async function main() {
         continue;
       }
       if (
-        file.endsWith(`${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}search.ts`) ||
-        (guardianRelationshipStart >= 0 &&
-        currentOffset >= guardianRelationshipStart &&
-        (guardianRelationshipEnd < 0 || currentOffset < guardianRelationshipEnd)) ||
-        /\b(?:[A-Za-z]*nameAr|[A-Za-z_]*name_ar|relationshipAr|relationship_ar|country_name_ar|currency_symbol_ar|currency_name_ar|suggested_academic_year_ar|suggested_academic_calendar_ar|detected_language)\s*(?:=|:|\|\|)/i.test(
-        line,
+        file.endsWith(
+          `${"src"}${"\\"}lib${"\\"}shared${"\\"}utils${"\\"}search.ts`,
         ) ||
-        (file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}registration-effects.ts`) &&
+        (guardianRelationshipStart >= 0 &&
+          currentOffset >= guardianRelationshipStart &&
+          (guardianRelationshipEnd < 0 ||
+            currentOffset < guardianRelationshipEnd)) ||
+        /\b(?:[A-Za-z]*nameAr|[A-Za-z_]*name_ar|relationshipAr|relationship_ar|country_name_ar|currency_symbol_ar|currency_name_ar|suggested_academic_year_ar|suggested_academic_calendar_ar|detected_language)\s*(?:=|:|\|\|)/i.test(
+          line,
+        ) ||
+        (file.endsWith(
+          `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}registration-effects.ts`,
+        ) &&
           /account\.name_ar\?\.trim\(\)/.test(line)) ||
         /\b(?:rawStatus|rawGender|status|sex)\b.*[\u0600-\u06ff]/.test(line) ||
         /\.replace\(\s*["'][^"']*[\u0600-\u06ff][^"']*["']/.test(line) ||
-        ((file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`) ||
-          file.endsWith(`${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`)) &&
+        ((file.endsWith(
+          `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}form-state.svelte.ts`,
+        ) ||
+          file.endsWith(
+            `${"src"}${"\\"}lib${"\\"}features${"\\"}students${"\\"}student-details.svelte`,
+          )) &&
           /\b(?:firstName|lastName)\b.*[\u0600-\u06ff]/.test(line))
       ) {
         continue;
@@ -297,7 +327,10 @@ async function main() {
   printList("Missing Arabic translations", missingInArabic);
   printList("Missing English translations", missingInEnglish);
   printList("Placeholder mismatches", placeholderMismatches);
-  printList("Generated-looking English messages (manual review)", generatedLookingMessages);
+  printList(
+    "Generated-looking English messages (manual review)",
+    generatedLookingMessages,
+  );
   printList("Hardcoded Arabic literals", hardcodedArabic);
   printList("Hardcoded Arabic Svelte markup", hardcodedArabicMarkup);
 

@@ -14,7 +14,12 @@ import { formatCurrency, l } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import { confirmStore } from "$lib/stores";
 import DiscountTemplateSheet from "$lib/features/finance/components/discount-template-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { discountTemplateFilterFields } from "$lib/core/filter-configs";
 
@@ -36,7 +41,9 @@ async function loadTemplates() {
   try {
     templates = await api.listDiscountTemplates();
   } catch (e) {
-    toast.error((e as any)?.message || m.settings_ui_discount_templates_load_error());
+    toast.error(
+      (e as any)?.message || m.settings_ui_discount_templates_load_error(),
+    );
   } finally {
     isLoading = false;
   }
@@ -48,7 +55,10 @@ onMount(() => {
 
 function getFormattedValue(tpl: any): string {
   const val = Number(tpl.value || 0);
-  if (String(tpl.discount_type || tpl.calculation_method).toLowerCase() === "percentage")
+  if (
+    String(tpl.discount_type || tpl.calculation_method).toLowerCase() ===
+    "percentage"
+  )
     return `${val}%`;
   return formatCurrency(val, "YER");
 }
@@ -65,7 +75,12 @@ function getTypeLabel(typeStr: string): string {
 
 const templateActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
-  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
+  {
+    id: "delete",
+    label: m.common_action_delete(),
+    icon: "Trash2",
+    variant: "destructive",
+  },
 ];
 
 const gridSource = $derived(
@@ -75,16 +90,64 @@ const gridSource = $derived(
     name: tpl.name_ar || tpl.name || "—",
     discount_type: getTypeLabel(tpl.discount_type || tpl.type || ""),
     value: getFormattedValue(tpl),
-    status: (tpl.is_active === 1 || tpl.is_active === true) ? "active" : "inactive",
+    status:
+      tpl.is_active === 1 || tpl.is_active === true ? "active" : "inactive",
   })),
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_ft_col_name(), name: m.common_ft_col_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "discount_type", prop: "discount_type", header: m.common_word_type(), name: m.common_word_type(), width: 130, size: 130, readonly: true },
-  { id: "value", prop: "value", header: m.common_dt_col_value(), name: m.common_dt_col_value(), width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.common_ft_col_name(),
+    name: m.common_ft_col_name(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "discount_type",
+    prop: "discount_type",
+    header: m.common_word_type(),
+    name: m.common_word_type(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "value",
+    prop: "value",
+    header: m.common_dt_col_value(),
+    name: m.common_dt_col_value(),
+    width: 120,
+    size: 120,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
+    width: 110,
+    size: 110,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
   {
     id: "actions",
     prop: "actions",
@@ -126,7 +189,9 @@ async function handleGridAction(event: GridActionEvent) {
           queryKey: queryKeys.finance.discountTemplates(orgId),
         });
       } catch (err: any) {
-        toast.error(err?.message || m.settings_ui_discount_template_delete_error());
+        toast.error(
+          err?.message || m.settings_ui_discount_template_delete_error(),
+        );
       }
     }
   }

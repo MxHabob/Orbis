@@ -44,13 +44,19 @@ export class PersonalInfoState {
     const s = originalStudent.student;
     const e = originalStudent.enrollment;
 
-    this.nameAr = (p.first_name_ar && p.last_name_ar ? `${p.first_name_ar} ${p.last_name_ar}` : "") || p.full_name_ar || p.full_name || "";
-    this.nameEn = p.full_name || (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "");
+    this.nameAr =
+      (p.first_name_ar && p.last_name_ar
+        ? `${p.first_name_ar} ${p.last_name_ar}`
+        : "") ||
+      p.full_name_ar ||
+      p.full_name ||
+      "";
+    this.nameEn =
+      p.full_name ||
+      (p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : "");
     this.nationalId = p.national_id || "";
 
-    const birth = p.birth_date
-      ? String(p.birth_date).slice(0, 10)
-      : "";
+    const birth = p.birth_date ? String(p.birth_date).slice(0, 10) : "";
     if (birth) {
       const parts = birth.split("-");
       if (parts.length === 3) {

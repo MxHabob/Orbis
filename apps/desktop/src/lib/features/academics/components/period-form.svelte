@@ -68,22 +68,27 @@ const periodsList = $derived(
   ),
 );
 
-const form = untrack(() => new FormController({
-  initialValues: {
-    year_id: period?.year_id || "",
-    name: period?.name || "",
-    name_ar: period?.name_ar || "",
-    code: period?.code || "",
-    period_type: period?.period_type || (period?.year_id ? "term" : "year"),
-    parent_id: period?.parent_id || period?.period_id || "",
-    start_date: period?.start_date ? String(period.start_date).slice(0, 10) : "",
-    end_date: period?.end_date ? String(period.end_date).slice(0, 10) : "",
-    grading_system: period?.grading_system || "percentage",
-    passing_grade: period?.passing_grade ?? 50,
-    max_grade: period?.max_grade ?? 100,
-  },
-  schema: createPeriodInputSchema,
-}));
+const form = untrack(
+  () =>
+    new FormController({
+      initialValues: {
+        year_id: period?.year_id || "",
+        name: period?.name || "",
+        name_ar: period?.name_ar || "",
+        code: period?.code || "",
+        period_type: period?.period_type || (period?.year_id ? "term" : "year"),
+        parent_id: period?.parent_id || period?.period_id || "",
+        start_date: period?.start_date
+          ? String(period.start_date).slice(0, 10)
+          : "",
+        end_date: period?.end_date ? String(period.end_date).slice(0, 10) : "",
+        grading_system: period?.grading_system || "percentage",
+        passing_grade: period?.passing_grade ?? 50,
+        max_grade: period?.max_grade ?? 100,
+      },
+      schema: createPeriodInputSchema,
+    }),
+);
 
 function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];
@@ -134,8 +139,7 @@ async function handleSubmit(e: SubmitEvent) {
         toast.success(m.common_action_save());
       } else {
         const selectedYearId =
-          payload.year_id ||
-          (yearsList[0]?.id ? String(yearsList[0].id) : "");
+          payload.year_id || (yearsList[0]?.id ? String(yearsList[0].id) : "");
         if (!selectedYearId) {
           throw new Error(m.shared_ui_academic_calendar_required_for_period());
         }

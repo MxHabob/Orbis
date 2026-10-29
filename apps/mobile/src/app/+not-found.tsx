@@ -10,7 +10,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HEADER_CONTENT_OFFSET, Header } from "@/components/header";
 import { EmptyState } from "@/components/ui/empty-state";
 
-
 export default function NotFoundScreen() {
   const insets = useSafeAreaInsets();
 

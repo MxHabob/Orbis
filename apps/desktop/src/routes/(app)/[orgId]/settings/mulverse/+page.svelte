@@ -1,214 +1,239 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { createMutation, createQuery } from "@tanstack/svelte-query";
-  import { api, queryClient, queryKeys } from "$lib/api";
-  import type { MulverseDeploymentDto, MulverseEndpointDto } from "$lib/api";
-  import { toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Card } from "@orbis/ui/card";
-  import { Input } from "@orbis/ui/input";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "@orbis/ui/select";
-  import { ArchiveBox, Cloud, Database, Merge, Sparkles } from "@orbis/icons";
-  import { resolve } from "$app/paths";
-  import { localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { createMutation, createQuery } from "@tanstack/svelte-query";
+import { api, queryClient, queryKeys } from "$lib/api";
+import type { MulverseDeploymentDto, MulverseEndpointDto } from "$lib/api";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Card } from "@orbis/ui/card";
+import { Input } from "@orbis/ui/input";
+import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { ArchiveBox, Cloud, Database, Merge, Sparkles } from "@orbis/icons";
+import { resolve } from "$app/paths";
+import { localizeHref } from "$lib/paraglide/runtime";
 
-  function showMutationError(error: unknown) {
-    toast.error(error instanceof Error ? error.message : String(error));
-  }
+function showMutationError(error: unknown) {
+  toast.error(error instanceof Error ? error.message : String(error));
+}
 
-  let { data }: { data: { orgId: string } } = $props();
-  let apiKey = $state("");
-  let deploymentName = $state("");
-  let deploymentEnvironment = $state("production");
-  let editingDeploymentName = $state("");
-  let editingDeploymentEnvironment = $state("");
-  let selectedDeploymentId = $state<string | null>(null);
-  let editingDeploymentId = $state<string | null>(null);
-  let editingEndpointId = $state<string | null>(null);
-  let endpointUrl = $state("");
-  let endpointScope = $state<"public" | "local_network">("public");
-  let newEndpointUrl = $state("");
+let { data }: { data: { orgId: string } } = $props();
+let apiKey = $state("");
+let deploymentName = $state("");
+let deploymentEnvironment = $state("production");
+let editingDeploymentName = $state("");
+let editingDeploymentEnvironment = $state("");
+let selectedDeploymentId = $state<string | null>(null);
+let editingDeploymentId = $state<string | null>(null);
+let editingEndpointId = $state<string | null>(null);
+let endpointUrl = $state("");
+let endpointScope = $state<"public" | "local_network">("public");
+let newEndpointUrl = $state("");
 
-  const connection = createQuery(() => ({
-    queryKey: ["mulverseConnection", data.orgId],
-    queryFn: () => api.getMulverseConnection(),
-    retry: false,
-  }));
+const connection = createQuery(() => ({
+  queryKey: ["mulverseConnection", data.orgId],
+  queryFn: () => api.getMulverseConnection(),
+  retry: false,
+}));
 
-  const integrations = createQuery(() => ({
-    queryKey: queryKeys.integration.list(data.orgId),
-    queryFn: () => api.listIntegrations(),
-    retry: false,
-  }));
+const integrations = createQuery(() => ({
+  queryKey: queryKeys.integration.list(data.orgId),
+  queryFn: () => api.listIntegrations(),
+  retry: false,
+}));
 
-  function isIntegrationEnabled(...providerNames: string[]): boolean {
-    const normalizedNames = providerNames.map((name) => name.toLowerCase().replaceAll("_", "-"));
-    return integrations.data?.some(
+function isIntegrationEnabled(...providerNames: string[]): boolean {
+  const normalizedNames = providerNames.map((name) =>
+    name.toLowerCase().replaceAll("_", "-"),
+  );
+  return (
+    integrations.data?.some(
       (integration) =>
         integration.is_enabled &&
-        normalizedNames.includes(integration.provider_name.toLowerCase().replaceAll("_", "-")),
-    ) ?? false;
-  }
-
-  const orbisAiEnabled = $derived(isIntegrationEnabled("orbis-ai"));
-  const orbisMobileEnabled = $derived(
-    isIntegrationEnabled("orbis-mobile") || connection.data?.connected === true,
+        normalizedNames.includes(
+          integration.provider_name.toLowerCase().replaceAll("_", "-"),
+        ),
+    ) ?? false
   );
-  const mulverseCloudEnabled = $derived(isIntegrationEnabled("mulverse-cloud"));
+}
 
-  const deployments = createQuery(() => ({
-    queryKey: ["mulverseDeployments", data.orgId],
-    queryFn: () => api.listMulverseDeployments(),
-    enabled: connection.data?.connected === true,
-  }));
+const orbisAiEnabled = $derived(isIntegrationEnabled("orbis-ai"));
+const orbisMobileEnabled = $derived(
+  isIntegrationEnabled("orbis-mobile") || connection.data?.connected === true,
+);
+const mulverseCloudEnabled = $derived(isIntegrationEnabled("mulverse-cloud"));
 
-  const endpoints = createQuery(() => ({
-    queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
-    queryFn: () => api.listMulverseEndpoints(selectedDeploymentId!),
-    enabled: !!selectedDeploymentId,
-  }));
+const deployments = createQuery(() => ({
+  queryKey: ["mulverseDeployments", data.orgId],
+  queryFn: () => api.listMulverseDeployments(),
+  enabled: connection.data?.connected === true,
+}));
 
-  const connectMutation = createMutation(() => ({
-    mutationFn: () => api.connectMulverse(apiKey.trim()),
-    onSuccess: async () => {
-      apiKey = "";
-      await queryClient.invalidateQueries({ queryKey: ["mulverseConnection", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_connected());
-    },
-    onError: showMutationError,
-  }));
+const endpoints = createQuery(() => ({
+  queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
+  queryFn: () => api.listMulverseEndpoints(selectedDeploymentId!),
+  enabled: !!selectedDeploymentId,
+}));
 
-  const disconnectMutation = createMutation(() => ({
-    mutationFn: () => api.disconnectMulverse(),
-    onSuccess: async () => {
-      selectedDeploymentId = null;
-      await queryClient.invalidateQueries({ queryKey: ["mulverseConnection", data.orgId] });
-      await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_disconnected());
-    },
-    onError: showMutationError,
-  }));
+const connectMutation = createMutation(() => ({
+  mutationFn: () => api.connectMulverse(apiKey.trim()),
+  onSuccess: async () => {
+    apiKey = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseConnection", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_connected());
+  },
+  onError: showMutationError,
+}));
 
-  const createDeploymentMutation = createMutation(() => ({
-    mutationFn: () =>
-      api.createMulverseDeployment({
-        name: deploymentName.trim(),
-        environment: deploymentEnvironment.trim(),
-      }),
-    onSuccess: async () => {
-      deploymentName = "";
-      await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_deployment_created());
-    },
-    onError: showMutationError,
-  }));
+const disconnectMutation = createMutation(() => ({
+  mutationFn: () => api.disconnectMulverse(),
+  onSuccess: async () => {
+    selectedDeploymentId = null;
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseConnection", data.orgId],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseDeployments", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_disconnected());
+  },
+  onError: showMutationError,
+}));
 
-  const updateDeploymentMutation = createMutation(() => ({
-    mutationFn: (deployment: MulverseDeploymentDto) =>
-      api.updateMulverseDeployment(deployment.id, {
-        name: editingDeploymentName.trim(),
-        environment: editingDeploymentEnvironment.trim(),
-      }),
-    onSuccess: async () => {
-      editingDeploymentId = null;
-      await queryClient.invalidateQueries({ queryKey: ["mulverseDeployments", data.orgId] });
-      toast.success(m.settings_orbis_mobile_toast_deployment_updated());
-    },
-    onError: showMutationError,
-  }));
+const createDeploymentMutation = createMutation(() => ({
+  mutationFn: () =>
+    api.createMulverseDeployment({
+      name: deploymentName.trim(),
+      environment: deploymentEnvironment.trim(),
+    }),
+  onSuccess: async () => {
+    deploymentName = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseDeployments", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_deployment_created());
+  },
+  onError: showMutationError,
+}));
 
-  const createEndpointMutation = createMutation(() => ({
-    mutationFn: () =>
-      api.createMulverseEndpoint(selectedDeploymentId!, {
-        url: newEndpointUrl.trim(),
-        network_scope: endpointScope,
-      }),
-    onSuccess: async () => {
-      newEndpointUrl = "";
-      await queryClient.invalidateQueries({
-        queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
-      });
-      toast.success(m.settings_orbis_mobile_toast_endpoint_added());
-    },
-    onError: showMutationError,
-  }));
+const updateDeploymentMutation = createMutation(() => ({
+  mutationFn: (deployment: MulverseDeploymentDto) =>
+    api.updateMulverseDeployment(deployment.id, {
+      name: editingDeploymentName.trim(),
+      environment: editingDeploymentEnvironment.trim(),
+    }),
+  onSuccess: async () => {
+    editingDeploymentId = null;
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseDeployments", data.orgId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_deployment_updated());
+  },
+  onError: showMutationError,
+}));
 
-  const updateEndpointMutation = createMutation(() => ({
-    mutationFn: ({ endpoint, status, url }: {
-      endpoint: MulverseEndpointDto;
-      status?: "active" | "disabled";
-      url?: string;
-    }) =>
-      api.updateMulverseEndpoint(endpoint.id, {
-        url,
-        status,
-      }),
-    onSuccess: async (_result, variables) => {
-      editingEndpointId = null;
-      endpointUrl = "";
-      await queryClient.invalidateQueries({
-        queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
-      });
-      if (variables.status === "active") {
-        toast.success(m.settings_orbis_mobile_toast_endpoint_activated());
-      } else if (variables.status === "disabled") {
-        toast.success(m.settings_orbis_mobile_toast_endpoint_disabled());
-      } else {
-        toast.success(m.settings_orbis_mobile_toast_endpoint_updated());
-      }
-    },
-    onError: showMutationError,
-  }));
+const createEndpointMutation = createMutation(() => ({
+  mutationFn: () =>
+    api.createMulverseEndpoint(selectedDeploymentId!, {
+      url: newEndpointUrl.trim(),
+      network_scope: endpointScope,
+    }),
+  onSuccess: async () => {
+    newEndpointUrl = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
+    });
+    toast.success(m.settings_orbis_mobile_toast_endpoint_added());
+  },
+  onError: showMutationError,
+}));
 
-  function submitConnect(event: SubmitEvent) {
-    event.preventDefault();
-    connectMutation.mutate();
-  }
-
-  function submitDeployment(event: SubmitEvent) {
-    event.preventDefault();
-    createDeploymentMutation.mutate();
-  }
-
-  function submitEndpoint(event: SubmitEvent) {
-    event.preventDefault();
-    createEndpointMutation.mutate();
-  }
-
-  function saveDeployment(event: SubmitEvent, deployment: MulverseDeploymentDto) {
-    event.preventDefault();
-    updateDeploymentMutation.mutate(deployment);
-  }
-
-  function saveEndpoint(event: SubmitEvent, endpoint: MulverseEndpointDto) {
-    event.preventDefault();
-    const nextUrl = endpointUrl.trim();
-    if (nextUrl && nextUrl !== endpoint.url) {
-      updateEndpointMutation.mutate({ endpoint, url: nextUrl });
+const updateEndpointMutation = createMutation(() => ({
+  mutationFn: ({
+    endpoint,
+    status,
+    url,
+  }: {
+    endpoint: MulverseEndpointDto;
+    status?: "active" | "disabled";
+    url?: string;
+  }) =>
+    api.updateMulverseEndpoint(endpoint.id, {
+      url,
+      status,
+    }),
+  onSuccess: async (_result, variables) => {
+    editingEndpointId = null;
+    endpointUrl = "";
+    await queryClient.invalidateQueries({
+      queryKey: ["mulverseEndpoints", data.orgId, selectedDeploymentId],
+    });
+    if (variables.status === "active") {
+      toast.success(m.settings_orbis_mobile_toast_endpoint_activated());
+    } else if (variables.status === "disabled") {
+      toast.success(m.settings_orbis_mobile_toast_endpoint_disabled());
     } else {
-      editingEndpointId = null;
-      endpointUrl = "";
+      toast.success(m.settings_orbis_mobile_toast_endpoint_updated());
     }
-  }
+  },
+  onError: showMutationError,
+}));
 
-  function statusMessage(status: string): string {
-    switch (status) {
-      case "active":
-        return m.settings_orbis_mobile_status_active();
-      case "disabled":
-        return m.settings_orbis_mobile_status_disabled();
-      case "revoked":
-        return m.settings_orbis_mobile_status_revoked();
-      case "pending":
-        return m.settings_orbis_mobile_status_pending();
-      case "suspended":
-        return m.settings_orbis_mobile_status_suspended();
-      default:
-        return status;
-    }
+function submitConnect(event: SubmitEvent) {
+  event.preventDefault();
+  connectMutation.mutate();
+}
+
+function submitDeployment(event: SubmitEvent) {
+  event.preventDefault();
+  createDeploymentMutation.mutate();
+}
+
+function submitEndpoint(event: SubmitEvent) {
+  event.preventDefault();
+  createEndpointMutation.mutate();
+}
+
+function saveDeployment(event: SubmitEvent, deployment: MulverseDeploymentDto) {
+  event.preventDefault();
+  updateDeploymentMutation.mutate(deployment);
+}
+
+function saveEndpoint(event: SubmitEvent, endpoint: MulverseEndpointDto) {
+  event.preventDefault();
+  const nextUrl = endpointUrl.trim();
+  if (nextUrl && nextUrl !== endpoint.url) {
+    updateEndpointMutation.mutate({ endpoint, url: nextUrl });
+  } else {
+    editingEndpointId = null;
+    endpointUrl = "";
   }
+}
+
+function statusMessage(status: string): string {
+  switch (status) {
+    case "active":
+      return m.settings_orbis_mobile_status_active();
+    case "disabled":
+      return m.settings_orbis_mobile_status_disabled();
+    case "revoked":
+      return m.settings_orbis_mobile_status_revoked();
+    case "pending":
+      return m.settings_orbis_mobile_status_pending();
+    case "suspended":
+      return m.settings_orbis_mobile_status_suspended();
+    default:
+      return status;
+  }
+}
 </script>
 
 <svelte:head>
@@ -448,7 +473,7 @@
               <div class="flex min-w-0 items-center gap-3">
                 <div class="min-w-0">
                   <p class="mt-1 truncate font-mono text-xs text-muted-foreground" dir="ltr">
-                    {connection.data.organization_id}
+                    {connection.data.customer_id}
                   </p>
                 </div>
               </div>

@@ -14,7 +14,8 @@ export function formatAiErrorMessage(error: unknown): string {
   } else if (typeof error === "string") {
     raw = error;
   } else if (typeof error === "object") {
-    raw = (error as any).message || (error as any).error || JSON.stringify(error);
+    raw =
+      (error as any).message || (error as any).error || JSON.stringify(error);
   } else {
     raw = String(error);
   }
@@ -125,7 +126,8 @@ export function formatAiErrorMessage(error: unknown): string {
   if (
     rawLower.includes("report definition not found") ||
     rawLower.includes("report code is required") ||
-    rawLower.includes("report definition") && rawLower.includes("not found") ||
+    (rawLower.includes("report definition") &&
+      rawLower.includes("not found")) ||
     rawLower.includes("invalid report code")
   ) {
     return [
@@ -150,20 +152,21 @@ export function formatAiErrorMessage(error: unknown): string {
   }
 
   // 8. Generic Details / Fallback
-  const cleanDetails = innerMsg || raw
-    .replace(/^Validation failed:\s*/i, "")
-    .replace(/^Gemini API Error:\s*/i, "")
-    .replace(/^DomainError::\w+:\s*/i, "")
-    .trim();
+  const cleanDetails =
+    innerMsg ||
+    raw
+      .replace(/^Validation failed:\s*/i, "")
+      .replace(/^Gemini API Error:\s*/i, "")
+      .replace(/^DomainError::\w+:\s*/i, "")
+      .trim();
 
-  if (cleanDetails && cleanDetails !== "Error" && cleanDetails !== "[object Object]") {
-    return [
-      cleanDetails,
-      "",
-      m.ai_ui_error_generic_solution(),
-    ].join("\n");
+  if (
+    cleanDetails &&
+    cleanDetails !== "Error" &&
+    cleanDetails !== "[object Object]"
+  ) {
+    return [cleanDetails, "", m.ai_ui_error_generic_solution()].join("\n");
   }
 
   return m.ai_ui_error_unknown();
 }
-

@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { INITIAL_ONBOARDING_VALUES } from "./types";
-import { validateBootstrapForm, validateBootstrapStep } from "./bootstrap-validation";
+import {
+  validateBootstrapForm,
+  validateBootstrapStep,
+} from "./bootstrap-validation";
 
 describe("Bootstrap validation", () => {
   test("requires the same core text values as the backend without requiring Arabic names", () => {
@@ -66,9 +69,9 @@ describe("Bootstrap validation", () => {
   });
 
   test("does not validate unrelated fields while leaving the introduction step", () => {
-    expect(
-      validateBootstrapStep("intro", INITIAL_ONBOARDING_VALUES),
-    ).toEqual({});
+    expect(validateBootstrapStep("intro", INITIAL_ONBOARDING_VALUES)).toEqual(
+      {},
+    );
   });
 
   test("requires server-mandated regional values but permits optional locale details", () => {

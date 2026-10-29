@@ -1,46 +1,69 @@
 <script lang="ts">
-import { api } from "$lib/api/client";
-import type { AuditLogDto } from "$lib/api/types";
-import { orgContext } from "$lib/stores";
-import { Skeleton } from "@orbis/ui/skeleton";
+import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui/accordion";
+import { api } from "$lib/api/client";
+import type { AuditLogDto, UserDto } from "$lib/api/types";
+import { formatDate, l } from "$lib/core/i18n";
 import * as m from "$lib/paraglide/messages";
-    import { formatDate } from "$lib/core/i18n";
+import { orgContext } from "$lib/stores";
 
 let {
   entityType,
   entityId,
-  maxHeight = "400px",
+  maxHeight = "260px",
 }: {
   entityType: string;
   entityId: string;
   maxHeight?: string;
 } = $props();
 
-let loading = $state(true);
-let error = $state<string | null>(null);
-let logs = $state<AuditLogDto[]>([]);
+let accordionValue = $state<string | undefined>("activity");
 
-async function loadAuditHistory() {
-  if (!entityId) {
-    loading = false;
-    logs = [];
-    return;
-  }
-  loading = true;
-  error = null;
-  try {
-    logs = await api.getEntityAudit(entityType, entityId, 50, 0);
-  } catch (err: any) {
-    error = err?.message || m.shared_ui_audit_load_failed();
-  } finally {
-    loading = false;
-  }
+const auditQuery = createQuery(() => ({
+  queryKey: ["entity-audit", orgContext.orgId, entityType, entityId],
+  queryFn: async (): Promise<AuditLogDto[]> => {
+    const logs = await api.getEntityAudit(entityType, entityId, 50, 0);
+    return [...logs].sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  },
+  enabled: Boolean(orgContext.orgId && entityId),
+}));
+
+const usersQuery = createQuery(() => ({
+  queryKey: ["users", orgContext.orgId],
+  queryFn: () => api.listUsers(),
+  enabled: Boolean(orgContext.orgId),
+  staleTime: 5 * 60 * 1000,
+}));
+
+const logs = $derived(auditQuery.data ?? []);
+const users = $derived<UserDto[]>(usersQuery.data ?? []);
+const usersById = $derived(
+  new Map(users.map((user) => [String(user.id), user])),
+);
+const isLoading = $derived(
+  Boolean(orgContext.orgId && entityId && auditQuery.isLoading),
+);
+const errorMessage = $derived(
+  auditQuery.error instanceof Error
+    ? auditQuery.error.message
+    : m.shared_ui_audit_load_failed(),
+);
+
+function getActorName(userId: string | null | undefined): string {
+  if (!userId) return m.shared_ui_system_actor();
+  const user = usersById.get(String(userId));
+  if (!user) return userId;
+  return l(user.full_name_ar, user.full_name) || userId;
 }
-
-$effect(() => {
-  void loadAuditHistory();
-});
 
 function formatActionLabel(action: string): string {
   const map: Record<string, string> = {
@@ -60,96 +83,51 @@ function formatActionLabel(action: string): string {
   };
   return map[action] || action;
 }
-
-function getActionColor(action: string): string {
-  if (action.includes("created") || action.includes("assigned") || action.includes("received")) {
-    return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
-  }
-  if (action.includes("deleted") || action.includes("reversed") || action.includes("removed")) {
-    return "bg-destructive/10 text-destructive border-destructive/20";
-  }
-  if (action.includes("posted") || action.includes("status")) {
-    return "bg-blue-500/10 text-blue-600 border-blue-500/20";
-  }
-  return "bg-muted text-muted-foreground border-border";
-}
 </script>
 
-<div class="flex flex-col gap-3 p-3 bg-card rounded-lg border border-border/60 text-card-foreground">
-  <div class="flex items-center justify-between border-b border-border/40 pb-2">
-    <div class="flex items-center gap-2">
-      <span class="text-sm font-semibold flex items-center gap-1.5">
-        <span class="text-primary">📋</span>
-        <span>{m.shared_ui_audit_trail_title()}</span>
-      </span>
-      <span class="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-mono">
-        {logs.length}
-      </span>
-    </div>
-    <Button
-      variant="ghost"
-      size="sm"
-      class="h-7 text-xs px-2 text-muted-foreground hover:text-foreground"
-      onclick={loadAuditHistory}
-      disabled={loading}
-    >
-      {loading ? m.shared_ui_refreshing() : m.common_control_refresh()}
-    </Button>
-  </div>
-
-  <div class="overflow-y-auto pr-1 flex flex-col gap-3" style="max-height: {maxHeight};">
-    {#if loading}
-      <div class="flex flex-col gap-2.5 py-2">
-        <Skeleton class="h-10 w-full rounded" />
-        <Skeleton class="h-10 w-full rounded" />
-        <Skeleton class="h-10 w-full rounded" />
-      </div>
-    {:else if error}
-      <div class="p-3 rounded-md bg-destructive/10 text-destructive text-xs flex items-center justify-between">
-        <span>{error}</span>
-        <Button variant="outline" size="sm" class="h-6 text-[10px]" onclick={loadAuditHistory}>
-          {m.common_retry()}
-        </Button>
-      </div>
-    {:else if logs.length === 0}
-      <div class="py-8 text-center text-xs text-muted-foreground flex flex-col items-center gap-1.5">
-        <span class="text-xl opacity-60">📑</span>
-        <span>{m.shared_ui_no_audit_history()}</span>
-      </div>
-    {:else}
-      <div class="relative border-s-2 border-border/80 ms-2.5 flex flex-col gap-4 py-1">
-        {#each logs as log (log.id)}
-          <div class="relative ms-4 flex flex-col gap-1 text-xs">
-            <!-- Bullet dot -->
-            <div class="absolute -inset-s-5.75 top-1 h-3 w-3 rounded-full border-2 border-background bg-primary"></div>
-
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="px-2 py-0.5 rounded text-[10px] font-semibold border {getActionColor(log.action)}">
-                {formatActionLabel(log.action)}
-              </span>
-              <span class="text-[11px] text-muted-foreground font-mono">
-                {formatDate(log.created_at)}
-              </span>
+<Accordion type="single" bind:value={accordionValue} collapsible class="w-full">
+  <AccordionItem value="activity" class="border-0">
+    <AccordionTrigger class="py-2 text-sm font-semibold text-foreground hover:no-underline">
+      {m.shared_ui_audit_trail_title()}
+    </AccordionTrigger>
+    <AccordionContent>
+      <section aria-label={m.shared_ui_audit_trail_title()}>
+        <div class="overflow-y-auto" style="max-height: {maxHeight};">
+          {#if isLoading}
+            <p class="py-2 text-sm text-muted-foreground">{m.shared_ui_refreshing()}</p>
+          {:else if auditQuery.isError}
+            <div class="flex items-center gap-2 py-2">
+              <p class="text-sm text-destructive">{errorMessage}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                class="h-auto px-1 py-0 text-sm"
+                onclick={() => auditQuery.refetch()}
+                disabled={auditQuery.isFetching}
+              >
+                {m.common_retry()}
+              </Button>
             </div>
-
-            <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
-              <span>{m.shared_ui_by()}</span>
-              <span class="font-medium text-foreground">
-                {log.user_id ? log.user_id : m.shared_ui_system_actor()}
-              </span>
-              {#if log.ip_address}
-                <span class="text-[10px] opacity-70">({log.ip_address})</span>
-              {/if}
+          {:else if logs.length === 0}
+            <p class="py-2 text-sm text-muted-foreground">{m.shared_ui_no_audit_history()}</p>
+          {:else}
+            <div class="relative ms-1 border-s border-border py-1">
+              {#each logs as log (log.id)}
+                <div class="relative pb-4 ps-5 last:pb-0">
+                  <span class="absolute -start-[4.5px] top-1.5 size-2 rounded-full bg-muted-foreground"></span>
+                  <p class="text-sm leading-relaxed text-foreground">
+                    <span class="font-medium">{formatActionLabel(log.action)}</span>
+                    <span class="text-muted-foreground"> · {m.shared_ui_by()} {getActorName(log.user_id)}</span>
+                    <time datetime={log.created_at} class="text-muted-foreground">
+                      · {formatDate(log.created_at, "relative")}
+                    </time>
+                  </p>
+                </div>
+              {/each}
             </div>
-
-            {#if log.details && Object.keys(log.details).length > 0}
-              <div class="mt-1 p-2 rounded bg-muted/50 border border-border/40 font-mono text-[10px] text-muted-foreground overflow-x-auto">
-                <pre class="whitespace-pre-wrap">{JSON.stringify(log.details, null, 2)}</pre>
-              </div>
-            {/if}
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </div>
-</div>
+          {/if}
+        </div>
+      </section>
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

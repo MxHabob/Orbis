@@ -85,6 +85,8 @@ pub struct FrameNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: FrameProps,
     #[serde(default)]
     pub children: Vec<TemplateNode>,
@@ -128,6 +130,8 @@ pub struct TextNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: TextProps,
 }
 
@@ -156,6 +160,8 @@ pub struct ImageNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: ImageProps,
 }
 
@@ -183,6 +189,8 @@ pub struct ShapeNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: ShapeProps,
 }
 
@@ -391,11 +399,25 @@ fn default_true() -> bool {
     true
 }
 
+fn default_barcode_height() -> f64 {
+    15.0
+}
+
+fn default_qr_size() -> f64 {
+    25.0
+}
+
+fn default_error_correction() -> String {
+    "M".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BarcodeNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: BarcodeProps,
 }
 
@@ -406,6 +428,7 @@ pub struct BarcodeProps {
     pub format: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
+    #[serde(default = "default_barcode_height")]
     pub height: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub show_text: Option<bool>,
@@ -418,6 +441,8 @@ pub struct QRCodeNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: QRCodeProps,
 }
 
@@ -427,7 +452,9 @@ pub struct QRCodeProps {
     pub data: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
+    #[serde(default = "default_qr_size")]
     pub size: f64,
+    #[serde(default = "default_error_correction")]
     pub error_correction: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
@@ -440,6 +467,8 @@ pub struct SeparatorNode {
     pub id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<Position>,
     pub props: SeparatorProps,
 }
 

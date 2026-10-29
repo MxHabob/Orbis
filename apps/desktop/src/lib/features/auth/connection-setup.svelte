@@ -14,67 +14,79 @@ import { Input } from "@orbis/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import type { RemoteHealthResult } from "$lib/api/types";
-import { ArrowLeft, ArrowRight, ChartBar, CheckCircle, Computer, Database, GlobeAlt, InfoCircle } from "@orbis/icons";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChartBar,
+  CheckCircle,
+  Computer,
+  Database,
+  GlobeAlt,
+  InfoCircle,
+} from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { onMount } from "svelte";
 import { configureApiClient } from "$lib/api";
 
-
 const isRTL = $derived(getLocale().startsWith("ar"));
 
-const connectionSchema = z.object({
-  mode: z.enum(["local", "direct", "api"]).optional(),
-  dbFilename: z.string().trim(),
-  serverUrl: z.string().trim(),
-  host: z.string().trim(),
-  port: z.coerce.number().int().min(1).max(65535),
-  databaseName: z.string().trim(),
-  username: z.string().trim(),
-  password: z.string(),
-}).superRefine((data, context) => {
-  if (!data.mode) {
-    context.addIssue({
-      code: "custom",
-      message: m.setup_connection_mode_title(),
-      path: ["mode"],
-    });
-  }
-  if (data.mode === "local" && !data.dbFilename) {
-    context.addIssue({
-      code: "custom",
-      message: m.setup_connection_db_file_label(),
-      path: ["dbFilename"],
-    });
-  }
-  if (data.mode === "api" && (
-    !data.serverUrl ||
-    (!data.serverUrl.startsWith("http://") && !data.serverUrl.startsWith("https://"))
-  )) {
-    context.addIssue({
-      code: "custom",
-      message: m.setup_connection_server_url_label(),
-      path: ["serverUrl"],
-    });
-  }
-  if (data.mode === "direct") {
-    const requiredFields = [
-      ["host", data.host],
-      ["databaseName", data.databaseName],
-      ["username", data.username],
-      ["password", data.password],
-    ] as const;
-    for (const [field, value] of requiredFields) {
-      if (!value.trim()) {
-        context.addIssue({
-          code: "custom",
-          message: m.setup_connection_required_field(),
-          path: [field],
-        });
+const connectionSchema = z
+  .object({
+    mode: z.enum(["local", "direct", "api"]).optional(),
+    dbFilename: z.string().trim(),
+    serverUrl: z.string().trim(),
+    host: z.string().trim(),
+    port: z.coerce.number().int().min(1).max(65535),
+    databaseName: z.string().trim(),
+    username: z.string().trim(),
+    password: z.string(),
+  })
+  .superRefine((data, context) => {
+    if (!data.mode) {
+      context.addIssue({
+        code: "custom",
+        message: m.setup_connection_mode_title(),
+        path: ["mode"],
+      });
+    }
+    if (data.mode === "local" && !data.dbFilename) {
+      context.addIssue({
+        code: "custom",
+        message: m.setup_connection_db_file_label(),
+        path: ["dbFilename"],
+      });
+    }
+    if (
+      data.mode === "api" &&
+      (!data.serverUrl ||
+        (!data.serverUrl.startsWith("http://") &&
+          !data.serverUrl.startsWith("https://")))
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: m.setup_connection_server_url_label(),
+        path: ["serverUrl"],
+      });
+    }
+    if (data.mode === "direct") {
+      const requiredFields = [
+        ["host", data.host],
+        ["databaseName", data.databaseName],
+        ["username", data.username],
+        ["password", data.password],
+      ] as const;
+      for (const [field, value] of requiredFields) {
+        if (!value.trim()) {
+          context.addIssue({
+            code: "custom",
+            message: m.setup_connection_required_field(),
+            path: [field],
+          });
+        }
       }
     }
-  }
-});
+  });
 
 type ConnectionFormValues = z.infer<typeof connectionSchema>;
 
@@ -98,10 +110,9 @@ function fieldError(field: keyof ConnectionFormValues): string | undefined {
 
 async function continueToOrganization() {
   const hasOrg = await api.systemHasOrganization();
-  goto(
-    resolve(localizeHref(hasOrg ? "/login" : "/onboarding")),
-    { replaceState: true },
-  );
+  goto(resolve(localizeHref(hasOrg ? "/login" : "/onboarding")), {
+    replaceState: true,
+  });
 }
 
 let isCheckingHealth = $state(false);
@@ -115,11 +126,11 @@ onMount(() => {
 async function checkHealth() {
   const url = form.values.serverUrl.trim();
   if (!url) return;
-  
+
   isCheckingHealth = true;
   healthResult = null;
   form.formError = undefined;
-  
+
   try {
     healthResult = await api.connectionCheckRemoteHealth(url);
     if (!healthResult.reachable) {
@@ -145,10 +156,12 @@ async function handleConnect(e: SubmitEvent | MouseEvent) {
       databaseEngine: values.mode === "direct" ? "postgres" : undefined,
       host: values.mode === "direct" ? values.host.trim() : undefined,
       port: values.mode === "direct" ? values.port : undefined,
-      databaseName: values.mode === "direct" ? values.databaseName.trim() : undefined,
+      databaseName:
+        values.mode === "direct" ? values.databaseName.trim() : undefined,
       username: values.mode === "direct" ? values.username.trim() : undefined,
       password: values.mode === "direct" ? values.password : undefined,
-      dbFilename: values.mode === "local" ? values.dbFilename.trim() : undefined,
+      dbFilename:
+        values.mode === "local" ? values.dbFilename.trim() : undefined,
     });
 
     if (values.mode === "api") {

@@ -44,6 +44,16 @@ pub fn get_master_report_catalog() -> Vec<ReportDefEntry> {
             provider_key: "academic.term_result",
         },
         ReportDefEntry {
+            code: "rep.administration.enrollment-certificate",
+            name: "Certificate of Regular Enrollment",
+            name_ar: "شهادة قيد دراسي وتأكيد انتظام",
+            domain: "student",
+            category: "certificates",
+            description: "Official certificate confirming student regular enrollment and active academic standing",
+            description_ar: "شهادة رسمية تثبت قيد الطالب وانتظامه بالدراسة موجهة للجهات المعنية",
+            provider_key: "academic.certificate",
+        },
+        ReportDefEntry {
             code: "rep.academic.student-certificate",
             name: "Official Academic Student Certificate",
             name_ar: "الشهادة المدرسية الرسمية المعتمدة (شهادة نجاح ونقل)",

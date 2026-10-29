@@ -20,7 +20,13 @@ interface Props {
   resetLabel?: string;
   message?: string;
   showReset?: boolean;
-  saveVariant?: "default" | "destructive" | "primary" | "secondary" | "lime" | "outline";
+  saveVariant?:
+    | "default"
+    | "destructive"
+    | "primary"
+    | "secondary"
+    | "lime"
+    | "outline";
   statusVariant?: "amber" | "rose" | "primary" | "emerald";
   maxWidthClass?: string;
   actions?: import("svelte").Snippet;

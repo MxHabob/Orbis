@@ -1,154 +1,215 @@
 <script lang="ts">
-  import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
-  import * as m from "$lib/paraglide/messages";
-  import { createShowInFolderToastAction } from "$lib/shared/utils/download";
-  import { orgContext } from "$lib/stores/org-context.svelte";
-  import {
-      ArrowDownTray,
-      ArrowUpTray,
-      CheckCircle,
-      Clipboard,
-      FolderOpen,
-      Plus,
-      Trash
-  } from "@orbis/icons";
-  import { OrbisGrid, parseClipboard, type CellEditEvent, type GridRowsChangeEvent } from "@orbis/svelte-grid";
-  import { toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { untrack } from "svelte";
-  import { executeCommitPipeline } from "../engine/commit-pipeline";
-  import { exportCorrectedDataset } from "../engine/exporter";
-  import { parseDroppedFile, pickAndParseFile } from "../engine/file-parser";
-  import { revalidateCellChange } from "../engine/revalidator";
-  import { downloadExcelTemplate } from "../engine/template-generator";
-  import { validateAllRows } from "../engine/validator";
-  import { getBulkEntryGridColumns, getBulkEntryProfileName } from "../localization";
-  import { BULK_PROFILES, getBulkProfile } from "../profiles";
-  import { createBulkReferenceDataQuery } from "../queries";
-  import type {
-      BulkCommitResult,
-      BulkPreviewSummary,
-      BulkProfileId,
-      BulkRowState,
-      ChunkProgress,
-  } from "../types";
-  import CommitProgressModal from "./commit-progress-modal.svelte";
-  import ImpactPreviewModal from "./impact-preview-modal.svelte";
-  import ImportResultSummary from "./import-result-summary.svelte";
+import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
+import * as m from "$lib/paraglide/messages";
+import { createShowInFolderToastAction } from "$lib/shared/utils/download";
+import { orgContext } from "$lib/stores/org-context.svelte";
+import {
+  ArrowDownTray,
+  ArrowUpTray,
+  CheckCircle,
+  Clipboard,
+  FolderOpen,
+  Plus,
+  Trash,
+} from "@orbis/icons";
+import {
+  OrbisGrid,
+  parseClipboard,
+  type CellEditEvent,
+  type GridRowsChangeEvent,
+} from "@orbis/svelte-grid";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { untrack } from "svelte";
+import { executeCommitPipeline } from "../engine/commit-pipeline";
+import { exportCorrectedDataset } from "../engine/exporter";
+import { parseDroppedFile, pickAndParseFile } from "../engine/file-parser";
+import { revalidateCellChange } from "../engine/revalidator";
+import { downloadExcelTemplate } from "../engine/template-generator";
+import { validateAllRows } from "../engine/validator";
+import {
+  getBulkEntryGridColumns,
+  getBulkEntryProfileName,
+} from "../localization";
+import { BULK_PROFILES, getBulkProfile } from "../profiles";
+import { createBulkReferenceDataQuery } from "../queries";
+import type {
+  BulkCommitResult,
+  BulkPreviewSummary,
+  BulkProfileId,
+  BulkRowState,
+  ChunkProgress,
+} from "../types";
+import CommitProgressModal from "./commit-progress-modal.svelte";
+import ImpactPreviewModal from "./impact-preview-modal.svelte";
+import ImportResultSummary from "./import-result-summary.svelte";
 
-  let {
-    initialProfileId = "students",
-    hideProfileSelector = false,
-  }: {
-    initialProfileId?: BulkProfileId;
-    hideProfileSelector?: boolean;
-  } = $props();
+let {
+  initialProfileId = "students",
+  hideProfileSelector = false,
+}: {
+  initialProfileId?: BulkProfileId;
+  hideProfileSelector?: boolean;
+} = $props();
 
-  let selectedProfileId = $state<BulkProfileId>(
-    untrack(() => initialProfileId),
-  );
-  let currentProfile = $derived(getBulkProfile(selectedProfileId));
+let selectedProfileId = $state<BulkProfileId>(untrack(() => initialProfileId));
+let currentProfile = $derived(getBulkProfile(selectedProfileId));
 
-  // Declarative TanStack Query for Reference Data (Zero $effect data loading!)
-  const refDataQuery = createBulkReferenceDataQuery(
-    () => selectedProfileId,
-    () => orgContext.orgId || "",
-    () => orgContext.baseCurrency || "",
-  );
-  const refData = $derived(refDataQuery.data ?? null);
-  const isLoadingRefData = $derived(refDataQuery.isLoading);
-  const referenceDataError = $derived(
-    refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
-  );
-  const activeColumnMetadata = $derived(
-    currentProfile.columnMetadata.filter((column) => {
-      if (currentProfile.id !== "students" || !refData?.registrationFields) return true;
-      if (column.id === "full_name_ar" || column.id === "class_name") return true;
-      return refData.registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
-    }),
-  );
+// Declarative TanStack Query for Reference Data (Zero $effect data loading!)
+const refDataQuery = createBulkReferenceDataQuery(
+  () => selectedProfileId,
+  () => orgContext.orgId || "",
+  () => orgContext.baseCurrency || "",
+);
+const refData = $derived(refDataQuery.data ?? null);
+const isLoadingRefData = $derived(refDataQuery.isLoading);
+const referenceDataError = $derived(
+  refDataQuery.error instanceof Error ? refDataQuery.error.message : "",
+);
+const activeColumnMetadata = $derived(
+  currentProfile.columnMetadata.filter((column) => {
+    if (currentProfile.id !== "students" || !refData?.registrationFields)
+      return true;
+    if (column.id === "full_name_ar" || column.id === "class_name") return true;
+    return (
+      refData.registrationFields[normalizeRegistrationFieldKey(column.id)]
+        ?.active !== false
+    );
+  }),
+);
 
-  let fileName = $state<string | null>(null);
-  let rawRows = $state<BulkRowState[]>([]);
-  let filterMode = $state<"all" | "errors" | "warnings" | "valid">("all");
-  let searchQuery = $state("");
+let fileName = $state<string | null>(null);
+let rawRows = $state<BulkRowState[]>([]);
+let filterMode = $state<"all" | "errors" | "warnings" | "valid">("all");
+let searchQuery = $state("");
 
-  let errorCount = $state(0);
-  let warningCount = $state(0);
-  let validCount = $state(0);
+let errorCount = $state(0);
+let warningCount = $state(0);
+let validCount = $state(0);
 
-  let isPreviewModalOpen = $state(false);
-  let isProgressModalOpen = $state(false);
-  let previewSummary = $state<BulkPreviewSummary<any> | null>(null);
-  let commitProgress = $state<ChunkProgress | null>(null);
-  let commitResult = $state<BulkCommitResult | null>(null);
+let isPreviewModalOpen = $state(false);
+let isProgressModalOpen = $state(false);
+let previewSummary = $state<BulkPreviewSummary<any> | null>(null);
+let commitProgress = $state<ChunkProgress | null>(null);
+let commitResult = $state<BulkCommitResult | null>(null);
 
-  let isDraggingFile = $state(false);
+let isDraggingFile = $state(false);
 
-  // Switch profile handler (clears active staging rows without $effect)
-  function handleProfileChange(newProfileId: BulkProfileId) {
-    selectedProfileId = newProfileId;
-    rawRows = [];
-    fileName = null;
-    commitResult = null;
-    errorCount = 0;
-    warningCount = 0;
-    validCount = 0;
+// Switch profile handler (clears active staging rows without $effect)
+function handleProfileChange(newProfileId: BulkProfileId) {
+  selectedProfileId = newProfileId;
+  rawRows = [];
+  fileName = null;
+  commitResult = null;
+  errorCount = 0;
+  warningCount = 0;
+  validCount = 0;
+}
+
+// Filtered rows for OrbisGrid display
+const gridSource = $derived.by(() => {
+  let filtered = rawRows;
+
+  if (filterMode === "errors") {
+    filtered = filtered.filter(
+      (r) => r.status === "error" || r.status === "failed",
+    );
+  } else if (filterMode === "warnings") {
+    filtered = filtered.filter((r) => r.status === "warning");
+  } else if (filterMode === "valid") {
+    filtered = filtered.filter(
+      (r) => r.status === "valid" || r.status === "committed",
+    );
   }
 
-  // Filtered rows for OrbisGrid display
-  const gridSource = $derived.by(() => {
-    let filtered = rawRows;
-
-    if (filterMode === "errors") {
-      filtered = filtered.filter((r) => r.status === "error" || r.status === "failed");
-    } else if (filterMode === "warnings") {
-      filtered = filtered.filter((r) => r.status === "warning");
-    } else if (filterMode === "valid") {
-      filtered = filtered.filter((r) => r.status === "valid" || r.status === "committed");
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter((r) =>
-        Object.values(r.data).some((val) => String(val || "").toLowerCase().includes(q)),
-      );
-    }
-
-    return filtered.map((r) => r.data);
-  });
-
-  // Helper to create a single blank row
-  function createBlankRow(rowNumber: number): BulkRowState {
-    const data: Record<string, any> = {
-      __idx: rowNumber,
-      rowNumber,
-      id: `row-${crypto.randomUUID()}`,
-    };
-    for (const col of activeColumnMetadata) {
-      data[col.id] = "";
-    }
-    return {
-      rowNumber,
-      data,
-      status: "pending",
-      errors: new Map(),
-      warnings: new Map(),
-      info: new Map(),
-    };
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    filtered = filtered.filter((r) =>
+      Object.values(r.data).some((val) =>
+        String(val || "")
+          .toLowerCase()
+          .includes(q),
+      ),
+    );
   }
 
-  // Add blank rows for direct visual entry
-  function handleAddBlankRows(count: number = 5) {
-    if (!refData) {
-      toast.warning(m.common_loading());
+  return filtered.map((r) => r.data);
+});
+
+// Helper to create a single blank row
+function createBlankRow(rowNumber: number): BulkRowState {
+  const data: Record<string, any> = {
+    __idx: rowNumber,
+    rowNumber,
+    id: `row-${crypto.randomUUID()}`,
+  };
+  for (const col of activeColumnMetadata) {
+    data[col.id] = "";
+  }
+  return {
+    rowNumber,
+    data,
+    status: "pending",
+    errors: new Map(),
+    warnings: new Map(),
+    info: new Map(),
+  };
+}
+
+// Add blank rows for direct visual entry
+function handleAddBlankRows(count: number = 5) {
+  if (!refData) {
+    toast.warning(m.common_loading());
+    return;
+  }
+  const startIndex = rawRows.length + 1;
+  const newRows: BulkRowState[] = [];
+  for (let i = 0; i < count; i++) {
+    newRows.push(createBlankRow(startIndex + i));
+  }
+
+  const merged = [...rawRows, ...newRows];
+  const summary = validateAllRows(merged, currentProfile, refData);
+  rawRows = merged;
+  errorCount = summary.errorCount;
+  warningCount = summary.warningCount;
+  validCount = summary.validCount;
+}
+
+// Paste tabular data from clipboard
+async function handlePasteFromClipboard() {
+  if (!refData) {
+    toast.warning(m.common_loading());
+    return;
+  }
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || !text.trim()) {
+      toast.warning(m.bulk_entry_toast_clipboard_empty());
       return;
     }
-    const startIndex = rawRows.length + 1;
+
+    const matrix = parseClipboard(text);
+    if (matrix.length === 0) return;
+
     const newRows: BulkRowState[] = [];
-    for (let i = 0; i < count; i++) {
-      newRows.push(createBlankRow(startIndex + i));
+    const startIndex = rawRows.length + 1;
+
+    for (let r = 0; r < matrix.length; r++) {
+      const cells = matrix[r]!;
+      const row = createBlankRow(startIndex + r);
+
+      for (
+        let c = 0;
+        c < Math.min(cells.length, activeColumnMetadata.length);
+        c++
+      ) {
+        const col = activeColumnMetadata[c]!;
+        const cellVal = cells[c]?.trim() || "";
+        row.data[col.id] = cellVal;
+      }
+      newRows.push(row);
     }
 
     const merged = [...rawRows, ...newRows];
@@ -157,282 +218,270 @@
     errorCount = summary.errorCount;
     warningCount = summary.warningCount;
     validCount = summary.validCount;
-  }
 
-  // Paste tabular data from clipboard
-  async function handlePasteFromClipboard() {
-    if (!refData) {
-      toast.warning(m.common_loading());
-      return;
-    }
-    try {
-      const text = await navigator.clipboard.readText();
-      if (!text || !text.trim()) {
-        toast.warning(m.bulk_entry_toast_clipboard_empty());
-        return;
-      }
-
-      const matrix = parseClipboard(text);
-      if (matrix.length === 0) return;
-
-      const newRows: BulkRowState[] = [];
-      const startIndex = rawRows.length + 1;
-
-      for (let r = 0; r < matrix.length; r++) {
-        const cells = matrix[r]!;
-        const row = createBlankRow(startIndex + r);
-
-        for (let c = 0; c < Math.min(cells.length, activeColumnMetadata.length); c++) {
-          const col = activeColumnMetadata[c]!;
-          const cellVal = cells[c]?.trim() || "";
-          row.data[col.id] = cellVal;
-        }
-        newRows.push(row);
-      }
-
-      const merged = [...rawRows, ...newRows];
-      const summary = validateAllRows(merged, currentProfile, refData);
-      rawRows = merged;
-      errorCount = summary.errorCount;
-      warningCount = summary.warningCount;
-      validCount = summary.validCount;
-
-      toast.success(m.bulk_entry_toast_pasted({ count: newRows.length }));
-    } catch (err: any) {
-      toast.error(m.bulk_entry_toast_paste_failed({ reason: err.message || String(err) }));
-    }
-  }
-
-  // Clear completely empty rows
-  function handleClearEmptyRows() {
-    if (!refData || rawRows.length === 0) return;
-
-    const cleaned = rawRows.filter((row) => {
-      return activeColumnMetadata.some((col) => {
-        const val = row.data[col.id];
-        return val !== undefined && val !== null && String(val).trim() !== "";
-      });
-    });
-
-    for (let i = 0; i < cleaned.length; i++) {
-      cleaned[i]!.rowNumber = i + 1;
-      cleaned[i]!.data.rowNumber = i + 1;
-      cleaned[i]!.data.__idx = i + 1;
-    }
-
-    const summary = validateAllRows(cleaned, currentProfile, refData);
-    rawRows = cleaned;
-    errorCount = summary.errorCount;
-    warningCount = summary.warningCount;
-    validCount = summary.validCount;
-  }
-
-  // Handle template download
-  async function handleDownloadTemplate() {
-    if (!refData) {
-      toast.warning(m.common_loading());
-      return;
-    }
-    try {
-      const openFile = await downloadExcelTemplate({
-        profile: currentProfile,
-        refData,
-        orgName: orgContext.displayName,
-      });
-      toast.success(m.bulk_entry_toast_template_downloaded(), {
-        action: openFile
-          ? createShowInFolderToastAction(openFile)
-          : undefined,
-      });
-    } catch (err: any) {
-      toast.error(m.bulk_entry_toast_template_download_failed({ reason: err.message || String(err) }));
-    }
-  }
-
-  // Handle native file selection
-  async function handlePickFile() {
-    try {
-      const res = await pickAndParseFile(currentProfile);
-      if (res) {
-        processLoadedRows(res.fileName, res.rows);
-      }
-    } catch (err: any) {
-      toast.error(m.bulk_entry_toast_file_read_failed({ reason: err.message || String(err) }));
-    }
-  }
-
-  // Handle dropped file
-  async function handleDropFile(e: DragEvent) {
-    e.preventDefault();
-    isDraggingFile = false;
-    const file = e.dataTransfer?.files?.[0];
-    if (file) {
-      try {
-        const res = await parseDroppedFile(file, currentProfile);
-        processLoadedRows(res.fileName, res.rows);
-      } catch (err: any) {
-        toast.error(m.bulk_entry_toast_file_read_failed({ reason: err.message || String(err) }));
-      }
-    }
-  }
-
-  function processLoadedRows(name: string, loadedRows: BulkRowState[]) {
-    if (!refData) return;
-    fileName = name;
-    commitResult = null;
-
-    const summary = validateAllRows(loadedRows, currentProfile, refData);
-    rawRows = loadedRows;
-    errorCount = summary.errorCount;
-    warningCount = summary.warningCount;
-    validCount = summary.validCount;
-
-    toast.success(m.bulk_entry_toast_imported({ count: loadedRows.length }));
-  }
-
-  // Live cell edit handler from OrbisGrid
-  function handleCellEdit(e: CellEditEvent) {
-    if (!refData) return;
-    const rowId = String(e.row.id ?? "");
-    const rowIndex = rawRows.findIndex(
-      (row) => rowId && String(row.data.id ?? "") === rowId,
+    toast.success(m.bulk_entry_toast_pasted({ count: newRows.length }));
+  } catch (err: any) {
+    toast.error(
+      m.bulk_entry_toast_paste_failed({ reason: err.message || String(err) }),
     );
-    if (rowIndex < 0) return;
-    const columnId = e.columnId;
-    const newValue = e.newValue;
+  }
+}
 
-    const result = revalidateCellChange(
-      rawRows,
-      { rowIndex, columnId, newValue },
-      currentProfile,
+// Clear completely empty rows
+function handleClearEmptyRows() {
+  if (!refData || rawRows.length === 0) return;
+
+  const cleaned = rawRows.filter((row) => {
+    return activeColumnMetadata.some((col) => {
+      const val = row.data[col.id];
+      return val !== undefined && val !== null && String(val).trim() !== "";
+    });
+  });
+
+  for (let i = 0; i < cleaned.length; i++) {
+    cleaned[i]!.rowNumber = i + 1;
+    cleaned[i]!.data.rowNumber = i + 1;
+    cleaned[i]!.data.__idx = i + 1;
+  }
+
+  const summary = validateAllRows(cleaned, currentProfile, refData);
+  rawRows = cleaned;
+  errorCount = summary.errorCount;
+  warningCount = summary.warningCount;
+  validCount = summary.validCount;
+}
+
+// Handle template download
+async function handleDownloadTemplate() {
+  if (!refData) {
+    toast.warning(m.common_loading());
+    return;
+  }
+  try {
+    const openFile = await downloadExcelTemplate({
+      profile: currentProfile,
       refData,
+      orgName: orgContext.displayName,
+    });
+    toast.success(m.bulk_entry_toast_template_downloaded(), {
+      action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+    });
+  } catch (err: any) {
+    toast.error(
+      m.bulk_entry_toast_template_download_failed({
+        reason: err.message || String(err),
+      }),
     );
+  }
+}
 
-    rawRows = result.updatedRows;
-    errorCount = result.errorCount;
-    warningCount = result.warningCount;
-    validCount = result.validCount;
+// Handle native file selection
+async function handlePickFile() {
+  try {
+    const res = await pickAndParseFile(currentProfile);
+    if (res) {
+      processLoadedRows(res.fileName, res.rows);
+    }
+  } catch (err: any) {
+    toast.error(
+      m.bulk_entry_toast_file_read_failed({
+        reason: err.message || String(err),
+      }),
+    );
+  }
+}
+
+// Handle dropped file
+async function handleDropFile(e: DragEvent) {
+  e.preventDefault();
+  isDraggingFile = false;
+  const file = e.dataTransfer?.files?.[0];
+  if (file) {
+    try {
+      const res = await parseDroppedFile(file, currentProfile);
+      processLoadedRows(res.fileName, res.rows);
+    } catch (err: any) {
+      toast.error(
+        m.bulk_entry_toast_file_read_failed({
+          reason: err.message || String(err),
+        }),
+      );
+    }
+  }
+}
+
+function processLoadedRows(name: string, loadedRows: BulkRowState[]) {
+  if (!refData) return;
+  fileName = name;
+  commitResult = null;
+
+  const summary = validateAllRows(loadedRows, currentProfile, refData);
+  rawRows = loadedRows;
+  errorCount = summary.errorCount;
+  warningCount = summary.warningCount;
+  validCount = summary.validCount;
+
+  toast.success(m.bulk_entry_toast_imported({ count: loadedRows.length }));
+}
+
+// Live cell edit handler from OrbisGrid
+function handleCellEdit(e: CellEditEvent) {
+  if (!refData) return;
+  const rowId = String(e.row.id ?? "");
+  const rowIndex = rawRows.findIndex(
+    (row) => rowId && String(row.data.id ?? "") === rowId,
+  );
+  if (rowIndex < 0) return;
+  const columnId = e.columnId;
+  const newValue = e.newValue;
+
+  const result = revalidateCellChange(
+    rawRows,
+    { rowIndex, columnId, newValue },
+    currentProfile,
+    refData,
+  );
+
+  rawRows = result.updatedRows;
+  errorCount = result.errorCount;
+  warningCount = result.warningCount;
+  validCount = result.validCount;
+}
+
+function handleGridRowsChange(event: GridRowsChangeEvent) {
+  if (!refData || event.action === "edit" || event.changedRows.length === 0)
+    return;
+
+  const updatedRows = rawRows.slice();
+  const rowIndexes: Record<string, number> = {};
+  updatedRows.forEach((row, index) => {
+    rowIndexes[String(row.data.id ?? "")] = index;
+  });
+
+  for (const changedData of event.changedRows) {
+    const id = String(changedData.id ?? "");
+    const existingIndex = rowIndexes[id];
+    if (existingIndex !== undefined) {
+      const existing = updatedRows[existingIndex]!;
+      existing.data = { ...existing.data, ...changedData };
+      continue;
+    }
+
+    const rowNumber = updatedRows.length + 1;
+    const data = { ...changedData, __idx: rowNumber, rowNumber };
+    const row: BulkRowState = {
+      rowNumber,
+      data,
+      errors: new Map(),
+      warnings: new Map(),
+      info: new Map(),
+      status: "pending",
+    };
+    rowIndexes[id] = updatedRows.length;
+    updatedRows.push(row);
   }
 
-  function handleGridRowsChange(event: GridRowsChangeEvent) {
-    if (!refData || event.action === "edit" || event.changedRows.length === 0) return;
+  const summary = validateAllRows(updatedRows, currentProfile, refData);
+  rawRows = updatedRows;
+  errorCount = summary.errorCount;
+  warningCount = summary.warningCount;
+  validCount = summary.validCount;
+}
 
-    const updatedRows = rawRows.slice();
-    const rowIndexes: Record<string, number> = {};
-    updatedRows.forEach((row, index) => {
-      rowIndexes[String(row.data.id ?? "")] = index;
+// Jump to next error shortcut (F8)
+function handleNextError() {
+  const errIdx = rawRows.findIndex(
+    (r) => r.status === "error" || r.status === "failed",
+  );
+  if (errIdx !== -1) {
+    filterMode = "errors";
+  } else {
+    toast.success(m.bulk_entry_toast_no_errors());
+  }
+}
+
+// Export corrected data
+async function handleExportCorrected() {
+  if (rawRows.length === 0) return;
+  try {
+    const openFile = await exportCorrectedDataset({
+      profile: currentProfile,
+      rows: rawRows,
+      filenamePrefix: `Orbis_${selectedProfileId}_Data`,
     });
 
-    for (const changedData of event.changedRows) {
-      const id = String(changedData.id ?? "");
-      const existingIndex = rowIndexes[id];
-      if (existingIndex !== undefined) {
-        const existing = updatedRows[existingIndex]!;
-        existing.data = { ...existing.data, ...changedData };
-        continue;
-      }
-
-      const rowNumber = updatedRows.length + 1;
-      const data = { ...changedData, __idx: rowNumber, rowNumber };
-      const row: BulkRowState = {
-        rowNumber,
-        data,
-        errors: new Map(),
-        warnings: new Map(),
-        info: new Map(),
-        status: "pending",
-      };
-      rowIndexes[id] = updatedRows.length;
-      updatedRows.push(row);
-    }
-
-    const summary = validateAllRows(updatedRows, currentProfile, refData);
-    rawRows = updatedRows;
-    errorCount = summary.errorCount;
-    warningCount = summary.warningCount;
-    validCount = summary.validCount;
+    toast.success(m.bulk_entry_toast_data_exported(), {
+      action: openFile ? createShowInFolderToastAction(openFile) : undefined,
+    });
+  } catch (err: any) {
+    toast.error(
+      m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }),
+    );
   }
+}
 
-  // Jump to next error shortcut (F8)
-  function handleNextError() {
-    const errIdx = rawRows.findIndex((r) => r.status === "error" || r.status === "failed");
-    if (errIdx !== -1) {
-      filterMode = "errors";
+// Review impact before commit
+async function handleReviewImpact() {
+  if (!refData || rawRows.length === 0) return;
+  try {
+    const plainRows = rawRows.map((r) => r.data);
+    previewSummary = await currentProfile.generatePreview(plainRows, refData);
+    isPreviewModalOpen = true;
+  } catch (err: any) {
+    toast.error(
+      m.bulk_entry_toast_preview_failed({ reason: err.message || String(err) }),
+    );
+  }
+}
+
+// Execute Commit
+async function handleConfirmCommit() {
+  if (!refData || rawRows.length === 0) return;
+  isPreviewModalOpen = false;
+  isProgressModalOpen = true;
+
+  try {
+    const result = await executeCommitPipeline({
+      rows: rawRows,
+      profile: currentProfile,
+      refData,
+      orgId: orgContext.orgId || "",
+      chunkSize: 50,
+      onProgress: (prog) => {
+        commitProgress = prog;
+      },
+    });
+
+    commitResult = result;
+    isProgressModalOpen = false;
+
+    if (result.failedCount === 0 && result.warnings.length === 0) {
+      toast.success(
+        m.bulk_entry_toast_committed({ count: result.committedCount }),
+      );
     } else {
-      toast.success(m.bulk_entry_toast_no_errors());
+      toast.warning(
+        m.bulk_entry_toast_commit_partial({
+          count: result.failedCount + result.warnings.length,
+        }),
+      );
     }
+  } catch (err: any) {
+    isProgressModalOpen = false;
+    toast.error(
+      m.bulk_entry_toast_save_failed({ reason: err.message || String(err) }),
+    );
   }
+}
 
-  // Export corrected data
-  async function handleExportCorrected() {
-    if (rawRows.length === 0) return;
-    try {
-      const openFile = await exportCorrectedDataset({
-        profile: currentProfile,
-        rows: rawRows,
-        filenamePrefix: `Orbis_${selectedProfileId}_Data`,
-      });
-
-      toast.success(m.bulk_entry_toast_data_exported(), {
-        action: openFile ? createShowInFolderToastAction(openFile) : undefined,
-      });
-    } catch (err: any) {
-      toast.error(m.bulk_entry_toast_export_failed({ reason: err.message || String(err) }));
-    }
-  }
-
-  // Review impact before commit
-  async function handleReviewImpact() {
-    if (!refData || rawRows.length === 0) return;
-    try {
-      const plainRows = rawRows.map((r) => r.data);
-      previewSummary = await currentProfile.generatePreview(plainRows, refData);
-      isPreviewModalOpen = true;
-    } catch (err: any) {
-      toast.error(m.bulk_entry_toast_preview_failed({ reason: err.message || String(err) }));
-    }
-  }
-
-  // Execute Commit
-  async function handleConfirmCommit() {
-    if (!refData || rawRows.length === 0) return;
-    isPreviewModalOpen = false;
-    isProgressModalOpen = true;
-
-    try {
-      const result = await executeCommitPipeline({
-        rows: rawRows,
-        profile: currentProfile,
-        refData,
-        orgId: orgContext.orgId || "",
-        chunkSize: 50,
-        onProgress: (prog) => {
-          commitProgress = prog;
-        },
-      });
-
-      commitResult = result;
-      isProgressModalOpen = false;
-
-      if (result.failedCount === 0 && result.warnings.length === 0) {
-        toast.success(m.bulk_entry_toast_committed({ count: result.committedCount }));
-      } else {
-        toast.warning(m.bulk_entry_toast_commit_partial({ count: result.failedCount + result.warnings.length }));
-      }
-    } catch (err: any) {
-      isProgressModalOpen = false;
-      toast.error(m.bulk_entry_toast_save_failed({ reason: err.message || String(err) }));
-    }
-  }
-
-  function handleReset() {
-    rawRows = [];
-    fileName = null;
-    commitResult = null;
-    errorCount = 0;
-    warningCount = 0;
-    validCount = 0;
-  }
+function handleReset() {
+  rawRows = [];
+  fileName = null;
+  commitResult = null;
+  errorCount = 0;
+  warningCount = 0;
+  validCount = 0;
+}
 </script>
 
 <svelte:window

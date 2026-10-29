@@ -49,7 +49,10 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
         await synchronizeLocaleDirection(savedLocale);
       })
       .catch((error: unknown) => {
-        console.error("[Orbis Mobile I18n] Failed to load saved locale.", error);
+        console.error(
+          "[Orbis Mobile I18n] Failed to load saved locale.",
+          error,
+        );
       })
       .finally(() => {
         if (isMounted) {

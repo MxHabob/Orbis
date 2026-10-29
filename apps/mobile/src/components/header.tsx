@@ -31,6 +31,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useUnreadCountQuery } from "@/hooks/use-api-queries";
 
 export const HEADER_CONTENT_OFFSET = 36;
 
@@ -134,6 +135,7 @@ export function Header({
     router.push("/notifications");
   };
 
+  const { data: unreadCount } = useUnreadCountQuery();
   const leftLabel = showBack ? t("header_back") : t("header_profile");
 
   return (
@@ -230,12 +232,7 @@ export function Header({
         </View>
 
         {/* CENTER — PAGE TITLE */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.titleContainer,
-          ]}
-        >
+        <View pointerEvents="none" style={[styles.titleContainer]}>
           {showTitle && title && !largeTitle ? (
             <View className="max-w-full items-center justify-center">
               <Text
@@ -291,6 +288,21 @@ export function Header({
               className="items-center justify-center"
             >
               <AppNotification size={20} color={theme.foreground} />
+              {(unreadCount ?? 0) > 0 && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 10,
+                    right: 10,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: theme.destructive,
+                    borderWidth: 1.5,
+                    borderColor: theme.cardElevated,
+                  }}
+                />
+              )}
             </Pressable>
           ) : (
             <View

@@ -16,7 +16,12 @@ import { createInfiniteQuery } from "@tanstack/svelte-query";
 import { debounce } from "$lib/shared/utils/debounce";
 import { api, extractErrorMessage, queryClient, queryKeys } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
-import type { StudentFeeDto, FeeTemplateDto, DiscountTemplateDto, AcademicPeriodDto } from "$lib/api/types";
+import type {
+  StudentFeeDto,
+  FeeTemplateDto,
+  DiscountTemplateDto,
+  AcademicPeriodDto,
+} from "$lib/api/types";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -68,7 +73,9 @@ let formStudentId = $state("");
 let formPeriodId = $state("");
 let formTemplateId = $state("");
 let formDiscountAmount = $state<number | null>(null);
-let formDueDate = $state(new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10));
+let formDueDate = $state(
+  new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+);
 
 // Split Installments Form
 let selectedFeeForSplit = $state<StudentFeeDto | null>(null);
@@ -86,7 +93,9 @@ let refundNotes = $state("");
 // Filters
 let searchQuery = $state("");
 let searchInput = $state("");
-let statusFilter = $state<"all" | "pending" | "partially_paid" | "paid" | "overdue">("all");
+let statusFilter = $state<
+  "all" | "pending" | "partially_paid" | "paid" | "overdue"
+>("all");
 let gridSort = $state<SortSpec[]>([]);
 const updateFeeSearch = debounce((value: string) => {
   searchQuery = value;
@@ -115,7 +124,7 @@ const feePageFilter = $derived({
   is_overdue: statusFilter === "overdue" ? true : undefined,
 });
 const feesQuery = createInfiniteQuery(() => ({
-  queryKey: queryKeys.finance.studentFees(orgId, {
+  queryKey: queryKeys.finance.studentFeesPaginated(orgId, {
     ...feePageFilter,
     search: searchQuery.trim() || undefined,
     ...feePageSort,
@@ -134,7 +143,9 @@ const feesQuery = createInfiniteQuery(() => ({
   enabled: !!orgId,
   staleTime: 2 * 60 * 1000,
 }));
-const fees = $derived(feesQuery.data?.pages.flatMap((page) => page.items) ?? []);
+const fees = $derived(
+  feesQuery.data?.pages.flatMap((page) => page.items) ?? [],
+);
 const gridLoading = $derived(
   isLoading || (feesQuery.isLoading && !feesQuery.data),
 );
@@ -146,7 +157,12 @@ async function loadMoreFees() {
 
 function getFeeCurrency(fee: StudentFeeDto) {
   const template = feeTemplates.find((item) => item.id === fee.fee_template_id);
-  return template?.currency || (fee as StudentFeeDto & { currency?: string }).currency || orgContext.baseCurrency || "";
+  return (
+    template?.currency ||
+    (fee as StudentFeeDto & { currency?: string }).currency ||
+    orgContext.baseCurrency ||
+    ""
+  );
 }
 
 function formatFeeAmount(amount: number, currency: string) {
@@ -162,12 +178,15 @@ onMount(async () => {
 async function loadData(refreshFees = true) {
   isLoading = true;
   try {
-    const [templatesList, discountsList, enrollmentsList, periodsList] = await Promise.all([
-      api.listFeeTemplates(),
-      api.listDiscountTemplates(),
-      api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
-      api.listAcademicPeriods ? api.listAcademicPeriods() : Promise.resolve([]),
-    ]);
+    const [templatesList, discountsList, enrollmentsList, periodsList] =
+      await Promise.all([
+        api.listFeeTemplates(),
+        api.listDiscountTemplates(),
+        api.listEnrollments ? api.listEnrollments() : Promise.resolve([]),
+        api.listAcademicPeriods
+          ? api.listAcademicPeriods()
+          : Promise.resolve([]),
+      ]);
 
     feeTemplates = asArray(templatesList);
     discountTemplates = asArray(discountsList);
@@ -175,7 +194,12 @@ async function loadData(refreshFees = true) {
     students = safeEnrollments.map((e: any) => ({
       id: String(e.id),
       student_id: String(e.student_id),
-      full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
+      full_name:
+        e.full_name ||
+        e.name_ar ||
+        e.name_en ||
+        e.student_number ||
+        m.finance_ui_student_number_fallback({ id: e.id }),
     }));
     periods = asArray(periodsList);
 
@@ -197,19 +221,30 @@ async function loadData(refreshFees = true) {
 
 // ── KPI Summary Calculations ───────────────────────────────────────────
 const feeTotals = $derived.by(() => {
-  const totals = new Map<string, { currency: string; due: number; paid: number; balance: number }>();
+  const totals = new Map<
+    string,
+    { currency: string; due: number; paid: number; balance: number }
+  >();
   for (const fee of fees) {
     const currency = getFeeCurrency(fee);
     const key = currency || "unspecified";
     const total = totals.get(key) || { currency, due: 0, paid: 0, balance: 0 };
     total.due += Number(fee.net_amount ?? fee.original_amount ?? 0);
     total.paid += Number(fee.paid_amount ?? 0);
-    total.balance += Number(fee.balance_due ?? Math.max(0, Number(fee.net_amount ?? fee.original_amount ?? 0) - Number(fee.paid_amount ?? 0)));
+    total.balance += Number(
+      fee.balance_due ??
+        Math.max(
+          0,
+          Number(fee.net_amount ?? fee.original_amount ?? 0) -
+            Number(fee.paid_amount ?? 0),
+        ),
+    );
     totals.set(key, total);
   }
   return [...totals.values()].map((total) => ({
     ...total,
-    collectionRate: total.due > 0 ? Math.round((total.paid / total.due) * 100) : 0,
+    collectionRate:
+      total.due > 0 ? Math.round((total.paid / total.due) * 100) : 0,
   }));
 });
 
@@ -325,41 +360,51 @@ async function handleRefundFee() {
 
 // ── Grid Data ─────────────────────────────────────────────────────────
 function toFeeGridRow(f: StudentFeeDto, idx: number) {
-    const student = students.find(
-      (s) =>
-        String(s.student_id) === String(f.student_id) ||
-        String(s.id) === String(f.enrollment_id),
-    );
-    const template = feeTemplates.find((t) => t.id === f.fee_template_id);
-    const templateName = template?.name_ar || template?.name || m.finance_ui_tuition_fees();
+  const student = students.find(
+    (s) =>
+      String(s.student_id) === String(f.student_id) ||
+      String(s.id) === String(f.enrollment_id),
+  );
+  const template = feeTemplates.find((t) => t.id === f.fee_template_id);
+  const templateName =
+    template?.name_ar || template?.name || m.finance_ui_tuition_fees();
 
-    const net = Number(f.net_amount ?? f.original_amount ?? 0);
-    const paid = Number(f.paid_amount ?? 0);
-    const balance = Number(f.balance_due ?? Math.max(0, net - paid));
-    const curr = getFeeCurrency(f);
+  const net = Number(f.net_amount ?? f.original_amount ?? 0);
+  const paid = Number(f.paid_amount ?? 0);
+  const balance = Number(f.balance_due ?? Math.max(0, net - paid));
+  const curr = getFeeCurrency(f);
 
-    let statusLabel = m.finance_ui_fee_status_unpaid();
-    if (f.status === "paid" || balance <= 0) {
-      statusLabel = m.finance_ui_fee_status_paid();
-    } else if (paid > 0) {
-      statusLabel = m.finance_ui_fee_status_partially_paid();
-    } else if (f.due_date && new Date(f.due_date) < new Date()) {
-      statusLabel = m.finance_ui_fee_status_overdue();
-    }
+  let statusLabel = m.finance_ui_fee_status_unpaid();
+  if (f.status === "paid" || balance <= 0) {
+    statusLabel = m.finance_ui_fee_status_paid();
+  } else if (paid > 0) {
+    statusLabel = m.finance_ui_fee_status_partially_paid();
+  } else if (f.due_date && new Date(f.due_date) < new Date()) {
+    statusLabel = m.finance_ui_fee_status_overdue();
+  }
 
-    return {
-      ...f,
-      __idx: idx + 1,
-      student_display: student?.full_name || m.finance_ui_student_number_fallback({ id: f.enrollment_id }),
-      status_key: f.status === "paid" || balance <= 0 ? "paid" : paid > 0 ? "partially_paid" : f.due_date && new Date(f.due_date) < new Date() ? "overdue" : "pending",
-      template_display: templateName,
-      net_formatted: formatCurrency(net, curr),
-      paid_formatted: formatCurrency(paid, curr),
-      balance_formatted: formatCurrency(balance, curr),
-      currency_display: curr,
-      due_date_display: f.due_date ? formatDate(f.due_date) : "—",
-      status_display: statusLabel,
-    };
+  return {
+    ...f,
+    __idx: idx + 1,
+    student_display:
+      student?.full_name ||
+      m.finance_ui_student_number_fallback({ id: f.enrollment_id }),
+    status_key:
+      f.status === "paid" || balance <= 0
+        ? "paid"
+        : paid > 0
+          ? "partially_paid"
+          : f.due_date && new Date(f.due_date) < new Date()
+            ? "overdue"
+            : "pending",
+    template_display: templateName,
+    net_formatted: formatCurrency(net, curr),
+    paid_formatted: formatCurrency(paid, curr),
+    balance_formatted: formatCurrency(balance, curr),
+    currency_display: curr,
+    due_date_display: f.due_date ? formatDate(f.due_date) : "—",
+    status_display: statusLabel,
+  };
 }
 
 const gridSource = $derived(fees.map(toFeeGridRow));
@@ -367,15 +412,104 @@ const gridSource = $derived(fees.map(toFeeGridRow));
 const filteredSource = $derived(gridSource);
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "student_display", prop: "student_display", header: m.finance_ui_student_name(), name: m.finance_ui_student_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "template_display", prop: "template_display", header: m.finance_ui_fee_item(), name: m.finance_ui_fee_item(), width: 180, size: 180, readonly: true },
-  { id: "net_formatted", prop: "net_formatted", header: m.finance_ui_net_amount(), name: m.finance_ui_net_amount(), width: 130, size: 130, readonly: true, sortable: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "paid_formatted", prop: "paid_formatted", header: m.finance_ui_paid_amount(), name: m.finance_ui_paid_amount(), width: 130, size: 130, readonly: true, sortable: true, align: "end", cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold" },
-  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_remaining_amount(), name: m.finance_ui_remaining_amount(), width: 130, size: 130, readonly: true, sortable: true, align: "end", cellClass: "font-mono text-rose-600 dark:text-rose-400 font-bold" },
-  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
-  { id: "due_date_display", prop: "due_date_display", header: m.finance_ui_due_date(), name: m.finance_ui_due_date(), width: 120, size: 120, readonly: true, sortable: true, align: "center" },
-  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "student_display",
+    prop: "student_display",
+    header: m.finance_ui_student_name(),
+    name: m.finance_ui_student_name(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "template_display",
+    prop: "template_display",
+    header: m.finance_ui_fee_item(),
+    name: m.finance_ui_fee_item(),
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "net_formatted",
+    prop: "net_formatted",
+    header: m.finance_ui_net_amount(),
+    name: m.finance_ui_net_amount(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    sortable: true,
+    align: "end",
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "paid_formatted",
+    prop: "paid_formatted",
+    header: m.finance_ui_paid_amount(),
+    name: m.finance_ui_paid_amount(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    sortable: true,
+    align: "end",
+    cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold",
+  },
+  {
+    id: "balance_formatted",
+    prop: "balance_formatted",
+    header: m.finance_ui_remaining_amount(),
+    name: m.finance_ui_remaining_amount(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    sortable: true,
+    align: "end",
+    cellClass: "font-mono text-rose-600 dark:text-rose-400 font-bold",
+  },
+  {
+    id: "currency_display",
+    prop: "currency_display",
+    header: m.finance_ui_currency(),
+    name: m.finance_ui_currency(),
+    width: 80,
+    size: 80,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "due_date_display",
+    prop: "due_date_display",
+    header: m.finance_ui_due_date(),
+    name: m.finance_ui_due_date(),
+    width: 120,
+    size: 120,
+    readonly: true,
+    sortable: true,
+    align: "center",
+  },
+  {
+    id: "status_display",
+    prop: "status_display",
+    header: m.finance_ui_status(),
+    name: m.finance_ui_status(),
+    width: 100,
+    size: 100,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
 ];
 
 async function exportCsv() {
@@ -384,23 +518,38 @@ async function exportCsv() {
       ...feePageFilter,
       search: searchQuery.trim() || undefined,
     });
-    const rows = allFees.map(toFeeGridRow).map((fee) => [
-      fee.student_display,
-      fee.template_display,
-      fee.net_formatted,
-      fee.paid_formatted,
-      fee.balance_formatted,
-      fee.currency_display,
-      fee.due_date_display,
-      fee.status_display,
-    ]);
+    const rows = allFees
+      .map(toFeeGridRow)
+      .map((fee) => [
+        fee.student_display,
+        fee.template_display,
+        fee.net_formatted,
+        fee.paid_formatted,
+        fee.balance_formatted,
+        fee.currency_display,
+        fee.due_date_display,
+        fee.status_display,
+      ]);
     const csv = [
-      [m.finance_ui_student_name(), m.finance_ui_fee_item(), m.finance_ui_net_amount(), m.finance_ui_paid_amount(), m.finance_ui_balance_due(), m.finance_ui_currency(), m.finance_ui_due_date(), m.finance_ui_status()],
+      [
+        m.finance_ui_student_name(),
+        m.finance_ui_fee_item(),
+        m.finance_ui_net_amount(),
+        m.finance_ui_paid_amount(),
+        m.finance_ui_balance_due(),
+        m.finance_ui_currency(),
+        m.finance_ui_due_date(),
+        m.finance_ui_status(),
+      ],
       ...rows,
     ]
-      .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+      .map((row) =>
+        row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+      )
       .join("\n");
-    const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(
+      new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+    );
     const link = document.createElement("a");
     link.href = url;
     link.download = `student-fees-${orgId}.csv`;

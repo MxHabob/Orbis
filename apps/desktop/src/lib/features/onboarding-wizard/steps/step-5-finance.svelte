@@ -4,7 +4,12 @@ import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
 import { formatNumber, l } from "$lib/core/i18n";
-import { api, type FeeTemplateDto, type DiscountTemplateDto, type AccountDto } from "$lib/api";
+import {
+  api,
+  type FeeTemplateDto,
+  type DiscountTemplateDto,
+  type AccountDto,
+} from "$lib/api";
 import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -66,23 +71,71 @@ const FREQUENCIES = [
 ];
 
 const PRESET_FEES = [
-  { name: "Annual Tuition Fee", nameAr: "الرسوم الدراسية السنوية", amount: 10000, category: "tuition", frequency: "yearly" },
-  { name: "Registration & Admission", nameAr: "رسوم القبول والتسجيل", amount: 1000, category: "registration", frequency: "once" },
-  { name: "Bus Transportation", nameAr: "رسوم النقل المدرسي", amount: 3500, category: "transport", frequency: "yearly" },
+  {
+    name: "Annual Tuition Fee",
+    nameAr: "الرسوم الدراسية السنوية",
+    amount: 10000,
+    category: "tuition",
+    frequency: "yearly",
+  },
+  {
+    name: "Registration & Admission",
+    nameAr: "رسوم القبول والتسجيل",
+    amount: 1000,
+    category: "registration",
+    frequency: "once",
+  },
+  {
+    name: "Bus Transportation",
+    nameAr: "رسوم النقل المدرسي",
+    amount: 3500,
+    category: "transport",
+    frequency: "yearly",
+  },
 ];
 
 const PRESET_DISCOUNTS = [
-  { name: "Second Sibling (10%)", nameAr: "خصم الأخ الثاني (10%)", type: "percentage", value: 10 },
-  { name: "Third Sibling (20%)", nameAr: "خصم الأخ الثالث (20%)", type: "percentage", value: 20 },
-  { name: "Staff Child Discount (50%)", nameAr: "خصم أبناء العاملين (50%)", type: "percentage", value: 50 },
-  { name: "Academic Merit Scholarship (25%)", nameAr: "منحة التفوق الدراسي (25%)", type: "percentage", value: 25 },
+  {
+    name: "Second Sibling (10%)",
+    nameAr: "خصم الأخ الثاني (10%)",
+    type: "percentage",
+    value: 10,
+  },
+  {
+    name: "Third Sibling (20%)",
+    nameAr: "خصم الأخ الثالث (20%)",
+    type: "percentage",
+    value: 20,
+  },
+  {
+    name: "Staff Child Discount (50%)",
+    nameAr: "خصم أبناء العاملين (50%)",
+    type: "percentage",
+    value: 50,
+  },
+  {
+    name: "Academic Merit Scholarship (25%)",
+    nameAr: "منحة التفوق الدراسي (25%)",
+    type: "percentage",
+    value: 25,
+  },
 ];
 
-const stepTasks = $derived(getTasksForStep("finance", systemStore.onboardingTasks));
-const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const stepTasks = $derived(
+  getTasksForStep("finance", systemStore.onboardingTasks),
+);
+const isTaskComplete = $derived(
+  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
+);
 const hasFeeAccounts = $derived(
-  accounts.some((account) => account.account_type === "asset" && account.code.startsWith("1103")) &&
-    accounts.some((account) => account.account_type === "revenue" && account.code.startsWith("410")),
+  accounts.some(
+    (account) =>
+      account.account_type === "asset" && account.code.startsWith("1103"),
+  ) &&
+    accounts.some(
+      (account) =>
+        account.account_type === "revenue" && account.code.startsWith("410"),
+    ),
 );
 
 onMount(async () => {
@@ -128,7 +181,12 @@ async function handleCreateFeeTemplate() {
       default_amount: String(Number(feeAmount)),
       currency: feeCurrency,
       category: feeCategory,
-      frequency: feeFrequency === "yearly" ? "annual" : feeFrequency === "termly" ? "termly" : feeFrequency,
+      frequency:
+        feeFrequency === "yearly"
+          ? "annual"
+          : feeFrequency === "termly"
+            ? "termly"
+            : feeFrequency,
       is_mandatory: true,
     });
 
@@ -146,7 +204,7 @@ async function handleCreateFeeTemplate() {
   }
 }
 
-function applyFeePreset(preset: typeof PRESET_FEES[number]) {
+function applyFeePreset(preset: (typeof PRESET_FEES)[number]) {
   feeName = preset.name;
   feeNameAr = preset.nameAr;
   feeAmount = preset.amount;
@@ -154,7 +212,7 @@ function applyFeePreset(preset: typeof PRESET_FEES[number]) {
   feeFrequency = preset.frequency;
 }
 
-function applyDiscountPreset(preset: typeof PRESET_DISCOUNTS[number]) {
+function applyDiscountPreset(preset: (typeof PRESET_DISCOUNTS)[number]) {
   discountName = preset.name;
   discountNameAr = preset.nameAr;
   discountType = preset.type;
@@ -211,10 +269,11 @@ async function deleteFeeTemplate(template: FeeTemplateDto) {
 async function deleteDiscountTemplate(template: DiscountTemplateDto) {
   const deleted = await api.deleteDiscountTemplate(String(template.id));
   if (!deleted) throw new Error(m.common_action_failed());
-  discountTemplates = discountTemplates.filter((item) => item.id !== template.id);
+  discountTemplates = discountTemplates.filter(
+    (item) => item.id !== template.id,
+  );
   await refreshOnboardingState(orgId, m.common_action_failed());
 }
-
 </script>
 
 <div class="space-y-6">

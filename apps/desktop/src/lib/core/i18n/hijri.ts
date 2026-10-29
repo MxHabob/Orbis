@@ -102,10 +102,11 @@ export function getHijriSchoolMonthLengths(
   }
 
   const utcDay = (value: Date) =>
-    Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) / 86_400_000;
-  const monthLengths = starts.slice(0, 8).map((value, index) =>
-    utcDay(starts[index + 1]) - utcDay(value),
-  );
+    Date.UTC(value.getFullYear(), value.getMonth(), value.getDate()) /
+    86_400_000;
+  const monthLengths = starts
+    .slice(0, 8)
+    .map((value, index) => utcDay(starts[index + 1]) - utcDay(value));
   return monthLengths.every((days) => days === 29 || days === 30)
     ? { hijriYear: hijriStart.hy, monthLengths }
     : null;

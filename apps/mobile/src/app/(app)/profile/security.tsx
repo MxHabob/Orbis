@@ -27,6 +27,7 @@ import {
   SettingsPanelTitle,
 } from "@/components/ui/settings-panel";
 import { useToast } from "@/components/ui/toast";
+import type { UserDeviceDto } from "@/lib/api/types";
 import {
   useDevicesQuery,
   useRevokeDeviceMutation,
@@ -133,7 +134,7 @@ export default function SecurityScreen() {
               </Text>
             </View>
           ) : (
-            devices.map((device, index) => {
+            devices.map((device: UserDeviceDto, index: number) => {
               const isRevoking = revokingId === device.id;
               const deviceDescription = [
                 device.os || device.browser || t("common_unknown"),

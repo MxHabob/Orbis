@@ -141,7 +141,9 @@ function isEffectiveContextDto(value: unknown): value is EffectiveContextDto {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
   const userRef = useRef(user);
-  userRef.current = user;
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
   const [effectiveContext, setEffectiveContext] =
     useState<EffectiveContextDto | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -153,7 +155,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [selectedInstitution, setSelectedInstitution] =
     useState<DirectoryInstitution | null>(null);
   const selectedInstitutionRef = useRef(selectedInstitution);
-  selectedInstitutionRef.current = selectedInstitution;
+  useEffect(() => {
+    selectedInstitutionRef.current = selectedInstitution;
+  }, [selectedInstitution]);
 
   const isAuthenticated = useMemo(() => !!token && !!user, [token, user]);
   const orgId = useMemo(() => user?.org_id ?? "", [user]);
@@ -177,7 +181,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       return complete;
     } catch (error) {
-      console.warn("[Auth] Unable to determine organization setup status.", error);
+      console.warn(
+        "[Auth] Unable to determine organization setup status.",
+        error,
+      );
       return null;
     }
   }, []);
@@ -192,10 +199,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         res.effective_context &&
         !isEffectiveContextDto(res.effective_context)
       ) {
-        throw new Error("The login response included an invalid effective context.");
+        throw new Error(
+          "The login response included an invalid effective context.",
+        );
       }
 
-      if (user && (user.id !== res.user.id || user.org_id !== res.user.org_id)) {
+      if (
+        user &&
+        (user.id !== res.user.id || user.org_id !== res.user.org_id)
+      ) {
         notifySessionEnded({ orgId: user.org_id, userId: user.id });
       }
 
@@ -357,13 +369,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       deleteSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
     ];
     if (selectedInstitutionRef.current) {
-      const sessionsRaw = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+      const sessionsRaw = await getSecureItem(
+        STORAGE_KEYS.INSTITUTION_SESSIONS,
+      );
       if (sessionsRaw) {
         const sessions: Record<string, InstitutionSessionSnapshot> =
           JSON.parse(sessionsRaw);
         delete sessions[selectedInstitutionRef.current.deployment_id];
         removals.push(
-          setSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS, JSON.stringify(sessions)),
+          setSecureItem(
+            STORAGE_KEYS.INSTITUTION_SESSIONS,
+            JSON.stringify(sessions),
+          ),
         );
       }
     }
@@ -381,16 +398,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         savedApiBaseUrl,
         savedInstitutions,
         activeInstitutionId,
-      ] =
-        await Promise.all([
-          getSecureItem(STORAGE_KEYS.TOKEN),
-          getSecureItem(STORAGE_KEYS.USER),
-          getSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
-          getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
-          getSecureItem(STORAGE_KEYS.API_BASE_URL),
-          getSavedInstitutions(),
-          getSecureItem(STORAGE_KEYS.ACTIVE_INSTITUTION_ID),
-        ]);
+      ] = await Promise.all([
+        getSecureItem(STORAGE_KEYS.TOKEN),
+        getSecureItem(STORAGE_KEYS.USER),
+        getSecureItem(STORAGE_KEYS.EFFECTIVE_CONTEXT),
+        getSecureItem(STORAGE_KEYS.SETUP_COMPLETE),
+        getSecureItem(STORAGE_KEYS.API_BASE_URL),
+        getSavedInstitutions(),
+        getSecureItem(STORAGE_KEYS.ACTIVE_INSTITUTION_ID),
+      ]);
 
       setInstitutions(savedInstitutions);
       const activeInstitution =
@@ -455,7 +471,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 JSON.stringify(session.user),
               );
             } else if (!restoredUser) {
-              console.warn("[Auth] Session response did not contain a valid user.");
+              console.warn(
+                "[Auth] Session response did not contain a valid user.",
+              );
               await logout();
             }
             if (isEffectiveContextDto(session?.effective_context)) {
@@ -475,7 +493,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   sessionErr.message
                     .toLowerCase()
                     .includes("invalid or expired token") ||
-                  sessionErr.message.toLowerCase().includes("invalidsignature")));
+                  sessionErr.message
+                    .toLowerCase()
+                    .includes("invalidsignature")));
 
             if (isInvalidToken || !restoredUser) {
               await logout();
@@ -496,7 +516,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (institution: DirectoryInstitution) => {
       const previousInstitution = selectedInstitutionRef.current;
       if (previousInstitution && token && user) {
-        const sessionsRaw = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
+        const sessionsRaw = await getSecureItem(
+          STORAGE_KEYS.INSTITUTION_SESSIONS,
+        );
         const sessions: Record<string, InstitutionSessionSnapshot> = sessionsRaw
           ? JSON.parse(sessionsRaw)
           : {};
@@ -507,7 +529,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             ? JSON.stringify(effectiveContext)
             : null,
           setupComplete:
-            isSetupComplete === null ? null : isSetupComplete ? "true" : "false",
+            isSetupComplete === null
+              ? null
+              : isSetupComplete
+                ? "true"
+                : "false",
         };
         await setSecureItem(
           STORAGE_KEYS.INSTITUTION_SESSIONS,
@@ -528,8 +554,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const cachedUser: unknown = snapshot ? JSON.parse(snapshot.user) : null;
       const restoredUser = isUserDto(cachedUser) ? cachedUser : null;
-      const cachedContext: unknown =
-        snapshot?.effectiveContext ? JSON.parse(snapshot.effectiveContext) : null;
+      const cachedContext: unknown = snapshot?.effectiveContext
+        ? JSON.parse(snapshot.effectiveContext)
+        : null;
       const restoredContext = isEffectiveContextDto(cachedContext)
         ? cachedContext
         : null;
@@ -569,13 +596,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await restoreSession();
     },
-    [
-      effectiveContext,
-      isSetupComplete,
-      restoreSession,
-      token,
-      user,
-    ],
+    [effectiveContext, isSetupComplete, restoreSession, token, user],
   );
 
   const refreshSessionData = useCallback(async () => {
@@ -595,7 +616,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if ("effective_context" in session) {
       const nextContext = session.effective_context ?? null;
       if (nextContext && !isEffectiveContextDto(nextContext)) {
-        throw new Error("The session response included an invalid effective context.");
+        throw new Error(
+          "The session response included an invalid effective context.",
+        );
       }
       setEffectiveContext(nextContext);
       writes.push(
@@ -611,7 +634,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (selectedInstitutionRef.current && token) {
       const currentContext =
         "effective_context" in session
-          ? session.effective_context ?? null
+          ? (session.effective_context ?? null)
           : null;
       await setInstitutionSession(
         selectedInstitutionRef.current.deployment_id,

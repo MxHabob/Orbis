@@ -28,7 +28,16 @@ import { Separator } from "@orbis/ui/separator";
 import { toast } from "@orbis/ui";
 
 import { getLocale } from "$lib/paraglide/runtime";
-import { CheckCircle, DocumentPage, Download, Grid, InfoCircle, Label, Refresh, Printer } from "@orbis/icons";
+import {
+  CheckCircle,
+  DocumentPage,
+  Download,
+  Grid,
+  InfoCircle,
+  Label,
+  Refresh,
+  Printer,
+} from "@orbis/icons";
 
 import {
   computeMultiUpLayout,
@@ -141,7 +150,8 @@ async function loadTemplates() {
       selectedTemplateId = "";
     }
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_print_templates_load_failed();
+    const msg =
+      (e as any)?.message || m.shared_ui_print_templates_load_failed();
     console.error(msg);
   } finally {
     loadingTemplates = false;
@@ -149,7 +159,9 @@ async function loadTemplates() {
 }
 
 async function setSelectedTemplateDefault() {
-  const selected = templates.find((template) => template.id === selectedTemplateId);
+  const selected = templates.find(
+    (template) => template.id === selectedTemplateId,
+  );
   if (!selected || selected.is_default) return;
 
   try {
@@ -160,8 +172,7 @@ async function setSelectedTemplateDefault() {
     }));
     toast.success(m.settings_templates_set_default_success());
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : String(error);
+    const message = error instanceof Error ? error.message : String(error);
     console.error("Failed to set print template as default:", error);
     toast.error(message);
   }
@@ -269,7 +280,9 @@ function serializeMultiUpConfig(config: MultiUpConfig): string {
 async function resolveContexts(): Promise<Record<string, unknown>[]> {
   if (suppliedContexts) return suppliedContexts;
   if (entityType === "student") {
-    const students = await Promise.all(entityIds.map((id) => api.getStudent(id)));
+    const students = await Promise.all(
+      entityIds.map((id) => api.getStudent(id)),
+    );
     const classIds = [
       ...new Set(
         students
@@ -334,8 +347,7 @@ async function generatePdf(): Promise<boolean> {
     activeTab = "pdf";
     return true;
   } catch (e: unknown) {
-    previewError =
-      extractErrorMessage(e) || m.shared_ui_print_preview_failed();
+    previewError = extractErrorMessage(e) || m.shared_ui_print_preview_failed();
     toast.error(previewError);
     return false;
   } finally {
@@ -380,7 +392,8 @@ async function handlePrintAction() {
         batchConfig: JSON.parse(serializeMultiUpConfig(multiUpConfig)),
         locale: getLocale(),
       });
-      if (!pdfBytes.length) throw new Error(m.shared_ui_print_generation_failed());
+      if (!pdfBytes.length)
+        throw new Error(m.shared_ui_print_generation_failed());
       batchProgress = 80;
 
       const blobUrl = URL.createObjectURL(

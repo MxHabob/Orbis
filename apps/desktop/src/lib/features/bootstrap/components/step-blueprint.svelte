@@ -6,7 +6,11 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
-import { BLUEPRINTS, type InstitutionType, type InstitutionBlueprint } from "@orbis/blueprints";
+import {
+  BLUEPRINTS,
+  type InstitutionType,
+  type InstitutionBlueprint,
+} from "@orbis/blueprints";
 import { Check } from "@orbis/icons";
 import { Card, CardContent } from "@orbis/ui/card";
 

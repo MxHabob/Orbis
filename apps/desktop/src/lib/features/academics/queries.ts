@@ -135,7 +135,10 @@ export function createSectionSubjectsQuery(
   periodId: () => string | undefined,
 ) {
   return createQuery<SectionSubjectDto[]>(() => ({
-    queryKey: queryKeys.academic.SectionSubjects(classId() ?? "", periodId() ?? ""),
+    queryKey: queryKeys.academic.SectionSubjects(
+      classId() ?? "",
+      periodId() ?? "",
+    ),
     queryFn: () => api.listSectionSubjects(classId()!, periodId()!),
     enabled: !!classId() && !!periodId(),
     staleTime: 5 * 60 * 1000,
@@ -170,7 +173,9 @@ export function createAssessmentsQuery(
 /** Grades for a class subject. */
 export function createGradesQuery(SectionSubjectId: () => string | undefined) {
   return createQuery<GradeDto[]>(() => ({
-    queryKey: queryKeys.assessment.grades({ SectionSubjectId: SectionSubjectId() }),
+    queryKey: queryKeys.assessment.grades({
+      SectionSubjectId: SectionSubjectId(),
+    }),
     queryFn: () => api.listGrades({ SectionSubjectId: SectionSubjectId() }),
     enabled: !!SectionSubjectId(),
     staleTime: 1 * 60 * 1000,
@@ -178,9 +183,7 @@ export function createGradesQuery(SectionSubjectId: () => string | undefined) {
 }
 
 /** Time slots for an academic period. */
-export function createTimeSlotsQuery(
-  periodId: () => string | undefined,
-) {
+export function createTimeSlotsQuery(periodId: () => string | undefined) {
   return createQuery<TimeSlotDto[]>(() => ({
     queryKey: queryKeys.scheduling.timeSlots(periodId() ?? ""),
     queryFn: () => api.listTimeSlots(periodId()!),
@@ -231,7 +234,9 @@ export function createPrerequisitesQuery(
 }
 
 /** Report definitions for academics domain */
-export function createReportDefinitionsQuery(domain: () => string = () => "academics") {
+export function createReportDefinitionsQuery(
+  domain: () => string = () => "academics",
+) {
   return createQuery<ReportDefinitionDto[]>(() => ({
     queryKey: queryKeys.report.definitions(domain()),
     queryFn: () => api.listReportDefinitions(domain()),
@@ -242,7 +247,9 @@ export function createReportDefinitionsQuery(domain: () => string = () => "acade
 /** Calculate student rankings using authoritative backend engine */
 export function createCalculateRankingsMutation() {
   return createMutation(() => ({
-    mutationFn: (params: CalculateRankingsRequest): Promise<RankingItemDto[]> => {
+    mutationFn: (
+      params: CalculateRankingsRequest,
+    ): Promise<RankingItemDto[]> => {
       return api.calculateRankings(params);
     },
   }));
@@ -265,7 +272,6 @@ export function createGenerateReportMutation() {
   }));
 }
 
-
 /** Sections for an organization (unified concept). */
 export function createSectionsQuery(orgId: () => string) {
   return createQuery<SectionDto[]>(() => ({
@@ -287,7 +293,9 @@ export function createSectionQuery(sectionId: () => string | undefined) {
 }
 
 /** Students enrolled in a specific section. */
-export function createSectionStudentsQuery(sectionId: () => string | undefined) {
+export function createSectionStudentsQuery(
+  sectionId: () => string | undefined,
+) {
   return createClassStudentsQuery(sectionId);
 }
 

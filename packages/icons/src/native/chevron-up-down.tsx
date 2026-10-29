@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface ChevronUpDownProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface ChevronUpDownProps extends SvgProps {
 
 export function ChevronUpDown({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,13 @@ export function ChevronUpDown({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
-	/>
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 15 12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9"
+      />
     </Svg>
   );
 }

@@ -11,7 +11,14 @@ import {
   TooltipProvider,
 } from "@orbis/ui/tooltip";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { ChartBar, ChevronRight, InfoCircle, Refresh, Settings, Sparkles } from "@orbis/icons";
+import {
+  ChartBar,
+  ChevronRight,
+  InfoCircle,
+  Refresh,
+  Settings,
+  Sparkles,
+} from "@orbis/icons";
 import { systemStore } from "$lib/stores";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
@@ -50,7 +57,8 @@ const isOperational = $derived(systemStore.isOperational);
 const pendingSetupItems = $derived(systemStore.pendingSetupItems);
 const hasDiagnosticsWarning = $derived(
   diagnostics &&
-  (((diagnostics.stuck_tasks?.length ?? 0) > 0) || ((diagnostics.overdue_tasks?.length ?? 0) > 0))
+    ((diagnostics.stuck_tasks?.length ?? 0) > 0 ||
+      (diagnostics.overdue_tasks?.length ?? 0) > 0),
 );
 
 onMount(() => {
@@ -80,27 +88,54 @@ function getTaskTypeLabel(type: string): string {
     case "grade_entry_close":
       return m.common_autopilot_task_grade_entry_close();
     case "period_lock":
-      return m.common_autopilot_task_period_lock?.() || m.autopilot_task_period_lock?.() || (m.common_autopilot_task_period_lock());
+      return (
+        m.common_autopilot_task_period_lock?.() ||
+        m.autopilot_task_period_lock?.() ||
+        m.common_autopilot_task_period_lock()
+      );
     case "report_generation":
       return m.common_autopilot_task_report_generation();
     case "backup":
-      return m.common_autopilot_task_backup?.() || (m.ui_autopilot_system_backup());
+      return (
+        m.common_autopilot_task_backup?.() || m.ui_autopilot_system_backup()
+      );
     case "promotion_dry_run":
       return m.common_autopilot_task_promotion_dry_run();
     case "promotion_execute":
-      return m.common_autopilot_task_promotion_execute?.() || (m.ui_autopilot_execute_student_promotion());
+      return (
+        m.common_autopilot_task_promotion_execute?.() ||
+        m.ui_autopilot_execute_student_promotion()
+      );
     case "attendance_warning":
-      return m.common_autopilot_task_attendance_warning?.() || (m.ui_autopilot_attendance_warning());
+      return (
+        m.common_autopilot_task_attendance_warning?.() ||
+        m.ui_autopilot_attendance_warning()
+      );
     case "fee_due_notice":
-      return m.common_autopilot_task_fee_due_notice?.() || (m.ui_autopilot_fee_due_notice());
+      return (
+        m.common_autopilot_task_fee_due_notice?.() ||
+        m.ui_autopilot_fee_due_notice()
+      );
     case "period_transition":
-      return m.common_autopilot_task_period_transition?.() || (m.ui_autopilot_period_transition());
+      return (
+        m.common_autopilot_task_period_transition?.() ||
+        m.ui_autopilot_period_transition()
+      );
     case "sync_calendar":
-      return m.common_autopilot_task_sync_calendar?.() || (m.ui_autopilot_sync_calendar());
+      return (
+        m.common_autopilot_task_sync_calendar?.() ||
+        m.ui_autopilot_sync_calendar()
+      );
     case "stale_task_cleanup":
-      return m.common_autopilot_task_stale_task_cleanup?.() || (m.ui_autopilot_cleanup_stale_tasks());
+      return (
+        m.common_autopilot_task_stale_task_cleanup?.() ||
+        m.ui_autopilot_cleanup_stale_tasks()
+      );
     case "health_check":
-      return m.common_autopilot_task_health_check?.() || (m.ui_autopilot_health_check());
+      return (
+        m.common_autopilot_task_health_check?.() ||
+        m.ui_autopilot_health_check()
+      );
     default:
       return type;
   }
@@ -110,11 +145,18 @@ function getTaskTypeLabel(type: string): string {
 function getModeLabel(mode?: string): string {
   switch (mode) {
     case "automatic":
-      return m.common_autopilot_popover_mode_automatic?.() || (m.ui_autopilot_auto());
+      return (
+        m.common_autopilot_popover_mode_automatic?.() || m.ui_autopilot_auto()
+      );
     case "suggested":
-      return m.common_autopilot_popover_mode_suggested?.() || (m.ui_autopilot_suggested());
+      return (
+        m.common_autopilot_popover_mode_suggested?.() ||
+        m.ui_autopilot_suggested()
+      );
     case "manual":
-      return m.common_autopilot_popover_mode_manual?.() || (m.common_dt_type_manual());
+      return (
+        m.common_autopilot_popover_mode_manual?.() || m.common_dt_type_manual()
+      );
     default:
       return m.common_phase_active();
   }

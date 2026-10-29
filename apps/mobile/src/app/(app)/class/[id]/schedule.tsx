@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StudentRecordLayout } from "@/components/student-record-layout";
 import { useClassScheduleQuery } from "@/hooks/use-api-queries";
+import type { StudentScheduleItem } from "@/hooks/use-api-queries";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
 import { useLocalSearchParams } from "expo-router";
@@ -37,7 +38,8 @@ export default function ClassScheduleScreen() {
         <View className="gap-four">
           {weekdayKeys.map((dayKey, index) => {
             const lessons = schedule.filter(
-              (item) => item.timeSlot.day_of_week === index + 1,
+              (item: StudentScheduleItem) =>
+                item.timeSlot.day_of_week === index + 1,
             );
             if (lessons.length === 0) return null;
             return (
@@ -45,28 +47,30 @@ export default function ClassScheduleScreen() {
                 <Text className="text-base font-semibold text-foreground">
                   {t(dayKey)}
                 </Text>
-                {lessons.map(({ lesson, timeSlot, subject }) => (
-                  <Card key={lesson.id} variant="outline" padding="three">
-                    <View className="flex-row items-center justify-between gap-three">
-                      <View className="flex-1 gap-one">
-                        <Text className="text-sm font-semibold text-foreground">
-                          {(isArabic ? subject?.name_ar : subject?.name) ||
-                            subject?.name ||
-                            subject?.name_ar ||
-                            t("domain_schedule")}
-                        </Text>
-                        <Text className="text-xs text-muted-foreground">
-                          {(isArabic ? timeSlot.name_ar : timeSlot.name) ||
-                            timeSlot.name ||
-                            ""}
+                {lessons.map(
+                  ({ lesson, timeSlot, subject }: StudentScheduleItem) => (
+                    <Card key={lesson.id} variant="outline" padding="three">
+                      <View className="flex-row items-center justify-between gap-three">
+                        <View className="flex-1 gap-one">
+                          <Text className="text-sm font-semibold text-foreground">
+                            {(isArabic ? subject?.name_ar : subject?.name) ||
+                              subject?.name ||
+                              subject?.name_ar ||
+                              t("domain_schedule")}
+                          </Text>
+                          <Text className="text-xs text-muted-foreground">
+                            {(isArabic ? timeSlot.name_ar : timeSlot.name) ||
+                              timeSlot.name ||
+                              ""}
+                          </Text>
+                        </View>
+                        <Text className="text-sm font-medium text-foreground">
+                          {timeSlot.start_time} – {timeSlot.end_time}
                         </Text>
                       </View>
-                      <Text className="text-sm font-medium text-foreground">
-                        {timeSlot.start_time} – {timeSlot.end_time}
-                      </Text>
-                    </View>
-                  </Card>
-                ))}
+                    </Card>
+                  ),
+                )}
               </View>
             );
           })}

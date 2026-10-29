@@ -16,7 +16,12 @@ import { confirmStore } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, Search, Refresh } from "@orbis/icons";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { currencyFilterFields } from "$lib/core/filter-configs";
 import AddCurrencyDialog from "./components/add-currency-dialog.svelte";
@@ -36,7 +41,12 @@ let activeFilter = $state<UniversalFilter>({
 
 const currencyActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
-  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
+  {
+    id: "delete",
+    label: m.common_action_delete(),
+    icon: "Trash2",
+    variant: "destructive",
+  },
 ];
 
 async function loadCurrencies() {
@@ -62,7 +72,10 @@ const gridSource = $derived(
     name: l(c.name_ar, c.name) || c.name || c.name_ar || c.code,
     name_en: c.name || "—",
     symbol: c.symbol || c.code,
-    is_base_display: c.is_base === true || c.is_base === 1 ? m.settings_currencies_type_base() : m.settings_currencies_type_sub(),
+    is_base_display:
+      c.is_base === true || c.is_base === 1
+        ? m.settings_currencies_type_base()
+        : m.settings_currencies_type_sub(),
     exchange_rate: Number(c.exchange_rate ?? 1),
     decimal_places: c.decimal_places ?? 2,
     status: c.is_active === false || c.is_active === 0 ? "inactive" : "active",
@@ -70,15 +83,102 @@ const gridSource = $derived(
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "code", prop: "code", header: m.common_ledger_col_code(), name: m.common_ledger_col_code(), width: 90, size: 90, readonly: true, pin: "left", cellClass: "font-mono font-bold" },
-  { id: "name", prop: "name", header: m.common_cycle_form_name(), name: m.common_cycle_form_name(), width: 190, size: 190, readonly: true, cellClass: "font-medium" },
-  { id: "name_en", prop: "name_en", header: m.common_user_form_name_en(), name: m.common_user_form_name_en(), width: 160, size: 160, readonly: true },
-  { id: "symbol", prop: "symbol", header: m.settings_currencies_col_symbol(), name: m.settings_currencies_col_symbol(), width: 90, size: 90, readonly: true, align: "center", cellClass: "font-mono font-semibold" },
-  { id: "is_base_display", prop: "is_base_display", header: m.common_word_type(), name: m.common_word_type(), width: 110, size: 110, readonly: true, align: "center", type: "badge" },
-  { id: "exchange_rate", prop: "exchange_rate", header: m.settings_currencies_col_rate(), name: m.settings_currencies_col_rate(), width: 130, size: 130, readonly: true, align: "end", type: "number" },
-  { id: "decimal_places", prop: "decimal_places", header: m.settings_ui_currency_decimal_places(), name: m.settings_ui_currency_decimal_places(), width: 90, size: 90, readonly: true, align: "center", type: "number" },
-  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "code",
+    prop: "code",
+    header: m.common_ledger_col_code(),
+    name: m.common_ledger_col_code(),
+    width: 90,
+    size: 90,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.common_cycle_form_name(),
+    name: m.common_cycle_form_name(),
+    width: 190,
+    size: 190,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "name_en",
+    prop: "name_en",
+    header: m.common_user_form_name_en(),
+    name: m.common_user_form_name_en(),
+    width: 160,
+    size: 160,
+    readonly: true,
+  },
+  {
+    id: "symbol",
+    prop: "symbol",
+    header: m.settings_currencies_col_symbol(),
+    name: m.settings_currencies_col_symbol(),
+    width: 90,
+    size: 90,
+    readonly: true,
+    align: "center",
+    cellClass: "font-mono font-semibold",
+  },
+  {
+    id: "is_base_display",
+    prop: "is_base_display",
+    header: m.common_word_type(),
+    name: m.common_word_type(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+    type: "badge",
+  },
+  {
+    id: "exchange_rate",
+    prop: "exchange_rate",
+    header: m.settings_currencies_col_rate(),
+    name: m.settings_currencies_col_rate(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "decimal_places",
+    prop: "decimal_places",
+    header: m.settings_ui_currency_decimal_places(),
+    name: m.settings_ui_currency_decimal_places(),
+    width: 90,
+    size: 90,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
+    width: 100,
+    size: 100,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
   {
     id: "actions",
     prop: "actions",

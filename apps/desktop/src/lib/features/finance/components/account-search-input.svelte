@@ -75,7 +75,11 @@ onDestroy(() => {
 
 const allAccounts = $derived(accounts ?? fetchedAccounts);
 const parentAccountIds = $derived(
-  new Set(allAccounts.flatMap((account) => account.parent_id ? [account.parent_id] : []))
+  new Set(
+    allAccounts.flatMap((account) =>
+      account.parent_id ? [account.parent_id] : [],
+    ),
+  ),
 );
 const filteredByTypeAccounts = $derived.by(() => {
   if (!accountTypeFilter) return allAccounts;
@@ -91,19 +95,23 @@ const filteredByTypeAccounts = $derived.by(() => {
   });
 });
 const selectableAccounts = $derived(
-  filteredByTypeAccounts.filter((account) =>
-    account.is_active && (includeGroupAccounts || !parentAccountIds.has(account.id))
-  )
+  filteredByTypeAccounts.filter(
+    (account) =>
+      account.is_active &&
+      (includeGroupAccounts || !parentAccountIds.has(account.id)),
+  ),
 );
 const selectedAccount = $derived(
-  allAccounts.find((account) =>
-    String(account.id) === String(value || "") || String(account.code) === String(value || "")
-  )
+  allAccounts.find(
+    (account) =>
+      String(account.id) === String(value || "") ||
+      String(account.code) === String(value || ""),
+  ),
 );
 const selectedAccountLabel = $derived(
   selectedAccount
     ? `${selectedAccount.code ? `${selectedAccount.code} - ` : ""}${getAccountName(selectedAccount)}`
-    : ""
+    : "",
 );
 const searchableAccounts = $derived(
   selectableAccounts.map((account) => ({
@@ -114,8 +122,11 @@ const searchableAccounts = $derived(
       account.name_ar,
       account.account_type,
       account.sub_type,
-    ].filter(Boolean).join(" ").toLowerCase(),
-  }))
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  })),
 );
 const filteredResults = $derived.by(() => {
   const query = debouncedQuery.trim().toLowerCase();
@@ -128,7 +139,12 @@ const filteredResults = $derived.by(() => {
 const isSearching = $derived(searchText.trim() !== debouncedQuery);
 
 function getAccountName(account: AccountDto) {
-  return l(account.name_ar, account.name) || account.name || account.code || String(account.id);
+  return (
+    l(account.name_ar, account.name) ||
+    account.name ||
+    account.code ||
+    String(account.id)
+  );
 }
 
 function clearPendingSearch() {
@@ -197,9 +213,15 @@ function handleKeyDown(event: KeyboardEvent) {
       event.preventDefault();
       highlightedIndex = (highlightedIndex + 1) % filteredResults.length;
       scrollHighlightedOptionIntoView();
-    } else if (isOpen && filteredResults.length > 0 && event.key === "ArrowUp") {
+    } else if (
+      isOpen &&
+      filteredResults.length > 0 &&
+      event.key === "ArrowUp"
+    ) {
       event.preventDefault();
-      highlightedIndex = (highlightedIndex - 1 + filteredResults.length) % filteredResults.length;
+      highlightedIndex =
+        (highlightedIndex - 1 + filteredResults.length) %
+        filteredResults.length;
       scrollHighlightedOptionIntoView();
     } else if (isOpen && event.key === "Enter") {
       event.preventDefault();

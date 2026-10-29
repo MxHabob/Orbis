@@ -15,7 +15,10 @@ type ThemedStatusBarProps = {
   style?: "auto" | "light" | "dark" | "inverted";
 };
 
-export function ThemedStatusBar({ backgroundColor, style }: ThemedStatusBarProps) {
+export function ThemedStatusBar({
+  backgroundColor,
+  style,
+}: ThemedStatusBarProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const resolvedStyle = style ?? (isDark ? "light" : "dark");

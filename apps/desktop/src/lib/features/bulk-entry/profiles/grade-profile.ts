@@ -1,7 +1,10 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
-import { findDuplicateIndex, type BulkValidationContext } from "../engine/duplicate-index";
+import {
+  findDuplicateIndex,
+  type BulkValidationContext,
+} from "../engine/duplicate-index";
 import type {
   BulkImportProfile,
   BulkReferenceData,
@@ -69,7 +72,8 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
     headerEn: "Score*",
     required: true,
     type: "decimal",
-    descriptionAr: "الدرجة التي حصل عليها الطالب (أكبر أو تساوي 0 ولا تتجاوز الدرجة العظمى)",
+    descriptionAr:
+      "الدرجة التي حصل عليها الطالب (أكبر أو تساوي 0 ولا تتجاوز الدرجة العظمى)",
     example: "18.5",
   },
   {
@@ -100,19 +104,67 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const gradeGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
-  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
-  { id: "student_number", header: m.bulk_entry_grade_header_student_number(), width: 130 },
-  { id: "student_name", header: m.bulk_entry_grade_header_student_name(), width: 160, readonly: true },
-  { id: "subject_name", header: m.bulk_entry_grade_header_subject_name(), width: 150 },
-  { id: "assessment_type", header: m.bulk_entry_grade_header_assessment_type(), width: 160 },
-  { id: "score", header: m.bulk_entry_grade_header_score(), width: 100, type: "decimal" },
-  { id: "max_score", header: m.bulk_entry_grade_header_max_score(), width: 110, type: "decimal" },
-  { id: "is_excused", header: m.bulk_entry_grade_header_is_excused(), width: 90, type: "boolean" },
+  {
+    id: "__idx",
+    header: m.bulk_entry_grid_row_number(),
+    width: 50,
+    pin: "left",
+    readonly: true,
+  },
+  {
+    id: "status",
+    header: m.bulk_entry_grid_status(),
+    width: 110,
+    pin: "left",
+    type: "badge",
+    readonly: true,
+  },
+  {
+    id: "student_number",
+    header: m.bulk_entry_grade_header_student_number(),
+    width: 130,
+  },
+  {
+    id: "student_name",
+    header: m.bulk_entry_grade_header_student_name(),
+    width: 160,
+    readonly: true,
+  },
+  {
+    id: "subject_name",
+    header: m.bulk_entry_grade_header_subject_name(),
+    width: 150,
+  },
+  {
+    id: "assessment_type",
+    header: m.bulk_entry_grade_header_assessment_type(),
+    width: 160,
+  },
+  {
+    id: "score",
+    header: m.bulk_entry_grade_header_score(),
+    width: 100,
+    type: "decimal",
+  },
+  {
+    id: "max_score",
+    header: m.bulk_entry_grade_header_max_score(),
+    width: 110,
+    type: "decimal",
+  },
+  {
+    id: "is_excused",
+    header: m.bulk_entry_grade_header_is_excused(),
+    width: 90,
+    type: "boolean",
+  },
   { id: "notes", header: m.bulk_entry_grade_header_notes(), width: 180 },
 ];
 
-export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDetails> = {
+export const gradeImportProfile: BulkImportProfile<
+  GradeRowData,
+  GradePreviewDetails
+> = {
   id: "grades",
   displayName: {
     ar: "استيراد ورصد الدرجات والتقييمات",
@@ -168,10 +220,19 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
     };
   },
 
-  validateCell(colId: string, value: unknown, row: GradeRowData, refData: BulkReferenceData): BulkCellIssue | null {
+  validateCell(
+    colId: string,
+    value: unknown,
+    row: GradeRowData,
+    refData: BulkReferenceData,
+  ): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
 
-    if (["student_number", "subject_name", "assessment_type", "score"].includes(colId)) {
+    if (
+      ["student_number", "subject_name", "assessment_type", "score"].includes(
+        colId,
+      )
+    ) {
       if (!strVal) {
         return {
           severity: "BLOCKING_ERROR",
@@ -203,7 +264,9 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
       if (row.max_score) {
         limit = Number(row.max_score);
       } else if (row.assessment_type) {
-        const matchedScheme = refData.assessmentSchemes.find((s) => s.name.toLowerCase() === row.assessment_type.toLowerCase());
+        const matchedScheme = refData.assessmentSchemes.find(
+          (s) => s.name.toLowerCase() === row.assessment_type.toLowerCase(),
+        );
         if (matchedScheme?.meta?.max_score) {
           limit = Number(matchedScheme.meta.max_score);
         }
@@ -213,7 +276,10 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: m.bulk_entry_grade_validation_exceeds_max({ score: num, maximum: limit }),
+          message: m.bulk_entry_grade_validation_exceeds_max({
+            score: num,
+            maximum: limit,
+          }),
         };
       }
     }
@@ -230,7 +296,9 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: m.bulk_entry_grade_validation_subject_not_found({ subject: strVal }),
+          message: m.bulk_entry_grade_validation_subject_not_found({
+            subject: strVal,
+          }),
         };
       }
     }
@@ -255,7 +323,7 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         row.assessment_type.trim().toLowerCase(),
       ]);
       const duplicateIndex = context
-        ? findDuplicateIndex(context, "grade_assessment", key, rowIndex) ?? -1
+        ? (findDuplicateIndex(context, "grade_assessment", key, rowIndex) ?? -1)
         : allRows.findIndex((other, index) => {
             if (index === rowIndex) return false;
             const otherKey = JSON.stringify([
@@ -270,7 +338,9 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "score",
-          message: m.bulk_entry_grade_validation_duplicate({ row: duplicateIndex + 1 }),
+          message: m.bulk_entry_grade_validation_duplicate({
+            row: duplicateIndex + 1,
+          }),
         });
       }
     }
@@ -278,14 +348,22 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
     return issues;
   },
 
-  async generatePreview(rows: GradeRowData[], _refData: BulkReferenceData): Promise<BulkPreviewSummary<GradePreviewDetails>> {
+  async generatePreview(
+    rows: GradeRowData[],
+    _refData: BulkReferenceData,
+  ): Promise<BulkPreviewSummary<GradePreviewDetails>> {
     let validCount = 0;
     let errorCount = 0;
     const subjectsMap: Record<string, number> = {};
 
     for (const row of rows) {
       const num = Number(row.score);
-      const isInvalid = !row.student_number || !row.subject_name || !row.assessment_type || isNaN(num) || num < 0;
+      const isInvalid =
+        !row.student_number ||
+        !row.subject_name ||
+        !row.assessment_type ||
+        isNaN(num) ||
+        num < 0;
       if (isInvalid) {
         errorCount++;
       } else {
@@ -304,14 +382,19 @@ export const gradeImportProfile: BulkImportProfile<GradeRowData, GradePreviewDet
         gradesToRecord: validCount,
         gradesToUpdate: 0,
         subjectsSummary: subjectsMap,
-        assessmentType: rows[0]?.assessment_type || m.bulk_entry_general_assessment(),
+        assessmentType:
+          rows[0]?.assessment_type || m.bulk_entry_general_assessment(),
         academicPeriodName: m.bulk_entry_current_period(),
         maxScore: 100,
       },
     };
   },
 
-  async commitChunk(rows: GradeRowData[], orgId: string, refData: BulkReferenceData): Promise<{ success: boolean; errors?: string[] }> {
+  async commitChunk(
+    rows: GradeRowData[],
+    orgId: string,
+    refData: BulkReferenceData,
+  ): Promise<{ success: boolean; errors?: string[] }> {
     const items = rows.map((row) => {
       const matchedSubject = refData.subjects.find(
         (s) =>

@@ -13,7 +13,10 @@ type ToasterPosition =
   | "bottom-center"
   | "bottom-right";
 
-let { position = "bottom-right", ...restProps }: {
+let {
+  position = "bottom-right",
+  ...restProps
+}: {
   position?: ToasterPosition;
   [key: string]: unknown;
 } = $props();

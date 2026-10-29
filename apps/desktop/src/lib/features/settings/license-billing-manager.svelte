@@ -8,8 +8,13 @@ import * as m from "$lib/paraglide/messages";
 import { resolve } from "$app/paths";
 import { licenseStore, uiStore, confirmStore } from "$lib/stores";
 import { Button, LoadingIndicator, toast } from "@orbis/ui";
-import { Input } from "@orbis/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@orbis/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@orbis/ui/card";
 import { Check, Bolt, ArrowPath, Trash } from "@orbis/icons";
 import { formatLicensePlan } from "$lib/utils/license";
 import { formatDate } from "$lib/core/i18n";
@@ -20,8 +25,6 @@ let { orgId }: { orgId: string } = $props();
 let isRefreshing = $state(false);
 let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
-let isRedeeming = $state(false);
-let purchaseKey = $state("");
 let copiedId = $state(false);
 const planDisplay = $derived(
   formatLicensePlan(licenseStore.planName) ??
@@ -57,20 +60,6 @@ async function handleStartTrial() {
     toast.error(licenseStore.error);
   }
   isStartingTrial = false;
-}
-
-async function handleRedeemKey() {
-  const key = purchaseKey.trim();
-  if (!key) return;
-  isRedeeming = true;
-  const result = await licenseStore.redeemKey(key);
-  if (result) {
-    purchaseKey = "";
-    toast.success(m.license_activation_success());
-  } else if (licenseStore.error) {
-    toast.error(licenseStore.error);
-  }
-  isRedeeming = false;
 }
 
 async function handleDeactivate() {
@@ -113,39 +102,62 @@ async function copyInstallationId() {
 
 function getFeatureLabel(key: string): string {
   switch (key) {
-    case "students": return m.license_feature_students();
-    case "ai_grading": return m.license_feature_ai_grading();
-    case "multi_branch": return m.license_feature_multi_branch();
-    case "offline_sync": return m.license_feature_offline_sync();
-    case "parent_portal": return m.license_feature_parent_portal();
-    case "campus_analytics": return m.license_feature_campus_analytics();
-    case "sso": return m.license_feature_sso();
-    case "exam_tools": return m.license_feature_exam_tools();
-    default: return key.replace(/_/g, " ");
+    case "students":
+      return m.license_feature_students();
+    case "ai_grading":
+      return m.license_feature_ai_grading();
+    case "multi_branch":
+      return m.license_feature_multi_branch();
+    case "offline_sync":
+      return m.license_feature_offline_sync();
+    case "parent_portal":
+      return m.license_feature_parent_portal();
+    case "campus_analytics":
+      return m.license_feature_campus_analytics();
+    case "sso":
+      return m.license_feature_sso();
+    case "exam_tools":
+      return m.license_feature_exam_tools();
+    default:
+      return key.replace(/_/g, " ");
   }
 }
 
 function getLimitLabel(key: string): string {
   switch (key) {
-    case "students.max": return m.license_limit_students_max();
-    case "staff.max": return m.license_limit_staff_max();
-    case "devices.max": return m.license_limit_devices_max();
-    case "branches.max": return m.license_limit_branches_max();
-    case "classes.max": return m.license_limit_classes_max();
-    case "storage_gb.max": return m.license_limit_storage_gb_max();
-    default: return key.replace(/_/g, " ").replace(/\.max$/, "");
+    case "students.max":
+      return m.license_limit_students_max();
+    case "staff.max":
+      return m.license_limit_staff_max();
+    case "devices.max":
+      return m.license_limit_devices_max();
+    case "branches.max":
+      return m.license_limit_branches_max();
+    case "classes.max":
+      return m.license_limit_classes_max();
+    case "storage_gb.max":
+      return m.license_limit_storage_gb_max();
+    default:
+      return key.replace(/_/g, " ").replace(/\.max$/, "");
   }
 }
 
 function getUnitLabel(unit?: string): string {
   switch (unit) {
-    case "students": return m.license_unit_students();
-    case "users": return m.license_unit_users();
-    case "devices": return m.license_unit_devices();
-    case "branches": return m.license_unit_branches();
-    case "classes": return m.license_unit_classes();
-    case "GB": return m.license_unit_gb();
-    default: return unit ?? "";
+    case "students":
+      return m.license_unit_students();
+    case "users":
+      return m.license_unit_users();
+    case "devices":
+      return m.license_unit_devices();
+    case "branches":
+      return m.license_unit_branches();
+    case "classes":
+      return m.license_unit_classes();
+    case "GB":
+      return m.license_unit_gb();
+    default:
+      return unit ?? "";
   }
 }
 
@@ -155,17 +167,20 @@ const statusBadge = $derived.by(() => {
     case "active":
       return {
         label: m.license_status_active(),
-        class: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
+        class:
+          "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
       };
     case "trial":
       return {
         label: m.license_status_trial(),
-        class: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+        class:
+          "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
       };
     case "expiring":
       return {
         label: m.license_status_expiring(),
-        class: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+        class:
+          "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
       };
     case "expired":
       return {
@@ -186,7 +201,8 @@ const statusBadge = $derived.by(() => {
     case "offline_grace":
       return {
         label: m.license_status_offline_grace(),
-        class: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
+        class:
+          "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
       };
     case "pending":
       return {
@@ -200,7 +216,6 @@ const statusBadge = $derived.by(() => {
       };
   }
 });
-
 </script>
 
 <div class="h-full w-full overflow-y-auto px-5 py-8 md:px-8 scrollbar-hide font-sans text-start">
@@ -295,50 +310,10 @@ const statusBadge = $derived.by(() => {
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
               </svg>
             </a>
-            {#if !licenseStore.isOperational}
-              <Button variant="lime" size="sm" onclick={handleOpenActivation} class="font-semibold">
-                {m.license_activate_btn()}
-              </Button>
-            {/if}
-          </div>
-        </CardContent>
-      </Card>
-    </section>
-
-    <section aria-labelledby="redeem-key-heading">
-      <Card>
-        <CardContent class="flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h2 id="redeem-key-heading" class="text-sm font-medium text-foreground">
-              Redeem a purchase key
-            </h2>
-            <p class="text-xs text-muted-foreground">
-              Claim a reseller key for this organization and activate this device.
-            </p>
-          </div>
-          <form class="flex w-full gap-2 sm:max-w-md" onsubmit={(event) => {
-            event.preventDefault();
-            void handleRedeemKey();
-          }}>
-            <Input
-              bind:value={purchaseKey}
-              aria-label="Purchase key"
-              placeholder={m.license_key_placeholder()}
-              class="h-9 font-mono uppercase"
-              dir="ltr"
-              autocapitalize="characters"
-              autocorrect="off"
-              autocomplete="off"
-              spellcheck={false}
-              disabled={isRedeeming}
-            />
-            <Button type="submit" size="sm" disabled={isRedeeming || !purchaseKey.trim()}>
-              {#if isRedeeming}
-                <LoadingIndicator size="sm" class="me-1.5" />
-              {/if}
-              Redeem
+            <Button variant="lime" size="sm" onclick={handleOpenActivation} class="font-semibold">
+              {m.license_manage_btn()}
             </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
     </section>

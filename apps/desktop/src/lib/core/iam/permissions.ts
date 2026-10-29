@@ -2,7 +2,7 @@ import { Pencil } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 /**
  * Orbis IAM Permissions System (Single Source of Truth)
- * 
+ *
  * Maps directly to backend `orbis_domain::iam::permission::Permission`.
  * Provides Paraglide-localized metadata, domain groupings, resources,
  * actions, system role presets, and utility helpers.
@@ -41,9 +41,15 @@ export interface SystemRoleDef {
 
 export type IamMessageKey = `iam_${string}`;
 
-export function translateIamMessage(key: IamMessageKey, locale?: "ar" | "en"): string {
+export function translateIamMessage(
+  key: IamMessageKey,
+  locale?: "ar" | "en",
+): string {
   const message = m[key as keyof typeof m] as
-    | ((inputs?: Record<string, never>, options?: { locale?: "ar" | "en" }) => string)
+    | ((
+        inputs?: Record<string, never>,
+        options?: { locale?: "ar" | "en" },
+      ) => string)
     | undefined;
   return message?.({}, locale ? { locale } : undefined) ?? key;
 }
@@ -205,7 +211,7 @@ export const Permissions = {
   AutopilotBypass: "system:autopilot",
 } as const;
 
-export type Permission = typeof Permissions[keyof typeof Permissions];
+export type Permission = (typeof Permissions)[keyof typeof Permissions];
 
 // ============================================================================
 // 1. Unified IAM Domain & Resource Catalog
@@ -246,7 +252,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
           { key: "write", labelKey: "iam_action_user_write_label" },
           { key: "delete", labelKey: "iam_action_user_delete_label" },
           { key: "role_write", labelKey: "iam_action_user_role_write_label" },
-          { key: "password_write", labelKey: "iam_action_user_password_write_label" },
+          {
+            key: "password_write",
+            labelKey: "iam_action_user_password_write_label",
+          },
         ],
       },
       {
@@ -406,7 +415,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         actions: [
           { key: "read", labelKey: "iam_action_grade_read_label" },
           { key: "write", labelKey: "iam_action_grade_write_label" },
-          { key: "entry_manage", labelKey: "iam_action_grade_entry_manage_label" },
+          {
+            key: "entry_manage",
+            labelKey: "iam_action_grade_entry_manage_label",
+          },
           { key: "analytics", labelKey: "iam_action_grade_analytics_label" },
           { key: "report", labelKey: "iam_action_grade_report_label" },
         ],
@@ -418,7 +430,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         actions: [
           { key: "read", labelKey: "iam_action_attendance_read_label" },
           { key: "write", labelKey: "iam_action_attendance_write_label" },
-          { key: "analytics", labelKey: "iam_action_attendance_analytics_label" },
+          {
+            key: "analytics",
+            labelKey: "iam_action_attendance_analytics_label",
+          },
           { key: "report", labelKey: "iam_action_attendance_report_label" },
         ],
       },
@@ -448,7 +463,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         actions: [
           { key: "read", labelKey: "iam_action_exam_session_read_label" },
           { key: "write", labelKey: "iam_action_exam_session_write_label" },
-          { key: "activate", labelKey: "iam_action_exam_session_activate_label" },
+          {
+            key: "activate",
+            labelKey: "iam_action_exam_session_activate_label",
+          },
           { key: "delete", labelKey: "iam_action_exam_session_delete_label" },
         ],
       },
@@ -458,7 +476,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descriptionKey: "iam_resource_seating_number_description",
         actions: [
           { key: "read", labelKey: "iam_action_seating_number_read_label" },
-          { key: "generate", labelKey: "iam_action_seating_number_generate_label" },
+          {
+            key: "generate",
+            labelKey: "iam_action_seating_number_generate_label",
+          },
         ],
       },
       {
@@ -467,7 +488,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descriptionKey: "iam_resource_secret_number_description",
         actions: [
           { key: "read", labelKey: "iam_action_secret_number_read_label" },
-          { key: "generate", labelKey: "iam_action_secret_number_generate_label" },
+          {
+            key: "generate",
+            labelKey: "iam_action_secret_number_generate_label",
+          },
           { key: "reveal", labelKey: "iam_action_secret_number_reveal_label" },
         ],
       },
@@ -496,7 +520,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         descriptionKey: "iam_resource_student_order_description",
         actions: [
           { key: "read", labelKey: "iam_action_student_order_read_label" },
-          { key: "rebuild", labelKey: "iam_action_student_order_rebuild_label" },
+          {
+            key: "rebuild",
+            labelKey: "iam_action_student_order_rebuild_label",
+          },
           { key: "freeze", labelKey: "iam_action_student_order_freeze_label" },
         ],
       },
@@ -526,7 +553,10 @@ export const IAM_DOMAINS: IamDomainDef[] = [
           { key: "write", labelKey: "iam_action_finance_write_label" },
           { key: "payment", labelKey: "iam_action_finance_payment_label" },
           { key: "backdate", labelKey: "iam_action_finance_backdate_label" },
-          { key: "future_date", labelKey: "iam_action_finance_future_date_label" },
+          {
+            key: "future_date",
+            labelKey: "iam_action_finance_future_date_label",
+          },
         ],
       },
     ],
@@ -558,13 +588,34 @@ export const IAM_DOMAINS: IamDomainDef[] = [
           { key: "delete", labelKey: "iam_action_template_delete_label" },
           { key: "import", labelKey: "iam_action_template_import_label" },
           { key: "export", labelKey: "iam_action_template_export_label" },
-          { key: "generate_single", labelKey: "iam_action_template_generate_single_label" },
-          { key: "generate_batch", labelKey: "iam_action_template_generate_batch_label" },
-          { key: "generate_download", labelKey: "iam_action_template_generate_download_label" },
-          { key: "asset_upload", labelKey: "iam_action_template_asset_upload_label" },
-          { key: "asset_delete", labelKey: "iam_action_template_asset_delete_label" },
-          { key: "component_write", labelKey: "iam_action_template_component_write_label" },
-          { key: "component_delete", labelKey: "iam_action_template_component_delete_label" },
+          {
+            key: "generate_single",
+            labelKey: "iam_action_template_generate_single_label",
+          },
+          {
+            key: "generate_batch",
+            labelKey: "iam_action_template_generate_batch_label",
+          },
+          {
+            key: "generate_download",
+            labelKey: "iam_action_template_generate_download_label",
+          },
+          {
+            key: "asset_upload",
+            labelKey: "iam_action_template_asset_upload_label",
+          },
+          {
+            key: "asset_delete",
+            labelKey: "iam_action_template_asset_delete_label",
+          },
+          {
+            key: "component_write",
+            labelKey: "iam_action_template_component_write_label",
+          },
+          {
+            key: "component_delete",
+            labelKey: "iam_action_template_component_delete_label",
+          },
         ],
       },
     ],
@@ -599,17 +650,13 @@ export const IAM_DOMAINS: IamDomainDef[] = [
         key: "dashboard",
         labelKey: "iam_resource_dashboard_label",
         descriptionKey: "iam_resource_dashboard_description",
-        actions: [
-          { key: "read", labelKey: "iam_action_dashboard_read_label" },
-        ],
+        actions: [{ key: "read", labelKey: "iam_action_dashboard_read_label" }],
       },
       {
         key: "audit",
         labelKey: "iam_resource_audit_label",
         descriptionKey: "iam_resource_audit_description",
-        actions: [
-          { key: "read", labelKey: "iam_action_audit_read_label" },
-        ],
+        actions: [{ key: "read", labelKey: "iam_action_audit_read_label" }],
       },
       {
         key: "data",
@@ -680,7 +727,21 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
       exam_schedule: ["read", "write"],
       finance: ["read", "write", "payment", "backdate", "future_date"],
       document: ["read", "write", "delete"],
-      template: ["read", "write", "publish", "delete", "import", "export", "generate_single", "generate_batch", "generate_download", "asset_upload", "asset_delete", "component_write", "component_delete"],
+      template: [
+        "read",
+        "write",
+        "publish",
+        "delete",
+        "import",
+        "export",
+        "generate_single",
+        "generate_batch",
+        "generate_download",
+        "asset_upload",
+        "asset_delete",
+        "component_write",
+        "component_delete",
+      ],
       workflow: ["read", "write", "approve", "execute"],
       notification: ["read", "write"],
       dashboard: ["read"],
@@ -720,7 +781,12 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
       exam_schedule: ["read", "write"],
       finance: ["read"],
       document: ["read", "write"],
-      template: ["read", "generate_single", "generate_batch", "generate_download"],
+      template: [
+        "read",
+        "generate_single",
+        "generate_batch",
+        "generate_download",
+      ],
       workflow: ["read", "approve", "execute"],
       notification: ["read", "write"],
       dashboard: ["read"],
@@ -767,7 +833,12 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
       promotion: ["read", "write"],
       attendance: ["read"],
       document: ["read", "write"],
-      template: ["read", "generate_single", "generate_batch", "generate_download"],
+      template: [
+        "read",
+        "generate_single",
+        "generate_batch",
+        "generate_download",
+      ],
       notification: ["read", "write"],
     },
   },
@@ -784,7 +855,12 @@ export const SYSTEM_ROLE_DEFINITIONS: SystemRoleDef[] = [
       enrollment: ["read"],
       finance: ["read", "write", "payment"],
       document: ["read", "write"],
-      template: ["read", "generate_single", "generate_batch", "generate_download"],
+      template: [
+        "read",
+        "generate_single",
+        "generate_batch",
+        "generate_download",
+      ],
       notification: ["read"],
     },
   },
@@ -877,7 +953,9 @@ export function getActionsForResource(resourceKey: string): IamActionDef[] {
 /**
  * Finds a resource definition by key.
  */
-export function getResourceDef(resourceKey: string): IamResourceDef | undefined {
+export function getResourceDef(
+  resourceKey: string,
+): IamResourceDef | undefined {
   for (const domain of IAM_DOMAINS) {
     for (const res of domain.resources) {
       if (res.key === resourceKey) return res;
@@ -889,7 +967,9 @@ export function getResourceDef(resourceKey: string): IamResourceDef | undefined 
 /**
  * Finds the domain containing a specific resource key.
  */
-export function getDomainByResource(resourceKey: string): IamDomainDef | undefined {
+export function getDomainByResource(
+  resourceKey: string,
+): IamDomainDef | undefined {
   for (const domain of IAM_DOMAINS) {
     if (domain.resources.some((r) => r.key === resourceKey)) {
       return domain;
@@ -901,7 +981,10 @@ export function getDomainByResource(resourceKey: string): IamDomainDef | undefin
 /**
  * Returns a localized label for a resource.
  */
-export function getResourceLabel(resourceKey: string, locale?: "ar" | "en"): string {
+export function getResourceLabel(
+  resourceKey: string,
+  locale?: "ar" | "en",
+): string {
   const res = getResourceDef(resourceKey);
   if (!res) return resourceKey;
   return translateIamMessage(res.labelKey, locale);
@@ -910,7 +993,11 @@ export function getResourceLabel(resourceKey: string, locale?: "ar" | "en"): str
 /**
  * Returns a localized label for an action within a resource.
  */
-export function getActionLabel(resourceKey: string, actionKey: string, locale?: "ar" | "en"): string {
+export function getActionLabel(
+  resourceKey: string,
+  actionKey: string,
+  locale?: "ar" | "en",
+): string {
   const actions = getActionsForResource(resourceKey);
   const action = actions.find((a) => a.key === actionKey);
   if (!action) {
@@ -922,7 +1009,9 @@ export function getActionLabel(resourceKey: string, actionKey: string, locale?: 
 /**
  * Returns a badge color variant based on the action key.
  */
-export function getActionBadgeVariant(actionKey: string): "default" | "secondary" | "destructive" | "outline" | "lime" {
+export function getActionBadgeVariant(
+  actionKey: string,
+): "default" | "secondary" | "destructive" | "outline" | "lime" {
   switch (actionKey) {
     case "delete":
     case "component_delete":
@@ -967,7 +1056,10 @@ export function getSystemRoleDef(roleId: string): SystemRoleDef | undefined {
 /**
  * Computes total permissions granted across a role's permissions dictionary.
  */
-export function countRolePermissions(perms?: Record<string, string[]> | null, roleId?: string): number {
+export function countRolePermissions(
+  perms?: Record<string, string[]> | null,
+  roleId?: string,
+): number {
   if (perms && Object.keys(perms).length > 0) {
     if (perms["*"] && perms["*"].includes("*")) {
       let total = 0;
@@ -999,7 +1091,10 @@ export function countRolePermissions(perms?: Record<string, string[]> | null, ro
 /**
  * Calculates domain coverage statistics for a given role's permissions.
  */
-export function getRoleDomainStats(perms?: Record<string, string[]> | null, roleId?: string): Array<{
+export function getRoleDomainStats(
+  perms?: Record<string, string[]> | null,
+  roleId?: string,
+): Array<{
   domain: IamDomainDef;
   selectedCount: number;
   totalCount: number;
@@ -1032,7 +1127,8 @@ export function getRoleDomainStats(perms?: Record<string, string[]> | null, role
       domain,
       selectedCount: domainSelected,
       totalCount: domainTotal,
-      percentage: domainTotal > 0 ? Math.round((domainSelected / domainTotal) * 100) : 0,
+      percentage:
+        domainTotal > 0 ? Math.round((domainSelected / domainTotal) * 100) : 0,
     };
   });
 }

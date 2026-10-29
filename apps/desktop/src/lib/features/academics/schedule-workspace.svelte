@@ -5,7 +5,13 @@
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
-import { api, extractErrorMessage, queryKeys, type ScheduleLessonRequest, type OrgUnitDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type ScheduleLessonRequest,
+  type OrgUnitDto,
+} from "$lib/api";
 import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
@@ -82,8 +88,13 @@ const subjectsQuery = createQuery(() => ({
 }));
 
 const teachersQuery = createQuery(() => ({
-  queryKey: ["employees", orgId, { employee_type: "teacher", status: "active" }],
-  queryFn: () => api.listEmployees({ employee_type: "teacher", status: "active" }),
+  queryKey: [
+    "employees",
+    orgId,
+    { employee_type: "teacher", status: "active" },
+  ],
+  queryFn: () =>
+    api.listEmployees({ employee_type: "teacher", status: "active" }),
   enabled: !!orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -382,8 +393,12 @@ const error = $derived(
 );
 
 function handleDirectPrint() {
-  const activePeriod = periods.find((p) => String(p.id) === String(activePeriodId));
-  const periodTitle = activePeriod ? (l(activePeriod.name_ar, activePeriod.name) || activePeriod.name) : "";
+  const activePeriod = periods.find(
+    (p) => String(p.id) === String(activePeriodId),
+  );
+  const periodTitle = activePeriod
+    ? l(activePeriod.name_ar, activePeriod.name) || activePeriod.name
+    : "";
 
   let targetId = "master";
   let targetTitle = m.academics_schedule_master_title();
@@ -395,21 +410,31 @@ function handleDirectPrint() {
     targetTitle = cls
       ? m.academics_schedule_print_class({ name: l(cls.name_ar, cls.name) })
       : m.academics_schedule_print_class_fallback();
-    relevantLessons = allLessons.filter((l) => String(l.section_id) === String(selectedClassId));
+    relevantLessons = allLessons.filter(
+      (l) => String(l.section_id) === String(selectedClassId),
+    );
   } else if (viewMode === "teacher" && selectedTeacherId) {
-    const teach = teachers.find((t) => String(t.id) === String(selectedTeacherId));
+    const teach = teachers.find(
+      (t) => String(t.id) === String(selectedTeacherId),
+    );
     targetId = String(selectedTeacherId);
     targetTitle = teach
-      ? m.academics_schedule_print_teacher({ name: l(teach.full_name_ar, teach.full_name) })
+      ? m.academics_schedule_print_teacher({
+          name: l(teach.full_name_ar, teach.full_name),
+        })
       : m.academics_schedule_print_teacher_fallback();
-    relevantLessons = allLessons.filter((l) => String(l.teacher_id) === String(selectedTeacherId));
+    relevantLessons = allLessons.filter(
+      (l) => String(l.teacher_id) === String(selectedTeacherId),
+    );
   } else if (viewMode === "room" && selectedRoomId) {
     const rm = rooms.find((r) => String(r.id) === String(selectedRoomId));
     targetId = String(selectedRoomId);
     targetTitle = rm
       ? m.academics_schedule_print_room({ name: l(rm.name_ar, rm.name) })
       : m.academics_schedule_print_room_fallback();
-    relevantLessons = allLessons.filter((l) => String(l.room_id) === String(selectedRoomId));
+    relevantLessons = allLessons.filter(
+      (l) => String(l.room_id) === String(selectedRoomId),
+    );
   }
 
   const scheduleRows = timeSlots.map((slot) => {
@@ -424,16 +449,28 @@ function handleDirectPrint() {
     for (const day of weekdays) {
       const dayVal = String(day.value ?? day.day);
       if (isBreak) {
-        rowObj[`day_${dayVal}`] = l(slot.name_ar, slot.name) || m.common_onboarding_break_recess();
+        rowObj[`day_${dayVal}`] =
+          l(slot.name_ar, slot.name) || m.common_onboarding_break_recess();
       } else {
         const lesson = relevantLessons.find(
-          (l) => Number(l.day_of_week) === Number(dayVal) && String(l.time_slot_id) === String(slot.id),
+          (l) =>
+            Number(l.day_of_week) === Number(dayVal) &&
+            String(l.time_slot_id) === String(slot.id),
         );
         if (lesson) {
           const sub = getSubjectName(lesson.subject_id);
-          const teacher = viewMode !== "teacher" && lesson.teacher_id ? ` (${getTeacherName(lesson.teacher_id)})` : "";
-          const cls = viewMode !== "class" && lesson.section_id ? ` - ${getClassName(lesson.section_id)}` : "";
-          const rm = viewMode !== "room" && lesson.room_id ? ` [${getRoomName(lesson.room_id)}]` : "";
+          const teacher =
+            viewMode !== "teacher" && lesson.teacher_id
+              ? ` (${getTeacherName(lesson.teacher_id)})`
+              : "";
+          const cls =
+            viewMode !== "class" && lesson.section_id
+              ? ` - ${getClassName(lesson.section_id)}`
+              : "";
+          const rm =
+            viewMode !== "room" && lesson.room_id
+              ? ` [${getRoomName(lesson.room_id)}]`
+              : "";
           rowObj[`day_${dayVal}`] = `${sub}${teacher}${cls}${rm}`;
         } else {
           rowObj[`day_${dayVal}`] = "—";

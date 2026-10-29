@@ -15,7 +15,11 @@ import { formatDate, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Plus, Search, Refresh } from "@orbis/icons";
 import SubjectCreateSheet from "$lib/features/academics/components/subject-create-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { subjectFilterFields } from "$lib/core/filter-configs";
 
@@ -56,20 +60,99 @@ const gridSource = $derived(
     code: s.code || "—",
     credit_hours: s.credit_hours ?? s.periods_per_week ?? 3,
     status: s.is_active !== false ? "active" : "inactive",
-    created_at_display: s.created_at ? formatDate(s.created_at, "datetime") : "—",
-    updated_at_display: s.updated_at ? formatDate(s.updated_at, "datetime") : "—",
+    created_at_display: s.created_at
+      ? formatDate(s.created_at, "datetime")
+      : "—",
+    updated_at_display: s.updated_at
+      ? formatDate(s.updated_at, "datetime")
+      : "—",
   })),
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_word_subject(), name: m.common_word_subject(), width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-medium" },
-  { id: "name_en", prop: "name_en", header: m.common_subject_label_name_en(), name: m.common_subject_label_name_en(), width: 180, size: 180, readonly: true },
-  { id: "code", prop: "code", header: m.common_subject_label_code(), name: m.common_subject_label_code(), width: 120, size: 120, readonly: true, cellClass: "font-mono font-medium" },
-  { id: "credit_hours", prop: "credit_hours", header: m.common_subject_label_periods(), name: m.common_subject_label_periods(), width: 130, size: 130, readonly: true, align: "center", type: "number" },
-  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.common_word_subject(),
+    name: m.common_word_subject(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-medium",
+  },
+  {
+    id: "name_en",
+    prop: "name_en",
+    header: m.common_subject_label_name_en(),
+    name: m.common_subject_label_name_en(),
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "code",
+    prop: "code",
+    header: m.common_subject_label_code(),
+    name: m.common_subject_label_code(),
+    width: 120,
+    size: 120,
+    readonly: true,
+    cellClass: "font-mono font-medium",
+  },
+  {
+    id: "credit_hours",
+    prop: "credit_hours",
+    header: m.common_subject_label_periods(),
+    name: m.common_subject_label_periods(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
+    width: 100,
+    size: 100,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: m.ui_copy_created_at_01f6ea5f(),
+    name: "Created At",
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "updated_at_display",
+    prop: "updated_at_display",
+    header: m.ui_copy_updated_at_ba0d0a9f(),
+    name: "Updated At",
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
 ];
 
 function openCreateSheet() {

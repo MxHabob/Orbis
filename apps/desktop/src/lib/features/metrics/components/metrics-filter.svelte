@@ -12,7 +12,10 @@ import {
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 import { AdjustmentsHorizontal, ChevronDown } from "@orbis/icons";
-import { createPeriodsQuery, createClassesQuery } from "$lib/features/academics/queries";
+import {
+  createPeriodsQuery,
+  createClassesQuery,
+} from "$lib/features/academics/queries";
 import { getLocale } from "$lib/paraglide/runtime";
 
 let {

@@ -1,7 +1,14 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-import { api, extractErrorMessage, queryKeys, type SectionDto, type AcademicPeriodDto, type EnrollmentDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type SectionDto,
+  type AcademicPeriodDto,
+  type EnrollmentDto,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
@@ -113,7 +120,9 @@ const averageClassSize = $derived(
     : 0,
 );
 const pageLoading = $derived(
-  classesQuery.isLoading || periodsQuery.isLoading || enrollmentsQuery.isLoading,
+  classesQuery.isLoading ||
+    periodsQuery.isLoading ||
+    enrollmentsQuery.isLoading,
 );
 const classMenuActions = $derived([
   {

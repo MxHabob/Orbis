@@ -4,7 +4,13 @@ import { Button } from "@orbis/ui/button";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
 import AvatarUpload from "$lib/shared/components/avatar-upload.svelte";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@orbis/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 
 interface Props {
   avatarUrl: string | null;

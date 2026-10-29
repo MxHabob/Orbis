@@ -25,7 +25,6 @@ import {
   Card,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardContent,
   CardAction,
 } from "@orbis/ui/card";
@@ -39,6 +38,10 @@ let { orgId }: { orgId: string } = $props();
 
 const queryClient = useQueryClient();
 let rawSettings = $state<OrganizationSettingsDto | null>(null);
+
+let mobileChatSettings = $state({
+  enabled: false,
+});
 
 // ── 1. Autopilot Engine Settings (All 18 Backend Fields) ───────
 let autopilotSettings = $state({
@@ -94,6 +97,7 @@ onMount(async () => {
   try {
     const s = await api.getSettings();
     rawSettings = s;
+    mobileChatSettings.enabled = s.ai?.mobile_chat_enabled ?? false;
     if (s.autopilot) {
       autopilotSettings = {
         enabled: s.autopilot.enabled,
@@ -124,6 +128,7 @@ onMount(async () => {
     console.error("Failed to load settings in AI center:", err);
   } finally {
     initialSnapshot = JSON.stringify({
+      mobileChat: mobileChatSettings,
       autopilot: autopilotSettings,
       safety: safetySettings,
       insight: insightSettings,
@@ -135,6 +140,7 @@ onMount(async () => {
 
 const currentSnapshot = $derived(
   JSON.stringify({
+    mobileChat: mobileChatSettings,
     autopilot: autopilotSettings,
     safety: safetySettings,
     insight: insightSettings,
@@ -150,6 +156,7 @@ function resetToInitial() {
   if (!initialSnapshot) return;
   try {
     const parsed = JSON.parse(initialSnapshot);
+    Object.assign(mobileChatSettings, parsed.mobileChat);
     Object.assign(autopilotSettings, parsed.autopilot);
     Object.assign(safetySettings, parsed.safety);
     Object.assign(insightSettings, parsed.insight);
@@ -165,6 +172,10 @@ async function saveAllSettings() {
     const current = rawSettings ?? (await api.getSettings());
     const updated = await api.updateSettings({
       ...current,
+      ai: {
+        ...current.ai,
+        mobile_chat_enabled: mobileChatSettings.enabled,
+      },
       autopilot: {
         enabled: autopilotSettings.enabled,
         mode: autopilotSettings.execution_mode,
@@ -197,9 +208,7 @@ async function saveAllSettings() {
     queryClient.invalidateQueries({ queryKey: queryKeys.autopilot.all });
     toast.success(m.ai_center_settings_save_success());
   } catch (err) {
-    toast.error(
-      m.ai_center_settings_save_error(),
-    );
+    toast.error(m.ai_center_settings_save_error());
   } finally {
     isSaving = false;
   }
@@ -232,6 +241,7 @@ const executionModes = $derived([
 // Categorized Workflows using Design Tokens
 const workflowCategories = $derived([
   {
+    id: "admissions",
     categoryTitle: m.ai_center_settings_cat_admissions(),
     items: [
       {
@@ -251,6 +261,7 @@ const workflowCategories = $derived([
     ],
   },
   {
+    id: "academics",
     categoryTitle: m.ai_center_settings_cat_academics(),
     items: [
       {
@@ -298,6 +309,7 @@ const workflowCategories = $derived([
     ],
   },
   {
+    id: "administration",
     categoryTitle: m.ai_center_settings_cat_admin(),
     items: [
       {
@@ -491,7 +503,7 @@ const workflowCategories = $derived([
 
         <CardContent class="p-0">
           <div class="flex flex-col divide-y divide-border">
-            {#each workflowCategories as category}
+            {#each workflowCategories as category (category.id)}
               <div class="flex flex-col">
                 <!-- Category Subheader -->
                 <div class="px-6 py-2.5 bg-muted/30 text-start text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border">
@@ -796,6 +808,34 @@ const workflowCategories = $derived([
                 bind:value={memorySettings.rag_context_limit}
                 disabled={isSaving}
                 class="h-9 text-xs font-mono bg-background border-border w-full md:w-32"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div class="flex items-center gap-2 text-start">
+            <Sparkles size={14} class="text-primary" />
+            <CardTitle>{m.ai_center_settings_mobile_chat_title()}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent class="p-0">
+          <div class="px-6 py-4 flex items-center justify-between gap-6 border-t border-border hover:bg-muted/10 transition-colors">
+            <p class="text-[11px] text-muted-foreground leading-relaxed text-start">
+              {m.ai_center_settings_mobile_chat_description()}
+            </p>
+            <div class="flex shrink-0 items-center gap-3">
+              <span class="text-xs font-medium text-muted-foreground">
+                {mobileChatSettings.enabled
+                  ? m.ai_center_settings_mobile_chat_enabled()
+                  : m.ai_center_settings_mobile_chat_disabled()}
+              </span>
+              <Switch
+                checked={mobileChatSettings.enabled}
+                onCheckedChange={(enabled) => (mobileChatSettings.enabled = enabled)}
+                disabled={isSaving}
               />
             </div>
           </div>

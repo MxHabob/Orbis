@@ -1,5 +1,9 @@
 <script lang="ts">
-import { cn, type WithElementRef, type WithoutChildren } from "../../../utils.js";
+import {
+  cn,
+  type WithElementRef,
+  type WithoutChildren,
+} from "../../../utils.js";
 import type { HTMLAttributes } from "svelte/elements";
 
 export type LoadingIndicatorSize = "sm" | "md" | "lg";

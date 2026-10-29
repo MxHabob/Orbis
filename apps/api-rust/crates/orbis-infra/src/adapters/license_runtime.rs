@@ -26,7 +26,7 @@ use uuid::Uuid;
 use super::mulverse_client::MulverseClient;
 use super::mulverse_client::{
     ClaimProductKeyRequest, MulverseApiError, RefreshTrialRequest, RegisterTrialRequest,
-    TrialChallenge, TrialOrganizationProfile as MulverseTrialOrganizationProfile,
+    TrialChallenge, TrialCustomerProfile as MulverseTrialCustomerProfile,
     TrialRegistrationResponse,
 };
 use super::trial_device_identity;
@@ -101,9 +101,18 @@ pub fn verify_offline_license(
     let signature = Signature::from_slice(&sig_bytes)
         .map_err(|_| LicenseVerificationError::InvalidSignatureEncoding)?;
 
-    verifying_key
+    if verifying_key
         .verify(serialized_payload.as_bytes(), &signature)
-        .map_err(|_| LicenseVerificationError::TamperedLicenseSignature)?;
+        .is_err()
+    {
+        let legacy_payload = signed_doc
+            .payload
+            .serialize_legacy_signature_payload()
+            .map_err(|_| LicenseVerificationError::InvalidPayload)?;
+        verifying_key
+            .verify(legacy_payload.as_bytes(), &signature)
+            .map_err(|_| LicenseVerificationError::TamperedLicenseSignature)?;
+    }
 
     Ok(true)
 }
@@ -429,13 +438,13 @@ impl MulverseLicenseRuntime {
                 challenge_id: challenge.challenge_id,
                 challenge: challenge.challenge,
                 installation_id,
-                organization_id: organization.id.to_string(),
-                organization_name: organization.name.clone(),
-                organization_slug: organization.slug.clone(),
-                organization_profile: MulverseTrialOrganizationProfile {
+                customer_id: organization.id.to_string(),
+                customer_name: organization.name.clone(),
+                customer_slug: organization.slug.clone(),
+                customer_profile: MulverseTrialCustomerProfile {
                     name_ar: organization.name_ar.clone(),
                     institution_type: organization.institution_type.clone(),
-                    organization_size: organization.organization_size.clone(),
+                    customer_size: organization.organization_size.clone(),
                     educational_track: organization.educational_track.clone(),
                     country_code: organization.country_code.clone(),
                     country_name: organization.country_name.clone(),
@@ -483,7 +492,7 @@ impl MulverseLicenseRuntime {
                 challenge_id: challenge.challenge_id,
                 challenge: challenge.challenge,
                 installation_id,
-                organization_id: organization_id.to_string(),
+                customer_id: organization_id.to_string(),
                 app_version: self.app_version.clone(),
             })
             .await
@@ -649,7 +658,9 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             .activate(&request)
             .await
             .map_err(|e| {
-                if e.is_network_error() {
+                if e.requires_application_key_claim() {
+                    DomainError::LicenseKeyRequiresClaim
+                } else if e.is_network_error() {
                     DomainError::Internal(format!(
                         "Cannot reach Mulverse Platform for activation. Please check your internet connection. ({})",
                         e
@@ -715,14 +726,14 @@ impl LicenseRuntime for MulverseLicenseRuntime {
         let claim = self
             .mulverse_client
             .claim_product_key(&ClaimProductKeyRequest {
-                product_key: product_key.trim().to_uppercase(),
-                organization_id: organization.id.to_string(),
-                organization_name: organization.name.clone(),
-                organization_slug: organization.slug.clone(),
-                organization_profile: MulverseTrialOrganizationProfile {
+                application_key: product_key.trim().to_uppercase(),
+                customer_id: organization.id.to_string(),
+                customer_name: organization.name.clone(),
+                customer_slug: organization.slug.clone(),
+                customer_profile: MulverseTrialCustomerProfile {
                     name_ar: organization.name_ar,
                     institution_type: organization.institution_type,
-                    organization_size: organization.organization_size,
+                    customer_size: organization.organization_size,
                     educational_track: organization.educational_track,
                     country_code: organization.country_code,
                     country_name: organization.country_name,
@@ -732,7 +743,7 @@ impl LicenseRuntime for MulverseLicenseRuntime {
             })
             .await
             .map_err(DomainError::from)?;
-        if claim.organization_id != organization.id.to_string() {
+        if claim.customer_id != organization.id.to_string() {
             return Err(DomainError::Internal(
                 "Mulverse claimed the product key for a different organization".to_owned(),
             ));
@@ -1144,6 +1155,54 @@ pub fn spawn_background_sync(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn signed_entitlements_verify_with_current_and_legacy_field_names() {
+        let signing_key = ed25519_dalek::SigningKey::from_bytes(&[7_u8; 32]);
+        let public_key = base64::engine::general_purpose::STANDARD
+            .encode(signing_key.verifying_key().to_bytes());
+        let now = Utc::now();
+
+        for legacy_names in [false, true] {
+            let payload = EntitlementPayload {
+                license_id: "license-test".to_owned(),
+                product_key: "ORBIS-ABCDE-FGHIJ-KLMNO-PQRST".to_owned(),
+                product_id: CANONICAL_PRODUCT_ID.to_owned(),
+                organization_id: "customer-test".to_owned(),
+                edition_key: Some("SCHOOL".to_owned()),
+                plan_key: Some("SCHOOL_PRO".to_owned()),
+                plan_name: None,
+                entitlements: vec![],
+                limits: vec![],
+                activation_id: "activation-test".to_owned(),
+                installation_id: "installation-test".to_owned(),
+                issued_at: now.clone(),
+                valid_from: now,
+                valid_until: None,
+                offline_allowed: true,
+                offline_grace_period_days: Some(7),
+                verification_interval_hours: Some(24),
+            };
+            let serialized = if legacy_names {
+                payload
+                    .serialize_legacy_signature_payload()
+                    .expect("legacy payload should serialize")
+            } else {
+                serde_json::to_string(&payload).expect("current payload should serialize")
+            };
+            let signature = signing_key.sign(serialized.as_bytes());
+            let entitlement = SignedEntitlement {
+                v: 1,
+                kid: "test-key".to_owned(),
+                alg: "Ed25519".to_owned(),
+                payload,
+                sig: base64::engine::general_purpose::STANDARD.encode(signature.to_bytes()),
+            };
+
+            verify_offline_license(&entitlement, &public_key, "installation-test")
+                .expect("current and existing offline signatures should verify");
+        }
+    }
 
     #[test]
     fn negative_entitlement_limits_are_unlimited() {

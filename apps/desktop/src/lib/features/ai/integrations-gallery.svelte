@@ -39,7 +39,6 @@ const filteredApps = $derived.by(() => {
 
   return result;
 });
-
 </script>
 
 <div class="h-full w-full overflow-y-auto font-sans p-6 scrollbar-hide space-y-6">

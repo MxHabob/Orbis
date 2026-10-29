@@ -90,7 +90,8 @@ Supports custom organization IDs, fine-tuned models, and configurable max token 
       id: "temperature",
       label: "Temperature",
       label_ar: "درجة الحرارة",
-      description: "Sampling temperature (0.0 = deterministic, 1.0 = creative).",
+      description:
+        "Sampling temperature (0.0 = deterministic, 1.0 = creative).",
       description_ar: "درجة الحرارة (0.0 = دقيق، 1.0 = إبداعي).",
       type: "number",
       required: false,

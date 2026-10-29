@@ -1,6 +1,11 @@
 <script lang="ts">
 import { Button } from "../components/ui/button";
-import { AdjustmentsHorizontal, FloppyDisk, FolderOpen, Trash } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  FloppyDisk,
+  FolderOpen,
+  Trash,
+} from "@orbis/icons";
 import {
   Dialog,
   DialogContent,

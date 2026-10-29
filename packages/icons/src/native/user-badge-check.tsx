@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface UserBadgeCheckProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface UserBadgeCheckProps extends SvgProps {
 
 export function UserBadgeCheck({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,11 +45,20 @@ export function UserBadgeCheck({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Circle cx={7.5} cy={7.5} r={3.25} />
-      <Path d="M1.75 20v-1.25a5.75 5.75 0 0 1 11.5 0V20H1.75Z" strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="M1.75 20v-1.25a5.75 5.75 0 0 1 11.5 0V20H1.75Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <Circle cx={18} cy={17} r={4.25} />
-      <Path d="m16.25 17 1.2 1.2 2.35-2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <Path
+        d="m16.25 17 1.2 1.2 2.35-2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

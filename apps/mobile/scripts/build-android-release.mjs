@@ -27,11 +27,7 @@ if (process.platform === "win32") {
 } else {
   run(
     "./gradlew",
-    [
-      "assembleRelease",
-      "--offline",
-      "-PreactNativeArchitectures=arm64-v8a",
-    ],
+    ["assembleRelease", "--offline", "-PreactNativeArchitectures=arm64-v8a"],
     androidRoot,
   );
 }

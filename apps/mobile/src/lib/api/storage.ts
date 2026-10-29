@@ -101,7 +101,11 @@ export async function getInstitutionSession(
   if (!stored) return null;
 
   const sessions: unknown = JSON.parse(stored);
-  if (typeof sessions !== "object" || sessions === null || Array.isArray(sessions)) {
+  if (
+    typeof sessions !== "object" ||
+    sessions === null ||
+    Array.isArray(sessions)
+  ) {
     throw new Error("Saved institution sessions have an invalid format.");
   }
 
@@ -151,9 +155,13 @@ export async function deleteInstitutionSession(
   const stored = await getSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS);
   if (!stored) return;
 
-  const current: Record<string, InstitutionSessionSnapshot> = JSON.parse(stored);
+  const current: Record<string, InstitutionSessionSnapshot> =
+    JSON.parse(stored);
   delete current[institutionId];
-  await setSecureItem(STORAGE_KEYS.INSTITUTION_SESSIONS, JSON.stringify(current));
+  await setSecureItem(
+    STORAGE_KEYS.INSTITUTION_SESSIONS,
+    JSON.stringify(current),
+  );
 }
 
 export const authStorage = {

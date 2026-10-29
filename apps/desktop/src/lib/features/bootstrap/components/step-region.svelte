@@ -1,6 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { COUNTRIES_LIST, COLOR_PRESETS, type OnboardingFormModel } from "../types";
+import {
+  COUNTRIES_LIST,
+  COLOR_PRESETS,
+  type OnboardingFormModel,
+} from "../types";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { Checkbox } from "@orbis/ui/checkbox";

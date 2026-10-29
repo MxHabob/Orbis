@@ -121,9 +121,7 @@ export function DrawerOptionRow({
           )}
         </View>
       </View>
-      {isActive && (
-        <CheckCircle size={22} color={theme.primary} />
-      )}
+      {isActive && <CheckCircle size={22} color={theme.primary} />}
     </Pressable>
   );
 }

@@ -11,12 +11,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@orbis/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import {
   Accordion,
   AccordionContent,
@@ -62,10 +57,13 @@ $effect(() => {
       roleId = editingRole.id;
       roleName = editingRole.name || "";
       roleNameAr = editingRole.name_ar || "";
-      
+
       let sourcePerms = editingRole.permissions;
 
-      if (sourcePerms?.["*"]?.includes("*") || editingRole.id === "super_admin") {
+      if (
+        sourcePerms?.["*"]?.includes("*") ||
+        editingRole.id === "super_admin"
+      ) {
         const fullPerms: Record<string, string[]> = {};
         for (const domain of IAM_DOMAINS) {
           for (const res of domain.resources) {
@@ -148,7 +146,10 @@ function toggleResourceAll(resource: IamResourceDef) {
 // Submit handler
 async function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
-  const cleanId = roleId.toLowerCase().trim().replace(/[\s-]+/g, "_");
+  const cleanId = roleId
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
   if (!cleanId) {
     toast.error(m.ui_copy_role_id_is_required_98e11b83());
     return;
@@ -173,7 +174,7 @@ async function handleSubmit(e: SubmitEvent) {
     toast.success(
       isEditMode
         ? m.ui_copy_role_updated_successfully_39fa3ad8()
-        : m.ui_copy_role_created_successfully_e33128c9()
+        : m.ui_copy_role_created_successfully_e33128c9(),
     );
 
     if (onsave) {

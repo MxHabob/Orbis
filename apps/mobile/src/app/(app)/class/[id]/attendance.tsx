@@ -10,6 +10,8 @@ import {
 import { useEffectiveContext } from "@/providers/effective-context";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
+import type { AttendanceDto } from "@/lib/api/types";
+import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useToast } from "@/components/ui/toast";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -60,7 +62,7 @@ export default function ClassAttendanceScreen() {
   const recordedByStudent = useMemo(
     () =>
       new Map(
-        (attendanceQuery.data ?? []).map((record) => [
+        (attendanceQuery.data ?? []).map((record: AttendanceDto) => [
           record.student_id,
           record,
         ]),
@@ -69,18 +71,17 @@ export default function ClassAttendanceScreen() {
   );
   const roster = classQuery.data?.roster ?? [];
   const markedCount = roster.filter(
-    ({ student }) =>
+    ({ student }: TeacherRosterEntry) =>
       !recordedByStudent.has(student.id) && selectedStatuses[student.id],
   ).length;
   const isPending =
-    classQuery.isInScope &&
-    (classQuery.isPending || attendanceQuery.isPending);
+    classQuery.isInScope && (classQuery.isPending || attendanceQuery.isPending);
   const isError =
     !classQuery.isInScope || classQuery.isError || attendanceQuery.isError;
 
   const saveAttendance = async () => {
     if (!classId || !canRecord) return;
-    const items = roster.flatMap(({ student }) => {
+    const items = roster.flatMap(({ student }: TeacherRosterEntry) => {
       const status = selectedStatuses[student.id];
       if (!status || recordedByStudent.has(student.id)) return [];
       return [{ student_id: student.id, status }];
@@ -150,7 +151,7 @@ export default function ClassAttendanceScreen() {
           <EmptyState title={t("teacher_no_students")} />
         ) : (
           <>
-            {roster.map(({ student, enrollment }) => {
+            {roster.map(({ student, enrollment }: TeacherRosterEntry) => {
               const record = recordedByStudent.get(student.id);
               const studentName = isArabic
                 ? student.name_ar || student.full_name
@@ -170,7 +171,8 @@ export default function ClassAttendanceScreen() {
                       <Text className="text-xs font-medium text-success">
                         {t("teacher_already_recorded")}:{" "}
                         {attendanceOptions.find(
-                          (option) => option.value === record.status.toLowerCase(),
+                          (option) =>
+                            option.value === record.status.toLowerCase(),
                         )
                           ? t(
                               attendanceOptions.find(

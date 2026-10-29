@@ -1,5 +1,17 @@
 <script lang="ts">
-import { AdjustmentsHorizontal, BookOpen, Calendar, ClockRotateRight, Keyframes, Pin, Printer, Search, Sparkles, User, Users } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  BookOpen,
+  Calendar,
+  ClockRotateRight,
+  Keyframes,
+  Pin,
+  Printer,
+  Search,
+  Sparkles,
+  User,
+  Users,
+} from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {

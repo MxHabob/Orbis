@@ -15,7 +15,24 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import { ArrowLeft, ArrowsRightLeft, Bolt, BookOpen, Calendar, CheckCircle, Hashtag, Home, Lock, Pencil, Play, Plus, Printer, Trash, UserBadgeCheck, XMark } from "@orbis/icons";
+import {
+  ArrowLeft,
+  ArrowsRightLeft,
+  Bolt,
+  BookOpen,
+  Calendar,
+  CheckCircle,
+  Hashtag,
+  Home,
+  Lock,
+  Pencil,
+  Play,
+  Plus,
+  Printer,
+  Trash,
+  UserBadgeCheck,
+  XMark,
+} from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
@@ -63,7 +80,11 @@ const selectedSeatingContexts = $derived.by(() => {
         sessionName: session?.name ?? "",
       },
       student: {
-        name: sn.student_name_ar || (sn as any).student_name || sn.enrollment_id || "",
+        name:
+          sn.student_name_ar ||
+          (sn as any).student_name ||
+          sn.enrollment_id ||
+          "",
         studentNumber: sn.seating_number,
         className: (sn as any).class_name ?? sn.class_id ?? "",
         level: sn.level ?? "",
@@ -74,7 +95,10 @@ const selectedSeatingContexts = $derived.by(() => {
 const selectedSeatingLabels = $derived.by(() => {
   return seatingNumbers
     .filter((sn) => selectedSeatIds.has(String(sn.id)))
-    .map((sn) => `${sn.student_name_ar || sn.enrollment_id || ""} (${sn.seating_number})`);
+    .map(
+      (sn) =>
+        `${sn.student_name_ar || sn.enrollment_id || ""} (${sn.seating_number})`,
+    );
 });
 
 let halls = $state<any[]>([]);
@@ -170,11 +194,13 @@ function getSubjectColor(subjectId: string) {
 }
 
 function formatDateWithDay(dateStr: string): string {
-  return formatDate(dateStr, "date", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-  }) || dateStr;
+  return (
+    formatDate(dateStr, "date", {
+      weekday: "long",
+      day: "numeric",
+      month: "short",
+    }) || dateStr
+  );
 }
 
 function getExamsInCell(date: string, period: string) {
@@ -339,7 +365,8 @@ async function handleGenerateSeating() {
     toast.promise(promise, {
       loading: m.operations_ui_seating_generating(),
       success: m.operations_ui_seating_generate_success(),
-      error: (err) => (err as any)?.message || m.operations_ui_seating_generate_error(),
+      error: (err) =>
+        (err as any)?.message || m.operations_ui_seating_generate_error(),
     });
 
     await promise;
@@ -373,7 +400,8 @@ async function handleGenerateSecrets() {
     toast.promise(promise, {
       loading: m.operations_ui_secrets_generating(),
       success: m.operations_ui_secrets_generate_success(),
-      error: (err) => (err as any)?.message || m.operations_ui_secrets_generate_error(),
+      error: (err) =>
+        (err as any)?.message || m.operations_ui_secrets_generate_error(),
     });
 
     await promise;
@@ -438,7 +466,8 @@ async function handleDeleteSchedule(scheduleId: string) {
   toast.promise(promise, {
     loading: m.academics_exams_sessions_sessionId_deleting_scheduled_exam(),
     success: m.academics_exams_sessions_sessionId_deleted_exam_successfully(),
-    error: (err: any) => (err as any)?.message || m.operations_ui_exam_delete_error(),
+    error: (err: any) =>
+      (err as any)?.message || m.operations_ui_exam_delete_error(),
   });
   try {
     await promise;
@@ -463,7 +492,8 @@ async function handleToggleScheduleStatus(sched: any) {
   toast.promise(promise, {
     loading: label,
     success: labelSuccess,
-    error: (err: any) => (err as any)?.message || m.operations_ui_exam_status_update_error(),
+    error: (err: any) =>
+      (err as any)?.message || m.operations_ui_exam_status_update_error(),
   });
   try {
     await promise;
@@ -485,7 +515,9 @@ async function handleActivate() {
   toast.promise(promise, {
     loading: m.operations_ui_exam_session_status_updating(),
     success: m.operations_ui_exam_session_status_updated(),
-    error: (err) => (err as any)?.message || m.operations_ui_exam_session_status_update_error(),
+    error: (err) =>
+      (err as any)?.message ||
+      m.operations_ui_exam_session_status_update_error(),
   });
 
   try {
@@ -508,7 +540,8 @@ async function handleDeleteSeating(seatingId: string) {
   toast.promise(promise, {
     loading: m.operations_ui_seating_deleting(),
     success: m.operations_ui_seating_delete_success(),
-    error: (err: any) => (err as any)?.message || m.operations_ui_seating_delete_error(),
+    error: (err: any) =>
+      (err as any)?.message || m.operations_ui_seating_delete_error(),
   });
   try {
     await promise;
@@ -530,7 +563,9 @@ async function handleDeleteProctor(proctorId: string) {
   toast.promise(promise, {
     loading: m.operations_ui_proctor_assignment_cancelling(),
     success: m.operations_ui_proctor_assignment_cancel_success(),
-    error: (err: any) => (err as any)?.message || m.operations_ui_proctor_assignment_cancel_error(),
+    error: (err: any) =>
+      (err as any)?.message ||
+      m.operations_ui_proctor_assignment_cancel_error(),
   });
   try {
     await promise;
@@ -544,9 +579,12 @@ async function handleToggleHall(room: any) {
   const promise = Promise.resolve();
 
   toast.promise(promise, {
-    loading: m.operations_ui_exam_room_activating({ room: room.room_number || room.name }),
+    loading: m.operations_ui_exam_room_activating({
+      room: room.room_number || room.name,
+    }),
     success: m.operations_ui_exam_room_activate_success(),
-    error: (err) => (err as any)?.message || m.operations_ui_exam_room_activate_error(),
+    error: (err) =>
+      (err as any)?.message || m.operations_ui_exam_room_activate_error(),
   });
 
   try {

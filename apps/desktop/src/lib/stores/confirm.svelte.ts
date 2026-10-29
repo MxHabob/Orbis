@@ -105,9 +105,7 @@ class ConfirmStore {
   async promptVersionConflict(message?: string): Promise<boolean> {
     return this.prompt({
       title: m.shared_ui_version_conflict_title(),
-      description:
-        message ||
-        m.shared_ui_version_conflict_description(),
+      description: message || m.shared_ui_version_conflict_description(),
       confirmText: m.shared_ui_reload_latest_data(),
       cancelText: m.common_action_cancel(),
       variant: "default",

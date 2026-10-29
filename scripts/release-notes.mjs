@@ -4,7 +4,10 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 const desktopPackagePath = path.join(rootDir, "apps/desktop/package.json");
 const releasesDir = path.join(rootDir, "releases");
 const assetsRoot = path.join(rootDir, "release-assets");
@@ -15,10 +18,19 @@ function git(args) {
 
 function latestTag() {
   try {
-    return git(["tag", "--merged", "HEAD", "--list", "v[0-9]*", "--sort=-version:refname"])
-      .split(/\r?\n/)
-      .map((tag) => tag.trim())
-      .find(Boolean) ?? null;
+    return (
+      git([
+        "tag",
+        "--merged",
+        "HEAD",
+        "--list",
+        "v[0-9]*",
+        "--sort=-version:refname",
+      ])
+        .split(/\r?\n/)
+        .map((tag) => tag.trim())
+        .find(Boolean) ?? null
+    );
   } catch {
     return null;
   }
@@ -41,9 +53,14 @@ function getCommits() {
 }
 
 function classify({ subject, body }) {
-  const match = /^(feat|fix|perf|refactor|docs|build|ci|test|chore)(?:\(([^)]+)\))?(!)?:\s*(.+)$/i.exec(subject);
+  const match =
+    /^(feat|fix|perf|refactor|docs|build|ci|test|chore)(?:\(([^)]+)\))?(!)?:\s*(.+)$/i.exec(
+      subject,
+    );
   const breaking = Boolean(match?.[3]) || /BREAKING CHANGE:/i.test(body);
-  const category = breaking ? "breaking" : match?.[1].toLowerCase() ?? "other";
+  const category = breaking
+    ? "breaking"
+    : (match?.[1].toLowerCase() ?? "other");
   const scope = match?.[2] ? ` (${match[2]})` : "";
   const text = match?.[4] ?? subject;
   return { category, entry: `- ${text}${scope}` };
@@ -94,10 +111,26 @@ function createNotes(version, commits) {
     const entries = grouped.get(key);
     if (entries.length) lines.push(`## ${heading}`, "", ...entries, "");
   }
-  if (!commits.length) lines.push("## Changes", "", "- No commits were found since the previous version tag; add the user-facing changes manually.", "");
+  if (!commits.length)
+    lines.push(
+      "## Changes",
+      "",
+      "- No commits were found since the previous version tag; add the user-facing changes manually.",
+      "",
+    );
 
-  lines.push("## Known Issues", "", "<!-- Write \"None\" or list user-relevant known issues. -->", "");
-  lines.push("## Release Assets", "", "Version-specific images and supporting resources are attached to this GitHub Release. Images are also shown in the app's release history when available.", "");
+  lines.push(
+    "## Known Issues",
+    "",
+    '<!-- Write "None" or list user-relevant known issues. -->',
+    "",
+  );
+  lines.push(
+    "## Release Assets",
+    "",
+    "Version-specific images and supporting resources are attached to this GitHub Release. Images are also shown in the app's release history when available.",
+    "",
+  );
   return lines.join("\n");
 }
 
@@ -109,15 +142,23 @@ function main() {
   fs.mkdirSync(releasesDir, { recursive: true });
 
   if (fs.existsSync(notesPath) && !force) {
-    console.log(`Release notes already exist; left unchanged: ${path.relative(rootDir, notesPath)}`);
+    console.log(
+      `Release notes already exist; left unchanged: ${path.relative(rootDir, notesPath)}`,
+    );
     return;
   }
 
   const notes = createNotes(version, getCommits());
   fs.writeFileSync(notesPath, notes);
-  console.log(`Generated editable release notes: ${path.relative(rootDir, notesPath)}`);
-  console.log(`Add screenshots to ${path.relative(rootDir, path.join(assets.versionDir, "images"))}`);
-  console.log(`Add supporting files to ${path.relative(rootDir, path.join(assets.versionDir, "resources"))}`);
+  console.log(
+    `Generated editable release notes: ${path.relative(rootDir, notesPath)}`,
+  );
+  console.log(
+    `Add screenshots to ${path.relative(rootDir, path.join(assets.versionDir, "images"))}`,
+  );
+  console.log(
+    `Add supporting files to ${path.relative(rootDir, path.join(assets.versionDir, "resources"))}`,
+  );
 }
 
 try {

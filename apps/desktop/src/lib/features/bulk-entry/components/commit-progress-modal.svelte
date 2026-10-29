@@ -1,20 +1,23 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
-  import type { ChunkProgress } from "../types";
+import * as m from "$lib/paraglide/messages";
+import type { ChunkProgress } from "../types";
 
-  interface Props {
-    open: boolean;
-    progress: ChunkProgress | null;
-  }
+interface Props {
+  open: boolean;
+  progress: ChunkProgress | null;
+}
 
-  let { open, progress }: Props = $props();
+let { open, progress }: Props = $props();
 
-  const percentage = $derived(
-    progress && progress.totalRows > 0
-      ? Math.min(100, Math.round((progress.processedRows / progress.totalRows) * 100))
-      : 0,
-  );
+const percentage = $derived(
+  progress && progress.totalRows > 0
+    ? Math.min(
+        100,
+        Math.round((progress.processedRows / progress.totalRows) * 100),
+      )
+    : 0,
+);
 </script>
 
 {#if open && progress}

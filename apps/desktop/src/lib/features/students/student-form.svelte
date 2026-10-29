@@ -1,211 +1,213 @@
 <script lang="ts">
-  import { LoadingIndicator } from "@orbis/ui";
-  import * as m from "$lib/paraglide/messages";
-  import { onMount, untrack } from "svelte";
-  import { goto } from "$app/navigation";
-  import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { ArrowLeft, Check, ChevronDown, Printer } from "@orbis/icons";
-  import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-  } from "@orbis/ui/dropdown-menu";
-  import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-  } from "@orbis/ui/accordion";
+import { LoadingIndicator } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
+import { onMount, untrack } from "svelte";
+import { goto } from "$app/navigation";
+import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
+import { ArrowLeft, Check, ChevronDown, Printer } from "@orbis/icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@orbis/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@orbis/ui/accordion";
 
-  import { localizeHref } from "$lib/paraglide/runtime";
-  import { StudentFormState } from "./form-state.svelte";
-  import { createClassesQuery } from "$lib/features/academics";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { academicContext } from "$lib/stores/academic-context.svelte";
-  import { effectiveContext } from "$lib/stores/effective-context.svelte";
+import { localizeHref } from "$lib/paraglide/runtime";
+import { StudentFormState } from "./form-state.svelte";
+import { createClassesQuery } from "$lib/features/academics";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { academicContext } from "$lib/stores/academic-context.svelte";
+import { effectiveContext } from "$lib/stores/effective-context.svelte";
 
-  import ProfileSection from "./sections/profile-section.svelte";
-  import FamilySection from "./sections/family-section.svelte";
-  import LocationSection from "./sections/location-section.svelte";
-  import FinancialsSection from "./sections/financials-section.svelte";
-  import DocumentsSection from "./sections/documents-section.svelte";
+import ProfileSection from "./sections/profile-section.svelte";
+import FamilySection from "./sections/family-section.svelte";
+import LocationSection from "./sections/location-section.svelte";
+import FinancialsSection from "./sections/financials-section.svelte";
+import DocumentsSection from "./sections/documents-section.svelte";
 
-  let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
+let { studentId, orgId }: { studentId?: string; orgId: string } = $props();
 
-  const state = untrack(() => new StudentFormState(orgId || "", studentId));
-  const queryClient = useQueryClient();
-  const classesQuery = createClassesQuery(() => orgId);
-  let initialFormSnapshot: string | null = null;
-  const currentPeriod = $derived(
-    academicContext.periods.find(
-      (period) => period.id === effectiveContext.currentPeriodId,
-    ) ?? null,
-  );
+const state = untrack(() => new StudentFormState(orgId || "", studentId));
+const queryClient = useQueryClient();
+const classesQuery = createClassesQuery(() => orgId);
+let initialFormSnapshot: string | null = null;
+const currentPeriod = $derived(
+  academicContext.periods.find(
+    (period) => period.id === effectiveContext.currentPeriodId,
+  ) ?? null,
+);
 
-  $effect(() => {
-    const classes = classesQuery.data;
-    if (!classes) return;
+$effect(() => {
+  const classes = classesQuery.data;
+  if (!classes) return;
 
-    state.classes = classes;
-    if (!state.isEditMode && !state.personal.classId) {
-      const contextualClassId =
-        effectiveContext.activeClassId || academicContext.selectedClassId;
-      if (classes.some((classItem) => classItem.id === contextualClassId)) {
-        state.personal.classId = contextualClassId;
-      }
+  state.classes = classes;
+  if (!state.isEditMode && !state.personal.classId) {
+    const contextualClassId =
+      effectiveContext.activeClassId || academicContext.selectedClassId;
+    if (classes.some((classItem) => classItem.id === contextualClassId)) {
+      state.personal.classId = contextualClassId;
     }
-  });
+  }
+});
 
-  onMount(async () => {
-    if (orgId) state.orgId = orgId;
-    if (studentId) {
-      state.studentId = studentId;
-      state.isEditMode = true;
-    }
-    await state.init();
-    initialFormSnapshot = getFormSnapshot();
-  });
+onMount(async () => {
+  if (orgId) state.orgId = orgId;
+  if (studentId) {
+    state.studentId = studentId;
+    state.isEditMode = true;
+  }
+  await state.init();
+  initialFormSnapshot = getFormSnapshot();
+});
 
-  const documentStats = $derived.by(() => {
-    const fulfillments = state.document.fulfillments;
-    if (fulfillments.length > 0) {
-      const fulfilled = fulfillments.filter(
-        (item) =>
-          item.is_fulfilled
-          || state.document.submittedDocs.includes(item.requirement.code)
-          || !!state.document.attachments[item.requirement.code],
-      ).length;
-      return { total: fulfillments.length, fulfilled };
-    }
-
-    const requirements = state.document.requirements.filter((item) => {
-      const selectedClassId = state.personal.classId;
-      const selectedClassLevel = state.selectedClass?.level;
-      if (!item.target_id || !selectedClassId) return true;
-      return item.target_id === selectedClassId || item.target_id === selectedClassLevel;
-    });
-    if (requirements.length > 0) {
-      const fulfilled = requirements.filter(
-        (item) =>
-          state.document.submittedDocs.includes(item.code)
-          || !!state.document.attachments[item.code],
-      ).length;
-      return { total: requirements.length, fulfilled };
-    }
-
-    const requiredDocs = state.document.orgRequiredDocuments;
-    return {
-      total: requiredDocs.length,
-      fulfilled: requiredDocs.filter(
-        (code) =>
-          state.document.submittedDocs.includes(code)
-          || !!state.document.attachments[code],
-      ).length,
-    };
-  });
-
-  function getFormSnapshot(): string {
-    return JSON.stringify({
-      personal: {
-        nameAr: state.personal.nameAr,
-        nameEn: state.personal.nameEn,
-        nationalId: state.personal.nationalId,
-        sex: state.personal.sex,
-        classId: state.personal.classId,
-        birthDate: state.personal.birthDate,
-        studentNumber: state.personal.studentNumber,
-        email: state.personal.email,
-        phone: state.personal.phone,
-        address: state.personal.address,
-        previousSchool: state.personal.previousSchool,
-        district: state.personal.district,
-        governorate: state.personal.governorate,
-        nationality: state.personal.nationality,
-        placeOfBirth: state.personal.placeOfBirth,
-        passportNumber: state.personal.passportNumber,
-        bloodType: state.personal.bloodType,
-        emergencyContact: state.personal.emergencyContact,
-        medicalNotes: state.personal.medicalNotes,
-        specialNeedsNotes: state.personal.specialNeedsNotes,
-      },
-      guardians: state.guardian.linkedGuardians,
-      studyMode: state.studyMode,
-      createLoginAccount: state.createLoginAccount,
-      financial: {
-        applyDiscount: state.financial.applyDiscount,
-        discountType: state.financial.discountType,
-        selectedDiscountTemplateId: state.financial.selectedDiscountTemplateId,
-        customDiscountAmount: state.financial.customDiscountAmount,
-        selectedOptionalFees: state.financial.selectedOptionalFees,
-      },
-      documents: {
-        submittedDocs: [...state.document.submittedDocs].sort(),
-        attachments: Object.entries(state.document.attachments)
-          .map(([code, attachment]) => [
-            code,
-            attachment.fileName,
-            attachment.fileSize,
-            attachment.file?.lastModified,
-          ])
-          .sort(([left], [right]) => String(left).localeCompare(String(right))),
-      },
-      avatar: state.avatarFile
-        ? [state.avatarFile.name, state.avatarFile.size, state.avatarFile.lastModified]
-        : null,
-    });
+const documentStats = $derived.by(() => {
+  const fulfillments = state.document.fulfillments;
+  if (fulfillments.length > 0) {
+    const fulfilled = fulfillments.filter(
+      (item) =>
+        item.is_fulfilled ||
+        state.document.submittedDocs.includes(item.requirement.code) ||
+        !!state.document.attachments[item.requirement.code],
+    ).length;
+    return { total: fulfillments.length, fulfilled };
   }
 
-  const isFormDirty = $derived(
-    initialFormSnapshot !== null && getFormSnapshot() !== initialFormSnapshot,
-  );
+  const requirements = state.document.requirements.filter((item) => {
+    const selectedClassId = state.personal.classId;
+    const selectedClassLevel = state.selectedClass?.level;
+    if (!item.target_id || !selectedClassId) return true;
+    return (
+      item.target_id === selectedClassId ||
+      item.target_id === selectedClassLevel
+    );
+  });
+  if (requirements.length > 0) {
+    const fulfilled = requirements.filter(
+      (item) =>
+        state.document.submittedDocs.includes(item.code) ||
+        !!state.document.attachments[item.code],
+    ).length;
+    return { total: requirements.length, fulfilled };
+  }
 
-  const canSubmit = $derived(
-    !state.isInitializing
-    && !state.initializationFailed
-    && !classesQuery.isLoading
-    && !classesQuery.isError
-    && (
-      (state.isEditMode && state.originalStudent?.student?.status !== "inactive")
-      || (
-        state.admissionPolicy.registrationEnabled
-        && !!currentPeriod
-        && (
-          currentPeriod.is_enrollment_open
-          || state.admissionPolicy.allowLateEnrollment
-        )
-      )
-    ),
-  );
-  const canSaveDraft = $derived(
-    !state.isInitializing && !state.initializationFailed,
-  );
-  const isSavedDraft = $derived(
-    state.isEditMode && state.originalStudent?.student?.status === "inactive",
-  );
+  const requiredDocs = state.document.orgRequiredDocuments;
+  return {
+    total: requiredDocs.length,
+    fulfilled: requiredDocs.filter(
+      (code) =>
+        state.document.submittedDocs.includes(code) ||
+        !!state.document.attachments[code],
+    ).length,
+  };
+});
 
-  async function handleSave(saveAsDraft = false) {
-    if (!saveAsDraft && (!state.isEditMode || isSavedDraft)) {
-      if (!state.admissionPolicy.registrationEnabled) {
-        return;
-      }
-      if (!currentPeriod) {
-        return;
-      }
-      if (
-        !currentPeriod.is_enrollment_open
-        && !state.admissionPolicy.allowLateEnrollment
-      ) {
-        return;
-      }
+function getFormSnapshot(): string {
+  return JSON.stringify({
+    personal: {
+      nameAr: state.personal.nameAr,
+      nameEn: state.personal.nameEn,
+      nationalId: state.personal.nationalId,
+      sex: state.personal.sex,
+      classId: state.personal.classId,
+      birthDate: state.personal.birthDate,
+      studentNumber: state.personal.studentNumber,
+      email: state.personal.email,
+      phone: state.personal.phone,
+      address: state.personal.address,
+      previousSchool: state.personal.previousSchool,
+      district: state.personal.district,
+      governorate: state.personal.governorate,
+      nationality: state.personal.nationality,
+      placeOfBirth: state.personal.placeOfBirth,
+      passportNumber: state.personal.passportNumber,
+      bloodType: state.personal.bloodType,
+      emergencyContact: state.personal.emergencyContact,
+      medicalNotes: state.personal.medicalNotes,
+      specialNeedsNotes: state.personal.specialNeedsNotes,
+    },
+    guardians: state.guardian.linkedGuardians,
+    studyMode: state.studyMode,
+    createLoginAccount: state.createLoginAccount,
+    financial: {
+      applyDiscount: state.financial.applyDiscount,
+      discountType: state.financial.discountType,
+      selectedDiscountTemplateId: state.financial.selectedDiscountTemplateId,
+      customDiscountAmount: state.financial.customDiscountAmount,
+      selectedOptionalFees: state.financial.selectedOptionalFees,
+    },
+    documents: {
+      submittedDocs: [...state.document.submittedDocs].sort(),
+      attachments: Object.entries(state.document.attachments)
+        .map(([code, attachment]) => [
+          code,
+          attachment.fileName,
+          attachment.fileSize,
+          attachment.file?.lastModified,
+        ])
+        .sort(([left], [right]) => String(left).localeCompare(String(right))),
+    },
+    avatar: state.avatarFile
+      ? [
+          state.avatarFile.name,
+          state.avatarFile.size,
+          state.avatarFile.lastModified,
+        ]
+      : null,
+  });
+}
+
+const isFormDirty = $derived(
+  initialFormSnapshot !== null && getFormSnapshot() !== initialFormSnapshot,
+);
+
+const canSubmit = $derived(
+  !state.isInitializing &&
+    !state.initializationFailed &&
+    !classesQuery.isLoading &&
+    !classesQuery.isError &&
+    ((state.isEditMode &&
+      state.originalStudent?.student?.status !== "inactive") ||
+      (state.admissionPolicy.registrationEnabled &&
+        !!currentPeriod &&
+        (currentPeriod.is_enrollment_open ||
+          state.admissionPolicy.allowLateEnrollment))),
+);
+const canSaveDraft = $derived(
+  !state.isInitializing && !state.initializationFailed,
+);
+const isSavedDraft = $derived(
+  state.isEditMode && state.originalStudent?.student?.status === "inactive",
+);
+
+async function handleSave(saveAsDraft = false) {
+  if (!saveAsDraft && (!state.isEditMode || isSavedDraft)) {
+    if (!state.admissionPolicy.registrationEnabled) {
+      return;
     }
-    await state.handleSave(queryClient, saveAsDraft);
+    if (!currentPeriod) {
+      return;
+    }
+    if (
+      !currentPeriod.is_enrollment_open &&
+      !state.admissionPolicy.allowLateEnrollment
+    ) {
+      return;
+    }
   }
+  await state.handleSave(queryClient, saveAsDraft);
+}
 
-  function cancel() {
-    goto(localizeHref(`/${orgId}/students`));
-  }
+function cancel() {
+  goto(localizeHref(`/${orgId}/students`));
+}
 </script>
 
 <div class="h-full w-full overflow-y-auto text-foreground text-start pb-24">

@@ -88,11 +88,7 @@ export default function AccountScreen() {
               isArabic ? "flex-row-reverse" : ""
             }`}
           >
-            <Avatar
-              name={displayName}
-              imageUrl={user.avatar_url}
-              size="xl"
-            />
+            <Avatar name={displayName} imageUrl={user.avatar_url} size="xl" />
             <View className="min-w-0 flex-1 gap-half">
               <Text
                 numberOfLines={2}

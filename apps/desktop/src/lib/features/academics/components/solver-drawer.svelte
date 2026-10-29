@@ -12,7 +12,16 @@ import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import { Checkbox } from "@orbis/ui/checkbox";
 import { Label } from "@orbis/ui/label";
-import { AdjustmentsHorizontal, ArrowPath, Check, CheckCircle, ClockRotateRight, Eye, InfoCircle, Sparkles } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  ArrowPath,
+  Check,
+  CheckCircle,
+  ClockRotateRight,
+  Eye,
+  InfoCircle,
+  Sparkles,
+} from "@orbis/icons";
 import { api, extractErrorMessage } from "$lib/api";
 import { toast } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";

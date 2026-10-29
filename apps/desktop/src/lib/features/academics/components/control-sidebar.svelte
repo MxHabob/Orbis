@@ -2,7 +2,18 @@
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
-import { AdjustmentsHorizontal, ArrowPath, ChartBar, CheckCircle, Clock, Lock, LockClosed, Refresh, Users, XMark } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  ArrowPath,
+  ChartBar,
+  CheckCircle,
+  Clock,
+  Lock,
+  LockClosed,
+  Refresh,
+  Users,
+  XMark,
+} from "@orbis/icons";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import { formatNumber, formatDate } from "$lib/core/i18n";

@@ -16,15 +16,17 @@ let { orgId, userId }: { orgId: string; userId: string } = $props();
 let isLoading = $state(true);
 let isSaving = $state(false);
 let checkedRoles = $state<string[]>([]);
-let availableRoles = $state<Array<{
-  id: string;
-  nameEn: string;
-  nameAr: string;
-  descEn: string;
-  descAr: string;
-  isSystem: boolean;
-  permCount: number;
-}>>([]);
+let availableRoles = $state<
+  Array<{
+    id: string;
+    nameEn: string;
+    nameAr: string;
+    descEn: string;
+    descAr: string;
+    isSystem: boolean;
+    permCount: number;
+  }>
+>([]);
 
 async function loadRoles() {
   if (!userId) return;
@@ -39,14 +41,20 @@ async function loadRoles() {
       id: r.id,
       nameEn: r.name,
       nameAr: r.name_ar || r.name,
-      descEn: r.is_system ? "Institutional system role" : "Custom organizational role",
-      descAr: r.is_system ? m.settings_ui_role_system_description() : m.settings_ui_role_custom_description(),
+      descEn: r.is_system
+        ? "Institutional system role"
+        : "Custom organizational role",
+      descAr: r.is_system
+        ? m.settings_ui_role_system_description()
+        : m.settings_ui_role_custom_description(),
       isSystem: Boolean(r.is_system),
       permCount: countRolePermissions(r.permissions, r.id),
     }));
 
     // Load active roles for this user
-    checkedRoles = Array.isArray(userDetails?.roles) ? [...userDetails.roles] : [];
+    checkedRoles = Array.isArray(userDetails?.roles)
+      ? [...userDetails.roles]
+      : [];
   } catch (e) {
     console.error("Failed to load user roles:", e);
   } finally {
@@ -77,7 +85,7 @@ async function saveRoles() {
     toast.success(
       m.settings_user_detail_saved
         ? m.settings_user_detail_saved()
-        : m.ui_copy_user_roles_saved_successfully_5c90a882()
+        : m.ui_copy_user_roles_saved_successfully_5c90a882(),
     );
   } catch (e: any) {
     toast.error(e?.message || m.ui_copy_save_failed_c4740d2a());

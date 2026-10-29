@@ -70,13 +70,46 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
         org_id: Uuid,
         code: &str,
     ) -> Result<Option<ReportDefinition>, DomainError> {
+        let rep_code = if code.starts_with("rep.") {
+            code.to_string()
+        } else {
+            format!("rep.{code}")
+        };
+        let bare_code = code.strip_prefix("rep.").unwrap_or(code);
+        let codes = vec![code.to_string(), rep_code, bare_code.to_string()];
+
         let model = report_definition::Entity::find()
             .filter(report_definition::Column::OrgId.eq(org_id))
-            .filter(report_definition::Column::Code.eq(code))
+            .filter(report_definition::Column::Code.is_in(codes.clone()))
             .one(&self.db)
             .await
             .map_err(db_err)?;
-        Ok(model.map(model_to_definition))
+
+        if let Some(m) = model {
+            return Ok(Some(model_to_definition(m)));
+        }
+
+        // Auto-provision master report definitions if a known system report is requested
+        let catalog = super::report_catalog::get_master_report_catalog();
+        if catalog
+            .iter()
+            .any(|entry| codes.iter().any(|c| c == entry.code))
+        {
+            let now = chrono::Utc::now().to_rfc3339();
+            let _ =
+                super::report_catalog::provision_master_report_definitions(&self.db, org_id, &now)
+                    .await;
+
+            let recheck = report_definition::Entity::find()
+                .filter(report_definition::Column::OrgId.eq(org_id))
+                .filter(report_definition::Column::Code.is_in(codes))
+                .one(&self.db)
+                .await
+                .map_err(db_err)?;
+            return Ok(recheck.map(model_to_definition));
+        }
+
+        Ok(None)
     }
 
     async fn list_by_org(
@@ -745,6 +778,44 @@ impl ReportAuditRepository for ReportAuditRepoImpl {
         }
         if let Some(o) = offset {
             query = query.offset(o);
+        }
+
+        let models = query.all(&self.db).await.map_err(db_err)?;
+        Ok(models
+            .into_iter()
+            .map(|m| ReportAuditEntry {
+                id: m.id,
+                org_id: m.org_id,
+                actor_id: m.actor_id,
+                action: m.action,
+                entity_type: m.entity_type,
+                entity_id: m.entity_id,
+                details: m.details,
+                created_at: m.created_at.into(),
+            })
+            .collect())
+    }
+
+    async fn list_by_entity(
+        &self,
+        org_id: Uuid,
+        entity_type: &str,
+        entity_id: Uuid,
+        limit: Option<u64>,
+        offset: Option<u64>,
+    ) -> Result<Vec<ReportAuditEntry>, DomainError> {
+        let mut query = report_audit_log::Entity::find()
+            .filter(report_audit_log::Column::OrgId.eq(org_id))
+            .filter(report_audit_log::Column::EntityType.eq(entity_type))
+            .filter(report_audit_log::Column::EntityId.eq(entity_id))
+            .order_by_desc(report_audit_log::Column::CreatedAt)
+            .order_by_desc(report_audit_log::Column::Id);
+
+        if let Some(limit) = limit {
+            query = query.limit(limit);
+        }
+        if let Some(offset) = offset {
+            query = query.offset(offset);
         }
 
         let models = query.all(&self.db).await.map_err(db_err)?;

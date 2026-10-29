@@ -65,8 +65,6 @@ export function Dialog({ visible, onClose, children }: DialogProps) {
         setShouldRender(false);
       }, 200);
       return () => clearTimeout(timer);
-    } else {
-      setShouldRender(true);
     }
   }, [visible]);
 
@@ -222,12 +220,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   title: {
-    ...{"fontSize":18,"lineHeight":24,"fontWeight":"700"},
+    ...{ fontSize: 18, lineHeight: 24, fontWeight: "700" },
     fontWeight: "700",
     letterSpacing: -0.3,
   },
   description: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
+    ...{ fontSize: 14, lineHeight: 20, fontWeight: "400" },
     lineHeight: 20,
   },
   footer: {

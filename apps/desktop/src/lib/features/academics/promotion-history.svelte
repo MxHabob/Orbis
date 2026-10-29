@@ -12,12 +12,7 @@ import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { LoadingIndicator } from "@orbis/ui";
 import { Card, CardContent } from "@orbis/ui/card";
-import {
-  ArrowPath,
-  CheckCircle,
-  ClockRotateRight,
-  XMark,
-} from "@orbis/icons";
+import { ArrowPath, CheckCircle, ClockRotateRight, XMark } from "@orbis/icons";
 
 let { orgId }: { orgId: string } = $props();
 

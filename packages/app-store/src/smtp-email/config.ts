@@ -9,10 +9,8 @@ const config: OrbisApp = {
   category: "communication",
   active: true,
   icon: "Mail",
-  short_description:
-    "Send automated email notifications through SendGrid.",
-  short_description_ar:
-    "إرسال إشعارات البريد الإلكتروني تلقائياً عبر SendGrid.",
+  short_description: "Send automated email notifications through SendGrid.",
+  short_description_ar: "إرسال إشعارات البريد الإلكتروني تلقائياً عبر SendGrid.",
   description: `Connect a SendGrid API key to send email notifications through Orbis.
 
 **Automated Notifications**
@@ -40,8 +38,7 @@ Send grade reports, attendance alerts, fee reminders, and enrollment confirmatio
       id: "from_email",
       label: "Verified Sender Email",
       label_ar: "بريد المرسل المعتمد",
-      description:
-        "A sender email address verified in your SendGrid account.",
+      description: "A sender email address verified in your SendGrid account.",
       description_ar: "عنوان بريد مرسل تم اعتماده في حساب SendGrid.",
       type: "email",
       required: true,

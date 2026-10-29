@@ -102,6 +102,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let integration_repo = Arc::new(
         orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() },
     );
+    let notification_repo = Arc::new(
+        orbis_infra::repositories::notification_repos::NotificationRepoImpl { db: db.clone() },
+    );
+    let notification_pref_repo = Arc::new(
+        orbis_infra::repositories::notification_repos::NotificationPreferenceRepoImpl {
+            db: db.clone(),
+        },
+    );
     let workflow_repo =
         Arc::new(orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() });
     let override_repo =
@@ -120,9 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let dashboard_repo =
         Arc::new(orbis_infra::repositories::dashboard_repo::DashboardRepoImpl { db: db.clone() });
 
-    let event_bus = Arc::new(MemoryEventBus {
-        workflow_engine: None,
-    });
+    let event_bus = Arc::new(MemoryEventBus::new());
     let jwt_secret = std::env::var("JWT_SECRET")
         .unwrap_or_else(|_| "orbis_dev_super_secret_jwt_key_2026_educational_platform".to_string());
     let mfa_encryption_key = match std::env::var("MFA_ENCRYPTION_KEY") {
@@ -386,6 +392,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         permission_checker.clone(),
     ));
 
+    let (notif_tx, _notif_rx) = tokio::sync::broadcast::channel(256);
+    let notification_service = Arc::new(
+        orbis_app::services::NotificationService::new(
+            notification_repo.clone(),
+            notification_pref_repo.clone(),
+            permission_checker.clone(),
+        )
+        .with_broadcaster(notif_tx),
+    );
+    event_bus.set_notification_service(notification_service.clone());
+
     let workflow_service = Arc::new(orbis_app::services::WorkflowService::new(
         override_repo.clone(),
         workflow_repo.clone(),
@@ -412,6 +429,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         report_service.clone(),
         workflow_service.clone(),
     ));
+    event_bus.set_workflow_engine(autopilot_engine.clone());
 
     let autopilot_evaluator = Arc::new(orbis_app::autopilot::evaluator::AutopilotEvaluator::new(
         policy_repo.clone(),
@@ -604,6 +622,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         storage_resolver,
         integration_service,
         notification_adapter,
+        notification_service: notification_service.clone(),
         workflow_service,
         report_service: report_service.clone(),
         ai_service,
@@ -656,6 +675,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    // Spawn Notification cleanup background task (every 6 hours)
+    let notification_cleanup = notification_service.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(6 * 60 * 60));
+        loop {
+            interval.tick().await;
+            match notification_cleanup.cleanup_expired().await {
+                Ok(removed) if removed > 0 => {
+                    tracing::info!(removed, "Expired notifications cleaned up");
+                }
+                Ok(_) => {}
+                Err(error) => {
+                    tracing::error!(error = %error, "Expired notification cleanup failed");
+                }
+            }
+        }
+    });
     // Build Axum Router
     let app = app_router(state);
 

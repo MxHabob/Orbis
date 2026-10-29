@@ -7,7 +7,15 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { fade } from "svelte/transition";
-import { ArrowRight, BookOpen, Calendar, Plus, Search, TaskList, Users } from "@orbis/icons";
+import {
+  ArrowRight,
+  BookOpen,
+  Calendar,
+  Plus,
+  Search,
+  TaskList,
+  Users,
+} from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";

@@ -1574,6 +1574,8 @@ pub struct AuditLogDto {
 pub struct AuditLogFilter {
     pub limit: Option<u64>,
     pub offset: Option<u64>,
+    pub entity_type: Option<String>,
+    pub entity_id: Option<Uuid>,
 }
 
 #[utoipa::path(
@@ -1589,11 +1591,32 @@ pub async fn list_audit_logs(
     auth: AuthContext,
     Query(filter): Query<AuditLogFilter>,
 ) -> Result<Json<ApiResponse<Vec<AuditLogDto>>>, ApiError> {
-    let entries = state
-        .report_audit_repo
-        .list_by_org(auth.tenant_id, filter.limit, filter.offset)
-        .await
-        .map_err(|e| ApiError::internal(e.to_string()))?;
+    let entries = match (filter.entity_type.as_deref(), filter.entity_id) {
+        (Some(entity_type), Some(entity_id)) => {
+            state
+                .report_audit_repo
+                .list_by_entity(
+                    auth.tenant_id,
+                    entity_type,
+                    entity_id,
+                    filter.limit,
+                    filter.offset,
+                )
+                .await
+        }
+        (None, None) => {
+            state
+                .report_audit_repo
+                .list_by_org(auth.tenant_id, filter.limit, filter.offset)
+                .await
+        }
+        _ => {
+            return Err(ApiError::bad_request(
+                "entity_type and entity_id must be provided together",
+            ));
+        }
+    }
+    .map_err(|e| ApiError::internal(e.to_string()))?;
 
     let dtos = entries
         .into_iter()
@@ -1604,7 +1627,7 @@ pub async fn list_audit_logs(
             action: e.action,
             entity_type: e.entity_type,
             entity_id: Some(e.entity_id),
-            ip_address: Some("127.0.0.1".into()),
+            ip_address: None,
             metadata: e
                 .details
                 .as_ref()

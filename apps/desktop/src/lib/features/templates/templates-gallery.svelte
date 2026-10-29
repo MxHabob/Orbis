@@ -61,10 +61,18 @@ const archiveMutation = createArchiveTemplateMutation();
 const rawTemplates = $derived(templatesQuery.data ?? []);
 const loading = $derived(templatesQuery.isLoading);
 const entityTypes = $derived(
-  [...new Set(rawTemplates.map((template) => template.entity_type).filter(Boolean))].sort(),
+  [
+    ...new Set(
+      rawTemplates.map((template) => template.entity_type).filter(Boolean),
+    ),
+  ].sort(),
 );
 const documentTypes = $derived(
-  [...new Set(rawTemplates.map((template) => template.document_type).filter(Boolean))].sort(),
+  [
+    ...new Set(
+      rawTemplates.map((template) => template.document_type).filter(Boolean),
+    ),
+  ].sort(),
 );
 
 function displayType(value: string): string {
@@ -93,10 +101,7 @@ function getDefaultPageSetup(): Pick<PageSetup, "size" | "orientation"> {
     return { size: "ID_CARD", orientation: "landscape" };
   if (newTemplateDocType === "EXAM_CARD")
     return { size: "A5", orientation: "portrait" };
-  if (
-    newTemplateDocType === "RECEIPT" ||
-    newTemplateDocType === "TRANSCRIPT"
-  )
+  if (newTemplateDocType === "RECEIPT" || newTemplateDocType === "TRANSCRIPT")
     return { size: "A4", orientation: "portrait" };
   return { size: "A5", orientation: "landscape" };
 }

@@ -21,40 +21,53 @@ import { extractErrorMessage } from "$lib/api";
 class SystemStore {
   // Connection state
   connectionConfig = $state<ConnectionConfig | null>(null);
-  connectionState = $state<"unconfigured" | "connected" | "error" | "validating">("unconfigured");
+  connectionState = $state<
+    "unconfigured" | "connected" | "error" | "validating"
+  >("unconfigured");
   connectionMode = $state<ConnectionMode | null>(null);
   connectionError = $state<string | null>(null);
 
   // Organization readiness & onboarding
   orgReadiness = $state<OrganizationReadiness | null>(null);
-  onboardingState = $state<import("$lib/api/types").OnboardingStateDto | null>(null);
+  onboardingState = $state<import("$lib/api/types").OnboardingStateDto | null>(
+    null,
+  );
   entitlement = $state<EntitlementResult | null>(null);
   isLoading = $state(false);
 
   // Derived state
   isConnected = $derived(this.connectionState === "connected");
   hasOrganization = $derived(this.orgReadiness?.has_organization ?? false);
-  orgLifecycleState = $derived<OrgLifecycleState>(this.orgReadiness?.state ?? "empty");
+  orgLifecycleState = $derived<OrgLifecycleState>(
+    this.orgReadiness?.state ?? "empty",
+  );
   isOperational = $derived(this.orgReadiness?.state === "operational");
-  
+
   // Real DAG onboarding tasks
   onboardingTasks = $derived(this.onboardingState?.tasks ?? []);
   pendingOnboardingTasks = $derived(
-    this.onboardingState?.tasks.filter((t) => t.status !== "completed" && t.status !== "not_applicable") ?? []
+    this.onboardingState?.tasks.filter(
+      (t) => t.status !== "completed" && t.status !== "not_applicable",
+    ) ?? [],
   );
   completedOnboardingTasks = $derived(
-    this.onboardingState?.tasks.filter((t) => t.status === "completed") ?? []
+    this.onboardingState?.tasks.filter((t) => t.status === "completed") ?? [],
   );
   blockedOnboardingTasks = $derived(
-    this.onboardingState?.tasks.filter((t) => t.status === "blocked") ?? []
+    this.onboardingState?.tasks.filter((t) => t.status === "blocked") ?? [],
   );
-  onboardingProgressPercentage = $derived(this.onboardingState?.progress_percentage ?? 0);
-  isInstitutionReady = $derived(this.onboardingState?.is_institution_ready ?? false);
+  onboardingProgressPercentage = $derived(
+    this.onboardingState?.progress_percentage ?? 0,
+  );
+  isInstitutionReady = $derived(
+    this.onboardingState?.is_institution_ready ?? false,
+  );
   pendingSetupItems = $derived(
-    this.orgReadiness?.pending_setup_items?.filter((i) => !i.is_completed) ?? []
+    this.orgReadiness?.pending_setup_items?.filter((i) => !i.is_completed) ??
+      [],
   );
   completedSetupItems = $derived(
-    this.orgReadiness?.pending_setup_items?.filter((i) => i.is_completed) ?? []
+    this.orgReadiness?.pending_setup_items?.filter((i) => i.is_completed) ?? [],
   );
   setupProgressPercentage = $derived.by(() => {
     const total = this.orgReadiness?.pending_setup_items?.length ?? 0;
@@ -140,7 +153,9 @@ class SystemStore {
     }
   }
 
-  async loadOnboardingState(orgId?: string): Promise<import("$lib/api/types").OnboardingStateDto | null> {
+  async loadOnboardingState(
+    orgId?: string,
+  ): Promise<import("$lib/api/types").OnboardingStateDto | null> {
     this.onboardingState = null;
     try {
       this.onboardingState = await api.onboardingGetState(orgId);

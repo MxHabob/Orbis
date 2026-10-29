@@ -79,7 +79,29 @@ const NATIONALITY_MESSAGES: Record<string, () => string> = {
 };
 
 // Priority countries displayed at top of list
-const PRIORITY_CODES = ["YE", "SA", "EG", "AE", "JO", "SY", "LB", "PS", "KW", "QA", "BH", "OM", "IQ", "SD", "MA", "IN", "PK", "BD", "PH", "US", "GB"];
+const PRIORITY_CODES = [
+  "YE",
+  "SA",
+  "EG",
+  "AE",
+  "JO",
+  "SY",
+  "LB",
+  "PS",
+  "KW",
+  "QA",
+  "BH",
+  "OM",
+  "IQ",
+  "SD",
+  "MA",
+  "IN",
+  "PK",
+  "BD",
+  "PH",
+  "US",
+  "GB",
+];
 
 interface CountryItem {
   alpha2: string;

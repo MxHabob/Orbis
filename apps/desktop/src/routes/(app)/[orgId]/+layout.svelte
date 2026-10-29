@@ -4,7 +4,13 @@
 -->
 <script lang="ts">
 import AppChrome from "$lib/shell/app-chrome.svelte";
-import { authStore, systemStore, licenseStore, uiStore, academicContext } from "$lib/stores";
+import {
+  authStore,
+  systemStore,
+  licenseStore,
+  uiStore,
+  academicContext,
+} from "$lib/stores";
 import { afterNavigate, goto, replaceState } from "$app/navigation";
 import { page } from "$app/state";
 import { onMount } from "svelte";

@@ -18,6 +18,7 @@ pub mod iam_cmds;
 pub mod integration_cmds;
 pub mod license_cmds;
 pub mod mulverse_cmds;
+pub mod notification_cmds;
 pub mod onboarding_cmds;
 pub mod org_cmds;
 pub mod progression_cmds;
@@ -94,7 +95,6 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
             command,
             "license_get_state"
                 | "license_activate_key"
-                | "license_redeem_key"
                 | "license_start_trial"
                 | "license_deactivate"
                 | "license_refresh"
@@ -407,6 +407,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         report_cmds::download_report_file,
         report_cmds::batch_print,
         report_cmds::audit_list_logs,
+        report_cmds::get_entity_audit,
         // ── Template Management ─────────────────────────────────
         template_cmds::template_create,
         template_cmds::template_get,
@@ -466,7 +467,6 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         // ── License & Activation ────────────────────────────────
         license_cmds::license_get_state,
         license_cmds::license_activate_key,
-        license_cmds::license_redeem_key,
         license_cmds::license_start_trial,
         license_cmds::license_deactivate,
         license_cmds::license_refresh,
@@ -497,6 +497,14 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         // ── Onboarding ──────────────────────────────────────────
         onboarding_cmds::onboarding_get_state,
         onboarding_cmds::onboarding_provision_defaults,
+        // ── Notifications ───────────────────────────────────────
+        notification_cmds::notification_list,
+        notification_cmds::notification_unread_count,
+        notification_cmds::notification_mark_read,
+        notification_cmds::notification_mark_all_read,
+        notification_cmds::notification_dismiss,
+        notification_cmds::notification_get_preferences,
+        notification_cmds::notification_update_preferences,
     ]
 }
 

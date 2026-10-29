@@ -14,9 +14,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": [
-          "orbis-staging"
-        ]
+        "schemes": ["orbis-staging"]
       }
     },
     "updater": {

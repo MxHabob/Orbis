@@ -21,7 +21,11 @@ import * as m from "$lib/paraglide/messages";
 import { extractErrorMessage } from "$lib/api";
 import { createClassStudentsQuery } from "$lib/features/academics";
 import { formatDate } from "$lib/core/i18n";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();

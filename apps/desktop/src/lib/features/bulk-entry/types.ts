@@ -1,7 +1,11 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import type { BulkValidationContext } from "./engine/duplicate-index";
 
-export type BulkProfileId = "students" | "employees" | "grades" | "teacher-subjects";
+export type BulkProfileId =
+  | "students"
+  | "employees"
+  | "grades"
+  | "teacher-subjects";
 
 export type ValidationSeverity = "BLOCKING_ERROR" | "WARNING" | "INFO";
 
@@ -49,11 +53,14 @@ export interface BulkReferenceData {
     bloodTypes: string[];
     relationships: Array<{ value: string; labelAr: string; labelEn: string }>;
   };
-  registrationFields?: Record<string, {
-    active: boolean;
-    required: boolean;
-    preventDuplicate: boolean;
-  }>;
+  registrationFields?: Record<
+    string,
+    {
+      active: boolean;
+      required: boolean;
+      preventDuplicate: boolean;
+    }
+  >;
   existingSectionSubjectAssignments: Array<{
     classId: string;
     subjectId: string;
@@ -67,7 +74,15 @@ export interface ColumnDefinitionMetadata {
   headerAr: string;
   headerEn: string;
   required: boolean;
-  type: "text" | "number" | "integer" | "decimal" | "date" | "boolean" | "enum" | "reference";
+  type:
+    | "text"
+    | "number"
+    | "integer"
+    | "decimal"
+    | "date"
+    | "boolean"
+    | "enum"
+    | "reference";
   format?: string;
   descriptionAr?: string;
   descriptionEn?: string;
@@ -97,7 +112,11 @@ export interface StudentPreviewDetails {
   mandatoryFeesAssignedCount: number;
   totalEstimatedMandatoryFees: number;
   currency: string;
-  capacityOverridesRequired: Array<{ studentName: string; className: string; reason: string }>;
+  capacityOverridesRequired: Array<{
+    studentName: string;
+    className: string;
+    reason: string;
+  }>;
   classPlacementsSummary: Record<string, number>;
 }
 
@@ -160,7 +179,10 @@ export interface BulkChunkCommitResult {
   warnings?: Array<{ rowNumber: number; reason: string }>;
 }
 
-export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Record<string, unknown>> {
+export interface BulkImportProfile<
+  TRow = Record<string, unknown>,
+  TSummary = Record<string, unknown>,
+> {
   id: BulkProfileId;
   displayName: { ar: string; en: string };
   description: { ar: string; en: string };
@@ -168,7 +190,12 @@ export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Re
   columnMetadata: ColumnDefinitionMetadata[];
   gridColumns: OrbisColumnDef[];
   buildReferenceData: (orgId: string) => Promise<BulkReferenceData>;
-  validateCell: (colId: string, value: unknown, row: TRow, refData: BulkReferenceData) => BulkCellIssue | null;
+  validateCell: (
+    colId: string,
+    value: unknown,
+    row: TRow,
+    refData: BulkReferenceData,
+  ) => BulkCellIssue | null;
   validateRow: (
     row: TRow,
     allRows: TRow[],
@@ -176,6 +203,13 @@ export interface BulkImportProfile<TRow = Record<string, unknown>, TSummary = Re
     refData: BulkReferenceData,
     context?: BulkValidationContext,
   ) => BulkCellIssue[];
-  generatePreview: (rows: TRow[], refData: BulkReferenceData) => Promise<BulkPreviewSummary<TSummary>>;
-  commitChunk: (rows: TRow[], orgId: string, refData: BulkReferenceData) => Promise<BulkChunkCommitResult>;
+  generatePreview: (
+    rows: TRow[],
+    refData: BulkReferenceData,
+  ) => Promise<BulkPreviewSummary<TSummary>>;
+  commitChunk: (
+    rows: TRow[],
+    orgId: string,
+    refData: BulkReferenceData,
+  ) => Promise<BulkChunkCommitResult>;
 }

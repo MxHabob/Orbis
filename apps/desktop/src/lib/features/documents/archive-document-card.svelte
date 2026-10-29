@@ -6,7 +6,16 @@ import {
   getDocumentSource,
   resolveDocumentUrl,
 } from "$lib/features/documents/queries";
-import { DocumentPage, Download, Eye, Play, SoundHigh, Trash, ArchiveBox, Sparkles } from "@orbis/icons";
+import {
+  DocumentPage,
+  Download,
+  Eye,
+  Play,
+  SoundHigh,
+  Trash,
+  ArchiveBox,
+  Sparkles,
+} from "@orbis/icons";
 import type { DocumentDto } from "$lib/api";
 
 let {
@@ -29,7 +38,9 @@ const mimeType = $derived(document.mime_type?.toLowerCase() ?? "");
 const isImage = $derived(mimeType.startsWith("image/"));
 const isVideo = $derived(mimeType.startsWith("video/"));
 const isAudio = $derived(mimeType.startsWith("audio/"));
-const isPdf = $derived(mimeType === "application/pdf" || document.extension?.toLowerCase() === "pdf");
+const isPdf = $derived(
+  mimeType === "application/pdf" || document.extension?.toLowerCase() === "pdf",
+);
 const source = $derived(getDocumentSource(document));
 const extension = $derived(document.extension?.toUpperCase() || "FILE");
 let isNearViewport = $state(false);

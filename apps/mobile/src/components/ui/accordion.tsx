@@ -29,14 +29,17 @@ export function Accordion({
   };
 
   return (
-    <View className="border-b" style={{ borderBottomColor: theme.borderSubtle }}>
+    <View
+      className="border-b"
+      style={{ borderBottomColor: theme.borderSubtle }}
+    >
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open, disabled }}
         disabled={disabled}
         onPress={toggle}
         className="min-h-12 flex-row items-center justify-between gap-3 py-3"
-        style={({ pressed }) => pressed ? { opacity: 0.7 } : undefined}
+        style={({ pressed }) => (pressed ? { opacity: 0.7 } : undefined)}
       >
         <Text className="flex-1 text-base font-semibold">{title}</Text>
         {open ? (

@@ -41,13 +41,8 @@ export default function StudentAttendanceScreen() {
   const { t, formatDate } = useI18n();
 
   const requestedStudentId = typeof id === "string" ? id : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const attendanceQuery = useStudentAttendanceQuery(studentId);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -55,10 +50,19 @@ export default function StudentAttendanceScreen() {
   const rawRecords = attendanceQuery.data ?? [];
   const records = [...rawRecords].sort((a, b) => b.date.localeCompare(a.date));
 
-  const presentCount = records.filter((r) => r.status.toLowerCase() === "present").length;
-  const absentCount = records.filter((r) => r.status.toLowerCase() === "absent").length;
-  const lateCount = records.filter((r) => r.status.toLowerCase() === "late").length;
-  const attendancePercentage = records.length > 0 ? Math.round((presentCount / records.length) * 100) : 100;
+  const presentCount = records.filter(
+    (r) => r.status.toLowerCase() === "present",
+  ).length;
+  const absentCount = records.filter(
+    (r) => r.status.toLowerCase() === "absent",
+  ).length;
+  const lateCount = records.filter(
+    (r) => r.status.toLowerCase() === "late",
+  ).length;
+  const attendancePercentage =
+    records.length > 0
+      ? Math.round((presentCount / records.length) * 100)
+      : 100;
 
   const filteredRecords = records.filter((r) => {
     if (filterStatus === "all") return true;
@@ -83,10 +87,7 @@ export default function StudentAttendanceScreen() {
       }
     >
       {/* 1. Overall Attendance Performance Widget */}
-      <Card
-        variant="default"
-        padding="four"
-      >
+      <Card variant="default" padding="four">
         <View className="flex-row items-center justify-between pb-three">
           <View className="gap-half">
             <Text className="text-xs font-semibold text-muted-foreground">
@@ -109,8 +110,12 @@ export default function StudentAttendanceScreen() {
               <CheckCircle size={15} color={theme.success} />
             </View>
             <View>
-              <Text className="text-xs font-bold text-foreground">{formatNumber(presentCount)}</Text>
-              <Text className="text-[10px] text-muted-foreground">{t("student_attendance_present")}</Text>
+              <Text className="text-xs font-bold text-foreground">
+                {formatNumber(presentCount)}
+              </Text>
+              <Text className="text-[10px] text-muted-foreground">
+                {t("student_attendance_present")}
+              </Text>
             </View>
           </View>
 
@@ -119,8 +124,12 @@ export default function StudentAttendanceScreen() {
               <ExclamationCircle size={15} color={theme.destructive} />
             </View>
             <View>
-              <Text className="text-xs font-bold text-foreground">{formatNumber(absentCount)}</Text>
-              <Text className="text-[10px] text-muted-foreground">{t("student_attendance_absent")}</Text>
+              <Text className="text-xs font-bold text-foreground">
+                {formatNumber(absentCount)}
+              </Text>
+              <Text className="text-[10px] text-muted-foreground">
+                {t("student_attendance_absent")}
+              </Text>
             </View>
           </View>
 
@@ -129,8 +138,12 @@ export default function StudentAttendanceScreen() {
               <Clock size={15} color={theme.warning} />
             </View>
             <View>
-              <Text className="text-xs font-bold text-foreground">{formatNumber(lateCount)}</Text>
-              <Text className="text-[10px] text-muted-foreground">{t("student_attendance_late")}</Text>
+              <Text className="text-xs font-bold text-foreground">
+                {formatNumber(lateCount)}
+              </Text>
+              <Text className="text-[10px] text-muted-foreground">
+                {t("student_attendance_late")}
+              </Text>
             </View>
           </View>
         </View>
@@ -165,7 +178,12 @@ export default function StudentAttendanceScreen() {
         <View className="py-ten">
           <EmptyState
             title={t("student_no_attendance")}
-            icon={<ClipboardDocumentCheck size={32} className="text-muted-foreground" />}
+            icon={
+              <ClipboardDocumentCheck
+                size={32}
+                className="text-muted-foreground"
+              />
+            }
           />
         </View>
       ) : (
@@ -177,18 +195,20 @@ export default function StudentAttendanceScreen() {
             const isLate = status === "late";
 
             return (
-              <Card
-                key={record.id}
-                variant="outline"
-                padding="four"
-              >
+              <Card key={record.id} variant="outline" padding="four">
                 <View className="flex-row items-center justify-between pb-two">
                   <Text className="text-sm font-bold text-foreground">
                     {formatDate(record.date)}
                   </Text>
 
                   <Badge
-                    variant={isAbsent ? "destructive" : isLate ? "secondary" : "default"}
+                    variant={
+                      isAbsent
+                        ? "destructive"
+                        : isLate
+                          ? "secondary"
+                          : "default"
+                    }
                     className={`px-two py-half ${
                       !isAbsent && !isLate ? "bg-success/20" : ""
                     }`}

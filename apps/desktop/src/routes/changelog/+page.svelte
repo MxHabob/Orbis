@@ -1,110 +1,114 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { onMount } from "svelte";
-  import { api } from "$lib/api/client";
-  import type { AppInfo, ReleaseChangelogItem, UpdateCheckResult } from "$lib/api/types";
-  import { formatDate as formatOrgDate } from "$lib/core/i18n";
-  import { Button } from "@orbis/ui/button";
-  import { LoadingIndicator, toast } from "@orbis/ui";
-  import { ArrowPath, Sparkles } from "@orbis/icons";
-  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
-  import EmptyState from "$lib/shared/components/empty-state.svelte";
+import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { api } from "$lib/api/client";
+import type {
+  AppInfo,
+  ReleaseChangelogItem,
+  UpdateCheckResult,
+} from "$lib/api/types";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
+import { Button } from "@orbis/ui/button";
+import { LoadingIndicator, toast } from "@orbis/ui";
+import { ArrowPath, Sparkles } from "@orbis/icons";
+import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
 
-  let releases = $state<ReleaseChangelogItem[]>([]);
-  let appInfo = $state<AppInfo | null>(null);
-  let isLoading = $state(true);
-  let isCheckingUpdate = $state(false);
-  let isInstallingUpdate = $state(false);
-  let updateResult = $state<UpdateCheckResult | null>(null);
+let releases = $state<ReleaseChangelogItem[]>([]);
+let appInfo = $state<AppInfo | null>(null);
+let isLoading = $state(true);
+let isCheckingUpdate = $state(false);
+let isInstallingUpdate = $state(false);
+let updateResult = $state<UpdateCheckResult | null>(null);
 
-  // Focus strictly on the current installed release
-  const currentRelease = $derived(
-    releases.find((r) => r.is_current) ??
+// Focus strictly on the current installed release
+const currentRelease = $derived(
+  releases.find((r) => r.is_current) ??
     releases.find((r) => r.version === appInfo?.version) ??
     releases[0] ??
-    null
-  );
+    null,
+);
 
-  function formatDate(value?: string) {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? null
-      : formatOrgDate(date, "date");
+function formatDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : formatOrgDate(date, "date");
+}
+
+async function loadData() {
+  isLoading = true;
+  try {
+    const [releaseList, info] = await Promise.all([
+      api.systemGetChangelog().catch((err) => {
+        console.warn("Changelog fetch failed, treating as empty:", err);
+        return [] as ReleaseChangelogItem[];
+      }),
+      api.systemGetAppInfo().catch((err) => {
+        console.warn("App info fetch failed:", err);
+        return null;
+      }),
+    ]);
+    releases = releaseList;
+    appInfo = info;
+  } catch (error) {
+    console.warn("Failed to load changelog data:", error);
+    releases = [];
+  } finally {
+    isLoading = false;
   }
+}
 
-  async function loadData() {
-    isLoading = true;
-    try {
-      const [releaseList, info] = await Promise.all([
-        api.systemGetChangelog().catch((err) => {
-          console.warn("Changelog fetch failed, treating as empty:", err);
-          return [] as ReleaseChangelogItem[];
-        }),
-        api.systemGetAppInfo().catch((err) => {
-          console.warn("App info fetch failed:", err);
-          return null;
-        }),
-      ]);
-      releases = releaseList;
-      appInfo = info;
-    } catch (error) {
-      console.warn("Failed to load changelog data:", error);
-      releases = [];
-    } finally {
-      isLoading = false;
+async function handleCheckForUpdates() {
+  isCheckingUpdate = true;
+  updateResult = null;
+  try {
+    const res = await api.systemCheckForUpdates();
+    updateResult = res;
+    if (res.status === "unavailable") {
+      toast.info(m.ui_changelog_updates_unavailable_staging());
+    } else if (!res.has_update) {
+      toast.info(
+        m.shared_ui_latest_version_installed({ version: res.current_version }),
+      );
     }
+  } catch (error) {
+    console.warn("Check for updates failed:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
+  } finally {
+    isCheckingUpdate = false;
   }
+}
 
-  async function handleCheckForUpdates() {
-    isCheckingUpdate = true;
-    updateResult = null;
-    try {
-      const res = await api.systemCheckForUpdates();
-      updateResult = res;
-      if (res.status === "unavailable") {
-        toast.info(m.ui_changelog_updates_unavailable_staging());
-      } else if (!res.has_update) {
-        toast.info(m.shared_ui_latest_version_installed({ version: res.current_version }));
-      }
-    } catch (error) {
-      console.warn("Check for updates failed:", error);
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
-    } finally {
-      isCheckingUpdate = false;
-    }
+async function handleInstallUpdate() {
+  isInstallingUpdate = true;
+  try {
+    await api.systemInstallUpdate();
+  } catch (error) {
+    console.error("Failed to install update:", error);
+    const msg = error instanceof Error ? error.message : String(error);
+    toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
+  } finally {
+    isInstallingUpdate = false;
   }
+}
 
-  async function handleInstallUpdate() {
-    isInstallingUpdate = true;
-    try {
-      await api.systemInstallUpdate();
-    } catch (error) {
-      console.error("Failed to install update:", error);
-      const msg = error instanceof Error ? error.message : String(error);
-      toast.error(`${m.ui_changelog_update_failed()} ${msg}`);
-    } finally {
-      isInstallingUpdate = false;
-    }
-  }
+function closeWindow() {
+  window.close();
+}
 
-  function closeWindow() {
-    window.close();
-  }
-
-  onMount(() => {
-    void loadData();
-  });
+onMount(() => {
+  void loadData();
+});
 </script>
 
 <svelte:head>
   <title>{currentRelease?.title ? `${currentRelease.title} (v${currentRelease.version})` : m.ui_changelog_what_s_new_releases()}</title>
 </svelte:head>
 
-<div class="min-h-screen bg-background font-sans text-foreground flex flex-col">
-  <main class="flex-1 w-full max-w-2xl sm:max-w-3xl mx-auto p-5 sm:p-7 flex flex-col gap-5 justify-between">
-    <div class="flex flex-col gap-5">
+<div class="h-screen overflow-hidden bg-background font-sans text-foreground flex flex-col">
+  <main class="min-h-0 flex-1 w-full overflow-y-auto scrollbar-hide">
+    <div class="w-full max-w-2xl sm:max-w-3xl mx-auto p-5 sm:p-7 flex flex-col gap-5">
       <!-- Update Available Action Bar -->
       {#if updateResult?.has_update}
         <div class="flex items-center justify-between rounded-2xl border border-primary/20 bg-primary/10 text-primary p-3 text-xs">
@@ -249,9 +253,11 @@
         />
       {/if}
     </div>
+  </main>
 
-    <!-- Bottom Action Row (Always present) -->
-    <div class="flex items-center justify-between gap-2 pt-4 mt-2 border-t border-border/40">
+  <!-- Fixed bottom action row -->
+  <div class="shrink-0 w-full max-w-2xl sm:max-w-3xl mx-auto px-5 sm:px-7 pb-5 sm:pb-7 pt-4 border-t border-border/40 bg-background">
+    <div class="flex items-center justify-between gap-2">
       <div>
         {#if currentRelease?.html_url}
           <Button
@@ -292,5 +298,5 @@
         </Button>
       </div>
     </div>
-  </main>
+  </div>
 </div>

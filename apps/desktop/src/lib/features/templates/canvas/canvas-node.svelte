@@ -165,7 +165,8 @@ const tableLayout = $derived.by(() => {
   const style = nodeProps.style || {};
   const isRtl = (nodeProps.direction || "rtl") === "rtl";
   const showHeader = nodeProps.showHeader !== false;
-  const showTotals = nodeProps.showTotals === true || cols.some((c: any) => c.total);
+  const showTotals =
+    nodeProps.showTotals === true || cols.some((c: any) => c.total);
   const showGrid = nodeProps.showGrid !== false;
   const showBorder = nodeProps.showBorder !== false;
 
@@ -201,13 +202,27 @@ const tableLayout = $derived.by(() => {
     widths = widths.map((val) => val * scale);
   }
 
-  const headerH = showHeader ? mmToPx(style.headerFontSize ? style.headerFontSize * 0.9 : 8, vp.dpi, vp.zoom) : 0;
-  const rowH = mmToPx(style.rowHeight ? style.rowHeight * 0.35 : 7, vp.dpi, vp.zoom);
+  const headerH = showHeader
+    ? mmToPx(
+        style.headerFontSize ? style.headerFontSize * 0.9 : 8,
+        vp.dpi,
+        vp.zoom,
+      )
+    : 0;
+  const rowH = mmToPx(
+    style.rowHeight ? style.rowHeight * 0.35 : 7,
+    vp.dpi,
+    vp.zoom,
+  );
   const totalsH = showTotals ? rowH : 0;
 
   const availableH = h - headerH - totalsH;
-  const numRows = Math.max(2, Math.min(7, Math.floor(availableH / Math.max(rowH, 10))));
-  const actualRowH = availableH > 0 && numRows > 0 ? availableH / numRows : rowH;
+  const numRows = Math.max(
+    2,
+    Math.min(7, Math.floor(availableH / Math.max(rowH, 10))),
+  );
+  const actualRowH =
+    availableH > 0 && numRows > 0 ? availableH / numRows : rowH;
 
   const colPositions: { x: number; width: number; col: any }[] = [];
   if (isRtl) {
@@ -245,7 +260,11 @@ const tableLayout = $derived.by(() => {
   };
 });
 
-function getCellDisplayText(col: any, rowIdx: number, runtimeRows?: any[]): string {
+function getCellDisplayText(
+  col: any,
+  rowIdx: number,
+  runtimeRows?: any[],
+): string {
   const field = col.field || col.key || "";
   if (runtimeRows && runtimeRows[rowIdx]) {
     const val = runtimeRows[rowIdx][field];
@@ -259,10 +278,17 @@ function getCellDisplayText(col: any, rowIdx: number, runtimeRows?: any[]): stri
 
 function getTotalDisplayText(col: any): string {
   if (col.total) {
-    if (col.total === "label") return col.totalLabel || col.total_label || col.headerAr || m.template_inspector_total_label();
+    if (col.total === "label")
+      return (
+        col.totalLabel ||
+        col.total_label ||
+        col.headerAr ||
+        m.template_inspector_total_label()
+      );
     return `Σ (${col.total})`;
   }
-  if (col.totalLabel || col.total_label) return col.totalLabel || col.total_label;
+  if (col.totalLabel || col.total_label)
+    return col.totalLabel || col.total_label;
   return "—";
 }
 </script>

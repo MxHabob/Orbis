@@ -5,10 +5,7 @@
  */
 
 import React from "react";
-import {
-  View,
-  type ViewProps,
-} from "react-native";
+import { View, type ViewProps } from "react-native";
 import type { ViewStyle } from "react-native";
 
 type SpacingScale =
@@ -23,7 +20,16 @@ type SpacingScale =
   | "ten"
   | "twelve"
   | "sixteen";
-type RadiusScale = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "full";
+type RadiusScale =
+  | "none"
+  | "xs"
+  | "sm"
+  | "md"
+  | "lg"
+  | "xl"
+  | "2xl"
+  | "3xl"
+  | "full";
 
 const paddingClasses: Record<SpacingScale, string> = {
   half: "p-half",

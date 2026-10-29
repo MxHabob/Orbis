@@ -31,9 +31,9 @@ const initialPrefs = {
 let isSaving = $state(false);
 const isDirty = $derived(
   prefTheme !== initialPrefs.theme ||
-  prefLanguage !== initialPrefs.language ||
-  notifyEmail !== initialPrefs.notifyEmail ||
-  notifyPush !== initialPrefs.notifyPush
+    prefLanguage !== initialPrefs.language ||
+    notifyEmail !== initialPrefs.notifyEmail ||
+    notifyPush !== initialPrefs.notifyPush,
 );
 
 function handleReset() {

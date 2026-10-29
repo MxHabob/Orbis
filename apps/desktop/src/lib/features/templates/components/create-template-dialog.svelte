@@ -57,7 +57,11 @@ function handleDocumentTypeChange(type: string | undefined) {
 function presetForDocument(type: string): string {
   if (type === "RECEIPT") return "receipt";
   if (type === "REPORT" || type === "TRANSCRIPT") return "transcript";
-  if (type === "CERTIFICATE" || type === "TERM_CERTIFICATE" || type === "ANNUAL_CERTIFICATE") {
+  if (
+    type === "CERTIFICATE" ||
+    type === "TERM_CERTIFICATE" ||
+    type === "ANNUAL_CERTIFICATE"
+  ) {
     return "certificate";
   }
   return "blank";

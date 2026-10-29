@@ -7,10 +7,7 @@
 import React, { useEffect, useState } from "react";
 import { AppState, type AppStateStatus, Platform } from "react-native";
 import * as Network from "expo-network";
-import {
-  QueryClient,
-  focusManager,
-} from "@tanstack/react-query";
+import { QueryClient, focusManager } from "@tanstack/query-core";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useAuth } from "@/lib/api";
 import { updateNetworkStatus } from "@/lib/network/online-manager";
@@ -52,7 +49,9 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
     [cacheScope],
   );
   const activePersister = React.useRef(persister);
-  activePersister.current = persister;
+  useEffect(() => {
+    activePersister.current = persister;
+  }, [persister]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", onAppStateChange);
@@ -77,7 +76,10 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch((error: unknown) => {
-        console.error("[Orbis Mobile Network] Failed to read network status.", error);
+        console.error(
+          "[Orbis Mobile Network] Failed to read network status.",
+          error,
+        );
         if (!receivedNetworkEvent) {
           updateNetworkStatus(false, false);
         }
@@ -92,14 +94,20 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
         if (`${identity.orgId}:${identity.userId}` !== cacheScope) return;
 
         void queryClient.cancelQueries().catch((error: unknown) => {
-          console.error("[Orbis Mobile Cache] Failed to cancel session queries.", error);
+          console.error(
+            "[Orbis Mobile Cache] Failed to cancel session queries.",
+            error,
+          );
         });
         queryClient.clear();
 
         const removeClient = activePersister.current.removeClient;
         if (removeClient) {
           void Promise.resolve(removeClient()).catch((error: unknown) => {
-            console.error("[Orbis Mobile Cache] Failed to clear the user cache.", error);
+            console.error(
+              "[Orbis Mobile Cache] Failed to clear the user cache.",
+              error,
+            );
           });
         }
       }),
@@ -115,7 +123,9 @@ export function AppQueryProvider({ children }: { children: React.ReactNode }) {
         buster: "orbis-mobile-query-cache-v1",
       }}
       onError={() => {
-        console.error("[Orbis Mobile Cache] Failed to restore the offline cache.");
+        console.error(
+          "[Orbis Mobile Cache] Failed to restore the offline cache.",
+        );
       }}
     >
       {children}

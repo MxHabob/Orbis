@@ -31,9 +31,7 @@ onDestroy(() => {
   if (timer) clearInterval(timer);
 });
 
-const currentStatus = $derived(
-  statusText || defaultPhases[currentPhaseIndex]
-);
+const currentStatus = $derived(statusText || defaultPhases[currentPhaseIndex]);
 </script>
 
 <div class="flex flex-col gap-3 w-full text-start py-1 select-none {className}">
@@ -41,7 +39,6 @@ const currentStatus = $derived(
   <div class="flex items-center gap-2">
     <div class="relative flex items-center justify-center shrink-0">
       <UserAvatar
-        hat="graduation"
         state="thinking"
         width="22px"
         height="22px"

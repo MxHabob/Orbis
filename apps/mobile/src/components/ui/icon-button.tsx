@@ -110,6 +110,7 @@ export const IconButton = React.memo<IconButtonProps>(
         onPressOut={tactilePress.onPressOut}
         className={`items-center justify-center ${rounded ? "rounded-full" : "rounded-md"} ${variantStyle.container}`}
         style={[
+          tactilePress.shadowStyle,
           tactilePress.style,
           {
             width: dimensions.size,

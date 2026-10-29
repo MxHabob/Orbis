@@ -66,29 +66,46 @@ let ministryName = $state("");
 let regionName = $state("");
 let organizationMetadata = $state<Record<string, unknown>>({});
 
-const stepTasks = $derived(getTasksForStep("organization", systemStore.onboardingTasks));
-const isTaskComplete = $derived(stepTasks.every((t) => t.status === "completed"));
+const stepTasks = $derived(
+  getTasksForStep("organization", systemStore.onboardingTasks),
+);
+const isTaskComplete = $derived(
+  stepTasks.every((t) => t.status === "completed"),
+);
 
 onMount(async () => {
   try {
     isLoading = true;
-    const org = (await api.getCurrentOrg()) || systemStore.onboardingState?.organization || authStore.currentOrg;
+    const org =
+      (await api.getCurrentOrg()) ||
+      systemStore.onboardingState?.organization ||
+      authStore.currentOrg;
     if (org) {
       name = org.name || name;
       nameAr = org.name_ar || nameAr;
       slug = org.slug || slug;
-      baseCurrencyCode = org.base_currency_code || (org as any).currency || baseCurrencyCode;
+      baseCurrencyCode =
+        org.base_currency_code || (org as any).currency || baseCurrencyCode;
       timezone = org.timezone || timezone;
       locale = org.locale || locale;
-      isHijriEnabled = Boolean(org.is_hijri_enabled ?? (org as any).hijri_enabled ?? isHijriEnabled);
+      isHijriEnabled = Boolean(
+        org.is_hijri_enabled ?? (org as any).hijri_enabled ?? isHijriEnabled,
+      );
       const metadata =
-        org.metadata && typeof org.metadata === "object" && !Array.isArray(org.metadata)
+        org.metadata &&
+        typeof org.metadata === "object" &&
+        !Array.isArray(org.metadata)
           ? (org.metadata as Record<string, unknown>)
           : {};
       organizationMetadata = metadata;
-      countryName = typeof metadata.country_name === "string" ? metadata.country_name : "";
-      ministryName = typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
-      regionName = typeof metadata.region_name === "string" ? metadata.region_name : "";
+      countryName =
+        typeof metadata.country_name === "string" ? metadata.country_name : "";
+      ministryName =
+        typeof metadata.ministry_name === "string"
+          ? metadata.ministry_name
+          : "";
+      regionName =
+        typeof metadata.region_name === "string" ? metadata.region_name : "";
     }
     if (!name && authStore.currentOrg?.name) {
       name = authStore.currentOrg.name;
@@ -140,7 +157,6 @@ async function saveOrganization() {
     toast.error(err?.message || m.common_action_failed());
   }
 }
-
 </script>
 
 <div class="space-y-6">

@@ -18,7 +18,16 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Pencil, Plus, Trash, Users } from "@orbis/icons";
-import { api, extractErrorMessage, queryKeys, type GuardianDto, type UserDto } from "$lib/api";
+import ActionDropdownMenu from "$lib/shared/components/action-dropdown-menu.svelte";
+import type { SplitActionItem } from "$lib/shared/components/split-action-menu.svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type GuardianDto,
+  type UserDto,
+} from "$lib/api";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();
@@ -76,6 +85,24 @@ function openEdit(link: GuardianDto) {
   sheetOpen = true;
 }
 
+function getGuardianActions(link: GuardianDto): SplitActionItem[] {
+  return [
+    {
+      id: "edit",
+      label: m.common_action_edit_simple(),
+      icon: Pencil,
+      onSelect: () => openEdit(link),
+    },
+    {
+      id: "unlink",
+      label: m.common_action_unlink(),
+      icon: Trash,
+      destructive: true,
+      onSelect: () => handleDelete(link),
+    },
+  ];
+}
+
 async function handleDelete(link: GuardianDto) {
   const confirmed = await confirmStore.prompt({
     title: m.operations_ui_delete_question_title(),
@@ -117,19 +144,18 @@ async function handleDelete(link: GuardianDto) {
       {/each}
     </div>
   {:else if guardians.length === 0}
-    <div class="flex flex-col items-center justify-center gap-4 py-16 text-center">
-      <div class="p-5 rounded-2xl bg-muted/30 border border-border/30">
-        <Users class="h-10 w-10 text-muted-foreground/40" />
-      </div>
-      <div class="space-y-1">
-        <p class="text-sm font-semibold text-foreground">{m.common_guardians_empty()}</p>
-        <p class="text-xs text-muted-foreground max-w-xs">{m.common_guardians_empty_desc()}</p>
-      </div>
-      <Button onclick={openCreate} size="sm" class="mt-2 gap-1.5 text-xs">
-        <Plus size={13} />
-        {m.common_guardians_add()}
-      </Button>
-    </div>
+    <StudentSectionState
+      icon={Users}
+      title={m.common_guardians_empty()}
+      description={m.common_guardians_empty_desc()}
+    >
+      {#snippet action()}
+        <Button onclick={openCreate} size="sm" class="gap-1.5 text-xs">
+          <Plus size={13} />
+          {m.common_guardians_add()}
+        </Button>
+      {/snippet}
+    </StudentSectionState>
   {:else}
     <div class="grid grid-cols-1 gap-6">
       {#each guardians as link, index (link.id)}
@@ -140,26 +166,7 @@ async function handleDelete(link: GuardianDto) {
               {m.common_form_guardian_number()} {index + 1}
             </CardTitle>
             <CardAction>
-              <div class="flex items-center gap-1.5 flex-nowrap shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-7 px-2.5 text-xs text-primary hover:bg-primary/10 gap-1"
-                  onclick={() => openEdit(link)}
-                >
-                  <Pencil size={12} />
-                  {m.common_action_edit_simple()}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  class="h-7 px-2.5 text-xs text-destructive hover:bg-destructive/10 gap-1"
-                  onclick={() => handleDelete(link)}
-                >
-                  <Trash size={12} />
-                  {m.common_action_unlink()}
-                </Button>
-              </div>
+              <ActionDropdownMenu actions={getGuardianActions(link)} />
             </CardAction>
           </CardHeader>
 

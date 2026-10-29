@@ -7,6 +7,7 @@
  * - Longer stale times (local data changes predictably)
  * - Always-on network mode
  */
+
 import { QueryClient } from "@tanstack/svelte-query";
 
 export const queryClient = new QueryClient({

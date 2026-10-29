@@ -38,8 +38,7 @@ const websites: Record<string, string> = {
   stripe: "https://dashboard.stripe.com/",
   tabby: "https://business.tabby.ai/",
   tamara: "https://tamara.co/en-SA/merchant",
-  "whatsapp-business":
-    "https://www.twilio.com/docs/whatsapp/api",
+  "whatsapp-business": "https://www.twilio.com/docs/whatsapp/api",
   "yemen-mobile-sms": "https://yemenmobile.com.ye/",
   "yemen-wallet":
     "https://play.google.com/store/apps/details?id=com.s2m.yamenpost.merchant.android",
@@ -91,10 +90,7 @@ const connectionSummaries: Record<
   },
 };
 
-const appSpecificSummaries: Record<
-  string,
-  { en: string; ar: string }
-> = {
+const appSpecificSummaries: Record<string, { en: string; ar: string }> = {
   authen: {
     en: "Enter your Authen API URL and key. Orbis verifies access with a generated blank test image; no user image is sent, but the check may count toward your Authen usage.",
     ar: "أدخل عنوان Authen ومفتاح API. يتحقق أوربيس من الوصول بصورة اختبار اصطناعية فارغة؛ لا تُرسل صور مستخدمين، لكن قد يُحتسب الطلب ضمن استخدام Authen.",
@@ -115,7 +111,7 @@ const appSpecificSummaries: Record<
     en: "Enable a WhatsApp sender in Twilio, then enter its Account SID, Auth Token, and sender number below. Orbis verifies the Twilio account before saving; actual WhatsApp delivery requires an active sender.",
     ar: "فعّل مرسل WhatsApp في Twilio، ثم أدخل Account SID وAuth Token ورقم المرسل أدناه. يتحقق أوربيس من حساب Twilio قبل الحفظ؛ ويتطلب الإرسال الفعلي مرسلاً نشطاً.",
   },
-  "orbis_mobile": {
+  orbis_mobile: {
     en: "To connect, publish your active public HTTPS endpoint in the Mulverse deployment dashboard.",
     ar: "للربط، انشر عنوان HTTPS العام والنشط في لوحة نشر Mulverse.",
   },
@@ -152,7 +148,9 @@ const appsAvailableWithoutLiveVerifier = new Set(["orbis_mobile"]);
 export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const website = websites[app.id];
   if (!website) {
-    throw new Error(`Missing official website for app-store entry "${app.id}".`);
+    throw new Error(
+      `Missing official website for app-store entry "${app.id}".`,
+    );
   }
 
   const summary =

@@ -20,13 +20,18 @@ export async function ensureStudentRegistrationArtifacts(
   studentId: string,
   studentName: string,
   options: RegistrationArtifactOptions = {},
-): Promise<{ warnings: string[]; studentFolder?: FolderDto; folderError?: string }> {
+): Promise<{
+  warnings: string[];
+  studentFolder?: FolderDto;
+  folderError?: string;
+}> {
   const warnings: string[] = [];
   let studentFolder: FolderDto | undefined;
   let folderError: string | undefined;
 
   const [folderResult, accountResult] = await Promise.allSettled([
-    options.studentFolder ?? getOrCreateStudentArchiveFolder(studentId, studentName),
+    options.studentFolder ??
+      getOrCreateStudentArchiveFolder(studentId, studentName),
     (async () => {
       if (options.accountListError) throw new Error(options.accountListError);
       const accounts = options.accounts ?? (await api.listAccounts());
@@ -96,7 +101,11 @@ export async function provisionStudentLoginAccount(input: {
     preferred_username: input.preferredUsername?.trim() || undefined,
     roles: ["student"],
     group_ids: input.groupIds ?? [],
-    delivery_channel: input.email?.trim() ? "email" : input.phone?.trim() ? "sms" : "manual",
+    delivery_channel: input.email?.trim()
+      ? "email"
+      : input.phone?.trim()
+        ? "sms"
+        : "manual",
   };
   return api.provisionUser(request);
 }

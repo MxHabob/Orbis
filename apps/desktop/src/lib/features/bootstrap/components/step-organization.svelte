@@ -31,7 +31,6 @@ let {
   form: OnboardingFormModel;
   errors?: Record<string, string>;
 } = $props();
-
 </script>
 
 <div class="space-y-6 max-w-5xl mx-auto py-2">

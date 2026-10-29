@@ -14,6 +14,7 @@ pub mod identity_repo;
 pub mod integration_repos;
 pub mod license_quota;
 pub mod mfa_repo;
+pub mod notification_repos;
 pub mod org_repo;
 pub mod org_unit_repo;
 pub mod override_repos;

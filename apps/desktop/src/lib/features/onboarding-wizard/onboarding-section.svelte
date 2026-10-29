@@ -1,6 +1,12 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@orbis/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@orbis/ui/card";
 import { Badge } from "@orbis/ui/badge";
 import type { Snippet } from "svelte";
 

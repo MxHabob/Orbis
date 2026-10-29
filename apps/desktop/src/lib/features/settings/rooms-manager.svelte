@@ -6,7 +6,12 @@ Lists all rooms and venues with OrbisGrid, CRUD via RoomCreateSheet.
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, extractErrorMessage, type OrgUnitDto, type RoomDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type OrgUnitDto,
+  type RoomDto,
+} from "$lib/api";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { toast } from "@orbis/ui";
@@ -14,7 +19,12 @@ import { formatDate, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { Pin, Plus, Search, Refresh } from "@orbis/icons";
 import RoomCreateSheet from "$lib/features/academics/components/room-create-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { roomFilterFields } from "$lib/core/filter-configs";
 import { confirmStore } from "$lib/stores";
@@ -76,23 +86,121 @@ const gridSource = $derived(
       capacity: r.capacity ?? "—",
       room_type: r.room_type || "—",
       status: r.is_active !== false ? "active" : "inactive",
-      created_at_display: r.created_at ? formatDate(r.created_at, "datetime") : "—",
-      updated_at_display: r.updated_at ? formatDate(r.updated_at, "datetime") : "—",
+      created_at_display: r.created_at
+        ? formatDate(r.created_at, "datetime")
+        : "—",
+      updated_at_display: r.updated_at
+        ? formatDate(r.updated_at, "datetime")
+        : "—",
     };
   }),
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_rooms_col_name(), name: m.common_rooms_col_name(), width: 200, size: 200, readonly: true, pin: "left", cellClass: "font-medium" },
-  { id: "room_type", prop: "room_type", header: m.common_word_type(), name: m.common_word_type(), width: 130, size: 130, readonly: true },
-  { id: "building", prop: "building", header: m.common_rooms_col_location(), name: m.common_rooms_col_location(), width: 150, size: 150, readonly: true },
-  { id: "floor", prop: "floor", header: m.settings_ui_room_floor(), name: m.settings_ui_room_floor(), width: 90, size: 90, readonly: true, align: "center" },
-  { id: "capacity", prop: "capacity", header: m.common_rooms_col_capacity(), name: m.common_rooms_col_capacity(), width: 100, size: 100, readonly: true, align: "center", type: "number" },
-  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, size: 100, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: m.ui_copy_created_at_01f6ea5f(), width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: m.ui_copy_updated_at_ba0d0a9f(), width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "actions", prop: "actions", header: m.ui_copy_actions_c48127a5(), name: m.ui_copy_actions_c48127a5(), width: 120, size: 120, type: "action", align: "center", readonly: true, meta: { items: roomActions } },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.common_rooms_col_name(),
+    name: m.common_rooms_col_name(),
+    width: 200,
+    size: 200,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-medium",
+  },
+  {
+    id: "room_type",
+    prop: "room_type",
+    header: m.common_word_type(),
+    name: m.common_word_type(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "building",
+    prop: "building",
+    header: m.common_rooms_col_location(),
+    name: m.common_rooms_col_location(),
+    width: 150,
+    size: 150,
+    readonly: true,
+  },
+  {
+    id: "floor",
+    prop: "floor",
+    header: m.settings_ui_room_floor(),
+    name: m.settings_ui_room_floor(),
+    width: 90,
+    size: 90,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "capacity",
+    prop: "capacity",
+    header: m.common_rooms_col_capacity(),
+    name: m.common_rooms_col_capacity(),
+    width: 100,
+    size: 100,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
+    width: 100,
+    size: 100,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: m.ui_copy_created_at_01f6ea5f(),
+    name: m.ui_copy_created_at_01f6ea5f(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "updated_at_display",
+    prop: "updated_at_display",
+    header: m.ui_copy_updated_at_ba0d0a9f(),
+    name: m.ui_copy_updated_at_ba0d0a9f(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.ui_copy_actions_c48127a5(),
+    name: m.ui_copy_actions_c48127a5(),
+    width: 120,
+    size: 120,
+    type: "action",
+    align: "center",
+    readonly: true,
+    meta: { items: roomActions },
+  },
 ];
 
 function openCreateSheet() {
@@ -103,7 +211,9 @@ function openCreateSheet() {
 function promptDelete(room: RoomDto) {
   confirmStore.open({
     title: m.ui_copy_delete_room_b9cc731b(),
-    message: m.ui_room_delete_confirmation({ roomName: room.name_ar || room.name }),
+    message: m.ui_room_delete_confirmation({
+      roomName: room.name_ar || room.name,
+    }),
     confirmLabel: m.common_action_delete(),
     variant: "destructive",
     onConfirm: async () => {

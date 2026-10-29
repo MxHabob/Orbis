@@ -5,10 +5,7 @@ import * as m from "$lib/paraglide/messages";
 
 export type RevealDownloadedLocation = () => void | Promise<void>;
 
-export function downloadBlob(
-  blob: Blob,
-  filename: string,
-): null {
+export function downloadBlob(blob: Blob, filename: string): null {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

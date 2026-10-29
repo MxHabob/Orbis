@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface RefreshProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface RefreshProps extends SvgProps {
 
 export function Refresh({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,7 +45,8 @@ export function Refresh({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path d="M19.5 12a7.5 7.5 0 1 1-7.5-7.5M12 4.5h5m0 0-3-2.5m3 2.5-3 2.5" />
     </Svg>
   );

@@ -85,11 +85,7 @@ export default function PreferencesScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <Header
-        title={t("pref_title")}
-        showBack
-        onBack={() => router.back()}
-      />
+      <Header title={t("pref_title")} showBack onBack={() => router.back()} />
       <ScreenScrollView
         edges={["bottom", "left", "right"]}
         contentContainerStyle={{
@@ -139,7 +135,9 @@ export default function PreferencesScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t("pref_notifications")}
-            onPress={() => router.push("/(app)/notifications")}
+            onPress={() =>
+              router.push("/(app)/profile/notification-preferences")
+            }
             className="min-h-16 flex-row items-center justify-between gap-four px-four py-three active:bg-secondary/50"
           >
             <View className="min-w-0 flex-1 gap-half">
@@ -153,7 +151,6 @@ export default function PreferencesScreen() {
             <DirectionChevron size={17} color={theme.mutedForeground} />
           </Pressable>
         </Card>
-
       </ScreenScrollView>
     </View>
   );
@@ -196,9 +193,7 @@ function PreferenceRow({
       </View>
       <View
         className={`h-6 w-6 items-center justify-center rounded-sm border ${
-          selected
-            ? "border-primary bg-primary"
-            : "border-input bg-background"
+          selected ? "border-primary bg-primary" : "border-input bg-background"
         }`}
       >
         {selected ? <Check size={14} color={checkColor} /> : null}

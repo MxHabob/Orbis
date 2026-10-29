@@ -58,24 +58,27 @@ let {
 const isEditMode = $derived(!!editData);
 
 // Single Source of Truth Form Controller
-const form = untrack(() => new FormController<GuardianFormInput>({
-  initialValues: {
-    guardianId: editData?.guardian_id ?? "",
-    fullName: "",
-    phone: "",
-    email: null,
-    nationalId: null,
-    relationship: editData?.relationship ?? "father",
-    relationshipAr: null,
-    occupation: null,
-    isPrimary: editData?.is_primary ?? false,
-    isEmergencyContact: editData?.is_emergency_contact ?? true,
-    isAuthorizedPickup: editData?.is_authorized_pickup ?? false,
-    isPayer: editData?.is_payer ?? false,
-    paymentSharePercent: editData?.payment_share_percent ?? 0,
-  },
-  schema: guardianFormInputSchema,
-}));
+const form = untrack(
+  () =>
+    new FormController<GuardianFormInput>({
+      initialValues: {
+        guardianId: editData?.guardian_id ?? "",
+        fullName: "",
+        phone: "",
+        email: null,
+        nationalId: null,
+        relationship: editData?.relationship ?? "father",
+        relationshipAr: null,
+        occupation: null,
+        isPrimary: editData?.is_primary ?? false,
+        isEmergencyContact: editData?.is_emergency_contact ?? true,
+        isAuthorizedPickup: editData?.is_authorized_pickup ?? false,
+        isPayer: editData?.is_payer ?? false,
+        paymentSharePercent: editData?.payment_share_percent ?? 0,
+      },
+      schema: guardianFormInputSchema,
+    }),
+);
 
 function fieldError(field: string): string | undefined {
   return form.errors[field]?.[0];
@@ -114,8 +117,8 @@ const updateSearch = debounce((q: string) => {
 
 const usersQuery = createUsersQuery(() => orgId);
 const parentUsers = $derived(
-  (usersQuery.data ?? []).filter((u: UserDto) =>
-    (u.roles ?? []).includes("parent") || u.status === "active",
+  (usersQuery.data ?? []).filter(
+    (u: UserDto) => (u.roles ?? []).includes("parent") || u.status === "active",
   ),
 );
 
@@ -127,9 +130,7 @@ const filteredUsers = $derived(
         const name = (u.full_name ?? u.full_name_ar ?? "").toLowerCase();
         const emailVal = (u.email ?? "").toLowerCase();
         const phoneVal = (u.phone ?? "").toLowerCase();
-        return (
-          name.includes(q) || emailVal.includes(q) || phoneVal.includes(q)
-        );
+        return name.includes(q) || emailVal.includes(q) || phoneVal.includes(q);
       }),
 );
 
@@ -203,7 +204,9 @@ async function handleSubmit(e: SubmitEvent) {
   } else if (form.formError) {
     toast.error(form.formError);
   } else if (Object.keys(form.errors).length > 0) {
-    toast.error(fieldError("guardianId") || m.common_validation_guardian_name_required());
+    toast.error(
+      fieldError("guardianId") || m.common_validation_guardian_name_required(),
+    );
   }
 }
 </script>

@@ -56,7 +56,12 @@ export function createAutopilotConfigQuery(orgId: string | (() => string)) {
 
 export function createAutopilotTasksQuery(
   orgId: string | (() => string),
-  params?: () => { status?: string; task_type?: string; limit?: number; offset?: number },
+  params?: () => {
+    status?: string;
+    task_type?: string;
+    limit?: number;
+    offset?: number;
+  },
 ) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
@@ -201,7 +206,9 @@ export function useConfigureAutopilot() {
 
 // ── AI Providers & Model Management ──────────────────────────
 
-export function createConnectedAiProvidersQuery(orgId?: string | (() => string | undefined)) {
+export function createConnectedAiProvidersQuery(
+  orgId?: string | (() => string | undefined),
+) {
   const getOrgId = typeof orgId === "function" ? orgId : () => orgId;
   return createQuery(() => ({
     queryKey: queryKeys.integration.list(getOrgId()),
@@ -226,7 +233,13 @@ export function createConnectedAiProvidersQuery(orgId?: string | (() => string |
 export function useSwitchActiveAiProvider() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: async ({ providerName, isEnabled }: { providerName: string; isEnabled: boolean }) => {
+    mutationFn: async ({
+      providerName,
+      isEnabled,
+    }: {
+      providerName: string;
+      isEnabled: boolean;
+    }) => {
       return api.toggleIntegration(providerName, isEnabled);
     },
     onSuccess: () => {
@@ -234,4 +247,3 @@ export function useSwitchActiveAiProvider() {
     },
   }));
 }
-

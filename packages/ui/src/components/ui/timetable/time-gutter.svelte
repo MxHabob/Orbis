@@ -1,56 +1,56 @@
 <script lang="ts">
-  import { Heart } from "@orbis/icons";
-  import { ARABIC_PERIOD_NAMES, ENGLISH_PERIOD_NAMES } from "./utils";
+import { Heart } from "@orbis/icons";
+import { ARABIC_PERIOD_NAMES, ENGLISH_PERIOD_NAMES } from "./utils";
 
-  interface Props {
-    slot?: any;
-    timeSlots?: any[];
-    locale?: string;
-    compact?: boolean;
-    class?: string;
+interface Props {
+  slot?: any;
+  timeSlots?: any[];
+  locale?: string;
+  compact?: boolean;
+  class?: string;
+}
+
+let {
+  slot,
+  timeSlots,
+  locale = "ar",
+  compact = false,
+  class: className = "",
+}: Props = $props();
+
+const isArabic = $derived(locale === "ar");
+
+const slotsList = $derived(
+  slot ? [slot] : Array.isArray(timeSlots) ? timeSlots : [],
+);
+
+function formatTime(val?: string): string {
+  if (!val) return "";
+  const clean = val.slice(0, 5);
+  const [hStr, mStr] = clean.split(":");
+  let h = parseInt(hStr, 10);
+  const m = mStr || "00";
+  if (isNaN(h)) return val;
+  const period = h >= 12 ? (isArabic ? "م" : "PM") : isArabic ? "ص" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${period}`;
+}
+
+function getSlotTitle(s: any): string {
+  if (isArabic) {
+    if (s.name_ar) return s.name_ar;
+    if (s.display_name_ar) return s.display_name_ar;
+    if (s.display_name) return s.display_name;
+    const num = s.period_number ?? s.slot_index ?? s.slot_number ?? 1;
+    return ARABIC_PERIOD_NAMES[num] || `الحصة ${num}`;
+  } else {
+    if (s.name) return s.name;
+    if (s.display_name_en) return s.display_name_en;
+    if (s.display_name) return s.display_name;
+    const num = s.period_number ?? s.slot_index ?? s.slot_number ?? 1;
+    return ENGLISH_PERIOD_NAMES[num] || `Period ${num}`;
   }
-
-  let {
-    slot,
-    timeSlots,
-    locale = "ar",
-    compact = false,
-    class: className = "",
-  }: Props = $props();
-
-  const isArabic = $derived(locale === "ar");
-
-  const slotsList = $derived(
-    slot ? [slot] : Array.isArray(timeSlots) ? timeSlots : []
-  );
-
-  function formatTime(val?: string): string {
-    if (!val) return "";
-    const clean = val.slice(0, 5);
-    const [hStr, mStr] = clean.split(":");
-    let h = parseInt(hStr, 10);
-    const m = mStr || "00";
-    if (isNaN(h)) return val;
-    const period = h >= 12 ? (isArabic ? "م" : "PM") : isArabic ? "ص" : "AM";
-    h = h % 12 || 12;
-    return `${h}:${m} ${period}`;
-  }
-
-  function getSlotTitle(s: any): string {
-    if (isArabic) {
-      if (s.name_ar) return s.name_ar;
-      if (s.display_name_ar) return s.display_name_ar;
-      if (s.display_name) return s.display_name;
-      const num = s.period_number ?? s.slot_index ?? s.slot_number ?? 1;
-      return ARABIC_PERIOD_NAMES[num] || `الحصة ${num}`;
-    } else {
-      if (s.name) return s.name;
-      if (s.display_name_en) return s.display_name_en;
-      if (s.display_name) return s.display_name;
-      const num = s.period_number ?? s.slot_index ?? s.slot_number ?? 1;
-      return ENGLISH_PERIOD_NAMES[num] || `Period ${num}`;
-    }
-  }
+}
 </script>
 
 {#each slotsList as s (s.id ?? s.slot_index ?? Math.random())}

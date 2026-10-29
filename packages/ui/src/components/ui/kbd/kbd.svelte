@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type { HTMLAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "../../../utils.js";
+import type { HTMLAttributes } from "svelte/elements";
+import { cn, type WithElementRef } from "../../../utils.js";
 
-  let {
-    ref = $bindable(null),
-    class: className,
-    children,
-    "data-slot": dataSlot = "kbd",
-    ...restProps
-  }: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
+let {
+  ref = $bindable(null),
+  class: className,
+  children,
+  "data-slot": dataSlot = "kbd",
+  ...restProps
+}: WithElementRef<HTMLAttributes<HTMLElement>> = $props();
 </script>
 
 <kbd

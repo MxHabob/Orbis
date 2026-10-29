@@ -192,6 +192,9 @@ impl From<DomainError> for ApiError {
             }
             DomainError::ConcurrencyConflict(_) => Self::conflict(err.to_string()),
             DomainError::Storage(msg) => Self::internal(format!("Storage error: {msg}")),
+            DomainError::LicenseKeyRequiresClaim => {
+                Self::bad_request("License key requires a valid claim")
+            }
             DomainError::Internal(_) => Self::internal(err.to_string()),
         }
     }
@@ -216,6 +219,7 @@ pub mod group_routes;
 pub mod iam_routes;
 pub mod integration_routes;
 pub mod mulverse_routes;
+pub mod notification_routes;
 pub mod onboarding_routes;
 pub mod org_routes;
 pub mod override_routes;

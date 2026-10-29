@@ -49,7 +49,6 @@ export { default as AssessmentForm } from "./components/assessment-form.svelte";
 export { default as TimeSlotForm } from "./components/time-slot-form.svelte";
 export { default as TimeSlotManager } from "./components/time-slot-manager.svelte";
 
-
 // Section aliases aligned with unified domain model
 export { default as SectionsDirectory } from "./classes-directory.svelte";
 export { default as SectionDetails } from "./class-details.svelte";

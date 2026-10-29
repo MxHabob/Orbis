@@ -76,7 +76,7 @@ const filteredRoles = $derived.by(() => {
       (r) =>
         r.id.toLowerCase().includes(q) ||
         r.name.toLowerCase().includes(q) ||
-        (r.name_ar && r.name_ar.toLowerCase().includes(q))
+        (r.name_ar && r.name_ar.toLowerCase().includes(q)),
     );
   }
   return list;
@@ -88,16 +88,22 @@ const gridSource = $derived(
     __idx: i + 1,
     permCount: countRolePermissions(r.permissions, r.id),
     roleType: r.is_system ? "system" : "custom",
-    typeBadge: r.is_system ? m.ui_copy_system_e3980179() : m.common_onboarding_break_custom(),
+    typeBadge: r.is_system
+      ? m.ui_copy_system_e3980179()
+      : m.common_onboarding_break_custom(),
     permBadge: `${countRolePermissions(r.permissions, r.id)} ${m.ui_copy_perms_dd19d499()}`,
     name_display: l(r.name_ar, r.name) || r.name || r.id,
-  }))
+  })),
 );
 
 // Actions Configuration
 const roleActions: ActionItem[] = [
   { id: "edit", label: m.ui_copy_edit_permissions_bc90fdaf(), icon: "Pencil" },
-  { id: "duplicate", label: m.ui_copy_duplicate_role_82f6bf4c(), icon: "Clipboard" },
+  {
+    id: "duplicate",
+    label: m.ui_copy_duplicate_role_82f6bf4c(),
+    icon: "Clipboard",
+  },
   {
     id: "delete",
     label: m.ui_copy_delete_role_981a0e24(),
@@ -109,12 +115,70 @@ const roleActions: ActionItem[] = [
 
 // Columns Definition
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 50, size: 50, readonly: true, pin: "left", align: "center" },
-  { id: "id", prop: "id", header: m.ui_copy_role_id_efa8c46a(), name: m.ui_copy_role_id_efa8c46a(), width: 160, size: 160, readonly: true, pin: "left", cellClass: "font-mono font-bold text-foreground text-xs" },
-  { id: "name_ar", prop: "name_ar", header: m.common_org_unit_name_ar(), name: m.common_org_unit_name_ar(), width: 200, size: 200, readonly: true, cellClass: "font-semibold text-xs text-foreground" },
-  { id: "name", prop: "name", header: m.common_org_unit_name_en(), name: m.common_org_unit_name_en(), width: 200, size: 200, readonly: true, cellClass: "text-muted-foreground text-xs" },
-  { id: "typeBadge", prop: "typeBadge", header: m.ui_copy_type_0d257656(), name: m.ui_copy_type_0d257656(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "permBadge", prop: "permBadge", header: m.settings_permissions_col_permissions(), name: m.settings_permissions_col_permissions(), width: 120, size: 120, align: "center", readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 50,
+    size: 50,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "id",
+    prop: "id",
+    header: m.ui_copy_role_id_efa8c46a(),
+    name: m.ui_copy_role_id_efa8c46a(),
+    width: 160,
+    size: 160,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-mono font-bold text-foreground text-xs",
+  },
+  {
+    id: "name_ar",
+    prop: "name_ar",
+    header: m.common_org_unit_name_ar(),
+    name: m.common_org_unit_name_ar(),
+    width: 200,
+    size: 200,
+    readonly: true,
+    cellClass: "font-semibold text-xs text-foreground",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.common_org_unit_name_en(),
+    name: m.common_org_unit_name_en(),
+    width: 200,
+    size: 200,
+    readonly: true,
+    cellClass: "text-muted-foreground text-xs",
+  },
+  {
+    id: "typeBadge",
+    prop: "typeBadge",
+    header: m.ui_copy_type_0d257656(),
+    name: m.ui_copy_type_0d257656(),
+    width: 110,
+    size: 110,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "permBadge",
+    prop: "permBadge",
+    header: m.settings_permissions_col_permissions(),
+    name: m.settings_permissions_col_permissions(),
+    width: 120,
+    size: 120,
+    align: "center",
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
   {
     id: "actions",
     prop: "actions",
@@ -166,7 +230,9 @@ function openDuplicateRole(role: RoleDto) {
     ...role,
     id: duplicateId,
     name: `${role.name} (${m.settings_ui_copy_suffix()})`,
-    name_ar: role.name_ar ? `${role.name_ar} (${m.settings_ui_copy_suffix()})` : undefined,
+    name_ar: role.name_ar
+      ? `${role.name_ar} (${m.settings_ui_copy_suffix()})`
+      : undefined,
     is_system: false,
   };
   isDuplicate = true;
@@ -181,7 +247,9 @@ async function handleDeleteRole(roleToDelete: RoleDto) {
 
   const confirmed = await confirmStore.prompt({
     title: m.common_action_delete(),
-    description: m.settings_ui_role_delete_confirm({ role: roleToDelete.name_ar || roleToDelete.name }),
+    description: m.settings_ui_role_delete_confirm({
+      role: roleToDelete.name_ar || roleToDelete.name,
+    }),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });

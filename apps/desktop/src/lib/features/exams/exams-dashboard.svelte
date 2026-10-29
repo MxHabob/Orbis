@@ -3,7 +3,20 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import { ArrowRight, Calendar, DocumentPage, Home, Info, InfoCircle, Lock, LockClosed, Plus, Sparkles, TaskList, UserBadgeCheck } from "@orbis/icons";
+import {
+  ArrowRight,
+  Calendar,
+  DocumentPage,
+  Home,
+  Info,
+  InfoCircle,
+  Lock,
+  LockClosed,
+  Plus,
+  Sparkles,
+  TaskList,
+  UserBadgeCheck,
+} from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { createQuery } from "@tanstack/svelte-query";
 import { api, extractErrorMessage } from "$lib/api";
@@ -23,7 +36,12 @@ const periods = $derived(periodsQuery.data ?? []);
 // Active academic year & period
 const activeYearName = $derived(academicContext.yearLabelAr);
 const activePeriod = $derived(
-  periods.find((p) => p.status === "active" || p.status === "active_teaching" || p.status === "grade_submission") || periods[0],
+  periods.find(
+    (p) =>
+      p.status === "active" ||
+      p.status === "active_teaching" ||
+      p.status === "grade_submission",
+  ) || periods[0],
 );
 const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
 const activePeriodName = $derived(activePeriod ? activePeriod.name : null);

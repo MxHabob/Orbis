@@ -36,7 +36,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { AdjustmentsHorizontal, ArrowPath, Check, DocumentChartBar, GlobeAlt, Sparkles } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  ArrowPath,
+  Check,
+  DocumentChartBar,
+  GlobeAlt,
+  Sparkles,
+} from "@orbis/icons";
 import { currencyInputSchema } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";

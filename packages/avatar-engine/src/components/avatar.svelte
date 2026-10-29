@@ -3,7 +3,7 @@ import { onDestroy } from "svelte";
 import { createSubscriber } from "svelte/reactivity";
 import { AvatarController } from "../core/avatar-controller.js";
 import { getAvatarDrawing } from "../core/avatar-svg.js";
-import { resolveAvatarHat, type AvatarHat } from "../core/types.js";
+import { type AvatarHat, resolveAvatarHat } from "../core/types.js";
 import AvatarDrawing from "./avatar-drawing.svelte";
 
 const {

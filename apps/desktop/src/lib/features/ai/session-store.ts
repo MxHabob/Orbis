@@ -1,5 +1,10 @@
 import * as m from "$lib/paraglide/messages";
-import type { AiToolResult, AiProposedAction, AiStoredSession, AiStoredMessage } from "$lib/api/types";
+import type {
+  AiToolResult,
+  AiProposedAction,
+  AiStoredSession,
+  AiStoredMessage,
+} from "$lib/api/types";
 import { api } from "$lib/api";
 
 export interface ActionWithStatus extends AiProposedAction {
@@ -18,8 +23,7 @@ export interface UnpaidFeeUiRow {
   due_date: string;
 }
 
-export type AiUiData =
-  | { type: "unpaid_fees"; items: UnpaidFeeUiRow[] };
+export type AiUiData = { type: "unpaid_fees"; items: UnpaidFeeUiRow[] };
 
 export interface AiChatMessage {
   id: string;
@@ -65,7 +69,9 @@ export interface AiChatSession {
   messages: AiChatMessage[];
 }
 
-export async function loadFileSessions(orgId: string): Promise<AiChatSession[]> {
+export async function loadFileSessions(
+  orgId: string,
+): Promise<AiChatSession[]> {
   try {
     const rawSessions = await api.aiLoadSessions(orgId || "default");
     return rawSessions.map((s) => ({
@@ -90,7 +96,9 @@ export async function loadFileSessions(orgId: string): Promise<AiChatSession[]> 
   }
 }
 
-export async function saveFileSession(session: AiChatSession): Promise<boolean> {
+export async function saveFileSession(
+  session: AiChatSession,
+): Promise<boolean> {
   try {
     const stored: AiStoredSession = {
       id: session.id,
@@ -117,7 +125,10 @@ export async function saveFileSession(session: AiChatSession): Promise<boolean> 
   }
 }
 
-export async function deleteFileSession(orgId: string, sessionId: string): Promise<boolean> {
+export async function deleteFileSession(
+  orgId: string,
+  sessionId: string,
+): Promise<boolean> {
   try {
     return await api.aiDeleteSession(orgId || "default", sessionId);
   } catch (e) {
@@ -126,7 +137,10 @@ export async function deleteFileSession(orgId: string, sessionId: string): Promi
   }
 }
 
-export async function saveFileContext(orgId: string, context: Record<string, unknown>): Promise<boolean> {
+export async function saveFileContext(
+  orgId: string,
+  context: Record<string, unknown>,
+): Promise<boolean> {
   try {
     return await api.aiSaveContext(orgId || "default", context);
   } catch (e) {
@@ -135,7 +149,9 @@ export async function saveFileContext(orgId: string, context: Record<string, unk
   }
 }
 
-export async function loadFileContext(orgId: string): Promise<Record<string, unknown> | null> {
+export async function loadFileContext(
+  orgId: string,
+): Promise<Record<string, unknown> | null> {
   try {
     return await api.aiLoadContext(orgId || "default");
   } catch (e) {
@@ -144,7 +160,10 @@ export async function loadFileContext(orgId: string): Promise<Record<string, unk
   }
 }
 
-export function createNewLocalSession(orgId: string, title: string = m.ai_ui_new_chat()): AiChatSession {
+export function createNewLocalSession(
+  orgId: string,
+  title: string = m.ai_ui_new_chat(),
+): AiChatSession {
   return {
     id: `session_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     title,

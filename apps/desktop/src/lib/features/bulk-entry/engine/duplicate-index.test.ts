@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { createBulkValidationContext, findDuplicateIndex } from "./duplicate-index";
+import {
+  createBulkValidationContext,
+  findDuplicateIndex,
+} from "./duplicate-index";
 
 describe("bulk duplicate index", () => {
   test("finds the other matching row without scanning the batch", () => {
@@ -11,6 +14,8 @@ describe("bulk duplicate index", () => {
 
     expect(findDuplicateIndex(context, "national_id", "A-1", 0)).toBe(1);
     expect(findDuplicateIndex(context, "national_id", "A-1", 1)).toBe(0);
-    expect(findDuplicateIndex(context, "national_id", "B-2", 2)).toBeUndefined();
+    expect(
+      findDuplicateIndex(context, "national_id", "B-2", 2),
+    ).toBeUndefined();
   });
 });

@@ -13,11 +13,13 @@ import { api } from "$lib/api";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 import { Label } from "@orbis/ui/label";
 
-type CurrencyOption = string | (CurrencyDto & {
-  name_ar?: string;
-  exchange_rate?: number;
-  is_base?: boolean;
-});
+type CurrencyOption =
+  | string
+  | (CurrencyDto & {
+      name_ar?: string;
+      exchange_rate?: number;
+      is_base?: boolean;
+    });
 
 let {
   title = m.finance_ledger_currency(),
@@ -76,10 +78,14 @@ function getCurrencyLabel(c: CurrencyOption | null | undefined): string {
   const codeUpper = c.code.toUpperCase();
   const nameStr = l(c.name_ar, c.name) || c.name;
   const symbolStr = c.symbol ? ` (${c.symbol})` : "";
-  return nameStr ? `${codeUpper} - ${nameStr}${symbolStr}` : `${codeUpper}${symbolStr}`;
+  return nameStr
+    ? `${codeUpper} - ${nameStr}${symbolStr}`
+    : `${codeUpper}${symbolStr}`;
 }
 
-function getCurrencySubtitle(c: CurrencyOption | null | undefined): string | undefined {
+function getCurrencySubtitle(
+  c: CurrencyOption | null | undefined,
+): string | undefined {
   if (!c || typeof c === "string") return undefined;
   if (c?.exchange_rate && Number(c.exchange_rate) !== 1) {
     return m.shared_ui_exchange_rate({ rate: c.exchange_rate });
@@ -87,7 +93,9 @@ function getCurrencySubtitle(c: CurrencyOption | null | undefined): string | und
   return undefined;
 }
 
-function getCurrencyBadge(c: CurrencyOption | null | undefined): string | undefined {
+function getCurrencyBadge(
+  c: CurrencyOption | null | undefined,
+): string | undefined {
   if (!c || typeof c === "string") return undefined;
   if (c?.is_base) return m.shared_ui_base_currency();
   return undefined;

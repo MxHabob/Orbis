@@ -1,6 +1,9 @@
 <script lang="ts">
 import { cn, type WithoutChildrenOrChild } from "../../../utils.js";
-import { useDirectionAwareSide, type PositionSide } from "../../../utils/direction.svelte.js";
+import {
+  useDirectionAwareSide,
+  type PositionSide,
+} from "../../../utils/direction.svelte.js";
 import DropdownMenuPortal from "./dropdown-menu-portal.svelte";
 import { DropdownMenu as DropdownMenuPrimitive } from "bits-ui";
 import type { ComponentProps } from "svelte";

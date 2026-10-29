@@ -1,105 +1,107 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { api } from "$lib/api";
-  import * as m from "$lib/paraglide/messages";
-  import { FormController } from "$lib/shared/forms/form-controller.svelte";
-  import { feeAssignmentInputSchema } from "@orbis/schemas";
-  import { FormField, toast } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { onMount } from "svelte";
+import { api } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
+import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { feeAssignmentInputSchema } from "@orbis/schemas";
+import { FormField, toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 
-  let {
-    orgId,
-    onSuccess,
-    onCancel,
-  }: {
-    orgId: string;
-    onSuccess: () => void;
-    onCancel: () => void;
-  } = $props();
+let {
+  orgId,
+  onSuccess,
+  onCancel,
+}: {
+  orgId: string;
+  onSuccess: () => void;
+  onCancel: () => void;
+} = $props();
 
-  // State
-  let students = $state<any[]>([]);
-  let templates = $state<any[]>([]);
-  let isLoadingDropdowns = $state(false);
+// State
+let students = $state<any[]>([]);
+let templates = $state<any[]>([]);
+let isLoadingDropdowns = $state(false);
 
-  // Form state
-  const form = new FormController({
-    initialValues: {
-      enrollment_id: "",
-      fee_template_id: "",
-      amount_override: null as number | null,
-    },
-    schema: feeAssignmentInputSchema,
-  });
+// Form state
+const form = new FormController({
+  initialValues: {
+    enrollment_id: "",
+    fee_template_id: "",
+    amount_override: null as number | null,
+  },
+  schema: feeAssignmentInputSchema,
+});
 
-  let description = $state("");
-  let dueDate = $state(getLocalDateInputValue());
+let description = $state("");
+let dueDate = $state(getLocalDateInputValue());
 
-  function getLocalDateInputValue(date = new Date()) {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
-  }
+function getLocalDateInputValue(date = new Date()) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
+}
 
-  onMount(async () => {
-    if (!orgId) return;
-    isLoadingDropdowns = true;
-    try {
-      const [studentList, templateList] = await Promise.all([
-        api.listEnrollments(),
-        api.listFeeTemplates(),
-      ]);
-      students = studentList;
-      templates = templateList;
+onMount(async () => {
+  if (!orgId) return;
+  isLoadingDropdowns = true;
+  try {
+    const [studentList, templateList] = await Promise.all([
+      api.listEnrollments(),
+      api.listFeeTemplates(),
+    ]);
+    students = studentList;
+    templates = templateList;
 
-      if (studentList.length > 0) {
-        form.values.enrollment_id = String(studentList[0].id);
-      }
-      if (templateList.length > 0) {
-        form.values.fee_template_id = String(templateList[0].id);
-        if (templateList[0].default_amount !== undefined) {
-          form.values.amount_override = Number(templateList[0].default_amount);
-        }
-      }
-    } catch (e) {
-      console.error("Error loading dropdown data for fee-assign-form:", e);
-    } finally {
-      isLoadingDropdowns = false;
+    if (studentList.length > 0) {
+      form.values.enrollment_id = String(studentList[0].id);
     }
-  });
-
-  function handleTemplateChange(val: string | null) {
-    if (!val) return;
-    form.values.fee_template_id = val;
-    const tpl = templates.find((t) => String(t.id) === val);
-    if (tpl && tpl.default_amount !== undefined) {
-      form.values.amount_override = Number(tpl.default_amount);
+    if (templateList.length > 0) {
+      form.values.fee_template_id = String(templateList[0].id);
+      if (templateList[0].default_amount !== undefined) {
+        form.values.amount_override = Number(templateList[0].default_amount);
+      }
     }
+  } catch (e) {
+    console.error("Error loading dropdown data for fee-assign-form:", e);
+  } finally {
+    isLoadingDropdowns = false;
   }
+});
 
-  async function handleSubmit(e: SubmitEvent) {
-    e.preventDefault();
-    const submitted = await form.submit(async (payload) => {
-      await api.generateStudentFee({
-        enrollment_id: payload.enrollment_id,
-        template_id: payload.fee_template_id,
-        due_date: dueDate,
-        amount_override: payload.amount_override ?? undefined,
-        notes: description || undefined,
-      });
-      toast.success(m.common_fee_toast_success());
-      form.reset();
-      description = "";
-      dueDate = getLocalDateInputValue();
+function handleTemplateChange(val: string | null) {
+  if (!val) return;
+  form.values.fee_template_id = val;
+  const tpl = templates.find((t) => String(t.id) === val);
+  if (tpl && tpl.default_amount !== undefined) {
+    form.values.amount_override = Number(tpl.default_amount);
+  }
+}
+
+async function handleSubmit(e: SubmitEvent) {
+  e.preventDefault();
+  const submitted = await form.submit(async (payload) => {
+    await api.generateStudentFee({
+      enrollment_id: payload.enrollment_id,
+      template_id: payload.fee_template_id,
+      due_date: dueDate,
+      amount_override: payload.amount_override ?? undefined,
+      notes: description || undefined,
     });
-    if (submitted) {
-      onSuccess();
-    } else if (form.formError) {
-      toast.error(form.formError);
-    } else if (Object.keys(form.errors).length > 0) {
-      toast.error(m.common_fee_toast_error_amount());
-    }
+    toast.success(m.common_fee_toast_success());
+    form.reset();
+    description = "";
+    dueDate = getLocalDateInputValue();
+  });
+  if (submitted) {
+    onSuccess();
+  } else if (form.formError) {
+    toast.error(form.formError);
+  } else if (Object.keys(form.errors).length > 0) {
+    toast.error(m.common_fee_toast_error_amount());
   }
+}
 </script>
 
 <form

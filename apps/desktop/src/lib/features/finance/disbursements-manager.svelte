@@ -24,14 +24,7 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import {
-  Plus,
-  Refresh,
-  Search,
-  Download,
-  XMark,
-  Printer,
-} from "@orbis/icons";
+import { Plus, Refresh, Search, Download, XMark, Printer } from "@orbis/icons";
 import {
   OrbisGrid,
   type OrbisColumnDef,
@@ -60,7 +53,13 @@ type DisbursementLine = {
 let nextDisbursementLineId = 1;
 function createDisbursementLine(): DisbursementLine {
   const id = nextDisbursementLineId++;
-  return { id, sequence: id, beneficiaryAccountId: "", amount: null, notes: "" };
+  return {
+    id,
+    sequence: id,
+    beneficiaryAccountId: "",
+    amount: null,
+    notes: "",
+  };
 }
 
 // ── State ──────────────────────────────────────────────────────────────
@@ -79,26 +78,36 @@ let treasuryAccountId = $state(""); // Credit: Cash/Bank
 let paymentMethod = $state<"Cash" | "Bank" | "Check">("Cash");
 let disbursementLines = $state<DisbursementLine[]>([createDisbursementLine()]);
 function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 const selectedCurrency = $derived(
-  treasuries.find((account) => String(account.id) === String(treasuryAccountId))?.currency || "",
+  treasuries.find((account) => String(account.id) === String(treasuryAccountId))
+    ?.currency || "",
 );
 const availableCurrencies = $derived(
   currencies.filter((currency) =>
-    treasuries.some((account) => account.currency.toUpperCase() === currency.code.toUpperCase())
+    treasuries.some(
+      (account) =>
+        account.currency.toUpperCase() === currency.code.toUpperCase(),
+    ),
   ),
 );
 const disbursementAccounts = $derived(
-  accounts.filter((account) =>
-    account.is_active &&
-    !isCashOrBankAccount(account) &&
-    account.currency.toUpperCase() === selectedCurrency.toUpperCase()
+  accounts.filter(
+    (account) =>
+      account.is_active &&
+      !isCashOrBankAccount(account) &&
+      account.currency.toUpperCase() === selectedCurrency.toUpperCase(),
   ),
 );
 const calculatedTotal = $derived(
-  disbursementLines.reduce((total, line) => total + (Number(line.amount) || 0), 0),
+  disbursementLines.reduce(
+    (total, line) => total + (Number(line.amount) || 0),
+    0,
+  ),
 );
 
 // Filters
@@ -132,7 +141,10 @@ async function loadData() {
     treasuries = accountsList.filter(isCashOrBankAccount);
     currencies = currenciesList;
 
-    if (treasuries.length > 0 && !treasuries.some((account) => account.id === treasuryAccountId)) {
+    if (
+      treasuries.length > 0 &&
+      !treasuries.some((account) => account.id === treasuryAccountId)
+    ) {
       handleTreasuryChange(treasuries[0].id);
     }
 
@@ -159,10 +171,18 @@ function clearForm() {
 
 function handleTreasuryChange(accountId: string) {
   treasuryAccountId = accountId;
-  const currency = treasuries.find((account) => account.id === accountId)?.currency;
+  const currency = treasuries.find(
+    (account) => account.id === accountId,
+  )?.currency;
   for (const line of disbursementLines) {
-    const account = accounts.find((candidate) => candidate.id === line.beneficiaryAccountId);
-    if (account && currency && account.currency.toUpperCase() !== currency.toUpperCase()) {
+    const account = accounts.find(
+      (candidate) => candidate.id === line.beneficiaryAccountId,
+    );
+    if (
+      account &&
+      currency &&
+      account.currency.toUpperCase() !== currency.toUpperCase()
+    ) {
       line.beneficiaryAccountId = "";
     }
   }
@@ -170,8 +190,8 @@ function handleTreasuryChange(accountId: string) {
 
 function handleCurrencyChange(currencyCode: string | undefined) {
   if (!currencyCode || currencyCode === selectedCurrency) return;
-  const treasury = treasuries.find((account) =>
-    account.currency.toUpperCase() === currencyCode.toUpperCase()
+  const treasury = treasuries.find(
+    (account) => account.currency.toUpperCase() === currencyCode.toUpperCase(),
   );
   if (treasury) handleTreasuryChange(treasury.id);
 }
@@ -185,7 +205,9 @@ function addDisbursementLine() {
 function addDisbursementLineAndFocus() {
   const lineId = addDisbursementLine();
   requestAnimationFrame(() => {
-    const accountInput = document.getElementById(`disbursement-line-account-${lineId}`);
+    const accountInput = document.getElementById(
+      `disbursement-line-account-${lineId}`,
+    );
     if (accountInput instanceof HTMLInputElement) accountInput.focus();
   });
 }
@@ -225,11 +247,22 @@ async function handleSaveDisbursement() {
     toast.error(m.finance_ui_disbursement_beneficiary_required());
     return;
   }
-  if (disbursementLines.some((line) => !disbursementAccounts.some((account) => account.id === line.beneficiaryAccountId))) {
+  if (
+    disbursementLines.some(
+      (line) =>
+        !disbursementAccounts.some(
+          (account) => account.id === line.beneficiaryAccountId,
+        ),
+    )
+  ) {
     toast.error(m.finance_ui_disbursement_beneficiary_required());
     return;
   }
-  if (disbursementLines.some((line) => line.beneficiaryAccountId === treasuryAccountId)) {
+  if (
+    disbursementLines.some(
+      (line) => line.beneficiaryAccountId === treasuryAccountId,
+    )
+  ) {
     toast.error(m.finance_ui_disbursement_accounts_must_differ());
     return;
   }
@@ -258,7 +291,9 @@ async function handleSaveDisbursement() {
           voucher_date: voucherDate || undefined,
         });
         savedCount += 1;
-        disbursementLines = disbursementLines.filter((item) => item.id !== line.id);
+        disbursementLines = disbursementLines.filter(
+          (item) => item.id !== line.id,
+        );
       } catch (err) {
         failure = err;
         break;
@@ -271,7 +306,9 @@ async function handleSaveDisbursement() {
     }
     if (failure) {
       console.error("Failed to record a disbursement in the batch:", failure);
-      toast.error(extractErrorMessage(failure) || m.finance_ui_disbursement_save_failed());
+      toast.error(
+        extractErrorMessage(failure) || m.finance_ui_disbursement_save_failed(),
+      );
     } else {
       clearForm();
       showAddForm = false;
@@ -301,16 +338,20 @@ const gridSource = $derived(
       notes_display: d.description_ar || d.description || "—",
       status_display: m.finance_ui_disbursed_status(),
     };
-  })
+  }),
 );
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (filterDate && (!row.accounting_date || !String(row.accounting_date).startsWith(filterDate))) {
+    if (
+      filterDate &&
+      (!row.accounting_date ||
+        !String(row.accounting_date).startsWith(filterDate))
+    ) {
       return false;
     }
     return true;
-  })
+  }),
 );
 const selectedDisbursements = $derived(
   filteredSource.filter((disbursement) =>
@@ -326,9 +367,15 @@ const disbursementPrintContexts = $derived(
       date: disbursement.accounting_date || "",
       primaryName: disbursement.beneficiary_display,
       secondaryName: disbursement.treasury_display,
-      amount: Number(disbursement.amount || disbursement.lines?.[0]?.debit || 0),
-      currency: disbursement.currency_code || disbursement.currency || orgContext.baseCurrency,
-      description: disbursement.description_ar || disbursement.description || "",
+      amount: Number(
+        disbursement.amount || disbursement.lines?.[0]?.debit || 0,
+      ),
+      currency:
+        disbursement.currency_code ||
+        disbursement.currency ||
+        orgContext.baseCurrency,
+      description:
+        disbursement.description_ar || disbursement.description || "",
     },
     $org: {
       name: orgContext.name,
@@ -345,15 +392,97 @@ function handleDisbursementSelection(selection: SelectionSnapshot) {
 }
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "receipt_display", prop: "receipt_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
-  { id: "beneficiary_display", prop: "beneficiary_display", header: m.finance_ui_disbursement_beneficiary(), name: m.finance_ui_disbursement_beneficiary(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "treasury_display", prop: "treasury_display", header: m.finance_ui_treasury_account(), name: m.finance_ui_treasury_account(), width: 180, size: 180, readonly: true },
-  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_disbursed_amount(), name: m.finance_ui_disbursed_amount(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400" },
-  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
-  { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 220, size: 220, readonly: true },
-  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "receipt_display",
+    prop: "receipt_display",
+    header: m.finance_ui_voucher_number(),
+    name: m.finance_ui_voucher_number(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "date_display",
+    prop: "date_display",
+    header: m.finance_ui_date(),
+    name: m.finance_ui_date(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "beneficiary_display",
+    prop: "beneficiary_display",
+    header: m.finance_ui_disbursement_beneficiary(),
+    name: m.finance_ui_disbursement_beneficiary(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "treasury_display",
+    prop: "treasury_display",
+    header: m.finance_ui_treasury_account(),
+    name: m.finance_ui_treasury_account(),
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "amount_formatted",
+    prop: "amount_formatted",
+    header: m.finance_ui_disbursed_amount(),
+    name: m.finance_ui_disbursed_amount(),
+    width: 140,
+    size: 140,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400",
+  },
+  {
+    id: "currency_display",
+    prop: "currency_display",
+    header: m.finance_ui_currency(),
+    name: m.finance_ui_currency(),
+    width: 80,
+    size: 80,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "notes_display",
+    prop: "notes_display",
+    header: m.finance_ui_description_notes(),
+    name: m.finance_ui_description_notes(),
+    width: 220,
+    size: 220,
+    readonly: true,
+  },
+  {
+    id: "status_display",
+    prop: "status_display",
+    header: m.finance_ui_status(),
+    name: m.finance_ui_status(),
+    width: 90,
+    size: 90,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
 ];
 
 function exportCsv() {
@@ -368,12 +497,25 @@ function exportCsv() {
     d.status_display,
   ]);
   const csv = [
-    [m.finance_ui_voucher_number(), m.finance_ui_date(), m.finance_ui_beneficiary(), m.finance_ui_treasury(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_notes(), m.finance_ui_status()],
+    [
+      m.finance_ui_voucher_number(),
+      m.finance_ui_date(),
+      m.finance_ui_beneficiary(),
+      m.finance_ui_treasury(),
+      m.finance_ui_amount(),
+      m.finance_ui_currency(),
+      m.finance_ui_notes(),
+      m.finance_ui_status(),
+    ],
     ...rows,
   ]
-    .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+    .map((row) =>
+      row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+    )
     .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(
+    new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+  );
   const link = document.createElement("a");
   link.href = url;
   link.download = `disbursements-${orgId}.csv`;

@@ -59,7 +59,7 @@ const isArabic = $derived(locale === "ar");
 const enrichedSlots = $derived<EnrichedTimeSlot[]>(
   timeSlots.length > 0 && timeSlots[0]?.display_name !== undefined
     ? timeSlots
-    : enrichTimeSlots(timeSlots, locale)
+    : enrichTimeSlots(timeSlots, locale),
 );
 
 // Build quick map of lessons by day and slot

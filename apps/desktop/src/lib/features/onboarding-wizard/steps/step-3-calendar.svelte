@@ -3,7 +3,12 @@ import { LoadingIndicator } from "@orbis/ui";
 import { onMount } from "svelte";
 import * as m from "$lib/paraglide/messages";
 import { toast } from "@orbis/ui";
-import { api, type academicCalendarDto, type AcademicPeriodDto, type CalendarDefaultsDto } from "$lib/api";
+import {
+  api,
+  type academicCalendarDto,
+  type AcademicPeriodDto,
+  type CalendarDefaultsDto,
+} from "$lib/api";
 import { orgContext, systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -67,17 +72,27 @@ let editingPeriodEndDate = $state("");
 let editingPeriodKind = $state("teaching");
 let isUpdatingRecord = $state(false);
 
-const stepTasks = $derived(getTasksForStep("calendar", systemStore.onboardingTasks));
-const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
-const selectedYear = $derived(years.find((year) => String(year.id) === selectedYearId));
+const stepTasks = $derived(
+  getTasksForStep("calendar", systemStore.onboardingTasks),
+);
+const isTaskComplete = $derived(
+  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
+);
+const selectedYear = $derived(
+  years.find((year) => String(year.id) === selectedYearId),
+);
 const organizationToday = $derived(getOrganizationDate(new Date()));
-const yearStartIsPast = $derived(!!yearStartDate && yearStartDate.slice(0, 10) < organizationToday);
+const yearStartIsPast = $derived(
+  !!yearStartDate && yearStartDate.slice(0, 10) < organizationToday,
+);
 
 function toDateTimeInput(value: string) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  const localDate = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60_000,
+  );
   return localDate.toISOString().slice(0, 16);
 }
 
@@ -106,7 +121,15 @@ function getDateParts(date: Date, timeZone: string, calendar = "gregory") {
   };
 }
 
-function dateString({ year, month, day }: { year: number; month: number; day: number }) {
+function dateString({
+  year,
+  month,
+  day,
+}: {
+  year: number;
+  month: number;
+  day: number;
+}) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
@@ -115,17 +138,26 @@ function getOrganizationDate(date: Date) {
 }
 
 function shiftDate(date: string, days: number) {
-  const timestamp = Date.parse(`${date}T12:00:00.000Z`) + days * 24 * 60 * 60 * 1000;
+  const timestamp =
+    Date.parse(`${date}T12:00:00.000Z`) + days * 24 * 60 * 60 * 1000;
   return dateString(getDateParts(new Date(timestamp), "UTC"));
 }
 
-function findHijriDate(year: number, month: number, day: number, aroundDate: string) {
-  const hijriFormatter = new Intl.DateTimeFormat("en-US-u-ca-islamic-umalqura", {
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+function findHijriDate(
+  year: number,
+  month: number,
+  day: number,
+  aroundDate: string,
+) {
+  const hijriFormatter = new Intl.DateTimeFormat(
+    "en-US-u-ca-islamic-umalqura",
+    {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      timeZone: "UTC",
+    },
+  );
   if (hijriFormatter.resolvedOptions().calendar !== "islamic-umalqura") {
     throw new Error(m.onboarding_step3_default_periods_calendar_error());
   }
@@ -135,9 +167,14 @@ function findHijriDate(year: number, month: number, day: number, aroundDate: str
     const date = shiftDate(aroundDate, offset);
     const timestamp = Date.parse(`${date}T12:00:00.000Z`);
     const parts = Object.fromEntries(
-      hijriFormatter.formatToParts(new Date(timestamp)).map(({ type, value }) => [type, value]),
+      hijriFormatter
+        .formatToParts(new Date(timestamp))
+        .map(({ type, value }) => [type, value]),
     );
-    if (`${Number(parts.year)}-${Number(parts.month)}-${Number(parts.day)}` === target) {
+    if (
+      `${Number(parts.year)}-${Number(parts.month)}-${Number(parts.day)}` ===
+      target
+    ) {
       return date;
     }
   }
@@ -243,7 +280,9 @@ function suggestacademicCalendar() {
     startDate = today;
     const [year, month, day] = today.split("-").map(Number);
     const nextYear = year + 1;
-    const lastDayOfTargetMonth = new Date(Date.UTC(nextYear, month, 0)).getUTCDate();
+    const lastDayOfTargetMonth = new Date(
+      Date.UTC(nextYear, month, 0),
+    ).getUTCDate();
     const sameDateNextYear = dateString({
       year: nextYear,
       month,
@@ -306,7 +345,13 @@ async function handleCreateYear() {
     toast.error(m.onboarding_step3_year_err_name());
     return;
   }
-  if (!validateDateRange(yearStartDate, yearEndDate, m.onboarding_step3_year_err_dates())) {
+  if (
+    !validateDateRange(
+      yearStartDate,
+      yearEndDate,
+      m.onboarding_step3_year_err_dates(),
+    )
+  ) {
     return;
   }
 
@@ -346,7 +391,13 @@ async function handleCreatePeriod() {
     toast.error(m.onboarding_step3_year_err_name());
     return;
   }
-  if (!validateDateRange(periodStartDate, periodEndDate, m.onboarding_step3_year_err_dates())) {
+  if (
+    !validateDateRange(
+      periodStartDate,
+      periodEndDate,
+      m.onboarding_step3_year_err_dates(),
+    )
+  ) {
     return;
   }
 
@@ -458,7 +509,13 @@ async function saveYearEdit(year: academicCalendarDto) {
     toast.error(m.onboarding_step3_year_err_name());
     return;
   }
-  if (!validateDateRange(editingYearStartDate, editingYearEndDate, m.onboarding_step3_year_err_dates())) {
+  if (
+    !validateDateRange(
+      editingYearStartDate,
+      editingYearEndDate,
+      m.onboarding_step3_year_err_dates(),
+    )
+  ) {
     return;
   }
 
@@ -471,7 +528,7 @@ async function saveYearEdit(year: academicCalendarDto) {
       end_date: toApiDateTime(editingYearEndDate),
       notes: editingYearNotes.trim() || null,
     });
-    years = years.map((item) => item.id === updated.id ? updated : item);
+    years = years.map((item) => (item.id === updated.id ? updated : item));
     editingYearId = null;
     await refreshOnboardingState(orgId, m.common_action_failed());
   } catch (err: unknown) {
@@ -482,15 +539,19 @@ async function saveYearEdit(year: academicCalendarDto) {
   }
 }
 
-async function transitionYear(year: academicCalendarDto, action: "activate" | "close" | "archive") {
+async function transitionYear(
+  year: academicCalendarDto,
+  action: "activate" | "close" | "archive",
+) {
   isSubmittingYear = true;
   try {
-    const updated = action === "activate"
-      ? await api.activateacademicCalendar(String(year.id))
-      : action === "close"
-        ? await api.closeacademicCalendar(String(year.id))
-        : await api.archiveacademicCalendar(String(year.id));
-    years = years.map((item) => item.id === updated.id ? updated : item);
+    const updated =
+      action === "activate"
+        ? await api.activateacademicCalendar(String(year.id))
+        : action === "close"
+          ? await api.closeacademicCalendar(String(year.id))
+          : await api.archiveacademicCalendar(String(year.id));
+    years = years.map((item) => (item.id === updated.id ? updated : item));
     await refreshOnboardingState(orgId, m.common_action_failed());
   } catch (err: unknown) {
     console.error(`Failed to ${action} academic year:`, err);
@@ -519,7 +580,13 @@ async function savePeriodEdit(period: AcademicPeriodDto) {
     toast.error(m.onboarding_step3_year_err_name());
     return;
   }
-  if (!validateDateRange(editingPeriodStartDate, editingPeriodEndDate, m.onboarding_step3_year_err_dates())) {
+  if (
+    !validateDateRange(
+      editingPeriodStartDate,
+      editingPeriodEndDate,
+      m.onboarding_step3_year_err_dates(),
+    )
+  ) {
     return;
   }
 
@@ -533,7 +600,7 @@ async function savePeriodEdit(period: AcademicPeriodDto) {
       end_date: toApiDateTime(editingPeriodEndDate),
       period_kind: editingPeriodKind,
     });
-    periods = periods.map((item) => item.id === updated.id ? updated : item);
+    periods = periods.map((item) => (item.id === updated.id ? updated : item));
     editingPeriodId = null;
     await refreshOnboardingState(orgId, m.common_action_failed());
   } catch (err: unknown) {
@@ -544,15 +611,19 @@ async function savePeriodEdit(period: AcademicPeriodDto) {
   }
 }
 
-async function transitionPeriod(period: AcademicPeriodDto, action: "lock" | "unlock" | "close") {
+async function transitionPeriod(
+  period: AcademicPeriodDto,
+  action: "lock" | "unlock" | "close",
+) {
   isSubmittingPeriod = true;
   try {
-    const updated = action === "lock"
-      ? await api.lockAcademicPeriod(String(period.id))
-      : action === "unlock"
-        ? await api.unlockAcademicPeriod(String(period.id))
-        : await api.closeAcademicPeriod(String(period.id));
-    periods = periods.map((item) => item.id === updated.id ? updated : item);
+    const updated =
+      action === "lock"
+        ? await api.lockAcademicPeriod(String(period.id))
+        : action === "unlock"
+          ? await api.unlockAcademicPeriod(String(period.id))
+          : await api.closeAcademicPeriod(String(period.id));
+    periods = periods.map((item) => (item.id === updated.id ? updated : item));
     await refreshOnboardingState(orgId, m.common_action_failed());
   } catch (err: unknown) {
     console.error(`Failed to ${action} academic period:`, err);
@@ -579,7 +650,6 @@ async function deleteYear(year: academicCalendarDto) {
   await refreshOnboardingState(orgId, m.common_action_failed());
   successMessage = m.onboarding_step3_year_deleted_success();
 }
-
 </script>
 
 <div class="space-y-6">

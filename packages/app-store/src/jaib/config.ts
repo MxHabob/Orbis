@@ -23,11 +23,7 @@ const config: OrbisApp = {
     "Electronic payments",
     "Money transfers",
   ],
-  features_ar: [
-    "خدمات المحفظة الرقمية",
-    "الدفع الإلكتروني",
-    "تحويل الأموال",
-  ],
+  features_ar: ["خدمات المحفظة الرقمية", "الدفع الإلكتروني", "تحويل الأموال"],
   settings: [],
 };
 

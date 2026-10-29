@@ -17,7 +17,14 @@ import {
 } from "@orbis/ui/dialog";
 import { Progress } from "@orbis/ui/progress";
 import { toast } from "@orbis/ui";
-import { CheckCircle, DocumentPage, Download, Refresh, XMark, Printer } from "@orbis/icons";
+import {
+  CheckCircle,
+  DocumentPage,
+  Download,
+  Refresh,
+  XMark,
+  Printer,
+} from "@orbis/icons";
 
 let {
   open = $bindable(false),
@@ -59,11 +66,7 @@ async function generateReport() {
 
   try {
     // 1. Trigger Generation
-    const jobId = await api.generateReport(
-      templateId,
-      "pdf",
-      parameters,
-    );
+    const jobId = await api.generateReport(templateId, "pdf", parameters);
 
     currentJobId = jobId;
     progress = 30;
@@ -79,11 +82,17 @@ async function generateReport() {
       const jobStatus = await api.getReportJobStatus(jobId);
       if (currentJobId !== jobId) return;
 
-      if (jobStatus.status === "completed" || jobStatus.status === "Completed") {
+      if (
+        jobStatus.status === "completed" ||
+        jobStatus.status === "Completed"
+      ) {
         progress = 80;
         statusText = m.shared_ui_fetching_document();
         break;
-      } else if (jobStatus.status === "failed" || jobStatus.status === "Failed") {
+      } else if (
+        jobStatus.status === "failed" ||
+        jobStatus.status === "Failed"
+      ) {
         throw new Error(
           jobStatus.error_message ||
             m.shared_ui_report_generation_server_failed(),

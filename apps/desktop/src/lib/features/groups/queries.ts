@@ -2,7 +2,11 @@
  * User Groups domain queries & mutations — RBAC & User Groups Management.
  * Wraps OrbisApiClient with TanStack Query and queryKeys factory.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import {
   api,
   queryKeys,
@@ -59,7 +63,9 @@ export function createUpdateGroupMutation() {
     mutationFn: ({ id, req }: { id: string; req: UpdateGroupRequest }) =>
       api.updateGroup(id, req),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.group.all });
     },
   }));
@@ -83,8 +89,12 @@ export function createAddGroupMemberMutation() {
     mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
       api.addGroupMember(groupId, userId),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.members(variables.groupId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.detail(variables.groupId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.members(variables.groupId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.detail(variables.groupId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.group.all });
     },
   }));
@@ -97,8 +107,12 @@ export function createRemoveGroupMemberMutation() {
     mutationFn: ({ groupId, userId }: { groupId: string; userId: string }) =>
       api.removeGroupMember(groupId, userId),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.members(variables.groupId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.detail(variables.groupId) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.members(variables.groupId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.detail(variables.groupId),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.group.all });
     },
   }));
@@ -110,8 +124,12 @@ export function createBulkAssignGroupMutation() {
   return createMutation(() => ({
     mutationFn: (req: BulkAssignGroupRequest) => api.bulkAssignGroup(req),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.members(variables.group_id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.detail(variables.group_id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.members(variables.group_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.detail(variables.group_id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.group.all });
     },
   }));
@@ -124,7 +142,9 @@ export function createSetGroupPermissionsMutation() {
     mutationFn: ({ id, permissions }: { id: string; permissions: string[] }) =>
       api.setGroupPermissions(id, permissions),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.group.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.group.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.group.all });
     },
   }));

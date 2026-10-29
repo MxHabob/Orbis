@@ -14,8 +14,31 @@ use super::extractors::AuthContext;
 use super::{ApiError, ApiResponse};
 use crate::state::AppState;
 use orbis_domain::entities::enrollment::{Enrollment, StudyMode};
+use orbis_domain::entities::report::ReportAuditEntry;
 use orbis_domain::entities::student::{AcademicStanding, StudentDetail, StudentStatus};
 use orbis_domain::queries::filters::{EnrollmentFilter, PaginationParams, StudentFilter};
+
+async fn record_student_audit(
+    state: &AppState,
+    ctx: &AuthContext,
+    student_id: Uuid,
+    action: &str,
+    details: serde_json::Value,
+) -> Result<(), ApiError> {
+    let entry = ReportAuditEntry {
+        id: Uuid::new_v4(),
+        org_id: ctx.tenant_id,
+        actor_id: ctx.user_id().unwrap_or_default(),
+        action: action.to_string(),
+        entity_type: "student".to_string(),
+        entity_id: student_id,
+        details: Some(details),
+        created_at: Utc::now(),
+    };
+    state.report_audit_repo.save(&entry).await.map_err(|error| {
+        ApiError::internal(format!("Failed to record student audit entry: {error}"))
+    })
+}
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct StudentDto {
@@ -431,6 +454,14 @@ pub async fn register_student(
         .student_service
         .register_student(&ctx, ctx.tenant_id, input)
         .await?;
+    record_student_audit(
+        &state,
+        &ctx,
+        result.student.student.id,
+        "student.created",
+        serde_json::json!({}),
+    )
+    .await?;
     Ok(ApiResponse::ok(result.student.into()))
 }
 
@@ -551,6 +582,14 @@ pub async fn update_student_status(
         .student_service
         .update_student_status(&ctx, id, new_status, p.reason)
         .await?;
+    record_student_audit(
+        &state,
+        &ctx,
+        id,
+        "student.status_changed",
+        serde_json::json!({ "status": student.status.to_string() }),
+    )
+    .await?;
     let person = state
         .person_repo
         .find_by_id(student.person_id)
@@ -570,6 +609,31 @@ pub async fn update_student_profile(
     Path(id): Path<Uuid>,
     Json(p): Json<UpdateStudentProfileRequest>,
 ) -> Result<Json<ApiResponse<StudentDto>>, ApiError> {
+    let updated_fields = [
+        ("first_name", p.first_name.is_some()),
+        ("middle_name", p.middle_name.is_some()),
+        ("last_name", p.last_name.is_some()),
+        ("first_name_ar", p.first_name_ar.is_some()),
+        ("middle_name_ar", p.middle_name_ar.is_some()),
+        ("last_name_ar", p.last_name_ar.is_some()),
+        ("display_name", p.display_name.is_some()),
+        ("national_id", p.national_id.is_some()),
+        ("passport_number", p.passport_number.is_some()),
+        ("gender", p.gender.is_some()),
+        ("birth_date", p.birth_date.is_some()),
+        ("place_of_birth", p.place_of_birth.is_some()),
+        ("nationality", p.nationality.is_some()),
+        ("blood_type", p.blood_type.is_some()),
+        ("medical_notes", p.medical_notes.is_some()),
+        ("special_needs_notes", p.special_needs_notes.is_some()),
+        ("phone", p.phone.is_some()),
+        ("email", p.email.is_some()),
+        ("address", p.address.is_some()),
+        ("avatar_url", p.avatar_url.is_some()),
+    ]
+    .into_iter()
+    .filter_map(|(field, is_set)| is_set.then_some(field))
+    .collect::<Vec<_>>();
     let input = orbis_app::services::student_service::UpdateStudentProfileInput {
         first_name: p.first_name,
         middle_name: p.middle_name,
@@ -597,6 +661,14 @@ pub async fn update_student_profile(
         .student_service
         .update_student_profile(&ctx, id, input)
         .await?;
+    record_student_audit(
+        &state,
+        &ctx,
+        id,
+        "student.updated",
+        serde_json::json!({ "updated_fields": updated_fields }),
+    )
+    .await?;
     Ok(ApiResponse::ok(detail.into()))
 }
 

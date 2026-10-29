@@ -11,7 +11,8 @@ import { BuildingOffice, ShieldCheck } from "@orbis/icons";
 
 import type { Snippet } from "svelte";
 
-let { data, children }: { data: { orgId: string }; children: Snippet } = $props();
+let { data, children }: { data: { orgId: string }; children: Snippet } =
+  $props();
 
 const orgId = $derived((page.params.orgId as string) || data?.orgId || "");
 const basePath = $derived(`/${orgId}/settings/branches`);

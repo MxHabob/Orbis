@@ -59,8 +59,12 @@ const ROOM_TYPES = [
   { value: "other", label: m.onboarding_room_type_other() },
 ];
 
-const stepTasks = $derived(getTasksForStep("structure", systemStore.onboardingTasks));
-const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const stepTasks = $derived(
+  getTasksForStep("structure", systemStore.onboardingTasks),
+);
+const isTaskComplete = $derived(
+  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
+);
 
 function applyBranchPreset() {
   unitCode = `BR-${String(orgUnits.length + 1).padStart(2, "0")}`;
@@ -175,7 +179,6 @@ async function deleteRoom(room: RoomDto) {
   rooms = rooms.filter((item) => item.id !== room.id);
   await refreshOnboardingState(orgId, m.common_action_failed());
 }
-
 </script>
 
 <div class="space-y-6">

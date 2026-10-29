@@ -11,7 +11,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FlatList,
-  type ListRenderItemInfo,
   Modal,
   Pressable,
   StyleSheet,
@@ -19,6 +18,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import type { ListRenderItemInfo } from "@react-native/virtualized-lists";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
 import { Section } from "@/components/layout/section";
@@ -102,7 +102,8 @@ export default function InstitutionSelectScreen() {
 
   const directoryQuery = useQuery({
     queryKey: ["institution-directory"],
-    queryFn: ({ signal }) => searchInstitutionDirectory(undefined, signal),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      searchInstitutionDirectory(undefined, signal),
     enabled: !isInitializing,
     staleTime: 5 * 60 * 1000,
   });
@@ -228,16 +229,23 @@ export default function InstitutionSelectScreen() {
 
   useEffect(() => {
     if (!institutionQr) return;
-    try {
-      setLocalCandidate(parseLocalInstitutionQr(institutionQr));
-    } catch (caught: unknown) {
-      console.warn(
-        "[Institution Select] Rejected an unsupported QR code.",
-        caught,
-      );
-      setScreenError(t("auth_institution_local_qr_error"));
-    }
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        setLocalCandidate(parseLocalInstitutionQr(institutionQr));
+      } catch (caught: unknown) {
+        console.warn(
+          "[Institution Select] Rejected an unsupported QR code.",
+          caught,
+        );
+        setScreenError(t("auth_institution_local_qr_error"));
+      }
+    });
     router.setParams({ institutionQr: undefined });
+    return () => {
+      cancelled = true;
+    };
   }, [institutionQr, router, t]);
 
   const submitManualInstitution = useCallback(() => {
@@ -427,9 +435,7 @@ export default function InstitutionSelectScreen() {
                       accessibilityState={{ selected: userLocation !== null }}
                       onPress={() => void requestNearbyLocation()}
                       className={`min-h-11 flex-row items-center gap-2 rounded-full px-3 ${
-                        userLocation
-                          ? "bg-primary/10"
-                          : "bg-background-element"
+                        userLocation ? "bg-primary/10" : "bg-background-element"
                       }`}
                     >
                       <Pin

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface ZoomResetProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface ZoomResetProps extends SvgProps {
 
 export function ZoomReset({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,19 +45,28 @@ export function ZoomReset({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Rect x="2" y="4" width="20" height="16" rx="3" fill="none" />
-	
-	<Path strokeLinecap="round" strokeLinejoin="round" d="M7.5 9v6M6 10.5l1.5-1.5" />
-	
-	<Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="M12 10.5v.01M12 13.5v.01"
-		strokeWidth="2"
-	/>
-	
-	<Path strokeLinecap="round" strokeLinejoin="round" d="M16.5 9v6M15 10.5l1.5-1.5" />
+
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 9v6M6 10.5l1.5-1.5"
+      />
+
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 10.5v.01M12 13.5v.01"
+        strokeWidth="2"
+      />
+
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.5 9v6M15 10.5l1.5-1.5"
+      />
     </Svg>
   );
 }

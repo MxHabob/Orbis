@@ -34,6 +34,8 @@ pub mod integration;
 pub mod journal_entry;
 pub mod license;
 pub mod mfa;
+pub mod notification;
+pub mod notification_preference;
 pub mod org_unit;
 pub mod organization;
 pub mod override_request;

@@ -50,8 +50,14 @@ const form = new FormController({
   initialValues: {
     period_id: periodId || "",
     slot_number: nextSlotNumber || 1,
-    name: untrack(() => m.academics_schedule_placeholder_period_en({ number: nextSlotNumber || 1 })),
-    name_ar: untrack(() => m.academics_schedule_placeholder_period({ number: nextSlotNumber || 1 })),
+    name: untrack(() =>
+      m.academics_schedule_placeholder_period_en({
+        number: nextSlotNumber || 1,
+      }),
+    ),
+    name_ar: untrack(() =>
+      m.academics_schedule_placeholder_period({ number: nextSlotNumber || 1 }),
+    ),
     start_time: "08:00",
     end_time: "08:45",
     duration_minutes: 45,
@@ -90,7 +96,10 @@ async function handleSubmit(event: SubmitEvent) {
 
   form.values.period_id = periodId || form.values.period_id;
   form.values.slot_number = nextSlotNumber || form.values.slot_number;
-  form.values.duration_minutes = calcDuration(form.values.start_time, form.values.end_time);
+  form.values.duration_minutes = calcDuration(
+    form.values.start_time,
+    form.values.end_time,
+  );
 
   if (!form.validate()) {
     const errorMsg =

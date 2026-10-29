@@ -6,12 +6,15 @@ import { getOfflineQueryCacheKey } from "./offline-query-cache";
 
 const DATABASE_NAME = "orbis-mobile-offline-cache.db";
 const ENCRYPTION_KEY_STORAGE_KEY = "orbis_offline_cache_encryption_key";
+const fallbackQueryCache = new Map<string, Map<string, string>>();
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | undefined;
 
 async function openEncryptedDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!(await SecureStore.isAvailableAsync())) {
-    throw new Error("Secure storage is unavailable; offline cache cannot be encrypted.");
+    throw new Error(
+      "Secure storage is unavailable; offline cache cannot be encrypted.",
+    );
   }
 
   let encryptionKey = await SecureStore.getItemAsync(
@@ -22,11 +25,9 @@ async function openEncryptedDatabase(): Promise<SQLite.SQLiteDatabase> {
     encryptionKey = Array.from(bytes, (byte) =>
       byte.toString(16).padStart(2, "0"),
     ).join("");
-    await SecureStore.setItemAsync(
-      ENCRYPTION_KEY_STORAGE_KEY,
-      encryptionKey,
-      { keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK },
-    );
+    await SecureStore.setItemAsync(ENCRYPTION_KEY_STORAGE_KEY, encryptionKey, {
+      keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+    });
   }
 
   if (!/^[\da-f]{64}$/i.test(encryptionKey)) {
@@ -54,7 +55,9 @@ async function openEncryptedDatabase(): Promise<SQLite.SQLiteDatabase> {
     `);
     return database;
   } catch (error) {
-    await database.closeAsync();
+    if (database && typeof database.closeAsync === "function") {
+      await database.closeAsync();
+    }
     throw error;
   }
 }
@@ -69,36 +72,71 @@ function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   return databasePromise;
 }
 
+function getFallbackStore(scope: string) {
+  let store = fallbackQueryCache.get(scope);
+  if (!store) {
+    store = new Map<string, string>();
+    fallbackQueryCache.set(scope, store);
+  }
+  return store;
+}
+
 export function createOfflineQueryPersister(scope: string) {
   const storageKey = getOfflineQueryCacheKey(scope);
+  const fallbackStore = getFallbackStore(scope);
+
   return createAsyncStoragePersister({
     key: storageKey,
     throttleTime: 1000,
     storage: {
-      async getItem(key) {
-        const database = await getDatabase();
-        const row = await database.getFirstAsync<{ cache_value: string }>(
-          "SELECT cache_value FROM persisted_query_cache WHERE cache_key = ?",
-          key,
-        );
-        return row?.cache_value ?? null;
+      async getItem(key: string) {
+        try {
+          const database = await getDatabase();
+          const row = await database.getFirstAsync<{ cache_value: string }>(
+            "SELECT cache_value FROM persisted_query_cache WHERE cache_key = ?",
+            key,
+          );
+          return row?.cache_value ?? fallbackStore.get(key) ?? null;
+        } catch (error) {
+          console.warn(
+            "[Orbis Mobile Cache] Native encrypted cache unavailable; using in-memory fallback.",
+            error,
+          );
+          return fallbackStore.get(key) ?? null;
+        }
       },
-      async setItem(key, value) {
-        const database = await getDatabase();
-        await database.runAsync(
-          `INSERT OR REPLACE INTO persisted_query_cache
-            (cache_key, cache_value, updated_at) VALUES (?, ?, ?)`,
-          key,
-          value,
-          Date.now(),
-        );
+      async setItem(key: string, value: string) {
+        try {
+          const database = await getDatabase();
+          await database.runAsync(
+            `INSERT OR REPLACE INTO persisted_query_cache
+              (cache_key, cache_value, updated_at) VALUES (?, ?, ?)`,
+            key,
+            value,
+            Date.now(),
+          );
+        } catch (error) {
+          console.warn(
+            "[Orbis Mobile Cache] Failed to persist query cache in SQLite; using in-memory fallback.",
+            error,
+          );
+          fallbackStore.set(key, value);
+        }
       },
-      async removeItem(key) {
-        const database = await getDatabase();
-        await database.runAsync(
-          "DELETE FROM persisted_query_cache WHERE cache_key = ?",
-          key,
-        );
+      async removeItem(key: string) {
+        try {
+          const database = await getDatabase();
+          await database.runAsync(
+            "DELETE FROM persisted_query_cache WHERE cache_key = ?",
+            key,
+          );
+        } catch (error) {
+          console.warn(
+            "[Orbis Mobile Cache] Failed to remove cached query from SQLite; clearing in-memory fallback.",
+            error,
+          );
+          fallbackStore.delete(key);
+        }
       },
     },
   });

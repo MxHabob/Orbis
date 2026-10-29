@@ -42,19 +42,16 @@ export default function StudentFeesScreen() {
   const { t, formatDate } = useI18n();
 
   const requestedStudentId = typeof id === "string" ? id : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const feesQuery = useFeesQuery(studentId);
   const orgQuery = useCurrentOrgQuery();
 
   const rawFees = feesQuery.data ?? [];
-  const fees = [...rawFees].sort((a, b) => a.due_date.localeCompare(b.due_date));
+  const fees = [...rawFees].sort((a, b) =>
+    a.due_date.localeCompare(b.due_date),
+  );
 
   const balanceDue = fees.reduce((total, fee) => {
     const amount = Number(fee.balance_due);
@@ -86,10 +83,7 @@ export default function StudentFeesScreen() {
       }}
     >
       {/* 1. Total Balance Due Banner */}
-      <Card
-        variant="default"
-        padding="four"
-      >
+      <Card variant="default" padding="four">
         <View className="flex-row items-center justify-between">
           <View className="gap-half">
             <Text className="text-xs font-semibold text-muted-foreground">
@@ -143,7 +137,13 @@ export default function StudentFeesScreen() {
                   </Text>
 
                   <Badge
-                    variant={isOverdue ? "destructive" : isPaid ? "default" : "secondary"}
+                    variant={
+                      isOverdue
+                        ? "destructive"
+                        : isPaid
+                          ? "default"
+                          : "secondary"
+                    }
                     className={`px-two py-half ${isPaid ? "bg-success/20" : ""}`}
                   >
                     <Text
@@ -182,7 +182,10 @@ export default function StudentFeesScreen() {
                   />
                   <FeeAmount
                     label={t("student_fee_balance") || "Remaining Balance"}
-                    value={formatCurrency(Number(fee.balance_due) || 0, currency)}
+                    value={formatCurrency(
+                      Number(fee.balance_due) || 0,
+                      currency,
+                    )}
                     highlight={Number(fee.balance_due) > 0}
                   />
                   <FeeAmount

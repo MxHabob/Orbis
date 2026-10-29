@@ -9,4 +9,8 @@ export {
   formatDecimal,
 } from "./format";
 export { l, isAr } from "./locale";
-export { changeAppLocale, localeState, type AppLocale } from "./locale-state.svelte";
+export {
+  changeAppLocale,
+  localeState,
+  type AppLocale,
+} from "./locale-state.svelte";

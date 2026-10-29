@@ -5,23 +5,14 @@
  */
 
 import React, { useState } from "react";
-import {
-  Text,
-  View,
-  Pressable,
-  TextInput,
-} from "react-native";
+import { Text, View, Pressable, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle,
-} from "@orbis/icons/native";
+import { ArrowLeft, ArrowRight, CheckCircle } from "@orbis/icons/native";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -82,23 +73,17 @@ export default function ForgotPasswordScreen() {
           <View className="flex-1 justify-center">
             {/* Title Block */}
             <View className="mb-6">
-              <Text
-                className="font-sans text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground"
-              >
+              <Text className="font-sans text-[28px] leading-8.5 font-extrabold tracking-[-0.5px] text-foreground">
                 {t("auth_forgot_title")}
               </Text>
-              <Text
-                className="mt-one font-sans text-sm leading-5 text-muted-foreground"
-              >
+              <Text className="mt-one font-sans text-sm leading-5 text-muted-foreground">
                 {t("auth_forgot_subtitle")}
               </Text>
             </View>
 
             {errorMsg ? (
               <View className="mb-four rounded-lg border border-destructive bg-destructive/10 px-three py-two">
-                <Text
-                  className="font-sans text-xs leading-4 font-semibold text-destructive"
-                >
+                <Text className="font-sans text-xs leading-4 font-semibold text-destructive">
                   {errorMsg}
                 </Text>
               </View>
@@ -144,21 +129,15 @@ export default function ForgotPasswordScreen() {
         ) : (
           /* Confirmation State */
           <View className="flex-1 items-center justify-center px-4">
-            <View
-              className="mb-five h-16 w-16 items-center justify-center rounded-full bg-success/10"
-            >
+            <View className="mb-five h-16 w-16 items-center justify-center rounded-full bg-success/10">
               <CheckCircle size={44} color={theme.success} />
             </View>
 
-            <Text
-              className="mb-two text-center font-sans text-2xl leading-7.5 font-extrabold text-foreground"
-            >
+            <Text className="mb-two text-center font-sans text-2xl leading-7.5 font-extrabold text-foreground">
               {t("auth_forgot_success_title")}
             </Text>
 
-            <Text
-              className="mb-eight text-center font-sans text-sm leading-5.5 text-muted-foreground"
-            >
+            <Text className="mb-eight text-center font-sans text-sm leading-5.5 text-muted-foreground">
               {t("auth_forgot_success_msg")}
             </Text>
 

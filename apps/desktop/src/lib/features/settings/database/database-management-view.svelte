@@ -11,23 +11,23 @@
 import type { ConnectionMode } from "$lib/api/types";
 import * as m from "$lib/paraglide/messages";
 import {
-    ArrowDownTray,
-    ArrowPath,
-    ArrowRight,
-    ArrowUpTray,
-    Bolt,
-    CheckCircle,
-    ClockRotateRight,
-    Computer,
-    Database,
-    FolderOpen,
-    GlobeAlt,
-    Info,
-    InfoCircle,
-    Plus,
-    ShieldCheck,
-    Sparkles,
-    Wrench,
+  ArrowDownTray,
+  ArrowPath,
+  ArrowRight,
+  ArrowUpTray,
+  Bolt,
+  CheckCircle,
+  ClockRotateRight,
+  Computer,
+  Database,
+  FolderOpen,
+  GlobeAlt,
+  Info,
+  InfoCircle,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Wrench,
 } from "@orbis/icons";
 import { FormField, LoadingIndicator, toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
@@ -43,7 +43,9 @@ let { orgId }: { orgId: string } = $props();
 
 const controller = new DatabaseManagerController();
 
-let activeSection = $state<"overview" | "connection" | "backup" | "restore" | "maintenance">("overview");
+let activeSection = $state<
+  "overview" | "connection" | "backup" | "restore" | "maintenance"
+>("overview");
 
 // Connection form state
 let connMode = $state<ConnectionMode>("local");
@@ -115,9 +117,13 @@ async function handleTestRemote() {
   }
   const result = await controller.testRemoteHealth(connServerUrl.trim());
   if (result.reachable) {
-    toast.success(m.ui_server_connected_latency({ latency: result.latency_ms }));
+    toast.success(
+      m.ui_server_connected_latency({ latency: result.latency_ms }),
+    );
   } else {
-    toast.error(result.error || m.ui_copy_unable_to_connect_to_server_147a38a8());
+    toast.error(
+      result.error || m.ui_copy_unable_to_connect_to_server_147a38a8(),
+    );
   }
 }
 
@@ -127,13 +133,17 @@ async function handleSaveConnection() {
       mode: connMode,
       serverUrl: connMode === "api" ? connServerUrl.trim() : undefined,
       dbFilename: connMode === "local" ? connDbFilename.trim() : undefined,
-      customPath: connMode === "local" && connCustomPath.trim() ? connCustomPath.trim() : undefined,
+      customPath:
+        connMode === "local" && connCustomPath.trim()
+          ? connCustomPath.trim()
+          : undefined,
       databaseEngine: connMode === "direct" ? "postgres" : undefined,
       host: connMode === "direct" ? connHost.trim() : undefined,
       port: connMode === "direct" ? connPort : undefined,
       databaseName: connMode === "direct" ? connDatabaseName.trim() : undefined,
       username: connMode === "direct" ? connUsername.trim() : undefined,
-      password: connMode === "direct" && connPassword ? connPassword : undefined,
+      password:
+        connMode === "direct" && connPassword ? connPassword : undefined,
       sslMode: connMode === "direct" ? connSslMode : undefined,
       walMode: connMode === "local" ? connWalMode : undefined,
       busyTimeoutMs: connMode === "local" ? connBusyTimeout : undefined,
@@ -145,7 +155,10 @@ async function handleSaveConnection() {
 }
 
 async function handleBrowseCustomDbPath() {
-  const file = await controller.pickFile(m.ui_copy_orbis_databases_db_2636ac20(), ["db", "sqlite", "sqlite3"]);
+  const file = await controller.pickFile(
+    m.ui_copy_orbis_databases_db_2636ac20(),
+    ["db", "sqlite", "sqlite3"],
+  );
   if (file) {
     connCustomPath = file;
   }
@@ -156,7 +169,7 @@ async function handleBrowseBackupDest() {
   const file = await controller.pickSavePath(
     `orbis_backup_${timestamp}.db`,
     m.ui_copy_backup_file_db_8e8097bf(),
-    ["db", "sqlite", "bak"]
+    ["db", "sqlite", "bak"],
   );
   if (file) {
     customBackupPath = file;
@@ -164,7 +177,9 @@ async function handleBrowseBackupDest() {
 }
 
 async function handleTriggerBackup() {
-  await controller.triggerBackup(customBackupPath.trim() ? customBackupPath.trim() : undefined);
+  await controller.triggerBackup(
+    customBackupPath.trim() ? customBackupPath.trim() : undefined,
+  );
   if (controller.operationSuccess) {
     toast.success(controller.operationSuccess);
     customBackupPath = "";
@@ -174,7 +189,11 @@ async function handleTriggerBackup() {
 }
 
 async function handleBrowseRestoreFile() {
-  const file = await controller.pickFile(m.ui_copy_backup_file_db_8e8097bf(), ["db", "sqlite", "bak"]);
+  const file = await controller.pickFile(m.ui_copy_backup_file_db_8e8097bf(), [
+    "db",
+    "sqlite",
+    "bak",
+  ]);
   if (file) {
     restoreFilePath = file;
     await controller.inspectBackupFile(file);
@@ -214,7 +233,10 @@ async function handleSaveSettings() {
 }
 
 async function handleOpenExistingDatabase() {
-  const file = await controller.pickFile(m.ui_copy_sqlite_database_db_08cc781c(), ["db", "sqlite", "sqlite3"]);
+  const file = await controller.pickFile(
+    m.ui_copy_sqlite_database_db_08cc781c(),
+    ["db", "sqlite", "sqlite3"],
+  );
   if (file) {
     await controller.openExistingDatabase(file);
     if (controller.operationSuccess) {
@@ -244,18 +266,31 @@ const kpiStats = $derived([
   {
     label: m.ui_copy_storage_size_8122fef2(),
     value: controller.status?.file_size_formatted || "—",
-    sub: controller.status?.journal_mode ? `WAL: ${controller.status.journal_mode}` : m.ui_copy_indexed_da85078a(),
+    sub: controller.status?.journal_mode
+      ? `WAL: ${controller.status.journal_mode}`
+      : m.ui_copy_indexed_da85078a(),
   },
   {
     label: m.database_card_version(),
-    value: controller.status?.applied_migrations_count ? `v${controller.status.applied_migrations_count}.0` : (controller.status?.schema_version || "v1.0.0"),
-    sub: controller.status?.schema_version ? controller.status.schema_version.replace(/^m\d+_\d+_/, "").replace(/_/g, " ") : m.ui_copy_current_7b958d7b(),
+    value: controller.status?.applied_migrations_count
+      ? `v${controller.status.applied_migrations_count}.0`
+      : controller.status?.schema_version || "v1.0.0",
+    sub: controller.status?.schema_version
+      ? controller.status.schema_version
+          .replace(/^m\d+_\d+_/, "")
+          .replace(/_/g, " ")
+      : m.ui_copy_current_7b958d7b(),
     fullTitle: controller.status?.schema_version || "v1.0.0",
   },
   {
     label: m.ui_copy_applied_migrations_b57f13d8(),
     value: `${controller.status?.applied_migrations_count ?? 0} / ${controller.status?.total_migrations_count ?? 0}`,
-    sub: (controller.status?.pending_migrations.length ?? 0) > 0 ? m.ui_pending_migrations_count({ count: controller.status?.pending_migrations.length ?? 0 }) : m.ui_copy_100_synced_085c434f(),
+    sub:
+      (controller.status?.pending_migrations.length ?? 0) > 0
+        ? m.ui_pending_migrations_count({
+            count: controller.status?.pending_migrations.length ?? 0,
+          })
+        : m.ui_copy_100_synced_085c434f(),
   },
 ]);
 
@@ -266,7 +301,10 @@ const directoryItems = $derived([
     title: m.ui_copy_overview_integrity_health_42939363(),
     desc: m.ui_copy_target_storage_path_integrity_check_and_fa_a39b10ce(),
     icon: ShieldCheck,
-    badge: controller.status?.integrity_status === "ok" ? m.ui_copy_ok_3b8e28b7() : (controller.status?.integrity_status || m.ui_copy_ok_217bf3e2()),
+    badge:
+      controller.status?.integrity_status === "ok"
+        ? m.ui_copy_ok_3b8e28b7()
+        : controller.status?.integrity_status || m.ui_copy_ok_217bf3e2(),
   },
   {
     id: "connection" as const,
@@ -279,29 +317,38 @@ const directoryItems = $derived([
         ? "PostgreSQL"
         : "Orbis API",
   },
-  ...(controller.isLocal ? [{
-    id: "backup" as const,
-    title: m.ui_copy_backup_retention_policies_6a7221cd(),
-    desc: m.ui_copy_create_instant_snapshots_via_vacuum_into_a_2757e2e9(),
-    icon: ArrowDownTray,
-    badge: controller.status?.last_backup_timestamp ? m.ui_copy_active_2acda471() : m.ui_copy_pending_5ac26458(),
-  },
-  {
-    id: "restore" as const,
-    title: m.ui_copy_restore_snapshot_recovery_0c381fdb(),
-    desc: m.ui_copy_safe_staged_recovery_with_pre_validation_i_589d67b1(),
-    icon: ArrowUpTray,
-    badge: m.ui_copy_staged_a21d0221(),
-  },
-  {
-    id: "maintenance" as const,
-    title: m.ui_copy_maintenance_migrations_vacuum_4ddc2f50(),
-    desc: m.ui_copy_apply_pending_schema_migrations_compact_db_c69fb0b3(),
-    icon: Wrench,
-    badge: controller.status && controller.status.pending_migrations.length > 0
-      ? m.ui_pending_migrations_count({ count: controller.status.pending_migrations.length })
-      : m.ui_copy_up_to_date_ccf363f4(),
-  }] : []),
+  ...(controller.isLocal
+    ? [
+        {
+          id: "backup" as const,
+          title: m.ui_copy_backup_retention_policies_6a7221cd(),
+          desc: m.ui_copy_create_instant_snapshots_via_vacuum_into_a_2757e2e9(),
+          icon: ArrowDownTray,
+          badge: controller.status?.last_backup_timestamp
+            ? m.ui_copy_active_2acda471()
+            : m.ui_copy_pending_5ac26458(),
+        },
+        {
+          id: "restore" as const,
+          title: m.ui_copy_restore_snapshot_recovery_0c381fdb(),
+          desc: m.ui_copy_safe_staged_recovery_with_pre_validation_i_589d67b1(),
+          icon: ArrowUpTray,
+          badge: m.ui_copy_staged_a21d0221(),
+        },
+        {
+          id: "maintenance" as const,
+          title: m.ui_copy_maintenance_migrations_vacuum_4ddc2f50(),
+          desc: m.ui_copy_apply_pending_schema_migrations_compact_db_c69fb0b3(),
+          icon: Wrench,
+          badge:
+            controller.status && controller.status.pending_migrations.length > 0
+              ? m.ui_pending_migrations_count({
+                  count: controller.status.pending_migrations.length,
+                })
+              : m.ui_copy_up_to_date_ccf363f4(),
+        },
+      ]
+    : []),
 ]);
 
 // Advisor Diagnostic Insights
@@ -309,7 +356,9 @@ const advisorInsights = $derived.by(() => {
   const insights = [];
 
   // 1. Integrity Check Insight
-  const isHealthy = controller.status?.integrity_status === "ok" || controller.status?.integrity_status === "healthy";
+  const isHealthy =
+    controller.status?.integrity_status === "ok" ||
+    controller.status?.integrity_status === "healthy";
   insights.push({
     id: "integrity-health",
     text: isHealthy
@@ -338,7 +387,8 @@ const advisorInsights = $derived.by(() => {
   }
 
   // 3. Concurrency / WAL Mode Insight
-  const walActive = connWalMode || controller.status?.journal_mode?.toLowerCase() === "wal";
+  const walActive =
+    connWalMode || controller.status?.journal_mode?.toLowerCase() === "wal";
   insights.push({
     id: "wal-mode",
     text: walActive

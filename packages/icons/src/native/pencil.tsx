@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface PencilProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface PencilProps extends SvgProps {
 
 export function Pencil({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,13 @@ export function Pencil({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="m4.1 16.9 12.2-12.2a2.4 2.4 0 0 1 3.4 3.4L7.5 20.3 2.5 21.5l1.6-4.6Zm11-11 3.4 3.4"
-	/>
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m4.1 16.9 12.2-12.2a2.4 2.4 0 0 1 3.4 3.4L7.5 20.3 2.5 21.5l1.6-4.6Zm11-11 3.4 3.4"
+      />
     </Svg>
   );
 }

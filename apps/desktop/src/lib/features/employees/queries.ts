@@ -2,7 +2,11 @@
  * Employees domain queries & mutations — Employee Affairs & Identity Provisioning.
  * Wraps OrbisApiClient with TanStack Query and queryKeys factory.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import {
   api,
   queryKeys,
@@ -18,7 +22,10 @@ export function createEmployeesQuery(
   filter?: () => EmployeeFilterInput | undefined,
 ) {
   return createQuery(() => ({
-    queryKey: queryKeys.employee.list(orgId(), filter?.() as Record<string, unknown>),
+    queryKey: queryKeys.employee.list(
+      orgId(),
+      filter?.() as Record<string, unknown>,
+    ),
     queryFn: () => api.listEmployees(filter?.()),
     enabled: !!orgId(),
     staleTime: 60 * 1000,
@@ -26,9 +33,7 @@ export function createEmployeesQuery(
 }
 
 /** Single employee profile dossier query (EmployeeDetail). */
-export function createEmployeeQuery(
-  employeeId: () => string,
-) {
+export function createEmployeeQuery(employeeId: () => string) {
   return createQuery(() => ({
     queryKey: queryKeys.employee.detail(employeeId()),
     queryFn: () => api.getEmployee(employeeId()),
@@ -38,9 +43,7 @@ export function createEmployeeQuery(
 }
 
 /** Employee counts by status (active, on_leave, suspended, terminated). */
-export function createEmployeeStatsQuery(
-  orgId: () => string,
-) {
+export function createEmployeeStatsQuery(orgId: () => string) {
   return createQuery(() => ({
     queryKey: queryKeys.employee.stats(orgId()),
     queryFn: () => api.getEmployeeStats(),
@@ -68,7 +71,9 @@ export function createUpdateEmployeeMutation() {
     mutationFn: ({ id, req }: { id: string; req: UpdateEmployeeRequest }) =>
       api.updateEmployee(id, req),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.employee.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
     },
   }));
@@ -81,7 +86,9 @@ export function createUpdateEmployeeStatusMutation() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       api.updateEmployeeStatus(id, status),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.employee.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
     },
   }));
@@ -91,10 +98,17 @@ export function createUpdateEmployeeStatusMutation() {
 export function createProvisionEmployeeAccountMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: ({ id, req }: { id: string; req: ProvisionEmployeeAccountRequest }) =>
-      api.provisionEmployeeAccount(id, req),
+    mutationFn: ({
+      id,
+      req,
+    }: {
+      id: string;
+      req: ProvisionEmployeeAccountRequest;
+    }) => api.provisionEmployeeAccount(id, req),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.employee.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
     },
@@ -108,7 +122,9 @@ export function createAssignEmployeeGroupsMutation() {
     mutationFn: ({ id, groupIds }: { id: string; groupIds: string[] }) =>
       api.assignEmployeeGroups(id, groupIds),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.employee.detail(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.group.all });
     },
   }));
@@ -131,7 +147,9 @@ export function createRestoreEmployeeMutation() {
   return createMutation(() => ({
     mutationFn: (id: string) => api.restoreEmployee(id),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.employee.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.employee.detail(id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
     },
   }));
@@ -141,13 +159,16 @@ export function createRestoreEmployeeMutation() {
 export function createBulkRegisterEmployeesMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: ({ items, options }: { items: any[]; options?: { atomic?: boolean; dryRun?: boolean } }) =>
-      api.bulkRegisterEmployees(items, options),
+    mutationFn: ({
+      items,
+      options,
+    }: {
+      items: any[];
+      options?: { atomic?: boolean; dryRun?: boolean };
+    }) => api.bulkRegisterEmployees(items, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employee.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
     },
   }));
 }
-
-

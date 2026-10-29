@@ -2,7 +2,11 @@
  * Attendance domain queries and mutations.
  * Provides TanStack Query hooks for attendance fetching and marking.
  */
-import { createQuery, createMutation, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createQuery,
+  createMutation,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { api, queryKeys, type MarkAttendanceRequest } from "$lib/api";
 
 /** List attendance records for a specific class and date */

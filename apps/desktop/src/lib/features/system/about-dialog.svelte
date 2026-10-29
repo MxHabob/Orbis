@@ -1,51 +1,51 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { api } from "$lib/api/client";
-  import type { AppInfo } from "$lib/api/types";
-  import {
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    DialogDescription,
-  } from "@orbis/ui/dialog";
-  import { Button } from "@orbis/ui/button";
-  import { GlobeAlt, Sparkles } from "@orbis/icons";
-  import mulverseOrbisImg from "$lib/assets/mulverse-orbis.png";
+import * as m from "$lib/paraglide/messages";
+import { api } from "$lib/api/client";
+import type { AppInfo } from "$lib/api/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@orbis/ui/dialog";
+import { Button } from "@orbis/ui/button";
+import { GlobeAlt, Sparkles } from "@orbis/icons";
+import mulverseOrbisImg from "$lib/assets/mulverse-orbis.png";
 
-  let { open = $bindable(false) }: { open?: boolean } = $props();
+let { open = $bindable(false) }: { open?: boolean } = $props();
 
-  let info = $state<AppInfo | null>(null);
-  let isLoading = $state(false);
+let info = $state<AppInfo | null>(null);
+let isLoading = $state(false);
 
-  const OFFICIAL_WEBSITE = "https://www.mulverse.com/";
+const OFFICIAL_WEBSITE = "https://www.mulverse.com/";
 
-  async function loadAppInfo() {
-    isLoading = true;
-    try {
-      info = await api.systemGetAppInfo();
-    } catch (error) {
-      console.error("Failed to load application information:", error);
-    } finally {
-      isLoading = false;
-    }
+async function loadAppInfo() {
+  isLoading = true;
+  try {
+    info = await api.systemGetAppInfo();
+  } catch (error) {
+    console.error("Failed to load application information:", error);
+  } finally {
+    isLoading = false;
   }
+}
 
-  async function openChangelog() {
-    try {
-      await api.openChangelogWindow();
-    } catch (error) {
-      console.error("Failed to open the changelog window:", error);
-      window.open("/changelog", "_blank", "width=860,height=680");
-    }
+async function openChangelog() {
+  try {
+    await api.openChangelogWindow();
+  } catch (error) {
+    console.error("Failed to open the changelog window:", error);
+    window.open("/changelog", "_blank", "width=860,height=680");
   }
+}
 
-  function openWebsite() {
-    window.open(OFFICIAL_WEBSITE, "_blank", "noopener,noreferrer");
-  }
+function openWebsite() {
+  window.open(OFFICIAL_WEBSITE, "_blank", "noopener,noreferrer");
+}
 
-  $effect(() => {
-    if (open && !info && !isLoading) void loadAppInfo();
-  });
+$effect(() => {
+  if (open && !info && !isLoading) void loadAppInfo();
+});
 </script>
 
 <Dialog bind:open>

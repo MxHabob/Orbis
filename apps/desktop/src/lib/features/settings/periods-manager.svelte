@@ -4,280 +4,282 @@ Allows administrators to manage configured academic periods and locking states.
 Redesigned with system-wide minimalist toolbar, SearchableMultiFilter, and hierarchical trees.
 -->
 <script lang="ts">
-  import { api, extractErrorMessage, queryKeys } from "$lib/api";
-  import { formatDate } from "$lib/core/i18n";
-  import { createPeriodsQuery, createacademicCalendarsQuery } from "$lib/features/academics/queries";
-  import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { confirmStore } from "$lib/stores";
-  import type { AcademicPeriodDto } from "@orbis/sdk";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import {
-    AcademicCap,
-    Calendar,
-    CheckCircle,
-    ChevronDown,
-    ChevronRight,
-    ClockRotateRight,
-    Lock,
-    Pencil,
-    Plus,
-    Refresh,
-    Search,
-    Trash,
-  } from "@orbis/icons";
-  import { LoadingIndicator, toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import SearchableMultiFilter, {
-    type SearchableMultiFilterGroup,
-  } from "$lib/shared/components/searchable-multi-filter.svelte";
-  import RelatedActions, {
-    type ActionGroup,
-  } from "$lib/shared/components/related-actions.svelte";
-  import { fade } from "svelte/transition";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import { formatDate } from "$lib/core/i18n";
+import {
+  createPeriodsQuery,
+  createacademicCalendarsQuery,
+} from "$lib/features/academics/queries";
+import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
+import * as m from "$lib/paraglide/messages";
+import { confirmStore } from "$lib/stores";
+import type { AcademicPeriodDto } from "@orbis/sdk";
+import { useQueryClient } from "@tanstack/svelte-query";
+import {
+  AcademicCap,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  ClockRotateRight,
+  Lock,
+  Pencil,
+  Plus,
+  Refresh,
+  Search,
+  Trash,
+} from "@orbis/icons";
+import { LoadingIndicator, toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Skeleton } from "@orbis/ui/skeleton";
+import SearchableMultiFilter, {
+  type SearchableMultiFilterGroup,
+} from "$lib/shared/components/searchable-multi-filter.svelte";
+import RelatedActions, {
+  type ActionGroup,
+} from "$lib/shared/components/related-actions.svelte";
+import { fade } from "svelte/transition";
 
-  let { orgId }: { orgId: string } = $props();
+let { orgId }: { orgId: string } = $props();
 
-  const queryClient = useQueryClient();
+const queryClient = useQueryClient();
 
-  // Queries
-  const periodsQuery = createPeriodsQuery(() => orgId);
-  const yearsQuery = createacademicCalendarsQuery(() => orgId);
+// Queries
+const periodsQuery = createPeriodsQuery(() => orgId);
+const yearsQuery = createacademicCalendarsQuery(() => orgId);
 
-  // Derived state from queries
-  const periods = $derived(periodsQuery.data ?? []);
-  const academicCalendars = $derived(yearsQuery.data ?? []);
-  const isLoading = $derived(periodsQuery.isLoading || yearsQuery.isLoading);
-  const isRefreshing = $derived(periodsQuery.isFetching || yearsQuery.isFetching);
+// Derived state from queries
+const periods = $derived(periodsQuery.data ?? []);
+const academicCalendars = $derived(yearsQuery.data ?? []);
+const isLoading = $derived(periodsQuery.isLoading || yearsQuery.isLoading);
+const isRefreshing = $derived(periodsQuery.isFetching || yearsQuery.isFetching);
 
-  let searchQuery = $state("");
-  let selectedFilters = $state<string[]>([]);
+let searchQuery = $state("");
+let selectedFilters = $state<string[]>([]);
 
-  // Sheet controls
-  let isSheetOpen = $state(false);
-  let editingPeriod = $state<any>(null);
+// Sheet controls
+let isSheetOpen = $state(false);
+let editingPeriod = $state<any>(null);
 
-  // Collapsed states for parent nodes
-  let collapsedNodes = $state<Record<string, boolean>>({});
+// Collapsed states for parent nodes
+let collapsedNodes = $state<Record<string, boolean>>({});
 
-  async function handleRefresh() {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
-  }
+async function handleRefresh() {
+  await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+}
 
-  // Filter Groups for SearchableMultiFilter
-  const filterGroups = $derived<SearchableMultiFilterGroup[]>([
-    {
-      id: "years",
-      label: m.settings_nav_academic_calendars(),
-      options: academicCalendars.map((y) => ({
-        value: `year:${y.id}`,
-        label: `${y.name_ar || y.name}${y.status === "active" ? " ★" : ""}`,
-      })),
-    },
-    {
-      id: "status",
-      label: m.common_word_status(),
-      options: [
-        { value: "status:active", label: m.academic_calendars_filter_active() },
-        { value: "status:locked", label: m.academic_calendar_locked_badge() },
-      ],
-    },
-    {
-      id: "type",
-      label: m.common_filter(),
-      options: [
-        ...new Set(
-          periods
-            .map((period) => period.period_type)
-            .filter((periodType): periodType is string => Boolean(periodType)),
-        ),
-      ].map((periodType) => ({
-        value: `type:${periodType}`,
-        label: periodType,
-      })),
-    },
-  ]);
+// Filter Groups for SearchableMultiFilter
+const filterGroups = $derived<SearchableMultiFilterGroup[]>([
+  {
+    id: "years",
+    label: m.settings_nav_academic_calendars(),
+    options: academicCalendars.map((y) => ({
+      value: `year:${y.id}`,
+      label: `${y.name_ar || y.name}${y.status === "active" ? " ★" : ""}`,
+    })),
+  },
+  {
+    id: "status",
+    label: m.common_word_status(),
+    options: [
+      { value: "status:active", label: m.academic_calendars_filter_active() },
+      { value: "status:locked", label: m.academic_calendar_locked_badge() },
+    ],
+  },
+  {
+    id: "type",
+    label: m.common_filter(),
+    options: [
+      ...new Set(
+        periods
+          .map((period) => period.period_type)
+          .filter((periodType): periodType is string => Boolean(periodType)),
+      ),
+    ].map((periodType) => ({
+      value: `type:${periodType}`,
+      label: periodType,
+    })),
+  },
+]);
 
-  const selectedYearFilters = $derived(
-    selectedFilters
-      .filter((f) => f.startsWith("year:"))
-      .map((f) => f.replace("year:", "")),
+const selectedYearFilters = $derived(
+  selectedFilters
+    .filter((f) => f.startsWith("year:"))
+    .map((f) => f.replace("year:", "")),
+);
+
+const selectedStatusFilters = $derived(
+  selectedFilters
+    .filter((f) => f.startsWith("status:"))
+    .map((f) => f.replace("status:", "")),
+);
+
+const selectedTypeFilters = $derived(
+  selectedFilters
+    .filter((f) => f.startsWith("type:"))
+    .map((f) => f.replace("type:", "")),
+);
+
+// Filtered Periods
+let filteredPeriods = $derived(
+  periods.filter((p) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.name_ar && p.name_ar.toLowerCase().includes(q)) ||
+      (p.code && p.code.toLowerCase().includes(q));
+
+    const matchesYear =
+      selectedYearFilters.length === 0 ||
+      (p.year_id && selectedYearFilters.includes(p.year_id));
+
+    const matchesStatus =
+      selectedStatusFilters.length === 0 ||
+      (selectedStatusFilters.includes("active") && p.status === "active") ||
+      (selectedStatusFilters.includes("locked") && p.is_locked === 1);
+
+    const matchesType =
+      selectedTypeFilters.length === 0 ||
+      (p.period_type && selectedTypeFilters.includes(p.period_type));
+
+    return matchesSearch && matchesYear && matchesStatus && matchesType;
+  }),
+);
+
+// Root periods (Semesters / Terms with no parent_id)
+let rootPeriods = $derived(
+  filteredPeriods.filter((p) => !p.parent_id || p.parent_id === ""),
+);
+
+function getChildren(parentId: string) {
+  return filteredPeriods.filter(
+    (p) => p.parent_id === parentId && p.id !== parentId,
   );
+}
 
-  const selectedStatusFilters = $derived(
-    selectedFilters
-      .filter((f) => f.startsWith("status:"))
-      .map((f) => f.replace("status:", "")),
-  );
+function getYearName(yearId?: string | null): string | null {
+  if (!yearId) return null;
+  const y = academicCalendars.find((item) => item.id === yearId);
+  return y ? y.name_ar || y.name : null;
+}
 
-  const selectedTypeFilters = $derived(
-    selectedFilters
-      .filter((f) => f.startsWith("type:"))
-      .map((f) => f.replace("type:", "")),
-  );
+function openCreateSheet() {
+  editingPeriod = null;
+  isSheetOpen = true;
+}
 
-  // Filtered Periods
-  let filteredPeriods = $derived(
-    periods.filter((p) => {
-      const q = searchQuery.trim().toLowerCase();
-      const matchesSearch =
-        !q ||
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.name_ar && p.name_ar.toLowerCase().includes(q)) ||
-        (p.code && p.code.toLowerCase().includes(q));
+function openEditSheet(period: any) {
+  editingPeriod = period;
+  isSheetOpen = true;
+}
 
-      const matchesYear =
-        selectedYearFilters.length === 0 ||
-        (p.year_id && selectedYearFilters.includes(p.year_id));
+async function requestActivate(periodId: string) {
+  const confirmed = await confirmStore.prompt({
+    title: m.ui_copy_activate_period_03ace2fa(),
+    description: m.settings_ui_period_open_confirm(),
+    confirmText: m.ui_copy_activate_c2b12d71(),
+    variant: "default",
+  });
 
-      const matchesStatus =
-        selectedStatusFilters.length === 0 ||
-        (selectedStatusFilters.includes("active") && p.status === "active") ||
-        (selectedStatusFilters.includes("locked") && p.is_locked === 1);
+  if (!confirmed) return;
 
-      const matchesType =
-        selectedTypeFilters.length === 0 ||
-        (p.period_type && selectedTypeFilters.includes(p.period_type));
-
-      return matchesSearch && matchesYear && matchesStatus && matchesType;
-    }),
-  );
-
-  // Root periods (Semesters / Terms with no parent_id)
-  let rootPeriods = $derived(
-    filteredPeriods.filter((p) => !p.parent_id || p.parent_id === ""),
-  );
-
-  function getChildren(parentId: string) {
-    return filteredPeriods.filter(
-      (p) => p.parent_id === parentId && p.id !== parentId,
-    );
+  try {
+    await api.unlockAcademicPeriod(periodId);
+    toast.success(m.ui_copy_period_activated_successfully_de714514());
+    await loadPeriods();
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
+}
 
-  function getYearName(yearId?: string | null): string | null {
-    if (!yearId) return null;
-    const y = academicCalendars.find((item) => item.id === yearId);
-    return y ? (y.name_ar || y.name) : null;
+async function requestLock(periodId: string) {
+  const confirmed = await confirmStore.prompt({
+    title: m.ui_copy_lock_close_period_57387762(),
+    description: m.settings_ui_period_close_confirm(),
+    confirmText: m.ui_copy_lock_period_54879736(),
+    variant: "destructive",
+  });
+
+  if (!confirmed) return;
+
+  try {
+    await api.lockAcademicPeriod(periodId);
+    toast.success(m.ui_copy_period_locked_successfully_c75e6ca2());
+    await loadPeriods();
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
+}
 
-  function openCreateSheet() {
-    editingPeriod = null;
-    isSheetOpen = true;
+async function requestDelete(periodId: string) {
+  const confirmed = await confirmStore.prompt({
+    title: m.periods_manager_delete_confirm_title(),
+    description: m.periods_manager_delete_confirm_desc(),
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+
+  if (!confirmed) return;
+
+  try {
+    await api.deleteAcademicPeriod(periodId);
+    toast.success(m.periods_manager_delete_success());
+    await loadPeriods();
+  } catch (e: unknown) {
+    toast.error(extractErrorMessage(e));
   }
+}
 
-  function openEditSheet(period: any) {
-    editingPeriod = period;
-    isSheetOpen = true;
-  }
+function toggleCollapse(periodId: string) {
+  collapsedNodes[periodId] = !collapsedNodes[periodId];
+}
 
-  async function requestActivate(periodId: string) {
-    const confirmed = await confirmStore.prompt({
-      title: m.ui_copy_activate_period_03ace2fa(),
-      description: m.settings_ui_period_open_confirm(),
-      confirmText: m.ui_copy_activate_c2b12d71(),
-      variant: "default",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.unlockAcademicPeriod(periodId);
-      toast.success(m.ui_copy_period_activated_successfully_de714514());
-      await loadPeriods();
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  async function requestLock(periodId: string) {
-    const confirmed = await confirmStore.prompt({
-      title: m.ui_copy_lock_close_period_57387762(),
-      description: m.settings_ui_period_close_confirm(),
-      confirmText: m.ui_copy_lock_period_54879736(),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.lockAcademicPeriod(periodId);
-      toast.success(m.ui_copy_period_locked_successfully_c75e6ca2());
-      await loadPeriods();
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  async function requestDelete(periodId: string) {
-    const confirmed = await confirmStore.prompt({
-      title: m.periods_manager_delete_confirm_title(),
-      description: m.periods_manager_delete_confirm_desc(),
-      confirmText: m.common_action_delete(),
-      variant: "destructive",
-    });
-
-    if (!confirmed) return;
-
-    try {
-      await api.deleteAcademicPeriod(periodId);
-      toast.success(m.periods_manager_delete_success());
-      await loadPeriods();
-    } catch (e: unknown) {
-      toast.error(extractErrorMessage(e));
-    }
-  }
-
-  function toggleCollapse(periodId: string) {
-    collapsedNodes[periodId] = !collapsedNodes[periodId];
-  }
-
-
-  const relatedActionGroups = $derived<ActionGroup[]>([
-    {
-      id: "academic_calendars_nav",
-      title: m.academic_calendar_title(),
-      icon: Calendar,
-      defaultExpanded: true,
-      subLinks: [
-        {
-          id: "academic_calendars_settings",
-          label: m.settings_nav_academic_calendars(),
-          href: `/${orgId}/settings/academic-calendars`,
-        },
-        {
-          id: "visual_calendar",
-          label: m.academics_nav_calendar(),
-          href: `/${orgId}/academics/calendar`,
-        },
-      ],
-    },
-    {
-      id: "academic_promotion_policies",
-      title: m.ui_copy_academic_policies_promotion_8c34613a(),
-      icon: AcademicCap,
-      defaultExpanded: true,
-      subLinks: [
-        {
-          id: "promotion_wizard",
-          label: m.ui_copy_student_promotion_wizard_e772861a(),
-          href: `/${orgId}/academics/promotion`,
-        },
-        {
-          id: "academic_policy",
-          label: m.ui_copy_academic_policy_grading_73e34776(),
-          href: `/${orgId}/settings/academic-policy`,
-        },
-        {
-          id: "registration_rules",
-          label: m.ui_copy_registration_enrollment_rules_34f1e148(),
-          href: `/${orgId}/settings/registration`,
-        },
-      ],
-    },
-  ]);
+const relatedActionGroups = $derived<ActionGroup[]>([
+  {
+    id: "academic_calendars_nav",
+    title: m.academic_calendar_title(),
+    icon: Calendar,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "academic_calendars_settings",
+        label: m.settings_nav_academic_calendars(),
+        href: `/${orgId}/settings/academic-calendars`,
+      },
+      {
+        id: "visual_calendar",
+        label: m.academics_nav_calendar(),
+        href: `/${orgId}/academics/calendar`,
+      },
+    ],
+  },
+  {
+    id: "academic_promotion_policies",
+    title: m.ui_copy_academic_policies_promotion_8c34613a(),
+    icon: AcademicCap,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "promotion_wizard",
+        label: m.ui_copy_student_promotion_wizard_e772861a(),
+        href: `/${orgId}/academics/promotion`,
+      },
+      {
+        id: "academic_policy",
+        label: m.ui_copy_academic_policy_grading_73e34776(),
+        href: `/${orgId}/settings/academic-policy`,
+      },
+      {
+        id: "registration_rules",
+        label: m.ui_copy_registration_enrollment_rules_34f1e148(),
+        href: `/${orgId}/settings/registration`,
+      },
+    ],
+  },
+]);
 </script>
 
 <div class="flex h-full w-full flex-col overflow-hidden bg-background font-sans text-start">

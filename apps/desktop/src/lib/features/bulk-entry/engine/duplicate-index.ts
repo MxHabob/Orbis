@@ -19,7 +19,9 @@ function getKeys(profileId: BulkProfileId, row: Row): Array<[string, string]> {
     return [["national_id", value("national_id")]];
   }
   if (profileId === "grades") {
-    const keyParts = ["student_number", "subject_name", "assessment_type"].map(value);
+    const keyParts = ["student_number", "subject_name", "assessment_type"].map(
+      value,
+    );
     return keyParts.every(Boolean)
       ? [["grade_assessment", JSON.stringify(keyParts)]]
       : [];

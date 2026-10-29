@@ -241,7 +241,9 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
     const hasManualResize = userW !== undefined;
     const flex = hasManualResize
       ? 0
-      : (col.flex ?? col.flexgrow ?? (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1));
+      : (col.flex ??
+        col.flexgrow ??
+        (isDedicatedFixed ? 0 : col.type === "avatar" ? 2 : 1));
 
     const finalBaseW = Math.max(minW, baseW);
     totalBase += finalBaseW;
@@ -260,7 +262,8 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
 
   const availableW = viewportW;
   const shouldAutoFit = autoFit || autoSize;
-  const extraW = shouldAutoFit && availableW > totalBase ? availableW - totalBase : 0;
+  const extraW =
+    shouldAutoFit && availableW > totalBase ? availableW - totalBase : 0;
 
   if (extraW > 0 && totalFlex > 0) {
     let allocatedExtra = 0;
@@ -268,7 +271,10 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
       const item = colDetails[i]!;
       if (item.flex > 0) {
         const share = Math.floor((extraW * item.flex) / totalFlex);
-        const targetW = Math.min(item.maxW, Math.max(item.minW, item.baseW + share));
+        const targetW = Math.min(
+          item.maxW,
+          Math.max(item.minW, item.baseW + share),
+        );
         map[item.id] = targetW;
         allocatedExtra += targetW - item.baseW;
       } else {
@@ -279,7 +285,10 @@ const computedWidthMap = $derived.by<Record<string, number>>(() => {
     if (remainder > 0) {
       const firstFlex = colDetails.find((d) => d.flex > 0);
       if (firstFlex && map[firstFlex.id] !== undefined) {
-        map[firstFlex.id] = Math.min(firstFlex.maxW, map[firstFlex.id]! + remainder);
+        map[firstFlex.id] = Math.min(
+          firstFlex.maxW,
+          map[firstFlex.id]! + remainder,
+        );
       }
     }
   } else {
@@ -455,7 +464,11 @@ function startEdit(row: number, col: number, seed?: string) {
   const column = visibleCols[col];
   if (!column || readonly || column.readonly) return;
   const type = column.type;
-  if (type === "boolean" || column.editor === "checkbox" || column.id === "__selected") {
+  if (
+    type === "boolean" ||
+    column.editor === "checkbox" ||
+    column.id === "__selected"
+  ) {
     const current = displayRows[row]
       ? getCellValue(displayRows[row]!, column)
       : false;
@@ -530,7 +543,10 @@ function pasteText(text: string) {
   updateRows(
     rows,
     "paste",
-    rows.slice(start.startRow, Math.min(start.startRow + matrix.length, rows.length)),
+    rows.slice(
+      start.startRow,
+      Math.min(start.startRow + matrix.length, rows.length),
+    ),
   );
   pasteBanner = result;
   onpasteResult?.(result);
@@ -657,7 +673,10 @@ function handleKeydown(e: KeyboardEvent) {
         updateRows(
           rows,
           "delete",
-          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+          rows.slice(
+            selected.startRow,
+            Math.min(selected.endRow + 1, rows.length),
+          ),
         );
       }
       break;
@@ -701,7 +720,10 @@ function handleKeydown(e: KeyboardEvent) {
         updateRows(
           rows,
           "fill-down",
-          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+          rows.slice(
+            selected.startRow,
+            Math.min(selected.endRow + 1, rows.length),
+          ),
         );
       }
       break;
@@ -712,7 +734,10 @@ function handleKeydown(e: KeyboardEvent) {
         updateRows(
           rows,
           "fill-right",
-          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+          rows.slice(
+            selected.startRow,
+            Math.min(selected.endRow + 1, rows.length),
+          ),
         );
       }
       break;
@@ -797,13 +822,18 @@ function runMenu(id: string) {
         updateRows(
           rows,
           "delete",
-          rows.slice(selected.startRow, Math.min(selected.endRow + 1, rows.length)),
+          rows.slice(
+            selected.startRow,
+            Math.min(selected.endRow + 1, rows.length),
+          ),
         );
       }
       break;
     case "duplicate":
       if (!readonly) {
-        const rows = duplicateRows(safeSource, [active.row], () => crypto.randomUUID());
+        const rows = duplicateRows(safeSource, [active.row], () =>
+          crypto.randomUUID(),
+        );
         updateRows(rows, "duplicate", rows.slice(safeSource.length));
       }
       break;
@@ -935,25 +965,58 @@ function cellClass(
   return parts.join(" ");
 }
 
-function getBadgeVariant(val: unknown): "lime" | "destructive" | "secondary" | "outline" {
-  const s = String(val ?? "").toLowerCase().trim();
+function getBadgeVariant(
+  val: unknown,
+): "lime" | "destructive" | "secondary" | "outline" {
+  const s = String(val ?? "")
+    .toLowerCase()
+    .trim();
   if (
     [
-      "active", "present", "paid", "approved", "open", "success",
-      "ناجح", "حاضر", "نشط", "مدفوع", "passing", "true", "1",
+      "active",
+      "present",
+      "paid",
+      "approved",
+      "open",
+      "success",
+      "ناجح",
+      "حاضر",
+      "نشط",
+      "مدفوع",
+      "passing",
+      "true",
+      "1",
     ].includes(s)
   )
     return "lime";
   if (
     [
-      "inactive", "absent", "overdue", "failed", "closed", "locked",
-      "withdrawn", "error", "راسب", "غائب", "غير نشط", "معلق", "false", "0",
+      "inactive",
+      "absent",
+      "overdue",
+      "failed",
+      "closed",
+      "locked",
+      "withdrawn",
+      "error",
+      "راسب",
+      "غائب",
+      "غير نشط",
+      "معلق",
+      "false",
+      "0",
     ].includes(s)
   )
     return "destructive";
   if (
     [
-      "pending", "late", "partial", "warning", "متأخر", "جزئي", "قيد الانتظار",
+      "pending",
+      "late",
+      "partial",
+      "warning",
+      "متأخر",
+      "جزئي",
+      "قيد الانتظار",
     ].includes(s)
   )
     return "secondary";
@@ -970,7 +1033,9 @@ function getInitials(name: string): string {
 }
 
 function getAvatarSrc(row: GridRow): string {
-  return String(row.avatar_url || row.avatar || row.photo_url || row.image || "");
+  return String(
+    row.avatar_url || row.avatar || row.photo_url || row.image || "",
+  );
 }
 
 function isIndexColumn(col: OrbisColumnDef): boolean {
@@ -980,7 +1045,9 @@ function isIndexColumn(col: OrbisColumnDef): boolean {
 
 function isCheckboxColumn(col: OrbisColumnDef): boolean {
   const id = columnId(col);
-  return id === "__selected" || col.type === "boolean" || col.editor === "checkbox";
+  return (
+    id === "__selected" || col.type === "boolean" || col.editor === "checkbox"
+  );
 }
 
 function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
@@ -1000,11 +1067,42 @@ function isBadgeColumn(col: OrbisColumnDef, row?: GridRow): boolean {
     if (
       typeof val === "string" &&
       [
-        "active", "inactive", "present", "absent", "late", "excused", "paid",
-        "pending", "overdue", "partial", "draft", "posted", "unposted",
-        "approved", "rejected", "success", "failed", "warning", "open", "closed",
-        "ناجح", "راسب", "حاضر", "غائب", "متأخر", "معذور", "نشط", "غير نشط",
-        "مدفوع", "معلق", "جزئي", "مسودة", "مرحل", "ملغى", "مقبول", "مرفوض"
+        "active",
+        "inactive",
+        "present",
+        "absent",
+        "late",
+        "excused",
+        "paid",
+        "pending",
+        "overdue",
+        "partial",
+        "draft",
+        "posted",
+        "unposted",
+        "approved",
+        "rejected",
+        "success",
+        "failed",
+        "warning",
+        "open",
+        "closed",
+        "ناجح",
+        "راسب",
+        "حاضر",
+        "غائب",
+        "متأخر",
+        "معذور",
+        "نشط",
+        "غير نشط",
+        "مدفوع",
+        "معلق",
+        "جزئي",
+        "مسودة",
+        "مرحل",
+        "ملغى",
+        "مقبول",
+        "مرفوض",
       ].includes(val.toLowerCase().trim())
     ) {
       return true;
@@ -1027,7 +1125,10 @@ function isAvatarColumn(col: OrbisColumnDef): boolean {
 }
 
 function isActionColumn(col: OrbisColumnDef): boolean {
-  return col.type === "action" || (Array.isArray(col.meta?.items) && col.meta.items.length > 0);
+  return (
+    col.type === "action" ||
+    (Array.isArray(col.meta?.items) && col.meta.items.length > 0)
+  );
 }
 
 let sizedFor = $state("");

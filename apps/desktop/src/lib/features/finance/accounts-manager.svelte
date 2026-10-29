@@ -39,7 +39,9 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate, isAr, l } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-import AccountTree, { type AccountNode } from "$lib/features/finance/components/account-tree.svelte";
+import AccountTree, {
+  type AccountNode,
+} from "$lib/features/finance/components/account-tree.svelte";
 import CurrencySelector from "$lib/shared/components/currency-selector.svelte";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import {
@@ -84,7 +86,11 @@ let activeFilter = $state<UniversalFilter>({
 
 const rtl = $derived(getLocale() === "ar");
 const parentAccountIds = $derived(
-  new Set(allAccounts.flatMap((account) => account.parent_id ? [account.parent_id] : []))
+  new Set(
+    allAccounts.flatMap((account) =>
+      account.parent_id ? [account.parent_id] : [],
+    ),
+  ),
 );
 
 onMount(async () => {
@@ -123,7 +129,11 @@ const accountTree = $derived.by(() => {
   function buildSubTree(parentId: string | null = null): AccountNode[] {
     return allAccounts
       .filter((a) => (parentId ? a.parent_id === parentId : !a.parent_id))
-      .sort((a, b) => (a.code || "").localeCompare(b.code || "", undefined, { numeric: true }))
+      .sort((a, b) =>
+        (a.code || "").localeCompare(b.code || "", undefined, {
+          numeric: true,
+        }),
+      )
       .map((node) => ({
         ...node,
         name: l(node.name_ar, node.name_en || node.name) || "—",
@@ -135,7 +145,8 @@ const accountTree = $derived.by(() => {
 
 // ── Smart Code Suggestion ──────────────────────────────────────────────
 function suggestNextChildCode(parent: AccountNode | null): string {
-  if (!parent) return String(allAccounts.filter((a) => !a.parent_id).length + 1);
+  if (!parent)
+    return String(allAccounts.filter((a) => !a.parent_id).length + 1);
 
   const existingChildren = allAccounts.filter((a) => a.parent_id === parent.id);
   if (existingChildren.length === 0) {
@@ -165,7 +176,9 @@ function handleSelectAccount(account: AccountNode) {
   formCode = account.code || "";
   formNameAr = account.name_ar || (isAr() ? account.name : "") || "";
   formNameEn = account.name_en || (!isAr() ? account.name : "") || "";
-  formAccountType = String(account.account_type || account.type || "asset").toLowerCase();
+  formAccountType = String(
+    account.account_type || account.type || "asset",
+  ).toLowerCase();
   formSubType = account.sub_type || "general";
   formCurrency = account.currency || baseCurrency;
 
@@ -173,7 +186,9 @@ function handleSelectAccount(account: AccountNode) {
   formAccountLevel = hasChildren ? "primary" : "sub";
 }
 
-function startAddSubAccount(parentAccount: AccountNode | null = selectedAccount) {
+function startAddSubAccount(
+  parentAccount: AccountNode | null = selectedAccount,
+) {
   isAddingNew = true;
   formParentId = parentAccount ? parentAccount.id : null;
   formCode = suggestNextChildCode(parentAccount);
@@ -182,25 +197,27 @@ function startAddSubAccount(parentAccount: AccountNode | null = selectedAccount)
   formAccountLevel = "sub";
 
   if (parentAccount) {
-    formAccountType = String(parentAccount.account_type || parentAccount.type || "asset").toLowerCase();
+    formAccountType = String(
+      parentAccount.account_type || parentAccount.type || "asset",
+    ).toLowerCase();
     formCurrency = parentAccount.currency || baseCurrency;
   }
 }
 
 const parentAccountNode = $derived(
-  allAccounts.find((a) => a.id === formParentId)
+  allAccounts.find((a) => a.id === formParentId),
 );
 const selectedAccountHasChildren = $derived(
-  !!selectedAccount && parentAccountIds.has(selectedAccount.id)
+  !!selectedAccount && parentAccountIds.has(selectedAccount.id),
 );
 const isFinancePurposeAccount = $derived(
-  !!selectedAccount
-    && (selectedAccount.is_finance_default
-      || selectedAccount.is_system_account
-      || selectedAccount.is_control_account)
+  !!selectedAccount &&
+    (selectedAccount.is_finance_default ||
+      selectedAccount.is_system_account ||
+      selectedAccount.is_control_account),
 );
 const isAccountStructureLocked = $derived(
-  isFinancePurposeAccount || selectedAccountHasChildren
+  isFinancePurposeAccount || selectedAccountHasChildren,
 );
 
 // Determine Closing Statement based on Account Type
@@ -261,7 +278,9 @@ async function handleDeleteAccount() {
 
   const confirmed = await confirmStore.prompt({
     title: m.finance_ui_delete_account(),
-    description: m.finance_ui_delete_account_confirm({ account: selectedAccount.name || selectedAccount.code }),
+    description: m.finance_ui_delete_account_confirm({
+      account: selectedAccount.name || selectedAccount.code,
+    }),
     confirmText: m.finance_ui_delete_account(),
     cancelText: m.finance_ui_cancel(),
     variant: "destructive",
@@ -284,30 +303,97 @@ async function handleDeleteAccount() {
 }
 
 // ── Grid Data for Table View ───────────────────────────────────────────
-const leafAccounts = $derived(allAccounts.filter((account) => !parentAccountIds.has(account.id)));
+const leafAccounts = $derived(
+  allAccounts.filter((account) => !parentAccountIds.has(account.id)),
+);
 
 const treasurySource = $derived(
   leafAccounts.map((account, i) => {
-    const bal = Number(account.balances?.[account.currency || baseCurrency] || 0);
+    const bal = Number(
+      account.balances?.[account.currency || baseCurrency] || 0,
+    );
     return {
       ...account,
       __idx: i + 1,
       name_display: l(account.name_ar, account.name_en || account.name) || "—",
       balance_formatted: formatCurrency(bal, account.currency || baseCurrency),
       currency_code: account.currency || baseCurrency,
-      status: account.is_active === 1 || account.is_active === true ? "active" : "inactive",
-      status_display: (account.is_active === 1 || account.is_active === true) ? m.finance_ui_active() : m.finance_ui_inactive(),
+      status:
+        account.is_active === 1 || account.is_active === true
+          ? "active"
+          : "inactive",
+      status_display:
+        account.is_active === 1 || account.is_active === true
+          ? m.finance_ui_active()
+          : m.finance_ui_inactive(),
     };
-  })
+  }),
 );
 
 const treasuryCols: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "code", prop: "code", header: m.finance_ui_account_number(), name: m.finance_ui_account_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "name_display", prop: "name_display", header: m.finance_ui_account_name(), name: m.finance_ui_account_name(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_current_balance(), name: m.finance_ui_current_balance(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-primary" },
-  { id: "currency_code", prop: "currency_code", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
-  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "code",
+    prop: "code",
+    header: m.finance_ui_account_number(),
+    name: m.finance_ui_account_number(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "name_display",
+    prop: "name_display",
+    header: m.finance_ui_account_name(),
+    name: m.finance_ui_account_name(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "balance_formatted",
+    prop: "balance_formatted",
+    header: m.finance_ui_current_balance(),
+    name: m.finance_ui_current_balance(),
+    width: 140,
+    size: 140,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-primary",
+  },
+  {
+    id: "currency_code",
+    prop: "currency_code",
+    header: m.finance_ui_currency(),
+    name: m.finance_ui_currency(),
+    width: 80,
+    size: 80,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "status_display",
+    prop: "status_display",
+    header: m.finance_ui_status(),
+    name: m.finance_ui_status(),
+    width: 90,
+    size: 90,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
 ];
 
 function exportAccountsCsv() {
@@ -319,12 +405,22 @@ function exportAccountsCsv() {
     a.status_display,
   ]);
   const csv = [
-    [m.finance_ui_account_code(), m.finance_ui_account_name(), m.finance_ui_balance(), m.finance_ui_currency(), m.finance_ui_status()],
+    [
+      m.finance_ui_account_code(),
+      m.finance_ui_account_name(),
+      m.finance_ui_balance(),
+      m.finance_ui_currency(),
+      m.finance_ui_status(),
+    ],
     ...rows,
   ]
-    .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+    .map((row) =>
+      row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+    )
     .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(
+    new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+  );
   const link = document.createElement("a");
   link.href = url;
   link.download = `chart-of-accounts-${orgId}.csv`;

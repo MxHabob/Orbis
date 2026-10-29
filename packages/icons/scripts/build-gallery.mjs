@@ -1,82 +1,92 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const manifest = JSON.parse(fs.readFileSync(path.join(packageRoot, 'docs/icon-manifest.json'), 'utf8'));
-const svelteRoot = path.join(packageRoot, 'src/svelte');
-const outputPath = path.join(packageRoot, 'docs/icon-gallery.html');
+const packageRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(packageRoot, "docs/icon-manifest.json"), "utf8"),
+);
+const svelteRoot = path.join(packageRoot, "src/svelte");
+const outputPath = path.join(packageRoot, "docs/icon-gallery.html");
 const sizes = [16, 20, 24];
 
 function getAttribute(attributes, name, fallback) {
-	return attributes.match(new RegExp(`\\b${name}=["']([^"']+)["']`, 'i'))?.[1] ?? fallback;
+  return (
+    attributes.match(new RegExp(`\\b${name}=["']([^"']+)["']`, "i"))?.[1] ??
+    fallback
+  );
 }
 
 function getSvgMarkup(icon) {
-	const source = fs.readFileSync(
-		path.join(svelteRoot, `${icon.files.svelte}.svelte`),
-		'utf8',
-	);
-	const match = source.match(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/i);
-	if (!match) throw new Error(`Missing Svelte SVG root for ${icon.name}`);
+  const source = fs.readFileSync(
+    path.join(svelteRoot, `${icon.files.svelte}.svelte`),
+    "utf8",
+  );
+  const match = source.match(/<svg\b([^>]*)>([\s\S]*?)<\/svg>/i);
+  if (!match) throw new Error(`Missing Svelte SVG root for ${icon.name}`);
 
-	const [, rootAttributes, rawContents] = match;
-	const viewBox = getAttribute(rootAttributes, 'viewBox', manifest.viewBox);
-	const fill = getAttribute(rootAttributes, 'fill', 'none');
-	const stroke = getAttribute(rootAttributes, 'stroke', 'currentColor');
-	let contents = rawContents
-		.replace(/<!--[\s\S]*?-->/g, '')
-		.replace(/fill=\{dotClass \? undefined : '#A821D9'\}/g, 'fill="#A821D9"')
-		.replace(/class=\{dotClass\}/g, '')
-		.replace(/stroke-width=\{strokeWidth\}/g, 'stroke-width="1.75"');
+  const [, rootAttributes, rawContents] = match;
+  const viewBox = getAttribute(rootAttributes, "viewBox", manifest.viewBox);
+  const fill = getAttribute(rootAttributes, "fill", "none");
+  const stroke = getAttribute(rootAttributes, "stroke", "currentColor");
+  let contents = rawContents
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/fill=\{dotClass \? undefined : '#A821D9'\}/g, 'fill="#A821D9"')
+    .replace(/class=\{dotClass\}/g, "")
+    .replace(/stroke-width=\{strokeWidth\}/g, 'stroke-width="1.75"');
 
-	const unresolvedExpression = contents.match(/\{[^}]*\}/);
-	if (unresolvedExpression) {
-		throw new Error(`Unsupported Svelte expression in ${icon.name}: ${unresolvedExpression[0]}`);
-	}
+  const unresolvedExpression = contents.match(/\{[^}]*\}/);
+  if (unresolvedExpression) {
+    throw new Error(
+      `Unsupported Svelte expression in ${icon.name}: ${unresolvedExpression[0]}`,
+    );
+  }
 
-	return { viewBox, fill, stroke, contents };
+  return { viewBox, fill, stroke, contents };
 }
 
 function escapeAttribute(value) {
-	return String(value)
-		.replaceAll('&', '&amp;')
-		.replaceAll('"', '&quot;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;');
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 const icons = manifest.icons.map((icon) => ({
-	...icon,
-	svg: getSvgMarkup(icon),
+  ...icon,
+  svg: getSvgMarkup(icon),
 }));
 const families = [...new Set(icons.map(({ family }) => family))].sort();
 const cards = icons
-	.map(({ name, family, variant, kind, svg }) => {
-		const previews = ['light', 'dark']
-			.map(
-				(theme) => `
+  .map(({ name, family, variant, kind, svg }) => {
+    const previews = ["light", "dark"]
+      .map(
+        (theme) => `
 					<div class="theme-strip ${theme}">
 						${sizes
-							.map(
-								(size) => `
+              .map(
+                (size) => `
 									<div class="sample">
 										<svg viewBox="${escapeAttribute(svg.viewBox)}" width="${size}" height="${size}" fill="${escapeAttribute(svg.fill)}" stroke="${escapeAttribute(svg.stroke)}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${svg.contents}</svg>
 										<span>${size}</span>
 									</div>`,
-							)
-							.join('')}
+              )
+              .join("")}
 					</div>`,
-			)
-			.join('');
+      )
+      .join("");
 
-		return `
+    return `
 			<article class="icon-card" data-name="${escapeAttribute(name.toLowerCase())}" data-family="${escapeAttribute(family)}">
 				<header><strong>${escapeAttribute(name)}</strong><span>${escapeAttribute(family)} · ${escapeAttribute(variant)} · ${escapeAttribute(kind)}</span></header>
 				${previews}
 			</article>`;
-	})
-	.join('');
+  })
+  .join("");
 
 const html = `<!doctype html>
 <html lang="en">
@@ -113,7 +123,7 @@ const html = `<!doctype html>
 	<div class="toolbar">
 		<h1>Orbis icons</h1>
 		<input id="search" type="search" placeholder="Search icons" aria-label="Search icons">
-		<select id="family" aria-label="Filter by family"><option value="">All families</option>${families.map((family) => `<option value="${escapeAttribute(family)}">${escapeAttribute(family)}</option>`).join('')}</select>
+		<select id="family" aria-label="Filter by family"><option value="">All families</option>${families.map((family) => `<option value="${escapeAttribute(family)}">${escapeAttribute(family)}</option>`).join("")}</select>
 		<span id="count" aria-live="polite">${icons.length} / ${icons.length}</span>
 	</div>
 	<p class="legend">Every public icon · light and dark surfaces · 16, 20, and 24px · generated from the paired Svelte source manifest.</p>
@@ -141,5 +151,7 @@ const html = `<!doctype html>
 </html>
 `;
 
-fs.writeFileSync(outputPath, html.replace(/[ \t]+(?=\r?$)/gm, ''));
-console.log(`Generated visual gallery for ${icons.length} icons at ${path.relative(packageRoot, outputPath)}`);
+fs.writeFileSync(outputPath, html.replace(/[ \t]+(?=\r?$)/gm, ""));
+console.log(
+  `Generated visual gallery for ${icons.length} icons at ${path.relative(packageRoot, outputPath)}`,
+);

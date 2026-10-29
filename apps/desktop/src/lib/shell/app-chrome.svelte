@@ -77,7 +77,11 @@ function handleKeyDown(e: KeyboardEvent) {
   }
 
   // Ctrl/Cmd + K -> Toggle global quick search
-  if (!standalone && (e.ctrlKey || e.metaKey) && (e.key === "k" || e.key === "K")) {
+  if (
+    !standalone &&
+    (e.ctrlKey || e.metaKey) &&
+    (e.key === "k" || e.key === "K")
+  ) {
     e.preventDefault();
     uiStore.toggleSearch();
     return;

@@ -65,8 +65,7 @@ export const Card = React.memo<CardProps>(
       default: "overflow-hidden rounded-md border border-border bg-card",
       elevated:
         "overflow-hidden rounded-md border border-border bg-card shadow-sm",
-      outline:
-        "overflow-hidden rounded-md border border-border bg-transparent",
+      outline: "overflow-hidden rounded-md border border-border bg-transparent",
       flat: "bg-transparent",
       interactive:
         "overflow-hidden rounded-md border border-border border-b-2 border-b-btn-shadow-secondary bg-card",
@@ -98,6 +97,7 @@ export const Card = React.memo<CardProps>(
           onPressIn={tactilePress.onPressIn}
           onPressOut={tactilePress.onPressOut}
           style={({ pressed }: PressableStateCallbackType) => [
+            tactilePress.shadowStyle,
             tactilePress.style,
             style,
             pressed && { opacity: 0.92 },

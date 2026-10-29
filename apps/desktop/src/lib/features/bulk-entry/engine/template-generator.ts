@@ -7,7 +7,10 @@ import {
   revealDownloadedPath,
   type RevealDownloadedLocation,
 } from "$lib/shared/utils/download";
-import { getBulkEntryColumnHeader, getBulkEntryProfileName } from "../localization";
+import {
+  getBulkEntryColumnHeader,
+  getBulkEntryProfileName,
+} from "../localization";
 import type { BulkImportProfile, BulkReferenceData } from "../types";
 import { normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
 
@@ -27,17 +30,23 @@ export async function buildTemplateWorkbook(
   const columns = profile.columnMetadata.filter((column) => {
     if (profile.id !== "students" || !refData.registrationFields) return true;
     if (column.id === "full_name_ar" || column.id === "class_name") return true;
-    return refData.registrationFields[normalizeRegistrationFieldKey(column.id)]?.active !== false;
+    return (
+      refData.registrationFields[normalizeRegistrationFieldKey(column.id)]
+        ?.active !== false
+    );
   });
 
   // ── Sheet 1: Data Entry Sheet ──────────────────────────────────
   const headers = columns.map((col) => {
-    const policy = refData.registrationFields?.[normalizeRegistrationFieldKey(col.id)];
+    const policy =
+      refData.registrationFields?.[normalizeRegistrationFieldKey(col.id)];
     return getBulkEntryColumnHeader(
       profile.id,
       col.id,
       col.headerAr,
-      profile.id === "students" ? policy?.required ?? col.required : undefined,
+      profile.id === "students"
+        ? (policy?.required ?? col.required)
+        : undefined,
     );
   });
   const sampleRow = columns.map((col) => col.example || "");
@@ -98,17 +107,26 @@ export async function buildTemplateWorkbook(
   appendReferenceSection(
     m.bulk_entry_workbook_subject(),
     [codeHeader, nameHeader],
-    refData.subjects.map((item) => [item.code || "", item.name || item.nameAr || ""]),
+    refData.subjects.map((item) => [
+      item.code || "",
+      item.name || item.nameAr || "",
+    ]),
   );
   appendReferenceSection(
     m.bulk_entry_workbook_reference_sections(),
     [codeHeader, nameHeader],
-    refData.sections.map((item) => [item.code || "", item.name || item.nameAr || ""]),
+    refData.sections.map((item) => [
+      item.code || "",
+      item.name || item.nameAr || "",
+    ]),
   );
   appendReferenceSection(
     m.bulk_entry_workbook_reference_levels(),
     [codeHeader, nameHeader],
-    refData.levels.map((item) => [item.code || "", item.name || item.nameAr || ""]),
+    refData.levels.map((item) => [
+      item.code || "",
+      item.name || item.nameAr || "",
+    ]),
   );
   appendReferenceSection(
     m.bulk_entry_workbook_fee_template(),
@@ -238,10 +256,14 @@ export async function buildTemplateWorkbook(
       column.id,
       column.headerAr,
     );
-    appendReferenceSection(fieldLabel, [codeHeader, nameHeader], [
-      ["true", m.bulk_entry_workbook_boolean_yes()],
-      ["false", m.bulk_entry_workbook_boolean_no()],
-    ]);
+    appendReferenceSection(
+      fieldLabel,
+      [codeHeader, nameHeader],
+      [
+        ["true", m.bulk_entry_workbook_boolean_yes()],
+        ["false", m.bulk_entry_workbook_boolean_no()],
+      ],
+    );
   }
 
   appendReferenceSection(
@@ -256,15 +278,28 @@ export async function buildTemplateWorkbook(
   const wsRef = XLSX.utils.aoa_to_sheet(refAoa);
   wsRef["!cols"] = [{ wch: 28 }, { wch: 32 }, { wch: 36 }, { wch: 32 }];
   wsRef["!merges"] = referenceMerges;
-  XLSX.utils.book_append_sheet(wb, wsRef, `_${m.bulk_entry_workbook_reference_sheet()}`);
+  XLSX.utils.book_append_sheet(
+    wb,
+    wsRef,
+    `_${m.bulk_entry_workbook_reference_sheet()}`,
+  );
 
   // ── Sheet 3: Instructions ──────────────────────────────────────
   const instructionsAoa = [
     [m.bulk_entry_workbook_instructions_title()],
     [""],
-    [m.bulk_entry_workbook_organization(), orgName || m.bulk_entry_workbook_current_organization()],
-    [m.bulk_entry_workbook_academic_year(), academicCalendar || m.bulk_entry_workbook_current_year()],
-    [m.bulk_entry_workbook_template_type(), getBulkEntryProfileName(profile.id)],
+    [
+      m.bulk_entry_workbook_organization(),
+      orgName || m.bulk_entry_workbook_current_organization(),
+    ],
+    [
+      m.bulk_entry_workbook_academic_year(),
+      academicCalendar || m.bulk_entry_workbook_current_year(),
+    ],
+    [
+      m.bulk_entry_workbook_template_type(),
+      getBulkEntryProfileName(profile.id),
+    ],
     [m.bulk_entry_workbook_template_version(), profile.templateVersion],
     ...(profile.id === "teacher-subjects"
       ? [[m.bulk_entry_workbook_rule_teacher_subject_assignment()]]
@@ -280,7 +315,11 @@ export async function buildTemplateWorkbook(
 
   const wsInstructions = XLSX.utils.aoa_to_sheet(instructionsAoa);
   wsInstructions["!cols"] = [{ wch: 80 }];
-  XLSX.utils.book_append_sheet(wb, wsInstructions, m.bulk_entry_workbook_instructions_sheet());
+  XLSX.utils.book_append_sheet(
+    wb,
+    wsInstructions,
+    m.bulk_entry_workbook_instructions_sheet(),
+  );
 
   return wb;
 }
@@ -297,7 +336,9 @@ export async function downloadExcelTemplate(
     // Try native Tauri save dialog
     const savePath = await save({
       defaultPath: filename,
-      filters: [{ name: m.bulk_entry_file_filter_excel(), extensions: ["xlsx"] }],
+      filters: [
+        { name: m.bulk_entry_file_filter_excel(), extensions: ["xlsx"] },
+      ],
     });
 
     if (savePath) {
@@ -305,7 +346,10 @@ export async function downloadExcelTemplate(
       return revealDownloadedPath(savePath);
     }
   } catch (err) {
-    console.warn("Native Tauri save dialog not available, falling back to browser download:", err);
+    console.warn(
+      "Native Tauri save dialog not available, falling back to browser download:",
+      err,
+    );
   }
 
   // Browser Fallback

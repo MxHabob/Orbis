@@ -1,593 +1,629 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { Switch, toast } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Label } from "@orbis/ui/label";
-  import { Card, CardContent } from "@orbis/ui/card";
-  import { Badge } from "@orbis/ui/badge";
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-  } from "@orbis/ui/select";
-  import { Plus, Trash, Refresh } from "@orbis/icons";
-  import {
-    createOrgAcademicPolicyQuery,
-    useUpdateAcademicPolicy,
-  } from "$lib/features/academics/queries-policy";
-  import { api, extractErrorMessage } from "$lib/api";
-  import type {
-    CalculationPreview,
-    CalculationEngineSettings,
-    CalculationExpression,
-    CalculationInput,
-    CalculationOutcomePolicy,
-    CalculationPlan,
-    CalculationRoundingMode,
-    CalculationUnit,
-  } from "$lib/api";
-  import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-  import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { untrack } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { Switch, toast } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import { Card, CardContent } from "@orbis/ui/card";
+import { Badge } from "@orbis/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { Plus, Trash, Refresh } from "@orbis/icons";
+import {
+  createOrgAcademicPolicyQuery,
+  useUpdateAcademicPolicy,
+} from "$lib/features/academics/queries-policy";
+import { api, extractErrorMessage } from "$lib/api";
+import type {
+  CalculationPreview,
+  CalculationEngineSettings,
+  CalculationExpression,
+  CalculationInput,
+  CalculationOutcomePolicy,
+  CalculationPlan,
+  CalculationRoundingMode,
+  CalculationUnit,
+} from "$lib/api";
+import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 
-  interface InputEditor {
-    name: string;
-    weight: string;
-    minimum: string;
-    maximum: string;
-    sample: string;
+interface InputEditor {
+  name: string;
+  weight: string;
+  minimum: string;
+  maximum: string;
+  sample: string;
+}
+
+interface GradeBandEditor {
+  code: string;
+  label: string;
+  minimum: string;
+}
+
+interface EngineForm {
+  scale: string;
+  outputName: string;
+  normalize: boolean;
+  roundingMode: CalculationRoundingMode;
+  decimalPlaces: number;
+  inputs: InputEditor[];
+  outcomeEnabled: boolean;
+  passThreshold: string;
+  honorsThreshold: string;
+  gradeBands: GradeBandEditor[];
+  rankingEnabled: boolean;
+  rankingScope: "class" | "grade_level" | "org_unit" | "cohort";
+  tiePolicy: "standard_competition" | "dense" | "fractional";
+  maxDisplayedRank: string;
+}
+
+let {
+  orgId,
+  onSaved,
+}: { orgId: string; onSaved?: () => void | Promise<void> } = $props();
+const policyQuery = createOrgAcademicPolicyQuery(() => orgId);
+const updateMutation = useUpdateAcademicPolicy();
+
+const newInput = (index: number): InputEditor => ({
+  name: `measure_${index + 1}`,
+  weight: "1",
+  minimum: "",
+  maximum: "",
+  sample: "0",
+});
+
+const initialForm = (): EngineForm => ({
+  scale: "",
+  outputName: "result",
+  normalize: true,
+  roundingMode: "round_half_up",
+  decimalPlaces: 2,
+  inputs: [newInput(0)],
+  outcomeEnabled: false,
+  passThreshold: "",
+  honorsThreshold: "",
+  gradeBands: [],
+  rankingEnabled: true,
+  rankingScope: "class",
+  tiePolicy: "standard_competition",
+  maxDisplayedRank: "",
+});
+
+let form = $state<EngineForm>(initialForm());
+let initialSnapshot = $state("");
+let initialized = $state(false);
+let customPlanReadOnly = $state(false);
+let isSaving = $state(false);
+let isPreviewing = $state(false);
+let previewResult = $state<CalculationPreview | null>(null);
+
+function formSnapshot(value = form): string {
+  return JSON.stringify(value);
+}
+
+function resolveScale(rawUnit: any): string {
+  if (!rawUnit) return "percentage";
+  if (typeof rawUnit.scale === "string") return rawUnit.scale;
+  if (
+    typeof rawUnit.scale === "object" &&
+    rawUnit.scale !== null &&
+    typeof rawUnit.scale.scale === "string"
+  ) {
+    return rawUnit.scale.scale;
   }
+  return "percentage";
+}
 
-  interface GradeBandEditor {
-    code: string;
-    label: string;
-    minimum: string;
-  }
+interface PolicyPreset {
+  id: string;
+  label: () => string;
+  description: () => string;
+  badge: () => string;
+  badgeVariant: "default" | "secondary" | "outline";
+  scale: string;
+  outputName: string;
+  normalize: boolean;
+  roundingMode: CalculationRoundingMode;
+  decimalPlaces: number;
+  inputs: InputEditor[];
+  outcomeEnabled: boolean;
+  passThreshold: string;
+  honorsThreshold: string;
+  gradeBands: Array<Omit<GradeBandEditor, "label"> & { label: () => string }>;
+}
 
-  interface EngineForm {
-    scale: string;
-    outputName: string;
-    normalize: boolean;
-    roundingMode: CalculationRoundingMode;
-    decimalPlaces: number;
-    inputs: InputEditor[];
-    outcomeEnabled: boolean;
-    passThreshold: string;
-    honorsThreshold: string;
-    gradeBands: GradeBandEditor[];
-    rankingEnabled: boolean;
-    rankingScope: "class" | "grade_level" | "org_unit" | "cohort";
-    tiePolicy: "standard_competition" | "dense" | "fractional";
-    maxDisplayedRank: string;
-  }
-
-  let {
-    orgId,
-    onSaved,
-  }: { orgId: string; onSaved?: () => void | Promise<void> } = $props();
-  const policyQuery = createOrgAcademicPolicyQuery(() => orgId);
-  const updateMutation = useUpdateAcademicPolicy();
-
-  const newInput = (index: number): InputEditor => ({
-    name: `measure_${index + 1}`,
-    weight: "1",
-    minimum: "",
-    maximum: "",
-    sample: "0",
-  });
-
-  const initialForm = (): EngineForm => ({
-    scale: "",
-    outputName: "result",
+const YEMENI_POLICY_PRESETS: PolicyPreset[] = [
+  {
+    id: "yemen_school_term",
+    label: () => m.settings_calc_preset_yemen_school_title(),
+    description: () => m.settings_calc_preset_yemen_school_description(),
+    badge: () => m.settings_calc_preset_yemen_school_badge(),
+    badgeVariant: "default",
+    scale: "percentage",
+    outputName: "term_result",
     normalize: true,
     roundingMode: "round_half_up",
     decimalPlaces: 2,
-    inputs: [newInput(0)],
-    outcomeEnabled: false,
-    passThreshold: "",
-    honorsThreshold: "",
-    gradeBands: [],
-    rankingEnabled: true,
-    rankingScope: "class",
-    tiePolicy: "standard_competition",
-    maxDisplayedRank: "",
-  });
+    inputs: [
+      {
+        name: "coursework",
+        weight: "0.4",
+        minimum: "0",
+        maximum: "20",
+        sample: "18",
+      },
+      {
+        name: "examination",
+        weight: "0.6",
+        minimum: "0",
+        maximum: "30",
+        sample: "25",
+      },
+    ],
+    outcomeEnabled: true,
+    passThreshold: "50",
+    honorsThreshold: "90",
+    gradeBands: [
+      {
+        code: "A",
+        label: () => m.settings_calc_grade_excellent(),
+        minimum: "90",
+      },
+      {
+        code: "B",
+        label: () => m.settings_calc_grade_very_good(),
+        minimum: "80",
+      },
+      { code: "C", label: () => m.settings_calc_grade_good(), minimum: "65" },
+      {
+        code: "D",
+        label: () => m.settings_calc_grade_acceptable(),
+        minimum: "50",
+      },
+      { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
+    ],
+  },
+  {
+    id: "yemen_thanawiya_cert",
+    label: () => m.settings_calc_preset_yemen_certificate_title(),
+    description: () => m.settings_calc_preset_yemen_certificate_description(),
+    badge: () => m.settings_calc_preset_yemen_certificate_badge(),
+    badgeVariant: "secondary",
+    scale: "percentage",
+    outputName: "thanawiya_score",
+    normalize: true,
+    roundingMode: "round_half_up",
+    decimalPlaces: 2,
+    inputs: [
+      {
+        name: "ministerial_exam",
+        weight: "0.8",
+        minimum: "0",
+        maximum: "100",
+        sample: "85",
+      },
+      {
+        name: "cumulative_prior",
+        weight: "0.2",
+        minimum: "0",
+        maximum: "100",
+        sample: "88",
+      },
+    ],
+    outcomeEnabled: true,
+    passThreshold: "50",
+    honorsThreshold: "90",
+    gradeBands: [
+      {
+        code: "A",
+        label: () => m.settings_calc_grade_excellent(),
+        minimum: "90",
+      },
+      {
+        code: "B",
+        label: () => m.settings_calc_grade_very_good(),
+        minimum: "80",
+      },
+      { code: "C", label: () => m.settings_calc_grade_good(), minimum: "65" },
+      {
+        code: "D",
+        label: () => m.settings_calc_grade_acceptable(),
+        minimum: "50",
+      },
+      { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
+    ],
+  },
+  {
+    id: "university_credit",
+    label: () => m.settings_calc_preset_university_title(),
+    description: () => m.settings_calc_preset_university_description(),
+    badge: () => m.settings_calc_preset_university_badge(),
+    badgeVariant: "outline",
+    scale: "percentage",
+    outputName: "gpa_course",
+    normalize: true,
+    roundingMode: "round_half_up",
+    decimalPlaces: 2,
+    inputs: [
+      {
+        name: "coursework",
+        weight: "0.2",
+        minimum: "0",
+        maximum: "100",
+        sample: "80",
+      },
+      {
+        name: "midterm",
+        weight: "0.2",
+        minimum: "0",
+        maximum: "100",
+        sample: "75",
+      },
+      {
+        name: "final_exam",
+        weight: "0.6",
+        minimum: "0",
+        maximum: "100",
+        sample: "82",
+      },
+    ],
+    outcomeEnabled: true,
+    passThreshold: "60",
+    honorsThreshold: "90",
+    gradeBands: [
+      {
+        code: "A",
+        label: () => m.settings_calc_grade_excellent(),
+        minimum: "90",
+      },
+      {
+        code: "B",
+        label: () => m.settings_calc_grade_very_good(),
+        minimum: "80",
+      },
+      { code: "C", label: () => m.settings_calc_grade_good(), minimum: "70" },
+      {
+        code: "D",
+        label: () => m.settings_calc_grade_acceptable(),
+        minimum: "60",
+      },
+      { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
+    ],
+  },
+];
 
-  let form = $state<EngineForm>(initialForm());
-  let initialSnapshot = $state("");
-  let initialized = $state(false);
-  let customPlanReadOnly = $state(false);
-  let isSaving = $state(false);
-  let isPreviewing = $state(false);
-  let previewResult = $state<CalculationPreview | null>(null);
+function applyPreset(preset: PolicyPreset) {
+  form.scale = preset.scale;
+  form.outputName = preset.outputName;
+  form.normalize = preset.normalize;
+  form.roundingMode = preset.roundingMode;
+  form.decimalPlaces = preset.decimalPlaces;
+  form.inputs = preset.inputs.map((inp) => ({ ...inp }));
+  form.outcomeEnabled = preset.outcomeEnabled;
+  form.passThreshold = preset.passThreshold;
+  form.honorsThreshold = preset.honorsThreshold;
+  form.gradeBands = preset.gradeBands.map(({ label, ...gradeBand }) => ({
+    ...gradeBand,
+    label: label(),
+  }));
+  customPlanReadOnly = false;
+  toast.success(m.settings_calc_preset_applied({ name: preset.label() }));
+}
 
-  function formSnapshot(value = form): string {
-    return JSON.stringify(value);
-  }
-
-  function resolveScale(rawUnit: any): string {
-    if (!rawUnit) return "percentage";
-    if (typeof rawUnit.scale === "string") return rawUnit.scale;
-    if (
-      typeof rawUnit.scale === "object" &&
-      rawUnit.scale !== null &&
-      typeof rawUnit.scale.scale === "string"
-    ) {
-      return rawUnit.scale.scale;
-    }
-    return "percentage";
-  }
-
-  interface PolicyPreset {
-    id: string;
-    label: () => string;
-    description: () => string;
-    badge: () => string;
-    badgeVariant: "default" | "secondary" | "outline";
-    scale: string;
-    outputName: string;
-    normalize: boolean;
-    roundingMode: CalculationRoundingMode;
-    decimalPlaces: number;
-    inputs: InputEditor[];
-    outcomeEnabled: boolean;
-    passThreshold: string;
-    honorsThreshold: string;
-    gradeBands: Array<Omit<GradeBandEditor, "label"> & { label: () => string }>;
-  }
-
-  const YEMENI_POLICY_PRESETS: PolicyPreset[] = [
-    {
-      id: "yemen_school_term",
-      label: () => m.settings_calc_preset_yemen_school_title(),
-      description: () => m.settings_calc_preset_yemen_school_description(),
-      badge: () => m.settings_calc_preset_yemen_school_badge(),
-      badgeVariant: "default",
-      scale: "percentage",
-      outputName: "term_result",
-      normalize: true,
-      roundingMode: "round_half_up",
-      decimalPlaces: 2,
-      inputs: [
-        {
-          name: "coursework",
-          weight: "0.4",
-          minimum: "0",
-          maximum: "20",
-          sample: "18",
-        },
-        {
-          name: "examination",
-          weight: "0.6",
-          minimum: "0",
-          maximum: "30",
-          sample: "25",
-        },
-      ],
-      outcomeEnabled: true,
-      passThreshold: "50",
-      honorsThreshold: "90",
-      gradeBands: [
-        { code: "A", label: () => m.settings_calc_grade_excellent(), minimum: "90" },
-        { code: "B", label: () => m.settings_calc_grade_very_good(), minimum: "80" },
-        { code: "C", label: () => m.settings_calc_grade_good(), minimum: "65" },
-        { code: "D", label: () => m.settings_calc_grade_acceptable(), minimum: "50" },
-        { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
-      ],
-    },
-    {
-      id: "yemen_thanawiya_cert",
-      label: () => m.settings_calc_preset_yemen_certificate_title(),
-      description: () => m.settings_calc_preset_yemen_certificate_description(),
-      badge: () => m.settings_calc_preset_yemen_certificate_badge(),
-      badgeVariant: "secondary",
-      scale: "percentage",
-      outputName: "thanawiya_score",
-      normalize: true,
-      roundingMode: "round_half_up",
-      decimalPlaces: 2,
-      inputs: [
-        {
-          name: "ministerial_exam",
-          weight: "0.8",
-          minimum: "0",
-          maximum: "100",
-          sample: "85",
-        },
-        {
-          name: "cumulative_prior",
-          weight: "0.2",
-          minimum: "0",
-          maximum: "100",
-          sample: "88",
-        },
-      ],
-      outcomeEnabled: true,
-      passThreshold: "50",
-      honorsThreshold: "90",
-      gradeBands: [
-        { code: "A", label: () => m.settings_calc_grade_excellent(), minimum: "90" },
-        { code: "B", label: () => m.settings_calc_grade_very_good(), minimum: "80" },
-        { code: "C", label: () => m.settings_calc_grade_good(), minimum: "65" },
-        { code: "D", label: () => m.settings_calc_grade_acceptable(), minimum: "50" },
-        { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
-      ],
-    },
-    {
-      id: "university_credit",
-      label: () => m.settings_calc_preset_university_title(),
-      description: () => m.settings_calc_preset_university_description(),
-      badge: () => m.settings_calc_preset_university_badge(),
-      badgeVariant: "outline",
-      scale: "percentage",
-      outputName: "gpa_course",
-      normalize: true,
-      roundingMode: "round_half_up",
-      decimalPlaces: 2,
-      inputs: [
-        {
-          name: "coursework",
-          weight: "0.2",
-          minimum: "0",
-          maximum: "100",
-          sample: "80",
-        },
-        {
-          name: "midterm",
-          weight: "0.2",
-          minimum: "0",
-          maximum: "100",
-          sample: "75",
-        },
-        {
-          name: "final_exam",
-          weight: "0.6",
-          minimum: "0",
-          maximum: "100",
-          sample: "82",
-        },
-      ],
-      outcomeEnabled: true,
-      passThreshold: "60",
-      honorsThreshold: "90",
-      gradeBands: [
-        { code: "A", label: () => m.settings_calc_grade_excellent(), minimum: "90" },
-        { code: "B", label: () => m.settings_calc_grade_very_good(), minimum: "80" },
-        { code: "C", label: () => m.settings_calc_grade_good(), minimum: "70" },
-        { code: "D", label: () => m.settings_calc_grade_acceptable(), minimum: "60" },
-        { code: "F", label: () => m.settings_calc_grade_fail(), minimum: "0" },
-      ],
-    },
-  ];
-
-  function applyPreset(preset: PolicyPreset) {
-    form.scale = preset.scale;
-    form.outputName = preset.outputName;
-    form.normalize = preset.normalize;
-    form.roundingMode = preset.roundingMode;
-    form.decimalPlaces = preset.decimalPlaces;
-    form.inputs = preset.inputs.map((inp) => ({ ...inp }));
-    form.outcomeEnabled = preset.outcomeEnabled;
-    form.passThreshold = preset.passThreshold;
-    form.honorsThreshold = preset.honorsThreshold;
-    form.gradeBands = preset.gradeBands.map(({ label, ...gradeBand }) => ({
-      ...gradeBand,
-      label: label(),
-    }));
-    customPlanReadOnly = false;
-    toast.success(m.settings_calc_preset_applied({ name: preset.label() }));
-  }
-
-  function hydrateFromSettings(settings: CalculationEngineSettings) {
-    const plan = settings.calculation_plan;
-    const output = plan?.outputs.length === 1 ? plan.outputs[0] : undefined;
-    const expression = output?.expression;
-    const weightedItems =
-      expression?.type === "weighted_sum" ? expression.items : undefined;
-    const variableItems = weightedItems?.every(
-      (item) => item.node.type === "variable",
-    );
-    const unit = output?.unit;
-
-    form.rankingEnabled = settings.ranking_enabled;
-    form.rankingScope = settings.ranking_scope;
-    form.tiePolicy = settings.tie_policy;
-    form.maxDisplayedRank =
-      settings.max_displayed_rank == null
-        ? ""
-        : String(settings.max_displayed_rank);
-
-    if (
-      plan &&
-      output &&
-      expression?.type === "weighted_sum" &&
-      variableItems &&
-      unit?.type === "score"
-    ) {
-      const inputs: CalculationInput[] = plan.inputs;
-      const weights = new Map(
-        weightedItems.map((item) => [
-          item.node.type === "variable" ? item.node.name : "",
-          String(item.weight),
-        ]),
-      );
-      const outcomePolicy = settings.outcome_policy;
-      form = {
-        scale: resolveScale(unit),
-        outputName: output.name,
-        normalize: expression.normalize,
-        roundingMode: output.rounding?.mode ?? "round_half_up",
-        decimalPlaces: output.rounding?.decimal_places ?? 2,
-        inputs: inputs.map((input) => ({
-          name: input.name,
-          weight: weights.get(input.name) ?? "1",
-          minimum: input.minimum == null ? "" : String(input.minimum),
-          maximum: input.maximum == null ? "" : String(input.maximum),
-          sample: "0",
-        })),
-        outcomeEnabled: outcomePolicy != null,
-        passThreshold:
-          outcomePolicy?.pass_at_or_above == null
-            ? ""
-            : String(outcomePolicy.pass_at_or_above),
-        honorsThreshold:
-          outcomePolicy?.honors_at_or_above == null
-            ? ""
-            : String(outcomePolicy.honors_at_or_above),
-        gradeBands:
-          outcomePolicy?.grade_bands.map((band) => ({
-            code: band.code,
-            label: band.label,
-            minimum: String(band.minimum_score),
-          })) ?? [],
-        rankingEnabled: settings.ranking_enabled,
-        rankingScope: settings.ranking_scope,
-        tiePolicy: settings.tie_policy,
-        maxDisplayedRank:
-          settings.max_displayed_rank == null
-            ? ""
-            : String(settings.max_displayed_rank),
-      };
-      customPlanReadOnly = false;
-    } else if (plan) {
-      customPlanReadOnly = true;
-    } else {
-      form = initialForm();
-      customPlanReadOnly = false;
-    }
-    initialSnapshot = untrack(() => formSnapshot());
-    initialized = true;
-  }
-
-  $effect(() => {
-    if (policyQuery.data && !initialized) {
-      hydrateFromSettings(policyQuery.data);
-    }
-  });
-
-  const isDirty = $derived(
-    initialSnapshot !== "" && formSnapshot() !== initialSnapshot,
+function hydrateFromSettings(settings: CalculationEngineSettings) {
+  const plan = settings.calculation_plan;
+  const output = plan?.outputs.length === 1 ? plan.outputs[0] : undefined;
+  const expression = output?.expression;
+  const weightedItems =
+    expression?.type === "weighted_sum" ? expression.items : undefined;
+  const variableItems = weightedItems?.every(
+    (item) => item.node.type === "variable",
   );
+  const unit = output?.unit;
 
-  function roundingLabel(mode: CalculationRoundingMode): string {
-    switch (mode) {
-      case "round_half_up":
-        return m.settings_academic_policy_round_half_up();
-      case "round_up":
-        return m.settings_academic_policy_round_up();
-      case "round_down":
-        return m.settings_academic_policy_round_down();
-      case "truncate":
-        return m.settings_academic_policy_truncate();
-    }
-  }
+  form.rankingEnabled = settings.ranking_enabled;
+  form.rankingScope = settings.ranking_scope;
+  form.tiePolicy = settings.tie_policy;
+  form.maxDisplayedRank =
+    settings.max_displayed_rank == null
+      ? ""
+      : String(settings.max_displayed_rank);
 
-  function scopeLabel(
-    scope: "class" | "grade_level" | "org_unit" | "cohort",
-  ): string {
-    switch (scope) {
-      case "class":
-        return m.settings_academic_policy_scope_class();
-      case "grade_level":
-        return m.settings_academic_policy_scope_grade();
-      case "org_unit":
-        return m.settings_academic_policy_scope_org();
-      case "cohort":
-        return m.settings_academic_policy_scope_cohort();
-    }
-  }
-
-  function tieLabel(
-    policy: "standard_competition" | "dense" | "fractional",
-  ): string {
-    switch (policy) {
-      case "standard_competition":
-        return m.settings_academic_policy_tie_standard();
-      case "dense":
-        return m.settings_academic_policy_tie_dense();
-      case "fractional":
-        return m.settings_academic_policy_tie_fractional();
-    }
-  }
-
-  function buildPlan(): CalculationPlan {
-    const unit: CalculationUnit = { type: "score", scale: form.scale.trim() };
-    const inputs: CalculationInput[] = form.inputs.map((input) => ({
-      name: input.name.trim(),
-      unit,
-      minimum: input.minimum.trim() === "" ? null : input.minimum,
-      maximum: input.maximum.trim() === "" ? null : input.maximum,
-      is_required: true,
-    }));
-    const expression: CalculationExpression = {
-      type: "weighted_sum",
-      items: form.inputs.map((input) => ({
-        node: { type: "variable", name: input.name.trim() },
-        weight: input.weight,
-      })),
-      normalize: form.normalize,
-    };
-
-    return {
-      version: (policyQuery.data?.calculation_plan?.version ?? 0) + 1,
-      inputs,
-      outputs: [
-        {
-          name: form.outputName.trim(),
-          unit,
-          expression,
-          rounding: {
-            mode: form.roundingMode,
-            decimal_places: Number(form.decimalPlaces),
-          },
-        },
-      ],
-    };
-  }
-
-  function buildOutcomePolicy(): CalculationOutcomePolicy | null {
-    if (!form.outcomeEnabled) return null;
-    return {
-      unit: { type: "score", scale: form.scale.trim() },
-      pass_at_or_above:
-        form.passThreshold.trim() === "" ? null : form.passThreshold,
-      honors_at_or_above:
-        form.honorsThreshold.trim() === "" ? null : form.honorsThreshold,
-      grade_bands: form.gradeBands.map((band) => ({
-        code: band.code.trim(),
-        label: band.label.trim(),
-        minimum_score: band.minimum,
-      })),
-    };
-  }
-
-  function getValidationError(): string | null {
-    if (customPlanReadOnly) return null;
-    if (!form.scale.trim()) return `${m.settings_calc_scale()}: Required`;
-    if (!form.outputName.trim())
-      return `${m.settings_calc_output_name()}: Required`;
-    if (!form.inputs.length) return `${m.settings_calc_inputs()}: Required`;
-    const names = form.inputs.map((input) => input.name.trim());
-    if (names.some((name) => !name))
-      return "Every calculation input needs a name.";
-    if (new Set(names).size !== names.length) {
-      return "Calculation input names must be unique.";
-    }
-    if (
-      form.inputs.some(
-        (input) =>
-          !Number.isFinite(Number(input.weight)) || Number(input.weight) < 0,
-      )
-    ) {
-      return "Input weights must be non-negative numbers.";
-    }
-    if (!form.inputs.some((input) => Number(input.weight) > 0)) {
-      return "At least one input must have a positive weight.";
-    }
-    if (
-      !Number.isInteger(Number(form.decimalPlaces)) ||
-      form.decimalPlaces < 0 ||
-      form.decimalPlaces > 28
-    ) {
-      return "Decimal places must be between 0 and 28.";
-    }
-    if (
-      form.inputs.some(
-        (input) =>
-          input.minimum.trim() !== "" &&
-          input.maximum.trim() !== "" &&
-          Number(input.minimum) > Number(input.maximum),
-      )
-    ) {
-      return "An input minimum cannot exceed its maximum.";
-    }
-    if (
-      form.outcomeEnabled &&
-      form.passThreshold.trim() !== "" &&
-      form.honorsThreshold.trim() !== "" &&
-      Number(form.honorsThreshold) < Number(form.passThreshold)
-    ) {
-      return "The honors threshold cannot be lower than the passing threshold.";
-    }
-    return null;
-  }
-
-  async function handleSave() {
-    const validationError = getValidationError();
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-    isSaving = true;
-    try {
-      const saved = await updateMutation.mutateAsync({
-        calculation_plan: customPlanReadOnly
-          ? (policyQuery.data?.calculation_plan ?? null)
-          : buildPlan(),
-        outcome_policy: customPlanReadOnly
-          ? (policyQuery.data?.outcome_policy ?? null)
-          : buildOutcomePolicy(),
-        ranking_enabled: form.rankingEnabled,
-        ranking_scope: form.rankingScope,
-        tie_policy: form.tiePolicy,
-        max_displayed_rank:
-          form.maxDisplayedRank.trim() === ""
-            ? null
-            : Number(form.maxDisplayedRank),
-      });
-      hydrateFromSettings(saved);
-      previewResult = null;
-      toast.success(m.settings_calc_saved());
-      await onSaved?.();
-    } catch (error: unknown) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isSaving = false;
-    }
-  }
-
-  async function handlePreview() {
-    const validationError = getValidationError();
-    if (validationError) {
-      toast.error(validationError);
-      return;
-    }
-    isPreviewing = true;
-    try {
-      previewResult = await api.previewCalculation(
-        Object.fromEntries(
-          form.inputs.map((input) => [
-            input.name.trim(),
-            input.sample.trim() === "" ? "0" : input.sample,
-          ]),
-        ),
-      );
-    } catch (error: unknown) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isPreviewing = false;
-    }
-  }
-
-  function resetForm() {
-    if (!initialSnapshot) return;
-    form = JSON.parse(initialSnapshot) as EngineForm;
-  }
-
-  function replaceCustomPlan() {
+  if (
+    plan &&
+    output &&
+    expression?.type === "weighted_sum" &&
+    variableItems &&
+    unit?.type === "score"
+  ) {
+    const inputs: CalculationInput[] = plan.inputs;
+    const weights = new Map(
+      weightedItems.map((item) => [
+        item.node.type === "variable" ? item.node.name : "",
+        String(item.weight),
+      ]),
+    );
+    const outcomePolicy = settings.outcome_policy;
     form = {
-      ...form,
-      ...initialForm(),
-      rankingEnabled: form.rankingEnabled,
-      rankingScope: form.rankingScope,
-      tiePolicy: form.tiePolicy,
-      maxDisplayedRank: form.maxDisplayedRank,
+      scale: resolveScale(unit),
+      outputName: output.name,
+      normalize: expression.normalize,
+      roundingMode: output.rounding?.mode ?? "round_half_up",
+      decimalPlaces: output.rounding?.decimal_places ?? 2,
+      inputs: inputs.map((input) => ({
+        name: input.name,
+        weight: weights.get(input.name) ?? "1",
+        minimum: input.minimum == null ? "" : String(input.minimum),
+        maximum: input.maximum == null ? "" : String(input.maximum),
+        sample: "0",
+      })),
+      outcomeEnabled: outcomePolicy != null,
+      passThreshold:
+        outcomePolicy?.pass_at_or_above == null
+          ? ""
+          : String(outcomePolicy.pass_at_or_above),
+      honorsThreshold:
+        outcomePolicy?.honors_at_or_above == null
+          ? ""
+          : String(outcomePolicy.honors_at_or_above),
+      gradeBands:
+        outcomePolicy?.grade_bands.map((band) => ({
+          code: band.code,
+          label: band.label,
+          minimum: String(band.minimum_score),
+        })) ?? [],
+      rankingEnabled: settings.ranking_enabled,
+      rankingScope: settings.ranking_scope,
+      tiePolicy: settings.tie_policy,
+      maxDisplayedRank:
+        settings.max_displayed_rank == null
+          ? ""
+          : String(settings.max_displayed_rank),
     };
-    form.scale = "score";
+    customPlanReadOnly = false;
+  } else if (plan) {
+    customPlanReadOnly = true;
+  } else {
+    form = initialForm();
     customPlanReadOnly = false;
   }
+  initialSnapshot = untrack(() => formSnapshot());
+  initialized = true;
+}
+
+$effect(() => {
+  if (policyQuery.data && !initialized) {
+    hydrateFromSettings(policyQuery.data);
+  }
+});
+
+const isDirty = $derived(
+  initialSnapshot !== "" && formSnapshot() !== initialSnapshot,
+);
+
+function roundingLabel(mode: CalculationRoundingMode): string {
+  switch (mode) {
+    case "round_half_up":
+      return m.settings_academic_policy_round_half_up();
+    case "round_up":
+      return m.settings_academic_policy_round_up();
+    case "round_down":
+      return m.settings_academic_policy_round_down();
+    case "truncate":
+      return m.settings_academic_policy_truncate();
+  }
+}
+
+function scopeLabel(
+  scope: "class" | "grade_level" | "org_unit" | "cohort",
+): string {
+  switch (scope) {
+    case "class":
+      return m.settings_academic_policy_scope_class();
+    case "grade_level":
+      return m.settings_academic_policy_scope_grade();
+    case "org_unit":
+      return m.settings_academic_policy_scope_org();
+    case "cohort":
+      return m.settings_academic_policy_scope_cohort();
+  }
+}
+
+function tieLabel(
+  policy: "standard_competition" | "dense" | "fractional",
+): string {
+  switch (policy) {
+    case "standard_competition":
+      return m.settings_academic_policy_tie_standard();
+    case "dense":
+      return m.settings_academic_policy_tie_dense();
+    case "fractional":
+      return m.settings_academic_policy_tie_fractional();
+  }
+}
+
+function buildPlan(): CalculationPlan {
+  const unit: CalculationUnit = { type: "score", scale: form.scale.trim() };
+  const inputs: CalculationInput[] = form.inputs.map((input) => ({
+    name: input.name.trim(),
+    unit,
+    minimum: input.minimum.trim() === "" ? null : input.minimum,
+    maximum: input.maximum.trim() === "" ? null : input.maximum,
+    is_required: true,
+  }));
+  const expression: CalculationExpression = {
+    type: "weighted_sum",
+    items: form.inputs.map((input) => ({
+      node: { type: "variable", name: input.name.trim() },
+      weight: input.weight,
+    })),
+    normalize: form.normalize,
+  };
+
+  return {
+    version: (policyQuery.data?.calculation_plan?.version ?? 0) + 1,
+    inputs,
+    outputs: [
+      {
+        name: form.outputName.trim(),
+        unit,
+        expression,
+        rounding: {
+          mode: form.roundingMode,
+          decimal_places: Number(form.decimalPlaces),
+        },
+      },
+    ],
+  };
+}
+
+function buildOutcomePolicy(): CalculationOutcomePolicy | null {
+  if (!form.outcomeEnabled) return null;
+  return {
+    unit: { type: "score", scale: form.scale.trim() },
+    pass_at_or_above:
+      form.passThreshold.trim() === "" ? null : form.passThreshold,
+    honors_at_or_above:
+      form.honorsThreshold.trim() === "" ? null : form.honorsThreshold,
+    grade_bands: form.gradeBands.map((band) => ({
+      code: band.code.trim(),
+      label: band.label.trim(),
+      minimum_score: band.minimum,
+    })),
+  };
+}
+
+function getValidationError(): string | null {
+  if (customPlanReadOnly) return null;
+  if (!form.scale.trim()) return `${m.settings_calc_scale()}: Required`;
+  if (!form.outputName.trim())
+    return `${m.settings_calc_output_name()}: Required`;
+  if (!form.inputs.length) return `${m.settings_calc_inputs()}: Required`;
+  const names = form.inputs.map((input) => input.name.trim());
+  if (names.some((name) => !name))
+    return "Every calculation input needs a name.";
+  if (new Set(names).size !== names.length) {
+    return "Calculation input names must be unique.";
+  }
+  if (
+    form.inputs.some(
+      (input) =>
+        !Number.isFinite(Number(input.weight)) || Number(input.weight) < 0,
+    )
+  ) {
+    return "Input weights must be non-negative numbers.";
+  }
+  if (!form.inputs.some((input) => Number(input.weight) > 0)) {
+    return "At least one input must have a positive weight.";
+  }
+  if (
+    !Number.isInteger(Number(form.decimalPlaces)) ||
+    form.decimalPlaces < 0 ||
+    form.decimalPlaces > 28
+  ) {
+    return "Decimal places must be between 0 and 28.";
+  }
+  if (
+    form.inputs.some(
+      (input) =>
+        input.minimum.trim() !== "" &&
+        input.maximum.trim() !== "" &&
+        Number(input.minimum) > Number(input.maximum),
+    )
+  ) {
+    return "An input minimum cannot exceed its maximum.";
+  }
+  if (
+    form.outcomeEnabled &&
+    form.passThreshold.trim() !== "" &&
+    form.honorsThreshold.trim() !== "" &&
+    Number(form.honorsThreshold) < Number(form.passThreshold)
+  ) {
+    return "The honors threshold cannot be lower than the passing threshold.";
+  }
+  return null;
+}
+
+async function handleSave() {
+  const validationError = getValidationError();
+  if (validationError) {
+    toast.error(validationError);
+    return;
+  }
+  isSaving = true;
+  try {
+    const saved = await updateMutation.mutateAsync({
+      calculation_plan: customPlanReadOnly
+        ? (policyQuery.data?.calculation_plan ?? null)
+        : buildPlan(),
+      outcome_policy: customPlanReadOnly
+        ? (policyQuery.data?.outcome_policy ?? null)
+        : buildOutcomePolicy(),
+      ranking_enabled: form.rankingEnabled,
+      ranking_scope: form.rankingScope,
+      tie_policy: form.tiePolicy,
+      max_displayed_rank:
+        form.maxDisplayedRank.trim() === ""
+          ? null
+          : Number(form.maxDisplayedRank),
+    });
+    hydrateFromSettings(saved);
+    previewResult = null;
+    toast.success(m.settings_calc_saved());
+    await onSaved?.();
+  } catch (error: unknown) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isSaving = false;
+  }
+}
+
+async function handlePreview() {
+  const validationError = getValidationError();
+  if (validationError) {
+    toast.error(validationError);
+    return;
+  }
+  isPreviewing = true;
+  try {
+    previewResult = await api.previewCalculation(
+      Object.fromEntries(
+        form.inputs.map((input) => [
+          input.name.trim(),
+          input.sample.trim() === "" ? "0" : input.sample,
+        ]),
+      ),
+    );
+  } catch (error: unknown) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isPreviewing = false;
+  }
+}
+
+function resetForm() {
+  if (!initialSnapshot) return;
+  form = JSON.parse(initialSnapshot) as EngineForm;
+}
+
+function replaceCustomPlan() {
+  form = {
+    ...form,
+    ...initialForm(),
+    rankingEnabled: form.rankingEnabled,
+    rankingScope: form.rankingScope,
+    tiePolicy: form.tiePolicy,
+    maxDisplayedRank: form.maxDisplayedRank,
+  };
+  form.scale = "score";
+  customPlanReadOnly = false;
+}
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">

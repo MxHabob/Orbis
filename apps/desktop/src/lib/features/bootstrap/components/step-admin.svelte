@@ -34,10 +34,29 @@ const passwordStrength = $derived.by(() => {
 
 const strengthLabel = $derived.by(() => {
   if (!form.adminPassword) return { text: "", color: "bg-muted", width: "0%" };
-  if (passwordStrength <= 2) return { text: m.ui_onboarding_admin_weak(), color: "bg-destructive", width: "30%" };
-  if (passwordStrength <= 3) return { text: m.ui_onboarding_admin_fair(), color: "bg-amber-500", width: "60%" };
-  if (passwordStrength <= 4) return { text: m.ui_onboarding_admin_good(), color: "bg-blue-500", width: "80%" };
-  return { text: m.ui_onboarding_admin_strong(), color: "bg-emerald-500", width: "100%" };
+  if (passwordStrength <= 2)
+    return {
+      text: m.ui_onboarding_admin_weak(),
+      color: "bg-destructive",
+      width: "30%",
+    };
+  if (passwordStrength <= 3)
+    return {
+      text: m.ui_onboarding_admin_fair(),
+      color: "bg-amber-500",
+      width: "60%",
+    };
+  if (passwordStrength <= 4)
+    return {
+      text: m.ui_onboarding_admin_good(),
+      color: "bg-blue-500",
+      width: "80%",
+    };
+  return {
+    text: m.ui_onboarding_admin_strong(),
+    color: "bg-emerald-500",
+    width: "100%",
+  };
 });
 </script>
 

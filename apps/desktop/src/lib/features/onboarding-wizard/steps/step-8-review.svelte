@@ -39,20 +39,29 @@ async function refreshDAG(): Promise<boolean> {
 
 const tasks = $derived(systemStore.onboardingTasks);
 const steps = $derived(
-  deriveSteps(tasks, (permission) => effectiveContext.hasPermission(permission)),
+  deriveSteps(tasks, (permission) =>
+    effectiveContext.hasPermission(permission),
+  ),
 );
 const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 const isReady = $derived(systemStore.isInstitutionReady);
 const warnings = $derived(systemStore.onboardingState?.warnings ?? []);
-const requiredTaskCount = $derived(systemStore.onboardingState?.required_tasks ?? 0);
-const completedRequiredTaskCount = $derived(systemStore.onboardingState?.required_completed ?? 0);
+const requiredTaskCount = $derived(
+  systemStore.onboardingState?.required_tasks ?? 0,
+);
+const completedRequiredTaskCount = $derived(
+  systemStore.onboardingState?.required_completed ?? 0,
+);
 
 function getBlockingReason(task: SetupTaskDto): string {
   let reason = l(task.blocking_reason_ar, task.blocking_reason);
   for (const dependencyId of task.dependencies) {
     const dependency = tasks.find((item) => item.id === dependencyId);
     if (dependency && reason.includes(dependencyId)) {
-      reason = reason.replaceAll(dependencyId, l(dependency.title_ar, dependency.title));
+      reason = reason.replaceAll(
+        dependencyId,
+        l(dependency.title_ar, dependency.title),
+      );
     }
   }
   return reason;

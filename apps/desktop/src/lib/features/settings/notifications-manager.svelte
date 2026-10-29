@@ -34,10 +34,12 @@ function channelsForIntegration(integration: IntegrationDto): string[] {
       : {};
   const declaredChannels = settings.__notification_channels;
   if (Array.isArray(declaredChannels)) {
-    return declaredChannels.filter(
-      (channel): channel is string =>
-        typeof channel === "string" && channel.trim().length > 0,
-    ).map((channel) => channel.trim().toLowerCase());
+    return declaredChannels
+      .filter(
+        (channel): channel is string =>
+          typeof channel === "string" && channel.trim().length > 0,
+      )
+      .map((channel) => channel.trim().toLowerCase());
   }
   return integration.category.trim().toLowerCase() === "communication"
     ? []
@@ -72,7 +74,8 @@ function channelLabel(channel: string): string {
 function selectedProviderLabel(channel: string): string {
   const selectedId = defaultIntegrationIds[channel];
   return (
-    integrations.find((integration) => integration.id === selectedId)?.provider_name ??
+    integrations.find((integration) => integration.id === selectedId)
+      ?.provider_name ??
     (selectedId || m.settings_ui_notification_no_default())
   );
 }
@@ -112,8 +115,10 @@ onMount(async () => {
     isLoading = true;
     rawSettings = await api.getSettings();
     if (rawSettings?.notifications) {
-      notifyParentsOnAbsence = rawSettings.notifications.notify_parents_on_absence ?? true;
-      notifyParentsOnGradePublish = rawSettings.notifications.notify_parents_on_grade_publish ?? true;
+      notifyParentsOnAbsence =
+        rawSettings.notifications.notify_parents_on_absence ?? true;
+      notifyParentsOnGradePublish =
+        rawSettings.notifications.notify_parents_on_grade_publish ?? true;
       defaultIntegrationIds = {
         ...(rawSettings.notifications.default_integration_ids ?? {}),
       };
@@ -188,7 +193,10 @@ async function handleSave(e?: Event) {
   e?.preventDefault();
   isSaving = true;
   try {
-    localStorage.setItem("orbis_notification_preferences", JSON.stringify(prefs));
+    localStorage.setItem(
+      "orbis_notification_preferences",
+      JSON.stringify(prefs),
+    );
     if (rawSettings) {
       const updatedSettings: OrganizationSettingsDto = {
         ...rawSettings,
@@ -200,7 +208,8 @@ async function handleSave(e?: Event) {
           whatsapp_integration_id: defaultIntegrationIds.whatsapp ?? null,
           notify_parents_on_absence: notifyParentsOnAbsence,
           notify_parents_on_grade_publish: notifyParentsOnGradePublish,
-          finance_reminder_days: rawSettings.notifications?.finance_reminder_days ?? [7, 3, 1],
+          finance_reminder_days: rawSettings.notifications
+            ?.finance_reminder_days ?? [7, 3, 1],
         },
       };
       rawSettings = await api.updateSettings(updatedSettings);

@@ -19,7 +19,7 @@ import {
   type GradeCell,
 } from "./grade-helpers";
 import type { CellEditEvent } from "@orbis/svelte-grid";
-    import { ControlGrid } from "../academics";
+import { ControlGrid } from "../academics";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -161,7 +161,8 @@ async function loadGradeMatrix() {
       });
       const total = cells.reduce((acc, cell) => acc + (cell.score || 0), 0);
       const maxTotal = cells.reduce((acc, cell) => acc + cell.max_score, 0);
-      const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+      const percentage =
+        maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
       return {
         enrollment_id:
           st.enrollment?.id ??
@@ -267,7 +268,9 @@ async function handleSaveAll() {
     }
 
     await api.batchRecordGrades({ items });
-    toast.success(m.common_control_save_success({ total: String(items.length) }));
+    toast.success(
+      m.common_control_save_success({ total: String(items.length) }),
+    );
 
     isDirty = false;
     await loadGradeMatrix();

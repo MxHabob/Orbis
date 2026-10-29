@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface FilePlusAltProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface FilePlusAltProps extends SvgProps {
 
 export function FilePlusAlt({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,22 +45,23 @@ export function FilePlusAlt({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		d="M4 12V2.6C4 2.26863 4.26863 2 4.6 2H16.2515C16.4106 2 16.5632 2.06321 16.6757 2.17574L19.8243 5.32426C19.9368 5.43679 20 5.5894 20 5.74853V21.4C20 21.7314 19.7314 22 19.4 22H11"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	/>
-	<Path
-		d="M16 2V5.4C16 5.73137 16.2686 6 16.6 6H20"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	/>
-	<Path
-		d="M1.99219 19H4.99219M7.99219 19H4.99219M4.99219 19V16M4.99219 19V22"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	/>
+        d="M4 12V2.6C4 2.26863 4.26863 2 4.6 2H16.2515C16.4106 2 16.5632 2.06321 16.6757 2.17574L19.8243 5.32426C19.9368 5.43679 20 5.5894 20 5.74853V21.4C20 21.7314 19.7314 22 19.4 22H11"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M16 2V5.4C16 5.73137 16.2686 6 16.6 6H20"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M1.99219 19H4.99219M7.99219 19H4.99219M4.99219 19V16M4.99219 19V22"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

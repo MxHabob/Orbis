@@ -3,10 +3,7 @@
 // Single source of truth for Mulverse license state in the Desktop UI.
 
 import { api } from "$lib/api/client";
-import type {
-  LicenseStateDto,
-  LicenseState,
-} from "$lib/api/types";
+import type { LicenseStateDto, LicenseState } from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
 
 class LicenseStore {
@@ -99,18 +96,6 @@ class LicenseStore {
   async activateKey(productKey: string): Promise<LicenseStateDto | null> {
     return this.runAction(
       () => api.licenseActivateKey({ product_key: productKey }),
-      (state) => {
-        this.licenseState = state;
-      },
-    );
-  }
-
-  /**
-   * Claim a reseller key for the active organization and activate this device.
-   */
-  async redeemKey(productKey: string): Promise<LicenseStateDto | null> {
-    return this.runAction(
-      () => api.licenseRedeemKey({ product_key: productKey }),
       (state) => {
         this.licenseState = state;
       },
