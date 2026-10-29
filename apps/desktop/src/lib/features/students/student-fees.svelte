@@ -15,6 +15,8 @@ import {
   CardContent,
 } from "@orbis/ui/card";
 import { CheckCircle, Document, InfoCircle } from "@orbis/icons";
+import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
@@ -107,7 +109,7 @@ const feesCols: OrbisColumnDef[] = [
     id: "fee_name",
     prop: "fee_name",
     header: m.finance_fees_col_description(),
-    name: "Fee",
+    name: m.finance_fees_col_description(),
     width: 180,
     size: 180,
     readonly: true,
@@ -116,7 +118,7 @@ const feesCols: OrbisColumnDef[] = [
     id: "total",
     prop: "total",
     header: m.common_ft_col_amount(),
-    name: "Total",
+    name: m.common_ft_col_amount(),
     width: 110,
     size: 110,
     readonly: true,
@@ -127,7 +129,7 @@ const feesCols: OrbisColumnDef[] = [
     id: "paid",
     prop: "paid",
     header: m.finance_fees_total_collected(),
-    name: "Paid",
+    name: m.finance_fees_total_collected(),
     width: 110,
     size: 110,
     readonly: true,
@@ -138,7 +140,7 @@ const feesCols: OrbisColumnDef[] = [
     id: "balance",
     prop: "balance",
     header: m.finance_fees_total_due(),
-    name: "Balance",
+    name: m.finance_fees_total_due(),
     width: 110,
     size: 110,
     readonly: true,
@@ -148,8 +150,8 @@ const feesCols: OrbisColumnDef[] = [
   {
     id: "status",
     prop: "status",
-    header: "Status",
-    name: "Status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
     width: 100,
     size: 100,
     type: "badge",
@@ -174,7 +176,7 @@ const paymentsCols: OrbisColumnDef[] = [
     id: "receipt",
     prop: "receipt",
     header: m.finance_fees_col_receipt(),
-    name: "Receipt",
+    name: m.finance_fees_col_receipt(),
     width: 120,
     size: 120,
     readonly: true,
@@ -184,7 +186,7 @@ const paymentsCols: OrbisColumnDef[] = [
     id: "method",
     prop: "method",
     header: m.finance_fees_col_method(),
-    name: "Method",
+    name: m.finance_fees_col_method(),
     width: 110,
     size: 110,
     readonly: true,
@@ -194,7 +196,7 @@ const paymentsCols: OrbisColumnDef[] = [
     id: "date",
     prop: "date",
     header: m.finance_fees_col_pay_date(),
-    name: "Date",
+    name: m.finance_fees_col_pay_date(),
     width: 120,
     size: 120,
     readonly: true,
@@ -204,7 +206,7 @@ const paymentsCols: OrbisColumnDef[] = [
     id: "amount",
     prop: "amount",
     header: m.finance_payments_col_amount(),
-    name: "Amount",
+    name: m.finance_payments_col_amount(),
     width: 120,
     size: 120,
     readonly: true,
@@ -229,37 +231,32 @@ const rtl = $derived(getLocale() === "ar");
 
 <div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- Summary Statistics Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 shrink-0">
-    <Card class="p-4 flex items-center justify-between">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.finance_fees_total_fees()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 text-foreground">{formatCurrency(totalFees)}</span>
-      </div>
-      <Document size={18} class="text-primary" />
-    </Card>
-
-    <Card class="p-4 flex items-center justify-between">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.finance_fees_total_paid()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 text-emerald-600 dark:text-emerald-400">{formatCurrency(totalPaid)}</span>
-      </div>
-      <CheckCircle size={18} class="text-emerald-500" />
-    </Card>
-
-    <Card class="p-4 flex items-center justify-between">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.finance_fees_balance_due()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 {balanceDue > 0 ? 'text-destructive' : 'text-emerald-600 dark:text-emerald-400'}">
-          {formatCurrency(balanceDue)}
-        </span>
-      </div>
-      <InfoCircle size={18} class={balanceDue > 0 ? 'text-destructive' : 'text-emerald-500'} />
-    </Card>
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <StudentMetricCard
+      title={m.finance_fees_total_fees()}
+      value={formatCurrency(totalFees)}
+      icon={Document}
+      loading={isLoading}
+    />
+    <StudentMetricCard
+      title={m.finance_fees_total_paid()}
+      value={formatCurrency(totalPaid)}
+      icon={CheckCircle}
+      tone="success"
+      loading={isLoading}
+    />
+    <StudentMetricCard
+      title={m.finance_fees_balance_due()}
+      value={formatCurrency(balanceDue)}
+      icon={InfoCircle}
+      tone={balanceDue > 0 ? "danger" : "success"}
+      loading={isLoading}
+    />
   </div>
 
   {#if isLoading}
-    <Skeleton class="h-44 w-full rounded-xl" />
-    <Skeleton class="h-44 w-full rounded-xl" />
+    <Skeleton class="h-40 w-full rounded-xl" />
+    <Skeleton class="h-40 w-full rounded-xl" />
   {:else}
     <!-- Assigned Fees Card -->
     <Card class="overflow-hidden">
@@ -269,15 +266,21 @@ const rtl = $derived(getLocale() === "ar");
         </CardTitle>
       </CardHeader>
       <CardContent class="p-0">
-        <div class="h-[200px] w-full">
+        {#if fees.length === 0}
+          <StudentSectionState
+            icon={Document}
+            title={m.finance_fees_no_fees()}
+          />
+        {:else}
+        <div class="h-56 w-full">
           <OrbisGrid
             columns={feesCols}
             source={feesSource}
-            emptyTitle={m.finance_fees_no_fees()}
             {rtl}
             readonly
           />
         </div>
+        {/if}
       </CardContent>
     </Card>
 
@@ -289,15 +292,21 @@ const rtl = $derived(getLocale() === "ar");
         </CardTitle>
       </CardHeader>
       <CardContent class="p-0">
-        <div class="h-[200px] w-full">
+        {#if payments.length === 0}
+          <StudentSectionState
+            icon={CheckCircle}
+            title={m.finance_fees_no_payments()}
+          />
+        {:else}
+        <div class="h-56 w-full">
           <OrbisGrid
             columns={paymentsCols}
             source={paymentsSource}
-            emptyTitle={m.finance_fees_no_payments()}
             {rtl}
             readonly
           />
         </div>
+        {/if}
       </CardContent>
     </Card>
   {/if}

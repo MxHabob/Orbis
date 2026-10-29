@@ -28,6 +28,7 @@ import {
 import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
 import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
 import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 
 let { studentId }: { orgId: string; studentId: string } = $props();
 
@@ -187,14 +188,16 @@ async function handleDeleteDocument(id: string) {
         class="h-8 w-full bg-background/70 ps-9 pe-8 text-xs"
       />
       {#if searchQuery}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon"
           onclick={() => (searchQuery = "")}
-          class="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          class="absolute inset-e-1.5 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           aria-label={m.common_filter_clear()}
         >
           <XMark class="h-3.5 w-3.5" />
-        </button>
+        </Button>
       {/if}
     </div>
 
@@ -228,27 +231,29 @@ async function handleDeleteDocument(id: string) {
         </Button>
       </div>
     {:else if documents.length === 0}
-      <div class="flex min-h-80 flex-col items-center justify-center text-center text-muted-foreground">
-        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground/60 shadow-inner">
-          <DocumentPage class="h-8 w-8" />
-        </div>
-        <h2 class="text-sm font-bold text-foreground">{m.common_docs_empty()}</h2>
-        <p class="mt-1 max-w-sm text-xs text-muted-foreground">
-          {m.common_docs_empty_hint()}
-        </p>
-        <Button class="mt-5" size="sm" disabled={isUploading} onclick={openFilePicker}>
-          <ArrowUpTray class="me-1.5 h-3.5 w-3.5" />
-          {m.common_docs_add_btn()}
-        </Button>
-      </div>
+      <StudentSectionState
+        icon={DocumentPage}
+        title={m.common_docs_empty()}
+        description={m.common_docs_empty_hint()}
+      >
+        {#snippet action()}
+          <Button size="sm" disabled={isUploading} onclick={openFilePicker}>
+            <ArrowUpTray class="me-1.5 h-3.5 w-3.5" />
+            {m.common_docs_add_btn()}
+          </Button>
+        {/snippet}
+      </StudentSectionState>
     {:else if filteredDocuments.length === 0}
-      <div class="flex min-h-64 flex-col items-center justify-center text-center text-muted-foreground">
-        <Search class="mb-3 h-7 w-7 opacity-50" />
-        <h2 class="text-sm font-semibold text-foreground">{m.common_search_no_results()}</h2>
-        <Button class="mt-3" variant="outline" size="sm" onclick={() => (searchQuery = "")}>
-          {m.common_filter_clear()}
-        </Button>
-      </div>
+      <StudentSectionState
+        icon={Search}
+        title={m.common_search_no_results()}
+      >
+        {#snippet action()}
+          <Button variant="outline" size="sm" onclick={() => (searchQuery = "")}>
+            {m.common_filter_clear()}
+          </Button>
+        {/snippet}
+      </StudentSectionState>
     {:else}
       <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {#each filteredDocuments as document (document.id)}

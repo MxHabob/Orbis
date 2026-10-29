@@ -19,6 +19,8 @@ import {
   UserBadgeCheck,
   UserMinus,
 } from "@orbis/icons";
+import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -158,44 +160,34 @@ const rtl = $derived(getLocale() === "ar");
 
 <div class="flex flex-col gap-6 text-xs text-start font-sans">
   <!-- Attendance Stats -->
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 select-none">
-    <Card class="flex items-center justify-between p-4">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_present_days()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 text-emerald-600 dark:text-emerald-400">
-          {formatNumber(presentCount)} {m.academics_attendance_day_unit()}
-        </span>
-      </div>
-      <UserBadgeCheck size={18} class="text-emerald-500" />
-    </Card>
-
-    <Card class="flex items-center justify-between p-4">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_absent_days()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 text-destructive">
-          {formatNumber(absentCount)} {m.academics_attendance_day_unit()}
-        </span>
-      </div>
-      <UserMinus size={18} class="text-destructive" />
-    </Card>
-
-    <Card class="flex items-center justify-between p-4">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.academics_attendance_late_cases()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 text-amber-500">
-          {formatNumber(lateCount)} {m.academics_attendance_times_unit()}
-        </span>
-      </div>
-      <ClockRotateRight size={18} class="text-amber-500" />
-    </Card>
-
-    <Card class="flex items-center justify-between p-4">
-      <div class="flex flex-col">
-        <span class="text-[9px] text-muted-foreground font-semibold">{m.common_card_attendance_rate()}</span>
-        <span class="text-sm font-bold font-mono mt-0.5 text-primary">{formatPercent(attendanceRate)}</span>
-      </div>
-      <Calendar size={18} class="text-primary" />
-    </Card>
+  <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <StudentMetricCard
+      title={m.academics_attendance_present_days()}
+      value={`${formatNumber(presentCount)} ${m.academics_attendance_day_unit()}`}
+      icon={UserBadgeCheck}
+      tone="success"
+      loading={isLoading}
+    />
+    <StudentMetricCard
+      title={m.academics_attendance_absent_days()}
+      value={`${formatNumber(absentCount)} ${m.academics_attendance_day_unit()}`}
+      icon={UserMinus}
+      tone="danger"
+      loading={isLoading}
+    />
+    <StudentMetricCard
+      title={m.academics_attendance_late_cases()}
+      value={`${formatNumber(lateCount)} ${m.academics_attendance_times_unit()}`}
+      icon={ClockRotateRight}
+      tone="warning"
+      loading={isLoading}
+    />
+    <StudentMetricCard
+      title={m.common_card_attendance_rate()}
+      value={attendanceRecords.length ? formatPercent(attendanceRate) : "—"}
+      icon={Calendar}
+      loading={isLoading}
+    />
   </div>
 
   <!-- Attendance Log Card -->
@@ -217,19 +209,25 @@ const rtl = $derived(getLocale() === "ar");
     </CardHeader>
 
     <CardContent class="p-0">
-      <div class="h-[350px] w-full">
+      {#if !isLoading && attendanceRecords.length === 0}
+        <StudentSectionState
+          icon={Calendar}
+          title={m.ui_copy_no_attendance_records_7b6831c5()}
+          description={m.ui_copy_no_attendance_recorded_for_this_student_ye_f2c2d408()}
+        />
+      {:else}
+      <div class="h-80 w-full">
         <OrbisGrid
           {columns}
           source={gridSource}
           loading={isLoading}
           clientQuery
           filter={activeFilter}
-          emptyTitle={m.ui_copy_no_attendance_records_7b6831c5()}
-          emptyDescription={m.ui_copy_no_attendance_recorded_for_this_student_ye_f2c2d408()}
           {rtl}
           readonly
         />
       </div>
+      {/if}
     </CardContent>
   </Card>
 </div>

@@ -70,9 +70,17 @@ impl ReportDefinitionRepository for ReportDefinitionRepoImpl {
         org_id: Uuid,
         code: &str,
     ) -> Result<Option<ReportDefinition>, DomainError> {
+        let rep_code = if code.starts_with("rep.") {
+            code.to_string()
+        } else {
+            format!("rep.{code}")
+        };
+        let bare_code = code.strip_prefix("rep.").unwrap_or(code);
+        let codes = vec![code.to_string(), rep_code, bare_code.to_string()];
+
         let model = report_definition::Entity::find()
             .filter(report_definition::Column::OrgId.eq(org_id))
-            .filter(report_definition::Column::Code.eq(code))
+            .filter(report_definition::Column::Code.is_in(codes))
             .one(&self.db)
             .await
             .map_err(db_err)?;

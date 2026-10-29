@@ -15,10 +15,12 @@ import {
   CardAction,
   CardContent,
 } from "@orbis/ui/card";
-import { Plus, Sparkles, UserBadgeCheck, Trash } from "@orbis/icons";
+import { Plus, Sparkles, UserBadgeCheck } from "@orbis/icons";
 import { onMount } from "svelte";
 import { toast } from "@orbis/ui";
 import { getLocale } from "$lib/paraglide/runtime";
+import BehaviorRecordDialog from "$lib/features/students/components/behavior-record-dialog.svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 
 import { formatDate } from "$lib/core/i18n";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
@@ -54,7 +56,7 @@ async function loadBehavior() {
 
 async function handleAddRecord() {
   if (!newDescription.trim()) {
-    toast.error("Description is required");
+    toast.error(m.academics_behavior_description_required());
     return;
   }
   isSaving = true;
@@ -65,14 +67,14 @@ async function handleAddRecord() {
       description: newDescription.trim(),
       points: Number(newPoints) || 0,
     });
-    toast.success("Behavior record added successfully");
+    toast.success(m.academics_behavior_add_success());
     showAddModal = false;
     newDescription = "";
     newPoints = 1;
     await loadBehavior();
   } catch (e) {
     console.error(e);
-    toast.error(String(e) || "Failed to add behavior record");
+    toast.error(`${m.academics_behavior_add_failed()}: ${String(e)}`);
   } finally {
     isSaving = false;
   }
@@ -153,8 +155,8 @@ const columns: OrbisColumnDef[] = [
   {
     id: "points",
     prop: "points",
-    header: "Points",
-    name: "Points",
+    header: m.academics_behavior_points(),
+    name: m.academics_behavior_points(),
     width: 80,
     size: 80,
     readonly: true,
@@ -181,14 +183,14 @@ const rtl = $derived(getLocale() === "ar");
   <Card class="overflow-hidden">
     <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
       <div class="flex items-center gap-2">
-        <Sparkles size={16} class="text-primary animate-pulse" />
+        <Sparkles size={16} class="text-primary" />
         <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
           {m.academics_behavior_ai_title()}
         </CardTitle>
       </div>
 
       <CardAction>
-        <Button variant="lime" class="text-[10px] h-7 px-2.5 font-semibold" onclick={handleAISummarize} disabled={isGeneratingAI}>
+        <Button variant="default" class="text-[10px] h-7 px-2.5 font-semibold" onclick={handleAISummarize} disabled={isGeneratingAI}>
           <Sparkles size={11} class="me-1.5" />
           {isGeneratingAI ? m.common_promo_running() : m.academics_behavior_ai_generate()}
         </Button>
@@ -226,72 +228,34 @@ const rtl = $derived(getLocale() === "ar");
     </CardHeader>
 
     <CardContent class="p-0">
-      <div class="h-[300px] w-full">
+      {#if !isLoading && records.length === 0}
+        <StudentSectionState
+          icon={UserBadgeCheck}
+          title={m.academics_behavior_empty_title()}
+          description={m.academics_behavior_empty_desc()}
+        />
+      {:else}
+      <div class="h-72 w-full">
         <OrbisGrid
           {columns}
           source={gridSource}
           loading={isLoading}
           clientQuery
           filter={activeFilter}
-          emptyIcon={UserBadgeCheck}
-          emptyTitle={m.academics_behavior_empty_title()}
-          emptyDescription={m.academics_behavior_empty_desc()}
           {rtl}
           readonly
         />
       </div>
+      {/if}
     </CardContent>
   </Card>
 </div>
 
-{#if showAddModal}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onclick={() => (showAddModal = false)}>
-    <div class="bg-popover border border-border rounded-xl p-6 w-96 shadow-lg flex flex-col gap-4" onclick={(e) => e.stopPropagation()}>
-      <h3 class="text-sm font-bold">{m.academics_behavior_add_record()}</h3>
-      
-      <div class="flex flex-col gap-1.5">
-        <label for="new-record-type-select" class="text-[10px] font-semibold text-muted-foreground">{m.academics_behavior_col_type()}</label>
-        <select
-          id="new-record-type-select"
-          class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background"
-          bind:value={newRecordType}
-        >
-          <option value="positive">Positive (Merit)</option>
-          <option value="negative">Negative (Violation)</option>
-        </select>
-      </div>
-
-      <div class="flex flex-col gap-1.5">
-        <label for="new-points-input" class="text-[10px] font-semibold text-muted-foreground">Points</label>
-        <input
-          id="new-points-input"
-          type="number"
-          class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background"
-          bind:value={newPoints}
-        />
-      </div>
-
-      <div class="flex flex-col gap-1.5">
-        <label for="new-desc-input" class="text-[10px] font-semibold text-muted-foreground">{m.academics_behavior_col_details()}</label>
-        <textarea
-          id="new-desc-input"
-          dir="auto"
-          class="w-full border border-border rounded-md px-3 py-2 text-xs bg-background h-20 resize-none"
-          placeholder="Enter details about the behavioral incident..."
-          bind:value={newDescription}
-        ></textarea>
-      </div>
-
-      <div class="flex gap-2 justify-end mt-2">
-        <Button variant="outline" class="text-xs h-8" onclick={() => (showAddModal = false)}>
-          {m.common_action_cancel()}
-        </Button>
-        <Button class="text-xs h-8" onclick={handleAddRecord} disabled={isSaving || !newDescription.trim()}>
-          {isSaving ? (m.common_promo_running()) : (m.common_action_save())}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
+<BehaviorRecordDialog
+  bind:open={showAddModal}
+  bind:recordType={newRecordType}
+  bind:points={newPoints}
+  bind:description={newDescription}
+  {isSaving}
+  onsubmit={handleAddRecord}
+/>

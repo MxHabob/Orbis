@@ -4,6 +4,7 @@ import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
 import { academicContext } from "$lib/stores";
+import { formatDate, formatDecimal, formatNumber, formatPercent } from "$lib/core/i18n";
 import {
   AcademicCap,
   BookOpen,
@@ -31,6 +32,8 @@ import {
   SelectTrigger,
 } from "@orbis/ui/select";
 import { createQuery } from "@tanstack/svelte-query";
+import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
+import StudentSectionState from "$lib/features/students/components/student-section-state.svelte";
 
 let {
   orgId,
@@ -242,7 +245,7 @@ const rows = $derived(
         : grade.is_final
           ? m.student_grades_state_final()
           : m.student_grades_state_recorded(),
-    updated_at: grade.updated_at,
+    updated_at: formatDate(grade.updated_at, "datetime"),
   })),
 );
 
@@ -333,57 +336,45 @@ const columns: OrbisColumnDef[] = [
   <!-- Mode Selection Tabs & Action Bar -->
   <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border/80 pb-3">
     <div class="inline-flex rounded-lg border border-border bg-muted/30 p-1">
-      <button
-        type="button"
-        class={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-          activeTab === "records"
-            ? "bg-background text-foreground shadow-xs"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
+      <Button
+        variant={activeTab === "records" ? "secondary" : "ghost"}
+        size="sm"
+        class="gap-1.5 text-xs font-semibold"
         onclick={() => (activeTab = "records")}
       >
         <BookOpen size={13} class={activeTab === "records" ? "text-primary" : ""} />
         <span>{m.student_grades_tab_assessment_records()}</span>
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-          activeTab === "term"
-            ? "bg-background text-foreground shadow-xs"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
+      <Button
+        variant={activeTab === "term" ? "secondary" : "ghost"}
+        size="sm"
+        class="gap-1.5 text-xs font-semibold"
         onclick={() => (activeTab = "term")}
       >
         <DocumentChartBar size={13} class={activeTab === "term" ? "text-primary" : ""} />
         <span>{m.student_grades_tab_term_report()}</span>
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-          activeTab === "annual"
-            ? "bg-background text-foreground shadow-xs"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
+      <Button
+        variant={activeTab === "annual" ? "secondary" : "ghost"}
+        size="sm"
+        class="gap-1.5 text-xs font-semibold"
         onclick={() => (activeTab = "annual")}
       >
         <ChartBar size={13} class={activeTab === "annual" ? "text-primary" : ""} />
         <span>{m.student_grades_tab_annual_results()}</span>
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        class={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-all ${
-          activeTab === "certificate"
-            ? "bg-background text-foreground shadow-xs"
-            : "text-muted-foreground hover:text-foreground"
-        }`}
+      <Button
+        variant={activeTab === "certificate" ? "secondary" : "ghost"}
+        size="sm"
+        class="gap-1.5 text-xs font-semibold"
         onclick={() => (activeTab = "certificate")}
       >
         <AcademicCap size={13} class={activeTab === "certificate" ? "text-primary" : ""} />
         <span>{m.student_grades_tab_certificate_results()}</span>
-      </button>
+      </Button>
     </div>
 
     <!-- Contextual Actions -->
@@ -439,7 +430,7 @@ const columns: OrbisColumnDef[] = [
                 if (value) selectedPeriodId = value;
               }}
             >
-              <SelectTrigger class="h-8 min-w-[160px] text-xs">
+              <SelectTrigger class="h-8 min-w-40 text-xs">
                 {selectedPeriodId === "all"
                   ? m.student_grades_all_periods()
                   : periodNames.get(selectedPeriodId) ?? m.student_grades_select_period()}
@@ -490,15 +481,19 @@ const columns: OrbisColumnDef[] = [
               {m.common_retry()}
             </Button>
           </div>
+        {:else if rows.length === 0}
+          <StudentSectionState
+            icon={BookOpen}
+            title={m.academics_grades_empty_title()}
+            description={m.academics_grades_empty_subtitle()}
+          />
         {:else}
-          <div class="h-[460px] w-full">
+          <div class="h-115 w-full">
             <OrbisGrid
               {columns}
               source={rows}
               loading={gradesQuery.isFetching}
               clientQuery
-              emptyTitle={m.academics_grades_empty_title()}
-              emptyDescription={m.academics_grades_empty_subtitle()}
               rtl={isRtl}
               readonly
             />
@@ -537,7 +532,7 @@ const columns: OrbisColumnDef[] = [
                 if (val) selectedTermPeriodId = val;
               }}
             >
-              <SelectTrigger class="h-8 min-w-[180px] text-xs">
+              <SelectTrigger class="h-8 min-w-45 text-xs">
                 {periodNames.get(selectedTermPeriodId) ?? m.student_grades_select_term()}
               </SelectTrigger>
               <SelectContent class="text-xs">
@@ -582,67 +577,46 @@ const columns: OrbisColumnDef[] = [
 
         <!-- Performance Summary KPIs -->
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_total_score()}
-            </span>
-            <div class="mt-1 flex items-baseline gap-1">
-              <span class="text-lg font-bold text-foreground">
-                {Number(termReport.total_score).toFixed(1)}
-              </span>
-              <span class="text-xs text-muted-foreground">
-                / {Number(termReport.max_possible_score).toFixed(0)}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_percentage()}
-            </span>
-            <div class="mt-1 flex items-baseline gap-1">
-              <span class="text-lg font-bold text-primary">
-                {Number(termReport.overall_percentage).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_appreciation_label()}
-            </span>
-            <div class="mt-1 text-sm font-bold text-foreground">
-              {getAppreciation(Number(termReport.overall_percentage))}
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_academic_decision()}
-            </span>
-            <div class="mt-1">
-              <span class={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${badge.color}`}>
-                {badge.label}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_rank_in_class()}
-            </span>
-            <div class="mt-1 text-base font-bold text-foreground">
-              {termReport.rank_in_class ? `#${termReport.rank_in_class}` : "—"}
-              {#if termReport.total_students_in_class}
-                <span class="text-xs font-normal text-muted-foreground">
-                  ({m.student_grades_of()} {termReport.total_students_in_class})
-                </span>
-              {/if}
-            </div>
-          </div>
+          <StudentMetricCard
+            title={m.student_grades_total_score()}
+            value={`${formatDecimal(Number(termReport.total_score), 1)} / ${formatNumber(Number(termReport.max_possible_score))}`}
+            icon={AcademicCap}
+          />
+          <StudentMetricCard
+            title={m.student_grades_percentage()}
+            value={formatPercent(Number(termReport.overall_percentage))}
+            icon={ChartBar}
+          />
+          <StudentMetricCard
+            title={m.student_grades_appreciation_label()}
+            value={getAppreciation(Number(termReport.overall_percentage))}
+            icon={InfoCircle}
+          />
+          <StudentMetricCard
+            title={m.student_grades_academic_decision()}
+            value={badge.label}
+            icon={InfoCircle}
+            tone={badge.variant === "destructive" ? "danger" : "success"}
+          />
+          <StudentMetricCard
+            title={m.student_grades_rank_in_class()}
+            value={termReport.rank_in_class ? `#${formatNumber(termReport.rank_in_class)}` : "—"}
+            icon={BookOpen}
+          >
+            {#if termReport.total_students_in_class}
+              {m.student_grades_of()} {formatNumber(termReport.total_students_in_class)}
+            {/if}
+          </StudentMetricCard>
         </div>
 
         <!-- Subject Results Table -->
+        {#if termReport.subjects.length === 0}
+          <StudentSectionState
+            icon={BookOpen}
+            title={m.academics_grades_empty_title()}
+            description={m.academics_grades_empty_subtitle()}
+          />
+        {:else}
         <Card class="overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-start">
@@ -665,16 +639,16 @@ const columns: OrbisColumnDef[] = [
                       {isRtl ? (subj.subject_name_ar || subj.subject_name) : subj.subject_name}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {Number(subj.monthly_contribution).toFixed(1)}
+                      {formatDecimal(Number(subj.monthly_contribution), 1)}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {subj.term_final_exam != null ? Number(subj.term_final_exam).toFixed(1) : "—"}
+                      {subj.term_final_exam != null ? formatDecimal(Number(subj.term_final_exam), 1) : "—"}
                     </td>
                     <td class="px-3 py-2.5 text-center font-bold text-foreground">
-                      {Number(subj.term_total).toFixed(1)}
+                      {formatDecimal(Number(subj.term_total), 1)}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {Number(subj.percentage).toFixed(0)}%
+                      {formatPercent(Number(subj.percentage))}
                     </td>
                     <td class="px-3 py-2.5 text-center font-medium">
                       {subj.letter_grade ?? getAppreciation(Number(subj.percentage))}
@@ -694,6 +668,7 @@ const columns: OrbisColumnDef[] = [
             </table>
           </div>
         </Card>
+        {/if}
       {/if}
     </div>
 
@@ -727,7 +702,7 @@ const columns: OrbisColumnDef[] = [
                 if (val) selectedCalendarId = val;
               }}
             >
-              <SelectTrigger class="h-8 min-w-[180px] text-xs">
+              <SelectTrigger class="h-8 min-w-45 text-xs">
                 {yearNames.get(selectedCalendarId) ?? m.student_grades_select_academic_year()}
               </SelectTrigger>
               <SelectContent class="text-xs">
@@ -771,68 +746,47 @@ const columns: OrbisColumnDef[] = [
         {@const badge = getStatusBadge(annualReport.status)}
 
         <!-- Performance Summary KPIs -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_annual_total()}
-            </span>
-            <div class="mt-1 flex items-baseline gap-1">
-              <span class="text-lg font-bold text-foreground">
-                {Number(annualReport.total_score).toFixed(1)}
-              </span>
-              <span class="text-xs text-muted-foreground">
-                / {Number(annualReport.max_possible_score).toFixed(0)}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_annual_percentage()}
-            </span>
-            <div class="mt-1 flex items-baseline gap-1">
-              <span class="text-lg font-bold text-primary">
-                {Number(annualReport.overall_percentage).toFixed(1)}%
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_appreciation_label()}
-            </span>
-            <div class="mt-1 text-sm font-bold text-foreground">
-              {getAppreciation(Number(annualReport.overall_percentage))}
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_promotion_status()}
-            </span>
-            <div class="mt-1">
-              <span class={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${badge.color}`}>
-                {badge.label}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_rank()}
-            </span>
-            <div class="mt-1 text-base font-bold text-foreground">
-              {annualReport.rank_in_class ? `#${annualReport.rank_in_class}` : "—"}
-              {#if annualReport.total_students_in_class}
-                <span class="text-xs font-normal text-muted-foreground">
-                  ({m.student_grades_in_class()})
-                </span>
-              {/if}
-            </div>
-          </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
+          <StudentMetricCard
+            title={m.student_grades_annual_total()}
+            value={`${formatDecimal(Number(annualReport.total_score), 1)} / ${formatNumber(Number(annualReport.max_possible_score))}`}
+            icon={AcademicCap}
+          />
+          <StudentMetricCard
+            title={m.student_grades_annual_percentage()}
+            value={formatPercent(Number(annualReport.overall_percentage))}
+            icon={ChartBar}
+          />
+          <StudentMetricCard
+            title={m.student_grades_appreciation_label()}
+            value={getAppreciation(Number(annualReport.overall_percentage))}
+            icon={InfoCircle}
+          />
+          <StudentMetricCard
+            title={m.student_grades_promotion_status()}
+            value={badge.label}
+            icon={InfoCircle}
+            tone={badge.variant === "destructive" ? "danger" : "success"}
+          />
+          <StudentMetricCard
+            title={m.student_grades_rank()}
+            value={annualReport.rank_in_class ? `#${formatNumber(annualReport.rank_in_class)}` : "—"}
+            icon={BookOpen}
+          >
+            {#if annualReport.total_students_in_class}
+              {m.student_grades_in_class()} {formatNumber(annualReport.total_students_in_class)}
+            {/if}
+          </StudentMetricCard>
         </div>
 
         <!-- Subject Results Table -->
+        {#if annualReport.subjects.length === 0}
+          <StudentSectionState
+            icon={BookOpen}
+            title={m.academics_grades_empty_title()}
+            description={m.academics_grades_empty_subtitle()}
+          />
+        {:else}
         <Card class="overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-start">
@@ -855,16 +809,16 @@ const columns: OrbisColumnDef[] = [
                       {isRtl ? (subj.subject_name_ar || subj.subject_name) : subj.subject_name}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {subj.term_1_result ? Number(subj.term_1_result.term_total).toFixed(1) : "—"}
+                      {subj.term_1_result ? formatDecimal(Number(subj.term_1_result.term_total), 1) : "—"}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {subj.term_2_result ? Number(subj.term_2_result.term_total).toFixed(1) : "—"}
+                      {subj.term_2_result ? formatDecimal(Number(subj.term_2_result.term_total), 1) : "—"}
                     </td>
                     <td class="px-3 py-2.5 text-center font-bold text-foreground">
-                      {Number(subj.annual_total).toFixed(1)}
+                      {formatDecimal(Number(subj.annual_total), 1)}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {Number(subj.percentage).toFixed(0)}%
+                      {formatPercent(Number(subj.percentage))}
                     </td>
                     <td class="px-3 py-2.5 text-center font-medium">
                       {subj.letter_grade ?? getAppreciation(Number(subj.percentage))}
@@ -884,6 +838,7 @@ const columns: OrbisColumnDef[] = [
             </table>
           </div>
         </Card>
+        {/if}
       {/if}
     </div>
 
@@ -1004,68 +959,47 @@ const columns: OrbisColumnDef[] = [
         {@const badge = getStatusBadge(certReport.status)}
 
         <!-- Performance Summary KPIs -->
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_total_score()}
-            </span>
-            <div class="mt-1 flex items-baseline gap-1">
-              <span class="text-lg font-bold text-foreground">
-                {Number(certReport.total_score).toFixed(1)}
-              </span>
-              <span class="text-xs text-muted-foreground">
-                / {Number(certReport.max_possible_score).toFixed(0)}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_overall_percentage()}
-            </span>
-            <div class="mt-1 flex items-baseline gap-1">
-              <span class="text-lg font-bold text-primary">
-                {Number(certReport.overall_percentage).toFixed(2)}%
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_appreciation_label()}
-            </span>
-            <div class="mt-1 text-sm font-bold text-foreground">
-              {getAppreciation(Number(certReport.overall_percentage))}
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_final_status()}
-            </span>
-            <div class="mt-1">
-              <span class={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${badge.color}`}>
-                {badge.label}
-              </span>
-            </div>
-          </div>
-
-          <div class="rounded-xl border border-border bg-card p-3">
-            <span class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              {m.student_grades_rank()}
-            </span>
-            <div class="mt-1 text-base font-bold text-foreground">
-              {certReport.rank_in_class ? `#${certReport.rank_in_class}` : "—"}
-              {#if certReport.total_students_in_class}
-                <span class="text-xs font-normal text-muted-foreground">
-                  ({m.student_grades_in_cohort()})
-                </span>
-              {/if}
-            </div>
-          </div>
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5">
+          <StudentMetricCard
+            title={m.student_grades_total_score()}
+            value={`${formatDecimal(Number(certReport.total_score), 1)} / ${formatNumber(Number(certReport.max_possible_score))}`}
+            icon={AcademicCap}
+          />
+          <StudentMetricCard
+            title={m.student_grades_overall_percentage()}
+            value={formatPercent(Number(certReport.overall_percentage))}
+            icon={ChartBar}
+          />
+          <StudentMetricCard
+            title={m.student_grades_appreciation_label()}
+            value={getAppreciation(Number(certReport.overall_percentage))}
+            icon={InfoCircle}
+          />
+          <StudentMetricCard
+            title={m.student_grades_final_status()}
+            value={badge.label}
+            icon={InfoCircle}
+            tone={badge.variant === "destructive" ? "danger" : "success"}
+          />
+          <StudentMetricCard
+            title={m.student_grades_rank()}
+            value={certReport.rank_in_class ? `#${formatNumber(certReport.rank_in_class)}` : "—"}
+            icon={BookOpen}
+          >
+            {#if certReport.total_students_in_class}
+              {m.student_grades_in_cohort()} {formatNumber(certReport.total_students_in_class)}
+            {/if}
+          </StudentMetricCard>
         </div>
 
         <!-- Certificate Subjects Table -->
+        {#if certReport.subjects.length === 0}
+          <StudentSectionState
+            icon={BookOpen}
+            title={m.academics_grades_empty_title()}
+            description={m.academics_grades_empty_subtitle()}
+          />
+        {:else}
         <Card class="overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-xs text-start">
@@ -1095,21 +1029,21 @@ const columns: OrbisColumnDef[] = [
 
                     {#if selectedCertType === "secondary_thanawiya"}
                       <td class="px-3 py-2.5 text-center text-muted-foreground">
-                        {subj.term_final_exam != null ? Number(subj.term_final_exam).toFixed(1) : "—"}
+                        {subj.term_final_exam != null ? formatDecimal(Number(subj.term_final_exam), 1) : "—"}
                       </td>
                       <td class="px-3 py-2.5 text-center text-muted-foreground">
-                        {Number(subj.monthly_contribution).toFixed(1)}
+                        {formatDecimal(Number(subj.monthly_contribution), 1)}
                       </td>
                     {/if}
 
                     <td class="px-3 py-2.5 text-center font-bold text-foreground">
-                      {Number(subj.term_total).toFixed(1)}
+                      {formatDecimal(Number(subj.term_total), 1)}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      50
+                      {formatNumber(50)}
                     </td>
                     <td class="px-3 py-2.5 text-center text-muted-foreground">
-                      {Number(subj.percentage).toFixed(0)}%
+                      {formatPercent(Number(subj.percentage))}
                     </td>
                     <td class="px-3 py-2.5 text-center font-medium">
                       {subj.letter_grade ?? getAppreciation(Number(subj.percentage))}
@@ -1129,6 +1063,7 @@ const columns: OrbisColumnDef[] = [
             </table>
           </div>
         </Card>
+        {/if}
       {/if}
     </div>
   {/if}

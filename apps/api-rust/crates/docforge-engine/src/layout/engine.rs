@@ -1272,6 +1272,7 @@ mod tests {
         let frame_node = TemplateNode::Frame(FrameNode {
             id: "frame-1".to_string(),
             name: None,
+            position: None,
             props: FrameProps {
                 position: None,
                 layout: "flex".to_string(),
@@ -1282,6 +1283,7 @@ mod tests {
                 TemplateNode::Text(TextNode {
                     id: "text-1".to_string(),
                     name: None,
+                    position: None,
                     props: TextProps {
                         content: "Hello {{name}}".to_string(),
                         position: None,
@@ -1297,6 +1299,7 @@ mod tests {
                 TemplateNode::Text(TextNode {
                     id: "text-2".to_string(),
                     name: None,
+                    position: None,
                     props: TextProps {
                         content: "Orbis TMS".to_string(),
                         position: None,
@@ -1406,6 +1409,7 @@ mod tests {
         let frame_node = TemplateNode::Frame(FrameNode {
             id: "flex-container".to_string(),
             name: None,
+            position: None,
             props: FrameProps {
                 position: None,
                 layout: "flex".to_string(),
@@ -1417,6 +1421,7 @@ mod tests {
                 TemplateNode::Text(TextNode {
                     id: "txt-1".to_string(),
                     name: None,
+                    position: None,
                     props: TextProps {
                         content: "مرحبا بك يا {{name}} في نظام Orbis TMS v3 الجديد".to_string(),
                         position: None,
@@ -1441,6 +1446,7 @@ mod tests {
                 TemplateNode::Separator(SeparatorNode {
                     id: "sep-1".to_string(),
                     name: None,
+                    position: None,
                     props: SeparatorProps {
                         direction: "horizontal".to_string(),
                         color: Some("#0066cc".to_string()),
@@ -1452,6 +1458,7 @@ mod tests {
                 TemplateNode::Barcode(BarcodeNode {
                     id: "barcode-1".to_string(),
                     name: None,
+                    position: None,
                     props: BarcodeProps {
                         data: "ORBIS-{{std_id}}".to_string(),
                         format: "Code128".to_string(),
@@ -1465,6 +1472,7 @@ mod tests {
                 TemplateNode::QRCode(QRCodeNode {
                     id: "qr-1".to_string(),
                     name: None,
+                    position: None,
                     props: QRCodeProps {
                         data: "https://orbis.edu/student/{{std_id}}".to_string(),
                         position: None,

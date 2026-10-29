@@ -40,11 +40,12 @@ import { toast } from "@orbis/ui";
 import { fade } from "svelte/transition";
 import { goto } from "$app/navigation";
 
-import { l, formatNumber, formatPercent } from "$lib/core/i18n";
+import { l, formatDecimal, formatNumber, formatPercent } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { createStudentQuery } from "$lib/features/students";
 import { createClassesQuery } from "$lib/features/academics";
 import NationalitySelect from "$lib/shared/components/nationality-select.svelte";
+import StudentMetricCard from "$lib/features/students/components/student-metric-card.svelte";
 import {
   api,
   extractErrorMessage,
@@ -322,7 +323,7 @@ const academicStats = $derived.by(() => {
       passed,
       failed,
       gradeLetter: letter,
-      gpa: termReport.gpa != null ? Number(termReport.gpa).toFixed(2) : null,
+      gpa: termReport.gpa != null ? formatDecimal(Number(termReport.gpa), 2) : null,
       rank: termReport.rank_in_class ?? null,
       totalStudents: termReport.total_students_in_class ?? null,
       hasData: true,
@@ -358,7 +359,7 @@ const academicStats = $derived.by(() => {
       gradeLetter: letter,
       gpa:
         (gpaReport as any)?.gpa != null
-          ? Number((gpaReport as any).gpa).toFixed(2)
+          ? formatDecimal(Number((gpaReport as any).gpa), 2)
           : null,
       rank: null,
       totalStudents: null,
@@ -657,89 +658,68 @@ async function resetStudentDetails() {
         {:else}
           <div class="flex flex-col gap-6">
             <!-- Live Performance Metrics Cards Strip -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
               <!-- Metric 1: Academic Result -->
-              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.academics_card_average_grade()}</span>
-                  <AcademicCap size={15} class="text-primary" />
-                </div>
-                <div class="flex items-baseline gap-2">
-                  <span class="text-xl font-bold font-mono text-foreground">
-                    {academicStats.hasData ? `${academicStats.avg}%` : "—"}
-                  </span>
-                  {#if academicStats.hasData && academicStats.gradeLetter !== "—"}
-                    <Badge variant="outline" class="text-[9px] font-bold px-1.5 py-0">
-                      {academicStats.gradeLetter}
-                    </Badge>
-                  {/if}
-                </div>
-                <div class="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+              <StudentMetricCard
+                title={m.academics_card_average_grade()}
+                value={academicStats.hasData ? formatPercent(academicStats.avg) : "—"}
+                icon={AcademicCap}
+              >
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
                   {#if academicStats.gpa}
-                    <span>GPA: <strong class="text-foreground">{academicStats.gpa}</strong></span>
+                    <span>{m.common_period_form_grading_gpa()}: <strong class="text-foreground">{academicStats.gpa}</strong></span>
                   {/if}
                   {#if academicStats.rank}
-                    <span>| {m.operations_ui_rank()}: <strong class="text-foreground">#{academicStats.rank}</strong>{academicStats.totalStudents ? `/${academicStats.totalStudents}` : ''}</span>
+                    <span>{m.operations_ui_rank()}: <strong class="text-foreground">#{formatNumber(academicStats.rank)}</strong>{academicStats.totalStudents ? `/${formatNumber(academicStats.totalStudents)}` : ''}</span>
                   {/if}
                 </div>
-              </Card>
+                {#if academicStats.hasData && academicStats.gradeLetter !== "—"}
+                  <Badge variant="outline" class="mt-1 text-[9px] font-bold px-1.5 py-0">
+                    {academicStats.gradeLetter}
+                  </Badge>
+                {/if}
+              </StudentMetricCard>
 
               <!-- Metric 2: Attendance -->
-              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_card_attendance_rate()}</span>
-                  <Calendar size={15} class="text-emerald-500" />
-                </div>
-                <div class="flex items-baseline gap-2">
-                  <span class="text-xl font-bold font-mono text-foreground">
-                    {attendanceStats.hasData ? formatPercent(attendanceStats.rate) : "—"}
-                  </span>
-                  {#if attendanceStats.absent > 0}
-                    <Badge variant="destructive" class="text-[9px] font-semibold px-1 py-0">
-                      {attendanceStats.absent} {m.academics_attendance_col_absent()}
-                    </Badge>
-                  {/if}
-                </div>
-                <div class="text-[10px] text-muted-foreground font-mono">
-                  {formatNumber(attendanceStats.present)} {m.academics_attendance_day_unit()} {m.academics_attendance_col_present()}
+              <StudentMetricCard
+                title={m.common_card_attendance_rate()}
+                value={attendanceStats.hasData ? formatPercent(attendanceStats.rate) : "—"}
+                icon={Calendar}
+                tone="success"
+              >
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span>{formatNumber(attendanceStats.present)} {m.academics_attendance_day_unit()} {m.academics_attendance_col_present()}</span>
                   {#if attendanceStats.late > 0}
-                    • {attendanceStats.late} {m.academics_attendance_col_late()}
+                    <span>{formatNumber(attendanceStats.late)} {m.academics_attendance_col_late()}</span>
                   {/if}
                 </div>
-              </Card>
+                {#if attendanceStats.absent > 0}
+                  <Badge variant="destructive" class="mt-1 text-[9px] font-semibold px-1 py-0">
+                    {formatNumber(attendanceStats.absent)} {m.academics_attendance_col_absent()}
+                  </Badge>
+                {/if}
+              </StudentMetricCard>
 
               <!-- Metric 3: Behavior -->
-              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.ui_copy_behavioral_standing_968ef046()}</span>
-                  <Sparkles size={15} class="text-amber-500" />
-                </div>
-                <div class="flex items-baseline gap-2">
-                  <span class="text-xl font-bold font-mono text-foreground">
-                    {behaviorStats.points}
-                  </span>
-                  <span class="text-[10px] text-muted-foreground font-semibold">pts</span>
-                </div>
-                <div class="text-[10px] text-muted-foreground">
-                  <span class="text-emerald-600 dark:text-emerald-400 font-semibold">+{behaviorStats.positive}</span>
-                  <span class="mx-1">/</span>
-                  <span class="text-rose-600 dark:text-rose-400 font-semibold">-{behaviorStats.negative}</span>
-                  <span class="ms-1">{m.academics_behavior_records_title()}</span>
-                </div>
-              </Card>
+              <StudentMetricCard
+                title={m.ui_copy_behavioral_standing_968ef046()}
+                value={`${formatNumber(behaviorStats.points)} ${m.academics_behavior_points()}`}
+                icon={Sparkles}
+                tone="warning"
+              >
+                <span class="text-emerald-600 dark:text-emerald-400 font-semibold">+{formatNumber(behaviorStats.positive)}</span>
+                <span class="mx-1">/</span>
+                <span class="text-rose-600 dark:text-rose-400 font-semibold">-{formatNumber(behaviorStats.negative)}</span>
+                <span class="ms-1">{m.academics_behavior_records_title()}</span>
+              </StudentMetricCard>
 
               <!-- Metric 4: Enrollment & Class -->
-              <Card class="p-3.5 flex flex-col justify-between gap-2 shadow-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{m.common_table_class()}</span>
-                  <Tag size={15} class="text-primary" />
-                </div>
-                <div class="flex items-baseline gap-2 truncate">
-                  <span class="text-sm font-bold truncate text-foreground">
-                    {selectedClassName}
-                  </span>
-                </div>
-                <div class="flex items-center gap-1.5">
+              <StudentMetricCard
+                title={m.common_table_class()}
+                value={selectedClassName}
+                icon={Tag}
+              >
+                <div class="flex flex-wrap items-center gap-1.5">
                   <Badge variant={isActiveState ? "lime" : "secondary"} class="text-[9px] px-1.5 py-0 font-medium">
                     {isActiveState ? m.common_phase_active() : m.students_student_detail_row_status_inactive()}
                   </Badge>
@@ -749,7 +729,7 @@ async function resetStudentDetails() {
                     </Badge>
                   {/if}
                 </div>
-              </Card>
+              </StudentMetricCard>
             </div>
 
             {#if classId}
