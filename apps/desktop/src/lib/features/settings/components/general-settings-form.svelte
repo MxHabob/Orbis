@@ -27,7 +27,10 @@ let { org, orgId, isSaving, onsave, onsaveavatar, onremove, onlanguagechange } =
     onsave: (request: any) => void | Promise<void>;
     onsaveavatar: (logo: string | null) => void;
     onremove: () => void;
-    onlanguagechange: (newLocale: string, currentValues: any) => void | boolean | Promise<void | boolean>;
+    onlanguagechange: (
+      newLocale: string,
+      currentValues: any,
+    ) => void | boolean | Promise<void | boolean>;
   }>();
 
 // Org Profile Form state
@@ -60,14 +63,22 @@ let licenseNumber = $state("");
 
 function entitlementStatusLabel(status?: string): string {
   switch (status) {
-    case "active": return m.license_status_active();
-    case "trial": return m.license_status_trial();
-    case "pending": return m.license_status_pending();
-    case "grace_period": return m.license_status_offline_grace();
-    case "expired": return m.license_status_expired();
-    case "suspended": return m.license_status_suspended();
-    case "unlicensed": return m.license_status_unavailable();
-    default: return m.license_status_unavailable();
+    case "active":
+      return m.license_status_active();
+    case "trial":
+      return m.license_status_trial();
+    case "pending":
+      return m.license_status_pending();
+    case "grace_period":
+      return m.license_status_offline_grace();
+    case "expired":
+      return m.license_status_expired();
+    case "suspended":
+      return m.license_status_suspended();
+    case "unlicensed":
+      return m.license_status_unavailable();
+    default:
+      return m.license_status_unavailable();
   }
 }
 
@@ -113,23 +124,42 @@ onMount(() => {
   dateFormat = org.date_format || "YYYY-MM-DD";
   formatLocale = org.format_locale || "auto";
   timeFormat = org.time_format || "locale";
-  hijriEnabled = org.is_hijri_enabled !== undefined ? Boolean(org.is_hijri_enabled) : (org.hijri_enabled === true || org.hijri_enabled === 1);
+  hijriEnabled =
+    org.is_hijri_enabled !== undefined
+      ? Boolean(org.is_hijri_enabled)
+      : org.hijri_enabled === true || org.hijri_enabled === 1;
   const metadata =
-    org.metadata && typeof org.metadata === "object" && !Array.isArray(org.metadata)
+    org.metadata &&
+    typeof org.metadata === "object" &&
+    !Array.isArray(org.metadata)
       ? org.metadata
       : {};
-  institutionType = typeof metadata.institution_type === "string" ? metadata.institution_type : org.institution_type || "school";
-  educationalTrack = typeof metadata.educational_track === "string" ? metadata.educational_track : "";
-  organizationSize = typeof metadata.organization_size === "string" ? metadata.organization_size : "";
-  countryCode = typeof metadata.country_code === "string" ? metadata.country_code : "";
-  countryName = typeof metadata.country_name === "string" ? metadata.country_name : "";
-  ministryName = typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
-  regionName = typeof metadata.region_name === "string" ? metadata.region_name : "";
+  institutionType =
+    typeof metadata.institution_type === "string"
+      ? metadata.institution_type
+      : org.institution_type || "school";
+  educationalTrack =
+    typeof metadata.educational_track === "string"
+      ? metadata.educational_track
+      : "";
+  organizationSize =
+    typeof metadata.organization_size === "string"
+      ? metadata.organization_size
+      : "";
+  countryCode =
+    typeof metadata.country_code === "string" ? metadata.country_code : "";
+  countryName =
+    typeof metadata.country_name === "string" ? metadata.country_name : "";
+  ministryName =
+    typeof metadata.ministry_name === "string" ? metadata.ministry_name : "";
+  regionName =
+    typeof metadata.region_name === "string" ? metadata.region_name : "";
   city = typeof metadata.city === "string" ? metadata.city : "";
   phone = typeof metadata.phone === "string" ? metadata.phone : "";
   website = typeof metadata.website === "string" ? metadata.website : "";
   taxId = typeof metadata.tax_id === "string" ? metadata.tax_id : "";
-  licenseNumber = typeof metadata.license_number === "string" ? metadata.license_number : "";
+  licenseNumber =
+    typeof metadata.license_number === "string" ? metadata.license_number : "";
 
   loadSettings().finally(() => {
     initialValues = {
@@ -239,7 +269,15 @@ function getProfileMetadata() {
 
 async function handleSubmit(e?: Event) {
   e?.preventDefault();
-  settingsForm.values = { name, currency, timezone, locale, dateFormat, formatLocale, timeFormat };
+  settingsForm.values = {
+    name,
+    currency,
+    timezone,
+    locale,
+    dateFormat,
+    formatLocale,
+    timeFormat,
+  };
   const submitted = await settingsForm.submit(async (result) => {
     await onsave({
       name: result.name,
@@ -268,7 +306,9 @@ async function handleSubmit(e?: Event) {
         });
         rawSettings = updated;
       } catch (err) {
-        toast.error(m.ui_copy_failed_to_save_institutional_policy_settin_6ea63580());
+        toast.error(
+          m.ui_copy_failed_to_save_institutional_policy_settin_6ea63580(),
+        );
       }
     }
   });
@@ -301,9 +341,7 @@ async function handleSubmit(e?: Event) {
       licenseNumber,
     };
   } else {
-    toast.error(
-      m.ui_copy_settings_contain_invalid_values_fae2c24c(),
-    );
+    toast.error(m.ui_copy_settings_contain_invalid_values_fae2c24c());
   }
 }
 

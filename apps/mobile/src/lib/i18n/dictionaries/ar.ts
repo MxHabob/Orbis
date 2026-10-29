@@ -26,14 +26,17 @@ export const ar = {
   tab_profile: "حسابي",
   digital_id_title: "الهوية الرقمية",
   digital_id_close: "إغلاق",
-  digital_id_context_required: "الهوية الرقمية متاحة للطالب أو لولي الأمر المرتبط بملف طالب.",
+  digital_id_context_required:
+    "الهوية الرقمية متاحة للطالب أو لولي الأمر المرتبط بملف طالب.",
   digital_id_student_error: "تعذر تحميل بيانات الطالب.",
   digital_id_template_error: "تعذر تحميل قالب الهوية من المؤسسة.",
   digital_id_template_missing: "لم توفر المؤسسة قالب هوية رقمية منشوراً.",
   digital_id_template_invalid: "قالب الهوية الرقمية غير صالح للعرض.",
   digital_id_assets_error: "تعذر تحميل أحد عناصر قالب الهوية.",
-  digital_id_unsupported_elements: "قد لا تظهر بعض عناصر القالب في معاينة الهاتف.",
-  digital_id_privacy_notice: "اعرض هذه البطاقة عند الحاجة للتحقق من بيانات الطالب، ولا تشارك صورة منها علناً.",
+  digital_id_unsupported_elements:
+    "قد لا تظهر بعض عناصر القالب في معاينة الهاتف.",
+  digital_id_privacy_notice:
+    "اعرض هذه البطاقة عند الحاجة للتحقق من بيانات الطالب، ولا تشارك صورة منها علناً.",
   home_welcome: "مرحباً بعودتك",
   home_greeting_morning: "صباح الخير",
   home_greeting_afternoon: "نهارك سعيد",
@@ -52,7 +55,8 @@ export const ar = {
   home_no_student_profile: "لا يوجد ملف طالب مرتبط بهذا الحساب.",
   home_classes: "شعبتي",
   home_classes_error: "تعذر تحميل الفصول. تحقق من الاتصال ثم أعد المحاولة.",
-  home_student_load_error: "تعذر تحميل بيانات الطالب. تحقق من الاتصال ثم أعد المحاولة.",
+  home_student_load_error:
+    "تعذر تحميل بيانات الطالب. تحقق من الاتصال ثم أعد المحاولة.",
   home_class_students_count: "{count} طالب",
   home_retry: "إعادة المحاولة",
   home_refresh_error: "تعذر تحديث الصفحة الرئيسية. حاول مرة أخرى.",
@@ -144,23 +148,29 @@ export const ar = {
   student_schedule_day_6: "الجمعة",
   student_schedule_day_7: "السبت",
   student_schedule_time: "الوقت",
-  behavior_student_context_required: "سجل السلوك متاح للطالب أو لولي الأمر المرتبط بملف طالب.",
+  behavior_student_context_required:
+    "سجل السلوك متاح للطالب أو لولي الأمر المرتبط بملف طالب.",
   behavior_record_merit: "نقطة إيجابية",
   behavior_record_violation: "ملاحظة سلوكية",
   behavior_record_other: "سجل سلوكي",
   notifications_inbox_unavailable_title: "صندوق الإشعارات غير متاح بعد",
-  notifications_inbox_unavailable_description: "لا يوفر التطبيق حالياً سجلاً داخلياً للإشعارات. قد تستمر المؤسسة بإرسال التنبيهات عبر قنواتها المفعّلة.",
+  notifications_inbox_unavailable_description:
+    "لا يوفر التطبيق حالياً سجلاً داخلياً للإشعارات. قد تستمر المؤسسة بإرسال التنبيهات عبر قنواتها المفعّلة.",
   home_notifications: "الإشعارات",
   home_notifications_description: "تابع التنبيهات الأكاديمية والإدارية.",
   home_profile_description: "إدارة الحساب والتفضيلات.",
   visitor_title: "منصة أوربس التعليمية",
-  visitor_description: "استكشف الخدمات المتاحة للطلاب والأسر والعضو أكاديميين قبل تسجيل الدخول.",
+  visitor_description:
+    "استكشف الخدمات المتاحة للطلاب والأسر والعضو أكاديميين قبل تسجيل الدخول.",
   visitor_academic_title: "المتابعة الأكاديمية",
-  visitor_academic_description: "الدرجات والنتائج والجداول والحضور في مكان واحد.",
+  visitor_academic_description:
+    "الدرجات والنتائج والجداول والحضور في مكان واحد.",
   visitor_family_title: "خدمات الأسرة",
-  visitor_family_description: "متابعة الأبناء والاطلاع على مستجداتهم العضو أكاديميية.",
+  visitor_family_description:
+    "متابعة الأبناء والاطلاع على مستجداتهم العضو أكاديميية.",
   visitor_teacher_title: "أدوات العضو أكاديمي",
-  visitor_teacher_description: "متابعة الفصول والطلاب وإدارة الأعمال الأكاديمية وفق الصلاحيات.",
+  visitor_teacher_description:
+    "متابعة الفصول والطلاب وإدارة الأعمال الأكاديمية وفق الصلاحيات.",
   visitor_sign_in: "تسجيل الدخول",
   visitor_register: "إنشاء حساب",
   visitor_explore: "استكشاف التطبيق كزائر",
@@ -210,13 +220,16 @@ export const ar = {
   behavior_status_regular: "مستوى الانضباط العام: منتظم ومتميز",
   behavior_ai_title: "تحليل الذكاء الاصطناعي",
   behavior_badge_live: "تحديث مباشر",
-  behavior_ai_summary_active: "يظهر الطالب التزاماً عالياً بالمواعيد والأنشطة الصفية المشتركة. يُنصح بتعزيز مهارات القيادة والمبادرة في المشاريع الجماعية.",
-  behavior_ai_summary_empty: "يتم رصد السلوك والتفاعل بانتظام. سيتم توليد تقرير الذكاء الاصطناعي فور تسجيل مؤشرات الحضور والمشاركة.",
+  behavior_ai_summary_active:
+    "يظهر الطالب التزاماً عالياً بالمواعيد والأنشطة الصفية المشتركة. يُنصح بتعزيز مهارات القيادة والمبادرة في المشاريع الجماعية.",
+  behavior_ai_summary_empty:
+    "يتم رصد السلوك والتفاعل بانتظام. سيتم توليد تقرير الذكاء الاصطناعي فور تسجيل مؤشرات الحضور والمشاركة.",
   behavior_filter_all: "الكل",
   behavior_filter_merit: "إيجابي",
   behavior_filter_violation: "ملاحظات",
   behavior_empty_title: "لا توجد ملاحظات سلوكية مسجلة",
-  behavior_empty_desc: "سيتم إدراج الملاحظات والنقاط الإيجابية هنا فور رصدها من الكادر التعليمي.",
+  behavior_empty_desc:
+    "سيتم إدراج الملاحظات والنقاط الإيجابية هنا فور رصدها من الكادر التعليمي.",
   behavior_modal_title: "رصد ملاحظة سلوكية",
   behavior_modal_student_label: "اسم الطالب أو الرقم الأكاديمي",
   behavior_modal_student_placeholder: "عمر خالد المنصور",
@@ -264,7 +277,8 @@ export const ar = {
   profile_verified: "موثّق",
   profile_not_verified: "غير موثّق",
   profile_account_created: "تاريخ إنشاء الحساب",
-  profile_account_read_only: "هذه البيانات للعرض فقط. لتعديلها، تواصل مع إدارة المؤسسة.",
+  profile_account_read_only:
+    "هذه البيانات للعرض فقط. لتعديلها، تواصل مع إدارة المؤسسة.",
   profile_account_unavailable: "تعذر تحميل بيانات الحساب.",
   profile_logout_error: "تعذر تسجيل الخروج. حاول مرة أخرى.",
   profile_preference_save_error: "تعذر حفظ التفضيل. حاول مرة أخرى.",
@@ -276,11 +290,13 @@ export const ar = {
   profile_sign_out_confirm: "هل أنت متأكد من رغبتك في تسجيل الخروج من التطبيق؟",
   profile_sign_out_button: "تسجيل الخروج",
   profile_help_title: "المساعدة والدعم",
-  profile_help_description: "تواصل مع دعم Mulverse للمساعدة التقنية، أو مع مؤسستك لمشكلات الحساب.",
+  profile_help_description:
+    "تواصل مع دعم Mulverse للمساعدة التقنية، أو مع مؤسستك لمشكلات الحساب.",
   profile_about_title: "عن أوربس",
   profile_about_mulverse: "عن Mulverse",
   profile_about_mulverse_description: "الشركة المطوّرة لمنصة أوربس.",
-  profile_support_page_description: "املأ بيانات الطلب، وسنفتح لك رسالة بريد لمراجعتها وإرسالها إلى فريق الدعم.",
+  profile_support_page_description:
+    "املأ بيانات الطلب، وسنفتح لك رسالة بريد لمراجعتها وإرسالها إلى فريق الدعم.",
   profile_support_email: "support@mulverse.com",
   profile_support_email_error: "تعذر فتح تطبيق البريد الإلكتروني.",
   support_category_label: "نوع الطلب",
@@ -299,21 +315,26 @@ export const ar = {
   support_invalid_email: "أدخل بريداً إلكترونياً صحيحاً أو اترك الحقل فارغاً.",
   support_diagnostics_label: "معلومات التطبيق والجهاز",
   support_send_report: "فتح البريد للدعم",
-  support_mail_review_note: "ستُضاف معلومات التطبيق والجهاز إلى مسودة البريد. راجعها وأرسلها بنفسك؛ لن تُرسل أي بيانات تلقائياً.",
-  profile_about_orbis_description: "أوربس منصة متكاملة لإدارة المؤسسات التعليمية وعملياتها الأكاديمية والإدارية.",
+  support_mail_review_note:
+    "ستُضاف معلومات التطبيق والجهاز إلى مسودة البريد. راجعها وأرسلها بنفسك؛ لن تُرسل أي بيانات تلقائياً.",
+  profile_about_orbis_description:
+    "أوربس منصة متكاملة لإدارة المؤسسات التعليمية وعملياتها الأكاديمية والإدارية.",
   profile_about_company: "تطوير Mulverse Inc.",
   profile_about_version: "إصدار التطبيق",
   profile_open_company_website: "زيارة موقع Mulverse",
   profile_organization_website: "موقع المؤسسة",
-  profile_organization_website_description: "زيارة الموقع الإلكتروني الرسمي للمؤسسة.",
+  profile_organization_website_description:
+    "زيارة الموقع الإلكتروني الرسمي للمؤسسة.",
   webviewer_invalid_url: "رابط الصفحة غير صالح أو غير آمن.",
   webviewer_load_error: "تعذر تحميل الصفحة. تحقق من اتصالك وحاول مجدداً.",
   webviewer_retry: "إعادة المحاولة",
-  security_description: "راجع الأجهزة التي استخدمت حسابك وألغِ الجلسات غير المعروفة.",
+  security_description:
+    "راجع الأجهزة التي استخدمت حسابك وألغِ الجلسات غير المعروفة.",
   security_mfa_title: "التحقق متعدد العوامل",
   security_mfa_enabled: "التحقق متعدد العوامل مفعّل لهذا الحساب.",
   security_mfa_disabled: "التحقق متعدد العوامل غير مفعّل لهذا الحساب.",
-  security_mfa_management_note: "تغيير إعدادات التحقق متعدد العوامل متاح حالياً عبر مسؤول المؤسسة.",
+  security_mfa_management_note:
+    "تغيير إعدادات التحقق متعدد العوامل متاح حالياً عبر مسؤول المؤسسة.",
   security_devices_title: "الأجهزة والجلسات",
   security_devices_error: "تعذر تحميل الأجهزة المرتبطة بالحساب.",
   security_no_devices: "لا توجد أجهزة مسجلة لهذا الحساب.",
@@ -344,7 +365,8 @@ export const ar = {
   pref_notify_exams: "تذكيرات مواعيد الاختبارات",
   pref_notify_exams_desc: "تذكير قبل موعد الاختبار بـ 24 ساعة",
   pref_notify_announcements: "التعاميم والأخبار العامة",
-  pref_notify_announcements_desc: "إشعارات الفعاليات والمناسبات العضو أكاديميية",
+  pref_notify_announcements_desc:
+    "إشعارات الفعاليات والمناسبات العضو أكاديميية",
   updates_title: "تحديث التطبيق",
   updates_app_version: "الإصدار المثبت",
   updates_check_button: "التحقق من وجود إصدار جديد",
@@ -352,9 +374,11 @@ export const ar = {
   updates_none_available: "التطبيق محدّث. لا توجد تحديثات جديدة.",
   updates_check_error: "تعذر التحقق من التحديثات. تحقق من اتصالك وحاول مجدداً.",
   updates_available_title: "يتوفر تحديث جديد",
-  updates_available_message: "يتوفر إصدار جديد من التطبيق ({version}). افتح صفحة الإصدار لتنزيله.",
+  updates_available_message:
+    "يتوفر إصدار جديد من التطبيق ({version}). افتح صفحة الإصدار لتنزيله.",
   updates_open_release: "فتح صفحة الإصدار",
-  updates_mobile_release_missing: "لم يُنشر إصدار موبايل بعد. أعد المحاولة لاحقاً.",
+  updates_mobile_release_missing:
+    "لم يُنشر إصدار موبايل بعد. أعد المحاولة لاحقاً.",
   updates_open_release_error: "تعذر فتح صفحة إصدار التطبيق.",
 
   // Auth & Branding
@@ -386,7 +410,8 @@ export const ar = {
   auth_password_label: "كلمة المرور",
   auth_error_required: "يرجى إدخال البريد الإلكتروني وكلمة المرور",
   auth_error_failed: "فشل تسجيل الدخول. يرجى التحقق من صحة البيانات.",
-  auth_error_network: "تعذر الاتصال بالخادم. يرجى التأكد من تشغيل الخادم والاتصال بالشبكة.",
+  auth_error_network:
+    "تعذر الاتصال بالخادم. يرجى التأكد من تشغيل الخادم والاتصال بالشبكة.",
   auth_error_invalid_credentials: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
   auth_error_google: "فشل تسجيل الدخول عبر Google",
   auth_capability_teach: "التدريس",
@@ -409,26 +434,32 @@ export const ar = {
   auth_institution_local_scan: "مسح QR",
   auth_institution_local_manual: "إدخال يدوي",
   auth_institution_local_title: "الاتصال بمؤسسة محلية",
-  auth_institution_local_hint: "امسح رمز QR الذي وفرته المدرسة أو أدخل عنوان خادمها.",
+  auth_institution_local_hint:
+    "امسح رمز QR الذي وفرته المدرسة أو أدخل عنوان خادمها.",
   auth_institution_local_label: "مؤسسة محلية",
   auth_institution_local_confirm: "اتصال بهذه المؤسسة",
   auth_institution_local_name: "اسم المدرسة",
   auth_institution_local_server: "عنوان خادم HTTPS",
   auth_institution_local_server_hint: "مثال: https://orbis.school.local",
-  auth_institution_local_camera_error: "تعذر الوصول إلى الكاميرا. تحقق من الإذن وحاول مجددًا.",
-  auth_institution_local_qr_error: "رمز QR غير صالح أو لا يحتوي إعداد اتصال Orbis مدعومًا.",
-  auth_institution_local_details_error: "أدخل اسم المدرسة وعنوان خادم صالحًا: HTTP بعنوان IP محلي أو HTTPS.",
+  auth_institution_local_camera_error:
+    "تعذر الوصول إلى الكاميرا. تحقق من الإذن وحاول مجددًا.",
+  auth_institution_local_qr_error:
+    "رمز QR غير صالح أو لا يحتوي إعداد اتصال Orbis مدعومًا.",
+  auth_institution_local_details_error:
+    "أدخل اسم المدرسة وعنوان خادم صالحًا: HTTP بعنوان IP محلي أو HTTPS.",
   auth_institution_local_camera_title: "امسح رمز المدرسة",
   auth_institution_local_camera_hint: "ضع رمز QR داخل الإطار",
   auth_institution_local_camera_ready: "جاهز للمسح",
   auth_institution_local_camera_loading: "جارٍ تجهيز الكاميرا...",
   auth_institution_local_camera_enable: "السماح باستخدام الكاميرا",
-  auth_institution_local_secure_hint: "للاتصال المحلي استخدم http:// مع عنوان IP خاص مثل 192.168.1.20:3000. عناوين الإنترنت تتطلب HTTPS. لا تستخدم HTTP على شبكة عامة أو غير موثوقة.",
+  auth_institution_local_secure_hint:
+    "للاتصال المحلي استخدم http:// مع عنوان IP خاص مثل 192.168.1.20:3000. عناوين الإنترنت تتطلب HTTPS. لا تستخدم HTTP على شبكة عامة أو غير موثوقة.",
   auth_institution_local_enter_name: "اكتب اسم المؤسسة",
   auth_institution_local_enter_server: "أدخل عنوان خادم المدرسة",
   auth_institution_filter_label: "تصفية المؤسسات",
   auth_institution_nearby: "بالقرب مني",
-  auth_institution_location_error: "تعذر الوصول إلى موقعك. تحقق من الأذونات وحاول مجددًا.",
+  auth_institution_location_error:
+    "تعذر الوصول إلى موقعك. تحقق من الأذونات وحاول مجددًا.",
   auth_institution_loading: "جارٍ تحميل المؤسسات المتاحة…",
   auth_institution_search_placeholder: "ابحث باسم المؤسسة",
   auth_institution_search: "البحث عن المؤسسات",
@@ -443,14 +474,17 @@ export const ar = {
   auth_institution_change: "اختر مؤسسة أخرى",
   auth_institution_not_selected: "اختر مؤسستك قبل إنشاء الحساب.",
   auth_institution_linked: "مؤسساتك المرتبطة",
-  auth_institution_linked_description: "اعرض المؤسسات المرتبطة بحسابك وبدّل المؤسسة الحالية.",
+  auth_institution_linked_description:
+    "اعرض المؤسسات المرتبطة بحسابك وبدّل المؤسسة الحالية.",
   auth_institution_linked_empty_title: "لا توجد مؤسسات مرتبطة",
-  auth_institution_linked_empty_description: "ابحث عن مؤسستك لإضافتها إلى حسابك.",
+  auth_institution_linked_empty_description:
+    "ابحث عن مؤسستك لإضافتها إلى حسابك.",
   auth_institution_find_more: "البحث عن مؤسسة أخرى",
   auth_institution_results: "مؤسسات أخرى",
   auth_institution_current: "المؤسسة الحالية",
   auth_institution_connected: "تم الاتصال بالمؤسسة بنجاح.",
-  auth_institution_connection_error: "تعذر الاتصال بخادم المؤسسة. تحقق من الاتصال وحاول مجددًا.",
+  auth_institution_connection_error:
+    "تعذر الاتصال بخادم المؤسسة. تحقق من الاتصال وحاول مجددًا.",
   auth_institution_switch: "تغيير المؤسسة",
   auth_full_name: "الاسم الكامل",
   auth_full_name_ph: "مثال: د. محمد المنصور",
@@ -471,7 +505,8 @@ export const ar = {
   auth_forgot_subtitle: "أدخل بريدك الإلكتروني المسجل لإرسال رابط الاستعادة",
   auth_forgot_send_btn: "إرسال رابط الاستعادة",
   auth_forgot_success_title: "تم إرسال التعليمات",
-  auth_forgot_success_msg: "لقد قمنا بإرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+  auth_forgot_success_msg:
+    "لقد قمنا بإرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
   auth_back_to_sign_in: "العودة لتسجيل الدخول",
 
   // Security & Device Setup Flow (Reference 1)
@@ -547,6 +582,29 @@ export const ar = {
   upcoming_exams_label: "الاختبارات القادمة",
   auth_sign_in_subtitle: "منصة إدارة المدارس والتعلم الذكي",
   auth_username_or_email: "اسم المستخدم أو البريد الإلكتروني",
+  notifications_mark_all_read: "تعليم الكل كمقروء",
+  notifications_no_unread: "أنت على اطلاع بكل شيء!",
+  notifications_no_unread_description: "لا توجد إشعارات غير مقروءة.",
+  notifications_empty_description: "عندما يحدث شيء مهم، ستراه هنا.",
+  notifications_dismiss: "تجاهل",
+  notifications_error_title: "تعذر تحميل الإشعارات",
+  notifications_error_retry: "انقر لإعادة المحاولة",
+  notifications_category_enrollment: "القبول والتسجيل",
+  notifications_category_grades: "الدرجات",
+  notifications_category_attendance: "الحضور والغياب",
+  notifications_category_finance: "المالية",
+  notifications_category_behavior: "السلوك",
+  notifications_category_schedule: "الجدول الدراسي",
+  notifications_category_approval: "الموافقات",
+  notifications_category_system: "النظام",
+  notifications_category_announcement: "الإعلانات",
+  notifications_just_now: "الآن",
+  notifications_minutes_ago: "منذ {{count}} د",
+  notifications_hours_ago: "منذ {{count}} س",
+  notifications_days_ago: "منذ {{count}} ي",
+  notif_pref_in_app: "داخل التطبيق",
+  notif_pref_email: "البريد الإلكتروني",
+  notif_pref_push: "إشعارات الدفع",
 } as const;
 
 export type TranslationKey = keyof typeof ar;

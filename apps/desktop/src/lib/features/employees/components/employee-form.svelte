@@ -25,11 +25,7 @@ import {
 } from "@orbis/ui/accordion";
 import { FormField, toast } from "@orbis/ui";
 import { Checkbox } from "@orbis/ui/checkbox";
-import {
-  Banknotes,
-  BuildingOffice,
-  User,
-} from "@orbis/icons";
+import { Banknotes, BuildingOffice, User } from "@orbis/icons";
 import { extractErrorMessage } from "$lib/api";
 import type {
   EmployeeDetailDto,
@@ -56,9 +52,9 @@ interface Props {
   onCancel?: () => void;
 }
 
-let { 
-  orgId, 
-  mode = "create", 
+let {
+  orgId,
+  mode = "create",
   employee = null,
   onSuccess,
   onCancel,
@@ -68,20 +64,31 @@ const initialEmployee = untrack(() => employee);
 
 const form = new FormController({
   initialValues: {
-    fullNameEn: [initialEmployee?.first_name, initialEmployee?.middle_name, initialEmployee?.last_name]
+    fullNameEn: [
+      initialEmployee?.first_name,
+      initialEmployee?.middle_name,
+      initialEmployee?.last_name,
+    ]
       .filter(Boolean)
       .join(" "),
-    fullNameAr: [initialEmployee?.first_name_ar, initialEmployee?.middle_name_ar, initialEmployee?.last_name_ar]
+    fullNameAr: [
+      initialEmployee?.first_name_ar,
+      initialEmployee?.middle_name_ar,
+      initialEmployee?.last_name_ar,
+    ]
       .filter(Boolean)
       .join(" "),
   },
-  schema: z.object({
-    fullNameEn: z.string(),
-    fullNameAr: z.string(),
-  }).refine(
-    ({ fullNameAr, fullNameEn }) => Boolean(fullNameAr.trim() || fullNameEn.trim()),
-    { path: ["fullNameAr"], message: m.employees_error_name_required() },
-  ),
+  schema: z
+    .object({
+      fullNameEn: z.string(),
+      fullNameAr: z.string(),
+    })
+    .refine(
+      ({ fullNameAr, fullNameEn }) =>
+        Boolean(fullNameAr.trim() || fullNameEn.trim()),
+      { path: ["fullNameAr"], message: m.employees_error_name_required() },
+    ),
 });
 
 let createLoginAccount = $state(false);
@@ -97,12 +104,18 @@ let email = $state(initialEmployee?.email || "");
 let address = $state(initialEmployee?.address || "");
 
 let employeeNumber = $state(initialEmployee?.employee_number || "");
-let employeeType = $state(initialEmployee?.employee_type?.toLowerCase() || "teacher");
+let employeeType = $state(
+  initialEmployee?.employee_type?.toLowerCase() || "teacher",
+);
 let jobTitle = $state(initialEmployee?.job_title || "");
 let department = $state(initialEmployee?.department || "");
 let orgUnitId = $state(initialEmployee?.org_unit_id || "");
-let hireDate = $state(initialEmployee?.hire_date || new Date().toISOString().split("T")[0]);
-let employmentType = $state(initialEmployee?.employment_type?.toLowerCase() || "full_time");
+let hireDate = $state(
+  initialEmployee?.hire_date || new Date().toISOString().split("T")[0],
+);
+let employmentType = $state(
+  initialEmployee?.employment_type?.toLowerCase() || "full_time",
+);
 let workShift = $state(initialEmployee?.work_shift?.toLowerCase() || "morning");
 let status = $state(initialEmployee?.status?.toLowerCase() || "active");
 
@@ -122,27 +135,29 @@ let gosiDeduction = $state<number>(rawPayroll.gosi_deduction ?? 0);
 let otherDeductions = $state<number>(rawPayroll.other_deductions ?? 0);
 let bankName = $state<string>(rawPayroll.bank_name || "");
 let bankIban = $state<string>(rawPayroll.bank_iban || "");
-let paymentMethod = $state<string>(rawPayroll.payment_method || "bank_transfer");
+let paymentMethod = $state<string>(
+  rawPayroll.payment_method || "bank_transfer",
+);
 let textNotes = $state<string>(
-  rawPayroll.text_notes || (initialEmployee?.notes && !initialEmployee.notes.startsWith("{") ? initialEmployee.notes : "")
+  rawPayroll.text_notes ||
+    (initialEmployee?.notes && !initialEmployee.notes.startsWith("{")
+      ? initialEmployee.notes
+      : ""),
 );
 
 // Derived Payroll Totals
 const totalGrossSalary = $derived(
   (Number(basicSalary) || 0) +
-  (Number(housingAllowance) || 0) +
-  (Number(transportAllowance) || 0) +
-  (Number(otherAllowances) || 0)
+    (Number(housingAllowance) || 0) +
+    (Number(transportAllowance) || 0) +
+    (Number(otherAllowances) || 0),
 );
 
 const totalDeductions = $derived(
-  (Number(gosiDeduction) || 0) +
-  (Number(otherDeductions) || 0)
+  (Number(gosiDeduction) || 0) + (Number(otherDeductions) || 0),
 );
 
-const netPayableSalary = $derived(
-  totalGrossSalary - totalDeductions
-);
+const netPayableSalary = $derived(totalGrossSalary - totalDeductions);
 
 // Queries & Mutations
 const registerMutation = createRegisterEmployeeMutation();
@@ -207,9 +222,17 @@ async function handleSubmit() {
         account: createLoginAccount
           ? {
               enabled: true,
-              preferred_username: email.trim() || employeeNumber.trim() || undefined,
-              role: (employeeType || "teacher").toLowerCase() === "teacher" ? "teacher" : "staff",
-              delivery_channel: email.trim() ? "email" : phone.trim() ? "sms" : "manual",
+              preferred_username:
+                email.trim() || employeeNumber.trim() || undefined,
+              role:
+                (employeeType || "teacher").toLowerCase() === "teacher"
+                  ? "teacher"
+                  : "staff",
+              delivery_channel: email.trim()
+                ? "email"
+                : phone.trim()
+                  ? "sms"
+                  : "manual",
             }
           : null,
       };
@@ -264,7 +287,10 @@ async function handleSubmit() {
       };
 
       try {
-        const res = await updateMutation.mutateAsync({ id: employee.id, req: payload });
+        const res = await updateMutation.mutateAsync({
+          id: employee.id,
+          req: payload,
+        });
         toast.success(m.employees_save_success());
         if (onSuccess) {
           onSuccess(res.employee);

@@ -91,9 +91,7 @@ function handleSubmit(e: SubmitEvent) {
   e.preventDefault();
   const result = createAppSettingsSchema(visibleSettings).safeParse(values);
   if (!result.success) {
-    toast.error(
-      m.ui_copy_please_review_the_connection_settings_e94d1183(),
-    );
+    toast.error(m.ui_copy_please_review_the_connection_settings_e94d1183());
     return;
   }
   onsubmit?.(result.data);

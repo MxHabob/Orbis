@@ -28,7 +28,9 @@ const currentPlanDisplay = $derived.by(() => {
   }
   if (licenseStore.plan) {
     const planName = licenseStore.planName ?? licenseStore.plan;
-    return licenseStore.edition ? `${planName} — ${licenseStore.edition}` : planName;
+    return licenseStore.edition
+      ? `${planName} — ${licenseStore.edition}`
+      : planName;
   }
   return m.common_upgrade_plan_dev();
 });

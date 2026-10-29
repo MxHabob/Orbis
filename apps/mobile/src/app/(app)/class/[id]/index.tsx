@@ -56,10 +56,7 @@ export default function ClassIndexScreen() {
       {classQuery.data ? (
         <>
           {/* 1. Class Metric Banner */}
-          <Card
-            variant="default"
-            padding="four"
-          >
+          <Card variant="default" padding="four">
             <View className="flex-row items-center justify-between">
               <View className="gap-half">
                 <Text className="text-xl font-extrabold text-foreground">
@@ -70,10 +67,14 @@ export default function ClassIndexScreen() {
                 </Text>
               </View>
 
-              <Badge variant="secondary" className="flex-row items-center gap-one px-three py-one">
+              <Badge
+                variant="secondary"
+                className="flex-row items-center gap-one px-three py-one"
+              >
                 <Users size={14} color={theme.primary} />
                 <Text className="text-xs font-bold text-primary">
-                  {formatNumber(roster.length)} {t("teacher_students_count_short") || "Students"}
+                  {formatNumber(roster.length)}{" "}
+                  {t("teacher_students_count_short") || "Students"}
                 </Text>
               </Badge>
             </View>
@@ -152,7 +153,8 @@ export default function ClassIndexScreen() {
                 {t("teacher_class_roster")}
               </Text>
               <Text className="text-xs font-semibold text-muted-foreground">
-                {formatNumber(roster.length)} {t("teacher_students_count_short") || "Enrolled"}
+                {formatNumber(roster.length)}{" "}
+                {t("teacher_students_count_short") || "Enrolled"}
               </Text>
             </View>
 

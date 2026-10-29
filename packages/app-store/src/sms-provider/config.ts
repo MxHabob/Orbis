@@ -10,8 +10,7 @@ const config: OrbisApp = {
   active: true,
   beta: true,
   icon: "Smartphone",
-  short_description:
-    "Send SMS notifications to parents and staff via Twilio.",
+  short_description: "Send SMS notifications to parents and staff via Twilio.",
   short_description_ar: "إرسال رسائل نصية قصيرة لأولياء الأمور والموظفين.",
   description: `Connect an SMS gateway to send critical notifications that demand immediate attention.
 
@@ -38,9 +37,7 @@ Send notifications to entire classes or the whole school at once.`,
       required: true,
       value: "twilio",
       description: "Select your SMS gateway provider.",
-      options: [
-        { label: "Twilio", value: "twilio" },
-      ],
+      options: [{ label: "Twilio", value: "twilio" }],
     },
     {
       id: "account_sid",

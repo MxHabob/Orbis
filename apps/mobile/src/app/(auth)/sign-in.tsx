@@ -48,12 +48,8 @@ export default function SignInScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, locale, setLocale, isArabic } = useI18n();
-  const {
-    login,
-    loginWithGoogle,
-    selectedInstitution,
-    institutions,
-  } = useAuth();
+  const { login, loginWithGoogle, selectedInstitution, institutions } =
+    useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -85,7 +81,9 @@ export default function SignInScreen() {
       }
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : t("auth_error_invalid_credentials");
+        err instanceof Error
+          ? err.message
+          : t("auth_error_invalid_credentials");
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);
@@ -98,7 +96,8 @@ export default function SignInScreen() {
     try {
       await loginWithGoogle("google-token");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : t("auth_error_google");
+      const message =
+        err instanceof Error ? err.message : t("auth_error_google");
       setErrorMessage(message);
     } finally {
       setIsSubmitting(false);

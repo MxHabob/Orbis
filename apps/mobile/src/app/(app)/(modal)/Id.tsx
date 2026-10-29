@@ -20,12 +20,8 @@ import { useEffectiveContext } from "@/providers/effective-context";
 export default function DigitalIdModalScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const {
-    activeRole,
-    dependents,
-    selectedDependent,
-    setSelectedDependentId,
-  } = useEffectiveContext();
+  const { activeRole, dependents, selectedDependent, setSelectedDependentId } =
+    useEffectiveContext();
   const { t, isArabic } = useI18n();
   const normalizedActiveRole = activeRole.toLowerCase();
   const isStudent = normalizedActiveRole.includes("student");
@@ -37,13 +33,8 @@ export default function DigitalIdModalScreen() {
     : isGuardian
       ? selectedDependent?.student_id
       : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
   const studentQuery = useStudentQuery(studentId);
   const student = studentQuery.data;
   const organizationQuery = useCurrentOrgQuery();
@@ -134,10 +125,7 @@ export default function DigitalIdModalScreen() {
             style={{ aspectRatio: 85.6 / 53.98 }}
           />
         ) : identityMissing ? (
-          <EmptyState
-            title={t("student_profile_missing")}
-            fullScreen
-          />
+          <EmptyState title={t("student_profile_missing")} fullScreen />
         ) : isLinked && studentQuery.isError ? (
           <EmptyState
             title={t("digital_id_student_error")}

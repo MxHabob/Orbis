@@ -359,9 +359,7 @@ export const DropdownMenuItem = ({
         </Text>
       </View>
 
-      {selected ? (
-        <CheckCircle size={18} color={theme.primary} />
-      ) : null}
+      {selected ? <CheckCircle size={18} color={theme.primary} /> : null}
     </TouchableOpacity>
   );
 };
@@ -444,7 +442,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuItemText: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
+    ...{ fontSize: 14, lineHeight: 20, fontWeight: "400" },
     flexShrink: 1,
   },
   menuAvatar: {
@@ -461,7 +459,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   labelText: {
-    ...{"fontSize":12,"lineHeight":16,"fontWeight":"600"},
+    ...{ fontSize: 12, lineHeight: 16, fontWeight: "600" },
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },

@@ -1148,3 +1148,86 @@ pub trait RoleRepository: Send + Sync {
         role_id: &str,
     ) -> Result<Option<UserRoleAssignment>, DomainError>;
 }
+
+// =========================================================================
+// Notification Repository Port
+// =========================================================================
+
+use orbis_domain::entities::notification::Notification;
+use orbis_domain::entities::notification_preference::UserNotificationPreference;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationFilter {
+    pub category: Option<String>,
+    pub is_read: Option<bool>,
+    pub is_dismissed: bool,
+    pub limit: i64,
+    pub offset: i64,
+}
+
+impl Default for NotificationFilter {
+    fn default() -> Self {
+        Self {
+            category: None,
+            is_read: None,
+            is_dismissed: false,
+            limit: 50,
+            offset: 0,
+        }
+    }
+}
+
+#[async_trait]
+pub trait NotificationRepository: Send + Sync {
+    async fn save(&self, notification: &Notification) -> Result<(), DomainError>;
+
+    async fn find_by_id(
+        &self,
+        org_id: Uuid,
+        notification_id: Uuid,
+    ) -> Result<Option<Notification>, DomainError>;
+
+    async fn find_by_correlation_id(
+        &self,
+        correlation_id: &str,
+    ) -> Result<Option<Notification>, DomainError>;
+
+    async fn list_for_user(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+        filter: &NotificationFilter,
+    ) -> Result<Vec<Notification>, DomainError>;
+
+    async fn count_unread(&self, org_id: Uuid, user_id: Uuid) -> Result<i64, DomainError>;
+
+    async fn mark_read(&self, org_id: Uuid, notification_id: Uuid) -> Result<(), DomainError>;
+
+    async fn mark_all_read(&self, org_id: Uuid, user_id: Uuid) -> Result<u64, DomainError>;
+
+    async fn dismiss(&self, org_id: Uuid, notification_id: Uuid) -> Result<(), DomainError>;
+
+    async fn delete_expired(&self) -> Result<u64, DomainError>;
+}
+
+// =========================================================================
+// Notification Preference Repository Port
+// =========================================================================
+
+#[async_trait]
+pub trait NotificationPreferenceRepository: Send + Sync {
+    async fn find_for_user(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<Vec<UserNotificationPreference>, DomainError>;
+
+    async fn save(&self, preference: &UserNotificationPreference) -> Result<(), DomainError>;
+
+    async fn save_all(
+        &self,
+        org_id: Uuid,
+        user_id: Uuid,
+        preferences: &[UserNotificationPreference],
+    ) -> Result<(), DomainError>;
+}

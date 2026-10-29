@@ -14,7 +14,6 @@ import {
   BookOpen,
   BuildingOffice,
   Calendar,
-  CheckCircle,
   ClockRotateRight,
   Database,
   DocumentPage,
@@ -33,7 +32,6 @@ import {
 import MainViewport from "$lib/shell/main-viewport.svelte";
 import SidebarNav from "$lib/shell/sidebar-nav.svelte";
 import type { Snippet } from "svelte";
-
 
 let { data, children }: { data: { orgId: string }; children: Snippet } =
   $props();
@@ -132,11 +130,6 @@ const navGroups = $derived([
         path: "registration",
         label: m.settings_nav_admission(),
         icon: DocumentPage,
-      },
-      {
-        path: "approvals",
-        label: m.settings_nav_approvals(),
-        icon: CheckCircle,
       },
     ],
   },

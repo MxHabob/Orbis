@@ -94,36 +94,42 @@ const rootFoldersQuery = useFolders(() => undefined);
 const curriculumFoldersQuery = useCurriculumFolders();
 
 // 4. Documents query (if root or general)
-const rootDocumentsQuery = useDocuments(() => (isRoot ? undefined : { entityId: folderId || undefined }));
+const rootDocumentsQuery = useDocuments(() =>
+  isRoot ? undefined : { entityId: folderId || undefined },
+);
 
 // Active Data Derivatives
 const currentFolder = $derived<FolderDto | null>(
-  !isRoot && folderContentsQuery.data?.folder ? folderContentsQuery.data.folder : null
+  !isRoot && folderContentsQuery.data?.folder
+    ? folderContentsQuery.data.folder
+    : null,
 );
 
 const subfolders = $derived<FolderDto[]>(
   isRoot
-    ? (rootFoldersQuery.data || [])
-    : (folderContentsQuery.data?.subfolders || [])
+    ? rootFoldersQuery.data || []
+    : folderContentsQuery.data?.subfolders || [],
 );
 
 const rawDocuments = $derived<DocumentDto[]>(
   isRoot
-    ? (rootDocumentsQuery.data?.pages.flatMap((p) => p.items) || [])
-    : (folderContentsQuery.data?.documents || [])
+    ? rootDocumentsQuery.data?.pages.flatMap((p) => p.items) || []
+    : folderContentsQuery.data?.documents || [],
 );
 
 const isLoading = $derived(
   isRoot
     ? rootFoldersQuery.isLoading || rootDocumentsQuery.isLoading
-    : folderContentsQuery.isLoading
+    : folderContentsQuery.isLoading,
 );
 
 // Filtering & Search
 const filteredFolders = $derived.by(() => {
   const q = searchQuery.trim().toLowerCase();
   if (!q) return subfolders;
-  return subfolders.filter((f) => f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q));
+  return subfolders.filter(
+    (f) => f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q),
+  );
 });
 
 const selectedFileTypes = $derived(
@@ -151,7 +157,8 @@ const filteredDocuments = $derived.by(() => {
       const mime = doc.mime_type?.toLowerCase() || "";
       const extension = doc.extension?.toLowerCase();
       const matchesType = selectedFileTypes.some((type) => {
-        if (type === "pdf") return mime === "application/pdf" || extension === "pdf";
+        if (type === "pdf")
+          return mime === "application/pdf" || extension === "pdf";
         return mime.startsWith(`${type}/`);
       });
       if (!matchesType) return false;
@@ -312,14 +319,16 @@ const archiveFilterGroups = $derived<SearchableMultiFilterGroup[]>([
     ],
   },
   ...(availableCategories.length > 0
-    ? [{
-        id: "categories",
-        label: m.settings_ui_archive_category(),
-        options: availableCategories.map((category) => ({
-          value: `category:${category}`,
-          label: category,
-        })),
-      }]
+    ? [
+        {
+          id: "categories",
+          label: m.settings_ui_archive_category(),
+          options: availableCategories.map((category) => ({
+            value: `category:${category}`,
+            label: category,
+          })),
+        },
+      ]
     : []),
 ]);
 
@@ -363,7 +372,10 @@ function navigateToFolder(targetFolderId?: string | null) {
 // Preview Handler
 async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
+  selectedDocumentUrl = await resolveDocumentUrl(
+    getDocumentSource(doc),
+    doc.id,
+  );
   isPreviewOpen = true;
 }
 
@@ -392,7 +404,10 @@ async function handleDeleteDoc(id: string) {
 // Archive Document Handler
 async function handleArchiveDoc(id: string) {
   try {
-    await archiveDocMutation.mutateAsync({ id, reason: m.settings_ui_archive_manual_reason() });
+    await archiveDocMutation.mutateAsync({
+      id,
+      reason: m.settings_ui_archive_manual_reason(),
+    });
     toast.success(m.settings_ui_archive_document_archived());
     if (!isRoot) folderContentsQuery.refetch();
   } catch (e: any) {
@@ -453,7 +468,9 @@ async function handleBulkDelete() {
   if (!confirmed) return;
 
   try {
-    await Promise.all(Array.from(selectedIds).map((id) => deleteDocMutation.mutateAsync(id)));
+    await Promise.all(
+      Array.from(selectedIds).map((id) => deleteDocMutation.mutateAsync(id)),
+    );
     toast.success(m.settings_ui_archive_files_deleted({ count }));
     selectedIds = new Set();
     if (!isRoot) folderContentsQuery.refetch();
@@ -466,16 +483,19 @@ async function handleBulkDelete() {
 async function runWithConcurrency<T, R>(
   items: T[],
   limit: number,
-  fn: (item: T, index: number) => Promise<R>
+  fn: (item: T, index: number) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = [];
   let index = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (index < items.length) {
-      const currentIndex = index++;
-      results[currentIndex] = await fn(items[currentIndex], currentIndex);
-    }
-  });
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (index < items.length) {
+        const currentIndex = index++;
+        results[currentIndex] = await fn(items[currentIndex], currentIndex);
+      }
+    },
+  );
   await Promise.all(workers);
   return results;
 }
@@ -531,10 +551,14 @@ async function handleFilesUpload(fileList: FileList | File[]) {
 
   if (successCount > 0) {
     toastHandle.update({
-      title: m.settings_ui_archive_files_uploaded({ uploaded: successCount, total }),
-      description: failCount > 0
-        ? m.settings_ui_archive_upload_fail_count({ count: failCount })
-        : undefined,
+      title: m.settings_ui_archive_files_uploaded({
+        uploaded: successCount,
+        total,
+      }),
+      description:
+        failCount > 0
+          ? m.settings_ui_archive_upload_fail_count({ count: failCount })
+          : undefined,
       progress: 100,
       variant: "success",
       duration: 4000,

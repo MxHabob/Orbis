@@ -89,7 +89,9 @@ const isDirty = $derived(
 );
 
 const activeBranchCount = $derived(
-  branches.filter((branch) => branch.is_active === true || (branch.is_active as any) === 1).length,
+  branches.filter(
+    (branch) => branch.is_active === true || (branch.is_active as any) === 1,
+  ).length,
 );
 
 onMount(async () => {
@@ -117,12 +119,12 @@ function updateMaxBranches(raw: string) {
 }
 
 async function savePolicy() {
-  if (
-    policy.max_branches !== null &&
-    activeBranchCount > policy.max_branches
-  ) {
+  if (policy.max_branches !== null && activeBranchCount > policy.max_branches) {
     toast.error(
-      m.settings_ui_branch_limit_below_active({ limit: policy.max_branches, count: activeBranchCount }),
+      m.settings_ui_branch_limit_below_active({
+        limit: policy.max_branches,
+        count: activeBranchCount,
+      }),
     );
     return;
   }

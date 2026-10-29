@@ -37,7 +37,10 @@ async function loadData() {
     const months: { label: string; index: number }[] = [];
     for (let i = 0; i < 12; i++) {
       const dateObj = new Date(new Date().getFullYear(), i, 1);
-      const label = formatDate(dateObj, "date", { month: "short", timeZone: "UTC" });
+      const label = formatDate(dateObj, "date", {
+        month: "short",
+        timeZone: "UTC",
+      });
       months.push({ label, index: i });
     }
 

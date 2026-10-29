@@ -118,14 +118,16 @@ const trashFilterGroups = $derived<SearchableMultiFilterGroup[]>([
     ],
   },
   ...(availableCategories.length > 0
-    ? [{
-        id: "categories",
-        label: m.operations_ui_category(),
-        options: availableCategories.map((category) => ({
-          value: `category:${category}`,
-          label: category,
-        })),
-      }]
+    ? [
+        {
+          id: "categories",
+          label: m.operations_ui_category(),
+          options: availableCategories.map((category) => ({
+            value: `category:${category}`,
+            label: category,
+          })),
+        },
+      ]
     : []),
 ]);
 
@@ -144,7 +146,8 @@ const filteredDocs = $derived.by(() => {
       const mime = doc.mime_type?.toLowerCase() || "";
       const extension = doc.extension?.toLowerCase();
       const matchesType = selectedFileTypes.some((type) => {
-        if (type === "pdf") return mime === "application/pdf" || extension === "pdf";
+        if (type === "pdf")
+          return mime === "application/pdf" || extension === "pdf";
         return mime.startsWith(`${type}/`);
       });
       if (!matchesType) return false;
@@ -162,7 +165,8 @@ const filteredDocs = $derived.by(() => {
   });
 });
 const allFilteredSelected = $derived(
-  filteredDocs.length > 0 && filteredDocs.every((doc) => selectedIds.has(doc.id)),
+  filteredDocs.length > 0 &&
+    filteredDocs.every((doc) => selectedIds.has(doc.id)),
 );
 
 const trashGridSource = $derived(
@@ -256,7 +260,10 @@ function handleGridAction(event: GridActionEvent) {
 // Preview handler
 async function handlePreview(doc: DocumentDto) {
   selectedDocument = doc;
-  selectedDocumentUrl = await resolveDocumentUrl(getDocumentSource(doc), doc.id);
+  selectedDocumentUrl = await resolveDocumentUrl(
+    getDocumentSource(doc),
+    doc.id,
+  );
   isPreviewOpen = true;
 }
 
@@ -300,14 +307,18 @@ async function handleEmptyTrash() {
 
   const confirmed = await confirmStore.prompt({
     title: m.operations_ui_trash_empty_title(),
-    description: m.operations_ui_trash_empty_confirm({ count: trashedDocs.length }),
+    description: m.operations_ui_trash_empty_confirm({
+      count: trashedDocs.length,
+    }),
     confirmText: m.operations_ui_trash_empty_action(),
     variant: "destructive",
   });
 
   if (confirmed) {
     try {
-      const promises = trashedDocs.map((doc) => purgeMutation.mutateAsync(doc.id));
+      const promises = trashedDocs.map((doc) =>
+        purgeMutation.mutateAsync(doc.id),
+      );
       await Promise.all(promises);
       toast.success(m.operations_ui_trash_empty_success());
       selectedIds = new Set();
@@ -344,7 +355,9 @@ async function handleBatchRestore() {
   if (selectedIds.size === 0) return;
   const count = selectedIds.size;
   try {
-    const promises = Array.from(selectedIds).map((id) => restoreMutation.mutateAsync(id));
+    const promises = Array.from(selectedIds).map((id) =>
+      restoreMutation.mutateAsync(id),
+    );
     await Promise.all(promises);
     toast.success(m.operations_ui_trash_restore_many_success({ count }));
     selectedIds = new Set();
@@ -367,7 +380,9 @@ async function handleBatchPurge() {
 
   if (confirmed) {
     try {
-      const promises = Array.from(selectedIds).map((id) => purgeMutation.mutateAsync(id));
+      const promises = Array.from(selectedIds).map((id) =>
+        purgeMutation.mutateAsync(id),
+      );
       await Promise.all(promises);
       toast.success(m.operations_ui_trash_delete_many_success({ count }));
       selectedIds = new Set();

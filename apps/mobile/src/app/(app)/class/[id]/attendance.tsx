@@ -73,8 +73,7 @@ export default function ClassAttendanceScreen() {
       !recordedByStudent.has(student.id) && selectedStatuses[student.id],
   ).length;
   const isPending =
-    classQuery.isInScope &&
-    (classQuery.isPending || attendanceQuery.isPending);
+    classQuery.isInScope && (classQuery.isPending || attendanceQuery.isPending);
   const isError =
     !classQuery.isInScope || classQuery.isError || attendanceQuery.isError;
 
@@ -170,7 +169,8 @@ export default function ClassAttendanceScreen() {
                       <Text className="text-xs font-medium text-success">
                         {t("teacher_already_recorded")}:{" "}
                         {attendanceOptions.find(
-                          (option) => option.value === record.status.toLowerCase(),
+                          (option) =>
+                            option.value === record.status.toLowerCase(),
                         )
                           ? t(
                               attendanceOptions.find(

@@ -83,7 +83,10 @@ export interface ScreenScrollViewProps extends ScreenProps {
   refreshing?: boolean;
   onRefresh?: () => void;
   refreshControlProps?: Omit<RefreshControlProps, "refreshing" | "onRefresh">;
-  scrollViewProps?: Omit<ScrollViewProps, "refreshControl" | "contentContainerStyle">;
+  scrollViewProps?: Omit<
+    ScrollViewProps,
+    "refreshControl" | "contentContainerStyle"
+  >;
 }
 
 export function ScreenScrollView({
@@ -105,7 +108,10 @@ export function ScreenScrollView({
     paddingVertical:
       typeof verticalPadding === "number" ? verticalPadding : undefined,
   };
-  const contentPaddingClass = resolveClass(contentPadding, contentPaddingClasses);
+  const contentPaddingClass = resolveClass(
+    contentPadding,
+    contentPaddingClasses,
+  );
   const horizontalPaddingClass = resolveClass(
     horizontalPadding,
     horizontalPaddingClasses,

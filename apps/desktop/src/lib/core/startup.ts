@@ -11,10 +11,7 @@
  */
 
 import { api, configureApiClient } from "$lib/api";
-import type {
-  StartupPhase,
-  ConnectionConfig,
-} from "$lib/api/types";
+import type { StartupPhase, ConnectionConfig } from "$lib/api/types";
 
 export interface StartupState {
   phase: StartupPhase;

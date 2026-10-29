@@ -4,172 +4,214 @@ Visual Academic Calendar providing Gantt timeline, term breakdown,
 progress tracking, and academic cycle status for the school year.
 -->
 <script lang="ts">
-  import { api, extractErrorMessage, queryKeys } from "$lib/api";
-  import { formatDate } from "$lib/core/i18n";
-  import * as m from "$lib/paraglide/messages";
-  import { academicContext, confirmStore } from "$lib/stores";
-  import { createacademicCalendarsQuery, createPeriodsQuery } from "$lib/features/academics/queries";
-  import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
-  import { useQueryClient } from "@tanstack/svelte-query";
-  import { LoadingIndicator, toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import {
-    AcademicCap,
-    Calendar,
-    ChartBar,
-    ChevronDown,
-    ChevronRight,
-    ClockRotateRight,
-    Pencil,
-    Plus,
-    Refresh,
-  } from "@orbis/icons";
-  import YearCreateSheet from "$lib/features/settings/year-create-sheet.svelte";
-  import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
-  import RelatedActions, {
-    type ActionGroup,
-  } from "$lib/shared/components/related-actions.svelte";
-  import { fade } from "svelte/transition";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import { formatDate } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import { academicContext, confirmStore } from "$lib/stores";
+import {
+  createacademicCalendarsQuery,
+  createPeriodsQuery,
+} from "$lib/features/academics/queries";
+import type { AcademicPeriodDto, academicCalendarDto } from "@orbis/sdk";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { LoadingIndicator, toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Skeleton } from "@orbis/ui/skeleton";
+import {
+  AcademicCap,
+  Calendar,
+  ChartBar,
+  ChevronDown,
+  ChevronRight,
+  ClockRotateRight,
+  Pencil,
+  Plus,
+  Refresh,
+} from "@orbis/icons";
+import YearCreateSheet from "$lib/features/settings/year-create-sheet.svelte";
+import PeriodCreateSheet from "$lib/features/academics/components/period-create-sheet.svelte";
+import RelatedActions, {
+  type ActionGroup,
+} from "$lib/shared/components/related-actions.svelte";
+import { fade } from "svelte/transition";
 
-  let { orgId }: { orgId: string } = $props();
+let { orgId }: { orgId: string } = $props();
 
-  const queryClient = useQueryClient();
+const queryClient = useQueryClient();
 
-  // Queries
-  const yearsQuery = createacademicCalendarsQuery(() => orgId);
-  const periodsQuery = createPeriodsQuery(() => orgId);
+// Queries
+const yearsQuery = createacademicCalendarsQuery(() => orgId);
+const periodsQuery = createPeriodsQuery(() => orgId);
 
-  // Derived state from queries
-  const years = $derived(yearsQuery.data ?? []);
-  const periods = $derived(periodsQuery.data ?? []);
-  const isLoading = $derived(yearsQuery.isLoading || periodsQuery.isLoading);
-  const isRefreshing = $derived(yearsQuery.isFetching || periodsQuery.isFetching);
+// Derived state from queries
+const years = $derived(yearsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const isLoading = $derived(yearsQuery.isLoading || periodsQuery.isLoading);
+const isRefreshing = $derived(yearsQuery.isFetching || periodsQuery.isFetching);
 
-  let selectedYearId = $state<string>("");
+let selectedYearId = $state<string>("");
 
-  // Select active year by default, or first year
-  $effect(() => {
-    if (years.length > 0 && (!selectedYearId || !years.some((y) => y.id === selectedYearId))) {
-      const active = years.find((y) => y.status === "active");
-      selectedYearId = active ? active.id : years[0]?.id || "";
-    }
-  });
-
-  // Sheets
-  let isYearSheetOpen = $state(false);
-  let editingYear = $state<academicCalendarDto | null>(null);
-  let isPeriodSheetOpen = $state(false);
-  let editingPeriod = $state<any>(null);
-
-  // View Mode: 'timeline' | 'cards'
-  let viewMode = $state<"timeline" | "cards">("timeline");
-
-  async function handleRefresh() {
-    await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+// Select active year by default, or first year
+$effect(() => {
+  if (
+    years.length > 0 &&
+    (!selectedYearId || !years.some((y) => y.id === selectedYearId))
+  ) {
+    const active = years.find((y) => y.status === "active");
+    selectedYearId = active ? active.id : years[0]?.id || "";
   }
+});
 
-  const currentYear = $derived(years.find((y) => y.id === selectedYearId));
-  const yearPeriods = $derived(
-    periods.filter((p) => p.year_id === selectedYearId),
+// Sheets
+let isYearSheetOpen = $state(false);
+let editingYear = $state<academicCalendarDto | null>(null);
+let isPeriodSheetOpen = $state(false);
+let editingPeriod = $state<any>(null);
+
+// View Mode: 'timeline' | 'cards'
+let viewMode = $state<"timeline" | "cards">("timeline");
+
+async function handleRefresh() {
+  await queryClient.invalidateQueries({ queryKey: queryKeys.calendar.all });
+}
+
+const currentYear = $derived(years.find((y) => y.id === selectedYearId));
+const yearPeriods = $derived(
+  periods.filter((p) => p.year_id === selectedYearId),
+);
+
+const rootPeriods = $derived(
+  yearPeriods.filter((p) => !p.parent_id || p.parent_id === ""),
+);
+
+function getChildren(parentId: string) {
+  return yearPeriods.filter(
+    (p) => p.parent_id === parentId && p.id !== parentId,
+  );
+}
+
+// Progress metrics
+const now = new Date();
+const yearProgress = $derived.by(() => {
+  if (!currentYear?.start_date || !currentYear?.end_date) return null;
+  const start = new Date(currentYear.start_date).getTime();
+  const end = new Date(currentYear.end_date).getTime();
+  const current = now.getTime();
+
+  if (current <= start)
+    return {
+      percentage: 0,
+      status: "upcoming",
+      totalDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)),
+      elapsedDays: 0,
+      remainingDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)),
+    };
+  if (current >= end)
+    return {
+      percentage: 100,
+      status: "completed",
+      totalDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)),
+      elapsedDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)),
+      remainingDays: 0,
+    };
+
+  const total = end - start;
+  const elapsed = current - start;
+  const pct = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+  const totalDays = Math.ceil(total / (1000 * 60 * 60 * 24));
+  const elapsedDays = Math.ceil(elapsed / (1000 * 60 * 60 * 24));
+  const remainingDays = Math.max(0, totalDays - elapsedDays);
+
+  return {
+    percentage: pct,
+    status: "in_progress",
+    totalDays,
+    elapsedDays,
+    remainingDays,
+  };
+});
+
+function calculateTimelinePosition(
+  startStr?: string | null,
+  endStr?: string | null,
+) {
+  if (
+    !startStr ||
+    !endStr ||
+    !currentYear?.start_date ||
+    !currentYear?.end_date
+  ) {
+    return { left: 0, width: 100 };
+  }
+  const yearStart = new Date(currentYear.start_date).getTime();
+  const yearEnd = new Date(currentYear.end_date).getTime();
+  const periodStart = Math.max(yearStart, new Date(startStr).getTime());
+  const periodEnd = Math.min(yearEnd, new Date(endStr).getTime());
+
+  const totalDuration = Math.max(1, yearEnd - yearStart);
+  const leftPct = Math.max(
+    0,
+    Math.min(100, ((periodStart - yearStart) / totalDuration) * 100),
+  );
+  const widthPct = Math.max(
+    2,
+    Math.min(100 - leftPct, ((periodEnd - periodStart) / totalDuration) * 100),
   );
 
-  const rootPeriods = $derived(
-    yearPeriods.filter((p) => !p.parent_id || p.parent_id === ""),
-  );
+  return { left: leftPct, width: widthPct };
+}
 
-  function getChildren(parentId: string) {
-    return yearPeriods.filter((p) => p.parent_id === parentId && p.id !== parentId);
-  }
+function openCreatePeriod() {
+  editingPeriod = null;
+  isPeriodSheetOpen = true;
+}
 
-  // Progress metrics
-  const now = new Date();
-  const yearProgress = $derived.by(() => {
-    if (!currentYear?.start_date || !currentYear?.end_date) return null;
-    const start = new Date(currentYear.start_date).getTime();
-    const end = new Date(currentYear.end_date).getTime();
-    const current = now.getTime();
+function openEditPeriod(period: any) {
+  editingPeriod = period;
+  isPeriodSheetOpen = true;
+}
 
-    if (current <= start) return { percentage: 0, status: "upcoming", totalDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)), elapsedDays: 0, remainingDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)) };
-    if (current >= end) return { percentage: 100, status: "completed", totalDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)), elapsedDays: Math.ceil((end - start) / (1000 * 60 * 60 * 24)), remainingDays: 0 };
+function openEditYear(year: academicCalendarDto) {
+  editingYear = year;
+  isYearSheetOpen = true;
+}
 
-    const total = end - start;
-    const elapsed = current - start;
-    const pct = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
-    const totalDays = Math.ceil(total / (1000 * 60 * 60 * 24));
-    const elapsedDays = Math.ceil(elapsed / (1000 * 60 * 60 * 24));
-    const remainingDays = Math.max(0, totalDays - elapsedDays);
-
-    return { percentage: pct, status: "in_progress", totalDays, elapsedDays, remainingDays };
-  });
-
-  function calculateTimelinePosition(startStr?: string | null, endStr?: string | null) {
-    if (!startStr || !endStr || !currentYear?.start_date || !currentYear?.end_date) {
-      return { left: 0, width: 100 };
-    }
-    const yearStart = new Date(currentYear.start_date).getTime();
-    const yearEnd = new Date(currentYear.end_date).getTime();
-    const periodStart = Math.max(yearStart, new Date(startStr).getTime());
-    const periodEnd = Math.min(yearEnd, new Date(endStr).getTime());
-
-    const totalDuration = Math.max(1, yearEnd - yearStart);
-    const leftPct = Math.max(0, Math.min(100, ((periodStart - yearStart) / totalDuration) * 100));
-    const widthPct = Math.max(2, Math.min(100 - leftPct, ((periodEnd - periodStart) / totalDuration) * 100));
-
-    return { left: leftPct, width: widthPct };
-  }
-
-  function openCreatePeriod() {
-    editingPeriod = null;
-    isPeriodSheetOpen = true;
-  }
-
-  function openEditPeriod(period: any) {
-    editingPeriod = period;
-    isPeriodSheetOpen = true;
-  }
-
-  function openEditYear(year: academicCalendarDto) {
-    editingYear = year;
-    isYearSheetOpen = true;
-  }
-
-  const relatedActionGroups = $derived<ActionGroup[]>([
-    {
-      id: "calendar_academics_links",
-      title: m.academics_layout_panel_title(),
-      icon: AcademicCap,
-      defaultExpanded: true,
-      subLinks: [
-        {
-          id: "academics_schedule",
-          label: m.common_exams_detail_schedule(),
-          href: `/${orgId}/academics/schedule`,
-        },
-        {
-          id: "academics_exams",
-          label: m.common_nav_exams(),
-          href: `/${orgId}/academics/exams`,
-        },
-        {
-          id: "academics_sections",
-          label: m.common_search_group_classes(),
-          href: `/${orgId}/academics/sections`,
-        },
-        {
-          id: "settings_academic_calendars",
-          label: m.settings_nav_academic_calendars(),
-          href: `/${orgId}/settings/academic-calendars`,
-        },
-        {
-          id: "settings_periods",
-          label: m.settings_nav_cycles(),
-          href: `/${orgId}/settings/periods`,
-        },
-      ],
-    },
-  ]);
+const relatedActionGroups = $derived<ActionGroup[]>([
+  {
+    id: "calendar_academics_links",
+    title: m.academics_layout_panel_title(),
+    icon: AcademicCap,
+    defaultExpanded: true,
+    subLinks: [
+      {
+        id: "academics_schedule",
+        label: m.common_exams_detail_schedule(),
+        href: `/${orgId}/academics/schedule`,
+      },
+      {
+        id: "academics_exams",
+        label: m.common_nav_exams(),
+        href: `/${orgId}/academics/exams`,
+      },
+      {
+        id: "academics_sections",
+        label: m.common_search_group_classes(),
+        href: `/${orgId}/academics/sections`,
+      },
+      {
+        id: "settings_academic_calendars",
+        label: m.settings_nav_academic_calendars(),
+        href: `/${orgId}/settings/academic-calendars`,
+      },
+      {
+        id: "settings_periods",
+        label: m.settings_nav_cycles(),
+        href: `/${orgId}/settings/periods`,
+      },
+    ],
+  },
+]);
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 scrollbar-hide font-sans">

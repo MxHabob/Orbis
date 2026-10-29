@@ -28,6 +28,8 @@ pub enum DomainError {
     Storage(String),
     #[error("License required: {0}")]
     LicenseRequired(String),
+    #[error("The application key must be claimed before activation")]
+    LicenseKeyRequiresClaim,
 }
 
 #[derive(Error, Debug, Clone)]

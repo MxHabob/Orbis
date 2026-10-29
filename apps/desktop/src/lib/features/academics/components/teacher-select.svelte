@@ -61,7 +61,9 @@ function getTeacherLabel(t: any): string {
   if (localized) return localized;
   const composite = `${t.first_name || ""} ${t.last_name || ""}`.trim();
   if (composite) return composite;
-  return String(t.full_name || t.full_name_ar || t.email || t.employee_number || t.id || "");
+  return String(
+    t.full_name || t.full_name_ar || t.email || t.employee_number || t.id || "",
+  );
 }
 
 function getTeacherSubtitle(t: any): string | undefined {

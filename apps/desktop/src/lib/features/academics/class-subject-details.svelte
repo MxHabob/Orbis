@@ -37,7 +37,11 @@ import {
   createGradesQuery,
 } from "$lib/features/academics/queries";
 
-let { orgId, classId, SectionSubjectId }: { orgId: string; classId: string; SectionSubjectId: string } = $props();
+let {
+  orgId,
+  classId,
+  SectionSubjectId,
+}: { orgId: string; classId: string; SectionSubjectId: string } = $props();
 
 // Matrix Data (Coursework)
 const selectedPeriodId = $derived(academicContext.effectivePeriodId || "");
@@ -69,9 +73,7 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
     );
     const cells: GradeCell[] = assessmentConfigs.map(
       ({ type, isFinal, max }) => {
-        const grade = studentGrades.find(
-          (item) => item.is_final === isFinal,
-        );
+        const grade = studentGrades.find((item) => item.is_final === isFinal);
         const gradeMax = Number(grade?.max_score);
         return {
           grade_id: grade?.id ?? null,
@@ -84,8 +86,7 @@ const matrixData = $derived.by((): GradeMatrixResponse => {
     );
     const total = cells.reduce((sum, cell) => sum + (cell.score || 0), 0);
     const maxTotal = cells.reduce((sum, cell) => sum + cell.max_score, 0);
-    const percentage =
-      maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+    const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
 
     return {
       enrollment_id:

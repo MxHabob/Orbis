@@ -18,6 +18,9 @@ export function validateReleaseNotes(markdown, description) {
 
   for (const required of ["summary", "known issues"]) {
     const content = sections.get(required)?.join("\n").trim();
-    if (!content) throw new Error(`${description} must include non-empty "## ${required === "summary" ? "Summary" : "Known Issues"}" content.`);
+    if (!content)
+      throw new Error(
+        `${description} must include non-empty "## ${required === "summary" ? "Summary" : "Known Issues"}" content.`,
+      );
   }
 }

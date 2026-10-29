@@ -55,8 +55,8 @@ const employees = $derived(
   Array.isArray(employeesQuery.data)
     ? employeesQuery.data
     : Array.isArray((employeesQuery.data as any)?.items)
-    ? (employeesQuery.data as any).items
-    : []
+      ? (employeesQuery.data as any).items
+      : [],
 );
 
 function getEmployeeLabel(e: any): string {

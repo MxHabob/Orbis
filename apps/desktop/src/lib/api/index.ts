@@ -118,8 +118,6 @@ export function configureApiClient(
   _instance =
     mode === "api" ? new RemoteClient(normalizedBaseUrl!) : new LocalClient();
   return _instance;
-
-  return _instance;
 }
 
 /**

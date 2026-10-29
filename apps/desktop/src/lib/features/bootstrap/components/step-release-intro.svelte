@@ -1,48 +1,47 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { onMount } from "svelte";
-  import { api } from "$lib/api/client";
-  import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
-  import { Badge } from "@orbis/ui/badge";
-  import { Card, CardContent } from "@orbis/ui/card";
-  import { Calendar, Sparkles } from "@orbis/icons";
-  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
-  import EmptyState from "$lib/shared/components/empty-state.svelte";
-  import { formatDate as formatOrgDate } from "$lib/core/i18n";
+import * as m from "$lib/paraglide/messages";
+import { onMount } from "svelte";
+import { api } from "$lib/api/client";
+import type { AppInfo, ReleaseChangelogItem } from "$lib/api/types";
+import { Badge } from "@orbis/ui/badge";
+import { Card, CardContent } from "@orbis/ui/card";
+import { Calendar, Sparkles } from "@orbis/icons";
+import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
+import { formatDate as formatOrgDate } from "$lib/core/i18n";
 
-  let appInfo = $state<AppInfo | null>(null);
-  let latestRelease = $state<ReleaseChangelogItem | null>(null);
-  let isLoading = $state(true);
+let appInfo = $state<AppInfo | null>(null);
+let latestRelease = $state<ReleaseChangelogItem | null>(null);
+let isLoading = $state(true);
 
-  function formatDate(value?: string) {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? null
-      : formatOrgDate(date, "date");
+function formatDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : formatOrgDate(date, "date");
+}
+
+onMount(async () => {
+  try {
+    const [info, releases] = await Promise.all([
+      api.systemGetAppInfo().catch((err) => {
+        console.warn("App info load failed:", err);
+        return null;
+      }),
+      api.systemGetChangelog().catch((err) => {
+        console.warn("Changelog load failed, treating as empty:", err);
+        return [] as ReleaseChangelogItem[];
+      }),
+    ]);
+    appInfo = info;
+    latestRelease =
+      releases.find((release) => release.is_latest) ?? releases[0] ?? null;
+  } catch (error) {
+    console.warn("Failed to load application release information:", error);
+    latestRelease = null;
+  } finally {
+    isLoading = false;
   }
-
-  onMount(async () => {
-    try {
-      const [info, releases] = await Promise.all([
-        api.systemGetAppInfo().catch((err) => {
-          console.warn("App info load failed:", err);
-          return null;
-        }),
-        api.systemGetChangelog().catch((err) => {
-          console.warn("Changelog load failed, treating as empty:", err);
-          return [] as ReleaseChangelogItem[];
-        }),
-      ]);
-      appInfo = info;
-      latestRelease = releases.find((release) => release.is_latest) ?? releases[0] ?? null;
-    } catch (error) {
-      console.warn("Failed to load application release information:", error);
-      latestRelease = null;
-    } finally {
-      isLoading = false;
-    }
-  });
+});
 </script>
 
 <section class="mx-auto w-full max-w-5xl space-y-6 py-2">

@@ -1,494 +1,339 @@
-<!--
-  @component StudentDocuments
-  Student official documents and certificate attachments.
--->
 <script lang="ts">
-import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+  ArrowUpTray,
+  DocumentPage,
+  Refresh,
+  Search,
+  XMark,
+} from "@orbis/icons";
 import { confirmStore } from "$lib/stores";
-import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { toast } from "@orbis/ui";
 import {
   api,
   extractErrorMessage,
+  queryKeys,
   type DocumentDto,
-  type UploadDocumentRequest,
 } from "$lib/api";
+import { useQueryClient } from "@tanstack/svelte-query";
 import {
-  Grid,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@orbis/ui";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@orbis/ui/card";
-import { Button } from "@orbis/ui/button";
-import { Input } from "@orbis/ui/input";
-import { Label } from "@orbis/ui/label";
-import { Skeleton } from "@orbis/ui/skeleton";
-import { ArrowForward, ArrowUpTray, CheckCircle, Clip, DocumentPage, InfoCircle, Plus, Refresh, Trash, XMark } from "@orbis/icons";
-import { toast } from "@orbis/ui";
-import { queryKeys } from "$lib/api";
-import { formatDate } from "$lib/core/i18n";
-import { useStudentFolder } from "$lib/features/documents/queries";
+  getDocumentSource,
+  resolveDocumentUrl,
+  useDocumentsByEntity,
+  useStudentFolder,
+  useTrashDocument,
+} from "$lib/features/documents/queries";
+import ArchiveDocumentCard from "$lib/features/documents/archive-document-card.svelte";
+import ArchivePreviewSheet from "$lib/features/documents/archive-preview-sheet.svelte";
+import ArchiveLoading from "$lib/features/documents/archive-loading.svelte";
 
 let { studentId }: { orgId: string; studentId: string } = $props();
+
 const queryClient = useQueryClient();
 const studentFolderQuery = useStudentFolder(() => studentId);
+const documentsQuery = useDocumentsByEntity(
+  () => "student",
+  () => studentId,
+);
+const trashMutation = useTrashDocument();
 
-const documentsQuery = createQuery(() => ({
-  queryKey: queryKeys.student.documents(studentId),
-  queryFn: () => api.listDocumentsByEntity("student", studentId),
-  enabled: !!studentId,
-  staleTime: 3 * 60 * 1000,
-}));
+let searchQuery = $state("");
+let isUploading = $state(false);
+let fileInput: HTMLInputElement | undefined = $state();
+let isPreviewOpen = $state(false);
+let selectedDocument = $state<DocumentDto | null>(null);
+let selectedDocumentUrl = $state("");
 
-const documents = $derived((documentsQuery.data as DocumentDto[] | undefined) ?? []);
+const i18n = {
+  academicsGradesRefresh: m.academics_grades_refresh(),
+  commonLoadingError: m.common_loading_error(),
+  commonRefresh: m.common_refresh(),
+  commonRetry: m.common_retry(),
+  docActionCreateReq: m.common_docs_action_create_req(),
+  docActionOpenFile: m.common_docs_action_open_file(),
+  docActionShowInFolder: m.common_docs_action_show_in_folder(),
+  docAddBtn: m.common_docs_add_btn(),
+  docBtnUpload: m.common_docs_btn_upload(),
+  docColDate: m.common_docs_col_date(),
+  docColName: m.common_docs_col_name(),
+  docCreateSuccess: m.common_docs_create_success(),
+  docDeleteConfirm: m.common_docs_delete_confirm(),
+  docDeleteSuccess: m.common_docs_delete_success(),
+  docDetailDescLabel: m.common_docs_detail_desc_label(),
+  docDetailDocLabel: m.common_docs_detail_doc_label(),
+  docEmpty: m.common_docs_empty(),
+  docEmptyHint: m.common_docs_empty_hint(),
+  docFormDescLabel: m.common_docs_form_desc_label(),
+  docFormDescPlaceholder: m.common_docs_form_desc_placeholder(),
+  docFormNameArLabel: m.common_docs_form_name_ar_label(),
+  docFormNameArPlaceholder: m.common_docs_form_name_ar_placeholder(),
+  docFormNameEnLabel: m.common_docs_form_name_en_label(),
+  docFormNameRequired: m.common_docs_form_name_required(),
+  docFormUrlLabel: m.common_docs_form_url_label(),
+  docFormUrlPlaceholder: m.common_docs_form_url_placeholder(),
+  docStatusPending: m.common_docs_status_pending(),
+  docStatusRequirement: m.common_docs_status_requirement(),
+  docStatusUploaded: m.common_docs_status_uploaded(),
+  docSubtitle: m.common_docs_subtitle(),
+  docTitle: m.common_docs_title(),
+  docUploadDialogTitle: m.common_docs_upload_dialog_title(),
+  docUploadSuccess: m.common_docs_upload_success(),
+  docUploadUrlRequired: m.common_docs_upload_url_required(),
+};
+
+const documentStateLabels = {
+  title: m.common_docs_title(),
+  subtitle: m.common_docs_subtitle(),
+  actionCreateReq: m.common_docs_action_create_req(),
+  actionOpenFile: m.common_docs_action_open_file(),
+  addBtn: m.common_docs_add_btn(),
+  uploadBtn: m.common_docs_btn_upload(),
+  empty: m.common_docs_empty(),
+  emptyHint: m.common_docs_empty_hint(),
+  formNameArLabel: m.common_docs_form_name_ar_label(),
+  formNameArPlaceholder: m.common_docs_form_name_ar_placeholder(),
+  formNameEnLabel: m.common_docs_form_name_en_label(),
+  formDescLabel: m.common_docs_form_desc_label(),
+  formDescPlaceholder: m.common_docs_form_desc_placeholder(),
+  formUrlLabel: m.common_docs_form_url_label(),
+  formUrlPlaceholder: m.common_docs_form_url_placeholder(),
+  statusRequirement: m.common_docs_status_requirement(),
+  statusPending: m.common_docs_status_pending(),
+  statusUploaded: m.common_docs_status_uploaded(),
+  colName: m.common_docs_col_name(),
+  colDate: m.common_docs_col_date(),
+  uploadDialogTitle: m.common_docs_upload_dialog_title(),
+  uploadSuccess: m.common_docs_upload_success(),
+  createSuccess: m.common_docs_create_success(),
+  deleteConfirm: m.common_docs_delete_confirm(),
+  deleteSuccess: m.common_docs_delete_success(),
+  detailDocLabel: m.common_docs_detail_doc_label(),
+  detailDescLabel: m.common_docs_detail_desc_label(),
+  uploadUrlRequired: m.common_docs_upload_url_required(),
+};
+
+const documents = $derived(
+  (documentsQuery.data ?? []).filter(
+    (document) => !document.deleted_at && !document.is_archived,
+  ),
+);
 const isLoading = $derived(documentsQuery.isLoading);
-const error = $derived(
+const queryError = $derived(
   documentsQuery.error ? extractErrorMessage(documentsQuery.error) : null,
 );
 
-let showAddModal = $state(false);
-let showUploadModal = $state(false);
-let selectedDoc = $state<DocumentDto | null>(null);
+const filteredDocuments = $derived.by(() => {
+  const query = searchQuery.trim().toLowerCase();
+  if (!query) return documents;
 
-let newDocName = $state("");
-let newDocTitle = $state("");
-let newDocDescription = $state("");
-let newDocUrl = $state("");
+  return documents.filter((document) => {
+    const searchableText = [
+      document.name,
+      document.description || "",
+      document.category || "",
+      document.tags || "",
+    ]
+      .join(" ")
+      .toLowerCase();
 
-let uploadFile = $state<File | null>(null);
-let isUploadingFile = $state(false);
+    return searchableText.includes(query);
+  });
+});
 
-async function handleAddDocument() {
-  if (!newDocName.trim()) {
-    toast.error(m.common_docs_form_name_required());
-    return;
-  }
+function openFilePicker() {
+  if (!isUploading) fileInput?.click();
+}
+
+async function ensureStudentFolder() {
+  return studentFolderQuery.data ?? api.getOrCreateStudentFolder(studentId);
+}
+
+async function handleFilesPicked(event: Event) {
+  const input = event.currentTarget as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
+  if (files.length === 0 || isUploading) return;
+
+  isUploading = true;
+  const errors: string[] = [];
+  let uploadedCount = 0;
 
   try {
-    const folder =
-      studentFolderQuery.data ?? (await api.getOrCreateStudentFolder(studentId));
-    const request: UploadDocumentRequest = {
-      name: newDocName.trim(),
-      mime_type: "application/pdf",
-      entity_type: "student",
-      entity_id: studentId,
-      folder_id: folder.id,
-      category: "general",
-      visibility: "private",
-      file_path: newDocUrl.trim() || newDocName.trim(),
-      description: newDocDescription.trim() || null,
-    };
+    const folder = await ensureStudentFolder();
 
-    await api.uploadDocument(request);
-    toast.success(m.common_docs_create_success());
-    showAddModal = false;
+    for (const file of files) {
+      try {
+        await api.uploadFile({
+          file,
+          name: file.name,
+          entity_type: "student",
+          entity_id: studentId,
+          folder_id: folder.id,
+          category: "general",
+          asset_type: "document",
+          visibility: "private",
+        });
+        uploadedCount += 1;
+      } catch (error) {
+        console.error(
+          `Failed to upload student document "${file.name}":`,
+          error,
+        );
+        errors.push(`${file.name}: ${extractErrorMessage(error)}`);
+      }
+    }
 
-    newDocName = "";
-    newDocTitle = "";
-    newDocDescription = "";
-    newDocUrl = "";
+    if (uploadedCount > 0) {
+      toast.success(m.common_docs_upload_success());
+      await documentsQuery.refetch();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.contents(folder.id),
+      });
+    }
 
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.student.documents(studentId),
-    });
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.folder.contents(folder.id),
-    });
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
+    if (errors.length > 0) {
+      toast.error(errors.join("\n"));
+    }
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isUploading = false;
   }
 }
 
-async function handleDelete(docId: string) {
+async function handlePreview(document: DocumentDto) {
+  try {
+    selectedDocument = document;
+    selectedDocumentUrl = await resolveDocumentUrl(
+      getDocumentSource(document),
+      document.id,
+    );
+    isPreviewOpen = true;
+  } catch (error) {
+    console.error("Failed to load student document preview:", error);
+    toast.error(m.common_loading_error());
+  }
+}
+
+async function handleDeleteDocument(id: string) {
   const confirmed = await confirmStore.prompt({
-    title: m.operations_ui_delete_question_title(),
+    title: m.common_docs_delete_success(),
     description: m.common_docs_delete_confirm(),
     confirmText: m.common_action_delete(),
     variant: "destructive",
   });
-  if (!confirmed) {
-    return;
-  }
+
+  if (!confirmed) return;
 
   try {
-    await api.deleteDocument(docId);
+    await trashMutation.mutateAsync(id);
     toast.success(m.common_docs_delete_success());
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.student.documents(studentId),
-    });
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  }
-}
-
-function openUploadModal(doc: DocumentDto) {
-  selectedDoc = doc;
-  uploadFile = null;
-  showUploadModal = true;
-}
-
-async function handleUploadFile() {
-  if (!uploadFile) {
-    toast.error(m.common_docs_upload_url_required());
-    return;
-  }
-
-  isUploadingFile = true;
-  try {
-    const folder =
-      studentFolderQuery.data ?? (await api.getOrCreateStudentFolder(studentId));
-    const uploadedDocument = await api.uploadFile({
-      file: uploadFile,
-      name: uploadFile.name,
-      entity_type: "student",
-      entity_id: studentId,
-      folder_id: folder.id,
-      category: selectedDoc?.category || "general",
-      asset_type: "document",
-      visibility: "private",
-      description: selectedDoc?.description || undefined,
-    });
-
-    if (selectedDoc?.id) {
-      try {
-        await api.deleteDocument(selectedDoc.id);
-      } catch (error) {
-        toast.warning(extractErrorMessage(error));
-      }
-    }
-    toast.success(m.common_docs_upload_success());
-    showUploadModal = false;
-    uploadFile = null;
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.student.documents(studentId),
-    });
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.folder.contents(folder.id),
-    });
-  } catch (e: unknown) {
-    toast.error(extractErrorMessage(e));
-  } finally {
-    isUploadingFile = false;
+    await documentsQuery.refetch();
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   }
 }
 </script>
 
-<div class="flex flex-col gap-5 text-xs text-start">
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-sm font-bold">{m.common_docs_title()}</h2>
-      <p class="text-[10px] text-muted-foreground">{m.common_docs_subtitle()}</p>
-    </div>
-    <div class="flex items-center gap-2">
-      <Button 
-        variant="outline" 
-        size="sm"
-        class="h-8 w-8 p-0 text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
-        onclick={() => documentsQuery.refetch()}
-        title={m.academics_grades_refresh()}
-      >
-        {#if isLoading}<LoadingIndicator  size={13} />{:else}<Refresh size={13}   />{/if}
-      </Button>
-      <Button 
-        variant="lime"
-        class="text-xs h-8 px-3 gap-1.5 cursor-pointer"
-        onclick={() => showAddModal = true}
-      >
-        <Plus size={13} />
-        {m.common_docs_add_btn()}
-      </Button>
-    </div>
-  </div>
+<input
+  bind:this={fileInput}
+  type="file"
+  multiple
+  class="hidden"
+  onchange={handleFilesPicked}
+/>
 
-  {#if isLoading}
-    <div class="flex flex-col gap-3 py-6">
-      <Skeleton class="h-12 w-full" />
-      <Skeleton class="h-10 w-full" />
-      <Skeleton class="h-10 w-full" />
+<div class="flex h-full w-full flex-col overflow-hidden bg-background text-foreground text-start">
+  <header class="flex items-center justify-between">
+    <div class="relative min-w-0 flex-1">
+      <Search class="pointer-events-none absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        bind:value={searchQuery}
+        placeholder={m.common_header_search()}
+        class="h-8 w-full bg-background/70 ps-9 pe-8 text-xs"
+      />
+      {#if searchQuery}
+        <button
+          type="button"
+          onclick={() => (searchQuery = "")}
+          class="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          aria-label={m.common_filter_clear()}
+        >
+          <XMark class="h-3.5 w-3.5" />
+        </button>
+      {/if}
     </div>
-  {:else if error}
-    <div class="flex flex-col items-center justify-center p-8 border border-destructive/20 bg-destructive/5 rounded-xl text-destructive text-center gap-2">
-      <h3 class="font-semibold text-xs">{m.common_loading_error()}</h3>
-      <p class="text-[10px] text-muted-foreground">{error}</p>
-      <Button variant="link" onclick={() => documentsQuery.refetch()} class="text-[10px] underline cursor-pointer mt-2 hover:text-foreground">{m.common_retry()}</Button>
-    </div>
-  {:else if documents.length === 0}
-    <div class="flex flex-col items-center justify-center p-12 text-center text-muted-foreground border border-dashed border-border rounded-xl bg-card/10 gap-3">
-      <DocumentPage size={28} class="text-muted-foreground/30 animate-pulse" />
-      <div class="flex flex-col gap-0.5">
-        <p class="text-xs font-semibold">{m.common_docs_empty()}</p>
-        <p class="text-[10px] text-muted-foreground/80">{m.common_docs_empty_hint()}</p>
+
+    <Button
+      variant="ghost"
+      size="icon"
+      class="h-8 w-8"
+      disabled={documentsQuery.isFetching}
+      onclick={() => documentsQuery.refetch()}
+      title={m.common_refresh()}
+    >
+      <Refresh class="h-4 w-4 {documentsQuery.isFetching ? 'animate-spin' : ''}" />
+    </Button>
+
+    <Button size="sm" disabled={isUploading} onclick={openFilePicker}>
+      <ArrowUpTray class="me-1.5 h-3.5 w-3.5" />
+      {m.common_docs_btn_upload()}
+    </Button>
+  </header>
+
+  <main class="flex-1 overflow-y-auto p-4">
+    {#if isLoading}
+      <ArchiveLoading />
+    {:else if queryError}
+      <div class="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+        <p class="text-sm font-semibold text-destructive">{m.common_loading_error()}</p>
+        <p class="max-w-lg text-xs text-muted-foreground">{queryError}</p>
+        <Button variant="outline" size="sm" onclick={() => documentsQuery.refetch()}>
+          <Refresh class="me-1.5 h-3.5 w-3.5" />
+          {m.common_retry()}
+        </Button>
       </div>
-      <Button 
-        variant="outline" 
-        class="text-xs h-8 px-4 cursor-pointer mt-2"
-        onclick={() => showAddModal = true}
-      >
-        <Plus size={12} class="me-1.5" />
-        {m.common_docs_add_btn()}
-      </Button>
-    </div>
-  {:else}
-    <Card class="overflow-hidden">
-      <CardHeader class="py-3 px-4 flex flex-row items-center justify-between">
-        <div class="flex items-center gap-2">
-          <Clip size={14} class="text-primary" />
-          <CardTitle class="text-xs font-bold uppercase tracking-wider text-foreground">
-            {m.common_docs_title()}
-          </CardTitle>
+    {:else if documents.length === 0}
+      <div class="flex min-h-80 flex-col items-center justify-center text-center text-muted-foreground">
+        <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground/60 shadow-inner">
+          <DocumentPage class="h-8 w-8" />
         </div>
-      </CardHeader>
-      <CardContent class="p-0">
-        <Grid>
-          <TableHeader>
-            <TableRow class="hover:bg-transparent">
-              <TableHead class="text-start">{m.common_docs_col_name()}</TableHead>
-              <TableHead class="text-start">{m.common_word_type()}</TableHead>
-              <TableHead class="text-start">{m.common_word_status()}</TableHead>
-              <TableHead class="text-start">{m.common_docs_col_date()}</TableHead>
-              <TableHead class="text-end px-6"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {#each documents as doc (doc.id)}
-              {@const isUploaded = !!doc.url || !!doc.file_path}
-              <TableRow class="hover:bg-accent/20">
-                <TableCell class="text-start">
-                  <div class="flex items-center gap-2.5">
-                    <div class="p-1.5 bg-primary/5 text-primary rounded-md">
-                      <DocumentPage size={14} />
-                    </div>
-                    <div class="flex flex-col text-start">
-                      <span class="font-bold text-foreground">{doc.name}</span>
-                      {#if doc.description}
-                        <span class="text-[9px] text-muted-foreground">{doc.description}</span>
-                      {/if}
-                    </div>
-                  </div>
-                </TableCell>
-                
-                <TableCell class="text-start font-mono text-[10px] text-muted-foreground">
-                  {#if isUploaded}
-                    <span class="uppercase font-semibold text-foreground/85">{doc.extension || 'FILE'}</span>
-                  {:else}
-                    <span class="opacity-60">{m.common_docs_status_requirement()}</span>
-                  {/if}
-                </TableCell>
-                
-                <TableCell class="text-start">
-                  {#if isUploaded}
-                    <span class="badge-brand-success py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-                      <CheckCircle size={10} />
-                      {m.common_docs_status_uploaded()}
-                    </span>
-                  {:else}
-                    <span class="badge-brand-destructive py-0.5 px-2 text-[9px] flex items-center w-fit gap-1 font-semibold">
-                      <InfoCircle size={10} />
-                      {m.common_docs_status_pending()}
-                    </span>
-                  {/if}
-                </TableCell>
-
-                <TableCell class="font-mono text-muted-foreground text-start">
-                  {formatDate(doc.created_at) || '-'}
-                </TableCell>
-
-                <TableCell class="text-end px-6">
-                  <div class="flex items-center justify-end gap-1.5">
-                    {#if doc.url}
-                      <Button 
-                        href={doc.url}
-                        target="_blank"
-                        variant="ghost" 
-                        size="sm"
-                        class="h-7 w-7 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-                        title={m.common_docs_action_open_file()}
-                      >
-                        <ArrowForward size={12} />
-                      </Button>
-                    {:else}
-                      <Button 
-                        variant="outline" 
-                        class="text-[10px] h-7 px-2 gap-1.5 cursor-pointer hover:bg-primary/5 hover:text-primary hover:border-primary/50"
-                        onclick={() => openUploadModal(doc)}
-                      >
-                        <ArrowUpTray size={11} />
-                        {m.common_docs_btn_upload()}
-                      </Button>
-                    {/if}
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      class="h-7 w-7 p-0 text-destructive hover:bg-destructive/5 hover:text-destructive cursor-pointer"
-                      onclick={() => handleDelete(doc.id)}
-                      title={m.common_action_delete()}
-                    >
-                      <Trash size={12} />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            {/each}
-          </TableBody>
-        </Grid>
-      </CardContent>
-    </Card>
-  {/if}
+        <h2 class="text-sm font-bold text-foreground">{m.common_docs_empty()}</h2>
+        <p class="mt-1 max-w-sm text-xs text-muted-foreground">
+          {m.common_docs_empty_hint()}
+        </p>
+        <Button class="mt-5" size="sm" disabled={isUploading} onclick={openFilePicker}>
+          <ArrowUpTray class="me-1.5 h-3.5 w-3.5" />
+          {m.common_docs_add_btn()}
+        </Button>
+      </div>
+    {:else if filteredDocuments.length === 0}
+      <div class="flex min-h-64 flex-col items-center justify-center text-center text-muted-foreground">
+        <Search class="mb-3 h-7 w-7 opacity-50" />
+        <h2 class="text-sm font-semibold text-foreground">{m.common_search_no_results()}</h2>
+        <Button class="mt-3" variant="outline" size="sm" onclick={() => (searchQuery = "")}>
+          {m.common_filter_clear()}
+        </Button>
+      </div>
+    {:else}
+      <div class="grid grid-cols-2 gap-3.5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {#each filteredDocuments as document (document.id)}
+          <ArchiveDocumentCard
+            {document}
+            onpreview={handlePreview}
+            ondelete={handleDeleteDocument}
+          />
+        {/each}
+      </div>
+    {/if}
+  </main>
 </div>
 
-<!-- Modal: Add New Document Requirement -->
-{#if showAddModal}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs">
-    <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none">
-      <div class="flex items-center justify-between border-b border-border/80 pb-3">
-        <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
-          <Clip size={15} class="text-primary" />
-          {m.common_docs_add_btn()}
-        </h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          class="h-6 w-6 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-          onclick={() => showAddModal = false}
-        >
-          <XMark size={14} />
-        </Button>
-      </div>
-
-      <div class="space-y-4 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_name_ar_label()}</Label>
-          <Input 
-            type="text" 
-            placeholder={m.common_docs_form_name_ar_placeholder()} 
-            class="text-xs" 
-            bind:value={newDocName}
-          />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_name_en_label()}</Label>
-          <Input 
-            type="text" 
-            placeholder={m.common_docs_form_name_ar_placeholder()} 
-            class="text-xs" 
-            bind:value={newDocTitle}
-          />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_desc_label()}</Label>
-          <Input 
-            type="text" 
-            placeholder={m.common_docs_form_desc_placeholder()} 
-            class="text-xs" 
-            bind:value={newDocDescription}
-          />
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_form_url_label()}</Label>
-          <Input 
-            type="text" 
-            placeholder={m.common_docs_form_url_placeholder()} 
-            class="text-xs font-mono" 
-            bind:value={newDocUrl}
-          />
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end gap-3 border-t border-border/80 pt-4 mt-2">
-        <Button 
-          variant="outline" 
-          class="text-xs h-8 px-4 cursor-pointer" 
-          onclick={() => showAddModal = false}
-        >
-          {m.common_action_cancel()}
-        </Button>
-        <Button 
-          variant="lime" 
-          class="text-xs h-8 px-5 cursor-pointer font-semibold"
-          onclick={handleAddDocument}
-        >
-          {m.common_docs_action_create_req()}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- Modal: Upload File -->
-{#if showUploadModal}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-xs">
-    <div class="bg-card border border-border p-6 rounded-xl shadow-xl w-full max-w-md flex flex-col gap-4 text-start select-none">
-      <div class="flex items-center justify-between border-b border-border/80 pb-3">
-        <h3 class="font-bold text-sm text-foreground flex items-center gap-2">
-          <ArrowUpTray size={15} class="text-primary" />
-          {m.common_docs_upload_dialog_title()}
-        </h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          class="h-6 w-6 p-0 text-muted-foreground hover:text-foreground cursor-pointer"
-          onclick={() => showUploadModal = false}
-        >
-          <XMark size={14} />
-        </Button>
-      </div>
-
-      {#if selectedDoc}
-        <div class="p-2 border border-border bg-card/45 rounded-lg text-[10px] space-y-0.5">
-          <div><span class="text-muted-foreground">{m.common_docs_detail_doc_label()}</span> <span class="font-bold text-foreground">{selectedDoc.name}</span></div>
-          {#if selectedDoc.description}
-            <div><span class="text-muted-foreground">{m.common_docs_detail_desc_label()}</span> <span class="text-foreground">{selectedDoc.description}</span></div>
-          {/if}
-        </div>
-      {/if}
-
-      <div class="space-y-4 py-2">
-        <div class="flex flex-col gap-1.5">
-          <Label class="text-[10px] font-semibold text-muted-foreground">{m.common_docs_upload_dialog_title()} *</Label>
-          <Input 
-            type="file"
-            accept=".pdf,image/*,.doc,.docx"
-            class="text-xs"
-            onchange={(event) => {
-              uploadFile = (event.currentTarget as HTMLInputElement).files?.[0] ?? null;
-            }}
-          />
-        </div>
-        {#if uploadFile}
-          <p class="text-[10px] text-muted-foreground">
-            {uploadFile.name} · {(uploadFile.size / 1024).toFixed(1)} KB
-          </p>
-        {/if}
-      </div>
-
-      <div class="flex items-center justify-end gap-3 border-t border-border/80 pt-4 mt-2">
-        <Button 
-          variant="outline" 
-          class="text-xs h-8 px-4 cursor-pointer" 
-          onclick={() => showUploadModal = false}
-        >
-          {m.common_action_cancel()}
-        </Button>
-        <Button 
-          variant="lime" 
-          class="text-xs h-8 px-5 cursor-pointer font-semibold"
-          disabled={!uploadFile || isUploadingFile}
-          onclick={handleUploadFile}
-        >
-          {#if isUploadingFile}<LoadingIndicator size={13} />{:else}{m.common_docs_btn_upload()}{/if}
-        </Button>
-      </div>
-    </div>
-  </div>
-{/if}
+<ArchivePreviewSheet
+  bind:open={isPreviewOpen}
+  document={selectedDocument}
+  url={selectedDocumentUrl}
+  ondelete={handleDeleteDocument}
+/>

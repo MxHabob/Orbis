@@ -55,7 +55,10 @@ const periods = $derived.by(() => {
   if (!periodType) return all;
   if (periodType === "academic_calendar" || periodType === "year") {
     return all.filter(
-      (p) => p.period_type === "academic_calendar" || p.period_type === "year" || p.period_type === "annual",
+      (p) =>
+        p.period_type === "academic_calendar" ||
+        p.period_type === "year" ||
+        p.period_type === "annual",
     );
   }
   return all.filter((p) => p.period_type === periodType);
@@ -70,7 +73,8 @@ function getPeriodLabel(p: any): string {
 }
 
 function getPeriodSubtitle(p: any): string | undefined {
-  if (p?.is_active || p?.status === "active") return m.shared_ui_current_active_period();
+  if (p?.is_active || p?.status === "active")
+    return m.shared_ui_current_active_period();
   if (p?.start_date && p?.end_date) {
     return `${formatDate(p.start_date, "date")} — ${formatDate(p.end_date, "date")}`;
   }

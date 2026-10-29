@@ -4,16 +4,31 @@ import { employeeImportProfile } from "./employee-profile";
 import { gradeImportProfile } from "./grade-profile";
 import { teacherSubjectImportProfile } from "./teacher-subject-profile";
 
-export { studentImportProfile, studentColumnMetadata, studentGridColumns } from "./student-profile";
-export { employeeImportProfile, employeeColumnMetadata, employeeGridColumns } from "./employee-profile";
-export { gradeImportProfile, gradeColumnMetadata, gradeGridColumns } from "./grade-profile";
+export {
+  studentImportProfile,
+  studentColumnMetadata,
+  studentGridColumns,
+} from "./student-profile";
+export {
+  employeeImportProfile,
+  employeeColumnMetadata,
+  employeeGridColumns,
+} from "./employee-profile";
+export {
+  gradeImportProfile,
+  gradeColumnMetadata,
+  gradeGridColumns,
+} from "./grade-profile";
 export {
   teacherSubjectImportProfile,
   teacherSubjectColumnMetadata,
   teacherSubjectGridColumns,
 } from "./teacher-subject-profile";
 
-export const BULK_PROFILES: Record<BulkProfileId, BulkImportProfile<any, any>> = {
+export const BULK_PROFILES: Record<
+  BulkProfileId,
+  BulkImportProfile<any, any>
+> = {
   students: studentImportProfile,
   employees: employeeImportProfile,
   grades: gradeImportProfile,

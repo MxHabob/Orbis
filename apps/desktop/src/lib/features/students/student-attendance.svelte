@@ -13,7 +13,12 @@ import {
   CardAction,
   CardContent,
 } from "@orbis/ui/card";
-import { Calendar, ClockRotateRight, UserBadgeCheck, UserMinus } from "@orbis/icons";
+import {
+  Calendar,
+  ClockRotateRight,
+  UserBadgeCheck,
+  UserMinus,
+} from "@orbis/icons";
 import { onMount } from "svelte";
 import { getLocale } from "$lib/paraglide/runtime";
 
@@ -31,16 +36,33 @@ let attendanceRecords = $state<any[]>([]);
 let isLoading = $state(true);
 
 const presentCount = $derived(
-  attendanceRecords.filter((r) => String(r.status || "").toLowerCase().includes("present") || String(r.status || "").includes("حاضر")).length,
+  attendanceRecords.filter(
+    (r) =>
+      String(r.status || "")
+        .toLowerCase()
+        .includes("present") || String(r.status || "").includes("حاضر"),
+  ).length,
 );
 const absentCount = $derived(
-  attendanceRecords.filter((r) => String(r.status || "").toLowerCase().includes("absent") || String(r.status || "").includes("غائب")).length,
+  attendanceRecords.filter(
+    (r) =>
+      String(r.status || "")
+        .toLowerCase()
+        .includes("absent") || String(r.status || "").includes("غائب"),
+  ).length,
 );
 const lateCount = $derived(
-  attendanceRecords.filter((r) => String(r.status || "").toLowerCase().includes("late") || String(r.status || "").includes("متأخر")).length,
+  attendanceRecords.filter(
+    (r) =>
+      String(r.status || "")
+        .toLowerCase()
+        .includes("late") || String(r.status || "").includes("متأخر"),
+  ).length,
 );
 const totalDays = $derived(presentCount + absentCount + lateCount);
-const attendanceRate = $derived(totalDays > 0 ? ((presentCount + lateCount * 0.5) / totalDays) * 100 : 100);
+const attendanceRate = $derived(
+  totalDays > 0 ? ((presentCount + lateCount * 0.5) / totalDays) * 100 : 100,
+);
 
 onMount(() => loadAttendance());
 
@@ -79,11 +101,56 @@ const gridSource = $derived(
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "date", prop: "date", header: m.common_overview_date(), name: m.common_overview_date(), width: 130, size: 130, readonly: true, cellClass: "font-mono" },
-  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "subject_name", prop: "subject_name", header: m.common_search_group_subjects(), name: m.common_search_group_subjects(), width: 140, size: 140, readonly: true },
-  { id: "notes", prop: "notes", header: m.academics_attendance_col_notes(), name: m.academics_attendance_col_notes(), width: 220, size: 220, readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "date",
+    prop: "date",
+    header: m.common_overview_date(),
+    name: m.common_overview_date(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
+    width: 110,
+    size: 110,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "subject_name",
+    prop: "subject_name",
+    header: m.common_search_group_subjects(),
+    name: m.common_search_group_subjects(),
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "notes",
+    prop: "notes",
+    header: m.academics_attendance_col_notes(),
+    name: m.academics_attendance_col_notes(),
+    width: 220,
+    size: 220,
+    readonly: true,
+  },
 ];
 
 const rtl = $derived(getLocale() === "ar");

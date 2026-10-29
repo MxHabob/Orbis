@@ -1,6 +1,6 @@
-import React from 'react';
-import Svg, { Path, Circle, type SvgProps } from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+import React from "react";
+import Svg, { Path, Circle, type SvgProps } from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface LanguageProps extends SvgProps {
   size?: number;
@@ -11,7 +11,7 @@ export interface LanguageProps extends SvgProps {
 
 export function Language({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -28,7 +28,8 @@ export function Language({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path d="m5 8 6 6m-4-6 2 6m-4-4h7M4 5h10M9 3v2m2 8 2.5-5 2.5 5m-4.25-1.5h3.5" />
       <Circle cx="12" cy="12" r="9.25" />
     </Svg>

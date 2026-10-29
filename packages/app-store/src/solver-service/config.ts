@@ -56,13 +56,18 @@ const config: OrbisApp = {
       id: "mode",
       label: "Deployment Mode",
       label_ar: "نمط التشغيل والربط",
-      description: "Choose between embedded desktop sidecar or external server cluster.",
-      description_ar: "اختر بين التشغيل المدمج في الديسكتوب (Sidecar) أو خادم خارجي.",
+      description:
+        "Choose between embedded desktop sidecar or external server cluster.",
+      description_ar:
+        "اختر بين التشغيل المدمج في الديسكتوب (Sidecar) أو خادم خارجي.",
       type: "select",
       required: true,
       value: "embedded",
       options: [
-        { label: "Embedded Desktop Sidecar (Auto On-Demand)", value: "embedded" },
+        {
+          label: "Embedded Desktop Sidecar (Auto On-Demand)",
+          value: "embedded",
+        },
         { label: "Remote Solver Cluster (Custom URL)", value: "remote" },
       ],
     },
@@ -81,8 +86,10 @@ const config: OrbisApp = {
       id: "idle_timeout_minutes",
       label: "Auto-Sleep Idle Timeout (Minutes)",
       label_ar: "مهلة الإيقاف التلقائي عند الخمول (دقائق)",
-      description: "Automatically stops the desktop sidecar when idle to free RAM & CPU.",
-      description_ar: "إيقاف خدمة الديسكتوب تلقائياً عند عدم الاستخدام لتحرير موارد الجهاز.",
+      description:
+        "Automatically stops the desktop sidecar when idle to free RAM & CPU.",
+      description_ar:
+        "إيقاف خدمة الديسكتوب تلقائياً عند عدم الاستخدام لتحرير موارد الجهاز.",
       type: "number",
       required: false,
       value: 5,
@@ -91,8 +98,10 @@ const config: OrbisApp = {
       id: "timeout_seconds",
       label: "Solving Timeout (Seconds)",
       label_ar: "المهلة الزمنية للحل (بالثواني)",
-      description: "Maximum time allowed for solving before returning the best solution found.",
-      description_ar: "أقصى وقت مسموح به لحساب وتوليد الجدول قبل اعتماد أفضل حل.",
+      description:
+        "Maximum time allowed for solving before returning the best solution found.",
+      description_ar:
+        "أقصى وقت مسموح به لحساب وتوليد الجدول قبل اعتماد أفضل حل.",
       type: "number",
       required: false,
       value: 30,

@@ -20,7 +20,9 @@ import type { LayoutData } from "./$types";
 let { data, children }: { data: LayoutData; children: Snippet } = $props();
 
 const orgId = $derived(data.orgId || String(page.params.orgId || ""));
-const sectionId = $derived(data.sectionId || String(page.params.sectionId || ""));
+const sectionId = $derived(
+  data.sectionId || String(page.params.sectionId || ""),
+);
 const SectionSubjectId = $derived(
   data.SectionSubjectId || String(page.params.SectionSubjectId || ""),
 );

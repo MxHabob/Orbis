@@ -120,7 +120,9 @@ async function handleRetryTask(taskId: string) {
 async function handleTriggerTick(dryRun: boolean = false) {
   try {
     await runTick.mutateAsync({ orgId, dryRun });
-    toast.success(dryRun ? m.ai_ui_dry_run_started() : m.ai_ui_policy_evaluation_started());
+    toast.success(
+      dryRun ? m.ai_ui_dry_run_started() : m.ai_ui_policy_evaluation_started(),
+    );
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }
@@ -135,7 +137,14 @@ async function toggleAutopilotMode() {
       paused: false,
       mode: newMode,
     });
-    toast.success(m.ai_ui_autopilot_mode_changed({ mode: newMode === "autonomous" ? m.ai_ui_mode_autonomous() : m.ai_ui_mode_advisory() }));
+    toast.success(
+      m.ai_ui_autopilot_mode_changed({
+        mode:
+          newMode === "autonomous"
+            ? m.ai_ui_mode_autonomous()
+            : m.ai_ui_mode_advisory(),
+      }),
+    );
   } catch (e) {
     toast.error(extractErrorMessage(e));
   }

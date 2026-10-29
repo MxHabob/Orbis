@@ -1,7 +1,10 @@
 <script lang="ts">
 import { Tooltip as TooltipPrimitive } from "bits-ui";
 import { cn } from "../../../utils.js";
-import { useDirectionAwareSide, type PositionSide } from "../../../utils/direction.svelte.js";
+import {
+  useDirectionAwareSide,
+  type PositionSide,
+} from "../../../utils/direction.svelte.js";
 import TooltipPortal from "./tooltip-portal.svelte";
 import type { ComponentProps } from "svelte";
 import type { WithoutChildrenOrChild } from "../../../utils.js";

@@ -64,6 +64,7 @@ export const FloatingActionButton = React.memo<FloatingActionButtonProps>(
         style={[
           styles.elevation,
           positionStyle,
+          tactilePress.shadowStyle,
           tactilePress.style,
           {
             opacity: isDisabled ? 0.6 : 1,

@@ -1,8 +1,5 @@
-import type { StyleProp, ViewStyle } from 'react-native';
-import Svg, {
-  Path,
-  type SvgProps,
-} from 'react-native-svg';
+import type { StyleProp, ViewStyle } from "react-native";
+import Svg, { Path, type SvgProps } from "react-native-svg";
 
 export interface XMarkProps extends SvgProps {
   size?: number;
@@ -13,7 +10,7 @@ export interface XMarkProps extends SvgProps {
 
 export function XMark({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -30,7 +27,8 @@ export function XMark({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path d="m5.75 5.75 8.5 8.5m0-8.5-8.5 8.5" />
     </Svg>
   );

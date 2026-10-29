@@ -1,6 +1,6 @@
-import React from 'react';
-import Svg, { Path, Circle, Rect, type SvgProps } from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+import React from "react";
+import Svg, { Path, Circle, Rect, type SvgProps } from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface EmployeeAffairsProps extends SvgProps {
   size?: number;
@@ -11,7 +11,7 @@ export interface EmployeeAffairsProps extends SvgProps {
 
 export function EmployeeAffairs({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -28,7 +28,8 @@ export function EmployeeAffairs({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Rect x="3.25" y="3.5" width="17.5" height="17" rx="2.75" />
       <Circle cx="8.5" cy="9" r="2.25" />
       <Path d="M5.5 16a3 3 0 0 1 6 0m2-5.75h4.25M13.5 14h4.25m-4.25 3.75h2.5" />

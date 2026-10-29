@@ -23,4 +23,3 @@ export function normalizeEnglish(value: string): string {
 export function normalizeTerm(value: string, language: "ar" | "en"): string {
   return language === "ar" ? normalizeArabic(value) : normalizeEnglish(value);
 }
-

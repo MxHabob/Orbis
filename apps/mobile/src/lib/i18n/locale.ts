@@ -136,7 +136,10 @@ export async function loadPersistedLocale(): Promise<SupportedLocale> {
       return saved;
     }
   } catch (error) {
-    console.error("[Orbis Mobile I18n] Failed to read the saved locale.", error);
+    console.error(
+      "[Orbis Mobile I18n] Failed to read the saved locale.",
+      error,
+    );
   }
   return currentLocale;
 }

@@ -19,7 +19,9 @@ module.exports = function withAndroidReleaseSigning(config) {
 
     const signingConfigsEndMarker = "\n    }\n    buildTypes {";
     if (!modConfig.modResults.contents.includes(signingConfigsEndMarker)) {
-      throw new Error("Could not find the Android buildTypes block to configure release signing.");
+      throw new Error(
+        "Could not find the Android buildTypes block to configure release signing.",
+      );
     }
 
     let contents = modConfig.modResults.contents.replace(
@@ -37,7 +39,9 @@ module.exports = function withAndroidReleaseSigning(config) {
     const releaseSigningPattern =
       /(buildTypes\s*\{[\s\S]*?^\s*release\s*\{[\s\S]*?^\s*signingConfig\s+)[^\r\n]+/m;
     if (!releaseSigningPattern.test(contents)) {
-      throw new Error("Could not find the generated Android release signing configuration.");
+      throw new Error(
+        "Could not find the generated Android release signing configuration.",
+      );
     }
     contents = contents.replace(
       releaseSigningPattern,

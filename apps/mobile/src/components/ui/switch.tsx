@@ -26,7 +26,9 @@ export function Switch({
       disabled={disabled}
       onPress={() => onValueChange?.(!value)}
       className={`h-6 w-11 justify-start rounded-sm border ${value ? "border-primary bg-primary" : "border-border bg-background-element"} ${disabled ? "opacity-50" : ""}`}
-      style={({ pressed }) => (pressed && !disabled ? { opacity: 0.8 } : undefined)}
+      style={({ pressed }) =>
+        pressed && !disabled ? { opacity: 0.8 } : undefined
+      }
     >
       <View
         className={`h-[22px] w-[22px] rounded-md border bg-background shadow-sm ${value ? "border-primary" : "border-border"}`}

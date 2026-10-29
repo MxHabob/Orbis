@@ -427,9 +427,7 @@ export default function InstitutionSelectScreen() {
                       accessibilityState={{ selected: userLocation !== null }}
                       onPress={() => void requestNearbyLocation()}
                       className={`min-h-11 flex-row items-center gap-2 rounded-full px-3 ${
-                        userLocation
-                          ? "bg-primary/10"
-                          : "bg-background-element"
+                        userLocation ? "bg-primary/10" : "bg-background-element"
                       }`}
                     >
                       <Pin

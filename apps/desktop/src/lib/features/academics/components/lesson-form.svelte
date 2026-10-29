@@ -21,7 +21,14 @@ import {
 } from "@orbis/ui/select";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import { Textarea } from "@orbis/ui/textarea";
-import { BookOpen, ClockRotateRight, Pin, User, UserBadgeCheck, Users } from "@orbis/icons";
+import {
+  BookOpen,
+  ClockRotateRight,
+  Pin,
+  User,
+  UserBadgeCheck,
+  Users,
+} from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
@@ -58,12 +65,18 @@ let {
   onCancel,
 }: Props = $props();
 
-let selectedClassId = $state(untrack(() => String(lesson?.class_id || classId || "")));
+let selectedClassId = $state(
+  untrack(() => String(lesson?.class_id || classId || "")),
+);
 let selectedSubjectId = $state(untrack(() => String(lesson?.subject_id || "")));
 let selectedTeacherId = $state(untrack(() => String(lesson?.teacher_id || "")));
 let selectedRoomId = $state(untrack(() => String(lesson?.room_id || "")));
-let selectedDay = $state(untrack(() => Number(lesson?.day_of_week || dayOfWeek || 1)));
-let selectedSlotId = $state(untrack(() => String(lesson?.time_slot_id || timeSlotId || "")));
+let selectedDay = $state(
+  untrack(() => Number(lesson?.day_of_week || dayOfWeek || 1)),
+);
+let selectedSlotId = $state(
+  untrack(() => String(lesson?.time_slot_id || timeSlotId || "")),
+);
 let topic = $state(untrack(() => lesson?.topic || ""));
 let homework = $state(untrack(() => lesson?.homework || ""));
 let notes = $state(untrack(() => lesson?.notes || ""));
@@ -100,11 +113,10 @@ const selectedSectionSubject = $derived(
   ),
 );
 const availableTeachers = $derived.by(() => {
-  const linkedIds = SectionSubjects
-    .filter(
-      (item: any) =>
-        !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
-    )
+  const linkedIds = SectionSubjects.filter(
+    (item: any) =>
+      !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
+  )
     .map((item: any) =>
       String(
         item.instructor_id || item.primary_teacher_id || item.teacher_id || "",
@@ -133,7 +145,8 @@ function handleSubjectChange(value: string | undefined) {
   const cs = SectionSubjects.find(
     (item: any) => String(item.subject_id) === selectedSubjectId,
   );
-  const teacherId = cs?.instructor_id || cs?.primary_teacher_id || cs?.teacher_id;
+  const teacherId =
+    cs?.instructor_id || cs?.primary_teacher_id || cs?.teacher_id;
   if (teacherId) {
     selectedTeacherId = String(teacherId);
   }

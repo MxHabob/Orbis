@@ -54,15 +54,23 @@ const isEditMode = $derived(!!editData);
 
 // Form state
 let classId = $state(
-  untrack(() => fixedClassId || (editData ? String(editData.section_id ?? "") : "")),
+  untrack(
+    () => fixedClassId || (editData ? String(editData.section_id ?? "") : ""),
+  ),
 );
-let subjectId = $state(untrack(() => editData ? String(editData.subject_id ?? "") : ""));
+let subjectId = $state(
+  untrack(() => (editData ? String(editData.subject_id ?? "") : "")),
+);
 let teacherId = $state(
-  untrack(() => editData ? String(editData.instructor_id ?? "") : ""),
+  untrack(() => (editData ? String(editData.instructor_id ?? "") : "")),
 );
-let weeklyHours = $state(untrack(() => editData ? Number(editData.weekly_hours ?? 4) : 4));
+let weeklyHours = $state(
+  untrack(() => (editData ? Number(editData.weekly_hours ?? 4) : 4)),
+);
 let periodId = $state(
-  untrack(() => fixedPeriodId || (editData ? String(editData.period_id ?? "") : "")),
+  untrack(
+    () => fixedPeriodId || (editData ? String(editData.period_id ?? "") : ""),
+  ),
 );
 let schemeId = $state(untrack(() => String(editData?.scheme_id ?? "")));
 

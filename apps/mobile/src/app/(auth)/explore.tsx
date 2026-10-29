@@ -19,7 +19,8 @@ export default function VisitorExploreScreen() {
     <ScreenScrollView
       edges={["top", "bottom", "left", "right"]}
       scrollViewProps={{
-        contentContainerClassName: "flex-grow justify-between gap-eight px-six pb-eight pt-eight",
+        contentContainerClassName:
+          "flex-grow justify-between gap-eight px-six pb-eight pt-eight",
       }}
     >
       <View className="gap-eight">

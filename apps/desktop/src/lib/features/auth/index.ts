@@ -13,4 +13,3 @@ export { default as AccountMfaCard } from "./components/account-mfa-card.svelte"
 export { default as AccountIdentitiesCard } from "./components/account-identities-card.svelte";
 export { default as MfaEnrollModal } from "./components/mfa-enroll-modal.svelte";
 export { default as MfaChallengeModal } from "./components/mfa-challenge-modal.svelte";
-

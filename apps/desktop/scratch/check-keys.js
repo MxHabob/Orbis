@@ -47,7 +47,9 @@ console.log("Total unique Paraglide message keys used:", usedKeys.size);
 const missingInAr = [];
 const missingInEn = [];
 
-for (const [key, usages] of Array.from(usedKeys.entries()).sort((a,b) => a[0].localeCompare(b[0]))) {
+for (const [key, usages] of Array.from(usedKeys.entries()).sort((a, b) =>
+  a[0].localeCompare(b[0]),
+)) {
   if (!(key in arJson)) {
     missingInAr.push({ key, usages: Array.from(new Set(usages)) });
   }

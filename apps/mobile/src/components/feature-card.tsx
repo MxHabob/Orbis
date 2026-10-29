@@ -12,11 +12,7 @@ type FeatureCardProps = {
   onPress: () => void;
 };
 
-export function FeatureCard({
-  title,
-  description,
-  onPress,
-}: FeatureCardProps) {
+export function FeatureCard({ title, description, onPress }: FeatureCardProps) {
   const theme = useTheme();
   const { isArabic } = useI18n();
   const DirectionIcon = isArabic ? ChevronLeft : ChevronRight;

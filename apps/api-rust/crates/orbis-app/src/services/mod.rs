@@ -17,6 +17,7 @@ pub mod folder_service;
 pub mod group_service;
 pub mod identity_provisioning_service;
 pub mod integration_service;
+pub mod notification_service;
 pub mod onboarding_service;
 pub mod organization_service;
 pub mod progression_service;
@@ -59,6 +60,7 @@ pub use identity_provisioning_service::{
     IdentityProvisioningService, ProvisionAccountInput, ResetPasswordResult,
 };
 pub use integration_service::IntegrationService;
+pub use notification_service::{CreateNotificationInput, NotificationService, UnreadCountResponse};
 pub use onboarding_service::{
     CategoryProgress, OnboardingService, OnboardingStateResponse, OnboardingTaskCategory,
     OnboardingTaskStatus, ProvisionDefaultsRequest, ProvisionDefaultsResult, SetupTask,

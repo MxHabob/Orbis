@@ -2,7 +2,18 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import { AppNotification, Bolt, Camera, CheckBox, ClockRotateRight, Cloud, Expand, Grid, InfoCircle, Sparkles } from "@orbis/icons";
+import {
+  AppNotification,
+  Bolt,
+  Camera,
+  CheckBox,
+  ClockRotateRight,
+  Cloud,
+  Expand,
+  Grid,
+  InfoCircle,
+  Sparkles,
+} from "@orbis/icons";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
@@ -61,7 +72,10 @@ const gridCols: Record<GridLayout, string> = {
 };
 const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
 
-const eventStyles: Record<string, { color: string; icon: typeof AppNotification }> = {
+const eventStyles: Record<
+  string,
+  { color: string; icon: typeof AppNotification }
+> = {
   motion: { color: "text-muted-foreground", icon: AppNotification },
   alarm: { color: "text-foreground font-semibold", icon: InfoCircle },
   disconnect: { color: "text-muted-foreground", icon: Cloud },

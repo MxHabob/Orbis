@@ -15,7 +15,12 @@ import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, formatDate } from "$lib/core/i18n";
 import { toast } from "@orbis/ui";
 import FeeTemplateSheet from "$lib/features/finance/components/fee-template-sheet.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { feeTemplateFilterFields } from "$lib/core/filter-configs";
 
@@ -40,8 +45,7 @@ let activeFilter = $state<UniversalFilter>({
 function getCategoryLabel(catStr: string) {
   const c = String(catStr).toLowerCase();
   if (c === "tuition") return m.common_ft_category_tuition();
-  if (c === "transport")
-    return m.common_ft_category_transport();
+  if (c === "transport") return m.common_ft_category_transport();
   if (c === "books") return m.common_ft_category_books();
   if (c === "uniform") return m.common_ft_category_uniform();
   if (c === "exam") return m.common_ft_category_exam();
@@ -63,11 +67,17 @@ function formatLevels(raw: any) {
     let levels: string[] = [];
     if (typeof raw === "string") {
       const parsed = JSON.parse(raw);
-      levels = Array.isArray(parsed) ? parsed : (parsed.levels || (parsed.level ? [parsed.level] : []));
+      levels = Array.isArray(parsed)
+        ? parsed
+        : parsed.levels || (parsed.level ? [parsed.level] : []);
     } else if (Array.isArray(raw)) {
       levels = raw;
     } else if (typeof raw === "object") {
-      levels = Array.isArray(raw.levels) ? raw.levels : (raw.level ? [raw.level] : []);
+      levels = Array.isArray(raw.levels)
+        ? raw.levels
+        : raw.level
+          ? [raw.level]
+          : [];
     }
     if (levels.length === 0) return m.ui_copy_all_levels_aa3ff22a();
     return levels.join(", ");
@@ -78,7 +88,12 @@ function formatLevels(raw: any) {
 
 const templateActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
-  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
+  {
+    id: "delete",
+    label: m.common_action_delete(),
+    icon: "Trash2",
+    variant: "destructive",
+  },
 ];
 
 const gridSource = $derived(
@@ -86,26 +101,116 @@ const gridSource = $derived(
     ...tpl,
     __idx: i + 1,
     name: tpl.name_ar || tpl.name || "—",
-    amount: formatCurrency(Number(tpl.default_amount || 0), tpl.currency || "YER"),
+    amount: formatCurrency(
+      Number(tpl.default_amount || 0),
+      tpl.currency || "YER",
+    ),
     frequency: getFrequencyLabel(tpl.frequency),
     applicable_levels_display: formatLevels(tpl.applicable_levels),
-    status: (tpl.is_active === true || tpl.is_active === 1) ? "active" : "inactive",
+    status:
+      tpl.is_active === true || tpl.is_active === 1 ? "active" : "inactive",
     class_count: getCategoryLabel(tpl.category),
-    created_at_display: tpl.created_at ? formatDate(tpl.created_at, "datetime") : "—",
-    updated_at_display: tpl.updated_at ? formatDate(tpl.updated_at, "datetime") : "—",
+    created_at_display: tpl.created_at
+      ? formatDate(tpl.created_at, "datetime")
+      : "—",
+    updated_at_display: tpl.updated_at
+      ? formatDate(tpl.updated_at, "datetime")
+      : "—",
   })),
 );
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "name", prop: "name", header: m.common_ft_col_name(), name: "Template", width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "class_count", prop: "class_count", header: m.common_ft_col_category(), name: "Category", width: 120, size: 120, readonly: true },
-  { id: "amount", prop: "amount", header: m.common_ft_col_amount(), name: "Amount", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold" },
-  { id: "frequency", prop: "frequency", header: m.common_ft_col_frequency(), name: "Frequency", width: 100, size: 100, readonly: true, align: "center" },
-  { id: "applicable_levels_display", prop: "applicable_levels_display", header: m.ui_copy_target_levels_71287d45(), name: "Target Levels", width: 150, size: 150, readonly: true },
-  { id: "status", prop: "status", header: m.common_word_status(), name: "Status", width: 90, size: 90, type: "badge", align: "center", readonly: true },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: "Created At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: "Updated At", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.common_ft_col_name(),
+    name: "Template",
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "class_count",
+    prop: "class_count",
+    header: m.common_ft_col_category(),
+    name: "Category",
+    width: 120,
+    size: 120,
+    readonly: true,
+  },
+  {
+    id: "amount",
+    prop: "amount",
+    header: m.common_ft_col_amount(),
+    name: "Amount",
+    width: 120,
+    size: 120,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "frequency",
+    prop: "frequency",
+    header: m.common_ft_col_frequency(),
+    name: "Frequency",
+    width: 100,
+    size: 100,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "applicable_levels_display",
+    prop: "applicable_levels_display",
+    header: m.ui_copy_target_levels_71287d45(),
+    name: "Target Levels",
+    width: 150,
+    size: 150,
+    readonly: true,
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: "Status",
+    width: 90,
+    size: 90,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: m.ui_copy_created_at_01f6ea5f(),
+    name: "Created At",
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "updated_at_display",
+    prop: "updated_at_display",
+    header: m.ui_copy_updated_at_ba0d0a9f(),
+    name: "Updated At",
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
   {
     id: "actions",
     prop: "actions",

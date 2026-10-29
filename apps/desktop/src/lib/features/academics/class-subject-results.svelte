@@ -1,137 +1,137 @@
 <script lang="ts">
-  import { createQuery } from "@tanstack/svelte-query";
-  import { LoadingIndicator } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import {
-    Card,
-    CardAction,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-  } from "@orbis/ui/card";
-  import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-  import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
-  import { api, extractErrorMessage, type GradeDto } from "$lib/api";
-  import { academicContext } from "$lib/stores";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
+import { createQuery } from "@tanstack/svelte-query";
+import { LoadingIndicator } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@orbis/ui/card";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { DocumentCheck, InfoCircle, Refresh } from "@orbis/icons";
+import { api, extractErrorMessage, type GradeDto } from "$lib/api";
+import { academicContext } from "$lib/stores";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
 
-  let {
-    SectionSubjectId,
-  }: {
-    orgId: string;
-    classId: string;
-    SectionSubjectId: string;
-  } = $props();
+let {
+  SectionSubjectId,
+}: {
+  orgId: string;
+  classId: string;
+  SectionSubjectId: string;
+} = $props();
 
-  const gradesQuery = createQuery(() => ({
-    queryKey: ["assessment-grades", "class-subject", SectionSubjectId],
-    queryFn: () => api.listGrades({ SectionSubjectId }),
-    enabled: !!SectionSubjectId,
-  }));
+const gradesQuery = createQuery(() => ({
+  queryKey: ["assessment-grades", "class-subject", SectionSubjectId],
+  queryFn: () => api.listGrades({ SectionSubjectId }),
+  enabled: !!SectionSubjectId,
+}));
 
-  const periodNames = $derived(
-    new Map(
-      academicContext.allPeriods.map((period) => [
-        period.id,
-        period.name_ar || period.name,
-      ]),
-    ),
-  );
+const periodNames = $derived(
+  new Map(
+    academicContext.allPeriods.map((period) => [
+      period.id,
+      period.name_ar || period.name,
+    ]),
+  ),
+);
 
-  const rows = $derived(
-    (gradesQuery.data ?? []).map((grade: GradeDto) => ({
-      student_id: grade.student_id,
-      period: periodNames.get(grade.period_id) ?? grade.period_id,
-      component_id: grade.component_id ?? "—",
-      score: Number(grade.score),
-      maximum: Number(grade.max_score),
-      weight: grade.weight == null ? "—" : Number(grade.weight),
-      letter_grade: grade.letter_grade ?? "—",
-      record_state: grade.is_exempt
-        ? "Exempt"
-        : grade.is_excused
-          ? "Excused"
-          : grade.is_final
-            ? "Final"
-            : "Recorded",
-    })),
-  );
+const rows = $derived(
+  (gradesQuery.data ?? []).map((grade: GradeDto) => ({
+    student_id: grade.student_id,
+    period: periodNames.get(grade.period_id) ?? grade.period_id,
+    component_id: grade.component_id ?? "—",
+    score: Number(grade.score),
+    maximum: Number(grade.max_score),
+    weight: grade.weight == null ? "—" : Number(grade.weight),
+    letter_grade: grade.letter_grade ?? "—",
+    record_state: grade.is_exempt
+      ? "Exempt"
+      : grade.is_excused
+        ? "Excused"
+        : grade.is_final
+          ? "Final"
+          : "Recorded",
+  })),
+);
 
-  const columns: OrbisColumnDef[] = [
-    {
-      id: "student_id",
-      prop: "student_id",
-      header: "Learner",
-      name: "Learner",
-      width: 230,
-      size: 230,
-      pin: "left",
-    },
-    {
-      id: "period",
-      prop: "period",
-      header: "Period",
-      name: "Period",
-      width: 170,
-      size: 170,
-    },
-    {
-      id: "component_id",
-      prop: "component_id",
-      header: "Assessment component",
-      name: "Assessment component",
-      width: 190,
-      size: 190,
-    },
-    {
-      id: "score",
-      prop: "score",
-      header: "Score",
-      name: "Score",
-      width: 100,
-      size: 100,
-      align: "end",
-      type: "number",
-    },
-    {
-      id: "maximum",
-      prop: "maximum",
-      header: "Maximum",
-      name: "Maximum",
-      width: 100,
-      size: 100,
-      align: "end",
-      type: "number",
-    },
-    {
-      id: "weight",
-      prop: "weight",
-      header: "Weight",
-      name: "Weight",
-      width: 90,
-      size: 90,
-      align: "end",
-      type: "number",
-    },
-    {
-      id: "letter_grade",
-      prop: "letter_grade",
-      header: "Grade",
-      name: "Grade",
-      width: 90,
-      size: 90,
-    },
-    {
-      id: "record_state",
-      prop: "record_state",
-      header: "Record state",
-      name: "Record state",
-      width: 115,
-      size: 115,
-    },
-  ];
+const columns: OrbisColumnDef[] = [
+  {
+    id: "student_id",
+    prop: "student_id",
+    header: "Learner",
+    name: "Learner",
+    width: 230,
+    size: 230,
+    pin: "left",
+  },
+  {
+    id: "period",
+    prop: "period",
+    header: "Period",
+    name: "Period",
+    width: 170,
+    size: 170,
+  },
+  {
+    id: "component_id",
+    prop: "component_id",
+    header: "Assessment component",
+    name: "Assessment component",
+    width: 190,
+    size: 190,
+  },
+  {
+    id: "score",
+    prop: "score",
+    header: "Score",
+    name: "Score",
+    width: 100,
+    size: 100,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "maximum",
+    prop: "maximum",
+    header: "Maximum",
+    name: "Maximum",
+    width: 100,
+    size: 100,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "weight",
+    prop: "weight",
+    header: "Weight",
+    name: "Weight",
+    width: 90,
+    size: 90,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "letter_grade",
+    prop: "letter_grade",
+    header: "Grade",
+    name: "Grade",
+    width: 90,
+    size: 90,
+  },
+  {
+    id: "record_state",
+    prop: "record_state",
+    header: "Record state",
+    name: "Record state",
+    width: 115,
+    size: 115,
+  },
+];
 </script>
 
 <div class="flex h-full w-full flex-col gap-2.5 font-sans">

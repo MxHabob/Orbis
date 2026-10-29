@@ -13,7 +13,12 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
-import type { AccountDto, CurrencyDto, JournalEntryDto, PaymentDto } from "$lib/api/types";
+import type {
+  AccountDto,
+  CurrencyDto,
+  JournalEntryDto,
+  PaymentDto,
+} from "$lib/api/types";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Card } from "@orbis/ui/card";
@@ -40,7 +45,9 @@ let startDate = $state(getLocalDateInputValue());
 let endDate = $state(getLocalDateInputValue());
 
 function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 type StatementMovement = {
@@ -72,12 +79,13 @@ onMount(async () => {
 async function loadData() {
   isLoading = true;
   try {
-    const [accountsList, currenciesList, entriesList, paymentsList] = await Promise.all([
-      api.listAccounts(),
-      api.listCurrencies(),
-      api.listJournalEntries(),
-      api.listPayments(),
-    ]);
+    const [accountsList, currenciesList, entriesList, paymentsList] =
+      await Promise.all([
+        api.listAccounts(),
+        api.listCurrencies(),
+        api.listJournalEntries(),
+        api.listPayments(),
+      ]);
 
     accounts = accountsList || [];
     currencies = currenciesList || [];
@@ -86,10 +94,12 @@ async function loadData() {
 
     if (!selectedAccountId && accounts.length > 0) {
       const parentAccountIds = new Set(
-        accounts.flatMap((account) => account.parent_id ? [account.parent_id] : [])
+        accounts.flatMap((account) =>
+          account.parent_id ? [account.parent_id] : [],
+        ),
       );
       const postingAccount = accounts.find(
-        (account) => account.is_active && !parentAccountIds.has(account.id)
+        (account) => account.is_active && !parentAccountIds.has(account.id),
       );
       selectedAccountId = postingAccount?.id || "";
     }
@@ -102,7 +112,7 @@ async function loadData() {
 }
 
 const selectedAccount = $derived(
-  accounts.find((a) => a.id === selectedAccountId)
+  accounts.find((a) => a.id === selectedAccountId),
 );
 
 // ── Ledger Rows & Running Balance Computation ──────────────────────────
@@ -111,18 +121,25 @@ const rawStatementRows = $derived.by((): StatementMovement[] => {
 
   const rows: StatementMovement[] = [];
   const targetAcc = selectedAccount;
-  const isCashAccount = targetAcc?.sub_type === "cash"
-    || targetAcc?.sub_type === "bank"
-    || targetAcc?.account_type === "asset";
+  const isCashAccount =
+    targetAcc?.sub_type === "cash" ||
+    targetAcc?.sub_type === "bank" ||
+    targetAcc?.account_type === "asset";
   const journalEntryIds = new Set(journalEntries.map((entry) => entry.id));
 
   for (const entry of journalEntries) {
-    const entryDate = entry.accounting_date ? String(entry.accounting_date).slice(0, 10) : "";
+    const entryDate = entry.accounting_date
+      ? String(entry.accounting_date).slice(0, 10)
+      : "";
     const curr = entry.currency_code || "YER";
     const ref = entry.reference_number || entry.id.slice(0, 8);
     const desc = isAr()
-      ? entry.description_ar || entry.description || m.finance_ui_journal_entry_fallback()
-      : entry.description || entry.description_ar || m.finance_ui_journal_entry_fallback();
+      ? entry.description_ar ||
+        entry.description ||
+        m.finance_ui_journal_entry_fallback()
+      : entry.description ||
+        entry.description_ar ||
+        m.finance_ui_journal_entry_fallback();
 
     if (entry.lines?.length) {
       for (const line of entry.lines) {
@@ -171,8 +188,8 @@ const rawStatementRows = $derived.by((): StatementMovement[] => {
   if (isCashAccount) {
     for (const p of payments) {
       if (
-        String(p.account_id) === selectedAccountId
-        && !(p.journal_entry_id && journalEntryIds.has(p.journal_entry_id))
+        String(p.account_id) === selectedAccountId &&
+        !(p.journal_entry_id && journalEntryIds.has(p.journal_entry_id))
       ) {
         const paymentDate = p.paid_at || p.created_at;
         const pDate = paymentDate ? String(paymentDate).slice(0, 10) : "";
@@ -183,7 +200,11 @@ const rawStatementRows = $derived.by((): StatementMovement[] => {
           date: pDate,
           date_raw: paymentDate,
           ref: p.receipt_number || p.id.slice(0, 8),
-          desc: p.payer_name || m.finance_ui_receipt_student_description({ student: m.finance_ui_student() }),
+          desc:
+            p.payer_name ||
+            m.finance_ui_receipt_student_description({
+              student: m.finance_ui_student(),
+            }),
           debit: Number(p.amount || 0),
           credit: 0,
           currency: curr,
@@ -192,27 +213,36 @@ const rawStatementRows = $derived.by((): StatementMovement[] => {
     }
   }
 
-  rows.sort((a, b) => new Date(a.date_raw).getTime() - new Date(b.date_raw).getTime());
+  rows.sort(
+    (a, b) => new Date(a.date_raw).getTime() - new Date(b.date_raw).getTime(),
+  );
   return rows;
 });
 
 const movementCurrencies = $derived(
-  [...new Set(rawStatementRows.map((row) => row.currency))].sort()
+  [...new Set(rawStatementRows.map((row) => row.currency))].sort(),
 );
 
 const selectedCurrency = $derived.by(() => {
-  if (movementCurrencies.includes(currencyPreference)) return currencyPreference;
-  if (selectedAccount?.currency && movementCurrencies.includes(selectedAccount.currency)) {
+  if (movementCurrencies.includes(currencyPreference))
+    return currencyPreference;
+  if (
+    selectedAccount?.currency &&
+    movementCurrencies.includes(selectedAccount.currency)
+  ) {
     return selectedAccount.currency;
   }
   return movementCurrencies[0] || "";
 });
 const movementCurrencyOptions = $derived(
-  movementCurrencies.map((code) => currencies.find((currency) => currency.code === code) ?? {
-    code,
-    name: code,
-    symbol: code,
-  })
+  movementCurrencies.map(
+    (code) =>
+      currencies.find((currency) => currency.code === code) ?? {
+        code,
+        name: code,
+        symbol: code,
+      },
+  ),
 );
 
 function handleAccountSelect() {
@@ -224,7 +254,9 @@ const statementSummary = $derived.by(() => {
     return { rows: [], totalDebit: 0, totalCredit: 0, closingBalance: 0 };
   }
 
-  const rows = rawStatementRows.filter((row) => row.currency === selectedCurrency);
+  const rows = rawStatementRows.filter(
+    (row) => row.currency === selectedCurrency,
+  );
   let running = 0;
   let totalDebit = 0;
   let totalCredit = 0;
@@ -240,8 +272,10 @@ const statementSummary = $derived.by(() => {
       ...row,
       __idx: visibleRows.length + 1,
       date_display: row.date ? formatDate(row.date) : "—",
-      debit_formatted: row.debit > 0 ? formatCurrency(row.debit, row.currency) : "—",
-      credit_formatted: row.credit > 0 ? formatCurrency(row.credit, row.currency) : "—",
+      debit_formatted:
+        row.debit > 0 ? formatCurrency(row.debit, row.currency) : "—",
+      credit_formatted:
+        row.credit > 0 ? formatCurrency(row.credit, row.currency) : "—",
       balance_formatted: formatCurrency(running, row.currency),
       running_balance: running,
     });
@@ -261,14 +295,89 @@ const totalCredit = $derived(statementSummary.totalCredit);
 const netBalance = $derived(statementSummary.closingBalance);
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
-  { id: "ref", prop: "ref", header: m.finance_ui_reference_voucher_number(), name: m.finance_ui_reference_voucher_number(), width: 130, size: 130, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "desc", prop: "desc", header: m.finance_ui_movement_description(), name: m.finance_ui_movement_description(), width: 280, size: 280, readonly: true },
-  { id: "debit_formatted", prop: "debit_formatted", header: m.finance_ui_debit_positive(), name: m.finance_ui_debit_positive(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
-  { id: "credit_formatted", prop: "credit_formatted", header: m.finance_ui_credit_negative(), name: m.finance_ui_credit_negative(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400" },
-  { id: "balance_formatted", prop: "balance_formatted", header: m.finance_ui_running_balance(), name: m.finance_ui_running_balance(), width: 150, size: 150, readonly: true, align: "end", cellClass: "font-mono font-extrabold text-foreground" },
-  { id: "currency", prop: "currency", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "date_display",
+    prop: "date_display",
+    header: m.finance_ui_date(),
+    name: m.finance_ui_date(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "ref",
+    prop: "ref",
+    header: m.finance_ui_reference_voucher_number(),
+    name: m.finance_ui_reference_voucher_number(),
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "desc",
+    prop: "desc",
+    header: m.finance_ui_movement_description(),
+    name: m.finance_ui_movement_description(),
+    width: 280,
+    size: 280,
+    readonly: true,
+  },
+  {
+    id: "debit_formatted",
+    prop: "debit_formatted",
+    header: m.finance_ui_debit_positive(),
+    name: m.finance_ui_debit_positive(),
+    width: 140,
+    size: 140,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    id: "credit_formatted",
+    prop: "credit_formatted",
+    header: m.finance_ui_credit_negative(),
+    name: m.finance_ui_credit_negative(),
+    width: 140,
+    size: 140,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-rose-600 dark:text-rose-400",
+  },
+  {
+    id: "balance_formatted",
+    prop: "balance_formatted",
+    header: m.finance_ui_running_balance(),
+    name: m.finance_ui_running_balance(),
+    width: 150,
+    size: 150,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-extrabold text-foreground",
+  },
+  {
+    id: "currency",
+    prop: "currency",
+    header: m.finance_ui_currency(),
+    name: m.finance_ui_currency(),
+    width: 80,
+    size: 80,
+    readonly: true,
+    align: "center",
+  },
 ];
 
 function exportCsv() {
@@ -282,12 +391,24 @@ function exportCsv() {
     r.currency,
   ]);
   const csv = [
-    [m.finance_ui_date(), m.finance_ui_reference(), m.finance_ui_description(), m.finance_ui_debit(), m.finance_ui_credit(), m.finance_ui_balance(), m.finance_ui_currency()],
+    [
+      m.finance_ui_date(),
+      m.finance_ui_reference(),
+      m.finance_ui_description(),
+      m.finance_ui_debit(),
+      m.finance_ui_credit(),
+      m.finance_ui_balance(),
+      m.finance_ui_currency(),
+    ],
     ...rows,
   ]
-    .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+    .map((row) =>
+      row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+    )
     .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(
+    new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+  );
   const link = document.createElement("a");
   link.href = url;
   link.download = `statement-${selectedAccount?.code || orgId}.csv`;

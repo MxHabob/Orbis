@@ -26,9 +26,7 @@ export function ErrorFallback({
 
   return (
     <View className="flex-1 items-center justify-center bg-background p-six">
-      <View
-        className="w-full max-w-[380px] items-center gap-four rounded-2xl border border-border bg-card p-eight shadow-lg"
-      >
+      <View className="w-full max-w-[380px] items-center gap-four rounded-2xl border border-border bg-card p-eight shadow-lg">
         <View className="mb-two h-16 w-16 items-center justify-center rounded-full bg-error-light">
           <InfoCircle size={40} color={theme.destructive} />
         </View>

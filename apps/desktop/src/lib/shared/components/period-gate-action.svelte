@@ -27,7 +27,14 @@ import * as m from "$lib/paraglide/messages";
 import { createQuery } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
-import { AdjustmentsHorizontal, ArrowPath, BarsArrowUp, ClockRotateRight, InfoCircle, Lock } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  ArrowPath,
+  BarsArrowUp,
+  ClockRotateRight,
+  InfoCircle,
+  Lock,
+} from "@orbis/icons";
 import type { Snippet } from "svelte";
 
 type GateType = "enrollment" | "grading" | "attendance" | string;

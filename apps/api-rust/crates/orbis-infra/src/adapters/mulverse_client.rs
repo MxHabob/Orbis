@@ -40,14 +40,17 @@ pub struct TrialChallenge {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OrbisConnectionResponse {
     pub connected: bool,
-    pub organization_id: String,
-    pub product_organization_id: String,
+    #[serde(alias = "organization_id")]
+    pub customer_id: String,
+    #[serde(alias = "product_organization_id")]
+    pub application_customer_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OrbisDeployment {
     pub id: String,
-    pub product_organization_id: String,
+    #[serde(alias = "product_organization_id")]
+    pub application_customer_id: String,
     pub name: String,
     pub environment: String,
     pub status: String,
@@ -98,20 +101,20 @@ pub struct RegisterTrialRequest {
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
-    pub organization_id: String,
-    pub organization_name: String,
-    pub organization_slug: String,
-    pub organization_profile: TrialOrganizationProfile,
+    pub customer_id: String,
+    pub customer_name: String,
+    pub customer_slug: String,
+    pub customer_profile: TrialCustomerProfile,
     pub platform: String,
     pub app_version: String,
     pub machine_label: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct TrialOrganizationProfile {
+pub struct TrialCustomerProfile {
     pub name_ar: Option<String>,
     pub institution_type: String,
-    pub organization_size: Option<String>,
+    pub customer_size: Option<String>,
     pub educational_track: Option<String>,
     pub country_code: Option<String>,
     pub country_name: Option<String>,
@@ -121,16 +124,17 @@ pub struct TrialOrganizationProfile {
 
 #[derive(Debug, Serialize)]
 pub struct ClaimProductKeyRequest {
-    pub product_key: String,
-    pub organization_id: String,
-    pub organization_name: String,
-    pub organization_slug: String,
-    pub organization_profile: TrialOrganizationProfile,
+    pub application_key: String,
+    pub customer_id: String,
+    pub customer_name: String,
+    pub customer_slug: String,
+    pub customer_profile: TrialCustomerProfile,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ClaimProductKeyResponse {
-    pub organization_id: String,
+    #[serde(alias = "organization_id")]
+    pub customer_id: String,
     pub license_id: String,
     pub valid_until: Option<chrono::DateTime<chrono::Utc>>,
 }
@@ -143,7 +147,7 @@ pub struct RefreshTrialRequest {
     pub challenge_id: String,
     pub challenge: String,
     pub installation_id: String,
-    pub organization_id: String,
+    pub customer_id: String,
     pub app_version: String,
 }
 
@@ -490,7 +494,7 @@ impl MulverseClient {
             reqwest::Url::parse(&format!("{}/api/v1/public/updates/tauri", self.base_url))
                 .map_err(|e| MulverseApiError::ParseError(e.to_string()))?;
         url.query_pairs_mut()
-            .append_pair("product_key", MULVERSE_PRODUCT_KEY)
+            .append_pair("application_key", MULVERSE_PRODUCT_KEY)
             .append_pair("channel", channel)
             .append_pair("current_version", current_version)
             .append_pair("target", target)
@@ -702,6 +706,16 @@ impl std::fmt::Display for MulverseApiError {
 }
 
 impl MulverseApiError {
+    pub fn requires_application_key_claim(&self) -> bool {
+        matches!(
+            self,
+            Self::Conflict(message)
+                if message.contains(
+                    "This application key is not assigned to an customer. Claim it or assign it before activation."
+                )
+        )
+    }
+
     pub fn is_network_error(&self) -> bool {
         matches!(
             self,
@@ -764,7 +778,10 @@ impl From<MulverseApiError> for orbis_domain::errors::DomainError {
 
 #[cfg(test)]
 mod tests {
-    use super::{MulverseApiError, format_api_error_body};
+    use super::{
+        ClaimProductKeyRequest, MulverseApiError, OrbisConnectionResponse, TrialCustomerProfile,
+        format_api_error_body,
+    };
 
     #[test]
     fn api_error_envelope_displays_message_instead_of_raw_json() {
@@ -781,6 +798,79 @@ mod tests {
         assert_eq!(
             format_api_error_body("upstream unavailable"),
             "upstream unavailable"
+        );
+    }
+
+    #[test]
+    fn only_unassigned_application_key_conflicts_require_claiming() {
+        assert!(
+            MulverseApiError::Conflict(
+                "CONFLICT: This application key is not assigned to an customer. Claim it or assign it before activation."
+                    .to_owned()
+            )
+            .requires_application_key_claim()
+        );
+        assert!(
+            !MulverseApiError::Conflict(
+                "CONFLICT: The license is not assigned to the active customer".to_owned()
+            )
+            .requires_application_key_claim()
+        );
+        assert!(
+            !MulverseApiError::NotFound("Key not recognized".to_owned())
+                .requires_application_key_claim()
+        );
+    }
+
+    #[test]
+    fn connection_response_accepts_current_and_legacy_field_names() {
+        let current: OrbisConnectionResponse = serde_json::from_value(serde_json::json!({
+            "connected": true,
+            "customer_id": "customer-id",
+            "application_customer_id": "application-customer-id"
+        }))
+        .expect("current connection response should deserialize");
+        assert_eq!(current.customer_id, "customer-id");
+        assert_eq!(current.application_customer_id, "application-customer-id");
+
+        let legacy: OrbisConnectionResponse = serde_json::from_value(serde_json::json!({
+            "connected": true,
+            "organization_id": "customer-id",
+            "product_organization_id": "application-customer-id"
+        }))
+        .expect("legacy connection response should deserialize");
+        assert_eq!(legacy.customer_id, "customer-id");
+        assert_eq!(legacy.application_customer_id, "application-customer-id");
+    }
+
+    #[test]
+    fn claim_request_serializes_with_application_and_customer_fields() {
+        let request = ClaimProductKeyRequest {
+            application_key: "ORBIS-KEY".to_owned(),
+            customer_id: "customer-id".to_owned(),
+            customer_name: "School".to_owned(),
+            customer_slug: "school".to_owned(),
+            customer_profile: TrialCustomerProfile {
+                name_ar: None,
+                institution_type: "school".to_owned(),
+                customer_size: Some("medium".to_owned()),
+                educational_track: None,
+                country_code: None,
+                country_name: None,
+                region_name: None,
+                city: None,
+            },
+        };
+        let serialized = serde_json::to_value(request).expect("request should serialize");
+        assert_eq!(serialized["application_key"], "ORBIS-KEY");
+        assert_eq!(serialized["customer_id"], "customer-id");
+        assert_eq!(serialized["customer_profile"]["customer_size"], "medium");
+        assert!(serialized.get("product_key").is_none());
+        assert!(serialized.get("organization_id").is_none());
+        assert!(
+            serialized["customer_profile"]
+                .get("organization_size")
+                .is_none()
         );
     }
 

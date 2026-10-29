@@ -4,7 +4,15 @@ Reviews server-evaluated cohort progression and submits one confirmed promotion 
 -->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { api, extractErrorMessage, type AcademicPeriodDto, type SectionDto, type StudentProgressionItemInput, type PromoteCohortInput, type progressionJobDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type AcademicPeriodDto,
+  type SectionDto,
+  type StudentProgressionItemInput,
+  type PromoteCohortInput,
+  type progressionJobDto,
+} from "$lib/api";
 import { toast, FormField, LoadingIndicator } from "@orbis/ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@orbis/ui/card";
 import { Button } from "@orbis/ui/button";
@@ -25,7 +33,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@orbis/ui/alert-dialog";
-import { Check, ChevronLeft, ChevronRight, Play, Refresh, Users } from "@orbis/icons";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Refresh,
+  Users,
+} from "@orbis/icons";
 import { z } from "zod";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { createPeriodsQuery, createSectionsQuery } from "./queries";
@@ -42,8 +57,12 @@ const form = new FormController({
   },
   schema: z
     .object({
-      source_period_id: z.string().min(1, m.common_form_error_required_fields()),
-      target_period_id: z.string().min(1, m.common_form_error_required_fields()),
+      source_period_id: z
+        .string()
+        .min(1, m.common_form_error_required_fields()),
+      target_period_id: z
+        .string()
+        .min(1, m.common_form_error_required_fields()),
       job_name: z.string().trim().min(1, m.common_form_error_required_fields()),
     })
     .refine((values) => values.source_period_id !== values.target_period_id, {
@@ -60,15 +79,13 @@ const sections = $derived(
 );
 const targetPeriods = $derived(
   periods.filter(
-    (period) =>
-      period.id !== form.values.source_period_id && !period.is_locked,
+    (period) => period.id !== form.values.source_period_id && !period.is_locked,
   ),
 );
 const targetSections = $derived(
   sections.filter(
     (section) =>
-      section.period_id === form.values.target_period_id
-      || !section.period_id,
+      section.period_id === form.values.target_period_id || !section.period_id,
   ),
 );
 
@@ -80,11 +97,13 @@ let isEvaluating = $state(false);
 let showExecuteConfirm = $state(false);
 let result = $state<progressionJobDto | null>(null);
 
-const sourceSectionIds = $derived(
-  [...new Set(cohort.map((item) => item.source_section_id).filter(
-    (sectionId): sectionId is string => !!sectionId,
-  ))],
-);
+const sourceSectionIds = $derived([
+  ...new Set(
+    cohort
+      .map((item) => item.source_section_id)
+      .filter((sectionId): sectionId is string => !!sectionId),
+  ),
+]);
 const promotedCount = $derived(
   cohort.filter((item) => item.decision === "promote").length,
 );
@@ -100,9 +119,9 @@ const excludedCount = $derived(
 const missingTargetCount = $derived(
   cohort.filter(
     (item) =>
-      item.decision === "promote"
-      && !!item.source_section_id
-      && !item.target_section_id,
+      item.decision === "promote" &&
+      !!item.source_section_id &&
+      !item.target_section_id,
   ).length,
 );
 const pageCount = $derived(Math.max(1, Math.ceil(cohort.length / PAGE_SIZE)));
@@ -116,9 +135,7 @@ function periodLabel(period: AcademicPeriodDto): string {
 
 function sectionLabel(sectionId: string): string {
   const section = sections.find((item) => item.id === sectionId);
-  return section
-    ? l(section.name_ar, section.name) || section.code
-    : sectionId;
+  return section ? l(section.name_ar, section.name) || section.code : sectionId;
 }
 
 function setSourcePeriod(value: string | undefined) {
@@ -138,7 +155,10 @@ function setTargetPeriod(value: string | undefined) {
   sourceSectionTargets = {};
   const targetName = periods.find((period) => period.id === value);
   if (!form.values.job_name.trim() && targetName) {
-    form.setField("job_name", `${periodLabel(targetName)} — ${m.common_promo_execute()}`);
+    form.setField(
+      "job_name",
+      `${periodLabel(targetName)} — ${m.common_promo_execute()}`,
+    );
   }
 }
 
@@ -214,7 +234,10 @@ async function executePromotion() {
 
   if (!submitted && form.formError) toast.error(form.formError);
   else if (!submitted) {
-    toast.error(Object.values(form.errors).flat()[0] || m.common_form_error_required_fields());
+    toast.error(
+      Object.values(form.errors).flat()[0] ||
+        m.common_form_error_required_fields(),
+    );
   }
 }
 

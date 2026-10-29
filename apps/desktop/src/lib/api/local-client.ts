@@ -16,6 +16,9 @@ import type {
   UserDto,
   RoleDto,
   SaveRoleRequest,
+  NotificationDto,
+  NotificationPreferenceDto,
+  NotificationPreferenceResponseDto,
   PermissionRuleDto,
   OrgDto,
   UpdateOrgRequest,
@@ -24,7 +27,7 @@ import type {
   UpdateOrgUnitRequest,
   OrganizationSettingsDto,
   DashboardCountsDto,
-  academicCalendarDto,
+  AcademicCalendarDto,
   AcademicPeriodDto,
   AcademicContextResponse,
   PeriodTypeDto,
@@ -269,9 +272,7 @@ export class LocalClient implements OrbisApiClient {
   async logout(): Promise<void> {
     await invoke("auth_logout");
   }
-  async mfaEnroll(
-    req?: MfaEnrollRequest,
-  ): Promise<MfaEnrollResponse> {
+  async mfaEnroll(req?: MfaEnrollRequest): Promise<MfaEnrollResponse> {
     return unwrap(await invoke("auth_mfa_enroll", { request: req ?? {} }));
   }
   async mfaVerifyEnrollment(
@@ -279,19 +280,13 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<string[]> {
     return unwrap(await invoke("auth_mfa_verify_enrollment", { request: req }));
   }
-  async mfaChallenge(
-    req: MfaChallengeRequest,
-  ): Promise<LoginResponse> {
+  async mfaChallenge(req: MfaChallengeRequest): Promise<LoginResponse> {
     return unwrap(await invoke("auth_mfa_challenge", { request: req }));
   }
-  async linkGoogle(
-    req: GoogleAuthRequest,
-  ): Promise<UserIdentityDto> {
+  async linkGoogle(req: GoogleAuthRequest): Promise<UserIdentityDto> {
     return unwrap(await invoke("auth_link_google", { request: req }));
   }
-  async loginWithGoogle(
-    req: GoogleAuthRequest,
-  ): Promise<LoginResponse> {
+  async loginWithGoogle(req: GoogleAuthRequest): Promise<LoginResponse> {
     return unwrap(await invoke("auth_login_google", { request: req }));
   }
   async listDevices(): Promise<UserDeviceDto[]> {
@@ -305,7 +300,9 @@ export class LocalClient implements OrbisApiClient {
   async registerUser(req: RegisterUserRequest): Promise<UserDto> {
     return unwrap(await invoke("iam_register_user", { request: req }));
   }
-  async provisionUser(req: ProvisionUserRequest): Promise<AccountProvisioningResultDto> {
+  async provisionUser(
+    req: ProvisionUserRequest,
+  ): Promise<AccountProvisioningResultDto> {
     return unwrap(await invoke("iam_provision_user", { request: req }));
   }
   async listUsers(): Promise<UserDto[]> {
@@ -317,7 +314,9 @@ export class LocalClient implements OrbisApiClient {
   async updateUser(id: string, req: UpdateUserRequest): Promise<UserDto> {
     return unwrap(await invoke("iam_update_user", { id, request: req }));
   }
-  async resetUserPassword(userId: string): Promise<AccountProvisioningResultDto> {
+  async resetUserPassword(
+    userId: string,
+  ): Promise<AccountProvisioningResultDto> {
     return unwrap(await invoke("iam_reset_user_password", { userId }));
   }
   async listRoles(): Promise<RoleDto[]> {
@@ -359,7 +358,10 @@ export class LocalClient implements OrbisApiClient {
   async createOrgUnit(req: CreateOrgUnitRequest): Promise<OrgUnitDto> {
     return unwrap(await invoke("org_create_unit", { request: req }));
   }
-  async updateOrgUnit(id: string, req: UpdateOrgUnitRequest): Promise<OrgUnitDto> {
+  async updateOrgUnit(
+    id: string,
+    req: UpdateOrgUnitRequest,
+  ): Promise<OrgUnitDto> {
     return unwrap(await invoke("org_update_unit", { id, request: req }));
   }
   async listOrgUnits(): Promise<OrgUnitDto[]> {
@@ -376,31 +378,33 @@ export class LocalClient implements OrbisApiClient {
   }
 
   // ── Calendar ────────────────────────────────────────────────
-  async createacademicCalendar(req: CreateYearRequest): Promise<academicCalendarDto> {
+  async createacademicCalendar(
+    req: CreateYearRequest,
+  ): Promise<AcademicCalendarDto> {
     return unwrap(await invoke("calendar_create_year", { request: req }));
   }
   async updateacademicCalendar(
     id: string,
     req: UpdateYearRequest,
-  ): Promise<academicCalendarDto> {
+  ): Promise<AcademicCalendarDto> {
     return unwrap(await invoke("calendar_update_year", { id, request: req }));
   }
-  async listacademicCalendars(): Promise<academicCalendarDto[]> {
+  async listacademicCalendars(): Promise<AcademicCalendarDto[]> {
     return unwrap(await invoke("calendar_list_years"));
   }
   async getAcademicContext(): Promise<AcademicContextResponse> {
     return unwrap(await invoke("calendar_get_context"));
   }
-  async getacademicCalendar(id: string): Promise<academicCalendarDto> {
+  async getacademicCalendar(id: string): Promise<AcademicCalendarDto> {
     return unwrap(await invoke("calendar_get_year", { id }));
   }
-  async activateacademicCalendar(id: string): Promise<academicCalendarDto> {
+  async activateacademicCalendar(id: string): Promise<AcademicCalendarDto> {
     return unwrap(await invoke("calendar_activate_year", { id }));
   }
-  async closeacademicCalendar(id: string): Promise<academicCalendarDto> {
+  async closeacademicCalendar(id: string): Promise<AcademicCalendarDto> {
     return unwrap(await invoke("calendar_close_year", { id }));
   }
-  async archiveacademicCalendar(id: string): Promise<academicCalendarDto> {
+  async archiveacademicCalendar(id: string): Promise<AcademicCalendarDto> {
     return unwrap(await invoke("calendar_archive_year", { id }));
   }
   async deleteacademicCalendar(id: string): Promise<boolean> {
@@ -438,25 +442,36 @@ export class LocalClient implements OrbisApiClient {
   async listPeriodTypes(): Promise<PeriodTypeDto[]> {
     return unwrap(await invoke("calendar_list_period_types"));
   }
-  async listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]> {
+  async listOfficialCalendarTemplates(): Promise<
+    OfficialCalendarTemplateDto[]
+  > {
     return unwrap(await invoke("calendar_list_official_templates"));
   }
   async applyCalendarTemplate(
     yearId: string,
     req: ApplyCalendarTemplateRequest,
   ): Promise<AcademicPeriodDto[]> {
-    return unwrap(await invoke("calendar_apply_template", { yearId, request: req }));
+    return unwrap(
+      await invoke("calendar_apply_template", { yearId, request: req }),
+    );
   }
   async getCalendarDefaults(orgId?: string): Promise<CalendarDefaultsDto> {
-    return unwrap(await invoke("calendar_get_defaults", { orgId: orgId ?? null }));
+    return unwrap(
+      await invoke("calendar_get_defaults", { orgId: orgId ?? null }),
+    );
   }
 
   // ── Academic ────────────────────────────────────────────────
   async createSubject(req: CreateSubjectRequest): Promise<SubjectDto> {
     return unwrap(await invoke("academic_create_subject", { request: req }));
   }
-  async updateSubject(id: string, req: UpdateSubjectRequest): Promise<SubjectDto> {
-    return unwrap(await invoke("academic_update_subject", { request: { ...req, id } }));
+  async updateSubject(
+    id: string,
+    req: UpdateSubjectRequest,
+  ): Promise<SubjectDto> {
+    return unwrap(
+      await invoke("academic_update_subject", { request: { ...req, id } }),
+    );
   }
   async listSections(): Promise<SectionDto[]> {
     return unwrap(await invoke("academic_list_sections"));
@@ -470,7 +485,10 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("academic_create_section", { request: req }));
   }
 
-  async updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto> {
+  async updateSection(
+    id: string,
+    req: UpdateSectionRequest,
+  ): Promise<SectionDto> {
     return unwrap(
       await invoke("academic_update_section", { request: { ...req, id } }),
     );
@@ -498,7 +516,9 @@ export class LocalClient implements OrbisApiClient {
     req: UpdateSectionSubjectRequest,
   ): Promise<SectionSubjectDto> {
     return unwrap(
-      await invoke("academic_update_section_subject", { request: { ...req, id } }),
+      await invoke("academic_update_section_subject", {
+        request: { ...req, id },
+      }),
     );
   }
   async listSectionSubjects(
@@ -522,19 +542,31 @@ export class LocalClient implements OrbisApiClient {
   async registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto> {
     return unwrap(await invoke("student_register_student", { request: req }));
   }
-  async checkDuplicate(req: DuplicateCheckRequest): Promise<DuplicateCheckResponse> {
+  async checkDuplicate(
+    req: DuplicateCheckRequest,
+  ): Promise<DuplicateCheckResponse> {
     return unwrap(await invoke("student_check_duplicate", { request: req }));
   }
-  async listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>> {
-    return unwrap(await invoke("student_list_students", { filter: filter ?? {} }));
+  async listStudents(
+    filter?: StudentFilterParams,
+  ): Promise<PaginatedList<StudentDetailDto>> {
+    return unwrap(
+      await invoke("student_list_students", { filter: filter ?? {} }),
+    );
   }
   async getStudent(id: string): Promise<StudentDetailDto> {
     return unwrap(await invoke("student_get_student", { id }));
   }
-  async updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto> {
-    return unwrap(await invoke("student_update_student_status", { request: req }));
+  async updateStudentStatus(
+    req: UpdateStudentStatusInput,
+  ): Promise<StudentDto> {
+    return unwrap(
+      await invoke("student_update_student_status", { request: req }),
+    );
   }
-  async updateStudentProfile(req: UpdateStudentProfileInput): Promise<StudentDetailDto> {
+  async updateStudentProfile(
+    req: UpdateStudentProfileInput,
+  ): Promise<StudentDetailDto> {
     return unwrap(await invoke("student_update_profile", { request: req }));
   }
   async changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto> {
@@ -546,7 +578,9 @@ export class LocalClient implements OrbisApiClient {
   async enrollStudent(req: EnrollStudentRequest): Promise<EnrollmentDto> {
     return unwrap(await invoke("student_enroll_student", { request: req }));
   }
-  async listEnrollments(filter?: EnrollmentFilterParams): Promise<EnrollmentDto[]> {
+  async listEnrollments(
+    filter?: EnrollmentFilterParams,
+  ): Promise<EnrollmentDto[]> {
     return unwrap(
       await invoke("student_list_enrollments", { filter: filter ?? {} }),
     );
@@ -560,8 +594,13 @@ export class LocalClient implements OrbisApiClient {
   async listGuardians(studentId: string): Promise<GuardianDto[]> {
     return unwrap(await invoke("student_list_guardians", { studentId }));
   }
-  async removeGuardian(studentId: string, guardianId: string): Promise<boolean> {
-    return unwrap(await invoke("student_remove_guardian", { studentId, guardianId }));
+  async removeGuardian(
+    studentId: string,
+    guardianId: string,
+  ): Promise<boolean> {
+    return unwrap(
+      await invoke("student_remove_guardian", { studentId, guardianId }),
+    );
   }
   async deleteStudent(id: string): Promise<boolean> {
     return unwrap(await invoke("student_delete_student", { id }));
@@ -569,20 +608,31 @@ export class LocalClient implements OrbisApiClient {
   async restoreStudent(id: string): Promise<StudentDto> {
     return unwrap(await invoke("student_restore_student", { id }));
   }
-  async bulkRegisterStudents( items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto> {
-    return unwrap(await invoke("student_bulk_register", {
-      items,
-      atomic: options?.atomic ?? true,
-      dryRun: options?.dryRun ?? false,
-    }));
+  async bulkRegisterStudents(
+    items: BulkRegisterStudentCommandItem[],
+    options?: { atomic?: boolean; dryRun?: boolean },
+  ): Promise<BulkRegisterStudentCommandResultDto> {
+    return unwrap(
+      await invoke("student_bulk_register", {
+        items,
+        atomic: options?.atomic ?? true,
+        dryRun: options?.dryRun ?? false,
+      }),
+    );
   }
 
   // ── Employee Affairs ────────────────────────────────────────
-  async registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto> {
+  async registerEmployee(
+    req: RegisterEmployeeRequest,
+  ): Promise<RegisterEmployeeResponseDto> {
     return unwrap(await invoke("employee_register_employee", { request: req }));
   }
-  async listEmployees(filter?: EmployeeFilterInput): Promise<PaginatedEmployeesDto> {
-    return unwrap(await invoke("employee_list_employees", { filter: filter ?? {} }));
+  async listEmployees(
+    filter?: EmployeeFilterInput,
+  ): Promise<PaginatedEmployeesDto> {
+    return unwrap(
+      await invoke("employee_list_employees", { filter: filter ?? {} }),
+    );
   }
   async getEmployee(id: string): Promise<EmployeeDetailDto> {
     return unwrap(await invoke("employee_get_employee", { id }));
@@ -590,11 +640,21 @@ export class LocalClient implements OrbisApiClient {
   async getEmployeeStats(): Promise<Record<string, number>> {
     return unwrap(await invoke("employee_get_employee_stats"));
   }
-  async updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto> {
-    return unwrap(await invoke("employee_update_employee", { id, request: req }));
+  async updateEmployee(
+    id: string,
+    req: UpdateEmployeeRequest,
+  ): Promise<EmployeeDetailDto> {
+    return unwrap(
+      await invoke("employee_update_employee", { id, request: req }),
+    );
   }
-  async updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto> {
-    return unwrap(await invoke("employee_update_employee_status", { id, status }));
+  async updateEmployeeStatus(
+    id: string,
+    status: string,
+  ): Promise<EmployeeDetailDto> {
+    return unwrap(
+      await invoke("employee_update_employee_status", { id, status }),
+    );
   }
   async deleteEmployee(id: string): Promise<boolean> {
     return unwrap(await invoke("employee_delete_employee", { id }));
@@ -602,21 +662,28 @@ export class LocalClient implements OrbisApiClient {
   async restoreEmployee(id: string): Promise<EmployeeDetailDto> {
     return unwrap(await invoke("employee_restore_employee", { id }));
   }
-  async provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto> {
-    return unwrap(await invoke("employee_provision_account", { id, request: req }));
+  async provisionEmployeeAccount(
+    id: string,
+    req: ProvisionEmployeeAccountRequest,
+  ): Promise<AccountProvisioningResultDto> {
+    return unwrap(
+      await invoke("employee_provision_account", { id, request: req }),
+    );
   }
   async assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean> {
     return unwrap(await invoke("employee_assign_groups", { id, groupIds }));
   }
   async bulkRegisterEmployees(
     items: BulkRegisterEmployeeCommandItem[],
-    options?: { atomic?: boolean; dryRun?: boolean }
+    options?: { atomic?: boolean; dryRun?: boolean },
   ): Promise<BulkRegisterEmployeeCommandResultDto> {
-    return unwrap(await invoke("employee_bulk_register", {
-      items,
-      atomic: options?.atomic ?? true,
-      dryRun: options?.dryRun ?? false,
-    }));
+    return unwrap(
+      await invoke("employee_bulk_register", {
+        items,
+        atomic: options?.atomic ?? true,
+        dryRun: options?.dryRun ?? false,
+      }),
+    );
   }
 
   // ── User Groups ─────────────────────────────────────────────
@@ -629,7 +696,10 @@ export class LocalClient implements OrbisApiClient {
   async getGroup(id: string): Promise<GroupDetailDto> {
     return unwrap(await invoke("group_get_group", { id }));
   }
-  async updateGroup(id: string, req: UpdateGroupRequest): Promise<GroupDetailDto> {
+  async updateGroup(
+    id: string,
+    req: UpdateGroupRequest,
+  ): Promise<GroupDetailDto> {
     return unwrap(await invoke("group_update_group", { id, request: req }));
   }
   async deleteGroup(id: string): Promise<boolean> {
@@ -647,7 +717,10 @@ export class LocalClient implements OrbisApiClient {
   async bulkAssignGroup(req: BulkAssignGroupRequest): Promise<number> {
     return unwrap(await invoke("group_bulk_assign", { request: req }));
   }
-  async setGroupPermissions(id: string, permissions: string[]): Promise<boolean> {
+  async setGroupPermissions(
+    id: string,
+    permissions: string[],
+  ): Promise<boolean> {
     return unwrap(await invoke("group_set_permissions", { id, permissions }));
   }
 
@@ -672,7 +745,9 @@ export class LocalClient implements OrbisApiClient {
       await invoke("scheduling_create_time_slot", { request: req }),
     );
   }
-  async batchCreateTimeSlots(req: BatchCreateTimeSlotsRequest): Promise<TimeSlotDto[]> {
+  async batchCreateTimeSlots(
+    req: BatchCreateTimeSlotsRequest,
+  ): Promise<TimeSlotDto[]> {
     return unwrap(
       await invoke("scheduling_batch_create_time_slots", { request: req }),
     );
@@ -687,8 +762,13 @@ export class LocalClient implements OrbisApiClient {
   async getTimeSlot(id: string): Promise<TimeSlotDto> {
     return unwrap(await invoke("scheduling_get_time_slot", { id }));
   }
-  async updateTimeSlot(id: string, req: UpdateTimeSlotRequest): Promise<TimeSlotDto> {
-    return unwrap(await invoke("scheduling_update_time_slot", { id, request: req }));
+  async updateTimeSlot(
+    id: string,
+    req: UpdateTimeSlotRequest,
+  ): Promise<TimeSlotDto> {
+    return unwrap(
+      await invoke("scheduling_update_time_slot", { id, request: req }),
+    );
   }
   async deleteTimeSlot(id: string): Promise<void> {
     await invoke("scheduling_delete_time_slot", { id });
@@ -701,7 +781,9 @@ export class LocalClient implements OrbisApiClient {
   async bulkScheduleLessons(
     req: BulkScheduleLessonsRequest,
   ): Promise<ScheduledLessonDto[]> {
-    return unwrap(await invoke("scheduling_bulk_schedule_lessons", { request: req }));
+    return unwrap(
+      await invoke("scheduling_bulk_schedule_lessons", { request: req }),
+    );
   }
   async deleteScheduledLesson(id: string): Promise<void> {
     await invoke("scheduling_delete_scheduled_lesson", { id });
@@ -837,9 +919,7 @@ export class LocalClient implements OrbisApiClient {
   async calculateGpa(
     req: CalculateGpaRequest,
   ): Promise<CumulativeGpaRecordDto> {
-    return unwrap(
-      await invoke("assessment_calculate_gpa", { request: req }),
-    );
+    return unwrap(await invoke("assessment_calculate_gpa", { request: req }));
   }
   async calculateRankings(
     req: CalculateRankingsRequest,
@@ -849,9 +929,7 @@ export class LocalClient implements OrbisApiClient {
     );
   }
   async getCalculationEngineSettings(): Promise<CalculationEngineSettings> {
-    return unwrap(
-      await invoke("assessment_get_calculation_engine_settings"),
-    );
+    return unwrap(await invoke("assessment_get_calculation_engine_settings"));
   }
   async updateCalculationEngineSettings(
     settings: CalculationEngineSettings,
@@ -961,9 +1039,7 @@ export class LocalClient implements OrbisApiClient {
     );
   }
   async recordBehavior(req: RecordBehaviorRequest): Promise<BehaviorRecordDto> {
-    return unwrap(
-      await invoke("assessment_record_behavior", { request: req }),
-    );
+    return unwrap(await invoke("assessment_record_behavior", { request: req }));
   }
   async deleteBehavior(id: string): Promise<void> {
     unwrap(await invoke("assessment_delete_behavior", { id }));
@@ -990,9 +1066,7 @@ export class LocalClient implements OrbisApiClient {
     );
   }
   async promoteCohort(req: PromoteCohortInput): Promise<progressionJobDto> {
-    return unwrap(
-      await invoke("progression_promote_cohort", { request: req }),
-    );
+    return unwrap(await invoke("progression_promote_cohort", { request: req }));
   }
   async listprogressionJobs(): Promise<progressionJobDto[]> {
     return unwrap(await invoke("progression_list_jobs"));
@@ -1005,23 +1079,15 @@ export class LocalClient implements OrbisApiClient {
   async submitOverride(
     req: SubmitOverrideRequestInput,
   ): Promise<OverrideRequestDto> {
-    return unwrap(
-      await invoke("workflow_submit_override", { request: req }),
-    );
+    return unwrap(await invoke("workflow_submit_override", { request: req }));
   }
   async approveOverride(
     req: ApproveOverrideInput,
   ): Promise<OverrideRequestDto> {
-    return unwrap(
-      await invoke("workflow_approve_override", { request: req }),
-    );
+    return unwrap(await invoke("workflow_approve_override", { request: req }));
   }
-  async rejectOverride(
-    req: RejectOverrideInput,
-  ): Promise<OverrideRequestDto> {
-    return unwrap(
-      await invoke("workflow_reject_override", { request: req }),
-    );
+  async rejectOverride(req: RejectOverrideInput): Promise<OverrideRequestDto> {
+    return unwrap(await invoke("workflow_reject_override", { request: req }));
   }
   async listOverrides(status?: string): Promise<OverrideRequestDto[]> {
     return unwrap(await invoke("workflow_list_overrides", { status }));
@@ -1104,7 +1170,10 @@ export class LocalClient implements OrbisApiClient {
   async getAccount(id: string): Promise<AccountDto> {
     return unwrap(await invoke("finance_get_account", { id }));
   }
-  async updateAccount(id: string, req: UpdateAccountRequest): Promise<AccountDto> {
+  async updateAccount(
+    id: string,
+    req: UpdateAccountRequest,
+  ): Promise<AccountDto> {
     return unwrap(await invoke("finance_update_account", { id, request: req }));
   }
   async deleteAccount(id: string): Promise<boolean> {
@@ -1162,7 +1231,10 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<PaginatedList<StudentFeeDto>> {
     return unwrap(
       await invoke("finance_list_student_fees_paginated", {
-        filter: { ...filter, page_size: Math.min(filter?.page_size ?? 50, 100) },
+        filter: {
+          ...filter,
+          page_size: Math.min(filter?.page_size ?? 50, 100),
+        },
       }),
     );
   }
@@ -1172,9 +1244,7 @@ export class LocalClient implements OrbisApiClient {
   async processPayment(req: ProcessPaymentRequest): Promise<PaymentDto> {
     return unwrap(await invoke("finance_process_payment", { request: req }));
   }
-  async listPayments(
-    filter?: PaymentFilterParams,
-  ): Promise<PaymentDto[]> {
+  async listPayments(filter?: PaymentFilterParams): Promise<PaymentDto[]> {
     const firstPage = await this.listPaymentsPaginated({
       ...filter,
       page: 1,
@@ -1197,7 +1267,10 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<PaginatedList<PaymentDto>> {
     return unwrap(
       await invoke("finance_list_payments_paginated", {
-        filter: { ...filter, page_size: Math.min(filter?.page_size ?? 50, 100) },
+        filter: {
+          ...filter,
+          page_size: Math.min(filter?.page_size ?? 50, 100),
+        },
       }),
     );
   }
@@ -1263,9 +1336,7 @@ export class LocalClient implements OrbisApiClient {
   async getAccountStatement(
     filter: StatementFilterParams,
   ): Promise<StatementResponseDto> {
-    return unwrap(
-      await invoke("finance_get_account_statement", { filter }),
-    );
+    return unwrap(await invoke("finance_get_account_statement", { filter }));
   }
   async processDisbursement(
     req: ProcessDisbursementRequest,
@@ -1274,12 +1345,8 @@ export class LocalClient implements OrbisApiClient {
       await invoke("finance_process_disbursement", { request: req }),
     );
   }
-  async createSubAccount(
-    req: CreateSubAccountRequest,
-  ): Promise<AccountDto> {
-    return unwrap(
-      await invoke("finance_create_sub_account", { request: req }),
-    );
+  async createSubAccount(req: CreateSubAccountRequest): Promise<AccountDto> {
+    return unwrap(await invoke("finance_create_sub_account", { request: req }));
   }
   async settleGatewayPayout(
     req: SettleGatewayPayoutRequest,
@@ -1288,19 +1355,13 @@ export class LocalClient implements OrbisApiClient {
       await invoke("finance_settle_gateway_payout", { request: req }),
     );
   }
-  async postPayrollAccrual(
-    req: PostPayrollRequest,
-  ): Promise<JournalEntryDto> {
+  async postPayrollAccrual(req: PostPayrollRequest): Promise<JournalEntryDto> {
     return unwrap(
       await invoke("finance_post_payroll_accrual", { request: req }),
     );
   }
-  async disbursePayroll(
-    req: DisbursePayrollRequest,
-  ): Promise<JournalEntryDto> {
-    return unwrap(
-      await invoke("finance_disburse_payroll", { request: req }),
-    );
+  async disbursePayroll(req: DisbursePayrollRequest): Promise<JournalEntryDto> {
+    return unwrap(await invoke("finance_disburse_payroll", { request: req }));
   }
 
   // ── Integration ─────────────────────────────────────────────
@@ -1326,23 +1387,33 @@ export class LocalClient implements OrbisApiClient {
       await invoke("integration_toggle", { providerName, isEnabled }),
     );
   }
-  async getMulverseConnection(): Promise<import("./types").MulverseConnectionDto> {
+  async getMulverseConnection(): Promise<
+    import("./types").MulverseConnectionDto
+  > {
     const response = unwrap<import("./types").MulverseConnectionDto | null>(
       await invoke("mulverse_get_connection"),
     );
-    return response ?? {
-      connected: false,
-      organization_id: null,
-      product_organization_id: null,
-    };
+    return (
+      response ?? {
+        connected: false,
+        customer_id: null,
+        application_customer_id: null,
+      }
+    );
   }
-  async connectMulverse(apiKey: string): Promise<import("./types").MulverseConnectionDto> {
-    return unwrap(await invoke("mulverse_connect", { request: { api_key: apiKey } }));
+  async connectMulverse(
+    apiKey: string,
+  ): Promise<import("./types").MulverseConnectionDto> {
+    return unwrap(
+      await invoke("mulverse_connect", { request: { api_key: apiKey } }),
+    );
   }
   async disconnectMulverse(): Promise<boolean> {
     return unwrap(await invoke("mulverse_disconnect"));
   }
-  async listMulverseDeployments(): Promise<import("./types").MulverseDeploymentDto[]> {
+  async listMulverseDeployments(): Promise<
+    import("./types").MulverseDeploymentDto[]
+  > {
     return unwrap(await invoke("mulverse_list_deployments"));
   }
   async createMulverseDeployment(
@@ -1354,22 +1425,30 @@ export class LocalClient implements OrbisApiClient {
     id: string,
     req: Partial<import("./types").MulverseDeploymentRequest>,
   ): Promise<import("./types").MulverseDeploymentDto> {
-    return unwrap(await invoke("mulverse_update_deployment", { id, request: req }));
+    return unwrap(
+      await invoke("mulverse_update_deployment", { id, request: req }),
+    );
   }
-  async listMulverseEndpoints(deploymentId: string): Promise<import("./types").MulverseEndpointDto[]> {
+  async listMulverseEndpoints(
+    deploymentId: string,
+  ): Promise<import("./types").MulverseEndpointDto[]> {
     return unwrap(await invoke("mulverse_list_endpoints", { deploymentId }));
   }
   async createMulverseEndpoint(
     deploymentId: string,
     req: import("./types").MulverseEndpointRequest,
   ): Promise<import("./types").MulverseEndpointDto> {
-    return unwrap(await invoke("mulverse_create_endpoint", { deploymentId, request: req }));
+    return unwrap(
+      await invoke("mulverse_create_endpoint", { deploymentId, request: req }),
+    );
   }
   async updateMulverseEndpoint(
     id: string,
     req: import("./types").MulverseEndpointUpdateRequest,
   ): Promise<import("./types").MulverseEndpointDto> {
-    return unwrap(await invoke("mulverse_update_endpoint", { id, request: req }));
+    return unwrap(
+      await invoke("mulverse_update_endpoint", { id, request: req }),
+    );
   }
   // ── Templates ───────────────────────────────────────────────
   async createTemplate(req: CreateTemplateRequest): Promise<TemplateDto> {
@@ -1515,13 +1594,19 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<AuditLogDto[]> {
     try {
       return unwrap(
-        await invoke("get_entity_audit", { entityType, entityId, limit, offset }),
+        await invoke("get_entity_audit", {
+          entityType,
+          entityId,
+          limit,
+          offset,
+        }),
       );
     } catch {
       const logs = await this.listAuditLogs(limit ?? 50, offset ?? 0);
       return logs.filter(
         (l) =>
-          l.entity_type === entityType && (!entityId || l.entity_id === entityId),
+          l.entity_type === entityType &&
+          (!entityId || l.entity_id === entityId),
       );
     }
   }
@@ -1568,9 +1653,6 @@ export class LocalClient implements OrbisApiClient {
   async licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto> {
     return invoke<LicenseStateDto>("license_activate_key", { request: req });
   }
-  async licenseRedeemKey(req: ActivateKeyRequest): Promise<LicenseStateDto> {
-    return invoke<LicenseStateDto>("license_redeem_key", { request: req });
-  }
   async licenseStartTrial(): Promise<LicenseStateDto> {
     return invoke<LicenseStateDto>("license_start_trial");
   }
@@ -1590,8 +1672,14 @@ export class LocalClient implements OrbisApiClient {
   async bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult> {
     return invoke<EnvironmentDetectionResult>("bootstrap_detect_environment");
   }
-  async bootstrapGenerateSlug(name: string, nameAr?: string): Promise<SlugGenerationResult> {
-    return invoke<SlugGenerationResult>("bootstrap_generate_slug", { name, nameAr: nameAr || null });
+  async bootstrapGenerateSlug(
+    name: string,
+    nameAr?: string,
+  ): Promise<SlugGenerationResult> {
+    return invoke<SlugGenerationResult>("bootstrap_generate_slug", {
+      name,
+      nameAr: nameAr || null,
+    });
   }
   async bootstrapGetStatus(): Promise<BootstrapStatusResponse> {
     return invoke<BootstrapStatusResponse>("bootstrap_get_status");
@@ -1599,11 +1687,15 @@ export class LocalClient implements OrbisApiClient {
   async bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult> {
     return invoke<BootstrapResult>("bootstrap_execute", { request: req });
   }
-  async completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult> {
+  async completeOnboarding(
+    req: CompleteOrganizationOnboardingRequest,
+  ): Promise<OnboardingResult> {
     return invoke<OnboardingResult>("onboarding_complete", { request: req });
   }
   async onboardingGetState(orgId?: string): Promise<OnboardingStateDto> {
-    return unwrap(await invoke("onboarding_get_state", { orgId: orgId ?? null }));
+    return unwrap(
+      await invoke("onboarding_get_state", { orgId: orgId ?? null }),
+    );
   }
   async onboardingProvisionDefaults(
     req: ProvisionDefaultsReqDto,
@@ -1658,8 +1750,12 @@ export class LocalClient implements OrbisApiClient {
   async connectionValidate(): Promise<ConnectionValidation> {
     return invoke<ConnectionValidation>("connection_validate");
   }
-  async connectionCheckRemoteHealth(serverUrl: string): Promise<RemoteHealthResult> {
-    return invoke<RemoteHealthResult>("connection_check_remote_health", { serverUrl });
+  async connectionCheckRemoteHealth(
+    serverUrl: string,
+  ): Promise<RemoteHealthResult> {
+    return invoke<RemoteHealthResult>("connection_check_remote_health", {
+      serverUrl,
+    });
   }
   async connectionConnect(): Promise<ConnectResult> {
     return invoke<ConnectResult>("connection_connect");
@@ -1672,44 +1768,85 @@ export class LocalClient implements OrbisApiClient {
   }
 
   async databaseGetStatus(): Promise<DatabaseStatusDto> {
-    return unwrap(await invoke<{ data: DatabaseStatusDto }>("database_get_status"));
+    return unwrap(
+      await invoke<{ data: DatabaseStatusDto }>("database_get_status"),
+    );
   }
-  async databaseCreateLocal(params: { customDir?: string; filename: string }): Promise<DatabaseStatusDto> {
-    return unwrap(await invoke<{ data: DatabaseStatusDto }>("database_create_local", {
-      customDir: params.customDir ?? null,
-      filename: params.filename,
-    }));
+  async databaseCreateLocal(params: {
+    customDir?: string;
+    filename: string;
+  }): Promise<DatabaseStatusDto> {
+    return unwrap(
+      await invoke<{ data: DatabaseStatusDto }>("database_create_local", {
+        customDir: params.customDir ?? null,
+        filename: params.filename,
+      }),
+    );
   }
   async databaseOpenExisting(filePath: string): Promise<DatabaseStatusDto> {
-    return unwrap(await invoke<{ data: DatabaseStatusDto }>("database_open_existing", { filePath }));
+    return unwrap(
+      await invoke<{ data: DatabaseStatusDto }>("database_open_existing", {
+        filePath,
+      }),
+    );
   }
   async databaseBackup(destinationPath?: string): Promise<BackupResultDto> {
-    return unwrap(await invoke<{ data: BackupResultDto }>("database_backup", {
-      destinationPath: destinationPath ?? null,
-    }));
+    return unwrap(
+      await invoke<{ data: BackupResultDto }>("database_backup", {
+        destinationPath: destinationPath ?? null,
+      }),
+    );
   }
-  async databaseValidateBackupFile(filePath: string): Promise<BackupInspectionDto> {
-    return unwrap(await invoke<{ data: BackupInspectionDto }>("database_validate_backup_file", { filePath }));
+  async databaseValidateBackupFile(
+    filePath: string,
+  ): Promise<BackupInspectionDto> {
+    return unwrap(
+      await invoke<{ data: BackupInspectionDto }>(
+        "database_validate_backup_file",
+        { filePath },
+      ),
+    );
   }
   async databaseRestore(backupFilePath: string): Promise<RestoreResultDto> {
-    return unwrap(await invoke<{ data: RestoreResultDto }>("database_restore", { backupFilePath }));
+    return unwrap(
+      await invoke<{ data: RestoreResultDto }>("database_restore", {
+        backupFilePath,
+      }),
+    );
   }
   async databaseRunMigrations(): Promise<MigrationResultDto> {
-    return unwrap(await invoke<{ data: MigrationResultDto }>("database_run_migrations"));
+    return unwrap(
+      await invoke<{ data: MigrationResultDto }>("database_run_migrations"),
+    );
   }
   async databaseCheckIntegrity(): Promise<IntegrityResultDto> {
-    return unwrap(await invoke<{ data: IntegrityResultDto }>("database_check_integrity"));
+    return unwrap(
+      await invoke<{ data: IntegrityResultDto }>("database_check_integrity"),
+    );
   }
   async databaseOptimize(): Promise<OptimizeResultDto> {
-    return unwrap(await invoke<{ data: OptimizeResultDto }>("database_optimize"));
+    return unwrap(
+      await invoke<{ data: OptimizeResultDto }>("database_optimize"),
+    );
   }
   async databaseGetSettings(): Promise<DatabaseSettingsDto> {
-    return unwrap(await invoke<{ data: DatabaseSettingsDto }>("database_get_settings"));
+    return unwrap(
+      await invoke<{ data: DatabaseSettingsDto }>("database_get_settings"),
+    );
   }
-  async databaseUpdateSettings(settings: DatabaseSettingsDto): Promise<DatabaseSettingsDto> {
-    return unwrap(await invoke<{ data: DatabaseSettingsDto }>("database_update_settings", { settings }));
+  async databaseUpdateSettings(
+    settings: DatabaseSettingsDto,
+  ): Promise<DatabaseSettingsDto> {
+    return unwrap(
+      await invoke<{ data: DatabaseSettingsDto }>("database_update_settings", {
+        settings,
+      }),
+    );
   }
-  async databasePickFile(params?: { filterName?: string; extensions?: string[] }): Promise<string | null> {
+  async databasePickFile(params?: {
+    filterName?: string;
+    extensions?: string[];
+  }): Promise<string | null> {
     return invoke<string | null>("database_pick_file", {
       filterName: params?.filterName ?? null,
       extensions: params?.extensions ?? null,
@@ -1718,7 +1855,11 @@ export class LocalClient implements OrbisApiClient {
   async databasePickFolder(): Promise<string | null> {
     return invoke<string | null>("database_pick_folder");
   }
-  async databasePickSavePath(params?: { defaultFilename?: string; filterName?: string; extensions?: string[] }): Promise<string | null> {
+  async databasePickSavePath(params?: {
+    defaultFilename?: string;
+    filterName?: string;
+    extensions?: string[];
+  }): Promise<string | null> {
     return invoke<string | null>("database_pick_save_path", {
       defaultFilename: params?.defaultFilename ?? null,
       filterName: params?.filterName ?? null,
@@ -1747,7 +1888,10 @@ export class LocalClient implements OrbisApiClient {
   async aiDeleteSession(orgId: string, sessionId: string): Promise<boolean> {
     return unwrap(await invoke("ai_delete_session", { orgId, sessionId }));
   }
-  async aiSaveContext(orgId: string, context: Record<string, unknown>): Promise<boolean> {
+  async aiSaveContext(
+    orgId: string,
+    context: Record<string, unknown>,
+  ): Promise<boolean> {
     return unwrap(await invoke("ai_save_context", { orgId, context }));
   }
   async aiLoadContext(orgId: string): Promise<Record<string, unknown> | null> {
@@ -1808,7 +1952,8 @@ export class LocalClient implements OrbisApiClient {
     const arrayBuffer = await req.file.arrayBuffer();
     const data = Array.from(new Uint8Array(arrayBuffer));
     const mime_type = req.file.type || "application/octet-stream";
-    const name = req.name || (req.file instanceof File ? req.file.name : "upload.bin");
+    const name =
+      req.name || (req.file instanceof File ? req.file.name : "upload.bin");
 
     return unwrap(
       await invoke("storage_upload_file", {
@@ -1832,7 +1977,11 @@ export class LocalClient implements OrbisApiClient {
     );
   }
 
-  async listDocuments(params?: { entity_type?: string; entity_id?: string; folder_id?: string }): Promise<DocumentDto[]> {
+  async listDocuments(params?: {
+    entity_type?: string;
+    entity_id?: string;
+    folder_id?: string;
+  }): Promise<DocumentDto[]> {
     if (params?.folder_id) {
       const contents = await this.getFolderContents(params.folder_id);
       return contents.documents;
@@ -1843,7 +1992,10 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("document_list"));
   }
 
-  async listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]> {
+  async listDocumentsByEntity(
+    entityType: string,
+    entityId: string,
+  ): Promise<DocumentDto[]> {
     return unwrap(
       await invoke("document_list_by_entity", {
         entityType,
@@ -1856,7 +2008,10 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("document_get", { id }));
   }
 
-  async updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto> {
+  async updateDocument(
+    id: string,
+    req: UpdateDocumentRequest,
+  ): Promise<DocumentDto> {
     return unwrap(await invoke("document_update", { id, request: req }));
   }
 
@@ -1865,7 +2020,9 @@ export class LocalClient implements OrbisApiClient {
   }
 
   async archiveDocument(id: string, reason?: string): Promise<DocumentDto> {
-    return unwrap(await invoke("document_archive", { id, reason: reason ?? null }));
+    return unwrap(
+      await invoke("document_archive", { id, reason: reason ?? null }),
+    );
   }
 
   async restoreDocument(id: string): Promise<DocumentDto> {
@@ -1888,8 +2045,16 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("document_list_trash"));
   }
 
-  async getDocumentAccessUrl(id: string, expiresInSeconds?: number): Promise<string> {
-    return unwrap(await invoke("storage_get_url", { id, expiresInSeconds: expiresInSeconds ?? null }));
+  async getDocumentAccessUrl(
+    id: string,
+    expiresInSeconds?: number,
+  ): Promise<string> {
+    return unwrap(
+      await invoke("storage_get_url", {
+        id,
+        expiresInSeconds: expiresInSeconds ?? null,
+      }),
+    );
   }
 
   async downloadDocumentFile(id: string): Promise<Blob | Uint8Array> {
@@ -1897,19 +2062,30 @@ export class LocalClient implements OrbisApiClient {
       await invoke("storage_download_file", { id }),
     );
     const uint8 = new Uint8Array(res.data);
-    return new Blob([uint8], { type: res.document.mime_type || "application/octet-stream" });
+    return new Blob([uint8], {
+      type: res.document.mime_type || "application/octet-stream",
+    });
   }
 
-  async createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto> {
-    return unwrap(await invoke("document_create_requirement", { request: req }));
+  async createDocumentRequirement(
+    req: CreateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto> {
+    return unwrap(
+      await invoke("document_create_requirement", { request: req }),
+    );
   }
 
   async getDocumentRequirement(id: string): Promise<DocumentRequirementDto> {
     return unwrap(await invoke("document_get_requirement", { id }));
   }
 
-  async updateDocumentRequirement(id: string, req: UpdateDocumentRequirementRequest): Promise<DocumentRequirementDto> {
-    return unwrap(await invoke("document_update_requirement", { id, request: req }));
+  async updateDocumentRequirement(
+    id: string,
+    req: UpdateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto> {
+    return unwrap(
+      await invoke("document_update_requirement", { id, request: req }),
+    );
   }
 
   async listDocumentRequirements(): Promise<DocumentRequirementDto[]> {
@@ -1957,7 +2133,10 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("folder_get_contents", { id }));
   }
 
-  async getOrCreateStudentFolder(studentId: string, studentName?: string): Promise<FolderDto> {
+  async getOrCreateStudentFolder(
+    studentId: string,
+    studentName?: string,
+  ): Promise<FolderDto> {
     return unwrap(
       await invoke("folder_get_or_create_student", {
         studentId,
@@ -1970,8 +2149,12 @@ export class LocalClient implements OrbisApiClient {
     return unwrap(await invoke("folder_list_curriculum"));
   }
 
-  async getOrCreateCurriculumFolder(req: CreateCurriculumFolderRequest): Promise<FolderDto> {
-    return unwrap(await invoke("folder_get_or_create_curriculum", { request: req }));
+  async getOrCreateCurriculumFolder(
+    req: CreateCurriculumFolderRequest,
+  ): Promise<FolderDto> {
+    return unwrap(
+      await invoke("folder_get_or_create_curriculum", { request: req }),
+    );
   }
 
   async updateFolder(id: string, req: UpdateFolderRequest): Promise<FolderDto> {
@@ -1980,5 +2163,70 @@ export class LocalClient implements OrbisApiClient {
 
   async deleteFolder(id: string): Promise<void> {
     await invoke("folder_delete", { id });
+  }
+
+  // ── Notifications ──────────────────────────────────────────
+  async listNotifications(params?: {
+    category?: string;
+    is_read?: boolean;
+    is_dismissed?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<NotificationDto[]> {
+    try {
+      return unwrap(await invoke("notification_list", { params }));
+    } catch {
+      return [];
+    }
+  }
+
+  async getUnreadNotificationCount(): Promise<{ count: number }> {
+    try {
+      return unwrap(await invoke("notification_unread_count"));
+    } catch {
+      return { count: 0 };
+    }
+  }
+
+  async markNotificationRead(id: string): Promise<void> {
+    try {
+      await invoke("notification_mark_read", { id });
+    } catch {}
+  }
+
+  async markAllNotificationsRead(): Promise<{ updated: number }> {
+    try {
+      return unwrap(await invoke("notification_mark_all_read"));
+    } catch {
+      return { updated: 0 };
+    }
+  }
+
+  async dismissNotification(id: string): Promise<void> {
+    try {
+      await invoke("notification_dismiss", { id });
+    } catch {}
+  }
+
+  async getNotificationPreferences(): Promise<
+    NotificationPreferenceResponseDto[]
+  > {
+    try {
+      return unwrap(await invoke("notification_get_preferences"));
+    } catch {
+      return [];
+    }
+  }
+
+  async updateNotificationPreferences(
+    preferences: NotificationPreferenceDto[],
+  ): Promise<NotificationPreferenceResponseDto[]> {
+    try {
+      return unwrap(
+        await invoke("notification_update_preferences", { preferences }),
+      );
+    } catch {
+      return [];
+    }
   }
 }

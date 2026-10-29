@@ -116,7 +116,10 @@ export function SupportDrawer({ visible, onClose }: SupportDrawerProps) {
         setCategory("technical_support");
       })
       .catch((error: unknown) => {
-        console.error("[Orbis Mobile Support] Failed to open support email.", error);
+        console.error(
+          "[Orbis Mobile Support] Failed to open support email.",
+          error,
+        );
         setFormError(t("profile_support_email_error"));
       });
   };

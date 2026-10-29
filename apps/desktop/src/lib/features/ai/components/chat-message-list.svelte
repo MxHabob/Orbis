@@ -4,8 +4,25 @@ import { marked } from "marked";
 import { Button } from "@orbis/ui/button";
 import { Badge } from "@orbis/ui/badge";
 import AiLoadingSkeleton from "./ai-loading-skeleton.svelte";
-import { Check, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Clipboard, Download, InfoCircle, Pencil, Refresh, Sparkles, Wrench, XMark } from "@orbis/icons";
-import type { AiChatMessage, ActionWithStatus } from "$lib/features/ai/session-store";
+import {
+  Check,
+  CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  ChevronUp,
+  Clipboard,
+  Download,
+  InfoCircle,
+  Pencil,
+  Refresh,
+  Sparkles,
+  Wrench,
+  XMark,
+} from "@orbis/icons";
+import type {
+  AiChatMessage,
+  ActionWithStatus,
+} from "$lib/features/ai/session-store";
 import { fade } from "svelte/transition";
 
 // Configure marked with GFM & breaks
@@ -33,7 +50,10 @@ let {
   orgName: string | null;
   chatContainer?: HTMLDivElement;
   onLinkClick: (href: string) => void;
-  onActionResponse?: (action: ActionWithStatus, status: "executed" | "rejected") => void;
+  onActionResponse?: (
+    action: ActionWithStatus,
+    status: "executed" | "rejected",
+  ) => void;
   onReportDownload?: (action: ActionWithStatus) => void;
   onRetry?: (msgId: string) => void;
   onEditUserMessage?: (msgId: string, newText: string) => void;

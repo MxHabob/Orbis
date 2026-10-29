@@ -4,7 +4,17 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
 import { fade } from "svelte/transition";
-import { ArrowRight, Bolt, ChartBar, CheckCircle, ClockRotateRight, Cube, InfoCircle, Sparkles, UserBadgeCheck } from "@orbis/icons";
+import {
+  ArrowRight,
+  Bolt,
+  ChartBar,
+  CheckCircle,
+  ClockRotateRight,
+  Cube,
+  InfoCircle,
+  Sparkles,
+  UserBadgeCheck,
+} from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import {
   Card,
@@ -33,16 +43,18 @@ let isLoading = $state(true);
 
 onMount(async () => {
   try {
-    const [integrations, taskRes, diagnostics, sessions, settings] = await Promise.all([
-      api.listIntegrations().catch(() => []),
-      api.autopilotListTasks({ limit: 10 }).catch(() => ({ total_count: 0, items: [] })),
-      api.autopilotGetDiagnostics().catch(() => null),
-      api.aiLoadSessions(orgId).catch(() => []),
-      api.getSettings().catch(() => null),
-    ]);
+    const [integrations, taskRes, diagnostics, sessions, settings] =
+      await Promise.all([
+        api.listIntegrations().catch(() => []),
+        api
+          .autopilotListTasks({ limit: 10 })
+          .catch(() => ({ total_count: 0, items: [] })),
+        api.autopilotGetDiagnostics().catch(() => null),
+        api.aiLoadSessions(orgId).catch(() => []),
+        api.getSettings().catch(() => null),
+      ]);
 
-    healthStatus =
-      diagnostics?.is_healthy === false ? "degraded" : "healthy";
+    healthStatus = diagnostics?.is_healthy === false ? "degraded" : "healthy";
     activeSessions = Array.isArray(sessions) ? sessions : [];
     sessionCount = activeSessions.length;
 
@@ -56,7 +68,11 @@ onMount(async () => {
     if (settings?.autopilot) {
       const mode = settings.autopilot.mode;
       autopilotMode =
-        mode === "automatic" ? m.ai_ui_mode_automatic() : mode === "manual" ? m.ai_ui_mode_manual() : m.ai_ui_mode_suggested();
+        mode === "automatic"
+          ? m.ai_ui_mode_automatic()
+          : mode === "manual"
+            ? m.ai_ui_mode_manual()
+            : m.ai_ui_mode_suggested();
     }
   } catch (e) {
     console.warn("[AI Center] Overview load:", e);

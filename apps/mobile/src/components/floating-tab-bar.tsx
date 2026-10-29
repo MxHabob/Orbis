@@ -3,14 +3,11 @@
  *
  * Orbis Floating Tab Bar.
  *
- * Three independent floating controls — there is intentionally no shared
- * floating container:
- *
- *   [ Apps ]        [ Digital ID ]        [ Analytics ]
- *
- * The left and right controls navigate between tab routes as usual. The
- * center control does not navigate: it opens `DigitalIdDialog`, which
- * presents the signed-in user's digital ID card.
+ * - Built entirely with NativeWind utility classes and 100% synchronized Orbis design tokens.
+ * - Zero StyleSheet usage.
+ * - Uses official icons from @orbis/icons/native.
+ * - Matches the reference aesthetic and desktop design tokens exactly:
+ *   [ Apps / Home (with desktop lime badge) ]    [ Digital ID ]    [ Analytics / Behavior AI ]
  */
 
 import React, { useEffect, useRef } from "react";
@@ -19,11 +16,8 @@ import {
   Keyboard,
   Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
-  type StyleProp,
-  type ViewStyle,
 } from "react-native";
 
 import { ChartBar, Document, Grid } from "@orbis/icons/native";
@@ -66,29 +60,34 @@ type FloatingTabBarProps = {
   descriptors: TabBarDescriptors;
 };
 
-type FloatingControlProps = {
-  children: React.ReactNode;
-  onPress: () => void;
-  accessibilityLabel: string;
-  active?: boolean;
-  style?: StyleProp<ViewStyle>;
-};
-
 const ROUTE_APPS = "index";
 const ROUTE_ANALYTICS = "behavior";
+
+// Ambient shadow for floating controls matching desktop card elevation
+const floatingShadow = {
+  shadowColor: "#000000",
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.08,
+  shadowRadius: 12,
+  elevation: 4,
+};
+
+const pressedScale = { transform: [{ scale: 0.94 }] };
 
 export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, isArabic } = useI18n();
 
   const translateY = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
 
     const showSub = Keyboard.addListener(showEvent, () => {
       Animated.parallel([
@@ -157,231 +156,75 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
   const isAppsFocused = isRouteFocused(ROUTE_APPS);
   const isAnalyticsFocused = isRouteFocused(ROUTE_ANALYTICS);
 
+  const appsLabel = t("tab_home");
   const digitalIdLabel = t("tab_digital_id");
-
-  // Shared floating surface
-  const surface = theme.cardElevated;
-  const border = theme.cardBorder;
-  const iconColor = theme.foreground;
-  const activeColor = theme.primary;
+  const analyticsLabel = t("tab_behavior_ai");
 
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={[
-        styles.navigation,
-        {
-          bottom,
-          transform: [{ translateY }],
-          opacity,
-        },
-      ]}
+      className="absolute left-five right-five flex-row items-center justify-between z-50 min-h-14"
+      style={{
+        bottom,
+        transform: [{ translateY }],
+        opacity,
+      }}
     >
-      {/* LEFT — Apps */}
-      <View style={styles.appsWrapper}>
+      {/* LEFT — Apps (Home) with NEW badge synchronized with desktop badge-brand-lime */}
+      <View className="w-14 h-14 relative items-center justify-center shrink-0">
         <View
           pointerEvents="none"
-          style={[
-            styles.newBadge,
-            { backgroundColor: theme.backgroundSelected },
-          ]}
+          className={`absolute -top-[9px] ${
+            isArabic ? "-right-1" : "-left-1"
+          } h-[22px] px-[9px] rounded-full items-center justify-center z-10 border border-brand-lime/30 bg-brand-lime/15`}
         >
-          <Text
-            style={[
-              styles.newBadgeText,
-              { color: theme.foreground },
-            ]}
-          >
+          <Text className="text-[11px] leading-[14px] font-bold tracking-wider uppercase text-brand-lime-dark">
             {t("badge_new")}
           </Text>
         </View>
 
-        <FloatingControl
-          accessibilityLabel="Apps"
-          active={isAppsFocused}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ selected: isAppsFocused }}
+          accessibilityLabel={appsLabel}
           onPress={() => navigateToRoute(ROUTE_APPS)}
-          style={[
-            styles.iconButton,
-            {
-              backgroundColor: isAppsFocused ? theme.accentLight : surface,
-            },
-          ]}
+          className="w-14 h-14 rounded-full bg-card items-center justify-center shrink-0"
+          style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
         >
-          <Grid
-            size={21}
-            color={isAppsFocused ? activeColor : iconColor}
-          />
-        </FloatingControl>
+          <Grid size={22} color={theme.foreground} strokeWidth={1.8} />
+        </Pressable>
       </View>
 
-      {/* CENTER — Digital ID */}
-      <FloatingControl
-        accessibilityLabel="Digital ID"
+      {/* CENTER — Digital ID (Document icon + Label) */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={digitalIdLabel}
         onPress={() => router.push("/Id")}
-        style={[
-          styles.digitalIdButton,
-          { backgroundColor: surface, borderColor: border },
-        ]}
+        className="h-14 min-w-[140px] px-five rounded-full bg-card flex-row items-center justify-center gap-two shrink-0"
+        style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
       >
-        <Document size={21} color={iconColor} />
-
+        <Document size={21} color={theme.foreground} strokeWidth={1.8} />
         <Text
           numberOfLines={1}
-          style={[
-            styles.digitalIdText,
-            { color: theme.foreground },
-          ]}
+          className="text-[15px] leading-5 font-medium text-foreground shrink"
         >
           {digitalIdLabel}
         </Text>
-      </FloatingControl>
+      </Pressable>
 
-      {/* RIGHT — Analytics */}
-      <FloatingControl
-        accessibilityLabel="Analytics"
-        active={isAnalyticsFocused}
+      {/* RIGHT — Analytics (Behavior & AI) */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: isAnalyticsFocused }}
+        accessibilityLabel={analyticsLabel}
         onPress={() => navigateToRoute(ROUTE_ANALYTICS)}
-        style={[
-          styles.iconButton,
-          {
-            backgroundColor: isAnalyticsFocused ? theme.accentLight : surface,
-          },
-        ]}
+        className="w-14 h-14 rounded-full bg-card items-center justify-center shrink-0"
+        style={({ pressed }) => [floatingShadow, pressed && pressedScale]}
       >
-        <ChartBar
-          size={21}
-          color={isAnalyticsFocused ? activeColor : iconColor}
-        />
-      </FloatingControl>
+        <ChartBar size={21} color={theme.foreground} strokeWidth={1.8} />
+      </Pressable>
     </Animated.View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Floating control
-// ---------------------------------------------------------------------------
-
-function FloatingControl({
-  children,
-  onPress,
-  accessibilityLabel,
-  active,
-  style,
-}: FloatingControlProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.control,
-        style,
-        pressed && styles.pressed,
-      ]}
-    >
-      {children}
-    </Pressable>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const styles = StyleSheet.create({
-  /**
-   * The navigation container is only a layout container.
-   * No background, no border, no shadow.
-   */
-  navigation: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    zIndex: 100,
-  },
-
-  /** Shared floating surface. */
-  control: {
-    alignItems: "center",
-    justifyContent: "center",
-    elevation: 4,
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-  },
-
-  /** LEFT + RIGHT. 48 × 48. */
-  iconButton: {
-    width: 48,
-    height: 48,
-    flexShrink: 0,
-    borderRadius: 9999,
-  },
-
-  /** Wrapper only exists so NEW can sit above Apps. */
-  appsWrapper: {
-    width: 48,
-    height: 48,
-    flexShrink: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-  },
-
-  /** NEW badge — small and visually subordinate to the button. */
-  newBadge: {
-    position: "absolute",
-    top: -16,
-    left: -2,
-    minWidth: 58,
-    height: 30,
-    paddingHorizontal: 8,
-    borderRadius: 9999,
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 10,
-  },
-
-  newBadgeText: {
-    ...{"fontSize":11,"lineHeight":14,"fontWeight":"500"},
-    fontSize: 12,
-    lineHeight: 14,
-    fontWeight: "500",
-    letterSpacing: 0.1,
-  },
-
-  /** CENTER. Flexible width, typical 140–160 × 44. */
-  digitalIdButton: {
-    flex: 1,
-    height: 44,
-    minWidth: 120,
-    maxWidth: 160,
-    paddingHorizontal: 12,
-    borderRadius: 9999,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-  },
-
-  digitalIdText: {
-    ...{"fontSize":14,"lineHeight":20,"fontWeight":"400"},
-    fontSize: 14,
-    lineHeight: 18,
-    fontWeight: "500",
-    flexShrink: 1,
-  },
-
-  pressed: {
-    transform: [{ scale: 0.96 }],
-  },
-});
 
 export default FloatingTabBar;

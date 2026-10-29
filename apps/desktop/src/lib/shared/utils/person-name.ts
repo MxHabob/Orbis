@@ -4,7 +4,10 @@ export interface PersonNameParts {
   lastName: string;
 }
 
-export function splitPersonName(fullName: string, fallbackName = "طالب"): PersonNameParts {
+export function splitPersonName(
+  fullName: string,
+  fallbackName = "طالب",
+): PersonNameParts {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   const firstName = parts[0] || fallbackName;
 

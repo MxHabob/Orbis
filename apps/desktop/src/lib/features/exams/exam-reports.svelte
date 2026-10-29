@@ -28,11 +28,20 @@ import {
   CheckCircle,
 } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
-import { createPeriodsQuery, createRoomsQuery, createSectionsQuery } from "$lib/features/academics";
+import {
+  createPeriodsQuery,
+  createRoomsQuery,
+  createSectionsQuery,
+} from "$lib/features/academics";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 import { createReportDefinitionsQuery } from "$lib/features/reporting/queries";
 import { createTemplatesQuery } from "$lib/features/templates/queries";
-import { extractErrorMessage, type ExamSessionDto, type ReportDefinitionDto, type TemplateDto } from "$lib/api";
+import {
+  extractErrorMessage,
+  type ExamSessionDto,
+  type ReportDefinitionDto,
+  type TemplateDto,
+} from "$lib/api";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
@@ -62,7 +71,12 @@ const periods = $derived(periodsQuery.data ?? []);
 // Active academic year & period
 const activeYearName = $derived(academicContext.yearLabelAr);
 const activePeriod = $derived(
-  periods.find((p) => p.status === "active" || p.status === "active_teaching" || p.status === "grade_submission") || periods[0],
+  periods.find(
+    (p) =>
+      p.status === "active" ||
+      p.status === "active_teaching" ||
+      p.status === "grade_submission",
+  ) || periods[0],
 );
 const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
 const activePeriodName = $derived(activePeriod ? activePeriod.name : null);
@@ -81,7 +95,9 @@ const examReportsQuery = createReportDefinitionsQuery(
   () => orgId,
   () => ({ domain: "exam" }),
 );
-const allExamReports = $derived<ReportDefinitionDto[]>(examReportsQuery.data ?? []);
+const allExamReports = $derived<ReportDefinitionDto[]>(
+  examReportsQuery.data ?? [],
+);
 
 // Exam Sessions Query
 const examSessionsQuery = createExamSessionsQuery(() => activePeriodId);
@@ -98,7 +114,11 @@ const sections = $derived(sectionsQuery.data ?? []);
 const documentTemplatesQuery = createTemplatesQuery(() => orgId);
 const allTemplates = $derived<TemplateDto[]>(documentTemplatesQuery.data ?? []);
 const examTemplates = $derived(
-  allTemplates.filter((t) => t.entity_type === "exam" || (t.document_type || "").toLowerCase().includes("exam")),
+  allTemplates.filter(
+    (t) =>
+      t.entity_type === "exam" ||
+      (t.document_type || "").toLowerCase().includes("exam"),
+  ),
 );
 
 const isLoading = $derived(
@@ -124,8 +144,10 @@ function getCategoryIcon(cat?: string) {
   const c = (cat || "").toLowerCase();
   if (c === "seating" || c.includes("seat")) return Hashtag;
   if (c === "halls" || c.includes("hall") || c.includes("room")) return Home;
-  if (c === "proctors" || c.includes("proctor") || c.includes("staff")) return UserBadgeCheck;
-  if (c === "control" || c.includes("result") || c.includes("secret")) return ClipboardCheck;
+  if (c === "proctors" || c.includes("proctor") || c.includes("staff"))
+    return UserBadgeCheck;
+  if (c === "control" || c.includes("result") || c.includes("secret"))
+    return ClipboardCheck;
   return DocumentPage;
 }
 
@@ -138,7 +160,8 @@ const filteredReports = $derived.by(() => {
       report.name.toLowerCase().includes(q) ||
       (report.name_ar && report.name_ar.toLowerCase().includes(q)) ||
       (report.description && report.description.toLowerCase().includes(q)) ||
-      (report.description_ar && report.description_ar.toLowerCase().includes(q)) ||
+      (report.description_ar &&
+        report.description_ar.toLowerCase().includes(q)) ||
       report.code.toLowerCase().includes(q);
 
     const matchesCat =
@@ -152,14 +175,18 @@ const filteredReports = $derived.by(() => {
 // Reactively select the first report if none or invalid
 $effect(() => {
   if (filteredReports.length > 0) {
-    if (!selectedCode || !filteredReports.some((r) => r.code === selectedCode)) {
+    if (
+      !selectedCode ||
+      !filteredReports.some((r) => r.code === selectedCode)
+    ) {
       selectedCode = filteredReports[0].code;
     }
   }
 });
 
 const selectedReport = $derived<ReportDefinitionDto | null>(
-  allExamReports.find((r) => r.code === selectedCode) ?? (filteredReports[0] || null),
+  allExamReports.find((r) => r.code === selectedCode) ??
+    (filteredReports[0] || null),
 );
 
 // Dynamic Real KPI Stats
@@ -189,7 +216,9 @@ const advisorInsights = $derived.by(() => {
   if (allExamReports.length > 0) {
     insights.push({
       id: "reports-catalog",
-      text: m.exam_reports_catalog_ready({ count: String(allExamReports.length) }),
+      text: m.exam_reports_catalog_ready({
+        count: String(allExamReports.length),
+      }),
       variant: "success" as const,
     });
   }
@@ -197,7 +226,9 @@ const advisorInsights = $derived.by(() => {
   if (examSessions.length > 0) {
     insights.push({
       id: "sessions-ok",
-      text: m.exam_reports_sessions_registered({ count: String(examSessions.length) }),
+      text: m.exam_reports_sessions_registered({
+        count: String(examSessions.length),
+      }),
       variant: "success" as const,
     });
   } else {
@@ -223,7 +254,9 @@ function handleSelectReport(code: string) {
   selectedCode = code;
   const rep = allExamReports.find((r) => r.code === code);
   if (rep) {
-    toast.info(m.operations_ui_report_selected({ title: rep.name_ar || rep.name }));
+    toast.info(
+      m.operations_ui_report_selected({ title: rep.name_ar || rep.name }),
+    );
   }
 }
 
@@ -261,7 +294,8 @@ function handlePrintTemplate() {
     },
     exam: {
       sessionId: selectedSessionId || null,
-      sessionName: session?.title_ar || session?.title || activePeriodName || "",
+      sessionName:
+        session?.title_ar || session?.title || activePeriodName || "",
       hallId: selectedRoomId || null,
       hallName: room?.name_ar || room?.name || "",
       classId: selectedSectionId || null,
@@ -274,10 +308,15 @@ function handlePrintTemplate() {
     },
   };
 
-  openPrintDialog("exam", [selectedReport.code], [selectedReport.name_ar || selectedReport.name], {
-    documentType: selectedReport.code,
-    contexts: [examContext],
-  });
+  openPrintDialog(
+    "exam",
+    [selectedReport.code],
+    [selectedReport.name_ar || selectedReport.name],
+    {
+      documentType: selectedReport.code,
+      contexts: [examContext],
+    },
+  );
 }
 </script>
 

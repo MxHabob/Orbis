@@ -10,7 +10,16 @@ import {
   CardContent,
   CardFooter,
 } from "@orbis/ui/card";
-import { AdjustmentsHorizontal, ArchiveBox, CheckCircle, DocumentPage, Pencil, Plus, Refresh, Trash } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  ArchiveBox,
+  CheckCircle,
+  DocumentPage,
+  Pencil,
+  Plus,
+  Refresh,
+  Trash,
+} from "@orbis/icons";
 
 import { l } from "$lib/core/i18n";
 

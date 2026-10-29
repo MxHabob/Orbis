@@ -1,330 +1,332 @@
 <script lang="ts">
-  import {
-      api,
-      extractErrorMessage,
-      type GradeDto
-  } from "$lib/api";
-  import * as m from "$lib/paraglide/messages";
-  import { getLocale } from "$lib/paraglide/runtime";
-  import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
-  import { academicContext } from "$lib/stores";
-  import {
-      AcademicCap,
-      BookOpen,
-      ChartBar,
-      DocumentChartBar,
-      InfoCircle,
-      Printer,
-      Refresh
-  } from "@orbis/icons";
-  import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
-  import { LoadingIndicator } from "@orbis/ui";
-  import { Button } from "@orbis/ui/button";
-  import {
-      Card,
-      CardAction,
-      CardContent,
-      CardDescription,
-      CardHeader,
-      CardTitle,
-  } from "@orbis/ui/card";
-  import {
-      Select,
-      SelectContent,
-      SelectItem,
-      SelectTrigger,
-  } from "@orbis/ui/select";
-  import { createQuery } from "@tanstack/svelte-query";
+import { api, extractErrorMessage, type GradeDto } from "$lib/api";
+import * as m from "$lib/paraglide/messages";
+import { getLocale } from "$lib/paraglide/runtime";
+import PdfReportViewer from "$lib/shared/components/pdf-report-viewer.svelte";
+import { academicContext } from "$lib/stores";
+import {
+  AcademicCap,
+  BookOpen,
+  ChartBar,
+  DocumentChartBar,
+  InfoCircle,
+  Printer,
+  Refresh,
+} from "@orbis/icons";
+import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
+import { LoadingIndicator } from "@orbis/ui";
+import { Button } from "@orbis/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@orbis/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import { createQuery } from "@tanstack/svelte-query";
 
-  let {
-    orgId,
+let {
+  orgId,
+  studentId,
+  classId,
+}: {
+  orgId: string;
+  studentId: string;
+  classId?: string;
+} = $props();
+
+const isRtl = $derived(getLocale() === "ar");
+
+// View mode: "records" | "term" | "annual" | "certificate"
+let activeTab = $state<"records" | "term" | "annual" | "certificate">(
+  "records",
+);
+
+// Selection states
+let selectedPeriodId = $state("all");
+let selectedTermPeriodId = $state(
+  academicContext.effectivePeriodId || academicContext.allPeriods[0]?.id || "",
+);
+let selectedCalendarId = $state(
+  academicContext.effectiveYearId || academicContext.allYears[0]?.id || "",
+);
+let selectedCertType = $state<"secondary_thanawiya" | "basic_grade9">(
+  "secondary_thanawiya",
+);
+
+// Dialog states for printing
+let showPrintCertificateDialog = $state(false);
+let printTemplateId = $state("academic.student-certificate-yemeni");
+let printTitle = $state("");
+
+// ── 1. Raw Assessment Records Query ─────────────────────────
+const gradesQuery = createQuery(() => ({
+  queryKey: ["assessment-grades", "student", orgId, studentId],
+  queryFn: () => api.listGrades({ studentId }),
+  enabled: !!orgId && !!studentId && activeTab === "records",
+}));
+
+// ── 2. Term Report Card Query ────────────────────────────────
+const termReportQuery = createQuery(() => ({
+  queryKey: [
+    "assessment-term-results",
     studentId,
-    classId,
-  }: {
-    orgId: string;
-    studentId: string;
-    classId?: string;
-  } = $props();
-
-  const isRtl = $derived(getLocale() === "ar");
-
-  // View mode: "records" | "term" | "annual" | "certificate"
-  let activeTab = $state<"records" | "term" | "annual" | "certificate">("records");
-
-  // Selection states
-  let selectedPeriodId = $state("all");
-  let selectedTermPeriodId = $state(
-    academicContext.effectivePeriodId || academicContext.allPeriods[0]?.id || "",
-  );
-  let selectedCalendarId = $state(
-    academicContext.effectiveYearId || academicContext.allYears[0]?.id || "",
-  );
-  let selectedCertType = $state<"secondary_thanawiya" | "basic_grade9">("secondary_thanawiya");
-
-  // Dialog states for printing
-  let showPrintCertificateDialog = $state(false);
-  let printTemplateId = $state("academic.student-certificate-yemeni");
-  let printTitle = $state("");
-
-  // ── 1. Raw Assessment Records Query ─────────────────────────
-  const gradesQuery = createQuery(() => ({
-    queryKey: ["assessment-grades", "student", orgId, studentId],
-    queryFn: () => api.listGrades({ studentId }),
-    enabled: !!orgId && !!studentId && activeTab === "records",
-  }));
-
-  // ── 2. Term Report Card Query ────────────────────────────────
-  const termReportQuery = createQuery(() => ({
-    queryKey: [
-      "assessment-term-results",
+    selectedTermPeriodId,
+    classId ?? "",
+  ],
+  queryFn: () =>
+    api.getStudentTermResults(
       studentId,
       selectedTermPeriodId,
-      classId ?? "",
-    ],
-    queryFn: () =>
-      api.getStudentTermResults(
-        studentId,
-        selectedTermPeriodId,
-        classId || undefined,
-      ),
-    enabled:
-      !!orgId &&
-      !!studentId &&
-      !!selectedTermPeriodId &&
-      activeTab === "term",
-  }));
+      classId || undefined,
+    ),
+  enabled:
+    !!orgId && !!studentId && !!selectedTermPeriodId && activeTab === "term",
+}));
 
-  // ── 3. Annual Report Query ───────────────────────────────────
-  const annualReportQuery = createQuery(() => ({
-    queryKey: [
-      "assessment-annual-results",
+// ── 3. Annual Report Query ───────────────────────────────────
+const annualReportQuery = createQuery(() => ({
+  queryKey: [
+    "assessment-annual-results",
+    studentId,
+    selectedCalendarId,
+    classId ?? "",
+  ],
+  queryFn: () =>
+    api.getStudentAnnualResults(
       studentId,
       selectedCalendarId,
-      classId ?? "",
-    ],
-    queryFn: () =>
-      api.getStudentAnnualResults(
-        studentId,
-        selectedCalendarId,
-        classId || undefined,
-      ),
-    enabled:
-      !!orgId &&
-      !!studentId &&
-      !!selectedCalendarId &&
-      activeTab === "annual",
-  }));
+      classId || undefined,
+    ),
+  enabled:
+    !!orgId && !!studentId && !!selectedCalendarId && activeTab === "annual",
+}));
 
-  // ── 4. Certificate Results Query ─────────────────────────────
-  const certificateReportQuery = createQuery(() => ({
-    queryKey: [
-      "assessment-certificate-results",
+// ── 4. Certificate Results Query ─────────────────────────────
+const certificateReportQuery = createQuery(() => ({
+  queryKey: [
+    "assessment-certificate-results",
+    studentId,
+    selectedCalendarId,
+    selectedCertType,
+    classId ?? "",
+  ],
+  queryFn: () =>
+    api.getStudentCertificateResults(
       studentId,
       selectedCalendarId,
       selectedCertType,
-      classId ?? "",
-    ],
-    queryFn: () =>
-      api.getStudentCertificateResults(
-        studentId,
-        selectedCalendarId,
-        selectedCertType,
-        classId || undefined,
-      ),
-    enabled:
-      !!orgId &&
-      !!studentId &&
-      !!selectedCalendarId &&
-      activeTab === "certificate",
-  }));
-
-  const periodNames = $derived(
-    new Map(
-      academicContext.allPeriods.map((period) => [
-        period.id,
-        period.name_ar || period.name,
-      ]),
+      classId || undefined,
     ),
-  );
+  enabled:
+    !!orgId &&
+    !!studentId &&
+    !!selectedCalendarId &&
+    activeTab === "certificate",
+}));
 
-  const yearNames = $derived(
-    new Map(
-      academicContext.allYears.map((year) => [
-        year.id,
-        year.name_ar || year.name,
-      ]),
-    ),
-  );
+const periodNames = $derived(
+  new Map(
+    academicContext.allPeriods.map((period) => [
+      period.id,
+      period.name_ar || period.name,
+    ]),
+  ),
+);
 
-  // ── Helper: Format Status ────────────────────────────────────
-  function getStatusBadge(status?: string | null) {
-    const s = String(status || "").toLowerCase();
-    if (s.includes("honor") || s === "passedwithhonors") {
-      return {
-        label: m.student_grades_status_honors(),
-        variant: "default" as const,
-        color: "bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-600/30",
-      };
-    }
-    if (s.includes("pass") || s === "passed") {
-      return {
-        label: m.student_grades_status_passed(),
-        variant: "default" as const,
-        color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
-      };
-    }
-    if (s.includes("conditional") || s.includes("makeup") || s.includes("second")) {
-      return {
-        label: m.student_grades_status_conditional_retake(),
-        variant: "secondary" as const,
-        color: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
-      };
-    }
-    if (s.includes("fail") || s === "failed") {
-      return {
-        label: m.student_grades_status_failed(),
-        variant: "destructive" as const,
-        color: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
-      };
-    }
+const yearNames = $derived(
+  new Map(
+    academicContext.allYears.map((year) => [
+      year.id,
+      year.name_ar || year.name,
+    ]),
+  ),
+);
+
+// ── Helper: Format Status ────────────────────────────────────
+function getStatusBadge(status?: string | null) {
+  const s = String(status || "").toLowerCase();
+  if (s.includes("honor") || s === "passedwithhonors") {
     return {
-      label: m.student_grades_status_pending(),
-      variant: "secondary" as const,
-      color: "bg-muted text-muted-foreground border-border",
+      label: m.student_grades_status_honors(),
+      variant: "default" as const,
+      color:
+        "bg-emerald-600/15 text-emerald-700 dark:text-emerald-400 border-emerald-600/30",
     };
   }
-
-  function getAppreciation(percentage?: number | null) {
-    if (percentage == null) return "—";
-    if (percentage >= 90) return m.student_grades_appreciation_excellent();
-    if (percentage >= 80) return m.student_grades_appreciation_very_good();
-    if (percentage >= 65) return m.student_grades_appreciation_good();
-    if (percentage >= 50) return m.student_grades_appreciation_pass();
-    return m.student_grades_appreciation_fail();
+  if (s.includes("pass") || s === "passed") {
+    return {
+      label: m.student_grades_status_passed(),
+      variant: "default" as const,
+      color:
+        "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    };
   }
-
-  // ── Print Triggers ───────────────────────────────────────────
-  function triggerPrintCertificate() {
-    printTemplateId = "academic.student-certificate-yemeni";
-    printTitle = m.student_grades_certificate_print_title();
-    showPrintCertificateDialog = true;
+  if (
+    s.includes("conditional") ||
+    s.includes("makeup") ||
+    s.includes("second")
+  ) {
+    return {
+      label: m.student_grades_status_conditional_retake(),
+      variant: "secondary" as const,
+      color:
+        "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
+    };
   }
-
-  function triggerPrintTermReport() {
-    printTemplateId = "academic.student-term-report-card";
-    printTitle = m.student_grades_term_report_print_title();
-    showPrintCertificateDialog = true;
+  if (s.includes("fail") || s === "failed") {
+    return {
+      label: m.student_grades_status_failed(),
+      variant: "destructive" as const,
+      color:
+        "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
+    };
   }
+  return {
+    label: m.student_grades_status_pending(),
+    variant: "secondary" as const,
+    color: "bg-muted text-muted-foreground border-border",
+  };
+}
 
-  // ── Grid Configuration for Raw Records ──────────────────────
-  const filteredGrades = $derived(
-    (gradesQuery.data ?? []).filter(
-      (grade) =>
-        selectedPeriodId === "all" || grade.period_id === selectedPeriodId,
-    ),
-  );
+function getAppreciation(percentage?: number | null) {
+  if (percentage == null) return "—";
+  if (percentage >= 90) return m.student_grades_appreciation_excellent();
+  if (percentage >= 80) return m.student_grades_appreciation_very_good();
+  if (percentage >= 65) return m.student_grades_appreciation_good();
+  if (percentage >= 50) return m.student_grades_appreciation_pass();
+  return m.student_grades_appreciation_fail();
+}
 
-  const rows = $derived(
-    filteredGrades.map((grade: GradeDto) => ({
-      period: periodNames.get(grade.period_id) ?? grade.period_id,
-      offering_id: grade.section_subject_id,
-      component_id: grade.component_id ?? "—",
-      score: Number(grade.score),
-      maximum: Number(grade.max_score),
-      weight: grade.weight == null ? "—" : Number(grade.weight),
-      letter_grade: grade.letter_grade ?? "—",
-      record_state: grade.is_exempt
-        ? m.student_grades_state_exempt()
-        : grade.is_excused
-          ? m.student_grades_state_excused()
-          : grade.is_final
-            ? m.student_grades_state_final()
-            : m.student_grades_state_recorded(),
-      updated_at: grade.updated_at,
-    })),
-  );
+// ── Print Triggers ───────────────────────────────────────────
+function triggerPrintCertificate() {
+  printTemplateId = "academic.student-certificate-yemeni";
+  printTitle = m.student_grades_certificate_print_title();
+  showPrintCertificateDialog = true;
+}
 
-  const columns: OrbisColumnDef[] = [
-    {
-      id: "period",
-      prop: "period",
-      header: m.student_grades_period(),
-      name: m.student_grades_period(),
-      width: 170,
-      size: 170,
-    },
-    {
-      id: "offering_id",
-      prop: "offering_id",
-      header: m.student_grades_course_or_offering(),
-      name: m.student_grades_course_or_offering(),
-      width: 230,
-      size: 230,
-      pin: "left",
-    },
-    {
-      id: "component_id",
-      prop: "component_id",
-      header: m.student_grades_assessment_component(),
-      name: m.student_grades_assessment_component(),
-      width: 190,
-      size: 190,
-    },
-    {
-      id: "score",
-      prop: "score",
-      header: m.student_grades_score(),
-      name: m.student_grades_score(),
-      width: 95,
-      size: 95,
-      align: "end",
-      type: "number",
-    },
-    {
-      id: "maximum",
-      prop: "maximum",
-      header: m.student_grades_maximum_score(),
-      name: m.student_grades_maximum_score(),
-      width: 105,
-      size: 105,
-      align: "end",
-      type: "number",
-    },
-    {
-      id: "weight",
-      prop: "weight",
-      header: m.student_grades_weight(),
-      name: m.student_grades_weight(),
-      width: 90,
-      size: 90,
-      align: "end",
-      type: "number",
-    },
-    {
-      id: "letter_grade",
-      prop: "letter_grade",
-      header: m.student_grades_grade(),
-      name: m.student_grades_grade(),
-      width: 90,
-      size: 90,
-    },
-    {
-      id: "record_state",
-      prop: "record_state",
-      header: m.student_grades_record_state(),
-      name: m.student_grades_record_state(),
-      width: 115,
-      size: 115,
-    },
-    {
-      id: "updated_at",
-      prop: "updated_at",
-      header: m.student_grades_last_updated(),
-      name: m.student_grades_last_updated(),
-      width: 180,
-      size: 180,
-    },
-  ];
+function triggerPrintTermReport() {
+  printTemplateId = "academic.student-term-report-card";
+  printTitle = m.student_grades_term_report_print_title();
+  showPrintCertificateDialog = true;
+}
+
+// ── Grid Configuration for Raw Records ──────────────────────
+const filteredGrades = $derived(
+  (gradesQuery.data ?? []).filter(
+    (grade) =>
+      selectedPeriodId === "all" || grade.period_id === selectedPeriodId,
+  ),
+);
+
+const rows = $derived(
+  filteredGrades.map((grade: GradeDto) => ({
+    period: periodNames.get(grade.period_id) ?? grade.period_id,
+    offering_id: grade.section_subject_id,
+    component_id: grade.component_id ?? "—",
+    score: Number(grade.score),
+    maximum: Number(grade.max_score),
+    weight: grade.weight == null ? "—" : Number(grade.weight),
+    letter_grade: grade.letter_grade ?? "—",
+    record_state: grade.is_exempt
+      ? m.student_grades_state_exempt()
+      : grade.is_excused
+        ? m.student_grades_state_excused()
+        : grade.is_final
+          ? m.student_grades_state_final()
+          : m.student_grades_state_recorded(),
+    updated_at: grade.updated_at,
+  })),
+);
+
+const columns: OrbisColumnDef[] = [
+  {
+    id: "period",
+    prop: "period",
+    header: m.student_grades_period(),
+    name: m.student_grades_period(),
+    width: 170,
+    size: 170,
+  },
+  {
+    id: "offering_id",
+    prop: "offering_id",
+    header: m.student_grades_course_or_offering(),
+    name: m.student_grades_course_or_offering(),
+    width: 230,
+    size: 230,
+    pin: "left",
+  },
+  {
+    id: "component_id",
+    prop: "component_id",
+    header: m.student_grades_assessment_component(),
+    name: m.student_grades_assessment_component(),
+    width: 190,
+    size: 190,
+  },
+  {
+    id: "score",
+    prop: "score",
+    header: m.student_grades_score(),
+    name: m.student_grades_score(),
+    width: 95,
+    size: 95,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "maximum",
+    prop: "maximum",
+    header: m.student_grades_maximum_score(),
+    name: m.student_grades_maximum_score(),
+    width: 105,
+    size: 105,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "weight",
+    prop: "weight",
+    header: m.student_grades_weight(),
+    name: m.student_grades_weight(),
+    width: 90,
+    size: 90,
+    align: "end",
+    type: "number",
+  },
+  {
+    id: "letter_grade",
+    prop: "letter_grade",
+    header: m.student_grades_grade(),
+    name: m.student_grades_grade(),
+    width: 90,
+    size: 90,
+  },
+  {
+    id: "record_state",
+    prop: "record_state",
+    header: m.student_grades_record_state(),
+    name: m.student_grades_record_state(),
+    width: 115,
+    size: 115,
+  },
+  {
+    id: "updated_at",
+    prop: "updated_at",
+    header: m.student_grades_last_updated(),
+    name: m.student_grades_last_updated(),
+    width: 180,
+    size: 180,
+  },
+];
 </script>
 
 <div class="flex flex-col gap-4 text-xs text-start font-sans print:p-0">

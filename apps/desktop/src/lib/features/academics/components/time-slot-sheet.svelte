@@ -1,204 +1,213 @@
 <script lang="ts">
-  import { toast } from "@orbis/ui";
-  import { api, extractErrorMessage, type TimeSlotDto } from "$lib/api";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import { Label } from "@orbis/ui/label";
-  import {
-    Sheet,
-    SheetContent,
-    SheetFooter,
-    SheetHeader,
-    SheetTitle,
-  } from "@orbis/ui/sheet";
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-  } from "@orbis/ui/select";
-  import { ClockRotateRight, FloppyDisk, Heart, Pencil, Plus, Trash, XMark } from "@orbis/icons";
-  import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
-  import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
-  import * as m from "$lib/paraglide/messages";
+import { toast } from "@orbis/ui";
+import { api, extractErrorMessage, type TimeSlotDto } from "$lib/api";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import { Label } from "@orbis/ui/label";
+import {
+  Sheet,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@orbis/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import {
+  ClockRotateRight,
+  FloppyDisk,
+  Heart,
+  Pencil,
+  Plus,
+  Trash,
+  XMark,
+} from "@orbis/icons";
+import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
+import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import * as m from "$lib/paraglide/messages";
 
-  interface Props {
-    open: boolean;
-    periodId: string;
-    timeSlots: TimeSlotDto[];
-    onSuccess?: () => void;
-  }
+interface Props {
+  open: boolean;
+  periodId: string;
+  timeSlots: TimeSlotDto[];
+  onSuccess?: () => void;
+}
 
-  let {
-    open = $bindable(false),
-    periodId,
-    timeSlots = [],
-    onSuccess,
-  }: Props = $props();
+let {
+  open = $bindable(false),
+  periodId,
+  timeSlots = [],
+  onSuccess,
+}: Props = $props();
 
-  const weekdays = [
-    { value: 7, label: m.common_day_saturday() },
-    { value: 1, label: m.common_day_sunday() },
-    { value: 2, label: m.common_day_monday() },
-    { value: 3, label: m.common_day_tuesday() },
-    { value: 4, label: m.common_day_wednesday() },
-    { value: 5, label: m.common_day_thursday() },
-    { value: 6, label: m.common_day_friday() },
-  ];
+const weekdays = [
+  { value: 7, label: m.common_day_saturday() },
+  { value: 1, label: m.common_day_sunday() },
+  { value: 2, label: m.common_day_monday() },
+  { value: 3, label: m.common_day_tuesday() },
+  { value: 4, label: m.common_day_wednesday() },
+  { value: 5, label: m.common_day_thursday() },
+  { value: 6, label: m.common_day_friday() },
+];
 
-  let isEditing = $state(false);
-  let editingSlot = $state<TimeSlotDto | null>(null);
-  let nameAr = $state("");
-  let name = $state("");
-  let startTime = $state("08:00");
-  let endTime = $state("08:45");
-  let slotIndex = $state("1");
-  let selectedDays = $state<number[]>([7, 1, 2, 3, 4, 5]);
-  let isBreak = $state(false);
-  let breakType = $state("recess");
-  let isSubmitting = $state(false);
+let isEditing = $state(false);
+let editingSlot = $state<TimeSlotDto | null>(null);
+let nameAr = $state("");
+let name = $state("");
+let startTime = $state("08:00");
+let endTime = $state("08:45");
+let slotIndex = $state("1");
+let selectedDays = $state<number[]>([7, 1, 2, 3, 4, 5]);
+let isBreak = $state(false);
+let breakType = $state("recess");
+let isSubmitting = $state(false);
 
-  const sortedTimeSlots = $derived(
-    [...timeSlots].sort((left, right) => {
-      const dayOrder = [7, 1, 2, 3, 4, 5, 6];
-      return (
-        dayOrder.indexOf(left.day_of_week) - dayOrder.indexOf(right.day_of_week) ||
-        left.slot_index - right.slot_index
-      );
-    }),
-  );
-  const duration = $derived.by(() => {
-    const [startHour, startMinute] = startTime.split(":").map(Number);
-    const [endHour, endMinute] = endTime.split(":").map(Number);
-    return endHour * 60 + endMinute - (startHour * 60 + startMinute);
-  });
-
-  function resetForm() {
-    isEditing = false;
-    editingSlot = null;
-    nameAr = "";
-    name = "";
-    startTime = "08:00";
-    endTime = "08:45";
-    slotIndex = String(
-      Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1,
+const sortedTimeSlots = $derived(
+  [...timeSlots].sort((left, right) => {
+    const dayOrder = [7, 1, 2, 3, 4, 5, 6];
+    return (
+      dayOrder.indexOf(left.day_of_week) -
+        dayOrder.indexOf(right.day_of_week) ||
+      left.slot_index - right.slot_index
     );
-    selectedDays = [7, 1, 2, 3, 4, 5];
-    isBreak = false;
-    breakType = "recess";
+  }),
+);
+const duration = $derived.by(() => {
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
+  return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+});
+
+function resetForm() {
+  isEditing = false;
+  editingSlot = null;
+  nameAr = "";
+  name = "";
+  startTime = "08:00";
+  endTime = "08:45";
+  slotIndex = String(
+    Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1,
+  );
+  selectedDays = [7, 1, 2, 3, 4, 5];
+  isBreak = false;
+  breakType = "recess";
+}
+
+function startAdd() {
+  resetForm();
+  isEditing = true;
+  const nextIndex =
+    Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1;
+  slotIndex = String(nextIndex);
+  nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
+  name = m.academics_schedule_placeholder_period_en({ number: nextIndex });
+}
+
+function startEdit(slot: TimeSlotDto) {
+  editingSlot = slot;
+  isEditing = true;
+  nameAr = slot.name_ar ?? "";
+  name = slot.name ?? "";
+  startTime = slot.start_time.slice(0, 5);
+  endTime = slot.end_time.slice(0, 5);
+  slotIndex = String(slot.slot_index);
+  selectedDays = [slot.day_of_week];
+  isBreak = slot.is_break;
+  breakType = slot.break_type ?? "recess";
+}
+
+function toggleDay(day: number) {
+  if (editingSlot) {
+    selectedDays = [day];
+    return;
+  }
+  selectedDays = selectedDays.includes(day)
+    ? selectedDays.filter((selected) => selected !== day)
+    : [...selectedDays, day];
+}
+
+async function handleSave(event: SubmitEvent) {
+  event.preventDefault();
+  const index = Number(slotIndex);
+  const label = name.trim() || nameAr.trim();
+  if (
+    !periodId ||
+    !label ||
+    !nameAr.trim() ||
+    !startTime ||
+    !endTime ||
+    duration <= 0 ||
+    !Number.isInteger(index) ||
+    index < 1 ||
+    selectedDays.length === 0 ||
+    (editingSlot && selectedDays.length !== 1)
+  ) {
+    toast.error(m.academics_schedule_time_slot_required());
+    return;
   }
 
-  function startAdd() {
-    resetForm();
-    isEditing = true;
-    const nextIndex =
-      Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1;
-    slotIndex = String(nextIndex);
-    nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
-    name = m.academics_schedule_placeholder_period_en({ number: nextIndex });
-  }
-
-  function startEdit(slot: TimeSlotDto) {
-    editingSlot = slot;
-    isEditing = true;
-    nameAr = slot.name_ar ?? "";
-    name = slot.name ?? "";
-    startTime = slot.start_time.slice(0, 5);
-    endTime = slot.end_time.slice(0, 5);
-    slotIndex = String(slot.slot_index);
-    selectedDays = [slot.day_of_week];
-    isBreak = slot.is_break;
-    breakType = slot.break_type ?? "recess";
-  }
-
-  function toggleDay(day: number) {
+  isSubmitting = true;
+  try {
     if (editingSlot) {
-      selectedDays = [day];
-      return;
+      await api.updateTimeSlot(editingSlot.id, {
+        day_of_week: selectedDays[0],
+        slot_index: index,
+        name: label,
+        name_ar: nameAr.trim(),
+        start_time: startTime,
+        end_time: endTime,
+        is_break: isBreak,
+        break_type: isBreak ? breakType : null,
+      });
+      toast.success(m.academics_schedule_time_slot_updated());
+    } else {
+      const slots = selectedDays.map((day) => ({
+        day_of_week: day,
+        slot_index: index,
+        name: label,
+        name_ar: nameAr.trim(),
+        start_time: startTime,
+        end_time: endTime,
+        is_break: isBreak,
+        break_type: isBreak ? breakType : null,
+      }));
+      await api.batchCreateTimeSlots({ period_id: periodId, slots });
+      toast.success(m.academics_schedule_time_slot_added());
     }
-    selectedDays = selectedDays.includes(day)
-      ? selectedDays.filter((selected) => selected !== day)
-      : [...selectedDays, day];
+    resetForm();
+    onSuccess?.();
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isSubmitting = false;
   }
+}
 
-  async function handleSave(event: SubmitEvent) {
-    event.preventDefault();
-    const index = Number(slotIndex);
-    const label = name.trim() || nameAr.trim();
-    if (
-      !periodId ||
-      !label ||
-      !nameAr.trim() ||
-      !startTime ||
-      !endTime ||
-      duration <= 0 ||
-      !Number.isInteger(index) ||
-      index < 1 ||
-      selectedDays.length === 0 ||
-      (editingSlot && selectedDays.length !== 1)
-    ) {
-      toast.error(m.academics_schedule_time_slot_required());
-      return;
-    }
-
-    isSubmitting = true;
-    try {
-      if (editingSlot) {
-        await api.updateTimeSlot(editingSlot.id, {
-          day_of_week: selectedDays[0],
-          slot_index: index,
-          name: label,
-          name_ar: nameAr.trim(),
-          start_time: startTime,
-          end_time: endTime,
-          is_break: isBreak,
-          break_type: isBreak ? breakType : null,
-        });
-        toast.success(m.academics_schedule_time_slot_updated());
-      } else {
-        const slots = selectedDays.map((day) => ({
-          day_of_week: day,
-          slot_index: index,
-          name: label,
-          name_ar: nameAr.trim(),
-          start_time: startTime,
-          end_time: endTime,
-          is_break: isBreak,
-          break_type: isBreak ? breakType : null,
-        }));
-        await api.batchCreateTimeSlots({ period_id: periodId, slots });
-        toast.success(m.academics_schedule_time_slot_added());
-      }
-      resetForm();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isSubmitting = false;
-    }
+async function handleDelete(slotId: string) {
+  try {
+    await api.deleteTimeSlot(slotId);
+    toast.success(m.academics_schedule_time_slot_deleted());
+    if (editingSlot?.id === slotId) resetForm();
+    onSuccess?.();
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
   }
+}
 
-  async function handleDelete(slotId: string) {
-    try {
-      await api.deleteTimeSlot(slotId);
-      toast.success(m.academics_schedule_time_slot_deleted());
-      if (editingSlot?.id === slotId) resetForm();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    }
-  }
+function getWeekdayLabel(day: number): string {
+  return weekdays.find((item) => item.value === day)?.label ?? String(day);
+}
 
-  function getWeekdayLabel(day: number): string {
-    return weekdays.find((item) => item.value === day)?.label ?? String(day);
-  }
-
-  function getDuration(slot: TimeSlotDto): number {
-    const [startHour, startMinute] = slot.start_time.split(":").map(Number);
-    const [endHour, endMinute] = slot.end_time.split(":").map(Number);
-    return endHour * 60 + endMinute - (startHour * 60 + startMinute);
-  }
+function getDuration(slot: TimeSlotDto): number {
+  const [startHour, startMinute] = slot.start_time.split(":").map(Number);
+  const [endHour, endMinute] = slot.end_time.split(":").map(Number);
+  return endHour * 60 + endMinute - (startHour * 60 + startMinute);
+}
 </script>
 
 <Sheet bind:open>

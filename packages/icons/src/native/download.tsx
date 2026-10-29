@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface DownloadProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface DownloadProps extends SvgProps {
 
 export function Download({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,14 @@ export function Download({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
-      <Path d="M6 20L18 20" strokeLinecap="round" strokeLinejoin="round"></Path><Path
-		d="M12 4V16M12 16L15.5 12.5M12 16L8.5 12.5"
-		strokeLinecap="round"
-		strokeLinejoin="round"
-	></Path>
+      {...props}
+    >
+      <Path d="M6 20L18 20" strokeLinecap="round" strokeLinejoin="round"></Path>
+      <Path
+        d="M12 4V16M12 16L15.5 12.5M12 16L8.5 12.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      ></Path>
     </Svg>
   );
 }

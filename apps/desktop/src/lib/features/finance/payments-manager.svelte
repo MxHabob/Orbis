@@ -57,9 +57,7 @@ import { formatCurrency, formatDate, isAr } from "$lib/core/i18n";
 import { fade, slide } from "svelte/transition";
 import { orgContext } from "$lib/stores/org-context.svelte";
 
-import {
-  createAvailablePaymentMethodsQuery,
-} from "$lib/features/finance";
+import { createAvailablePaymentMethodsQuery } from "$lib/features/finance";
 import { isCashOrBankAccount } from "./queries";
 
 let { orgId }: { orgId: string } = $props();
@@ -85,7 +83,9 @@ function createReceiptLine(): ReceiptLine {
 }
 
 function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 // Dynamic payment methods from Integration Layer
@@ -108,16 +108,24 @@ let paymentMethod = $state("cash");
 let sourceToken = $state("");
 let receiptLines = $state<ReceiptLine[]>([createReceiptLine()]);
 const selectedCurrency = $derived(
-  treasuries.find((account) => String(account.id) === String(selectedTreasuryId))?.currency || "YER",
+  treasuries.find(
+    (account) => String(account.id) === String(selectedTreasuryId),
+  )?.currency || "YER",
 );
-const availableCurrencies = $derived(
-  [...new Set(treasuries.map((account) => account.currency).filter((currency) => Boolean(currency)))],
-);
+const availableCurrencies = $derived([
+  ...new Set(
+    treasuries
+      .map((account) => account.currency)
+      .filter((currency) => Boolean(currency)),
+  ),
+]);
 const receivableAccounts = $derived(
-  accounts.filter((account) =>
-    account.is_active &&
-    !isCashOrBankAccount(account) &&
-    String(account.currency).toUpperCase() === String(selectedCurrency).toUpperCase()
+  accounts.filter(
+    (account) =>
+      account.is_active &&
+      !isCashOrBankAccount(account) &&
+      String(account.currency).toUpperCase() ===
+        String(selectedCurrency).toUpperCase(),
   ),
 );
 const calculatedTotal = $derived(
@@ -125,7 +133,8 @@ const calculatedTotal = $derived(
 );
 
 const selectedPaymentMethodObj = $derived(
-  availablePaymentMethods.find((m) => m.id === paymentMethod) || availablePaymentMethods[0]
+  availablePaymentMethods.find((m) => m.id === paymentMethod) ||
+    availablePaymentMethods[0],
 );
 
 // Filters
@@ -207,7 +216,9 @@ async function loadData(refreshPayments = true) {
   try {
     const [accountsList, enrollmentsList] = await Promise.all([
       api.listAccounts().catch(() => []),
-      api.listEnrollments ? api.listEnrollments().catch(() => []) : Promise.resolve([]),
+      api.listEnrollments
+        ? api.listEnrollments().catch(() => [])
+        : Promise.resolve([]),
     ]);
 
     accounts = accountsList || [];
@@ -215,7 +226,12 @@ async function loadData(refreshPayments = true) {
 
     students = (enrollmentsList || []).map((e: any) => ({
       id: String(e.id),
-      full_name: e.full_name || e.name_ar || e.name_en || e.student_number || m.finance_ui_student_number_fallback({ id: e.id }),
+      full_name:
+        e.full_name ||
+        e.name_ar ||
+        e.name_en ||
+        e.student_number ||
+        m.finance_ui_student_number_fallback({ id: e.id }),
       student_number: e.student_number || "",
     }));
 
@@ -237,19 +253,26 @@ async function loadData(refreshPayments = true) {
 
 function handleCurrencyChange(currency: string | undefined) {
   if (!currency || currency === selectedCurrency) return;
-  const matchingTreasury = treasuries.find((account) => account.currency === currency);
+  const matchingTreasury = treasuries.find(
+    (account) => account.currency === currency,
+  );
   if (matchingTreasury) handleTreasuryChange(String(matchingTreasury.id));
 }
 
 function handleTreasuryChange(accountId: string) {
   selectedTreasuryId = accountId;
-  const currency = treasuries.find((account) => String(account.id) === accountId)?.currency;
+  const currency = treasuries.find(
+    (account) => String(account.id) === accountId,
+  )?.currency;
   for (const line of receiptLines) {
-    const receivableAccount = accounts.find((account) => String(account.id) === line.accountId);
+    const receivableAccount = accounts.find(
+      (account) => String(account.id) === line.accountId,
+    );
     if (
       receivableAccount &&
       currency &&
-      String(receivableAccount.currency).toUpperCase() !== String(currency).toUpperCase()
+      String(receivableAccount.currency).toUpperCase() !==
+        String(currency).toUpperCase()
     ) {
       line.accountId = "";
     }
@@ -265,7 +288,9 @@ function addReceiptLine() {
 function addReceiptLineAndFocus() {
   const lineId = addReceiptLine();
   requestAnimationFrame(() => {
-    const accountInput = document.getElementById(`receipt-line-account-${lineId}`);
+    const accountInput = document.getElementById(
+      `receipt-line-account-${lineId}`,
+    );
     if (accountInput instanceof HTMLInputElement) accountInput.focus();
   });
 }
@@ -297,7 +322,14 @@ async function handleSavePayment() {
     toast.error(m.finance_ui_credit_account_required());
     return;
   }
-  if (receiptLines.some((line) => !receivableAccounts.some((account) => String(account.id) === line.accountId))) {
+  if (
+    receiptLines.some(
+      (line) =>
+        !receivableAccounts.some(
+          (account) => String(account.id) === line.accountId,
+        ),
+    )
+  ) {
     toast.error(m.finance_ui_credit_account_required());
     return;
   }
@@ -322,7 +354,9 @@ async function handleSavePayment() {
   const batchSize = receiptLines.length;
   try {
     for (const line of [...receiptLines]) {
-    const selectedAccount = accounts.find((account) => String(account.id) === line.accountId);
+      const selectedAccount = accounts.find(
+        (account) => String(account.id) === line.accountId,
+      );
       const baseReceiptNumber = receiptNumber.trim();
       const lineReceiptNumber = baseReceiptNumber
         ? batchSize > 1 || line.sequence > 1
@@ -337,7 +371,8 @@ async function handleSavePayment() {
           amount: String(line.amount),
           method: paymentMethod,
           source: sourceToken.trim() || undefined,
-          payer_name: selectedAccount?.name_ar || selectedAccount?.name || undefined,
+          payer_name:
+            selectedAccount?.name_ar || selectedAccount?.name || undefined,
           receipt_number: lineReceiptNumber,
           payment_date: paymentDate || undefined,
           notes: line.notes.trim() || undefined,
@@ -356,7 +391,9 @@ async function handleSavePayment() {
     }
     if (failure) {
       console.error("Failed to record a receipt in the batch:", failure);
-      toast.error(extractErrorMessage(failure) || m.finance_ui_receipt_save_failed());
+      toast.error(
+        extractErrorMessage(failure) || m.finance_ui_receipt_save_failed(),
+      );
     } else {
       clearForm();
       showAddForm = false;
@@ -368,31 +405,46 @@ async function handleSavePayment() {
 
 // ── Grid Data ─────────────────────────────────────────────────────────
 function toPaymentGridRow(p: PaymentDto, idx: number) {
-    const student = students.find((s) => String(s.id) === String(p.enrollment_id));
-    const accountName = p.payer_name || p.student_name || student?.full_name || "—";
-    const treasury = treasuries.find((t) => String(t.id) === String(p.account_id || p.cash_account_id));
-    const treasuryName = treasury ? (treasury.name_ar || treasury.name || m.finance_ui_treasury()) : m.finance_ui_main_treasury();
-    const amt = Number(p.amount || 0);
-    const curr = p.currency_code || p.currency || "YER";
+  const student = students.find(
+    (s) => String(s.id) === String(p.enrollment_id),
+  );
+  const accountName =
+    p.payer_name || p.student_name || student?.full_name || "—";
+  const treasury = treasuries.find(
+    (t) => String(t.id) === String(p.account_id || p.cash_account_id),
+  );
+  const treasuryName = treasury
+    ? treasury.name_ar || treasury.name || m.finance_ui_treasury()
+    : m.finance_ui_main_treasury();
+  const amt = Number(p.amount || 0);
+  const curr = p.currency_code || p.currency || "YER";
 
-    return {
-      ...p,
-      payment_method: p.payment_method || p.method,
-      __idx: idx + 1,
-      receipt_display: p.receipt_number || p.id.slice(0, 8),
-      date_display: p.paid_at ? formatDate(p.paid_at) : (p.payment_date ? formatDate(p.payment_date) : (p.created_at ? formatDate(p.created_at) : "—")),
-      counter_account_display: accountName,
-      treasury_display: treasuryName,
-      amount_formatted: formatCurrency(amt, curr),
-      currency_display: curr,
-      method_display: (p.method || p.payment_method) === "bank_transfer" || p.payment_method === "Bank"
+  return {
+    ...p,
+    payment_method: p.payment_method || p.method,
+    __idx: idx + 1,
+    receipt_display: p.receipt_number || p.id.slice(0, 8),
+    date_display: p.paid_at
+      ? formatDate(p.paid_at)
+      : p.payment_date
+        ? formatDate(p.payment_date)
+        : p.created_at
+          ? formatDate(p.created_at)
+          : "—",
+    counter_account_display: accountName,
+    treasury_display: treasuryName,
+    amount_formatted: formatCurrency(amt, curr),
+    currency_display: curr,
+    method_display:
+      (p.method || p.payment_method) === "bank_transfer" ||
+      p.payment_method === "Bank"
         ? m.finance_ui_payment_method_bank_transfer()
-        : (p.method === "check" || p.payment_method === "Check"
+        : p.method === "check" || p.payment_method === "Check"
           ? m.finance_ui_payment_method_check()
-          : m.finance_ui_payment_method_cash()),
-      notes_display: p.notes || "—",
-      status_display: m.finance_ui_receipt_status(),
-    };
+          : m.finance_ui_payment_method_cash(),
+    notes_display: p.notes || "—",
+    status_display: m.finance_ui_receipt_status(),
+  };
 }
 
 const gridSource = $derived(payments.map(toPaymentGridRow));
@@ -442,16 +494,113 @@ function handlePaymentSelection(selection: SelectionSnapshot) {
 }
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "receipt_display", prop: "receipt_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, sortable: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, sortable: true, align: "center" },
-  { id: "counter_account_display", prop: "counter_account_display", header: m.finance_ui_credit_account(), name: m.finance_ui_credit_account(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "treasury_display", prop: "treasury_display", header: m.finance_ui_receiving_account(), name: m.finance_ui_receiving_account(), width: 180, size: 180, readonly: true },
-  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_received_amount(), name: m.finance_ui_received_amount(), width: 140, size: 140, readonly: true, sortable: true, align: "end", cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400" },
-  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, sortable: true, align: "center" },
-  { id: "method_display", prop: "method_display", header: m.finance_ui_payment_method(), name: m.finance_ui_payment_method(), width: 110, size: 110, readonly: true, sortable: true, align: "center" },
-  { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 220, size: 220, readonly: true },
-  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true, sortable: false },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "receipt_display",
+    prop: "receipt_display",
+    header: m.finance_ui_voucher_number(),
+    name: m.finance_ui_voucher_number(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    sortable: true,
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "date_display",
+    prop: "date_display",
+    header: m.finance_ui_date(),
+    name: m.finance_ui_date(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    sortable: true,
+    align: "center",
+  },
+  {
+    id: "counter_account_display",
+    prop: "counter_account_display",
+    header: m.finance_ui_credit_account(),
+    name: m.finance_ui_credit_account(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "treasury_display",
+    prop: "treasury_display",
+    header: m.finance_ui_receiving_account(),
+    name: m.finance_ui_receiving_account(),
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "amount_formatted",
+    prop: "amount_formatted",
+    header: m.finance_ui_received_amount(),
+    name: m.finance_ui_received_amount(),
+    width: 140,
+    size: 140,
+    readonly: true,
+    sortable: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    id: "currency_display",
+    prop: "currency_display",
+    header: m.finance_ui_currency(),
+    name: m.finance_ui_currency(),
+    width: 80,
+    size: 80,
+    readonly: true,
+    sortable: true,
+    align: "center",
+  },
+  {
+    id: "method_display",
+    prop: "method_display",
+    header: m.finance_ui_payment_method(),
+    name: m.finance_ui_payment_method(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    sortable: true,
+    align: "center",
+  },
+  {
+    id: "notes_display",
+    prop: "notes_display",
+    header: m.finance_ui_description_notes(),
+    name: m.finance_ui_description_notes(),
+    width: 220,
+    size: 220,
+    readonly: true,
+  },
+  {
+    id: "status_display",
+    prop: "status_display",
+    header: m.finance_ui_status(),
+    name: m.finance_ui_status(),
+    width: 90,
+    size: 90,
+    type: "badge",
+    align: "center",
+    readonly: true,
+    sortable: false,
+  },
 ];
 
 async function exportCsv() {
@@ -460,24 +609,40 @@ async function exportCsv() {
       ...paymentPageFilter,
       search: searchQuery.trim() || undefined,
     });
-    const rows = allPayments.map(toPaymentGridRow).map((payment) => [
-      payment.receipt_display,
-      payment.date_display,
-      payment.counter_account_display,
-      payment.treasury_display,
-      payment.amount_formatted,
-      payment.currency_display,
-      payment.method_display,
-      payment.notes_display,
-      payment.status_display,
-    ]);
+    const rows = allPayments
+      .map(toPaymentGridRow)
+      .map((payment) => [
+        payment.receipt_display,
+        payment.date_display,
+        payment.counter_account_display,
+        payment.treasury_display,
+        payment.amount_formatted,
+        payment.currency_display,
+        payment.method_display,
+        payment.notes_display,
+        payment.status_display,
+      ]);
     const csv = [
-      [m.finance_ui_receipt(), m.finance_ui_date(), m.finance_ui_credit_account(), m.finance_ui_treasury(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_payment_method(), m.finance_ui_notes(), m.finance_ui_status()],
+      [
+        m.finance_ui_receipt(),
+        m.finance_ui_date(),
+        m.finance_ui_credit_account(),
+        m.finance_ui_treasury(),
+        m.finance_ui_amount(),
+        m.finance_ui_currency(),
+        m.finance_ui_payment_method(),
+        m.finance_ui_notes(),
+        m.finance_ui_status(),
+      ],
       ...rows,
     ]
-      .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+      .map((row) =>
+        row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+      )
       .join("\n");
-    const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+    const url = URL.createObjectURL(
+      new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+    );
     const link = document.createElement("a");
     link.href = url;
     link.download = `payments-${orgId}.csv`;

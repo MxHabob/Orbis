@@ -35,16 +35,14 @@ const behaviorTypeKeys: Record<string, TranslationKey> = {
 };
 
 export default function BehaviorTabScreen() {
-  const {
-    activeRole,
-    dependents,
-    selectedDependent,
-    setSelectedDependentId,
-  } = useEffectiveContext();
+  const { activeRole, dependents, selectedDependent, setSelectedDependentId } =
+    useEffectiveContext();
   const theme = useTheme();
   const { t, isArabic, formatDate } = useI18n();
 
-  const [filterType, setFilterType] = useState<"all" | "merit" | "violation">("all");
+  const [filterType, setFilterType] = useState<"all" | "merit" | "violation">(
+    "all",
+  );
 
   const normalizedActiveRole = activeRole.toLowerCase();
   const isStudent = normalizedActiveRole.includes("student");
@@ -58,13 +56,8 @@ export default function BehaviorTabScreen() {
       ? selectedDependent?.student_id
       : undefined;
 
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const behaviorQuery = useStudentBehaviorQuery(studentId);
 
@@ -121,10 +114,10 @@ export default function BehaviorTabScreen() {
           : missingStudentProfile
             ? undefined
             : hasStudentContext
-          ? isLinked
-            ? undefined
-            : t("student_access_denied")
-          : t("behavior_student_context_required")
+              ? isLinked
+                ? undefined
+                : t("student_access_denied")
+              : t("behavior_student_context_required")
       }
       onRetry={() =>
         void (isLinked ? behaviorQuery.refetch() : retryIdentity())
@@ -149,9 +142,7 @@ export default function BehaviorTabScreen() {
                   accessibilityState={{ selected }}
                   onPress={() => setSelectedDependentId(dep.student_id)}
                   className={`rounded-full px-four py-two ${
-                    selected
-                      ? "bg-primary"
-                      : "border border-border bg-card"
+                    selected ? "bg-primary" : "border border-border bg-card"
                   }`}
                 >
                   <Text
@@ -169,10 +160,7 @@ export default function BehaviorTabScreen() {
       ) : null}
 
       {/* 2. Conduct Score & Analytics Banner */}
-      <Card
-        variant="default"
-        padding="four"
-      >
+      <Card variant="default" padding="four">
         <View className="flex-row items-center justify-between pb-three">
           <View className="gap-half">
             <Text className="text-xs font-semibold text-muted-foreground">
@@ -184,7 +172,9 @@ export default function BehaviorTabScreen() {
                   netPoints >= 0 ? "text-primary" : "text-destructive"
                 }`}
               >
-                {netPoints > 0 ? `+${formatNumber(netPoints)}` : formatNumber(netPoints)}
+                {netPoints > 0
+                  ? `+${formatNumber(netPoints)}`
+                  : formatNumber(netPoints)}
               </Text>
               <Text className="text-xs font-medium text-muted-foreground">
                 {t("behavior_points_label") || "Points"}
@@ -264,11 +254,7 @@ export default function BehaviorTabScreen() {
             const recordType = record.record_type.toLowerCase();
             const typeKey = behaviorTypeKeys[recordType];
             return (
-              <Card
-                key={record.id}
-                variant="outline"
-                padding="four"
-              >
+              <Card key={record.id} variant="outline" padding="four">
                 <View className="flex-row items-center justify-between pb-two">
                   <View className="flex-row items-center gap-two">
                     <Badge
@@ -292,7 +278,9 @@ export default function BehaviorTabScreen() {
                       isPositive ? "text-primary" : "text-destructive"
                     }`}
                   >
-                    {isPositive ? `+${formatNumber(record.points)}` : formatNumber(record.points)}
+                    {isPositive
+                      ? `+${formatNumber(record.points)}`
+                      : formatNumber(record.points)}
                   </Text>
                 </View>
 

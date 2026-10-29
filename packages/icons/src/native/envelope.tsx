@@ -1,6 +1,6 @@
-import React from 'react';
-import Svg, { Path, Rect, type SvgProps } from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+import React from "react";
+import Svg, { Path, Rect, type SvgProps } from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface EnvelopeProps extends SvgProps {
   size?: number;
@@ -11,7 +11,7 @@ export interface EnvelopeProps extends SvgProps {
 
 export function Envelope({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -28,7 +28,8 @@ export function Envelope({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Rect x="3" y="5" width="18" height="14" rx="2" />
       <Path d="m3 7 9 6 9-6" />
     </Svg>

@@ -17,7 +17,19 @@ import {
   TooltipContent,
   TooltipProvider,
 } from "@orbis/ui/tooltip";
-import { Bars3BottomLeft, Calendar, CheckCircle, Clipboard, Code, Hashtag, ListBullet, Photo, Plus, Search, Trash } from "@orbis/icons";
+import {
+  Bars3BottomLeft,
+  Calendar,
+  CheckCircle,
+  Clipboard,
+  Code,
+  Hashtag,
+  ListBullet,
+  Photo,
+  Plus,
+  Search,
+  Trash,
+} from "@orbis/icons";
 
 let {
   store,
@@ -51,7 +63,14 @@ function flattenSchema(
     // Skip JSON Schema structural keywords
     if (
       props === schema &&
-      ["type", "label", "properties", "required", "$schema", "description"].includes(key)
+      [
+        "type",
+        "label",
+        "properties",
+        "required",
+        "$schema",
+        "description",
+      ].includes(key)
     ) {
       continue;
     }
@@ -60,8 +79,7 @@ function flattenSchema(
     const rawLabel = (value as any)?.label;
     const resolvedLabel =
       typeof rawLabel === "function" ? rawLabel() : rawLabel || fullPath;
-    const resolvedLabelAr =
-      (value as any)?.labelAr || resolvedLabel;
+    const resolvedLabelAr = (value as any)?.labelAr || resolvedLabel;
 
     if (
       value &&
@@ -140,7 +158,6 @@ const variableEntries = $derived(
     .sort((a, b) => a[0].localeCompare(b[0])),
 );
 
-
 // ── Actions ──────────────────────────────────────────────────
 
 function insertVariable(varName: string) {
@@ -196,7 +213,6 @@ function removeVariable(varName: string) {
   });
 }
 
-
 function getTypeIcon(type: string) {
   switch (type) {
     case "string":
@@ -236,13 +252,20 @@ function getTypeBadgeVariant(type: string): any {
 
   function getTypeLabel(type: string): string {
     switch (type) {
-      case "string": return m.shared_ui_type_string();
-      case "number": return m.shared_ui_type_number();
-      case "date": return m.shared_ui_type_date();
-      case "boolean": return m.shared_ui_type_boolean();
-      case "image": return m.shared_ui_type_image();
-      case "array": return m.shared_ui_type_array();
-      default: return type;
+      case "string":
+        return m.shared_ui_type_string();
+      case "number":
+        return m.shared_ui_type_number();
+      case "date":
+        return m.shared_ui_type_date();
+      case "boolean":
+        return m.shared_ui_type_boolean();
+      case "image":
+        return m.shared_ui_type_image();
+      case "array":
+        return m.shared_ui_type_array();
+      default:
+        return type;
     }
   }
 }

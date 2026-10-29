@@ -56,7 +56,9 @@ export function renderReleaseMarkdown(markdown?: string | null): string {
   if (!markdown?.trim()) return "";
   const rendered = parser.parse(markdown);
   if (typeof rendered !== "string") {
-    throw new Error("Release markdown parser unexpectedly returned an asynchronous result.");
+    throw new Error(
+      "Release markdown parser unexpectedly returned an asynchronous result.",
+    );
   }
   return rendered;
 }

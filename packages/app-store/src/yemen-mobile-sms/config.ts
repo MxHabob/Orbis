@@ -12,8 +12,7 @@ const config: OrbisApp = {
   icon: "ChatBubbles",
   short_description:
     "Business SMS notifications for institutions and organizations in Yemen.",
-  short_description_ar:
-    "خدمة رسائل أعمال للمؤسسات والجهات في اليمن.",
+  short_description_ar: "خدمة رسائل أعمال للمؤسسات والجهات في اليمن.",
   description: `Yemen Mobile's official business messaging information describes bulk and banking notifications for businesses, institutions, and organizations.
 
 **Integration requirements**

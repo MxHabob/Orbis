@@ -1,5 +1,9 @@
 import * as m from "$lib/paraglide/messages";
-import type { BulkImportProfile, BulkReferenceData, BulkRowState } from "../types";
+import type {
+  BulkImportProfile,
+  BulkReferenceData,
+  BulkRowState,
+} from "../types";
 import { createBulkValidationContext } from "./duplicate-index";
 
 export interface ValidationSummary {
@@ -76,7 +80,9 @@ export function validateAllRows<T = Record<string, unknown>>(
       errorCount++;
     } else if (rowWarnings.size > 0) {
       row.status = "warning";
-      row.data.status = m.bulk_entry_status_warning({ count: rowWarnings.size });
+      row.data.status = m.bulk_entry_status_warning({
+        count: rowWarnings.size,
+      });
       warningCount++;
       validCount++;
     } else {

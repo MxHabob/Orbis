@@ -1,129 +1,128 @@
 <script lang="ts">
-  import { page } from "$app/state";
-  import { onMount } from "svelte";
-  import { createOnboardingStateQuery } from "./onboarding-queries";
-  import type { Snippet } from "svelte";
-  import * as m from "$lib/paraglide/messages";
-  import { effectiveContext, systemStore } from "$lib/stores";
-  import { Button } from "@orbis/ui/button";
-  import { LoadingIndicator } from "@orbis/ui";
-  import { Skeleton } from "@orbis/ui/skeleton";
-  import { Card, CardContent } from "@orbis/ui/card";
-  import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
-  import SetupWizardHeader from "$lib/shared/components/setup-wizard-header.svelte";
-  import SetupWizardFooter from "$lib/shared/components/setup-wizard-footer.svelte";
-  import {
-    deriveSteps,
-    findNextIncompleteStep,
-    findStepForTask,
-  } from "./onboarding-steps";
-  import { navigateOnboardingRoute } from "./navigation";
+import { page } from "$app/state";
+import { onMount } from "svelte";
+import { createOnboardingStateQuery } from "./onboarding-queries";
+import type { Snippet } from "svelte";
+import * as m from "$lib/paraglide/messages";
+import { effectiveContext, systemStore } from "$lib/stores";
+import { Button } from "@orbis/ui/button";
+import { LoadingIndicator } from "@orbis/ui";
+import { Skeleton } from "@orbis/ui/skeleton";
+import { Card, CardContent } from "@orbis/ui/card";
+import SetupWorkspace from "$lib/shared/components/setup-workspace.svelte";
+import SetupWizardHeader from "$lib/shared/components/setup-wizard-header.svelte";
+import SetupWizardFooter from "$lib/shared/components/setup-wizard-footer.svelte";
+import {
+  deriveSteps,
+  findNextIncompleteStep,
+  findStepForTask,
+} from "./onboarding-steps";
+import { navigateOnboardingRoute } from "./navigation";
 
-  let { orgId, children }: { orgId: string; children: Snippet } = $props();
-  let hasLoadedState = $state(false);
-  let isLoadingState = $state(true);
-  let stateLoadError = $state(false);
-  const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
+let { orgId, children }: { orgId: string; children: Snippet } = $props();
+let hasLoadedState = $state(false);
+let isLoadingState = $state(true);
+let stateLoadError = $state(false);
+const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
 
-  const currentPath = $derived(page.url.pathname);
+const currentPath = $derived(page.url.pathname);
 
-  onMount(loadOnboardingState);
+onMount(loadOnboardingState);
 
-  async function loadOnboardingState() {
-    isLoadingState = true;
-    stateLoadError = false;
-    hasLoadedState = false;
-    systemStore.onboardingState = null;
-    try {
-      const result = await onboardingStateQuery.refetch();
-      if (result.isError || !result.data) {
-        systemStore.onboardingState = null;
-        stateLoadError = true;
-        return;
-      }
-      systemStore.onboardingState = result.data;
-      hasLoadedState = true;
-    } catch (error) {
-      console.error("Failed to load onboarding state:", error);
+async function loadOnboardingState() {
+  isLoadingState = true;
+  stateLoadError = false;
+  hasLoadedState = false;
+  systemStore.onboardingState = null;
+  try {
+    const result = await onboardingStateQuery.refetch();
+    if (result.isError || !result.data) {
       systemStore.onboardingState = null;
       stateLoadError = true;
-    } finally {
-      isLoadingState = false;
+      return;
     }
+    systemStore.onboardingState = result.data;
+    hasLoadedState = true;
+  } catch (error) {
+    console.error("Failed to load onboarding state:", error);
+    systemStore.onboardingState = null;
+    stateLoadError = true;
+  } finally {
+    isLoadingState = false;
   }
+}
 
-  const steps = $derived(
-    deriveSteps(
-      systemStore.onboardingTasks,
-      (permission) => effectiveContext.hasPermission(permission),
-    ),
-  );
-  const overallProgress = $derived(systemStore.onboardingProgressPercentage);
+const steps = $derived(
+  deriveSteps(systemStore.onboardingTasks, (permission) =>
+    effectiveContext.hasPermission(permission),
+  ),
+);
+const overallProgress = $derived(systemStore.onboardingProgressPercentage);
 
-  const currentStepIndex = $derived(
-    steps.findIndex((step) => currentPath.endsWith(`/onboarding/${step.route}`))
-  );
-  const currentStep = $derived(
-    currentStepIndex >= 0 ? steps[currentStepIndex] : null,
-  );
-  const navigationStepIndex = $derived(
-    currentStepIndex >= 0
-      ? currentStepIndex
-      : steps.findIndex((step) => step.status === "in_progress"),
-  );
-  const stepPosition = $derived(
-    `${Math.max(navigationStepIndex + 1, 1)} / ${steps.length}`,
-  );
+const currentStepIndex = $derived(
+  steps.findIndex((step) => currentPath.endsWith(`/onboarding/${step.route}`)),
+);
+const currentStep = $derived(
+  currentStepIndex >= 0 ? steps[currentStepIndex] : null,
+);
+const navigationStepIndex = $derived(
+  currentStepIndex >= 0
+    ? currentStepIndex
+    : steps.findIndex((step) => step.status === "in_progress"),
+);
+const stepPosition = $derived(
+  `${Math.max(navigationStepIndex + 1, 1)} / ${steps.length}`,
+);
 
-  async function exitSetup() {
-    await navigateOnboardingRoute(`/${orgId}`);
+async function exitSetup() {
+  await navigateOnboardingRoute(`/${orgId}`);
+}
+
+async function goToOverview() {
+  await navigateOnboardingRoute(`/${orgId}/onboarding`);
+}
+
+async function goToStep(index: number) {
+  const step = steps[index];
+  if (step?.isAccessible) {
+    await navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`);
   }
+}
 
-  async function goToOverview() {
-    await navigateOnboardingRoute(`/${orgId}/onboarding`);
+async function goToPrev() {
+  if (currentStepIndex > 0) {
+    await goToStep(currentStepIndex - 1);
+  } else if (currentStepIndex === 0) {
+    await goToOverview();
   }
+}
 
-  async function goToStep(index: number) {
-    const step = steps[index];
-    if (step?.isAccessible) {
-      await navigateOnboardingRoute(`/${orgId}/onboarding/${step.route}`);
-    }
-  }
-
-  async function goToPrev() {
-    if (currentStepIndex > 0) {
-      await goToStep(currentStepIndex - 1);
-    } else if (currentStepIndex === 0) {
-      await goToOverview();
-    }
-  }
-
-  async function goToNext() {
-    if (currentStepIndex === -1) {
-      const recommendedStep = findStepForTask(
-        steps,
-        systemStore.onboardingState?.recommended_next_task?.id,
-      );
-      const next =
-        recommendedStep?.isAccessible && recommendedStep.status !== "completed"
-          ? recommendedStep
-          : findNextIncompleteStep(steps);
-      if (next) {
-        await goToStep(steps.indexOf(next));
-      } else {
-        await goToStep(steps.length - 1);
-      }
-    } else if (currentStepIndex < steps.length - 2) {
-      const next = steps
-        .slice(currentStepIndex + 1)
-        .find((step) => step.isAccessible);
-      if (next) {
-        await goToStep(steps.indexOf(next));
-      }
-    } else if (currentStepIndex === steps.length - 2) {
+async function goToNext() {
+  if (currentStepIndex === -1) {
+    const recommendedStep = findStepForTask(
+      steps,
+      systemStore.onboardingState?.recommended_next_task?.id,
+    );
+    const next =
+      recommendedStep?.isAccessible && recommendedStep.status !== "completed"
+        ? recommendedStep
+        : findNextIncompleteStep(steps);
+    if (next) {
+      await goToStep(steps.indexOf(next));
+    } else {
       await goToStep(steps.length - 1);
     }
+  } else if (currentStepIndex < steps.length - 2) {
+    const next = steps
+      .slice(currentStepIndex + 1)
+      .find((step) => step.isAccessible);
+    if (next) {
+      await goToStep(steps.indexOf(next));
+    }
+  } else if (currentStepIndex === steps.length - 2) {
+    await goToStep(steps.length - 1);
   }
+}
 </script>
 
 <SetupWorkspace

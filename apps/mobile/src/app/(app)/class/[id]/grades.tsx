@@ -40,23 +40,21 @@ export default function ClassGradesScreen() {
       new Map(
         (gradesQuery.data ?? [])
           .filter(
-            (grade) =>
-              grade.period_id === classQuery.data?.classItem.period_id,
+            (grade) => grade.period_id === classQuery.data?.classItem.period_id,
           )
           .map((grade) => [grade.student_id, grade]),
       ),
     [gradesQuery.data, classQuery.data?.classItem.period_id],
   );
 
-
   const isPending =
     classQuery.isInScope &&
     (classQuery.isPending ||
-      Boolean(selectedClassSubject) && gradesQuery.isPending);
+      (Boolean(selectedClassSubject) && gradesQuery.isPending));
   const isError =
     !classQuery.isInScope ||
     classQuery.isError ||
-    Boolean(selectedClassSubject) && gradesQuery.isError;
+    (Boolean(selectedClassSubject) && gradesQuery.isError);
 
   const saveGrades = async () => {
     const classItem = classQuery.data?.classItem;
@@ -65,18 +63,22 @@ export default function ClassGradesScreen() {
     const invalidStudentIds: string[] = [];
     const items = (classQuery.data?.roster ?? []).flatMap(
       ({ student, enrollment }) => {
-      const score = scores[student.id]?.trim();
-      if (!score || existingGrades.has(student.id)) return [];
-      const numericScore = Number(score);
-      if (!Number.isFinite(numericScore) || numericScore < 0 || numericScore > 100) {
+        const score = scores[student.id]?.trim();
+        if (!score || existingGrades.has(student.id)) return [];
+        const numericScore = Number(score);
+        if (
+          !Number.isFinite(numericScore) ||
+          numericScore < 0 ||
+          numericScore > 100
+        ) {
           invalidStudentIds.push(student.id);
           return [];
-      }
-      if (!classItem.period_id) {
-        invalidStudentIds.push(student.id);
-        return [];
-      }
-      return [
+        }
+        if (!classItem.period_id) {
+          invalidStudentIds.push(student.id);
+          return [];
+        }
+        return [
           {
             period_id: classItem.period_id,
             student_id: student.id,
@@ -85,7 +87,7 @@ export default function ClassGradesScreen() {
             score: String(numericScore),
             max_score: "100",
           },
-      ];
+        ];
       },
     );
     if (invalidStudentIds.length > 0) {

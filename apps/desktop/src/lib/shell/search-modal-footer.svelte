@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Bolt } from "@orbis/icons";
-  import { Kbd } from "@orbis/ui/kbd";
+import * as m from "$lib/paraglide/messages";
+import { Bolt } from "@orbis/icons";
+import { Kbd } from "@orbis/ui/kbd";
 </script>
 
 <div

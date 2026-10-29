@@ -29,7 +29,12 @@ import {
   SelectContent,
   SelectItem,
 } from "@orbis/ui/select";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import {
   AdjustmentsHorizontal,
@@ -79,29 +84,120 @@ interface FieldConfig {
 }
 
 const defaultFormFields: FieldConfig[] = [
-  { key: "national_id", label: m.common_form_doc_national_id, isActive: true, isRequired: true, preventDuplicate: true, supportsDuplicate: true },
-  { key: "phone", label: m.common_form_student_phone, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: true },
-  { key: "email", label: m.common_form_student_email, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: true },
-  { key: "birth_date", label: m.registration_field_birth_date, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "sex", label: m.common_form_sex, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "nationality", label: m.common_form_nationality, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "address", label: m.common_form_address, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "place_of_birth", label: m.common_form_place_of_birth, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "blood_type", label: m.registration_field_blood_type, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "emergency_contact", label: m.common_form_guardian_role_emergency, isActive: true, isRequired: true, preventDuplicate: false, supportsDuplicate: false },
-  { key: "medical_notes", label: m.registration_field_medical_notes, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
-  { key: "previous_school", label: m.common_form_previous_school, isActive: true, isRequired: false, preventDuplicate: false, supportsDuplicate: false },
+  {
+    key: "national_id",
+    label: m.common_form_doc_national_id,
+    isActive: true,
+    isRequired: true,
+    preventDuplicate: true,
+    supportsDuplicate: true,
+  },
+  {
+    key: "phone",
+    label: m.common_form_student_phone,
+    isActive: true,
+    isRequired: true,
+    preventDuplicate: false,
+    supportsDuplicate: true,
+  },
+  {
+    key: "email",
+    label: m.common_form_student_email,
+    isActive: true,
+    isRequired: false,
+    preventDuplicate: false,
+    supportsDuplicate: true,
+  },
+  {
+    key: "birth_date",
+    label: m.registration_field_birth_date,
+    isActive: true,
+    isRequired: true,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "sex",
+    label: m.common_form_sex,
+    isActive: true,
+    isRequired: true,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "nationality",
+    label: m.common_form_nationality,
+    isActive: true,
+    isRequired: true,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "address",
+    label: m.common_form_address,
+    isActive: true,
+    isRequired: false,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "place_of_birth",
+    label: m.common_form_place_of_birth,
+    isActive: true,
+    isRequired: false,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "blood_type",
+    label: m.registration_field_blood_type,
+    isActive: true,
+    isRequired: false,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "emergency_contact",
+    label: m.common_form_guardian_role_emergency,
+    isActive: true,
+    isRequired: true,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "medical_notes",
+    label: m.registration_field_medical_notes,
+    isActive: true,
+    isRequired: false,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
+  {
+    key: "previous_school",
+    label: m.common_form_previous_school,
+    isActive: true,
+    isRequired: false,
+    preventDuplicate: false,
+    supportsDuplicate: false,
+  },
 ];
 
 function parseOrgRegistration(rawOrg: any) {
   let settingsObj: any = {};
   try {
-    settingsObj = typeof rawOrg?.settings === "string" ? JSON.parse(rawOrg.settings) : rawOrg?.settings || {};
+    settingsObj =
+      typeof rawOrg?.settings === "string"
+        ? JSON.parse(rawOrg.settings)
+        : rawOrg?.settings || {};
   } catch {
     settingsObj = {};
   }
 
-  const adm = settingsObj.admission || settingsObj.registration || settingsObj.registration_config || {};
+  const adm =
+    settingsObj.admission ||
+    settingsObj.registration ||
+    settingsObj.registration_config ||
+    {};
   const enr = settingsObj.enrollment || {};
   const num = adm.numbering || {};
   const pol = adm.policy || adm.policy_settings || adm;
@@ -110,29 +206,89 @@ function parseOrgRegistration(rawOrg: any) {
   return {
     institutionType: adm.institution_type || "school",
     studentNumberPrefix: num.prefix || adm.student_number_prefix || "STU",
-    studentNumberYearFormat: num.year_format === "full" ? "YEAR" : num.year_format === "short" ? "YEAR2" : num.year_format === "none" ? "NONE" : (adm.student_number_year_format || "YEAR"),
-    studentNumberDigits: num.sequence_digits ? Number(num.sequence_digits) : (adm.student_number_digits ? Number(adm.student_number_digits) : 4),
-    registrationEnabled: enr.registration_enabled !== undefined ? Boolean(enr.registration_enabled) : true,
-    requiresApproval: enr.require_admin_approval !== undefined ? Boolean(enr.require_admin_approval) : (pol.requires_approval !== undefined ? Boolean(pol.requires_approval) : true),
-    allowWaitlist: enr.allow_waitlist !== undefined ? Boolean(enr.allow_waitlist) : (pol.allow_waitlist !== undefined ? Boolean(pol.allow_waitlist) : true),
-    siblingPriorityEnabled: enr.sibling_priority_enabled !== undefined ? Boolean(enr.sibling_priority_enabled) : (pol.sibling_priority_enabled !== undefined ? Boolean(pol.sibling_priority_enabled) : true),
-    allowLateEnrollment: enr.allow_late_enrollment !== undefined ? Boolean(enr.allow_late_enrollment) : (pol.allow_late_enrollment !== undefined ? Boolean(pol.allow_late_enrollment) : false),
-    allowNoGuardian: pol.allow_no_guardian !== undefined ? Boolean(pol.allow_no_guardian) : false,
-    allowDuplicateNationalId: pol.allow_duplicate_national_id !== undefined ? Boolean(pol.allow_duplicate_national_id) : false,
-    autoAssignFees: pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
-    maxClassCapacity: enr.max_class_size_default ? Number(enr.max_class_size_default) : (pol.max_class_capacity ? Number(pol.max_class_capacity) : 30),
-    requiredDocuments: Array.isArray(adm.required_documents_list) ? adm.required_documents_list : [],
-    formFields: Array.isArray(fields) && fields.length > 0
-      ? fields.map((f: any) => ({
-          key: f.key,
-          nameAr: f.name_ar || f.nameAr || f.name,
-          nameEn: f.name_en || f.nameEn || f.key,
-          isActive: f.is_active !== undefined ? Boolean(f.is_active) : (f.isActive ?? true),
-          isRequired: f.is_required !== undefined ? Boolean(f.is_required) : (f.isRequired ?? false),
-          preventDuplicate: f.prevent_duplicate !== undefined ? Boolean(f.prevent_duplicate) : (f.preventDuplicate ?? false),
-          supportsDuplicate: f.supports_duplicate !== undefined ? Boolean(f.supports_duplicate) : (f.supportsDuplicate ?? true),
-        }))
-      : defaultFormFields,
+    studentNumberYearFormat:
+      num.year_format === "full"
+        ? "YEAR"
+        : num.year_format === "short"
+          ? "YEAR2"
+          : num.year_format === "none"
+            ? "NONE"
+            : adm.student_number_year_format || "YEAR",
+    studentNumberDigits: num.sequence_digits
+      ? Number(num.sequence_digits)
+      : adm.student_number_digits
+        ? Number(adm.student_number_digits)
+        : 4,
+    registrationEnabled:
+      enr.registration_enabled !== undefined
+        ? Boolean(enr.registration_enabled)
+        : true,
+    requiresApproval:
+      enr.require_admin_approval !== undefined
+        ? Boolean(enr.require_admin_approval)
+        : pol.requires_approval !== undefined
+          ? Boolean(pol.requires_approval)
+          : true,
+    allowWaitlist:
+      enr.allow_waitlist !== undefined
+        ? Boolean(enr.allow_waitlist)
+        : pol.allow_waitlist !== undefined
+          ? Boolean(pol.allow_waitlist)
+          : true,
+    siblingPriorityEnabled:
+      enr.sibling_priority_enabled !== undefined
+        ? Boolean(enr.sibling_priority_enabled)
+        : pol.sibling_priority_enabled !== undefined
+          ? Boolean(pol.sibling_priority_enabled)
+          : true,
+    allowLateEnrollment:
+      enr.allow_late_enrollment !== undefined
+        ? Boolean(enr.allow_late_enrollment)
+        : pol.allow_late_enrollment !== undefined
+          ? Boolean(pol.allow_late_enrollment)
+          : false,
+    allowNoGuardian:
+      pol.allow_no_guardian !== undefined
+        ? Boolean(pol.allow_no_guardian)
+        : false,
+    allowDuplicateNationalId:
+      pol.allow_duplicate_national_id !== undefined
+        ? Boolean(pol.allow_duplicate_national_id)
+        : false,
+    autoAssignFees:
+      pol.auto_assign_fees !== undefined ? Boolean(pol.auto_assign_fees) : true,
+    maxClassCapacity: enr.max_class_size_default
+      ? Number(enr.max_class_size_default)
+      : pol.max_class_capacity
+        ? Number(pol.max_class_capacity)
+        : 30,
+    requiredDocuments: Array.isArray(adm.required_documents_list)
+      ? adm.required_documents_list
+      : [],
+    formFields:
+      Array.isArray(fields) && fields.length > 0
+        ? fields.map((f: any) => ({
+            key: f.key,
+            nameAr: f.name_ar || f.nameAr || f.name,
+            nameEn: f.name_en || f.nameEn || f.key,
+            isActive:
+              f.is_active !== undefined
+                ? Boolean(f.is_active)
+                : (f.isActive ?? true),
+            isRequired:
+              f.is_required !== undefined
+                ? Boolean(f.is_required)
+                : (f.isRequired ?? false),
+            preventDuplicate:
+              f.prevent_duplicate !== undefined
+                ? Boolean(f.prevent_duplicate)
+                : (f.preventDuplicate ?? false),
+            supportsDuplicate:
+              f.supports_duplicate !== undefined
+                ? Boolean(f.supports_duplicate)
+                : (f.supportsDuplicate ?? true),
+          }))
+        : defaultFormFields,
   };
 }
 
@@ -152,8 +308,12 @@ let allowNoGuardian = $state<boolean>(parsed.allowNoGuardian);
 let allowDuplicateNationalId = $state<boolean>(parsed.allowDuplicateNationalId);
 let autoAssignFees = $state<boolean>(parsed.autoAssignFees);
 let maxClassCapacity = $state<number>(parsed.maxClassCapacity);
-let requiredDocuments = $state<DocItem[]>(JSON.parse(JSON.stringify(parsed.requiredDocuments)));
-let formFields = $state<FieldConfig[]>(parsed.formFields.map((field) => ({ ...field })));
+let requiredDocuments = $state<DocItem[]>(
+  JSON.parse(JSON.stringify(parsed.requiredDocuments)),
+);
+let formFields = $state<FieldConfig[]>(
+  parsed.formFields.map((field) => ({ ...field })),
+);
 
 // Database Classes & Sheet State
 let dbClasses = $state<ClassDto[]>([]);
@@ -197,7 +357,8 @@ const isDirty = $derived.by(() => {
     allowDuplicateNationalId !== initialState.allowDuplicateNationalId ||
     autoAssignFees !== initialState.autoAssignFees ||
     maxClassCapacity !== initialState.maxClassCapacity ||
-    JSON.stringify(requiredDocuments) !== JSON.stringify(initialState.requiredDocuments) ||
+    JSON.stringify(requiredDocuments) !==
+      JSON.stringify(initialState.requiredDocuments) ||
     JSON.stringify(formFields) !== JSON.stringify(initialState.formFields)
   );
 });
@@ -217,30 +378,52 @@ onMount(async () => {
     if (currentSettings) {
       if (currentSettings.enrollment) {
         const e = currentSettings.enrollment;
-        if (e.registration_enabled !== undefined) registrationEnabled = Boolean(e.registration_enabled);
-        if (e.require_admin_approval !== undefined) requiresApproval = Boolean(e.require_admin_approval);
-        if (e.allow_waitlist !== undefined) allowWaitlist = Boolean(e.allow_waitlist);
-        if (e.sibling_priority_enabled !== undefined) siblingPriorityEnabled = Boolean(e.sibling_priority_enabled);
-        if (e.max_class_size_default !== undefined) maxClassCapacity = Number(e.max_class_size_default);
-        if (e.allow_late_enrollment !== undefined) allowLateEnrollment = Boolean(e.allow_late_enrollment);
+        if (e.registration_enabled !== undefined)
+          registrationEnabled = Boolean(e.registration_enabled);
+        if (e.require_admin_approval !== undefined)
+          requiresApproval = Boolean(e.require_admin_approval);
+        if (e.allow_waitlist !== undefined)
+          allowWaitlist = Boolean(e.allow_waitlist);
+        if (e.sibling_priority_enabled !== undefined)
+          siblingPriorityEnabled = Boolean(e.sibling_priority_enabled);
+        if (e.max_class_size_default !== undefined)
+          maxClassCapacity = Number(e.max_class_size_default);
+        if (e.allow_late_enrollment !== undefined)
+          allowLateEnrollment = Boolean(e.allow_late_enrollment);
       }
       if (currentSettings.admission) {
         const a = currentSettings.admission;
         if (a.institution_type) institutionType = a.institution_type;
         if (a.numbering?.prefix) studentNumberPrefix = a.numbering.prefix;
-        if (a.numbering?.sequence_digits) studentNumberDigits = Number(a.numbering.sequence_digits);
+        if (a.numbering?.sequence_digits)
+          studentNumberDigits = Number(a.numbering.sequence_digits);
         if (a.numbering?.year_format) {
-          studentNumberYearFormat = a.numbering.year_format === "full" ? "YEAR" : a.numbering.year_format === "short" ? "YEAR2" : "NONE";
+          studentNumberYearFormat =
+            a.numbering.year_format === "full"
+              ? "YEAR"
+              : a.numbering.year_format === "short"
+                ? "YEAR2"
+                : "NONE";
         }
         if (a.policy) {
-          if (a.policy.requires_approval !== undefined) requiresApproval = Boolean(a.policy.requires_approval);
-          if (a.policy.allow_no_guardian !== undefined) allowNoGuardian = Boolean(a.policy.allow_no_guardian);
-          if (a.policy.allow_duplicate_national_id !== undefined) allowDuplicateNationalId = Boolean(a.policy.allow_duplicate_national_id);
-          if (a.policy.auto_assign_fees !== undefined) autoAssignFees = Boolean(a.policy.auto_assign_fees);
-          if (a.policy.max_class_capacity !== undefined) maxClassCapacity = Number(a.policy.max_class_capacity);
-          if (a.policy.allow_waitlist !== undefined) allowWaitlist = Boolean(a.policy.allow_waitlist);
-          if (a.policy.sibling_priority_enabled !== undefined) siblingPriorityEnabled = Boolean(a.policy.sibling_priority_enabled);
-          if (a.policy.allow_late_enrollment !== undefined) allowLateEnrollment = Boolean(a.policy.allow_late_enrollment);
+          if (a.policy.requires_approval !== undefined)
+            requiresApproval = Boolean(a.policy.requires_approval);
+          if (a.policy.allow_no_guardian !== undefined)
+            allowNoGuardian = Boolean(a.policy.allow_no_guardian);
+          if (a.policy.allow_duplicate_national_id !== undefined)
+            allowDuplicateNationalId = Boolean(
+              a.policy.allow_duplicate_national_id,
+            );
+          if (a.policy.auto_assign_fees !== undefined)
+            autoAssignFees = Boolean(a.policy.auto_assign_fees);
+          if (a.policy.max_class_capacity !== undefined)
+            maxClassCapacity = Number(a.policy.max_class_capacity);
+          if (a.policy.allow_waitlist !== undefined)
+            allowWaitlist = Boolean(a.policy.allow_waitlist);
+          if (a.policy.sibling_priority_enabled !== undefined)
+            siblingPriorityEnabled = Boolean(a.policy.sibling_priority_enabled);
+          if (a.policy.allow_late_enrollment !== undefined)
+            allowLateEnrollment = Boolean(a.policy.allow_late_enrollment);
         }
       }
       // Re-synchronize initial state
@@ -260,16 +443,18 @@ onMount(async () => {
     }
 
     if (backendReqs && backendReqs.length > 0) {
-      const mapped: DocItem[] = backendReqs.map((r: DocumentRequirementDto) => ({
-        id: r.id,
-        code: r.code,
-        nameAr: r.name_ar || r.name_en || r.code,
-        nameEn: r.name_en || r.name_ar || r.code,
-        isRequired: r.is_mandatory,
-        blocksEnrollment: r.blocks_enrollment,
-        gradeLevelId: r.target_id || undefined,
-        condition: r.condition || "all_students",
-      }));
+      const mapped: DocItem[] = backendReqs.map(
+        (r: DocumentRequirementDto) => ({
+          id: r.id,
+          code: r.code,
+          nameAr: r.name_ar || r.name_en || r.code,
+          nameEn: r.name_en || r.name_ar || r.code,
+          isRequired: r.is_mandatory,
+          blocksEnrollment: r.blocks_enrollment,
+          gradeLevelId: r.target_id || undefined,
+          condition: r.condition || "all_students",
+        }),
+      );
       requiredDocuments = mapped;
       initialState.requiredDocuments = JSON.parse(JSON.stringify(mapped));
     }
@@ -292,22 +477,32 @@ function resetToInitial() {
   allowDuplicateNationalId = initialState.allowDuplicateNationalId;
   autoAssignFees = initialState.autoAssignFees;
   maxClassCapacity = initialState.maxClassCapacity;
-  requiredDocuments = JSON.parse(JSON.stringify(initialState.requiredDocuments));
+  requiredDocuments = JSON.parse(
+    JSON.stringify(initialState.requiredDocuments),
+  );
   formFields = initialState.formFields.map((field) => ({ ...field }));
 }
 
 // Generated ID Preview
 const studentNumberPreview = $derived.by(() => {
   const year = new Date().getFullYear();
-  const yearStr = studentNumberYearFormat === "YEAR" ? `${year}-` : studentNumberYearFormat === "YEAR2" ? `${String(year).slice(2)}-` : "";
+  const yearStr =
+    studentNumberYearFormat === "YEAR"
+      ? `${year}-`
+      : studentNumberYearFormat === "YEAR2"
+        ? `${String(year).slice(2)}-`
+        : "";
   const seq = "1".padStart(studentNumberDigits, "0");
   return `${studentNumberPrefix}-${yearStr}${seq}`;
 });
 
 // Filtered Documents
 const filteredDocuments = $derived.by(() => {
-  if (selectedClassFilter === "all" || !selectedClassFilter) return requiredDocuments;
-  return requiredDocuments.filter(d => d.gradeLevelId === selectedClassFilter || !d.gradeLevelId);
+  if (selectedClassFilter === "all" || !selectedClassFilter)
+    return requiredDocuments;
+  return requiredDocuments.filter(
+    (d) => d.gradeLevelId === selectedClassFilter || !d.gradeLevelId,
+  );
 });
 
 function handleRequirementCreated(created: DocumentRequirementDto) {
@@ -333,47 +528,134 @@ async function removeDocument(doc: DocItem) {
       console.warn("Backend requirement deletion skipped:", err);
     }
   }
-  requiredDocuments = requiredDocuments.filter((d) => d.id !== doc.id && d.code !== doc.code);
+  requiredDocuments = requiredDocuments.filter(
+    (d) => d.id !== doc.id && d.code !== doc.code,
+  );
 }
 
 // ── OrbisGrid Source & Columns for Document Requirements Studio ──
 const documentActions: ActionItem[] = [
-  { id: "toggle-mandatory", label: m.ui_copy_toggle_mandatory_5b28c7c2(), icon: "CheckCircle" },
-  { id: "toggle-blocks", label: m.ui_copy_toggle_blocks_9f3655f1(), icon: "Lock" },
-  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
+  {
+    id: "toggle-mandatory",
+    label: m.ui_copy_toggle_mandatory_5b28c7c2(),
+    icon: "CheckCircle",
+  },
+  {
+    id: "toggle-blocks",
+    label: m.ui_copy_toggle_blocks_9f3655f1(),
+    icon: "Lock",
+  },
+  {
+    id: "delete",
+    label: m.common_action_delete(),
+    icon: "Trash2",
+    variant: "destructive",
+  },
 ];
 
 const docGridSource = $derived(
   filteredDocuments.map((doc, idx) => {
-    const mappedClass = dbClasses.find(c => String(c.id) === doc.gradeLevelId);
+    const mappedClass = dbClasses.find(
+      (c) => String(c.id) === doc.gradeLevelId,
+    );
     return {
       ...doc,
       __idx: idx + 1,
       doc_name: l(doc.nameAr, doc.nameEn),
-      class_name: mappedClass ? (mappedClass.name || mappedClass.level) : m.ui_copy_all_classes_c890049c(),
-      condition_label: doc.condition === "all_students"
-        ? m.ui_copy_all_students_be94120b()
-        : doc.condition === "non_national_only"
-        ? m.ui_copy_expats_only_714a26ad()
-        : doc.condition === "transfer_students_only"
-        ? m.ui_copy_transfers_452455ee()
-        : doc.condition === "special_needs_only"
-        ? m.ui_copy_special_needs_5315c628()
-        : doc.condition,
-      is_required_display: doc.isRequired ? m.ui_copy_mandatory_5ceed842() : m.ui_onboarding_progress_optional(),
-      blocks_display: doc.blocksEnrollment ? m.ui_copy_blocks_1362af09() : m.ui_copy_no_block_8cdb8971(),
+      class_name: mappedClass
+        ? mappedClass.name || mappedClass.level
+        : m.ui_copy_all_classes_c890049c(),
+      condition_label:
+        doc.condition === "all_students"
+          ? m.ui_copy_all_students_be94120b()
+          : doc.condition === "non_national_only"
+            ? m.ui_copy_expats_only_714a26ad()
+            : doc.condition === "transfer_students_only"
+              ? m.ui_copy_transfers_452455ee()
+              : doc.condition === "special_needs_only"
+                ? m.ui_copy_special_needs_5315c628()
+                : doc.condition,
+      is_required_display: doc.isRequired
+        ? m.ui_copy_mandatory_5ceed842()
+        : m.ui_onboarding_progress_optional(),
+      blocks_display: doc.blocksEnrollment
+        ? m.ui_copy_blocks_1362af09()
+        : m.ui_copy_no_block_8cdb8971(),
     };
-  })
+  }),
 );
 
 const docGridColumns = $derived<OrbisColumnDef[]>([
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
-  { id: "doc_name", prop: "doc_name", header: m.ui_copy_document_title_12e6b59a(), name: m.ui_copy_document_title_12e6b59a(), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
-  { id: "code", prop: "code", header: m.settings_units_column_code(), name: m.settings_units_column_code(), width: 110, size: 110, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "class_name", prop: "class_name", header: m.ui_copy_class_grade_fe0bb7cd(), name: m.ui_copy_class_grade_fe0bb7cd(), width: 150, size: 150, readonly: true },
-  { id: "condition_label", prop: "condition_label", header: m.ui_copy_condition_401a3f12(), name: m.ui_copy_condition_401a3f12(), width: 130, size: 130, readonly: true },
-  { id: "is_required_display", prop: "is_required_display", header: m.ui_copy_mandatory_d1edb458(), name: m.ui_copy_mandatory_d1edb458(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
-  { id: "blocks_display", prop: "blocks_display", header: m.ui_copy_blocks_d807c44d(), name: m.ui_copy_blocks_d807c44d(), width: 110, size: 110, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "doc_name",
+    prop: "doc_name",
+    header: m.ui_copy_document_title_12e6b59a(),
+    name: m.ui_copy_document_title_12e6b59a(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-semibold",
+  },
+  {
+    id: "code",
+    prop: "code",
+    header: m.settings_units_column_code(),
+    name: m.settings_units_column_code(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "class_name",
+    prop: "class_name",
+    header: m.ui_copy_class_grade_fe0bb7cd(),
+    name: m.ui_copy_class_grade_fe0bb7cd(),
+    width: 150,
+    size: 150,
+    readonly: true,
+  },
+  {
+    id: "condition_label",
+    prop: "condition_label",
+    header: m.ui_copy_condition_401a3f12(),
+    name: m.ui_copy_condition_401a3f12(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "is_required_display",
+    prop: "is_required_display",
+    header: m.ui_copy_mandatory_d1edb458(),
+    name: m.ui_copy_mandatory_d1edb458(),
+    width: 110,
+    size: 110,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "blocks_display",
+    prop: "blocks_display",
+    header: m.ui_copy_blocks_d807c44d(),
+    name: m.ui_copy_blocks_d807c44d(),
+    width: 110,
+    size: 110,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
   {
     id: "actions",
     prop: "actions",
@@ -393,9 +675,17 @@ function handleDocGridAction(event: GridActionEvent) {
   if (!row) return;
 
   if (event.actionId === "toggle-mandatory") {
-    requiredDocuments = requiredDocuments.map(d => d.id === row.id || d.code === row.code ? { ...d, isRequired: !d.isRequired } : d);
+    requiredDocuments = requiredDocuments.map((d) =>
+      d.id === row.id || d.code === row.code
+        ? { ...d, isRequired: !d.isRequired }
+        : d,
+    );
   } else if (event.actionId === "toggle-blocks") {
-    requiredDocuments = requiredDocuments.map(d => d.id === row.id || d.code === row.code ? { ...d, blocksEnrollment: !d.blocksEnrollment } : d);
+    requiredDocuments = requiredDocuments.map((d) =>
+      d.id === row.id || d.code === row.code
+        ? { ...d, blocksEnrollment: !d.blocksEnrollment }
+        : d,
+    );
   } else if (event.actionId === "delete") {
     removeDocument(row);
   }
@@ -413,19 +703,86 @@ const fieldGridSource = $derived(
     ...field,
     __idx: idx + 1,
     field_name: field.label?.() ?? l(field.nameAr ?? "", field.nameEn ?? ""),
-    active_display: field.isActive ? m.ui_copy_active_60ced915() : m.academics_exams_center_disabled(),
-    required_display: field.isActive ? (field.isRequired ? m.ui_copy_required_1c464044() : m.ui_onboarding_progress_optional()) : "—",
-    duplicate_display: field.supportsDuplicate ? (field.preventDuplicate ? m.ui_copy_strict_unique_be0bf346() : m.ui_copy_allow_duplicate_9bdc69d7()) : "—",
-  }))
+    active_display: field.isActive
+      ? m.ui_copy_active_60ced915()
+      : m.academics_exams_center_disabled(),
+    required_display: field.isActive
+      ? field.isRequired
+        ? m.ui_copy_required_1c464044()
+        : m.ui_onboarding_progress_optional()
+      : "—",
+    duplicate_display: field.supportsDuplicate
+      ? field.preventDuplicate
+        ? m.ui_copy_strict_unique_be0bf346()
+        : m.ui_copy_allow_duplicate_9bdc69d7()
+      : "—",
+  })),
 );
 
 const fieldGridColumns = $derived<OrbisColumnDef[]>([
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
-  { id: "field_name", prop: "field_name", header: m.ui_copy_field_name_b04bb75b(), name: m.ui_copy_field_name_b04bb75b(), width: 220, size: 220, readonly: true, cellClass: "font-semibold" },
-  { id: "key", prop: "key", header: m.ui_copy_key_813ba219(), name: m.ui_copy_key_813ba219(), width: 160, size: 160, readonly: true, cellClass: "font-mono text-xs text-muted-foreground" },
-  { id: "active_display", prop: "active_display", header: m.common_status(), name: m.common_status(), width: 130, size: 130, type: "badge", align: "center", readonly: true },
-  { id: "required_display", prop: "required_display", header: m.ui_onboarding_progress_required_2(), name: m.ui_onboarding_progress_required_2(), width: 130, size: 130, type: "badge", align: "center", readonly: true },
-  { id: "duplicate_display", prop: "duplicate_display", header: m.ui_copy_unique_c4f61bab(), name: m.ui_copy_unique_c4f61bab(), width: 140, size: 140, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "field_name",
+    prop: "field_name",
+    header: m.ui_copy_field_name_b04bb75b(),
+    name: m.ui_copy_field_name_b04bb75b(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-semibold",
+  },
+  {
+    id: "key",
+    prop: "key",
+    header: m.ui_copy_key_813ba219(),
+    name: m.ui_copy_key_813ba219(),
+    width: 160,
+    size: 160,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+  },
+  {
+    id: "active_display",
+    prop: "active_display",
+    header: m.common_status(),
+    name: m.common_status(),
+    width: 130,
+    size: 130,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "required_display",
+    prop: "required_display",
+    header: m.ui_onboarding_progress_required_2(),
+    name: m.ui_onboarding_progress_required_2(),
+    width: 130,
+    size: 130,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
+  {
+    id: "duplicate_display",
+    prop: "duplicate_display",
+    header: m.ui_copy_unique_c4f61bab(),
+    name: m.ui_copy_unique_c4f61bab(),
+    width: 140,
+    size: 140,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
   {
     id: "actions",
     prop: "actions",
@@ -445,12 +802,18 @@ function handleFieldGridAction(event: GridActionEvent) {
   if (!row) return;
 
   if (event.actionId === "toggle-active") {
-    formFields = formFields.map(f => f.key === row.key ? { ...f, isActive: !f.isActive } : f);
+    formFields = formFields.map((f) =>
+      f.key === row.key ? { ...f, isActive: !f.isActive } : f,
+    );
   } else if (event.actionId === "toggle-required") {
-    formFields = formFields.map(f => f.key === row.key ? { ...f, isRequired: !f.isRequired } : f);
+    formFields = formFields.map((f) =>
+      f.key === row.key ? { ...f, isRequired: !f.isRequired } : f,
+    );
   } else if (event.actionId === "toggle-duplicate") {
     if (row.supportsDuplicate) {
-      formFields = formFields.map(f => f.key === row.key ? { ...f, preventDuplicate: !f.preventDuplicate } : f);
+      formFields = formFields.map((f) =>
+        f.key === row.key ? { ...f, preventDuplicate: !f.preventDuplicate } : f,
+      );
     }
   }
 }
@@ -462,7 +825,12 @@ function handleFormSave() {
       institution_type: institutionType,
       numbering: {
         prefix: studentNumberPrefix,
-        year_format: studentNumberYearFormat === "YEAR" ? "full" : studentNumberYearFormat === "YEAR2" ? "short" : "none",
+        year_format:
+          studentNumberYearFormat === "YEAR"
+            ? "full"
+            : studentNumberYearFormat === "YEAR2"
+              ? "short"
+              : "none",
         sequence_digits: studentNumberDigits,
         separator: "-",
       },

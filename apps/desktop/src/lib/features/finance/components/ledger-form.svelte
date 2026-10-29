@@ -24,7 +24,14 @@ import {
 } from "@orbis/schemas";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
-import { ArrowPath, BookOpen, BuildingLibrary, Check, Info, Users } from "@orbis/icons";
+import {
+  ArrowPath,
+  BookOpen,
+  BuildingLibrary,
+  Check,
+  Info,
+  Users,
+} from "@orbis/icons";
 
 let {
   orgId,
@@ -92,7 +99,7 @@ const entityForm = new FormController({
 });
 
 const isSubmitting = $derived(
-  glForm.isSubmitting || cashForm.isSubmitting || entityForm.isSubmitting
+  glForm.isSubmitting || cashForm.isSubmitting || entityForm.isSubmitting,
 );
 
 // GL Account States
@@ -101,13 +108,17 @@ let glCode = $state("");
 let glNameAr = $state("");
 let glNameEn = $state("");
 let glAccountType = $state("asset");
-const glAccountTypeLabel = $derived(({
-  asset: m.finance_ui_account_type_asset(),
-  liability: m.finance_ui_account_type_liability(),
-  equity: m.finance_ui_account_type_equity(),
-  revenue: m.finance_ui_account_type_revenue(),
-  expense: m.finance_ui_account_type_expense(),
-} as Record<string, string>)[glAccountType.toLowerCase()] ?? glAccountType);
+const glAccountTypeLabel = $derived(
+  (
+    {
+      asset: m.finance_ui_account_type_asset(),
+      liability: m.finance_ui_account_type_liability(),
+      equity: m.finance_ui_account_type_equity(),
+      revenue: m.finance_ui_account_type_revenue(),
+      expense: m.finance_ui_account_type_expense(),
+    } as Record<string, string>
+  )[glAccountType.toLowerCase()] ?? glAccountType,
+);
 
 // Cash and bank account state
 let trNameAr = $state("");
@@ -155,7 +166,7 @@ function handleParentChange(accountId: string | null) {
   // Inherit account type from selected parent
   const parentAcc = ledgers.find((ledger) => ledger.id === glParentId);
   if (parentAcc) {
-    glAccountType =parentAcc.account_type || "asset";
+    glAccountType = parentAcc.account_type || "asset";
   }
 }
 
@@ -237,7 +248,9 @@ async function handleSubmit(e: SubmitEvent) {
       });
 
       if (!success) {
-        toast.error(cashForm.formError || m.common_cash_account_name_required());
+        toast.error(
+          cashForm.formError || m.common_cash_account_name_required(),
+        );
         return;
       }
       toast.success(m.common_cash_account_created());
@@ -252,7 +265,14 @@ async function handleSubmit(e: SubmitEvent) {
         return;
       }
 
-      const itemType = enType === "vendor" ? "liability" : enType === "partner" ? "equity" : enType === "employee" ? "liability" : "asset";
+      const itemType =
+        enType === "vendor"
+          ? "liability"
+          : enType === "partner"
+            ? "equity"
+            : enType === "employee"
+              ? "liability"
+              : "asset";
 
       entityForm.setField("code", "");
       entityForm.setField("name", enNameEn || enNameAr);
@@ -272,7 +292,9 @@ async function handleSubmit(e: SubmitEvent) {
       });
 
       if (!success) {
-        toast.error(entityForm.formError || m.common_ledger_error_entity_name());
+        toast.error(
+          entityForm.formError || m.common_ledger_error_entity_name(),
+        );
         return;
       }
       toast.success(m.common_ledger_entity_created());
@@ -284,7 +306,9 @@ async function handleSubmit(e: SubmitEvent) {
     }
 
     // Invalidate TanStack query cache to instantly refresh parent lists & accounts table across the app
-    await queryClient.invalidateQueries({ queryKey: queryKeys.finance.accounts(orgId) });
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.finance.accounts(orgId),
+    });
     onSuccess();
   } catch (e) {
     const errorMsg = e instanceof Error ? e.message : String(e);

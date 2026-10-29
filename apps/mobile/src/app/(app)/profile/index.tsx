@@ -97,7 +97,9 @@ export default function ProfileScreen() {
       ? 1
       : 0);
 
-  const openWebViewer = (params: { page: string } | { url: string; title: string }) => {
+  const openWebViewer = (
+    params: { page: string } | { url: string; title: string },
+  ) => {
     router.push({
       pathname: "/(app)/webviewer",
       params,
@@ -150,7 +152,10 @@ export default function ProfileScreen() {
       });
       setActiveDialog("update");
     } catch (error: unknown) {
-      console.error("[Orbis Mobile Updates] Failed to check for updates.", error);
+      console.error(
+        "[Orbis Mobile Updates] Failed to check for updates.",
+        error,
+      );
       toast.error(t("updates_check_error"));
     } finally {
       setIsCheckingUpdates(false);

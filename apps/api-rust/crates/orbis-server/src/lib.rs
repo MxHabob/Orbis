@@ -20,8 +20,8 @@ use api::{
     academic_framework_routes, academic_routes, ai_routes, assessment_routes, autopilot_routes,
     bootstrap_routes, calendar_routes, document_routes, employee_routes, exam_routes,
     finance_routes, folder_routes, group_routes, iam_routes, integration_routes, mulverse_routes,
-    onboarding_routes, org_routes, override_routes, progression_routes, report_routes,
-    scheduling_routes, storage_routes, student_routes,
+    notification_routes, onboarding_routes, org_routes, override_routes, progression_routes,
+    report_routes, scheduling_routes, storage_routes, student_routes,
 };
 
 // ── OpenAPI Spec ────────────────────────────────────────────────
@@ -50,6 +50,7 @@ use api::{
         (name = "Storage", description = "Physical file storage, upload, download, presigned URLs, archive"),
         (name = "Folder", description = "Hierarchical folders, student folders, and AI curriculum knowledge base"),
         (name = "Integration", description = "Third-party app integrations"),
+        (name = "Notification", description = "Notification center, preferences, and unread counts"),
         (name = "Report", description = "Report definitions, templates, generation"),
         (name = "Autopilot", description = "Autonomous lifecycle, finance & reporting automation engine"),
         (name = "Bootstrap", description = "First-time organization initialization"),
@@ -316,6 +317,15 @@ use api::{
         api::integration_routes::get_integration_status,
         api::integration_routes::disconnect_app,
         api::integration_routes::toggle_integration,
+        // Notification
+        api::notification_routes::list_notifications,
+        api::notification_routes::get_unread_count,
+        api::notification_routes::mark_read,
+        api::notification_routes::mark_all_read,
+        api::notification_routes::dismiss_notification,
+        api::notification_routes::get_preferences,
+        api::notification_routes::update_preferences,
+        api::notification_routes::notification_stream,
         api::mulverse_routes::get_status,
         api::mulverse_routes::connect,
         api::mulverse_routes::disconnect,
@@ -399,6 +409,7 @@ use api::{
             api::org_routes::UpdateOrgUnitRequest,
             api::org_routes::OrgUnitDto,
             api::org_routes::OrganizationSettingsDto,
+            api::org_routes::AiSettingsDto,
             api::org_routes::AcademicSettingsDto,
             api::org_routes::EnrollmentSettingsDto,
             api::org_routes::AdmissionConfigurationDto,
@@ -567,6 +578,14 @@ use api::{
             api::integration_routes::ToggleIntegrationRequest,
             api::integration_routes::NotificationIntegrationQuery,
             api::integration_routes::NotificationIntegrationCheckDto,
+            // Notification
+            api::notification_routes::NotificationDto,
+            api::notification_routes::UnreadCountDto,
+            api::notification_routes::MarkAllReadDto,
+            api::notification_routes::ListNotificationsQuery,
+            api::notification_routes::NotificationPreferenceDto,
+            api::notification_routes::NotificationPreferenceResponseDto,
+            api::notification_routes::UpdatePreferencesRequest,
             api::mulverse_routes::MulverseConnectionDto,
             api::mulverse_routes::ConnectMulverseRequest,
             api::mulverse_routes::DeploymentDto,
@@ -693,6 +712,7 @@ pub fn app_router(state: state::AppState) -> Router {
         .merge(ai_routes::routes())
         .merge(autopilot_routes::routes())
         .merge(bootstrap_routes::routes())
+        .merge(notification_routes::routes())
         .merge(onboarding_routes::routes())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(tower_http::cors::CorsLayer::permissive())

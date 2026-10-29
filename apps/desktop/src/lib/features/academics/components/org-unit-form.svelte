@@ -16,7 +16,16 @@ import {
 } from "@orbis/ui/select";
 import { EmployeeSelect } from "$lib/features/employees";
 import { toast } from "@orbis/ui";
-import { AdjustmentsHorizontal, BookOpen, BuildingOffice, Home, Keyframes, Pin, UserBadgeCheck, Users } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  BookOpen,
+  BuildingOffice,
+  Home,
+  Keyframes,
+  Pin,
+  UserBadgeCheck,
+  Users,
+} from "@orbis/icons";
 import { onMount, untrack } from "svelte";
 import {
   Accordion,

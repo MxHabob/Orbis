@@ -4,23 +4,23 @@ Slide-over Sheet component for adding or editing an Academic Year.
 Uses the shared @orbis/ui/sheet component and YearForm.
 -->
 <script lang="ts">
-  import { Sheet, SheetContent } from "@orbis/ui/sheet";
-  import YearForm from "./year-form.svelte";
-  import type { academicCalendarDto } from "@orbis/sdk";
+import { Sheet, SheetContent } from "@orbis/ui/sheet";
+import YearForm from "./year-form.svelte";
+import type { academicCalendarDto } from "@orbis/sdk";
 
-  let {
-    open = $bindable(false),
-    orgId,
-    year = null,
-    existingYears = [],
-    onSuccess,
-  }: {
-    open: boolean;
-    orgId: string;
-    year?: academicCalendarDto | null;
-    existingYears?: academicCalendarDto[];
-    onSuccess?: () => void;
-  } = $props();
+let {
+  open = $bindable(false),
+  orgId,
+  year = null,
+  existingYears = [],
+  onSuccess,
+}: {
+  open: boolean;
+  orgId: string;
+  year?: academicCalendarDto | null;
+  existingYears?: academicCalendarDto[];
+  onSuccess?: () => void;
+} = $props();
 </script>
 
 <Sheet bind:open>

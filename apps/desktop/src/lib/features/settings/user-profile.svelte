@@ -104,7 +104,8 @@ const isDirty = $derived.by(() => {
     email !== (user.email || "") ||
     phone !== ((user.phone as string) || "") ||
     role !== (user.roles?.[0] || "staff") ||
-    isActiveState !== (user.is_active !== undefined ? Boolean(user.is_active) : true) ||
+    isActiveState !==
+      (user.is_active !== undefined ? Boolean(user.is_active) : true) ||
     !!userAvatarDrafts[userId]
   );
 });
@@ -120,8 +121,7 @@ function resetForm() {
   email = user.email || "";
   phone = (user.phone as string) || "";
   role = user.roles?.[0] || "staff";
-  isActiveState =
-    user.is_active !== undefined ? Boolean(user.is_active) : true;
+  isActiveState = user.is_active !== undefined ? Boolean(user.is_active) : true;
   userAvatarDrafts[userId] = null;
 }
 

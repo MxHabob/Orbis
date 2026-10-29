@@ -46,9 +46,7 @@ export default ({ config }: { config: ExpoConfig }): ExpoConfig => {
       ...config.updates,
       enabled: updatesEnabled,
       checkAutomatically: updatesEnabled ? "ON_LOAD" : "NEVER",
-      ...(easProjectId
-        ? { url: `https://u.expo.dev/${easProjectId}` }
-        : {}),
+      ...(easProjectId ? { url: `https://u.expo.dev/${easProjectId}` } : {}),
     },
     extra: {
       ...config.extra,

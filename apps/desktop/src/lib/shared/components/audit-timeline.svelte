@@ -5,7 +5,7 @@ import { orgContext } from "$lib/stores";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Button } from "@orbis/ui/button";
 import * as m from "$lib/paraglide/messages";
-    import { formatDate } from "$lib/core/i18n";
+import { formatDate } from "$lib/core/i18n";
 
 let {
   entityType,
@@ -62,10 +62,18 @@ function formatActionLabel(action: string): string {
 }
 
 function getActionColor(action: string): string {
-  if (action.includes("created") || action.includes("assigned") || action.includes("received")) {
+  if (
+    action.includes("created") ||
+    action.includes("assigned") ||
+    action.includes("received")
+  ) {
     return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
   }
-  if (action.includes("deleted") || action.includes("reversed") || action.includes("removed")) {
+  if (
+    action.includes("deleted") ||
+    action.includes("reversed") ||
+    action.includes("removed")
+  ) {
     return "bg-destructive/10 text-destructive border-destructive/20";
   }
   if (action.includes("posted") || action.includes("status")) {

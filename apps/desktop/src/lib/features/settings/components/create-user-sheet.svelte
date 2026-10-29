@@ -66,11 +66,7 @@ interface Props {
   onsuccess?: (result: AccountProvisioningResultDto, userName: string) => void;
 }
 
-let {
-  open = $bindable(false),
-  orgId,
-  onsuccess,
-}: Props = $props();
+let { open = $bindable(false), orgId, onsuccess }: Props = $props();
 
 const queryClient = useQueryClient();
 
@@ -109,8 +105,14 @@ let isSubmitting = $state(false);
 let showGroupsSection = $state(false);
 
 // ── TanStack Queries ─────────────────────────────────────────────────
-const employeesQuery = createEmployeesQuery(() => orgId, () => ({ limit: 300 }));
-const studentsQuery = createStudentsQuery(() => orgId, () => ({ pageSize: 300 }));
+const employeesQuery = createEmployeesQuery(
+  () => orgId,
+  () => ({ limit: 300 }),
+);
+const studentsQuery = createStudentsQuery(
+  () => orgId,
+  () => ({ pageSize: 300 }),
+);
 
 // Dynamic Integrations Query (determines active SMS, WhatsApp, Email gateways)
 const integrationsQuery = createQuery<IntegrationDto[]>(() => ({
@@ -120,8 +122,12 @@ const integrationsQuery = createQuery<IntegrationDto[]>(() => ({
   staleTime: 60 * 1000,
 }));
 
-const rawEmployees = $derived<EmployeeDetailDto[]>(employeesQuery.data?.items ?? []);
-const rawStudents = $derived<StudentDetailDto[]>(studentsQuery.data?.items ?? []);
+const rawEmployees = $derived<EmployeeDetailDto[]>(
+  employeesQuery.data?.items ?? [],
+);
+const rawStudents = $derived<StudentDetailDto[]>(
+  studentsQuery.data?.items ?? [],
+);
 const integrations = $derived<IntegrationDto[]>(integrationsQuery.data ?? []);
 
 // Dynamic Gateway Capabilities
@@ -181,35 +187,49 @@ const availableChannels = $derived<DeliveryOption[]>([
   {
     id: "email",
     name: m.settings_ui_delivery_email_name(),
-    desc: email ? m.settings_ui_delivery_send_to({ destination: email }) : m.settings_ui_delivery_email_description(),
+    desc: email
+      ? m.settings_ui_delivery_send_to({ destination: email })
+      : m.settings_ui_delivery_email_description(),
     icon: "✉️",
     isAvailable: hasEmailIntegration,
     requiresIntegration: "SMTP / Email Gateway",
-    badge: hasEmailIntegration ? m.settings_ui_integration_connected() : m.settings_ui_email_integration_required(),
+    badge: hasEmailIntegration
+      ? m.settings_ui_integration_connected()
+      : m.settings_ui_email_integration_required(),
   },
   {
     id: "sms",
     name: m.settings_ui_delivery_sms_name(),
-    desc: phone ? m.settings_ui_delivery_send_to({ destination: phone }) : m.settings_ui_delivery_sms_description(),
+    desc: phone
+      ? m.settings_ui_delivery_send_to({ destination: phone })
+      : m.settings_ui_delivery_sms_description(),
     icon: "💬",
     isAvailable: hasSmsIntegration,
     requiresIntegration: "SMS Gateway (Twilio / Unifonic)",
-    badge: hasSmsIntegration ? m.settings_ui_integration_connected() : m.settings_ui_sms_gateway_required(),
+    badge: hasSmsIntegration
+      ? m.settings_ui_integration_connected()
+      : m.settings_ui_sms_gateway_required(),
   },
   {
     id: "whatsapp",
     name: m.settings_ui_delivery_whatsapp_name(),
-    desc: phone ? m.settings_ui_delivery_send_to({ destination: phone }) : m.settings_ui_delivery_whatsapp_description(),
+    desc: phone
+      ? m.settings_ui_delivery_send_to({ destination: phone })
+      : m.settings_ui_delivery_whatsapp_description(),
     icon: "📱",
     isAvailable: hasWhatsAppIntegration,
     requiresIntegration: "Meta / WhatsApp Business API",
-    badge: hasWhatsAppIntegration ? m.settings_ui_integration_connected() : m.settings_ui_whatsapp_integration_required(),
+    badge: hasWhatsAppIntegration
+      ? m.settings_ui_integration_connected()
+      : m.settings_ui_whatsapp_integration_required(),
   },
 ]);
 
 // Entity lookups
 const unprovisionedEmployees = $derived(rawEmployees.filter((e) => !e.user_id));
-const unprovisionedStudents = $derived(rawStudents.filter((s) => !s.student?.user_id));
+const unprovisionedStudents = $derived(
+  rawStudents.filter((s) => !s.student?.user_id),
+);
 
 const currentEmployee = $derived(
   rawEmployees.find((e) => e.id === selectedEmployeeId) ?? null,
@@ -234,9 +254,15 @@ function cleanUsernameSegment(str: string): string {
 
 function generateSuggestedUsername() {
   if (personaType === "employee" && currentEmployee) {
-    const fn = currentEmployee.first_name ? cleanUsernameSegment(currentEmployee.first_name) : "";
-    const ln = currentEmployee.last_name ? cleanUsernameSegment(currentEmployee.last_name) : "";
-    const num = currentEmployee.employee_number ? cleanUsernameSegment(currentEmployee.employee_number) : "";
+    const fn = currentEmployee.first_name
+      ? cleanUsernameSegment(currentEmployee.first_name)
+      : "";
+    const ln = currentEmployee.last_name
+      ? cleanUsernameSegment(currentEmployee.last_name)
+      : "";
+    const num = currentEmployee.employee_number
+      ? cleanUsernameSegment(currentEmployee.employee_number)
+      : "";
     if (fn && ln) {
       username = `${fn}.${ln}`;
     } else if (fn && num) {
@@ -245,8 +271,12 @@ function generateSuggestedUsername() {
       username = `emp.${num}`;
     }
   } else if (personaType === "student" && currentStudent) {
-    const fn = currentStudent.person?.first_name ? cleanUsernameSegment(currentStudent.person.first_name) : "";
-    const num = currentStudent.student?.student_number ? cleanUsernameSegment(currentStudent.student.student_number) : "";
+    const fn = currentStudent.person?.first_name
+      ? cleanUsernameSegment(currentStudent.person.first_name)
+      : "";
+    const num = currentStudent.student?.student_number
+      ? cleanUsernameSegment(currentStudent.student.student_number)
+      : "";
     if (fn && num) {
       username = `${fn}.${num}`;
     } else if (num) {
@@ -324,8 +354,10 @@ function handleSelectStudent(stdId: string | null) {
   const std = rawStudents.find((s) => s.student?.id === stdId);
   if (!std) return;
 
-  fullName = `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim();
-  fullNameAr = `${std.person?.first_name_ar || ""} ${std.person?.last_name_ar || ""}`.trim();
+  fullName =
+    `${std.person?.first_name || ""} ${std.person?.last_name || ""}`.trim();
+  fullNameAr =
+    `${std.person?.first_name_ar || ""} ${std.person?.last_name_ar || ""}`.trim();
   email = std.person?.email || "";
   phone = std.person?.phone || "";
   selectedRole = "student";
@@ -352,7 +384,8 @@ async function handleSelectGuardianStudent(stdId: string | null) {
 
 function handleSelectGuardianRecord(g: GuardianDto) {
   selectedGuardianPersonId = g.guardian_id;
-  const rel = l(g.relationship_ar, g.relationship) || g.relationship || "Guardian";
+  const rel =
+    l(g.relationship_ar, g.relationship) || g.relationship || "Guardian";
   const stdName = currentGuardianStudent
     ? l(
         `${currentGuardianStudent.person?.first_name_ar || ""} ${currentGuardianStudent.person?.last_name_ar || ""}`.trim(),
@@ -386,9 +419,7 @@ async function handleSubmit() {
 
   if (passwordMode === "custom") {
     if (!customPassword || customPassword.length < 6) {
-      toast.error(
-        m.ui_copy_password_must_be_at_least_6_characters_921652ea(),
-      );
+      toast.error(m.ui_copy_password_must_be_at_least_6_characters_921652ea());
       return;
     }
     if (customPassword !== confirmPassword) {
@@ -398,9 +429,19 @@ async function handleSubmit() {
   }
 
   // Validate channel availability
-  const selectedChannelObj = availableChannels.find((c) => c.id === deliveryChannel);
-  if (selectedChannelObj && !selectedChannelObj.isAvailable && deliveryChannel !== "manual") {
-    toast.error(m.settings_ui_delivery_channel_not_enabled({ channel: selectedChannelObj.name }));
+  const selectedChannelObj = availableChannels.find(
+    (c) => c.id === deliveryChannel,
+  );
+  if (
+    selectedChannelObj &&
+    !selectedChannelObj.isAvailable &&
+    deliveryChannel !== "manual"
+  ) {
+    toast.error(
+      m.settings_ui_delivery_channel_not_enabled({
+        channel: selectedChannelObj.name,
+      }),
+    );
     return;
   }
 
@@ -449,14 +490,18 @@ async function handleSubmit() {
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all }),
     ]);
 
-    toast.success(m.settings_ui_user_account_provisioned({ username: finalUsername }));
+    toast.success(
+      m.settings_ui_user_account_provisioned({ username: finalUsername }),
+    );
 
     const displayName = l(fullNameAr, fullName) || fullName || finalUsername;
     open = false;
     onsuccess?.(result, displayName);
   } catch (err: any) {
     console.error("User provisioning error:", err);
-    toast.error(err?.message || m.ui_copy_failed_to_provision_user_account_a5de6e16());
+    toast.error(
+      err?.message || m.ui_copy_failed_to_provision_user_account_a5de6e16(),
+    );
   } finally {
     isSubmitting = false;
   }

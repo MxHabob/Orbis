@@ -350,7 +350,15 @@ pub struct OrganizationSettingsDto {
     #[serde(default)]
     pub notifications: NotificationSettingsDto,
     #[serde(default)]
+    pub ai: AiSettingsDto,
+    #[serde(default)]
     pub autopilot: AutopilotSettingsDto,
+}
+
+#[derive(Serialize, Deserialize, ToSchema, Default)]
+#[serde(default)]
+pub struct AiSettingsDto {
+    pub mobile_chat_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, ToSchema)]
@@ -619,6 +627,9 @@ impl From<OrganizationSettings> for OrganizationSettingsDto {
                 notify_parents_on_grade_publish: s.notifications.notify_parents_on_grade_publish,
                 finance_reminder_days: s.notifications.finance_reminder_days,
             },
+            ai: AiSettingsDto {
+                mobile_chat_enabled: s.ai.mobile_chat_enabled,
+            },
             autopilot: AutopilotSettingsDto {
                 enabled: s.autopilot.enabled,
                 mode: s.autopilot.mode,
@@ -737,6 +748,9 @@ impl From<OrganizationSettingsDto> for OrganizationSettings {
                 notify_parents_on_absence: s.notifications.notify_parents_on_absence,
                 notify_parents_on_grade_publish: s.notifications.notify_parents_on_grade_publish,
                 finance_reminder_days: s.notifications.finance_reminder_days,
+            },
+            ai: orbis_domain::entities::settings::AiSettings {
+                mobile_chat_enabled: s.ai.mobile_chat_enabled,
             },
             autopilot: orbis_domain::entities::settings::AutopilotSettings {
                 enabled: s.autopilot.enabled,

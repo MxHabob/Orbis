@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { findSpreadsheetColumn, normalizeSpreadsheetHeader } from "./header-mapping";
+import {
+  findSpreadsheetColumn,
+  normalizeSpreadsheetHeader,
+} from "./header-mapping";
 
 describe("spreadsheet header mapping", () => {
   test("matches the localized class header used by generated templates", () => {

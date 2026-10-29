@@ -5,7 +5,19 @@ import * as m from "$lib/paraglide/messages";
  */
 import type { EditorStore } from "../stores/editor-store.svelte";
 import { copyNodes, cutNodes, pasteNodes } from "../stores/clipboard-manager";
-import { AdjustmentsHorizontal, BarsArrowUp, Clip, Clipboard, Eye, EyeSlash, Keyframes, Lock, Photo, Pencil, Trash } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  BarsArrowUp,
+  Clip,
+  Clipboard,
+  Eye,
+  EyeSlash,
+  Keyframes,
+  Lock,
+  Photo,
+  Pencil,
+  Trash,
+} from "@orbis/icons";
 
 let {
   store,
@@ -83,8 +95,7 @@ function handleSendToBack() {
 function handleSetAsBackground() {
   if (!selectedNode || selectedNode.type !== "Image") return;
   const { src, fallbackSrc, assetRef } = selectedNode.props;
-  const source =
-    src && !src.startsWith("{{") ? src : fallbackSrc || src || "";
+  const source = src && !src.startsWith("{{") ? src : fallbackSrc || src || "";
   store.setPageBackground(assetRef, source, selectedNode.id);
   onclose();
 }

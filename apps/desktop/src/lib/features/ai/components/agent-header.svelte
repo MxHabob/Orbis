@@ -1,85 +1,85 @@
 <script lang="ts">
-  import type { AiChatSession } from "$lib/features/ai/session-store";
-  import * as m from "$lib/paraglide/messages";
-  import type { OrbisApp } from "@orbis/app-store";
-  import { getAppsByCategory } from "@orbis/app-store";
-  import { ChartBar, Expand, Plus, Sparkles, XMark } from "@orbis/icons";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import ChatHistoryPopover from "./chat-history-popover.svelte";
+import type { AiChatSession } from "$lib/features/ai/session-store";
+import * as m from "$lib/paraglide/messages";
+import type { OrbisApp } from "@orbis/app-store";
+import { getAppsByCategory } from "@orbis/app-store";
+import { ChartBar, Expand, Plus, Sparkles, XMark } from "@orbis/icons";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import ChatHistoryPopover from "./chat-history-popover.svelte";
 
-  let {
-    isStandalone = false,
-    headerTitle = "",
-    messagesLength = 0,
-    currentOrgId = "",
-    viewMode = "chat",
-    sessions = [],
-    currentSessionId = null,
-    pendingActionsCount = 0,
-    selectedModel = "",
-    selectedProvider = "",
-    onClose,
-    onOpenStandalone,
-    onSelectSession,
-    onDeleteSession,
-    onNewChat,
-    onToggleView,
-    onOpenSettings,
-  }: {
-    isStandalone?: boolean;
-    headerTitle?: string;
-    messagesLength?: number;
-    currentOrgId?: string;
-    viewMode?: "chat" | "cockpit";
-    sessions?: AiChatSession[];
-    currentSessionId?: string | null;
-    pendingActionsCount?: number;
-    selectedModel?: string;
-    selectedProvider?: string;
-    onToggleView?: () => void;
-    onClose?: () => void;
-    onOpenStandalone?: () => void;
-    onSelectSession?: (id: string) => void;
-    onDeleteSession?: (id: string) => void;
-    onNewChat?: () => void;
-    onOpenSettings?: () => void;
-  } = $props();
+let {
+  isStandalone = false,
+  headerTitle = "",
+  messagesLength = 0,
+  currentOrgId = "",
+  viewMode = "chat",
+  sessions = [],
+  currentSessionId = null,
+  pendingActionsCount = 0,
+  selectedModel = "",
+  selectedProvider = "",
+  onClose,
+  onOpenStandalone,
+  onSelectSession,
+  onDeleteSession,
+  onNewChat,
+  onToggleView,
+  onOpenSettings,
+}: {
+  isStandalone?: boolean;
+  headerTitle?: string;
+  messagesLength?: number;
+  currentOrgId?: string;
+  viewMode?: "chat" | "cockpit";
+  sessions?: AiChatSession[];
+  currentSessionId?: string | null;
+  pendingActionsCount?: number;
+  selectedModel?: string;
+  selectedProvider?: string;
+  onToggleView?: () => void;
+  onClose?: () => void;
+  onOpenStandalone?: () => void;
+  onSelectSession?: (id: string) => void;
+  onDeleteSession?: (id: string) => void;
+  onNewChat?: () => void;
+  onOpenSettings?: () => void;
+} = $props();
 
-  // Canonical AI apps from @orbis/app-store
-  const aiApps = $derived(getAppsByCategory("ai-provider"));
+// Canonical AI apps from @orbis/app-store
+const aiApps = $derived(getAppsByCategory("ai-provider"));
 
-  // Resolve active app from selectedProvider
-  const currentApp = $derived.by<OrbisApp | undefined>(() => {
-    if (!selectedProvider) return aiApps[0];
-    const norm = selectedProvider.toLowerCase().trim().replace(/_/g, "-");
-    return aiApps.find(
-      (app) =>
-        app.id.toLowerCase() === norm ||
-        app.adapter_name?.toLowerCase() === norm ||
-        app.name.toLowerCase().includes(norm) ||
-        norm.includes(app.id.toLowerCase()),
-    );
-  });
+// Resolve active app from selectedProvider
+const currentApp = $derived.by<OrbisApp | undefined>(() => {
+  if (!selectedProvider) return aiApps[0];
+  const norm = selectedProvider.toLowerCase().trim().replace(/_/g, "-");
+  return aiApps.find(
+    (app) =>
+      app.id.toLowerCase() === norm ||
+      app.adapter_name?.toLowerCase() === norm ||
+      app.name.toLowerCase().includes(norm) ||
+      norm.includes(app.id.toLowerCase()),
+  );
+});
 
-  // Dynamic Display Name
-  const displayTitle = $derived.by(() => {
-    if (
-      headerTitle &&
-      headerTitle !== "Orbis" &&
-      headerTitle !== m.ai_ui_new_chat() &&
-      headerTitle !== "New Chat"
-    ) {
-      return headerTitle;
-    }
-    if (!currentApp) return "Orbis AI";
-    if (currentApp.id === "openrouter") return "OpenRouter";
-    if (currentApp.id === "openai") return "OpenAI";
-    if (currentApp.id === "anthropic") return "Claude";
-    if (currentApp.id === "deepseek") return "DeepSeek";
-    if (currentApp.id === "gemini-ai") return "Gemini";
-    return currentApp.name_ar?.split(" ")[0] || currentApp.name;
-  });
+// Dynamic Display Name
+const displayTitle = $derived.by(() => {
+  if (
+    headerTitle &&
+    headerTitle !== "Orbis" &&
+    headerTitle !== m.ai_ui_new_chat() &&
+    headerTitle !== "New Chat"
+  ) {
+    return headerTitle;
+  }
+  if (!currentApp) return "Orbis AI";
+  if (currentApp.id === "openrouter") return "OpenRouter";
+  if (currentApp.id === "openai") return "OpenAI";
+  if (currentApp.id === "anthropic") return "Claude";
+  if (currentApp.id === "deepseek") return "DeepSeek";
+  if (currentApp.id === "gemini-ai") return "Gemini";
+  return currentApp.name_ar?.split(" ")[0] || currentApp.name;
+});
 </script>
 
 <div

@@ -1,5 +1,14 @@
 <script lang="ts">
-import { AdjustmentsHorizontal, BookOpen, ClockRotateRight, InfoCircle, Pencil, Pin, Trash, Users } from "@orbis/icons";
+import {
+  AdjustmentsHorizontal,
+  BookOpen,
+  ClockRotateRight,
+  InfoCircle,
+  Pencil,
+  Pin,
+  Trash,
+  Users,
+} from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 
 interface Props {

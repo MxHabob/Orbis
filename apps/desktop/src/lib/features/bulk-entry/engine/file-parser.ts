@@ -3,7 +3,10 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import * as m from "$lib/paraglide/messages";
 import type { BulkImportProfile, BulkRowState } from "../types";
 import { getBulkEntryColumnHeader } from "../localization";
-import { findSpreadsheetColumn, normalizeSpreadsheetHeader } from "./header-mapping";
+import {
+  findSpreadsheetColumn,
+  normalizeSpreadsheetHeader,
+} from "./header-mapping";
 
 export interface ParsedFileResult {
   fileName: string;
@@ -12,11 +15,18 @@ export interface ParsedFileResult {
   headers: string[];
 }
 
-export async function pickAndParseFile(profile: BulkImportProfile<any, any>): Promise<ParsedFileResult | null> {
+export async function pickAndParseFile(
+  profile: BulkImportProfile<any, any>,
+): Promise<ParsedFileResult | null> {
   try {
     const selected = await open({
       multiple: false,
-      filters: [{ name: m.bulk_entry_file_filter_spreadsheets(), extensions: ["xlsx", "xls", "csv"] }],
+      filters: [
+        {
+          name: m.bulk_entry_file_filter_spreadsheets(),
+          extensions: ["xlsx", "xls", "csv"],
+        },
+      ],
     });
 
     if (!selected || typeof selected !== "string") {
@@ -27,12 +37,18 @@ export async function pickAndParseFile(profile: BulkImportProfile<any, any>): Pr
     const fileName = selected.split(/[\\/]/).pop() || "imported_file.xlsx";
     return parseSpreadsheetBytes(fileBytes, fileName, profile);
   } catch (err) {
-    console.warn("Native file picker error, browser interaction required:", err);
+    console.warn(
+      "Native file picker error, browser interaction required:",
+      err,
+    );
     throw err;
   }
 }
 
-export async function parseDroppedFile(file: File, profile: BulkImportProfile<any, any>): Promise<ParsedFileResult> {
+export async function parseDroppedFile(
+  file: File,
+  profile: BulkImportProfile<any, any>,
+): Promise<ParsedFileResult> {
   const arrayBuffer = await file.arrayBuffer();
   const fileBytes = new Uint8Array(arrayBuffer);
   return parseSpreadsheetBytes(fileBytes, file.name, profile);
@@ -48,7 +64,10 @@ export async function parseSpreadsheetBytes(
 
   // Use the first non-reference sheet
   const targetSheetName =
-    workbook.SheetNames.find((name) => !name.startsWith("_") && !name.toLowerCase().includes("instruction")) ||
+    workbook.SheetNames.find(
+      (name) =>
+        !name.startsWith("_") && !name.toLowerCase().includes("instruction"),
+    ) ||
     workbook.SheetNames[0] ||
     m.bulk_entry_parser_default_sheet();
 
@@ -69,7 +88,9 @@ export async function parseSpreadsheetBytes(
     throw new Error(m.bulk_entry_parser_empty_file());
   }
 
-  const rawHeaders = (rawData[0] as string[]).map((h) => String(h || "").trim());
+  const rawHeaders = (rawData[0] as string[]).map((h) =>
+    String(h || "").trim(),
+  );
   const columnMap: Record<number, string> = {};
 
   // Map header column indices to profile column metadata IDs
@@ -80,8 +101,7 @@ export async function parseSpreadsheetBytes(
     const matchedMeta = findSpreadsheetColumn(
       headerText,
       profile.columnMetadata,
-      (col) =>
-        getBulkEntryColumnHeader(profile.id, col.id, col.headerAr),
+      (col) => getBulkEntryColumnHeader(profile.id, col.id, col.headerAr),
     );
 
     if (matchedMeta) {
@@ -115,7 +135,13 @@ export async function parseSpreadsheetBytes(
 
   for (let r = 1; r < rawData.length; r++) {
     const line = rawData[r] as unknown[];
-    if (!line || line.every((cell) => cell === null || cell === undefined || String(cell).trim() === "")) {
+    if (
+      !line ||
+      line.every(
+        (cell) =>
+          cell === null || cell === undefined || String(cell).trim() === "",
+      )
+    ) {
       continue; // skip completely empty rows
     }
 
@@ -146,12 +172,17 @@ export async function parseSpreadsheetBytes(
       ]
         .filter((part) => String(part ?? "").trim())
         .join(" ");
-      const legacyEnglishName = [rowData.legacy_first_name, rowData.legacy_last_name]
+      const legacyEnglishName = [
+        rowData.legacy_first_name,
+        rowData.legacy_last_name,
+      ]
         .filter((part) => String(part ?? "").trim())
         .join(" ");
 
-      if (!rowData.full_name_ar && legacyArabicName) rowData.full_name_ar = legacyArabicName;
-      if (!rowData.full_name_en && legacyEnglishName) rowData.full_name_en = legacyEnglishName;
+      if (!rowData.full_name_ar && legacyArabicName)
+        rowData.full_name_ar = legacyArabicName;
+      if (!rowData.full_name_en && legacyEnglishName)
+        rowData.full_name_en = legacyEnglishName;
       for (const legacyId of [
         "legacy_first_name_ar",
         "legacy_middle_name_ar",

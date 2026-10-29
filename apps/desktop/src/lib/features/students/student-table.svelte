@@ -6,7 +6,11 @@ Renders the list of students using OrbisGrid with exact backend contract alignme
 import * as m from "$lib/paraglide/messages";
 import type { StudentDetailDto, EnrollmentDto, ClassDto } from "$lib/api";
 import { formatDate, l } from "$lib/core/i18n";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
@@ -37,9 +41,14 @@ let {
 // Map student ID to active enrollment and class
 const studentClassMap = $derived.by(() => {
   const map: Record<string, string> = {};
-  const classLookup = new Map(classes.map(c => [c.id, l(c.name_ar, c.name) || c.name]));
+  const classLookup = new Map(
+    classes.map((c) => [c.id, l(c.name_ar, c.name) || c.name]),
+  );
   for (const e of enrollments) {
-    if (e.section_id && (e.status === "active" || e.status === "pending_approval")) {
+    if (
+      e.section_id &&
+      (e.status === "active" || e.status === "pending_approval")
+    ) {
       const clsName = classLookup.get(e.section_id) || e.section_id;
       map[e.student_id] = clsName;
     }
@@ -179,14 +188,22 @@ let activeFilter = $state<UniversalFilter>({
 
 function formatStanding(standing: string): string {
   switch (standing) {
-    case "good_standing": return m.ui_copy_good_standing_97d50066();
-    case "honor_list": return m.ui_copy_honor_list_2fbe9f9c();
-    case "warning_1": return m.ui_copy_warning_1_d56eb3db();
-    case "warning_2": return m.ui_copy_warning_2_7d80f6e1();
-    case "warning_3": return m.ui_copy_warning_3_9d03bb80();
-    case "probation": return m.ui_copy_probation_fe016d19();
-    case "dismissed": return m.ui_copy_dismissed_99b10f56();
-    default: return standing || "—";
+    case "good_standing":
+      return m.ui_copy_good_standing_97d50066();
+    case "honor_list":
+      return m.ui_copy_honor_list_2fbe9f9c();
+    case "warning_1":
+      return m.ui_copy_warning_1_d56eb3db();
+    case "warning_2":
+      return m.ui_copy_warning_2_7d80f6e1();
+    case "warning_3":
+      return m.ui_copy_warning_3_9d03bb80();
+    case "probation":
+      return m.ui_copy_probation_fe016d19();
+    case "dismissed":
+      return m.ui_copy_dismissed_99b10f56();
+    default:
+      return standing || "—";
   }
 }
 
@@ -194,16 +211,18 @@ let gridSource = $derived(
   (students || []).map((detail, i) => {
     const s = detail.student;
     const p = detail.person;
-    const studentName = l(p.full_name_ar, p.full_name) || p.first_name || m.common_word_student();
+    const studentName =
+      l(p.full_name_ar, p.full_name) || p.first_name || m.common_word_student();
     const isSelected = selectedIds.has(String(s.id));
     const className = studentClassMap[s.id] || m.common_status_not_enrolled();
 
     const rawGender = String(p.gender || "").toLowerCase();
-    const genderDisplay = rawGender === "male" || rawGender === "ذكر"
-      ? m.common_form_male()
-      : rawGender === "female" || rawGender === "أنثى"
-        ? m.common_form_female()
-        : "—";
+    const genderDisplay =
+      rawGender === "male" || rawGender === "ذكر"
+        ? m.common_form_male()
+        : rawGender === "female" || rawGender === "أنثى"
+          ? m.common_form_female()
+          : "—";
 
     return {
       id: s.id,
@@ -217,8 +236,12 @@ let gridSource = $derived(
       standing: formatStanding(s.standing),
       gender_display: genderDisplay,
       admitted_at_display: s.admitted_at ? formatDate(s.admitted_at) : "—",
-      created_at_display: s.created_at ? formatDate(s.created_at, "datetime") : "—",
-      updated_at_display: s.updated_at ? formatDate(s.updated_at, "datetime") : "—",
+      created_at_display: s.created_at
+        ? formatDate(s.created_at, "datetime")
+        : "—",
+      updated_at_display: s.updated_at
+        ? formatDate(s.updated_at, "datetime")
+        : "—",
       avatar_url: p.avatar_url,
     };
   }),

@@ -1,21 +1,21 @@
 <script lang="ts">
-	import type { SVGAttributes } from 'svelte/elements';
-	import { cn } from './utils';
+import type { SVGAttributes } from "svelte/elements";
+import { cn } from "./utils";
 
-	interface Props extends SVGAttributes<SVGSVGElement> {
-		class?: string;
-		className?: string;
-		size?: number | string;
-		strokeWidth?: number | string;
-	}
+interface Props extends SVGAttributes<SVGSVGElement> {
+  class?: string;
+  className?: string;
+  size?: number | string;
+  strokeWidth?: number | string;
+}
 
-	let {
-		class: klass = '',
-		className = '',
-		size,
-		strokeWidth,
-		...restProps
-	}: Props = $props();
+let {
+  class: klass = "",
+  className = "",
+  size,
+  strokeWidth,
+  ...restProps
+}: Props = $props();
 </script>
 
 <svg

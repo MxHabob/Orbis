@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { renderReleaseMarkdown } from "$lib/utils/release-markdown";
+import { renderReleaseMarkdown } from "$lib/utils/release-markdown";
 
-  let { markdown = "" }: { markdown?: string | null } = $props();
-  const rendered = $derived(renderReleaseMarkdown(markdown));
+let { markdown = "" }: { markdown?: string | null } = $props();
+const rendered = $derived(renderReleaseMarkdown(markdown));
 </script>
 
 <div class="release-markdown text-sm leading-7 text-foreground">

@@ -2,7 +2,11 @@
 // Svelte 5 Runes-based authentication state.
 
 import { api } from "$lib/api/client";
-import type { UserDto, EffectiveContextDto, LoginResponse } from "$lib/api/types";
+import type {
+  UserDto,
+  EffectiveContextDto,
+  LoginResponse,
+} from "$lib/api/types";
 import { extractErrorMessage } from "$lib/api";
 import { effectiveContext } from "./effective-context.svelte";
 import { systemStore } from "./system.svelte";
@@ -16,14 +20,12 @@ class AuthStore {
   isAuthenticated = $derived(!!this.token && !!this.user);
   orgId = $derived(this.user?.org_id ?? "");
   userId = $derived(this.user?.id ?? "");
-  
+
   // Organization readiness integration
   isSetupComplete = $derived(
-    systemStore.orgReadiness ? systemStore.isOperational : null
+    systemStore.orgReadiness ? systemStore.isOperational : null,
   );
-  needsSetup = $derived(
-    this.isAuthenticated && !systemStore.isOperational
-  );
+  needsSetup = $derived(this.isAuthenticated && !systemStore.isOperational);
 
   async login(email: string, password: string): Promise<LoginResponse> {
     this.isLoading = true;

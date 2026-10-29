@@ -13,17 +13,10 @@ import { StudentRecordLayout } from "@/components/student-record-layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  useGradesQuery,
-  useLinkedStudentId,
-} from "@/hooks/use-api-queries";
+import { useGradesQuery, useLinkedStudentId } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import {
-  ChartBar,
-  AcademicCap,
-  Sparkles,
-} from "@orbis/icons/native";
+import { ChartBar, AcademicCap, Sparkles } from "@orbis/icons/native";
 
 export default function StudentGradesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,13 +24,8 @@ export default function StudentGradesScreen() {
   const { t, formatDate } = useI18n();
 
   const requestedStudentId = typeof id === "string" ? id : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const gradesQuery = useGradesQuery({ studentId });
   const rawGrades = gradesQuery.data ?? [];
@@ -58,7 +46,9 @@ export default function StudentGradesScreen() {
   });
 
   const overallAverage =
-    validPercentCount > 0 ? Math.round(validPercentSum / validPercentCount) : null;
+    validPercentCount > 0
+      ? Math.round(validPercentSum / validPercentCount)
+      : null;
 
   return (
     <StudentRecordLayout
@@ -73,16 +63,11 @@ export default function StudentGradesScreen() {
           ? undefined
           : t("student_access_denied")
       }
-      onRetry={() =>
-        void (isLinked ? gradesQuery.refetch() : retryIdentity())
-      }
+      onRetry={() => void (isLinked ? gradesQuery.refetch() : retryIdentity())}
     >
       {/* 1. Academic Performance Summary Widget */}
       {overallAverage !== null ? (
-        <Card
-          variant="default"
-          padding="four"
-        >
+        <Card variant="default" padding="four">
           <View className="flex-row items-center justify-between">
             <View className="gap-half">
               <Text className="text-xs font-semibold text-muted-foreground">
@@ -124,11 +109,23 @@ export default function StudentGradesScreen() {
                 : grade.score;
 
             const percent =
-              Number.isFinite(score) && Number.isFinite(maxScore) && maxScore > 0
+              Number.isFinite(score) &&
+              Number.isFinite(maxScore) &&
+              maxScore > 0
                 ? Math.round((score / maxScore) * 100)
                 : null;
 
-            const letter = grade.letter_grade || (percent !== null ? (percent >= 90 ? "A" : percent >= 80 ? "B" : percent >= 70 ? "C" : "D") : "—");
+            const letter =
+              grade.letter_grade ||
+              (percent !== null
+                ? percent >= 90
+                  ? "A"
+                  : percent >= 80
+                    ? "B"
+                    : percent >= 70
+                      ? "C"
+                      : "D"
+                : "—");
 
             return (
               <Card

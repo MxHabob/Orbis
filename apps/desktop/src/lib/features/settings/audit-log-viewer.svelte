@@ -14,7 +14,11 @@ import { l } from "$lib/core/i18n";
 import { formatDate as fmtDate } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import AuditDetailsDialog from "./components/audit-details-dialog.svelte";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+} from "@orbis/svelte-grid";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { auditFilterFields } from "$lib/core/filter-configs";
 

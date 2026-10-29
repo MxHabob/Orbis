@@ -91,7 +91,10 @@ function collapseAll() {
 }
 
 function getNodeName(node: AccountNode): string {
-  return l(node.name_ar, node.name_en || node.name) || m.finance_ui_account_fallback_name();
+  return (
+    l(node.name_ar, node.name_en || node.name) ||
+    m.finance_ui_account_fallback_name()
+  );
 }
 
 function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
@@ -104,12 +107,15 @@ function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
     const nameEn = (node.name_en || node.name || "").toLowerCase();
     const nameMatch = nameAr.includes(q) || nameEn.includes(q);
     const codeMatch = (node.code || "").toLowerCase().includes(q);
-    const matchingChildren = node.children ? filterTree(node.children, query) : [];
+    const matchingChildren = node.children
+      ? filterTree(node.children, query)
+      : [];
 
     if (nameMatch || codeMatch || matchingChildren.length > 0) {
       res.push({
         ...node,
-        children: matchingChildren.length > 0 ? matchingChildren : node.children,
+        children:
+          matchingChildren.length > 0 ? matchingChildren : node.children,
       });
     }
   }

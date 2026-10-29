@@ -54,11 +54,26 @@ let isLoadingInfo = $state(false);
 let infoError = $state<string | null>(null);
 
 const categories = $derived([
-  { value: "technical_support", label: m.ui_system_support_category_technical() },
-  { value: "onboarding_setup", label: m.ui_system_support_category_onboarding() },
-  { value: "finance_accounting", label: m.ui_system_support_category_finance() },
-  { value: "academics_grading", label: m.ui_system_support_category_academics() },
-  { value: "feature_request", label: m.ui_system_support_category_feature_request() },
+  {
+    value: "technical_support",
+    label: m.ui_system_support_category_technical(),
+  },
+  {
+    value: "onboarding_setup",
+    label: m.ui_system_support_category_onboarding(),
+  },
+  {
+    value: "finance_accounting",
+    label: m.ui_system_support_category_finance(),
+  },
+  {
+    value: "academics_grading",
+    label: m.ui_system_support_category_academics(),
+  },
+  {
+    value: "feature_request",
+    label: m.ui_system_support_category_feature_request(),
+  },
   { value: "other", label: m.ui_system_support_category_general() },
 ]);
 
@@ -73,7 +88,8 @@ const diagnosticPayload = $derived({
   platform: typeof navigator !== "undefined" ? navigator.platform : undefined,
   locale: typeof navigator !== "undefined" ? navigator.language : undefined,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  user_agent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+  user_agent:
+    typeof navigator !== "undefined" ? navigator.userAgent : undefined,
 });
 
 function createSupportReport() {
@@ -146,10 +162,14 @@ $effect(() => {
   if (open && !info && !isLoadingInfo) {
     isLoadingInfo = true;
     infoError = null;
-    void api.systemGetAppInfo()
+    void api
+      .systemGetAppInfo()
       .then((appInfo) => (info = appInfo))
       .catch((error) => {
-        console.error("Failed to load application information for support:", error);
+        console.error(
+          "Failed to load application information for support:",
+          error,
+        );
         infoError = error instanceof Error ? error.message : String(error);
       })
       .finally(() => (isLoadingInfo = false));

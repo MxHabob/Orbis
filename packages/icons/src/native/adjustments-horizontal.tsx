@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface AdjustmentsHorizontalProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface AdjustmentsHorizontalProps extends SvgProps {
 
 export function AdjustmentsHorizontal({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,13 @@ export function AdjustmentsHorizontal({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="M3.5 6.5h4m3 0h10M3.5 12h9m3 0h5m-17 5.5h3m3 0h11"
-	/>
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.5 6.5h4m3 0h10M3.5 12h9m3 0h5m-17 5.5h3m3 0h11"
+      />
       <Circle cx="9" cy="6.5" r="1.5" />
       <Circle cx="14" cy="12" r="1.5" />
       <Circle cx="8" cy="17.5" r="1.5" />

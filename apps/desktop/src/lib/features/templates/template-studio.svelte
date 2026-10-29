@@ -7,10 +7,10 @@ import * as m from "$lib/paraglide/messages";
 import ErrorState from "$lib/shared/components/error-state.svelte";
 import { TemplateEditorSkeleton } from "$lib/shared/components/skeletons";
 import {
-    createDocument,
-    deserializeDocument,
-    serializeDocument,
-    type TemplateDocument,
+  createDocument,
+  deserializeDocument,
+  serializeDocument,
+  type TemplateDocument,
 } from "@docforge/core";
 import { toast } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
@@ -22,11 +22,7 @@ import FlyoutPanel from "./layout/flyout-panel.svelte";
 import SideRail from "./layout/side-rail.svelte";
 import StatusBar from "./layout/status-bar.svelte";
 import PropertiesInspector from "./panels/properties-inspector.svelte";
-import {
-    copyNodes,
-    cutNodes,
-    pasteNodes,
-} from "./stores/clipboard-manager";
+import { copyNodes, cutNodes, pasteNodes } from "./stores/clipboard-manager";
 import { createEditorStore } from "./stores/editor-store.svelte";
 import { registerTemplateAiEditor } from "./template-ai-bridge";
 
@@ -91,11 +87,18 @@ async function initEditor() {
     const rawJson = data.document_json ?? (data as any).documentJson;
     let doc: TemplateDocument;
 
-    if (rawJson && typeof rawJson === "string" && rawJson.trim().startsWith("{")) {
+    if (
+      rawJson &&
+      typeof rawJson === "string" &&
+      rawJson.trim().startsWith("{")
+    ) {
       try {
         doc = deserializeDocument(rawJson);
       } catch (deserErr) {
-        console.warn("Failed to deserialize document JSON, generating default:", deserErr);
+        console.warn(
+          "Failed to deserialize document JSON, generating default:",
+          deserErr,
+        );
         doc = createDocument(
           data.document_type ?? (data as any).documentType ?? "REPORT",
           data.entity_type ?? (data as any).entityType ?? "student",
@@ -116,7 +119,8 @@ async function initEditor() {
       doc.meta.nameAr = data.name_ar ?? (data as any).nameAr;
     }
     if (data.page_size ?? (data as any).pageSize) {
-      doc.meta.pageSetup.size = (data.page_size ?? (data as any).pageSize) as any;
+      doc.meta.pageSetup.size = (data.page_size ??
+        (data as any).pageSize) as any;
     }
     if (data.orientation) {
       doc.meta.pageSetup.orientation = data.orientation as any;
@@ -128,17 +132,47 @@ async function initEditor() {
         type: "object",
         label: m.template_schema_student_group(),
         properties: {
-          name: { type: "string", label: m.template_schema_student_full_name() },
-          student_number: { type: "string", label: m.template_schema_student_number() },
-          national_id: { type: "string", label: m.template_schema_student_national_id() },
-          seat_number: { type: "string", label: m.template_schema_student_seat_number() },
-          class_name: { type: "string", label: m.template_schema_student_class_section() },
-          grade_level: { type: "string", label: m.template_schema_student_grade_level() },
-          academic_calendar: { type: "string", label: m.template_schema_academic_year() },
+          name: {
+            type: "string",
+            label: m.template_schema_student_full_name(),
+          },
+          student_number: {
+            type: "string",
+            label: m.template_schema_student_number(),
+          },
+          national_id: {
+            type: "string",
+            label: m.template_schema_student_national_id(),
+          },
+          seat_number: {
+            type: "string",
+            label: m.template_schema_student_seat_number(),
+          },
+          class_name: {
+            type: "string",
+            label: m.template_schema_student_class_section(),
+          },
+          grade_level: {
+            type: "string",
+            label: m.template_schema_student_grade_level(),
+          },
+          academic_calendar: {
+            type: "string",
+            label: m.template_schema_academic_year(),
+          },
           birth_date: { type: "string", label: m.template_schema_birth_date() },
-          birth_place: { type: "string", label: m.template_schema_birth_place() },
-          nationality: { type: "string", label: m.template_schema_nationality() },
-          guardian_name: { type: "string", label: m.template_schema_guardian_name() },
+          birth_place: {
+            type: "string",
+            label: m.template_schema_birth_place(),
+          },
+          nationality: {
+            type: "string",
+            label: m.template_schema_nationality(),
+          },
+          guardian_name: {
+            type: "string",
+            label: m.template_schema_guardian_name(),
+          },
         },
       },
       academic: {
@@ -150,49 +184,118 @@ async function initEditor() {
             label: m.template_schema_subjects_grades_table(),
             items: { type: "object" },
           },
-          annual_total: { type: "number", label: m.template_schema_annual_total() },
-          max_score: { type: "number", label: m.template_schema_maximum_score() },
-          min_score: { type: "number", label: m.template_schema_minimum_score() },
-          percentage: { type: "string", label: m.template_schema_cumulative_percentage() },
-          appreciation: { type: "string", label: m.template_schema_overall_grade() },
+          annual_total: {
+            type: "number",
+            label: m.template_schema_annual_total(),
+          },
+          max_score: {
+            type: "number",
+            label: m.template_schema_maximum_score(),
+          },
+          min_score: {
+            type: "number",
+            label: m.template_schema_minimum_score(),
+          },
+          percentage: {
+            type: "string",
+            label: m.template_schema_cumulative_percentage(),
+          },
+          appreciation: {
+            type: "string",
+            label: m.template_schema_overall_grade(),
+          },
           status: { type: "string", label: m.template_schema_final_result() },
-          rank_in_class: { type: "string", label: m.template_schema_class_rank() },
+          rank_in_class: {
+            type: "string",
+            label: m.template_schema_class_rank(),
+          },
         },
       },
       summary: {
         type: "object",
         label: m.template_schema_summary_group(),
         properties: {
-          total_score: { type: "number", label: m.template_schema_total_score() },
-          percentage: { type: "string", label: m.template_schema_overall_percentage() },
-          status: { type: "string", label: m.template_schema_academic_status_decision() },
-          appreciation: { type: "string", label: m.template_schema_cumulative_grade() },
-          rank_in_class: { type: "string", label: m.template_schema_academic_rank() },
+          total_score: {
+            type: "number",
+            label: m.template_schema_total_score(),
+          },
+          percentage: {
+            type: "string",
+            label: m.template_schema_overall_percentage(),
+          },
+          status: {
+            type: "string",
+            label: m.template_schema_academic_status_decision(),
+          },
+          appreciation: {
+            type: "string",
+            label: m.template_schema_cumulative_grade(),
+          },
+          rank_in_class: {
+            type: "string",
+            label: m.template_schema_academic_rank(),
+          },
         },
       },
       report: {
         type: "object",
         label: m.template_schema_report_group(),
         properties: {
-          period_name: { type: "string", label: m.template_schema_report_period() },
-          academic_calendar: { type: "string", label: m.template_schema_academic_year() },
-          issued_date: { type: "string", label: m.template_schema_issued_date() },
-          principal_name: { type: "string", label: m.template_schema_principal_name() },
-          class_teacher: { type: "string", label: m.template_schema_class_teacher() },
-          verification_url: { type: "string", label: m.template_schema_verification_qr() },
+          period_name: {
+            type: "string",
+            label: m.template_schema_report_period(),
+          },
+          academic_calendar: {
+            type: "string",
+            label: m.template_schema_academic_year(),
+          },
+          issued_date: {
+            type: "string",
+            label: m.template_schema_issued_date(),
+          },
+          principal_name: {
+            type: "string",
+            label: m.template_schema_principal_name(),
+          },
+          class_teacher: {
+            type: "string",
+            label: m.template_schema_class_teacher(),
+          },
+          verification_url: {
+            type: "string",
+            label: m.template_schema_verification_qr(),
+          },
         },
       },
       exam: {
         type: "object",
         label: m.template_schema_exam_group(),
         properties: {
-          session_name: { type: "string", label: m.template_schema_exam_session_name() },
+          session_name: {
+            type: "string",
+            label: m.template_schema_exam_session_name(),
+          },
           hall_name: { type: "string", label: m.template_schema_exam_hall() },
-          seating_number: { type: "string", label: m.template_schema_official_seat_number() },
-          desk_number: { type: "string", label: m.template_schema_desk_number() },
-          subject_name: { type: "string", label: m.template_schema_subject_name() },
-          exam_date: { type: "string", label: m.template_schema_exam_date_time() },
-          total_count: { type: "string", label: m.template_schema_committee_student_count() },
+          seating_number: {
+            type: "string",
+            label: m.template_schema_official_seat_number(),
+          },
+          desk_number: {
+            type: "string",
+            label: m.template_schema_desk_number(),
+          },
+          subject_name: {
+            type: "string",
+            label: m.template_schema_subject_name(),
+          },
+          exam_date: {
+            type: "string",
+            label: m.template_schema_exam_date_time(),
+          },
+          total_count: {
+            type: "string",
+            label: m.template_schema_committee_student_count(),
+          },
         },
       },
       employee: {
@@ -201,7 +304,10 @@ async function initEditor() {
         properties: {
           name: { type: "string", label: m.template_schema_employee_name() },
           job_title: { type: "string", label: m.template_schema_job_title() },
-          employee_number: { type: "string", label: m.template_schema_employee_number() },
+          employee_number: {
+            type: "string",
+            label: m.template_schema_employee_number(),
+          },
           department: { type: "string", label: m.template_schema_department() },
         },
       },
@@ -211,39 +317,99 @@ async function initEditor() {
         properties: {
           number: { type: "string", label: m.template_schema_receipt_number() },
           date: { type: "string", label: m.template_schema_receipt_date() },
-          payer_name: { type: "string", label: m.template_schema_payer_recipient() },
-          student_name: { type: "string", label: m.template_schema_student_name() },
+          payer_name: {
+            type: "string",
+            label: m.template_schema_payer_recipient(),
+          },
+          student_name: {
+            type: "string",
+            label: m.template_schema_student_name(),
+          },
           amount: { type: "number", label: m.template_schema_amount_numeric() },
-          amount_words: { type: "string", label: m.template_schema_amount_words() },
-          description: { type: "string", label: m.template_schema_description() },
-          payment_method: { type: "string", label: m.template_schema_payment_method() },
-          cashier_name: { type: "string", label: m.template_schema_cashier_name() },
+          amount_words: {
+            type: "string",
+            label: m.template_schema_amount_words(),
+          },
+          description: {
+            type: "string",
+            label: m.template_schema_description(),
+          },
+          payment_method: {
+            type: "string",
+            label: m.template_schema_payment_method(),
+          },
+          cashier_name: {
+            type: "string",
+            label: m.template_schema_cashier_name(),
+          },
         },
       },
       org: {
         type: "object",
         label: m.template_schema_organization_group(),
         properties: {
-          country_name: { type: "string", label: m.template_schema_country_name() },
-          ministry_name: { type: "string", label: m.template_schema_ministry_name() },
-          region_name: { type: "string", label: m.template_schema_region_name() },
-          name_ar: { type: "string", label: m.template_schema_organization_name_ar() },
-          name: { type: "string", label: m.template_schema_organization_name_en() },
-          logo_url: { type: "string", label: m.template_schema_organization_logo() },
-          emblem_url: { type: "string", label: m.template_schema_ministry_emblem() },
+          country_name: {
+            type: "string",
+            label: m.template_schema_country_name(),
+          },
+          ministry_name: {
+            type: "string",
+            label: m.template_schema_ministry_name(),
+          },
+          region_name: {
+            type: "string",
+            label: m.template_schema_region_name(),
+          },
+          name_ar: {
+            type: "string",
+            label: m.template_schema_organization_name_ar(),
+          },
+          name: {
+            type: "string",
+            label: m.template_schema_organization_name_en(),
+          },
+          logo_url: {
+            type: "string",
+            label: m.template_schema_organization_logo(),
+          },
+          emblem_url: {
+            type: "string",
+            label: m.template_schema_ministry_emblem(),
+          },
         },
       },
       $org: {
         type: "object",
         label: m.template_schema_organization_group(),
         properties: {
-          country_name: { type: "string", label: m.template_schema_country_name() },
-          ministry_name: { type: "string", label: m.template_schema_ministry_name() },
-          region_name: { type: "string", label: m.template_schema_region_name() },
-          name_ar: { type: "string", label: m.template_schema_organization_name_ar() },
-          name: { type: "string", label: m.template_schema_organization_name_en() },
-          logo_url: { type: "string", label: m.template_schema_organization_logo() },
-          emblem_url: { type: "string", label: m.template_schema_ministry_emblem() },
+          country_name: {
+            type: "string",
+            label: m.template_schema_country_name(),
+          },
+          ministry_name: {
+            type: "string",
+            label: m.template_schema_ministry_name(),
+          },
+          region_name: {
+            type: "string",
+            label: m.template_schema_region_name(),
+          },
+          name_ar: {
+            type: "string",
+            label: m.template_schema_organization_name_ar(),
+          },
+          name: {
+            type: "string",
+            label: m.template_schema_organization_name_en(),
+          },
+          logo_url: {
+            type: "string",
+            label: m.template_schema_organization_logo(),
+          },
+          emblem_url: {
+            type: "string",
+            label: m.template_schema_ministry_emblem(),
+          },
         },
       },
     });
@@ -252,7 +418,8 @@ async function initEditor() {
     unregisterTemplateAiEditor = registerTemplateAiEditor(store);
     isLoading = false;
   } catch (e: unknown) {
-    const msg = (e as any)?.message || m.shared_ui_template_editor_initialize_failed();
+    const msg =
+      (e as any)?.message || m.shared_ui_template_editor_initialize_failed();
     toast.error(msg);
     error = msg;
     isLoading = false;
@@ -318,9 +485,7 @@ async function saveTemplate() {
     await api.updateTemplate(templateId || "", updateRequest);
 
     store.markSaved();
-    toast.success(
-      m.ui_copy_template_saved_successfully_299be978(),
-    );
+    toast.success(m.ui_copy_template_saved_successfully_299be978());
   } catch (e: unknown) {
     const msg = (e as any)?.message || m.shared_ui_template_save_failed();
     toast.error(msg);

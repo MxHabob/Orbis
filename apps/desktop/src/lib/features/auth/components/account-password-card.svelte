@@ -2,7 +2,13 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@orbis/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
 
 interface Props {

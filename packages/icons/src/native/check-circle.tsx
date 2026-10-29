@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface CheckCircleProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface CheckCircleProps extends SvgProps {
 
 export function CheckCircle({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,9 +45,14 @@ export function CheckCircle({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Circle cx={12} cy={12} r={9} />
-      <Path strokeLinecap="round" strokeLinejoin="round" d="m7.75 12.25 2.9 2.9 5.75-6.25" />
+      <Path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m7.75 12.25 2.9 2.9 5.75-6.25"
+      />
     </Svg>
   );
 }

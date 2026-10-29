@@ -20,7 +20,15 @@ pub struct OrganizationSettings {
     #[serde(default)]
     pub notifications: NotificationSettings,
     #[serde(default)]
+    pub ai: AiSettings,
+    #[serde(default)]
     pub autopilot: AutopilotSettings,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct AiSettings {
+    pub mobile_chat_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -284,5 +292,29 @@ impl Default for AutopilotSettings {
             grade_entry_auto_close_days: 7,
             allow_grade_edit_after_close: false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::OrganizationSettings;
+
+    #[test]
+    fn missing_ai_settings_default_to_mobile_chat_disabled() {
+        let settings: OrganizationSettings = serde_json::from_value(serde_json::json!({}))
+            .expect("legacy organization settings should deserialize");
+
+        assert!(!settings.ai.mobile_chat_enabled);
+    }
+
+    #[test]
+    fn mobile_chat_setting_round_trips() {
+        let settings: OrganizationSettings = serde_json::from_value(serde_json::json!({
+            "ai": { "mobile_chat_enabled": true }
+        }))
+        .expect("AI settings should deserialize");
+
+        let serialized = serde_json::to_value(settings).expect("settings should serialize");
+        assert_eq!(serialized["ai"]["mobile_chat_enabled"], true);
     }
 }

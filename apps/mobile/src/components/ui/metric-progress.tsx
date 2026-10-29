@@ -94,14 +94,17 @@ export const MetricProgress = React.memo<MetricProgressProps>(
               </View>
               <View className="flex-row flex-wrap gap-three">
                 {segments.map((segment) => (
-                  <View key={segment.label} className="flex-row items-center gap-one">
+                  <View
+                    key={segment.label}
+                    className="flex-row items-center gap-one"
+                  >
                     <View
                       className="h-1.5 w-1.5 rounded-full"
-                      style={{ backgroundColor: getToneColor(segment.tone, theme) }}
+                      style={{
+                        backgroundColor: getToneColor(segment.tone, theme),
+                      }}
                     />
-                    <Text
-                      className="text-[11px] leading-[14px] font-medium text-muted-foreground"
-                    >
+                    <Text className="text-[11px] leading-[14px] font-medium text-muted-foreground">
                       {segment.label}
                       {segment.displayValue ? ` ${segment.displayValue}` : ""}
                     </Text>

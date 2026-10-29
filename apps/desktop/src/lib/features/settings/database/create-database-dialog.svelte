@@ -18,7 +18,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@orbis/ui/dialog";
-import { ArrowPath, Database, FolderOpen, InfoCircle, Sparkles } from "@orbis/icons";
+import {
+  ArrowPath,
+  Database,
+  FolderOpen,
+  InfoCircle,
+  Sparkles,
+} from "@orbis/icons";
 import type { DatabaseManagerController } from "./database-manager.svelte";
 
 let {
@@ -55,7 +61,9 @@ async function handleCreate() {
       customDir: customDir.trim() || undefined,
       filename: filename.trim(),
     });
-    toast.success(m.ui_copy_database_created_and_initialized_successfu_6e09e55d());
+    toast.success(
+      m.ui_copy_database_created_and_initialized_successfu_6e09e55d(),
+    );
     open = false;
   } catch (e) {
     errorMessage = e instanceof Error ? e.message : String(e);

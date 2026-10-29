@@ -30,13 +30,12 @@ let {
 
 const isCurriculum = $derived(
   folder.folder_type === "curriculum" ||
-  folder.metadata?.knowledge_base === true ||
-  folder.metadata?.ai_agent_accessible === true
+    folder.metadata?.knowledge_base === true ||
+    folder.metadata?.ai_agent_accessible === true,
 );
 
 const isStudent = $derived(
-  folder.folder_type === "student" ||
-  folder.entity_type === "student"
+  folder.folder_type === "student" || folder.entity_type === "student",
 );
 
 const isSystem = $derived(folder.is_system);

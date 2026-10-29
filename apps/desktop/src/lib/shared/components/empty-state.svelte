@@ -1,23 +1,23 @@
 <script lang="ts">
-  import type { Component } from "svelte";
-  import { Sparkles } from "@orbis/icons";
-  import { Button } from "@orbis/ui/button";
+import type { Component } from "svelte";
+import { Sparkles } from "@orbis/icons";
+import { Button } from "@orbis/ui/button";
 
-  let {
-    icon: Icon = Sparkles,
-    title,
-    description = "",
-    actionLabel = "",
-    onaction = undefined,
-    class: className = "",
-  }: {
-    icon?: Component<any>;
-    title: string;
-    description?: string;
-    actionLabel?: string;
-    onaction?: () => void;
-    class?: string;
-  } = $props();
+let {
+  icon: Icon = Sparkles,
+  title,
+  description = "",
+  actionLabel = "",
+  onaction = undefined,
+  class: className = "",
+}: {
+  icon?: Component<any>;
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  onaction?: () => void;
+  class?: string;
+} = $props();
 </script>
 
 <div class="flex flex-col items-center justify-center p-8 text-center h-full min-h-50 gap-4 {className}">

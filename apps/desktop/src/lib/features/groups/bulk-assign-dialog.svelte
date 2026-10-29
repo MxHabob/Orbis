@@ -52,7 +52,10 @@ let searchQuery = $state("");
 let selectedUserIds = $state<Set<string>>(new Set());
 
 // Query all employees with accounts
-const employeesQuery = createEmployeesQuery(() => orgId, () => ({ limit: 300 }));
+const employeesQuery = createEmployeesQuery(
+  () => orgId,
+  () => ({ limit: 300 }),
+);
 const bulkAssignMutation = createBulkAssignGroupMutation();
 
 // Derived candidates (employees that have a linked user account)
@@ -65,7 +68,7 @@ const candidates = $derived(
     const uname = (e.username || "").toLowerCase();
     const empNum = (e.employee_number || "").toLowerCase();
     return name.includes(q) || uname.includes(q) || empNum.includes(q);
-  })
+  }),
 );
 
 function toggleUser(userId: string) {
@@ -99,7 +102,9 @@ async function handleAssign() {
       group_id: groupId,
       user_ids: Array.from(selectedUserIds),
     });
-    toast.success(m.ui_group_assign_users_success({ count: selectedUserIds.size }));
+    toast.success(
+      m.ui_group_assign_users_success({ count: selectedUserIds.size }),
+    );
     open = false;
     selectedUserIds = new Set();
     oncomplete?.();

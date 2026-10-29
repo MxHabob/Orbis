@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface ArrowUturnRightProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface ArrowUturnRightProps extends SvgProps {
 
 export function ArrowUturnRight({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,12 +45,13 @@ export function ArrowUturnRight({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Path
-		strokeLinecap="round"
-		strokeLinejoin="round"
-		d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"
-	/>
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m15 15 6-6m0 0-6-6m6 6H9a6 6 0 0 0 0 12h3"
+      />
     </Svg>
   );
 }

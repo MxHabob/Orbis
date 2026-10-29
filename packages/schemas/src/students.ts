@@ -76,10 +76,7 @@ export const guardianFormInputSchema = z.object({
   guardianId: z.string().trim().min(1, "يرجى اختيار ولي الأمر من القائمة"),
   fullName: z.string().trim().optional(),
   phone: z.string().trim().optional(),
-  email: z.preprocess(
-    emptyToNull,
-    z.string().trim().nullable().optional(),
-  ),
+  email: z.preprocess(emptyToNull, z.string().trim().nullable().optional()),
   nationalId: z.preprocess(
     emptyToNull,
     z.string().trim().nullable().optional(),
@@ -113,11 +110,16 @@ export const updateStudentProfileSchema = z.object({
   nationality: z.preprocess(emptyToNull, z.string().nullable().optional()),
   blood_type: z.preprocess(emptyToNull, z.string().nullable().optional()),
   medical_notes: z.preprocess(emptyToNull, z.string().nullable().optional()),
-  special_needs_notes: z.preprocess(emptyToNull, z.string().nullable().optional()),
+  special_needs_notes: z.preprocess(
+    emptyToNull,
+    z.string().nullable().optional(),
+  ),
   phone: z.preprocess(emptyToNull, z.string().nullable().optional()),
   email: z.preprocess(emptyToNull, z.string().nullable().optional()),
   address: z.preprocess(emptyToNull, z.string().nullable().optional()),
   avatar_url: z.preprocess(emptyToNull, z.string().nullable().optional()),
 });
 
-export type UpdateStudentProfileSchemaInput = z.infer<typeof updateStudentProfileSchema>;
+export type UpdateStudentProfileSchemaInput = z.infer<
+  typeof updateStudentProfileSchema
+>;

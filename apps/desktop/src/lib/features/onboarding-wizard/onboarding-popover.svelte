@@ -40,11 +40,15 @@ const onboardingStateQuery = createOnboardingStateQuery(() => orgId, false);
 
 const tasks = $derived(systemStore.onboardingTasks);
 const steps = $derived(
-  deriveSteps(tasks, (permission) => effectiveContext.hasPermission(permission)),
+  deriveSteps(tasks, (permission) =>
+    effectiveContext.hasPermission(permission),
+  ),
 );
 const progress = $derived(systemStore.onboardingProgressPercentage);
 const isReady = $derived(systemStore.isInstitutionReady);
-const completedStepsCount = $derived(steps.filter((s) => s.status === "completed").length);
+const completedStepsCount = $derived(
+  steps.filter((s) => s.status === "completed").length,
+);
 
 const nextStep = $derived(findNextIncompleteStep(steps));
 
@@ -63,7 +67,10 @@ async function handleOpenChange(open: boolean) {
         systemStore.onboardingState = result.data;
       }
     } catch (error) {
-      console.error("Failed to load onboarding state for the progress menu:", error);
+      console.error(
+        "Failed to load onboarding state for the progress menu:",
+        error,
+      );
       systemStore.onboardingState = null;
       onboardingLoadError = true;
     } finally {

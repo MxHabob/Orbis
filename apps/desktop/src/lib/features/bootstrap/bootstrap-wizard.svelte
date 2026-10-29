@@ -12,10 +12,7 @@ import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { createMutation } from "@tanstack/svelte-query";
 import { api } from "$lib/api/client";
-import type {
-  BootstrapRequest,
-  BootstrapResult,
-} from "$lib/api/types";
+import type { BootstrapRequest, BootstrapResult } from "$lib/api/types";
 import { authStore, licenseStore } from "$lib/stores";
 import { LoadingIndicator, toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
@@ -47,14 +44,17 @@ import {
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
 
 let currentStep = $state<OnboardingStep>("intro");
-const form = untrack(() => new FormController<OnboardingFormModel>({
-  initialValues: {
-    ...INITIAL_ONBOARDING_VALUES,
-    locale: getLocale().startsWith("ar") ? "ar-SA" : "en-US",
-  },
-  schema: bootstrapFormSchema,
-  normalize: normalizeBootstrapForm,
-}));
+const form = untrack(
+  () =>
+    new FormController<OnboardingFormModel>({
+      initialValues: {
+        ...INITIAL_ONBOARDING_VALUES,
+        locale: getLocale().startsWith("ar") ? "ar-SA" : "en-US",
+      },
+      schema: bootstrapFormSchema,
+      normalize: normalizeBootstrapForm,
+    }),
+);
 let errors = $state<Record<string, string>>({});
 const bootstrapMutation = createMutation(() => ({
   mutationFn: (request: BootstrapRequest) => api.bootstrapOrganization(request),
@@ -138,21 +138,25 @@ function localizeValidationErrors(
   validationErrors: Partial<Record<string, string>>,
 ): Record<string, string> {
   const messages: Record<BootstrapValidationCode, () => string> = {
-    organizationNameRequired: () => m.ui_onboarding_bootstrap_organization_name_in_english_is_required(),
-    adminFirstNameRequired: () => m.ui_onboarding_bootstrap_first_name_is_required(),
-    adminLastNameRequired: () => m.ui_onboarding_bootstrap_last_name_is_required(),
-    adminEmailRequired: () => m.ui_onboarding_bootstrap_email_address_is_required(),
+    organizationNameRequired: () =>
+      m.ui_onboarding_bootstrap_organization_name_in_english_is_required(),
+    adminFirstNameRequired: () =>
+      m.ui_onboarding_bootstrap_first_name_is_required(),
+    adminLastNameRequired: () =>
+      m.ui_onboarding_bootstrap_last_name_is_required(),
+    adminEmailRequired: () =>
+      m.ui_onboarding_bootstrap_email_address_is_required(),
     adminEmailInvalid: () => m.ui_onboarding_bootstrap_invalid_email_format(),
-    adminPasswordRequired: () => m.ui_onboarding_bootstrap_password_is_required(),
+    adminPasswordRequired: () =>
+      m.ui_onboarding_bootstrap_password_is_required(),
     adminPasswordTooShort: () =>
       m.ui_onboarding_bootstrap_password_min_length(),
     adminPasswordMismatch: () => m.setup_bootstrap_err_password_mismatch(),
     timezoneRequired: () => m.ui_onboarding_bootstrap_timezone_is_required(),
     localeRequired: () => m.ui_onboarding_bootstrap_locale_is_required(),
   };
-  const isValidationCode = (
-    code: string,
-  ): code is BootstrapValidationCode => Object.hasOwn(messages, code);
+  const isValidationCode = (code: string): code is BootstrapValidationCode =>
+    Object.hasOwn(messages, code);
 
   return Object.fromEntries(
     Object.entries(validationErrors).map(([field, code]) => {
@@ -231,7 +235,10 @@ async function handleLaunchBootstrap() {
     bootstrapResult = result;
 
     try {
-      await authStore.login(payload.adminEmail.toLowerCase(), payload.adminPassword);
+      await authStore.login(
+        payload.adminEmail.toLowerCase(),
+        payload.adminPassword,
+      );
     } catch (authErr) {
       postBootstrapError = extractErrorMessage(authErr);
       toast.error(postBootstrapError);
@@ -295,8 +302,8 @@ async function startTrialFromBootstrap(): Promise<boolean> {
   return Boolean(await licenseStore.startTrial());
 }
 
-async function redeemKeyFromBootstrap(productKey: string): Promise<boolean> {
-  return Boolean(await licenseStore.redeemKey(productKey));
+async function activateKeyFromBootstrap(productKey: string): Promise<boolean> {
+  return Boolean(await licenseStore.activateKey(productKey));
 }
 
 function finishMfaEnrollment() {
@@ -350,7 +357,7 @@ function deferMfaEnrollment() {
       onLaunch={handleLaunchBootstrap}
       onEnterWorkspace={enterWorkspace}
       onStartTrial={startTrialFromBootstrap}
-      onRedeemKey={redeemKeyFromBootstrap}
+      onActivateKey={activateKeyFromBootstrap}
     />
   {/if}
 

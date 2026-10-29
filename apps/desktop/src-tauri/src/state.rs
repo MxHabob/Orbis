@@ -119,6 +119,10 @@ pub struct AppState {
     pub file_storage_service: Arc<orbis_app::services::FileStorageService>,
     pub storage_resolver: Arc<orbis_infra::adapters::storage::StorageResolver>,
     pub notification_adapter: Arc<orbis_infra::adapters::notification::NotificationAdapter>,
+    pub notification_repo: Arc<dyn orbis_app::ports::repositories::NotificationRepository>,
+    pub notification_pref_repo:
+        Arc<dyn orbis_app::ports::repositories::NotificationPreferenceRepository>,
+    pub notification_service: Arc<orbis_app::services::NotificationService>,
     pub integration_service: Arc<orbis_app::services::IntegrationService>,
     pub workflow_service: Arc<orbis_app::services::WorkflowService>,
     pub report_service: Arc<orbis_app::services::ReportService>,
@@ -282,9 +286,7 @@ impl AppState {
             orbis_infra::autopilot::task_repo::PgAutopilotTaskRepo::new(db.clone()),
         );
 
-        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus {
-            workflow_engine: None,
-        });
+        let event_bus = Arc::new(orbis_infra::event_bus::MemoryEventBus::new());
         // Generate or load a per-installation JWT secret.
         // Stored as a file in AppData — never hardcoded.
         let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
@@ -525,6 +527,21 @@ impl AppState {
             report_org_context_resolver.clone(),
         ));
 
+        let notification_repo = Arc::new(
+            orbis_infra::repositories::notification_repos::NotificationRepoImpl { db: db.clone() },
+        );
+        let notification_pref_repo = Arc::new(
+            orbis_infra::repositories::notification_repos::NotificationPreferenceRepoImpl {
+                db: db.clone(),
+            },
+        );
+        let notification_service = Arc::new(orbis_app::services::NotificationService::new(
+            notification_repo.clone(),
+            notification_pref_repo.clone(),
+            permission_checker.clone(),
+        ));
+        event_bus.set_notification_service(notification_service.clone());
+
         let autopilot_engine = Arc::new(orbis_app::autopilot::engine::AutopilotEngine::new(
             policy_repo.clone(),
             autopilot_task_repo.clone(),
@@ -746,6 +763,9 @@ impl AppState {
             file_storage_service,
             storage_resolver,
             notification_adapter,
+            notification_repo,
+            notification_pref_repo,
+            notification_service,
             integration_service,
             workflow_service,
             report_service,

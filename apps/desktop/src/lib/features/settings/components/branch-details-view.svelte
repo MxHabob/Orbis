@@ -21,12 +21,7 @@ import { Badge } from "@orbis/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@orbis/ui/tabs";
 import { toast } from "@orbis/ui";
-import {
-  ArrowRight,
-  Pencil,
-  Refresh,
-  Plus,
-} from "@orbis/icons";
+import { ArrowRight, Pencil, Refresh, Plus } from "@orbis/icons";
 import { OrbisGrid, type OrbisColumnDef } from "@orbis/svelte-grid";
 import { isAr, formatDate, formatNumber } from "$lib/core/i18n";
 import OrgUnitSheet from "$lib/features/academics/components/org-unit-sheet.svelte";
@@ -54,7 +49,9 @@ let isLoading = $state(true);
 let isRefreshing = $state(false);
 
 // Active Tab
-let activeTab = $state<"overview" | "classes" | "rooms" | "subunits" | "staff">("overview");
+let activeTab = $state<"overview" | "classes" | "rooms" | "subunits" | "staff">(
+  "overview",
+);
 
 // Sheets
 let isSubUnitSheetOpen = $state(false);
@@ -64,17 +61,18 @@ let isRoomSheetOpen = $state(false);
 async function loadBranchData() {
   isLoading = true;
   try {
-    const [classesRes, roomsRes, empRes, unitsRes, usersRes] = await Promise.all([
-      api.listSections().catch(() => []),
-      api.listRooms().catch(() => []),
-      api.listEmployees().catch(() => []),
-      api.listOrgUnits().catch(() => []),
-      api.listUsers().catch(() => []),
-    ]);
+    const [classesRes, roomsRes, empRes, unitsRes, usersRes] =
+      await Promise.all([
+        api.listSections().catch(() => []),
+        api.listRooms().catch(() => []),
+        api.listEmployees().catch(() => []),
+        api.listOrgUnits().catch(() => []),
+        api.listUsers().catch(() => []),
+      ]);
 
     // Sub-units belonging to this branch
     allUnits = Array.isArray(unitsRes) ? unitsRes : [];
-    
+
     // Find all unit IDs within this branch hierarchy
     const branchUnitIds = new Set<string>([branch.id]);
     for (const u of allUnits) {
@@ -84,13 +82,15 @@ async function loadBranchData() {
     }
 
     // Filter classes belonging to this branch or its stages
-    classes = (Array.isArray(classesRes) ? classesRes : []).filter(
-      (c) => branchUnitIds.has(c.unit_id)
+    classes = (Array.isArray(classesRes) ? classesRes : []).filter((c) =>
+      branchUnitIds.has(c.unit_id),
     );
 
     // Filter rooms belonging to this branch
     rooms = (Array.isArray(roomsRes) ? roomsRes : []).filter(
-      (r) => r.org_unit_id === branch.id || (r.building && r.building === branch.building)
+      (r) =>
+        r.org_unit_id === branch.id ||
+        (r.building && r.building === branch.building),
     );
 
     // Filter employees assigned to this branch
@@ -125,12 +125,16 @@ async function refresh() {
 
 // Child sub-units
 const childSubUnits = $derived(
-  allUnits.filter((u) => u.id !== branch.id && (u.parent_id === branch.id || (u.path && u.path.includes(branch.id))))
+  allUnits.filter(
+    (u) =>
+      u.id !== branch.id &&
+      (u.parent_id === branch.id || (u.path && u.path.includes(branch.id))),
+  ),
 );
 
 // Derived Telemetry
 const totalStudentsCount = $derived(
-  classes.reduce((sum, c) => sum + (c.current_students || 0), 0)
+  classes.reduce((sum, c) => sum + (c.current_students || 0), 0),
 );
 
 const branchSettings = $derived(() => {
@@ -141,13 +145,80 @@ const branchSettings = $derived(() => {
 
 // Grid Definitions for Classes Tab
 const classColumns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center", pin: "left" },
-  { id: "name", prop: "name", header: m.ui_copy_class_name_d6838016(), name: "Class Name", width: 200, size: 200, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
-  { id: "level", prop: "level", header: m.ui_copy_grade_level_75f9548e(), name: "Grade Level", width: 140, size: 140, readonly: true },
-  { id: "division", prop: "division", header: m.ui_copy_division_57edc3a3(), name: "Division", width: 100, size: 100, readonly: true, align: "center" },
-  { id: "students", prop: "students", header: m.ui_copy_enrolled_0d835d63(), name: "Enrolled", width: 120, size: 120, readonly: true, align: "center", type: "number" },
-  { id: "capacity", prop: "capacity", header: m.settings_units_column_capacity(), name: "Capacity", width: 100, size: 100, readonly: true, align: "center", type: "number" },
-  { id: "status", prop: "status", header: m.common_status(), name: "Status", width: 100, size: 100, readonly: true, align: "center", type: "badge" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+    pin: "left",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.ui_copy_class_name_d6838016(),
+    name: "Class Name",
+    width: 200,
+    size: 200,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "level",
+    prop: "level",
+    header: m.ui_copy_grade_level_75f9548e(),
+    name: "Grade Level",
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "division",
+    prop: "division",
+    header: m.ui_copy_division_57edc3a3(),
+    name: "Division",
+    width: 100,
+    size: 100,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "students",
+    prop: "students",
+    header: m.ui_copy_enrolled_0d835d63(),
+    name: "Enrolled",
+    width: 120,
+    size: 120,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "capacity",
+    prop: "capacity",
+    header: m.settings_units_column_capacity(),
+    name: "Capacity",
+    width: 100,
+    size: 100,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_status(),
+    name: "Status",
+    width: 100,
+    size: 100,
+    readonly: true,
+    align: "center",
+    type: "badge",
+  },
 ];
 
 const classGridSource = $derived(
@@ -160,17 +231,72 @@ const classGridSource = $derived(
     students: c.current_students ?? 0,
     capacity: c.capacity ?? "—",
     status: c.is_active ? "active" : "inactive",
-  }))
+  })),
 );
 
 // Grid Definitions for Rooms Tab
 const roomColumns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center", pin: "left" },
-  { id: "name", prop: "name", header: m.ui_copy_room_name_f2cc6a9e(), name: "Room Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
-  { id: "room_type", prop: "room_type", header: m.ui_copy_room_type_1a8fbda3(), name: "Room Type", width: 140, size: 140, readonly: true },
-  { id: "capacity", prop: "capacity", header: m.settings_units_column_capacity(), name: "Capacity", width: 110, size: 110, readonly: true, align: "center", type: "number" },
-  { id: "building", prop: "building", header: m.common_rooms_label_building(), name: "Building", width: 140, size: 140, readonly: true },
-  { id: "floor", prop: "floor", header: m.common_rooms_label_floor(), name: "Floor", width: 90, size: 90, readonly: true, align: "center" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+    pin: "left",
+  },
+  {
+    id: "name",
+    prop: "name",
+    header: m.ui_copy_room_name_f2cc6a9e(),
+    name: "Room Name",
+    width: 220,
+    size: 220,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "room_type",
+    prop: "room_type",
+    header: m.ui_copy_room_type_1a8fbda3(),
+    name: "Room Type",
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "capacity",
+    prop: "capacity",
+    header: m.settings_units_column_capacity(),
+    name: "Capacity",
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+    type: "number",
+  },
+  {
+    id: "building",
+    prop: "building",
+    header: m.common_rooms_label_building(),
+    name: "Building",
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "floor",
+    prop: "floor",
+    header: m.common_rooms_label_floor(),
+    name: "Floor",
+    width: 90,
+    size: 90,
+    readonly: true,
+    align: "center",
+  },
 ];
 
 const roomGridSource = $derived(
@@ -181,30 +307,93 @@ const roomGridSource = $derived(
     room_type: r.room_type || "—",
     capacity: r.capacity ?? "—",
     building: r.building || branch.building || "—",
-    floor: r.floor !== null && r.floor !== undefined ? String(r.floor) : branch.floor ? String(branch.floor) : "—",
-  }))
+    floor:
+      r.floor !== null && r.floor !== undefined
+        ? String(r.floor)
+        : branch.floor
+          ? String(branch.floor)
+          : "—",
+  })),
 );
 
 // Grid Definitions for Staff Tab
 const staffColumns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center", pin: "left" },
-  { id: "fullName", prop: "fullName", header: m.common_col_name(), name: "Name", width: 220, size: 220, readonly: true, pin: "left", cellClass: "font-semibold text-foreground" },
-  { id: "empNumber", prop: "empNumber", header: m.ui_copy_employee_da995e19(), name: "Employee #", width: 130, size: 130, readonly: true, cellClass: "font-mono text-xs" },
-  { id: "jobTitle", prop: "jobTitle", header: m.employees_job_title(), name: "Job Title", width: 180, size: 180, readonly: true },
-  { id: "empType", prop: "empType", header: m.common_word_type(), name: "Type", width: 130, size: 130, readonly: true, align: "center" },
-  { id: "phone", prop: "phone", header: m.ui_copy_phone_f2f307cb(), name: "Phone", width: 140, size: 140, readonly: true, cellClass: "font-mono text-xs" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+    pin: "left",
+  },
+  {
+    id: "fullName",
+    prop: "fullName",
+    header: m.common_col_name(),
+    name: "Name",
+    width: 220,
+    size: 220,
+    readonly: true,
+    pin: "left",
+    cellClass: "font-semibold text-foreground",
+  },
+  {
+    id: "empNumber",
+    prop: "empNumber",
+    header: m.ui_copy_employee_da995e19(),
+    name: "Employee #",
+    width: 130,
+    size: 130,
+    readonly: true,
+    cellClass: "font-mono text-xs",
+  },
+  {
+    id: "jobTitle",
+    prop: "jobTitle",
+    header: m.employees_job_title(),
+    name: "Job Title",
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "empType",
+    prop: "empType",
+    header: m.common_word_type(),
+    name: "Type",
+    width: 130,
+    size: 130,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "phone",
+    prop: "phone",
+    header: m.ui_copy_phone_f2f307cb(),
+    name: "Phone",
+    width: 140,
+    size: 140,
+    readonly: true,
+    cellClass: "font-mono text-xs",
+  },
 ];
 
 const staffGridSource = $derived(
   employees.map((e, i) => ({
     ...e,
     __idx: i + 1,
-    fullName: [e.first_name_ar || e.first_name, e.last_name_ar || e.last_name].filter(Boolean).join(" ") || "—",
+    fullName:
+      [e.first_name_ar || e.first_name, e.last_name_ar || e.last_name]
+        .filter(Boolean)
+        .join(" ") || "—",
     empNumber: e.employee_number || "—",
     jobTitle: e.job_title || "—",
     empType: e.employment_type || "—",
     phone: e.phone || "—",
-  }))
+  })),
 );
 </script>
 

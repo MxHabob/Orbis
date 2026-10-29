@@ -5,7 +5,7 @@
   search, CSV export, slide-over EmployeeSheet, and unified account lifecycle actions.
 -->
 <script lang="ts">
-  import { Skeleton } from "@orbis/ui/skeleton";
+import { Skeleton } from "@orbis/ui/skeleton";
 import { LoadingIndicator } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import MainViewport from "$lib/shell/main-viewport.svelte";
@@ -65,7 +65,10 @@ let sheetOpen = $state(false);
 let sheetMode = $state<"preview" | "create" | "edit">("create");
 let selectedEmployee = $state<EmployeeDetailDto | null>(null);
 
-function openEmployeeSheet(emp: EmployeeDetailDto | null, mode: "preview" | "create" | "edit") {
+function openEmployeeSheet(
+  emp: EmployeeDetailDto | null,
+  mode: "preview" | "create" | "edit",
+) {
   selectedEmployee = emp;
   sheetMode = mode;
   sheetOpen = true;
@@ -80,7 +83,10 @@ const filterInput = $derived({
 
 // Queries
 const employeesQuery = createInfiniteQuery(() => ({
-  queryKey: queryKeys.employee.list(orgId, filterInput as Record<string, unknown>),
+  queryKey: queryKeys.employee.list(
+    orgId,
+    filterInput as Record<string, unknown>,
+  ),
   queryFn: ({ pageParam }) =>
     api.listEmployees({ ...filterInput, page: pageParam, page_size: 50 }),
   initialPageParam: 1,
@@ -103,7 +109,15 @@ async function loadMoreEmployees() {
   const result = await employeesQuery.fetchNextPage();
   if (result.isError) throw result.error;
 }
-const stats = $derived(statsQuery.data ?? { total: 0, active: 0, on_leave: 0, suspended: 0, terminated: 0 });
+const stats = $derived(
+  statsQuery.data ?? {
+    total: 0,
+    active: 0,
+    on_leave: 0,
+    suspended: 0,
+    terminated: 0,
+  },
+);
 const isLoading = $derived(employeesQuery.isLoading || statsQuery.isLoading);
 const error = $derived(
   (employeesQuery.data?.pages.length ? undefined : employeesQuery.error) ||
@@ -132,7 +146,7 @@ function clearFilters() {
 }
 
 const hasActiveFilters = $derived(
-  searchQuery !== "" || statusFilter !== "all" || typeFilter !== "all"
+  searchQuery !== "" || statusFilter !== "all" || typeFilter !== "all",
 );
 
 function toggleSelect(id: string) {
@@ -146,7 +160,10 @@ function toggleSelect(id: string) {
 }
 
 // Status Change Handler via Global confirmStore
-async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) {
+async function promptStatusChange(
+  emp: EmployeeDetailDto,
+  targetStatus: string,
+) {
   const confirmed = await confirmStore.prompt({
     title: m.ui_copy_confirm_status_change_7af3a189(),
     description: m.operations_ui_employee_status_change_confirm({
@@ -154,7 +171,10 @@ async function promptStatusChange(emp: EmployeeDetailDto, targetStatus: string) 
       status: getStatusLabel(targetStatus),
     }),
     confirmText: m.ui_copy_confirm_change_6cd511d4(),
-    variant: targetStatus === "suspended" || targetStatus === "terminated" ? "destructive" : "default",
+    variant:
+      targetStatus === "suspended" || targetStatus === "terminated"
+        ? "destructive"
+        : "default",
   });
 
   if (!confirmed) return;
@@ -196,7 +216,6 @@ async function promptDelete(emp: EmployeeDetailDto) {
   }
 }
 
-
 // Export CSV Handler
 async function handleExport() {
   try {
@@ -220,23 +239,50 @@ async function handleExport() {
       }
     }
 
-    const openFile = exportToCsv(
-      `Employees_Roster_${orgId}`,
-      dataset,
-      [
-        { header: m.operations_ui_employee_number(), accessor: (e) => e.employee_number || "—" },
-        { header: m.operations_ui_full_name(), accessor: (e) => e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}` },
-        { header: m.operations_ui_national_id(), accessor: (e) => e.national_id || "—" },
-        { header: m.operations_ui_job_title(), accessor: (e) => e.job_title || "—" },
-        { header: m.operations_ui_department(), accessor: (e) => e.department || "—" },
-        { header: m.operations_ui_employee_category(), accessor: (e) => e.employee_type || "—" },
-        { header: m.operations_ui_status(), accessor: (e) => e.status || "active" },
-        { header: m.operations_ui_user_account(), accessor: (e) => e.username || m.operations_ui_not_linked() },
-        { header: m.operations_ui_hire_date(), accessor: (e) => e.hire_date ? formatDate(e.hire_date, "date") : "—" },
-        { header: m.operations_ui_phone_number(), accessor: (e) => e.phone || "—" },
-        { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
-      ]
-    );
+    const openFile = exportToCsv(`Employees_Roster_${orgId}`, dataset, [
+      {
+        header: m.operations_ui_employee_number(),
+        accessor: (e) => e.employee_number || "—",
+      },
+      {
+        header: m.operations_ui_full_name(),
+        accessor: (e) =>
+          e.full_name || e.full_name_ar || `${e.first_name} ${e.last_name}`,
+      },
+      {
+        header: m.operations_ui_national_id(),
+        accessor: (e) => e.national_id || "—",
+      },
+      {
+        header: m.operations_ui_job_title(),
+        accessor: (e) => e.job_title || "—",
+      },
+      {
+        header: m.operations_ui_department(),
+        accessor: (e) => e.department || "—",
+      },
+      {
+        header: m.operations_ui_employee_category(),
+        accessor: (e) => e.employee_type || "—",
+      },
+      {
+        header: m.operations_ui_status(),
+        accessor: (e) => e.status || "active",
+      },
+      {
+        header: m.operations_ui_user_account(),
+        accessor: (e) => e.username || m.operations_ui_not_linked(),
+      },
+      {
+        header: m.operations_ui_hire_date(),
+        accessor: (e) => (e.hire_date ? formatDate(e.hire_date, "date") : "—"),
+      },
+      {
+        header: m.operations_ui_phone_number(),
+        accessor: (e) => e.phone || "—",
+      },
+      { header: m.operations_ui_email(), accessor: (e) => e.email || "—" },
+    ]);
     toast.success(m.operations_ui_employee_export_success(), {
       action: openFile ? createShowInFolderToastAction(openFile) : undefined,
     });
@@ -279,31 +325,63 @@ function getTypeLabel(t: string): string {
 // ── OrbisGrid Actions & Columns (Icon-Only Pure Icons) ─────────────────
 const employeeActions: ActionItem[] = [
   { id: "preview", label: m.ui_copy_view_dossier_ca7e9625(), icon: "Eye" },
-  { id: "edit", label: m.ui_copy_edit_details_bb482293(), icon: "PencilSquare" },
-  { id: "set_active", label: m.ui_copy_set_active_7c3b569e(), icon: "CheckCircle" },
-  { id: "set_on_leave", label: m.ui_copy_set_on_leave_4946e4f1(), icon: "BuildingOffice" },
-  { id: "set_suspended", label: m.ui_copy_suspend_50430438(), icon: "ShieldCheck", variant: "destructive" },
-  { id: "delete", label: m.ui_copy_delete_employee_ef02f4a9(), icon: "Trash", variant: "destructive" },
+  {
+    id: "edit",
+    label: m.ui_copy_edit_details_bb482293(),
+    icon: "PencilSquare",
+  },
+  {
+    id: "set_active",
+    label: m.ui_copy_set_active_7c3b569e(),
+    icon: "CheckCircle",
+  },
+  {
+    id: "set_on_leave",
+    label: m.ui_copy_set_on_leave_4946e4f1(),
+    icon: "BuildingOffice",
+  },
+  {
+    id: "set_suspended",
+    label: m.ui_copy_suspend_50430438(),
+    icon: "ShieldCheck",
+    variant: "destructive",
+  },
+  {
+    id: "delete",
+    label: m.ui_copy_delete_employee_ef02f4a9(),
+    icon: "Trash",
+    variant: "destructive",
+  },
 ];
 
 const gridSource = $derived(
   employees.map((emp, i) => {
-    const fullName = emp.full_name || emp.full_name_ar || `${emp.first_name} ${emp.last_name}`;
+    const fullName =
+      emp.full_name || emp.full_name_ar || `${emp.first_name} ${emp.last_name}`;
     const isSelected = selectedIds.has(emp.id);
     return {
       ...emp,
       __idx: i + 1,
       __selected: isSelected,
       full_name: fullName,
-      job_dept: emp.department || emp.org_unit_name ? `${emp.job_title || ''} • ${emp.department || emp.org_unit_name || ''}` : (emp.job_title || "—"),
+      job_dept:
+        emp.department || emp.org_unit_name
+          ? `${emp.job_title || ""} • ${emp.department || emp.org_unit_name || ""}`
+          : emp.job_title || "—",
       type_display: getTypeLabel(emp.employee_type),
       status_display: getStatusLabel(emp.status),
       account_display: emp.username || m.ui_copy_not_linked_798eb72b(),
-      hire_date_display: emp.hire_date ? formatDate(emp.hire_date, "date") : "—",
-      created_at_display: emp.created_at ? formatDate(emp.created_at, "datetime") : "—",
-      updated_at_display: emp.updated_at ? formatDate(emp.updated_at, "datetime") : "—",
+      hire_date_display: emp.hire_date
+        ? formatDate(emp.hire_date, "date")
+        : "—",
+      created_at_display: emp.created_at
+        ? formatDate(emp.created_at, "datetime")
+        : "—",
+      updated_at_display: emp.updated_at
+        ? formatDate(emp.updated_at, "datetime")
+        : "—",
     };
-  })
+  }),
 );
 
 const columns = $derived.by<OrbisColumnDef[]>(() => [
@@ -442,7 +520,11 @@ function handleGridAction(event: GridActionEvent) {
 
   if (event.actionId === "toggle-select" || event.actionId === "select") {
     toggleSelect(emp.id);
-  } else if (event.actionId === "preview" || event.actionId === "dblclick" || event.actionId === "profile") {
+  } else if (
+    event.actionId === "preview" ||
+    event.actionId === "dblclick" ||
+    event.actionId === "profile"
+  ) {
     openEmployeeSheet(emp, "preview");
   } else if (event.actionId === "edit") {
     openEmployeeSheet(emp, "edit");
@@ -456,7 +538,6 @@ function handleGridAction(event: GridActionEvent) {
     promptDelete(emp);
   }
 }
-
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background">

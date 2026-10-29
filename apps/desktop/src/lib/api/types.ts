@@ -28,6 +28,9 @@ import type {
   UserDto,
   RoleDto,
   SaveRoleRequest,
+  NotificationDto,
+  NotificationPreferenceDto,
+  NotificationPreferenceResponseDto,
   PermissionRuleDto,
   OrgDto,
   UpdateOrgRequest,
@@ -200,7 +203,6 @@ export interface ApiResponse<T> {
   data: T;
   requestId?: string;
 }
-
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -747,7 +749,6 @@ export interface PromoteCohortInput {
   jobName?: string;
 }
 
-
 export interface AuditLogDto {
   id: string;
   org_id?: string;
@@ -771,8 +772,8 @@ export interface IntegrationStatusResponse {
 
 export interface MulverseConnectionDto {
   connected: boolean;
-  organization_id: string | null;
-  product_organization_id: string | null;
+  customer_id: string | null;
+  application_customer_id: string | null;
 }
 
 export interface MulverseDeploymentDto {
@@ -890,7 +891,14 @@ export interface RemoteHealthResult {
 
 export interface DatabaseStatusDto {
   mode: "local" | "direct" | "api" | "remote";
-  state: "connected" | "disconnected" | "connecting" | "migration_required" | "warning" | "error" | "not_found";
+  state:
+    | "connected"
+    | "disconnected"
+    | "connecting"
+    | "migration_required"
+    | "warning"
+    | "error"
+    | "not_found";
   database_name: string;
   connection_target: string;
   file_size_bytes?: number;
@@ -980,7 +988,11 @@ export interface HealthResponse {
   schema_version: string;
 }
 
-export type OrgLifecycleState = "empty" | "core_ready" | "ready_with_setup" | "operational";
+export type OrgLifecycleState =
+  | "empty"
+  | "core_ready"
+  | "ready_with_setup"
+  | "operational";
 
 export interface SetupItem {
   key: string;
@@ -1431,18 +1443,22 @@ export interface TimeSlotSummaryDto {
   break_type?: string;
 }
 
-export type RoundingMode = 'round_half_up' | 'round_up' | 'round_down' | 'truncate';
-export type RankingScope = 'class' | 'grade_level' | 'org_unit' | 'cohort';
-export type TiePolicy = 'standard_competition' | 'dense' | 'fractional';
+export type RoundingMode =
+  | "round_half_up"
+  | "round_up"
+  | "round_down"
+  | "truncate";
+export type RankingScope = "class" | "grade_level" | "org_unit" | "cohort";
+export type TiePolicy = "standard_competition" | "dense" | "fractional";
 export type AcademicStatus =
-  | 'passed'
-  | 'passed_with_honors'
-  | 'conditional_pass'
-  | 'failed'
-  | 'incomplete'
-  | 'absent'
-  | 'probation'
-  | 'withdrawn';
+  | "passed"
+  | "passed_with_honors"
+  | "conditional_pass"
+  | "failed"
+  | "incomplete"
+  | "absent"
+  | "probation"
+  | "withdrawn";
 
 export interface ComponentScore {
   code: string;
@@ -1602,7 +1618,11 @@ export type CalculationExpression =
       left?: CalculationExpression | null;
       right?: CalculationExpression | null;
     }
-  | { type: "subtract" | "divide"; left: CalculationExpression; right: CalculationExpression }
+  | {
+      type: "subtract" | "divide";
+      left: CalculationExpression;
+      right: CalculationExpression;
+    }
   | { type: "max" | "min" | "average"; operands: CalculationExpression[] }
   | {
       type: "weighted_sum";
@@ -1780,7 +1800,9 @@ export interface OrbisApiClient {
 
   // ── IAM ─────────────────────────────────────────────────────
   registerUser(req: RegisterUserRequest): Promise<UserDto>;
-  provisionUser(req: ProvisionUserRequest): Promise<AccountProvisioningResultDto>;
+  provisionUser(
+    req: ProvisionUserRequest,
+  ): Promise<AccountProvisioningResultDto>;
   listUsers(): Promise<UserDto[]>;
   getUser(id: string): Promise<UserDto>;
   updateUser(id: string, req: UpdateUserRequest): Promise<UserDto>;
@@ -1810,7 +1832,10 @@ export interface OrbisApiClient {
 
   // ── Calendar ────────────────────────────────────────────────
   createacademicCalendar(req: CreateYearRequest): Promise<AcademicCalendarDto>;
-  updateacademicCalendar(id: string, req: UpdateYearRequest): Promise<AcademicCalendarDto>;
+  updateacademicCalendar(
+    id: string,
+    req: UpdateYearRequest,
+  ): Promise<AcademicCalendarDto>;
   listacademicCalendars(): Promise<AcademicCalendarDto[]>;
   getAcademicContext(): Promise<AcademicContextResponse>;
   getacademicCalendar(id: string): Promise<AcademicCalendarDto>;
@@ -1819,7 +1844,10 @@ export interface OrbisApiClient {
   archiveacademicCalendar(id: string): Promise<AcademicCalendarDto>;
   deleteacademicCalendar(id: string): Promise<boolean>;
   createAcademicPeriod(req: CreatePeriodRequest): Promise<AcademicPeriodDto>;
-  updateAcademicPeriod(id: string, req: UpdatePeriodRequest): Promise<AcademicPeriodDto>;
+  updateAcademicPeriod(
+    id: string,
+    req: UpdatePeriodRequest,
+  ): Promise<AcademicPeriodDto>;
   deleteAcademicPeriod(id: string): Promise<boolean>;
   listAcademicPeriods(): Promise<AcademicPeriodDto[]>;
   getAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
@@ -1828,7 +1856,10 @@ export interface OrbisApiClient {
   closeAcademicPeriod(id: string): Promise<AcademicPeriodDto>;
   listPeriodTypes(): Promise<PeriodTypeDto[]>;
   listOfficialCalendarTemplates(): Promise<OfficialCalendarTemplateDto[]>;
-  applyCalendarTemplate(yearId: string, req: ApplyCalendarTemplateRequest): Promise<AcademicPeriodDto[]>;
+  applyCalendarTemplate(
+    yearId: string,
+    req: ApplyCalendarTemplateRequest,
+  ): Promise<AcademicPeriodDto[]>;
   getCalendarDefaults(orgId?: string): Promise<CalendarDefaultsDto>;
 
   // ── Academic ────────────────────────────────────────────────
@@ -1840,7 +1871,9 @@ export interface OrbisApiClient {
   updateSection(id: string, req: UpdateSectionRequest): Promise<SectionDto>;
   listSections(): Promise<SectionDto[]>;
   getSection(id: string): Promise<SectionDto>;
-  assignSectionSubject(req: AssignSectionSubjectRequest): Promise<SectionSubjectDto>;
+  assignSectionSubject(
+    req: AssignSectionSubjectRequest,
+  ): Promise<SectionSubjectDto>;
   getSectionSubject(id: string): Promise<SectionSubjectDto>;
   updateSectionSubject(
     id: string,
@@ -1858,10 +1891,14 @@ export interface OrbisApiClient {
   // ── Student ─────────────────────────────────────────────────
   registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto>;
   checkDuplicate(req: DuplicateCheckRequest): Promise<DuplicateCheckResponse>;
-  listStudents(filter?: StudentFilterParams): Promise<PaginatedList<StudentDetailDto>>;
+  listStudents(
+    filter?: StudentFilterParams,
+  ): Promise<PaginatedList<StudentDetailDto>>;
   getStudent(id: string): Promise<StudentDetailDto>;
   updateStudentStatus(req: UpdateStudentStatusInput): Promise<StudentDto>;
-  updateStudentProfile(req: UpdateStudentProfileInput): Promise<StudentDetailDto>;
+  updateStudentProfile(
+    req: UpdateStudentProfileInput,
+  ): Promise<StudentDetailDto>;
   deleteStudent(id: string): Promise<boolean>;
   restoreStudent(id: string): Promise<StudentDto>;
   changeStudyMode(req: ChangeStudyModeInput): Promise<EnrollmentDto>;
@@ -1872,20 +1909,34 @@ export interface OrbisApiClient {
   assignGuardian(req: AssignGuardianRequest): Promise<GuardianDto>;
   listGuardians(studentId: string): Promise<GuardianDto[]>;
   removeGuardian(studentId: string, guardianId: string): Promise<boolean>;
-  bulkRegisterStudents(items: BulkRegisterStudentCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterStudentCommandResultDto>;
+  bulkRegisterStudents(
+    items: BulkRegisterStudentCommandItem[],
+    options?: { atomic?: boolean; dryRun?: boolean },
+  ): Promise<BulkRegisterStudentCommandResultDto>;
 
   // ── Employee Affairs ────────────────────────────────────────
-  registerEmployee(req: RegisterEmployeeRequest): Promise<RegisterEmployeeResponseDto>;
+  registerEmployee(
+    req: RegisterEmployeeRequest,
+  ): Promise<RegisterEmployeeResponseDto>;
   listEmployees(filter?: EmployeeFilterInput): Promise<PaginatedEmployeesDto>;
   getEmployee(id: string): Promise<EmployeeDetailDto>;
   getEmployeeStats(): Promise<Record<string, number>>;
-  updateEmployee(id: string, req: UpdateEmployeeRequest): Promise<EmployeeDetailDto>;
+  updateEmployee(
+    id: string,
+    req: UpdateEmployeeRequest,
+  ): Promise<EmployeeDetailDto>;
   updateEmployeeStatus(id: string, status: string): Promise<EmployeeDetailDto>;
   deleteEmployee(id: string): Promise<boolean>;
   restoreEmployee(id: string): Promise<EmployeeDetailDto>;
-  provisionEmployeeAccount(id: string, req: ProvisionEmployeeAccountRequest): Promise<AccountProvisioningResultDto>;
+  provisionEmployeeAccount(
+    id: string,
+    req: ProvisionEmployeeAccountRequest,
+  ): Promise<AccountProvisioningResultDto>;
   assignEmployeeGroups(id: string, groupIds: string[]): Promise<boolean>;
-  bulkRegisterEmployees(items: BulkRegisterEmployeeCommandItem[], options?: { atomic?: boolean; dryRun?: boolean }): Promise<BulkRegisterEmployeeCommandResultDto>;
+  bulkRegisterEmployees(
+    items: BulkRegisterEmployeeCommandItem[],
+    options?: { atomic?: boolean; dryRun?: boolean },
+  ): Promise<BulkRegisterEmployeeCommandResultDto>;
 
   // ── User Groups ─────────────────────────────────────────────
   createGroup(req: CreateGroupRequest): Promise<GroupDetailDto>;
@@ -1906,13 +1957,17 @@ export interface OrbisApiClient {
   updateRoom(id: string, req: UpdateRoomRequest): Promise<RoomDto>;
   deleteRoom(id: string): Promise<void>;
   createTimeSlot(req: CreateTimeSlotRequest): Promise<TimeSlotDto>;
-  batchCreateTimeSlots(req: BatchCreateTimeSlotsRequest): Promise<TimeSlotDto[]>;
+  batchCreateTimeSlots(
+    req: BatchCreateTimeSlotsRequest,
+  ): Promise<TimeSlotDto[]>;
   listTimeSlots(periodId?: string): Promise<TimeSlotDto[]>;
   getTimeSlot(id: string): Promise<TimeSlotDto>;
   updateTimeSlot(id: string, req: UpdateTimeSlotRequest): Promise<TimeSlotDto>;
   deleteTimeSlot(id: string): Promise<void>;
   scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto>;
-  bulkScheduleLessons(req: BulkScheduleLessonsRequest): Promise<ScheduledLessonDto[]>;
+  bulkScheduleLessons(
+    req: BulkScheduleLessonsRequest,
+  ): Promise<ScheduledLessonDto[]>;
   deleteScheduledLesson(id: string): Promise<void>;
   listScheduledLessons(
     filterOrPeriodId?:
@@ -1956,7 +2011,9 @@ export interface OrbisApiClient {
   updateCalculationEngineSettings(
     settings: CalculationEngineSettings,
   ): Promise<CalculationEngineSettings>;
-  previewCalculation(values: Record<string, DecimalValue>): Promise<CalculationPreview>;
+  previewCalculation(
+    values: Record<string, DecimalValue>,
+  ): Promise<CalculationPreview>;
   getStudentTermResults(
     studentId: string,
     periodId: string,
@@ -1994,7 +2051,9 @@ export interface OrbisApiClient {
   listAllBehavior(): Promise<BehaviorRecordDto[]>;
 
   // ── Student Cohort Progression ──────────────────────────────
-  evaluateCohort(sourcePeriodId: string): Promise<StudentProgressionItemInput[]>;
+  evaluateCohort(
+    sourcePeriodId: string,
+  ): Promise<StudentProgressionItemInput[]>;
   promoteCohort(req: PromoteCohortInput): Promise<ProgressionJobDto>;
   listprogressionJobs(): Promise<ProgressionJobDto[]>;
   getprogressionJob(id: string): Promise<ProgressionJobDto>;
@@ -2010,7 +2069,10 @@ export interface OrbisApiClient {
   createExamSession(req: CreateExamSessionRequest): Promise<ExamSessionDto>;
   listExamSessions(periodId: string): Promise<ExamSessionDto[]>;
   getExamSession(id: string): Promise<ExamSessionDto>;
-  updateExamSession(id: string, req: UpdateExamSessionRequest): Promise<ExamSessionDto>;
+  updateExamSession(
+    id: string,
+    req: UpdateExamSessionRequest,
+  ): Promise<ExamSessionDto>;
   deleteExamSession(id: string): Promise<void>;
   scheduleExam(req: ScheduleExamRequest): Promise<ExamScheduleDto>;
   listExamSchedules(sessionId: string): Promise<ExamScheduleDto[]>;
@@ -2035,7 +2097,10 @@ export interface OrbisApiClient {
   deleteAccount(id: string): Promise<boolean>;
   createFeeTemplate(req: CreateFeeTemplateRequest): Promise<FeeTemplateDto>;
   getFeeTemplate(id: string): Promise<FeeTemplateDto>;
-  updateFeeTemplate(id: string, req: UpdateFeeTemplateRequest): Promise<FeeTemplateDto>;
+  updateFeeTemplate(
+    id: string,
+    req: UpdateFeeTemplateRequest,
+  ): Promise<FeeTemplateDto>;
   deleteFeeTemplate(id: string): Promise<boolean>;
   listFeeTemplates(): Promise<FeeTemplateDto[]>;
   generateStudentFee(req: GenerateFeeRequest): Promise<StudentFeeDto>;
@@ -2059,10 +2124,7 @@ export interface OrbisApiClient {
     req: ReverseJournalRequest,
   ): Promise<JournalEntryDto>;
   deleteJournalEntry(id: string): Promise<boolean>;
-  splitStudentFee(
-    id: string,
-    req: SplitFeeRequest,
-  ): Promise<StudentFeeDto[]>;
+  splitStudentFee(id: string, req: SplitFeeRequest): Promise<StudentFeeDto[]>;
   refundStudentFee(
     id: string,
     req: RefundStudentFeeRequest,
@@ -2072,18 +2134,31 @@ export interface OrbisApiClient {
     req: CreateDiscountTemplateRequest,
   ): Promise<DiscountTemplateDto>;
   deleteDiscountTemplate(id: string): Promise<boolean>;
-  getAccountStatement(filter: StatementFilterParams): Promise<StatementResponseDto>;
-  processDisbursement(req: ProcessDisbursementRequest): Promise<JournalEntryDto>;
+  getAccountStatement(
+    filter: StatementFilterParams,
+  ): Promise<StatementResponseDto>;
+  processDisbursement(
+    req: ProcessDisbursementRequest,
+  ): Promise<JournalEntryDto>;
   createSubAccount(req: CreateSubAccountRequest): Promise<AccountDto>;
-  settleGatewayPayout(req: SettleGatewayPayoutRequest): Promise<JournalEntryDto>;
+  settleGatewayPayout(
+    req: SettleGatewayPayoutRequest,
+  ): Promise<JournalEntryDto>;
   postPayrollAccrual(req: PostPayrollRequest): Promise<JournalEntryDto>;
   disbursePayroll(req: DisbursePayrollRequest): Promise<JournalEntryDto>;
 
   // ── Document & Storage Management ───────────────────────────
   uploadDocument(req: UploadDocumentRequest): Promise<DocumentDto>;
   uploadFile(req: StorageUploadRequest): Promise<DocumentDto>;
-  listDocuments(params?: { entity_type?: string; entity_id?: string; folder_id?: string }): Promise<DocumentDto[]>;
-  listDocumentsByEntity(entityType: string, entityId: string): Promise<DocumentDto[]>;
+  listDocuments(params?: {
+    entity_type?: string;
+    entity_id?: string;
+    folder_id?: string;
+  }): Promise<DocumentDto[]>;
+  listDocumentsByEntity(
+    entityType: string,
+    entityId: string,
+  ): Promise<DocumentDto[]>;
   getDocument(id: string): Promise<DocumentDto>;
   updateDocument(id: string, req: UpdateDocumentRequest): Promise<DocumentDto>;
   deleteDocument(id: string): Promise<void>;
@@ -2095,9 +2170,14 @@ export interface OrbisApiClient {
   listTrashDocuments(): Promise<DocumentDto[]>;
   getDocumentAccessUrl(id: string, expiresInSeconds?: number): Promise<string>;
   downloadDocumentFile(id: string): Promise<Blob | Uint8Array>;
-  createDocumentRequirement(req: CreateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
+  createDocumentRequirement(
+    req: CreateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto>;
   getDocumentRequirement(id: string): Promise<DocumentRequirementDto>;
-  updateDocumentRequirement(id: string, req: UpdateDocumentRequirementRequest): Promise<DocumentRequirementDto>;
+  updateDocumentRequirement(
+    id: string,
+    req: UpdateDocumentRequirementRequest,
+  ): Promise<DocumentRequirementDto>;
   listDocumentRequirements(): Promise<DocumentRequirementDto[]>;
   deleteDocumentRequirement(id: string): Promise<void>;
   evaluateStudentDocumentRequirements(
@@ -2115,9 +2195,14 @@ export interface OrbisApiClient {
   listFolders(parentId?: string): Promise<FolderDto[]>;
   getFolder(id: string): Promise<FolderDto>;
   getFolderContents(id: string): Promise<FolderContentsDto>;
-  getOrCreateStudentFolder(studentId: string, studentName?: string): Promise<FolderDto>;
+  getOrCreateStudentFolder(
+    studentId: string,
+    studentName?: string,
+  ): Promise<FolderDto>;
   listCurriculumFolders(): Promise<FolderDto[]>;
-  getOrCreateCurriculumFolder(req: CreateCurriculumFolderRequest): Promise<FolderDto>;
+  getOrCreateCurriculumFolder(
+    req: CreateCurriculumFolderRequest,
+  ): Promise<FolderDto>;
   updateFolder(id: string, req: UpdateFolderRequest): Promise<FolderDto>;
   deleteFolder(id: string): Promise<void>;
 
@@ -2133,7 +2218,9 @@ export interface OrbisApiClient {
   connectMulverse(apiKey: string): Promise<MulverseConnectionDto>;
   disconnectMulverse(): Promise<boolean>;
   listMulverseDeployments(): Promise<MulverseDeploymentDto[]>;
-  createMulverseDeployment(req: MulverseDeploymentRequest): Promise<MulverseDeploymentDto>;
+  createMulverseDeployment(
+    req: MulverseDeploymentRequest,
+  ): Promise<MulverseDeploymentDto>;
   updateMulverseDeployment(
     id: string,
     req: Partial<MulverseDeploymentRequest>,
@@ -2221,7 +2308,6 @@ export interface OrbisApiClient {
   // ── License & Activation ────────────────────────────────
   licenseGetState(): Promise<LicenseStateDto>;
   licenseActivateKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
-  licenseRedeemKey(req: ActivateKeyRequest): Promise<LicenseStateDto>;
   licenseStartTrial(): Promise<LicenseStateDto>;
   licenseDeactivate(): Promise<LicenseStateDto>;
   licenseRefresh(): Promise<LicenseStateDto>;
@@ -2230,10 +2316,15 @@ export interface OrbisApiClient {
 
   // ── Bootstrap & Regional Initialization ─────────────────────
   bootstrapDetectEnvironment(): Promise<EnvironmentDetectionResult>;
-  bootstrapGenerateSlug(name: string, nameAr?: string): Promise<SlugGenerationResult>;
+  bootstrapGenerateSlug(
+    name: string,
+    nameAr?: string,
+  ): Promise<SlugGenerationResult>;
   bootstrapGetStatus(): Promise<BootstrapStatusResponse>;
   bootstrapOrganization(req: BootstrapRequest): Promise<BootstrapResult>;
-  completeOnboarding(req: CompleteOrganizationOnboardingRequest): Promise<OnboardingResult>;
+  completeOnboarding(
+    req: CompleteOrganizationOnboardingRequest,
+  ): Promise<OnboardingResult>;
 
   // ── Onboarding & DAG Readiness ──────────────────────────────
   onboardingGetState(orgId?: string): Promise<OnboardingStateDto>;
@@ -2267,7 +2358,10 @@ export interface OrbisApiClient {
   connectionOpenWindow(): Promise<void>;
 
   databaseGetStatus(): Promise<DatabaseStatusDto>;
-  databaseCreateLocal(params: { customDir?: string; filename: string }): Promise<DatabaseStatusDto>;
+  databaseCreateLocal(params: {
+    customDir?: string;
+    filename: string;
+  }): Promise<DatabaseStatusDto>;
   databaseOpenExisting(filePath: string): Promise<DatabaseStatusDto>;
   databaseBackup(destinationPath?: string): Promise<BackupResultDto>;
   databaseValidateBackupFile(filePath: string): Promise<BackupInspectionDto>;
@@ -2276,19 +2370,33 @@ export interface OrbisApiClient {
   databaseCheckIntegrity(): Promise<IntegrityResultDto>;
   databaseOptimize(): Promise<OptimizeResultDto>;
   databaseGetSettings(): Promise<DatabaseSettingsDto>;
-  databaseUpdateSettings(settings: DatabaseSettingsDto): Promise<DatabaseSettingsDto>;
-  databasePickFile(params?: { filterName?: string; extensions?: string[] }): Promise<string | null>;
+  databaseUpdateSettings(
+    settings: DatabaseSettingsDto,
+  ): Promise<DatabaseSettingsDto>;
+  databasePickFile(params?: {
+    filterName?: string;
+    extensions?: string[];
+  }): Promise<string | null>;
   databasePickFolder(): Promise<string | null>;
-  databasePickSavePath(params?: { defaultFilename?: string; filterName?: string; extensions?: string[] }): Promise<string | null>;
+  databasePickSavePath(params?: {
+    defaultFilename?: string;
+    filterName?: string;
+    extensions?: string[];
+  }): Promise<string | null>;
 
   // ── AI Platform ─────────────────────────────────────────────
   aiChat(req: AiChatRequest): Promise<AiChatResponse>;
   aiListTools(): Promise<AiToolDefinition[]>;
-  aiCreateCustomReport(req: AiCustomReportRequest): Promise<AiCustomReportResponse>;
+  aiCreateCustomReport(
+    req: AiCustomReportRequest,
+  ): Promise<AiCustomReportResponse>;
   aiSaveSession(session: AiStoredSession): Promise<boolean>;
   aiLoadSessions(orgId: string): Promise<AiStoredSession[]>;
   aiDeleteSession(orgId: string, sessionId: string): Promise<boolean>;
-  aiSaveContext(orgId: string, context: Record<string, unknown>): Promise<boolean>;
+  aiSaveContext(
+    orgId: string,
+    context: Record<string, unknown>,
+  ): Promise<boolean>;
   aiLoadContext(orgId: string): Promise<Record<string, unknown> | null>;
 
   // ── Autopilot System ────────────────────────────────────────
@@ -2304,4 +2412,21 @@ export interface OrbisApiClient {
   autopilotRetryTask(id: string): Promise<AutopilotTaskDto>;
   autopilotDismissTask(id: string): Promise<AutopilotTaskDto>;
   autopilotGetDiagnostics(): Promise<AutopilotDiagnosticsDto>;
+
+  // ── Notifications ──────────────────────────────────────────
+  listNotifications(params?: {
+    category?: string;
+    is_read?: boolean;
+    is_dismissed?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<NotificationDto[]>;
+  getUnreadNotificationCount(): Promise<{ count: number }>;
+  markNotificationRead(id: string): Promise<void>;
+  markAllNotificationsRead(): Promise<{ updated: number }>;
+  dismissNotification(id: string): Promise<void>;
+  getNotificationPreferences(): Promise<NotificationPreferenceResponseDto[]>;
+  updateNotificationPreferences(
+    preferences: NotificationPreferenceDto[],
+  ): Promise<NotificationPreferenceResponseDto[]>;
 }

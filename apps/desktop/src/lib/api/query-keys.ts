@@ -12,44 +12,53 @@ export const queryKeys = {
     all: ["auth"] as const,
     session: () => [...queryKeys.auth.all, "session"] as const,
     user: (id: string) => [...queryKeys.auth.all, "user", id] as const,
-    users: (orgId?: string) => [...queryKeys.auth.all, "users", orgId ?? "current"] as const,
+    users: (orgId?: string) =>
+      [...queryKeys.auth.all, "users", orgId ?? "current"] as const,
   },
 
   // ── Organization ────────────────────────────────────────────
   org: {
     all: ["org"] as const,
     current: () => [...queryKeys.org.all, "current"] as const,
-    settings: (orgId?: string) => [...queryKeys.org.all, "settings", orgId ?? "current"] as const,
-    dashboard: (orgId?: string) => [...queryKeys.org.all, "dashboard", orgId ?? "current"] as const,
-    units: (orgId?: string) => [...queryKeys.org.all, "units", orgId ?? "current"] as const,
+    settings: (orgId?: string) =>
+      [...queryKeys.org.all, "settings", orgId ?? "current"] as const,
+    dashboard: (orgId?: string) =>
+      [...queryKeys.org.all, "dashboard", orgId ?? "current"] as const,
+    units: (orgId?: string) =>
+      [...queryKeys.org.all, "units", orgId ?? "current"] as const,
     unit: (id: string) => [...queryKeys.org.all, "unit", id] as const,
   },
 
   // ── Onboarding ──────────────────────────────────────────────
   onboarding: {
     all: ["onboarding"] as const,
-    state: (orgId: string) => [...queryKeys.onboarding.all, "state", orgId] as const,
+    state: (orgId: string) =>
+      [...queryKeys.onboarding.all, "state", orgId] as const,
   },
 
   // ── Calendar ────────────────────────────────────────────────
   calendar: {
     all: ["calendar"] as const,
-    context: (orgId?: string) => [...queryKeys.calendar.all, "context", orgId ?? "current"] as const,
-    years: (orgId?: string) => [...queryKeys.calendar.all, "years", orgId ?? "current"] as const,
+    context: (orgId?: string) =>
+      [...queryKeys.calendar.all, "context", orgId ?? "current"] as const,
+    years: (orgId?: string) =>
+      [...queryKeys.calendar.all, "years", orgId ?? "current"] as const,
     year: (id: string) => [...queryKeys.calendar.all, "year", id] as const,
-    periods: (orgId?: string) => [...queryKeys.calendar.all, "periods", orgId ?? "current"] as const,
+    periods: (orgId?: string) =>
+      [...queryKeys.calendar.all, "periods", orgId ?? "current"] as const,
     period: (id: string) => [...queryKeys.calendar.all, "period", id] as const,
-    PeriodTypes: () =>
-      [...queryKeys.calendar.all, "PeriodTypes"] as const,
+    PeriodTypes: () => [...queryKeys.calendar.all, "PeriodTypes"] as const,
   },
 
   // ── Academic ────────────────────────────────────────────────
   academic: {
     all: ["academic"] as const,
-    subjects: (orgId?: string) => [...queryKeys.academic.all, "subjects", orgId ?? "current"] as const,
+    subjects: (orgId?: string) =>
+      [...queryKeys.academic.all, "subjects", orgId ?? "current"] as const,
     subject: (id: string) =>
       [...queryKeys.academic.all, "subject", id] as const,
-    classes: (orgId?: string) => [...queryKeys.academic.all, "classes", orgId ?? "current"] as const,
+    classes: (orgId?: string) =>
+      [...queryKeys.academic.all, "classes", orgId ?? "current"] as const,
     class: (id: string) => [...queryKeys.academic.all, "class", id] as const,
     SectionSubjects: (classId: string, periodId: string) =>
       [
@@ -68,19 +77,44 @@ export const queryKeys = {
   // ── Student ─────────────────────────────────────────────────
   student: {
     all: ["student"] as const,
-    list: (orgIdOrFilter?: string | Record<string, unknown>, filter?: Record<string, unknown>) => {
+    list: (
+      orgIdOrFilter?: string | Record<string, unknown>,
+      filter?: Record<string, unknown>,
+    ) => {
       if (typeof orgIdOrFilter === "string") {
-        return [...queryKeys.student.all, "list", orgIdOrFilter, filter ?? {}] as const;
+        return [
+          ...queryKeys.student.all,
+          "list",
+          orgIdOrFilter,
+          filter ?? {},
+        ] as const;
       }
-      return [...queryKeys.student.all, "list", "current", orgIdOrFilter ?? {}] as const;
+      return [
+        ...queryKeys.student.all,
+        "list",
+        "current",
+        orgIdOrFilter ?? {},
+      ] as const;
     },
-    detail: (id: string) =>
-      [...queryKeys.student.all, "detail", id] as const,
-    enrollments: (orgIdOrFilter?: string | Record<string, unknown>, filter?: Record<string, unknown>) => {
+    detail: (id: string) => [...queryKeys.student.all, "detail", id] as const,
+    enrollments: (
+      orgIdOrFilter?: string | Record<string, unknown>,
+      filter?: Record<string, unknown>,
+    ) => {
       if (typeof orgIdOrFilter === "string") {
-        return [...queryKeys.student.all, "enrollments", orgIdOrFilter, filter ?? {}] as const;
+        return [
+          ...queryKeys.student.all,
+          "enrollments",
+          orgIdOrFilter,
+          filter ?? {},
+        ] as const;
       }
-      return [...queryKeys.student.all, "enrollments", "current", orgIdOrFilter ?? {}] as const;
+      return [
+        ...queryKeys.student.all,
+        "enrollments",
+        "current",
+        orgIdOrFilter ?? {},
+      ] as const;
     },
     enrollment: (id: string) =>
       [...queryKeys.student.all, "enrollment", id] as const,
@@ -103,14 +137,26 @@ export const queryKeys = {
   // ── Employee Affairs ────────────────────────────────────────
   employee: {
     all: ["employee"] as const,
-    list: (orgIdOrFilter?: string | Record<string, unknown>, filter?: Record<string, unknown>) => {
+    list: (
+      orgIdOrFilter?: string | Record<string, unknown>,
+      filter?: Record<string, unknown>,
+    ) => {
       if (typeof orgIdOrFilter === "string") {
-        return [...queryKeys.employee.all, "list", orgIdOrFilter, filter ?? {}] as const;
+        return [
+          ...queryKeys.employee.all,
+          "list",
+          orgIdOrFilter,
+          filter ?? {},
+        ] as const;
       }
-      return [...queryKeys.employee.all, "list", "current", orgIdOrFilter ?? {}] as const;
+      return [
+        ...queryKeys.employee.all,
+        "list",
+        "current",
+        orgIdOrFilter ?? {},
+      ] as const;
     },
-    detail: (id: string) =>
-      [...queryKeys.employee.all, "detail", id] as const,
+    detail: (id: string) => [...queryKeys.employee.all, "detail", id] as const,
     stats: (orgId?: string) =>
       [...queryKeys.employee.all, "stats", orgId ?? "current"] as const,
   },
@@ -120,8 +166,7 @@ export const queryKeys = {
     all: ["group"] as const,
     list: (orgId?: string) =>
       [...queryKeys.group.all, "list", orgId ?? "current"] as const,
-    detail: (id: string) =>
-      [...queryKeys.group.all, "detail", id] as const,
+    detail: (id: string) => [...queryKeys.group.all, "detail", id] as const,
     members: (groupId: string) =>
       [...queryKeys.group.all, "members", groupId] as const,
   },
@@ -129,7 +174,8 @@ export const queryKeys = {
   // ── Scheduling ──────────────────────────────────────────────
   scheduling: {
     all: ["scheduling"] as const,
-    rooms: (orgId?: string) => [...queryKeys.scheduling.all, "rooms", orgId ?? "current"] as const,
+    rooms: (orgId?: string) =>
+      [...queryKeys.scheduling.all, "rooms", orgId ?? "current"] as const,
     room: (id: string) => [...queryKeys.scheduling.all, "room", id] as const,
     timeSlots: (periodId: string) =>
       [...queryKeys.scheduling.all, "timeSlots", periodId] as const,
@@ -140,7 +186,8 @@ export const queryKeys = {
   // ── Assessment ──────────────────────────────────────────────
   assessment: {
     all: ["assessment"] as const,
-    schemes: (orgId?: string) => [...queryKeys.assessment.all, "schemes", orgId ?? "current"] as const,
+    schemes: (orgId?: string) =>
+      [...queryKeys.assessment.all, "schemes", orgId ?? "current"] as const,
     scheme: (id: string) =>
       [...queryKeys.assessment.all, "scheme", id] as const,
     grades: (filter?: { studentId?: string; SectionSubjectId?: string }) =>
@@ -154,7 +201,8 @@ export const queryKeys = {
   // ── Student Cohort Progression ──────────────────────────────
   progression: {
     all: ["progression"] as const,
-    jobs: (orgId?: string) => [...queryKeys.progression.all, "jobs", orgId ?? "current"] as const,
+    jobs: (orgId?: string) =>
+      [...queryKeys.progression.all, "jobs", orgId ?? "current"] as const,
     job: (id: string) => [...queryKeys.progression.all, "job", id] as const,
   },
 
@@ -163,9 +211,19 @@ export const queryKeys = {
     all: ["workflow"] as const,
     overrides: (orgIdOrStatus?: string, status?: string) => {
       if (status !== undefined) {
-        return [...queryKeys.workflow.all, "overrides", orgIdOrStatus ?? "current", status] as const;
+        return [
+          ...queryKeys.workflow.all,
+          "overrides",
+          orgIdOrStatus ?? "current",
+          status,
+        ] as const;
       }
-      return [...queryKeys.workflow.all, "overrides", "current", orgIdOrStatus ?? "all"] as const;
+      return [
+        ...queryKeys.workflow.all,
+        "overrides",
+        "current",
+        orgIdOrStatus ?? "all",
+      ] as const;
     },
     override: (id: string) =>
       [...queryKeys.workflow.all, "override", id] as const,
@@ -190,19 +248,43 @@ export const queryKeys = {
   // ── Finance ─────────────────────────────────────────────────
   finance: {
     all: ["finance"] as const,
-    accounts: (orgId?: string) => [...queryKeys.finance.all, "accounts", orgId ?? "current"] as const,
-    feeTemplates: (orgId?: string) => [...queryKeys.finance.all, "feeTemplates", orgId ?? "current"] as const,
+    accounts: (orgId?: string) =>
+      [...queryKeys.finance.all, "accounts", orgId ?? "current"] as const,
+    feeTemplates: (orgId?: string) =>
+      [...queryKeys.finance.all, "feeTemplates", orgId ?? "current"] as const,
     studentFees: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
-        return [...queryKeys.finance.all, "studentFees", filterOrOrg, (filter as Record<string, unknown>) ?? {}] as const;
+        return [
+          ...queryKeys.finance.all,
+          "studentFees",
+          filterOrOrg,
+          (filter as Record<string, unknown>) ?? {},
+        ] as const;
       }
-      return [...queryKeys.finance.all, "studentFees", "current", (filterOrOrg as Record<string, unknown>) ?? {}] as const;
+      return [
+        ...queryKeys.finance.all,
+        "studentFees",
+        "current",
+        (filterOrOrg as Record<string, unknown>) ?? {},
+      ] as const;
     },
+    studentFeesPaginated: (orgId?: string, filter?: unknown) =>
+      [...queryKeys.finance.studentFees(orgId, filter), "paginated"] as const,
     payments: (filterOrOrg?: string | unknown, filter?: unknown) => {
       if (typeof filterOrOrg === "string") {
-        return [...queryKeys.finance.all, "payments", filterOrOrg, (filter as Record<string, unknown>) ?? {}] as const;
+        return [
+          ...queryKeys.finance.all,
+          "payments",
+          filterOrOrg,
+          (filter as Record<string, unknown>) ?? {},
+        ] as const;
       }
-      return [...queryKeys.finance.all, "payments", "current", (filterOrOrg as Record<string, unknown>) ?? {}] as const;
+      return [
+        ...queryKeys.finance.all,
+        "payments",
+        "current",
+        (filterOrOrg as Record<string, unknown>) ?? {},
+      ] as const;
     },
     currencies: () => [...queryKeys.finance.all, "currencies"] as const,
     journalEntries: (orgId?: string) =>
@@ -210,31 +292,62 @@ export const queryKeys = {
     journalEntry: (id: string) =>
       [...queryKeys.finance.all, "journalEntry", id] as const,
     discountTemplates: (orgId?: string) =>
-      [...queryKeys.finance.all, "discountTemplates", orgId ?? "current"] as const,
+      [
+        ...queryKeys.finance.all,
+        "discountTemplates",
+        orgId ?? "current",
+      ] as const,
     statement: (filter?: unknown) =>
-      [...queryKeys.finance.all, "statement", (filter as Record<string, unknown>) ?? {}] as const,
+      [
+        ...queryKeys.finance.all,
+        "statement",
+        (filter as Record<string, unknown>) ?? {},
+      ] as const,
   },
 
   // ── Document ────────────────────────────────────────────────
   document: {
     all: ["document"] as const,
-    list: (orgIdOrFilter?: string | { entity_type?: string; entity_id?: string }, filter?: { entity_type?: string; entity_id?: string }) => {
+    list: (
+      orgIdOrFilter?: string | { entity_type?: string; entity_id?: string },
+      filter?: { entity_type?: string; entity_id?: string },
+    ) => {
       if (typeof orgIdOrFilter === "string") {
-        return [...queryKeys.document.all, "list", orgIdOrFilter, filter ?? {}] as const;
+        return [
+          ...queryKeys.document.all,
+          "list",
+          orgIdOrFilter,
+          filter ?? {},
+        ] as const;
       }
-      return [...queryKeys.document.all, "list", "current", orgIdOrFilter ?? {}] as const;
+      return [
+        ...queryKeys.document.all,
+        "list",
+        "current",
+        orgIdOrFilter ?? {},
+      ] as const;
     },
-    byEntity: (entityType: string, entityId: string) => [...queryKeys.document.all, "entity", entityType, entityId] as const,
+    byEntity: (entityType: string, entityId: string) =>
+      [...queryKeys.document.all, "entity", entityType, entityId] as const,
     detail: (id: string) => [...queryKeys.document.all, "detail", id] as const,
-    requirements: (orgId?: string) => [...queryKeys.document.all, "requirements", orgId ?? "current"] as const,
-    requirement: (id: string) => [...queryKeys.document.all, "requirement", id] as const,
-    studentFulfillment: (studentId: string, params?: Record<string, unknown>) => [...queryKeys.document.all, "studentFulfillment", studentId, params ?? {}] as const,
+    requirements: (orgId?: string) =>
+      [...queryKeys.document.all, "requirements", orgId ?? "current"] as const,
+    requirement: (id: string) =>
+      [...queryKeys.document.all, "requirement", id] as const,
+    studentFulfillment: (studentId: string, params?: Record<string, unknown>) =>
+      [
+        ...queryKeys.document.all,
+        "studentFulfillment",
+        studentId,
+        params ?? {},
+      ] as const,
   },
 
   // ── Folder & Knowledge Base ─────────────────────────────────
   folder: {
     all: ["folder"] as const,
-    list: (parentId?: string) => ["folder", "list", parentId ?? "root"] as const,
+    list: (parentId?: string) =>
+      ["folder", "list", parentId ?? "root"] as const,
     detail: (id: string) => ["folder", "detail", id] as const,
     contents: (id: string) => ["folder", "contents", id] as const,
     student: (studentId: string) => ["folder", "student", studentId] as const,
@@ -244,33 +357,62 @@ export const queryKeys = {
   // ── Integration ─────────────────────────────────────────────
   integration: {
     all: ["integration"] as const,
-    list: (orgId?: string) => [...queryKeys.integration.all, "list", orgId ?? "current"] as const,
+    list: (orgId?: string) =>
+      [...queryKeys.integration.all, "list", orgId ?? "current"] as const,
   },
 
   // ── Reports & Templates ─────────────────────────────────────
   report: {
     all: ["report"] as const,
-    definitions: (filterOrOrg?: string | { domain?: string; category?: string }, filter?: { domain?: string; category?: string }) => {
+    definitions: (
+      filterOrOrg?: string | { domain?: string; category?: string },
+      filter?: { domain?: string; category?: string },
+    ) => {
       if (typeof filterOrOrg === "string") {
-        return [...queryKeys.report.all, "definitions", filterOrOrg, filter ?? {}] as const;
+        return [
+          ...queryKeys.report.all,
+          "definitions",
+          filterOrOrg,
+          filter ?? {},
+        ] as const;
       }
-      return [...queryKeys.report.all, "definitions", "current", filterOrOrg ?? {}] as const;
+      return [
+        ...queryKeys.report.all,
+        "definitions",
+        "current",
+        filterOrOrg ?? {},
+      ] as const;
     },
     definition: (code: string) =>
       [...queryKeys.report.all, "definition", code] as const,
-    templates: (filterOrOrg?: string | {
-      documentType?: string;
-      entityType?: string;
-      status?: string;
-    }, filter?: {
-      documentType?: string;
-      entityType?: string;
-      status?: string;
-    }) => {
+    templates: (
+      filterOrOrg?:
+        | string
+        | {
+            documentType?: string;
+            entityType?: string;
+            status?: string;
+          },
+      filter?: {
+        documentType?: string;
+        entityType?: string;
+        status?: string;
+      },
+    ) => {
       if (typeof filterOrOrg === "string") {
-        return [...queryKeys.report.all, "templates", filterOrOrg, filter ?? {}] as const;
+        return [
+          ...queryKeys.report.all,
+          "templates",
+          filterOrOrg,
+          filter ?? {},
+        ] as const;
       }
-      return [...queryKeys.report.all, "templates", "current", filterOrOrg ?? {}] as const;
+      return [
+        ...queryKeys.report.all,
+        "templates",
+        "current",
+        filterOrOrg ?? {},
+      ] as const;
     },
     template: (id: string) =>
       [...queryKeys.report.all, "template", id] as const,
@@ -292,6 +434,21 @@ export const queryKeys = {
       offset?: number;
     }) => [...queryKeys.autopilot.all, "tasks", filter ?? {}] as const,
     task: (id: string) => [...queryKeys.autopilot.all, "task", id] as const,
-    diagnostics: (orgId?: string) => [...queryKeys.autopilot.all, "diagnostics", orgId ?? "current"] as const,
+    diagnostics: (orgId?: string) =>
+      [...queryKeys.autopilot.all, "diagnostics", orgId ?? "current"] as const,
+  },
+
+  // ── Notifications ──────────────────────────────────────────
+  notifications: {
+    all: ["notifications"] as const,
+    list: (params?: {
+      category?: string;
+      is_read?: boolean;
+      limit?: number;
+      offset?: number;
+    }) => [...queryKeys.notifications.all, "list", params ?? {}] as const,
+    unreadCount: () =>
+      [...queryKeys.notifications.all, "unread-count"] as const,
+    preferences: () => [...queryKeys.notifications.all, "preferences"] as const,
   },
 };

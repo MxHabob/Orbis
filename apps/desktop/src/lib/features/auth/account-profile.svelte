@@ -123,9 +123,7 @@ async function handleSaveAvatar(e: Event) {
       localStorage.setItem("orbis_user", JSON.stringify(updatedUser));
     }
 
-    toast.success(
-      m.settings_general_avatar_save(),
-    );
+    toast.success(m.settings_general_avatar_save());
   } catch (e) {
     console.error("Failed to update avatar:", e);
     const msg = (e as any)?.message || String(e);

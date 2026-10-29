@@ -13,10 +13,19 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@orbis/ui/dropdown-menu";
-import { Sparkles, ChevronDown, Check, Search, SettingsAlt } from "@orbis/icons";
+import {
+  Sparkles,
+  ChevronDown,
+  Check,
+  Search,
+  SettingsAlt,
+} from "@orbis/icons";
 import { getAppsByCategory } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
-import { createConnectedAiProvidersQuery, useSwitchActiveAiProvider } from "$lib/features/ai/queries";
+import {
+  createConnectedAiProvidersQuery,
+  useSwitchActiveAiProvider,
+} from "$lib/features/ai/queries";
 import { toast } from "@orbis/ui";
 import { extractErrorMessage } from "$lib/api";
 import { uiStore } from "$lib/stores";
@@ -52,19 +61,17 @@ const switchProviderMutation = useSwitchActiveAiProvider();
 // Helper to find matching OrbisApp from @orbis/app-store
 function findAppForProvider(providerNameOrId: string): OrbisApp | undefined {
   const norm = normalizeProviderName(providerNameOrId);
-  return aiApps.find(
-    (app) => {
-      const identifiers = [app.id, app.adapter_name, app.name]
-        .filter((identifier): identifier is string => Boolean(identifier))
-        .map(normalizeProviderName);
-      return identifiers.some(
-        (identifier) =>
-          identifier === norm ||
-          identifier.includes(norm) ||
-          norm.includes(identifier),
-      );
-    },
-  );
+  return aiApps.find((app) => {
+    const identifiers = [app.id, app.adapter_name, app.name]
+      .filter((identifier): identifier is string => Boolean(identifier))
+      .map(normalizeProviderName);
+    return identifiers.some(
+      (identifier) =>
+        identifier === norm ||
+        identifier.includes(norm) ||
+        norm.includes(identifier),
+    );
+  });
 }
 
 function normalizeProviderName(value: string): string {
@@ -102,7 +109,10 @@ const connectedAiApps = $derived.by(() => {
     };
     const models = getModelsForApp(resolvedApp);
     const configuredModel = readConfiguredModel(integration.settings);
-    if (configuredModel && !models.some((model) => model.value === configuredModel)) {
+    if (
+      configuredModel &&
+      !models.some((model) => model.value === configuredModel)
+    ) {
       models.push({ label: configuredModel, value: configuredModel });
     }
     return {
@@ -139,7 +149,11 @@ $effect(() => {
 });
 
 function readConfiguredModel(settings: unknown): string {
-  if (typeof settings !== "object" || settings === null || Array.isArray(settings)) {
+  if (
+    typeof settings !== "object" ||
+    settings === null ||
+    Array.isArray(settings)
+  ) {
     return "";
   }
   const values = settings as Record<string, unknown>;
@@ -219,7 +233,9 @@ const shortProviderName = $derived.by(() => {
 
 const shortModelName = $derived.by(() => {
   if (!selectedModel) return "";
-  const clean = selectedModel.includes("/") ? selectedModel.split("/")[1] : selectedModel;
+  const clean = selectedModel.includes("/")
+    ? selectedModel.split("/")[1]
+    : selectedModel;
   return clean
     .replace("claude-3-7-", "3.7-")
     .replace("claude-3-5-", "3.5-")
@@ -247,7 +263,9 @@ async function handleSelectProviderAndModel(
         providerName: matched.provider_name,
         isEnabled: true,
       });
-      toast.success(m.ai_ui_provider_activated({ name: app.name_ar || app.name }));
+      toast.success(
+        m.ai_ui_provider_activated({ name: app.name_ar || app.name }),
+      );
     } catch (e) {
       toast.error(extractErrorMessage(e));
     }

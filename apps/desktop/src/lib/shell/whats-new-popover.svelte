@@ -1,61 +1,60 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { api } from "$lib/api/client";
-  import type { ReleaseChangelogItem } from "$lib/api/types";
-  import { formatDate } from "$lib/core/i18n";
-  import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
-  import { Button } from "@orbis/ui/button";
-  import { Badge } from "@orbis/ui/badge";
-  import { LoadingIndicator } from "@orbis/ui";
-  import { ArrowPath, Calendar, Sparkles } from "@orbis/icons";
-  import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
-  import EmptyState from "$lib/shared/components/empty-state.svelte";
+import * as m from "$lib/paraglide/messages";
+import { api } from "$lib/api/client";
+import type { ReleaseChangelogItem } from "$lib/api/types";
+import { formatDate } from "$lib/core/i18n";
+import { Popover, PopoverContent, PopoverTrigger } from "@orbis/ui/popover";
+import { Button } from "@orbis/ui/button";
+import { Badge } from "@orbis/ui/badge";
+import { LoadingIndicator } from "@orbis/ui";
+import { ArrowPath, Calendar, Sparkles } from "@orbis/icons";
+import ReleaseMarkdown from "$lib/features/system/release-markdown.svelte";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
 
-  let isOpen = $state(false);
-  let latestRelease = $state<ReleaseChangelogItem | null>(null);
-  let isLoading = $state(false);
-  let hasLoaded = $state(false);
-  let openError = $state(false);
+let isOpen = $state(false);
+let latestRelease = $state<ReleaseChangelogItem | null>(null);
+let isLoading = $state(false);
+let hasLoaded = $state(false);
+let openError = $state(false);
 
-  const releaseDate = $derived.by(() => {
-    const value = latestRelease?.published_at;
-    if (!value) return null;
+const releaseDate = $derived.by(() => {
+  const value = latestRelease?.published_at;
+  if (!value) return null;
 
-    const date = new Date(value);
-    return Number.isNaN(date.getTime())
-      ? null
-      : formatDate(date, "date");
-  });
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : formatDate(date, "date");
+});
 
-  async function loadChangelog() {
-    isLoading = true;
-    hasLoaded = true;
-    try {
-      const releases = await api.systemGetChangelog();
-      latestRelease = releases.find((release) => release.is_latest) ?? releases[0] ?? null;
-    } catch (error) {
-      console.warn("Failed to load the latest changelog entry:", error);
-      latestRelease = null;
-    } finally {
-      isLoading = false;
-    }
+async function loadChangelog() {
+  isLoading = true;
+  hasLoaded = true;
+  try {
+    const releases = await api.systemGetChangelog();
+    latestRelease =
+      releases.find((release) => release.is_latest) ?? releases[0] ?? null;
+  } catch (error) {
+    console.warn("Failed to load the latest changelog entry:", error);
+    latestRelease = null;
+  } finally {
+    isLoading = false;
   }
+}
 
-  async function openChangelog() {
-    openError = false;
-    try {
-      await api.openChangelogWindow();
-      isOpen = false;
-    } catch (error) {
-      console.error("Failed to open the changelog:", error);
-      openError = true;
-    }
+async function openChangelog() {
+  openError = false;
+  try {
+    await api.openChangelogWindow();
+    isOpen = false;
+  } catch (error) {
+    console.error("Failed to open the changelog:", error);
+    openError = true;
   }
+}
 
-  function handleOpenChange(open: boolean) {
-    isOpen = open;
-    if (open && !hasLoaded && !isLoading) void loadChangelog();
-  }
+function handleOpenChange(open: boolean) {
+  isOpen = open;
+  if (open && !hasLoaded && !isLoading) void loadChangelog();
+}
 </script>
 
 <Popover bind:open={isOpen} onOpenChange={handleOpenChange}>

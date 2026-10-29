@@ -62,7 +62,11 @@ export function createEditorStore(initialDoc: TemplateDocument) {
   let document = $state<TemplateDocument>(initialDoc);
   let savedSnapshot = $state<string>(JSON.stringify(initialDoc));
   let isDirty = $state(false);
-  let liveEdit: { docBefore: string; description: string; descriptionAr: string } | null = null;
+  let liveEdit: {
+    docBefore: string;
+    description: string;
+    descriptionAr: string;
+  } | null = null;
   let systemSchemas = $state<Record<string, any>>({});
 
   // ── Selection ────────────────────────────────────────────
@@ -194,10 +198,7 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     document = JSON.parse(entry.docAfter) as TemplateDocument;
     isDirty = JSON.stringify(document) !== savedSnapshot;
     redoStack = redoStack.slice(0, -1);
-    undoStack = [
-      ...undoStack,
-      { cmd: entry.cmd, docBefore },
-    ];
+    undoStack = [...undoStack, { cmd: entry.cmd, docBefore }];
   }
 
   // ── Selection ────────────────────────────────────────────
@@ -413,7 +414,8 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     if (!page) return;
     const previousChildren = page.children;
     const nextChildren = page.children.filter(
-      (child) => !(child.type === "Image" && child.props.layer === "background"),
+      (child) =>
+        !(child.type === "Image" && child.props.layer === "background"),
     );
     if (nextChildren.length === previousChildren.length) return;
 
@@ -445,7 +447,9 @@ export function createEditorStore(initialDoc: TemplateDocument) {
     if (updates.length === 0) return;
     if (liveEdit) {
       for (const update of updates) {
-        document = new MoveNodeCommand(update.id, update.x, update.y).execute(document);
+        document = new MoveNodeCommand(update.id, update.x, update.y).execute(
+          document,
+        );
       }
       return;
     }
@@ -946,9 +950,10 @@ function getEffectivePageHeight(setup: PageSetup): number {
   return setup.orientation === "landscape" ? size.width : size.height;
 }
 
-function getEffectivePageDimensions(
-  setup: PageSetup,
-): { width: number; height: number } {
+function getEffectivePageDimensions(setup: PageSetup): {
+  width: number;
+  height: number;
+} {
   const sizes: Record<string, { width: number; height: number }> = {
     A4: { width: 210, height: 297 },
     A3: { width: 297, height: 420 },

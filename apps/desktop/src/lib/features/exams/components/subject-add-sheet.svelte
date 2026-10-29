@@ -121,7 +121,9 @@ async function handleSubmit() {
       // Refresh local list
       subjectsList = [...subjectsList, newSub];
     } catch (e: any) {
-      toast.error((e as any)?.message || m.operations_ui_subject_create_error());
+      toast.error(
+        (e as any)?.message || m.operations_ui_subject_create_error(),
+      );
       isSaving = false;
       return;
     }

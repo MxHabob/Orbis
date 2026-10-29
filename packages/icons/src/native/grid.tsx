@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import Svg, {
   Path,
   Circle,
@@ -16,8 +16,8 @@ import Svg, {
   RadialGradient,
   Stop,
   type SvgProps,
-} from 'react-native-svg';
-import type { StyleProp, ViewStyle } from 'react-native';
+} from "react-native-svg";
+import type { StyleProp, ViewStyle } from "react-native";
 
 export interface GridProps extends SvgProps {
   size?: number;
@@ -28,7 +28,7 @@ export interface GridProps extends SvgProps {
 
 export function Grid({
   size = 16,
-  color = 'currentColor',
+  color = "currentColor",
   strokeWidth = 1.75,
   style,
   ...props
@@ -45,7 +45,8 @@ export function Grid({
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden={true}
-      {...props}>
+      {...props}
+    >
       <Rect x={3.5} y={3.5} width={7} height={8.5} rx={1.25} />
       <Rect x={13.5} y={3.5} width={7} height={5.5} rx={1.25} />
       <Rect x={3.5} y={15} width={7} height={5.5} rx={1.25} />

@@ -1,23 +1,23 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import type { OrbisApp } from "@orbis/app-store";
-  import { l } from "$lib/core/i18n";
-  import AppConnectForm from "./app-connect-form.svelte";
-  import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import * as m from "$lib/paraglide/messages";
+import type { OrbisApp } from "@orbis/app-store";
+import { l } from "$lib/core/i18n";
+import AppConnectForm from "./app-connect-form.svelte";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 
-  let {
-    open = $bindable(false),
-    app,
-    submitting = false,
-    error = null,
-    onsubmit,
-  }: {
-    open: boolean;
-    app: OrbisApp;
-    submitting?: boolean;
-    error?: string | null;
-    onsubmit: (values: Record<string, unknown>) => void;
-  } = $props();
+let {
+  open = $bindable(false),
+  app,
+  submitting = false,
+  error = null,
+  onsubmit,
+}: {
+  open: boolean;
+  app: OrbisApp;
+  submitting?: boolean;
+  error?: string | null;
+  onsubmit: (values: Record<string, unknown>) => void;
+} = $props();
 </script>
 
 <Sheet bind:open={open}>

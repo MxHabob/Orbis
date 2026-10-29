@@ -1,722 +1,745 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { resolve } from "$app/paths";
-  import { page } from "$app/state";
-  import { formatDate } from "$lib/core/i18n";
-  import { api, extractErrorMessage, isDesktopApp, type SectionSubjectDto, type TimetableProblem, type TimetableSolveStatusDto } from "$lib/api";
-  import { localizeHref } from "$lib/paraglide/runtime";
-  import * as m from "$lib/paraglide/messages";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-  import { toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Input } from "@orbis/ui/input";
-  import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-  } from "@orbis/ui/select";
-  import {
-    AcademicCap,
-    AdjustmentsHorizontal,
-    BookOpen,
-    Calendar,
-    Check,
-    ClockRotateRight,
-    Eye,
-    InfoCircle,
-    Sparkles,
-    User,
-  } from "@orbis/icons";
-  import TimeSlotSheet from "./time-slot-sheet.svelte";
+import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
+import { page } from "$app/state";
+import { formatDate } from "$lib/core/i18n";
+import {
+  api,
+  extractErrorMessage,
+  isDesktopApp,
+  type SectionSubjectDto,
+  type TimetableProblem,
+  type TimetableSolveStatusDto,
+} from "$lib/api";
+import { localizeHref } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Input } from "@orbis/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@orbis/ui/select";
+import {
+  AcademicCap,
+  AdjustmentsHorizontal,
+  BookOpen,
+  Calendar,
+  Check,
+  ClockRotateRight,
+  Eye,
+  InfoCircle,
+  Sparkles,
+  User,
+} from "@orbis/icons";
+import TimeSlotSheet from "./time-slot-sheet.svelte";
 
-  interface Props {
-    orgId: string;
+interface Props {
+  orgId: string;
+}
+
+type StudioTab = "overview" | "curriculum" | "schedule" | "generator";
+
+let { orgId }: Props = $props();
+const queryClient = useQueryClient();
+
+let activeTab = $state<StudioTab>("overview");
+let activeYearId = $state(page.url.searchParams.get("yearId") ?? "");
+let activePeriodId = $state(page.url.searchParams.get("periodId") ?? "");
+let selectedClassId = $state("all");
+let selectedSubjectIds = $state<string[]>([]);
+let showClassesLane = $state(true);
+let showTeachersLane = $state(true);
+let showCurriculumLane = $state(true);
+let isTimeSlotSheetOpen = $state(false);
+let isSolving = $state(false);
+let isApplying = $state(false);
+let activeJobId = $state("");
+let activeJobApplied = $state(false);
+
+const yearsQuery = createQuery(() => ({
+  queryKey: ["academic-years", orgId],
+  queryFn: () => api.listacademicCalendars(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const periodsQuery = createQuery(() => ({
+  queryKey: ["periods", orgId],
+  queryFn: () => api.listAcademicPeriods(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const classesQuery = createQuery(() => ({
+  queryKey: ["classes", orgId],
+  queryFn: () => api.listSections(),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["subjects", orgId],
+  queryFn: () => api.listSubjects(),
+  enabled: !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const teachersQuery = createQuery(() => ({
+  queryKey: [
+    "employees",
+    orgId,
+    { employee_type: "teacher", status: "active" },
+  ],
+  queryFn: () =>
+    api.listEmployees({ employee_type: "teacher", status: "active" }),
+  enabled: !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const roomsQuery = createQuery(() => ({
+  queryKey: ["rooms", orgId],
+  queryFn: () => api.listRooms(),
+  enabled: !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+
+const sidecarQuery = createQuery(() => ({
+  queryKey: ["solver-sidecar-status", orgId],
+  queryFn: () => api.getSolverSidecarStatus(),
+  enabled: !!orgId && isDesktopApp,
+  refetchInterval: 10_000,
+}));
+
+const years = $derived(yearsQuery.data ?? []);
+const periods = $derived(periodsQuery.data ?? []);
+const classes = $derived(classesQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const teachers = $derived(teachersQuery.data?.items ?? []);
+const rooms = $derived(roomsQuery.data ?? []);
+
+const effectiveYearId = $derived(
+  (years.some((year) => year.id === activeYearId) ? activeYearId : "") ||
+    periods.find((period) => period.id === activePeriodId)?.year_id ||
+    years.find((year) => year.is_active)?.id ||
+    years[0]?.id ||
+    "",
+);
+const periodsForYear = $derived(
+  periods.filter((period) => period.year_id === effectiveYearId),
+);
+const effectiveActivePeriodId = $derived(
+  periodsForYear.some((period) => period.id === activePeriodId)
+    ? activePeriodId
+    : (periodsForYear.find((period) => period.status === "active")?.id ??
+        periodsForYear[0]?.id ??
+        ""),
+);
+const activeYear = $derived(years.find((year) => year.id === effectiveYearId));
+const activePeriod = $derived(
+  periods.find((period) => period.id === effectiveActivePeriodId),
+);
+
+const timeSlotsQuery = createQuery(() => ({
+  queryKey: ["time-slots", orgId, effectiveActivePeriodId],
+  queryFn: () => api.listTimeSlots(effectiveActivePeriodId),
+  enabled: !!orgId && !!effectiveActivePeriodId,
+  staleTime: 60 * 1000,
+}));
+
+const lessonsQuery = createQuery(() => ({
+  queryKey: ["period-schedule", orgId, effectiveActivePeriodId],
+  queryFn: () =>
+    api.listScheduledLessons({ periodId: effectiveActivePeriodId }),
+  enabled: !!orgId && !!effectiveActivePeriodId,
+  staleTime: 30 * 1000,
+}));
+
+const sectionSubjectsQuery = createQuery(() => ({
+  queryKey: [
+    "all-class-subjects-matrix",
+    orgId,
+    effectiveActivePeriodId,
+    classes.map((section) => section.id).join(","),
+  ],
+  queryFn: async () => {
+    if (!effectiveActivePeriodId || classes.length === 0) return [];
+    const result = await Promise.all(
+      classes.map((section) =>
+        api.listSectionSubjects(section.id, effectiveActivePeriodId),
+      ),
+    );
+    return result.flat();
+  },
+  enabled: !!orgId && !!effectiveActivePeriodId && classes.length > 0,
+  staleTime: 30 * 1000,
+}));
+
+const timeSlots = $derived(timeSlotsQuery.data ?? []);
+const regularSlots = $derived(timeSlots.filter((slot) => !slot.is_break));
+const lessons = $derived(lessonsQuery.data ?? []);
+const sectionSubjects = $derived(
+  (sectionSubjectsQuery.data ?? []).filter((item) => item.is_active),
+);
+const classesWithCurriculum = $derived(
+  classes.filter((section) =>
+    sectionSubjects.some((item) => item.section_id === section.id),
+  ),
+);
+const subjectById = $derived(
+  new Map(subjects.map((subject) => [subject.id, subject])),
+);
+const sectionSubjectById = $derived(
+  new Map(sectionSubjects.map((item) => [item.id, item])),
+);
+const timeSlotById = $derived(
+  new Map(timeSlots.map((slot) => [slot.id, slot])),
+);
+const totalWeeklyQuota = $derived(
+  sectionSubjects.reduce(
+    (total, item) => total + Math.max(0, Number(item.weekly_hours) || 0),
+    0,
+  ),
+);
+const pendingLessonCount = $derived(
+  sectionSubjects.reduce((total, item) => {
+    const scheduled = lessons.filter(
+      (lesson) => lesson.section_subject_id === item.id,
+    ).length;
+    return total + Math.max(0, (Number(item.weekly_hours) || 0) - scheduled);
+  }, 0),
+);
+const overAssignedSubjects = $derived(
+  sectionSubjects.filter((item) => {
+    const scheduled = lessons.filter(
+      (lesson) => lesson.section_subject_id === item.id,
+    ).length;
+    return scheduled > (Number(item.weekly_hours) || 0);
+  }),
+);
+const teachersById = $derived(
+  new Map(teachers.map((teacher) => [teacher.id, teacher])),
+);
+const missingTeachers = $derived(
+  sectionSubjects.filter((item) => {
+    const pending =
+      (Number(item.weekly_hours) || 0) -
+      lessons.filter((lesson) => lesson.section_subject_id === item.id).length;
+    return (
+      pending > 0 &&
+      (!item.instructor_id || !teachersById.has(item.instructor_id))
+    );
+  }),
+);
+const invalidPinnedLessons = $derived(
+  lessons.filter((lesson) => {
+    const item = sectionSubjectById.get(lesson.section_subject_id);
+    const slot = timeSlotById.get(lesson.time_slot_id);
+    return (
+      !item ||
+      !slot ||
+      slot.is_break ||
+      !(lesson.teacher_id || item.instructor_id)
+    );
+  }),
+);
+const capacityIssues = $derived.by(() => {
+  const quotaByClass = new Map<string, number>();
+  for (const item of sectionSubjects) {
+    quotaByClass.set(
+      item.section_id,
+      (quotaByClass.get(item.section_id) ?? 0) +
+        Math.max(0, Number(item.weekly_hours) || 0),
+    );
   }
+  return [...quotaByClass.entries()]
+    .filter(([, weeklyQuota]) => weeklyQuota > regularSlots.length)
+    .map(([sectionId]) => sectionId);
+});
 
-  type StudioTab = "overview" | "curriculum" | "schedule" | "generator";
-
-  let { orgId }: Props = $props();
-  const queryClient = useQueryClient();
-
-  let activeTab = $state<StudioTab>("overview");
-  let activeYearId = $state(page.url.searchParams.get("yearId") ?? "");
-  let activePeriodId = $state(page.url.searchParams.get("periodId") ?? "");
-  let selectedClassId = $state("all");
-  let selectedSubjectIds = $state<string[]>([]);
-  let showClassesLane = $state(true);
-  let showTeachersLane = $state(true);
-  let showCurriculumLane = $state(true);
-  let isTimeSlotSheetOpen = $state(false);
-  let isSolving = $state(false);
-  let isApplying = $state(false);
-  let activeJobId = $state("");
-  let activeJobApplied = $state(false);
-
-  const yearsQuery = createQuery(() => ({
-    queryKey: ["academic-years", orgId],
-    queryFn: () => api.listacademicCalendars(),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const periodsQuery = createQuery(() => ({
-    queryKey: ["periods", orgId],
-    queryFn: () => api.listAcademicPeriods(),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const classesQuery = createQuery(() => ({
-    queryKey: ["classes", orgId],
-    queryFn: () => api.listSections(),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const subjectsQuery = createQuery(() => ({
-    queryKey: ["subjects", orgId],
-    queryFn: () => api.listSubjects(),
-    enabled: !!orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
-
-  const teachersQuery = createQuery(() => ({
-    queryKey: ["employees", orgId, { employee_type: "teacher", status: "active" }],
-    queryFn: () =>
-      api.listEmployees({ employee_type: "teacher", status: "active" }),
-    enabled: !!orgId,
-    staleTime: 5 * 60 * 1000,
-  }));
-
-  const roomsQuery = createQuery(() => ({
-    queryKey: ["rooms", orgId],
-    queryFn: () => api.listRooms(),
-    enabled: !!orgId,
-    staleTime: 10 * 60 * 1000,
-  }));
-
-  const sidecarQuery = createQuery(() => ({
-    queryKey: ["solver-sidecar-status", orgId],
-    queryFn: () => api.getSolverSidecarStatus(),
-    enabled: !!orgId && isDesktopApp,
-    refetchInterval: 10_000,
-  }));
-
-  const years = $derived(yearsQuery.data ?? []);
-  const periods = $derived(periodsQuery.data ?? []);
-  const classes = $derived(classesQuery.data ?? []);
-  const subjects = $derived(subjectsQuery.data ?? []);
-  const teachers = $derived(teachersQuery.data?.items ?? []);
-  const rooms = $derived(roomsQuery.data ?? []);
-
-  const effectiveYearId = $derived(
-    (years.some((year) => year.id === activeYearId) ? activeYearId : "") ||
-      periods.find((period) => period.id === activePeriodId)?.year_id ||
-      years.find((year) => year.is_active)?.id ||
-      years[0]?.id ||
-      "",
-  );
-  const periodsForYear = $derived(
-    periods.filter((period) => period.year_id === effectiveYearId),
-  );
-  const effectiveActivePeriodId = $derived(
-    periodsForYear.some((period) => period.id === activePeriodId)
-      ? activePeriodId
-      : periodsForYear.find((period) => period.status === "active")?.id ??
-          periodsForYear[0]?.id ??
-          "",
-  );
-  const activeYear = $derived(years.find((year) => year.id === effectiveYearId));
-  const activePeriod = $derived(
-    periods.find((period) => period.id === effectiveActivePeriodId),
-  );
-
-  const timeSlotsQuery = createQuery(() => ({
-    queryKey: ["time-slots", orgId, effectiveActivePeriodId],
-    queryFn: () => api.listTimeSlots(effectiveActivePeriodId),
-    enabled: !!orgId && !!effectiveActivePeriodId,
-    staleTime: 60 * 1000,
-  }));
-
-  const lessonsQuery = createQuery(() => ({
-    queryKey: ["period-schedule", orgId, effectiveActivePeriodId],
-    queryFn: () =>
-      api.listScheduledLessons({ periodId: effectiveActivePeriodId }),
-    enabled: !!orgId && !!effectiveActivePeriodId,
-    staleTime: 30 * 1000,
-  }));
-
-  const sectionSubjectsQuery = createQuery(() => ({
-    queryKey: [
-      "all-class-subjects-matrix",
-      orgId,
-      effectiveActivePeriodId,
-      classes.map((section) => section.id).join(","),
-    ],
-    queryFn: async () => {
-      if (!effectiveActivePeriodId || classes.length === 0) return [];
-      const result = await Promise.all(
-        classes.map((section) =>
-          api.listSectionSubjects(section.id, effectiveActivePeriodId),
-        ),
-      );
-      return result.flat();
-    },
-    enabled: !!orgId && !!effectiveActivePeriodId && classes.length > 0,
-    staleTime: 30 * 1000,
-  }));
-
-  const timeSlots = $derived(timeSlotsQuery.data ?? []);
-  const regularSlots = $derived(timeSlots.filter((slot) => !slot.is_break));
-  const lessons = $derived(lessonsQuery.data ?? []);
-  const sectionSubjects = $derived(
-    (sectionSubjectsQuery.data ?? []).filter((item) => item.is_active),
-  );
-  const classesWithCurriculum = $derived(
-    classes.filter((section) =>
-      sectionSubjects.some((item) => item.section_id === section.id),
-    ),
-  );
-  const subjectById = $derived(
-    new Map(subjects.map((subject) => [subject.id, subject])),
-  );
-  const sectionSubjectById = $derived(
-    new Map(sectionSubjects.map((item) => [item.id, item])),
-  );
-  const timeSlotById = $derived(
-    new Map(timeSlots.map((slot) => [slot.id, slot])),
-  );
-  const totalWeeklyQuota = $derived(
-    sectionSubjects.reduce(
-      (total, item) => total + Math.max(0, Number(item.weekly_hours) || 0),
-      0,
-    ),
-  );
-  const pendingLessonCount = $derived(
-    sectionSubjects.reduce((total, item) => {
-      const scheduled = lessons.filter(
-        (lesson) => lesson.section_subject_id === item.id,
-      ).length;
-      return total + Math.max(0, (Number(item.weekly_hours) || 0) - scheduled);
-    }, 0),
-  );
-  const overAssignedSubjects = $derived(
-    sectionSubjects.filter((item) => {
-      const scheduled = lessons.filter(
-        (lesson) => lesson.section_subject_id === item.id,
-      ).length;
-      return scheduled > (Number(item.weekly_hours) || 0);
-    }),
-  );
-  const teachersById = $derived(new Map(teachers.map((teacher) => [teacher.id, teacher])));
-  const missingTeachers = $derived(
-    sectionSubjects.filter((item) => {
-      const pending =
-        (Number(item.weekly_hours) || 0) -
-        lessons.filter((lesson) => lesson.section_subject_id === item.id).length;
-      return (
-        pending > 0 &&
-        (!item.instructor_id || !teachersById.has(item.instructor_id))
-      );
-    }),
-  );
-  const invalidPinnedLessons = $derived(
-    lessons.filter((lesson) => {
-      const item = sectionSubjectById.get(lesson.section_subject_id);
-      const slot = timeSlotById.get(lesson.time_slot_id);
-      return (
-        !item ||
-        !slot ||
-        slot.is_break ||
-        !(lesson.teacher_id || item.instructor_id)
-      );
-    }),
-  );
-  const capacityIssues = $derived.by(() => {
-    const quotaByClass = new Map<string, number>();
-    for (const item of sectionSubjects) {
-      quotaByClass.set(
-        item.section_id,
-        (quotaByClass.get(item.section_id) ?? 0) +
-          Math.max(0, Number(item.weekly_hours) || 0),
-      );
-    }
-    return [...quotaByClass.entries()]
-      .filter(([, weeklyQuota]) => weeklyQuota > regularSlots.length)
-      .map(([sectionId]) => sectionId);
-  });
-
-  const isPeriodReadOnly = $derived(
+const isPeriodReadOnly = $derived(
+  !!activePeriod &&
+    (activePeriod.is_locked ||
+      activePeriod.status === "closed" ||
+      activePeriod.status === "archived"),
+);
+const hasSetupData = $derived(
+  yearsQuery.isSuccess &&
+    periodsQuery.isSuccess &&
+    classesQuery.isSuccess &&
+    subjectsQuery.isSuccess &&
+    teachersQuery.isSuccess &&
+    roomsQuery.isSuccess,
+);
+const isLoading = $derived(
+  yearsQuery.isLoading ||
+    periodsQuery.isLoading ||
+    classesQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    teachersQuery.isLoading ||
+    roomsQuery.isLoading ||
+    (!!effectiveActivePeriodId &&
+      (timeSlotsQuery.isLoading ||
+        lessonsQuery.isLoading ||
+        sectionSubjectsQuery.isLoading)),
+);
+const readinessIssues = $derived.by(() => {
+  const issues: string[] = [];
+  if (!activePeriod) return issues;
+  if (regularSlots.length === 0) {
+    issues.push(m.academics_studio_no_time_slots());
+  }
+  if (sectionSubjects.length === 0) {
+    issues.push(m.academics_studio_no_curriculum());
+  }
+  if (missingTeachers.length > 0) {
+    issues.push(
+      m.academics_studio_missing_teachers({
+        count: missingTeachers.length,
+      }),
+    );
+  }
+  if (overAssignedSubjects.length > 0) {
+    issues.push(m.academics_studio_over_assigned());
+  }
+  if (invalidPinnedLessons.length > 0) {
+    issues.push(
+      m.academics_studio_invalid_pinned_lessons({
+        count: invalidPinnedLessons.length,
+      }),
+    );
+  }
+  for (const sectionId of capacityIssues) {
+    issues.push(
+      m.academics_studio_capacity_exceeded({
+        name: getClassName(sectionId),
+      }),
+    );
+  }
+  if (isPeriodReadOnly) {
+    issues.push(m.academics_studio_locked_period());
+  }
+  return issues;
+});
+const solveStatusQuery = createQuery(() => ({
+  queryKey: ["timetable-solve-status", orgId, activeJobId],
+  queryFn: () => api.getTimetableSolveStatus(activeJobId),
+  enabled: isDesktopApp && !!activeJobId,
+  refetchInterval: (query) => {
+    const status = query.state.data?.status;
+    return status === "completed" ||
+      status === "failed" ||
+      status === "cancelled"
+      ? false
+      : 2000;
+  },
+}));
+const solveStatus = $derived(
+  (solveStatusQuery.data ?? null) as TimetableSolveStatusDto | null,
+);
+const solutionAssignments = $derived(
+  solveStatus?.best_solution?.assignments ?? [],
+);
+const unplacedAssignmentCount = $derived(
+  solutionAssignments.filter((assignment) => !assignment.time_slot_id).length,
+);
+const newSolutionAssignments = $derived(
+  solutionAssignments.filter((assignment) => {
+    if (!assignment.time_slot_id) return false;
+    return !lessons.some(
+      (lesson) =>
+        lesson.section_subject_id === assignment.section_subject_id &&
+        lesson.time_slot_id === assignment.time_slot_id,
+    );
+  }),
+);
+const isSolveRunning = $derived(
+  solveStatus?.status === "pending" || solveStatus?.status === "running",
+);
+const canGenerate = $derived(
+  isDesktopApp &&
+    sidecarQuery.data?.is_healthy === true &&
+    hasSetupData &&
+    !isLoading &&
+    !yearsQuery.error &&
+    !periodsQuery.error &&
+    !classesQuery.error &&
+    !subjectsQuery.error &&
+    !teachersQuery.error &&
+    !roomsQuery.error &&
+    !timeSlotsQuery.error &&
+    !lessonsQuery.error &&
+    !sectionSubjectsQuery.error &&
+    !isSolveRunning &&
     !!activePeriod &&
-      (activePeriod.is_locked ||
-        activePeriod.status === "closed" ||
-        activePeriod.status === "archived"),
-  );
-  const hasSetupData = $derived(
-    yearsQuery.isSuccess &&
-      periodsQuery.isSuccess &&
-      classesQuery.isSuccess &&
-      subjectsQuery.isSuccess &&
-      teachersQuery.isSuccess &&
-      roomsQuery.isSuccess,
-  );
-  const isLoading = $derived(
-    yearsQuery.isLoading ||
-      periodsQuery.isLoading ||
-      classesQuery.isLoading ||
-      subjectsQuery.isLoading ||
-      teachersQuery.isLoading ||
-      roomsQuery.isLoading ||
-      (!!effectiveActivePeriodId &&
-        (timeSlotsQuery.isLoading ||
-          lessonsQuery.isLoading ||
-          sectionSubjectsQuery.isLoading)),
-  );
-  const readinessIssues = $derived.by(() => {
-    const issues: string[] = [];
-    if (!activePeriod) return issues;
-    if (regularSlots.length === 0) {
-      issues.push(m.academics_studio_no_time_slots());
-    }
-    if (sectionSubjects.length === 0) {
-      issues.push(m.academics_studio_no_curriculum());
-    }
-    if (missingTeachers.length > 0) {
-      issues.push(
-        m.academics_studio_missing_teachers({
-          count: missingTeachers.length,
-        }),
-      );
-    }
-    if (overAssignedSubjects.length > 0) {
-      issues.push(m.academics_studio_over_assigned());
-    }
-    if (invalidPinnedLessons.length > 0) {
-      issues.push(
-        m.academics_studio_invalid_pinned_lessons({
-          count: invalidPinnedLessons.length,
-        }),
-      );
-    }
-    for (const sectionId of capacityIssues) {
-      issues.push(
-        m.academics_studio_capacity_exceeded({
-          name: getClassName(sectionId),
-        }),
-      );
-    }
-    if (isPeriodReadOnly) {
-      issues.push(m.academics_studio_locked_period());
-    }
-    return issues;
-  });
-  const solveStatusQuery = createQuery(() => ({
-    queryKey: ["timetable-solve-status", orgId, activeJobId],
-    queryFn: () => api.getTimetableSolveStatus(activeJobId),
-    enabled: isDesktopApp && !!activeJobId,
-    refetchInterval: (query) => {
-      const status = query.state.data?.status;
-      return status === "completed" ||
-        status === "failed" ||
-        status === "cancelled"
-        ? false
-        : 2000;
-    },
-  }));
-  const solveStatus = $derived(
-    (solveStatusQuery.data ?? null) as TimetableSolveStatusDto | null,
-  );
-  const solutionAssignments = $derived(
-    solveStatus?.best_solution?.assignments ?? [],
-  );
-  const unplacedAssignmentCount = $derived(
-    solutionAssignments.filter((assignment) => !assignment.time_slot_id).length,
-  );
-  const newSolutionAssignments = $derived(
-    solutionAssignments.filter((assignment) => {
-      if (!assignment.time_slot_id) return false;
-      return !lessons.some(
-        (lesson) =>
-          lesson.section_subject_id === assignment.section_subject_id &&
-          lesson.time_slot_id === assignment.time_slot_id,
-      );
-    }),
-  );
-  const isSolveRunning = $derived(
-    solveStatus?.status === "pending" || solveStatus?.status === "running",
-  );
-  const canGenerate = $derived(
-    isDesktopApp &&
-      sidecarQuery.data?.is_healthy === true &&
-      hasSetupData &&
-      !isLoading &&
-      !yearsQuery.error &&
-      !periodsQuery.error &&
-      !classesQuery.error &&
-      !subjectsQuery.error &&
-      !teachersQuery.error &&
-      !roomsQuery.error &&
-      !timeSlotsQuery.error &&
-      !lessonsQuery.error &&
-      !sectionSubjectsQuery.error &&
-      !isSolveRunning &&
-      !!activePeriod &&
-      !isPeriodReadOnly &&
-      readinessIssues.length === 0 &&
-      pendingLessonCount > 0 &&
-      !isSolving,
-  );
-  const canApplySolution = $derived(
-    solveStatus?.status === "completed" &&
-      unplacedAssignmentCount === 0 &&
-      newSolutionAssignments.length > 0 &&
-      !activeJobApplied &&
-      !isPeriodReadOnly,
-  );
-  const slotIndexes = $derived(
-    [...new Set(timeSlots.map((slot) => slot.slot_index))].sort(
-      (left, right) => left - right,
-    ),
-  );
-  const weekdays = $derived.by(() => {
-    const days = [...new Set(timeSlots.map((slot) => slot.day_of_week))];
-    const order = [7, 1, 2, 3, 4, 5, 6];
-    return days.sort((left, right) => order.indexOf(left) - order.indexOf(right));
-  });
-  const teacherWorkloads = $derived.by(() => {
-    const loads = new Map<string, number>();
-    for (const item of sectionSubjects) {
-      if (!item.instructor_id) continue;
-      loads.set(
-        item.instructor_id,
-        (loads.get(item.instructor_id) ?? 0) +
-          Math.max(0, Number(item.weekly_hours) || 0),
-      );
-    }
-    return loads;
-  });
-  const selectedScheduleClassId = $derived(
-    (selectedClassId !== "all" ? selectedClassId : "") ||
-      classesWithCurriculum[0]?.id ||
-      "",
-  );
-  const visibleDays = $derived(
-    weekdays.length > 0 ? weekdays : [7, 1, 2, 3, 4, 5],
-  );
-  const visibleSubjects = $derived(
-    subjects.filter(
-      (subject) =>
-        selectedSubjectIds.length === 0 ||
-        selectedSubjectIds.includes(subject.id),
-    ),
-  );
-  const visibleSectionSubjects = $derived(
-    sectionSubjects.filter((item) =>
-      visibleSubjects.some((subject) => subject.id === item.subject_id),
-    ),
-  );
-  const visiblePlannerLessons = $derived(
-    lessons.filter((lesson) => {
-      const item = sectionSubjectById.get(lesson.section_subject_id);
-      return (
-        item &&
-        (selectedClassId === "all" || item.section_id === selectedScheduleClassId) &&
-        visibleSubjects.some((subject) => subject.id === item.subject_id)
-      );
-    }),
-  );
-  const visiblePlannerTeachers = $derived(
-    [...new Set(
+    !isPeriodReadOnly &&
+    readinessIssues.length === 0 &&
+    pendingLessonCount > 0 &&
+    !isSolving,
+);
+const canApplySolution = $derived(
+  solveStatus?.status === "completed" &&
+    unplacedAssignmentCount === 0 &&
+    newSolutionAssignments.length > 0 &&
+    !activeJobApplied &&
+    !isPeriodReadOnly,
+);
+const slotIndexes = $derived(
+  [...new Set(timeSlots.map((slot) => slot.slot_index))].sort(
+    (left, right) => left - right,
+  ),
+);
+const weekdays = $derived.by(() => {
+  const days = [...new Set(timeSlots.map((slot) => slot.day_of_week))];
+  const order = [7, 1, 2, 3, 4, 5, 6];
+  return days.sort((left, right) => order.indexOf(left) - order.indexOf(right));
+});
+const teacherWorkloads = $derived.by(() => {
+  const loads = new Map<string, number>();
+  for (const item of sectionSubjects) {
+    if (!item.instructor_id) continue;
+    loads.set(
+      item.instructor_id,
+      (loads.get(item.instructor_id) ?? 0) +
+        Math.max(0, Number(item.weekly_hours) || 0),
+    );
+  }
+  return loads;
+});
+const selectedScheduleClassId = $derived(
+  (selectedClassId !== "all" ? selectedClassId : "") ||
+    classesWithCurriculum[0]?.id ||
+    "",
+);
+const visibleDays = $derived(
+  weekdays.length > 0 ? weekdays : [7, 1, 2, 3, 4, 5],
+);
+const visibleSubjects = $derived(
+  subjects.filter(
+    (subject) =>
+      selectedSubjectIds.length === 0 ||
+      selectedSubjectIds.includes(subject.id),
+  ),
+);
+const visibleSectionSubjects = $derived(
+  sectionSubjects.filter((item) =>
+    visibleSubjects.some((subject) => subject.id === item.subject_id),
+  ),
+);
+const visiblePlannerLessons = $derived(
+  lessons.filter((lesson) => {
+    const item = sectionSubjectById.get(lesson.section_subject_id);
+    return (
+      item &&
+      (selectedClassId === "all" ||
+        item.section_id === selectedScheduleClassId) &&
+      visibleSubjects.some((subject) => subject.id === item.subject_id)
+    );
+  }),
+);
+const visiblePlannerTeachers = $derived(
+  [
+    ...new Set(
       visibleSectionSubjects
         .map((item) => item.instructor_id)
         .filter((id): id is string => !!id),
-    )]
-      .map((id) => teachersById.get(id))
-      .filter((teacher) => !!teacher),
+    ),
+  ]
+    .map((id) => teachersById.get(id))
+    .filter((teacher) => !!teacher),
+);
+
+function getClassName(sectionId: string): string {
+  const section = classes.find((item) => item.id === sectionId);
+  return section?.name_ar || section?.name || section?.code || "";
+}
+
+function getSubjectName(subjectId: string): string {
+  const subject = subjectById.get(subjectId);
+  return (
+    subject?.name_ar || subject?.name || m.academics_studio_unknown_subject()
   );
+}
 
-  function getClassName(sectionId: string): string {
-    const section = classes.find((item) => item.id === sectionId);
-    return section?.name_ar || section?.name || section?.code || "";
-  }
+function getTeacherName(teacherId?: string | null): string {
+  if (!teacherId) return m.academics_studio_unassigned();
+  const teacher = teachersById.get(teacherId);
+  return (
+    teacher?.full_name_ar ||
+    teacher?.full_name ||
+    m.academics_studio_unassigned()
+  );
+}
 
-  function getSubjectName(subjectId: string): string {
-    const subject = subjectById.get(subjectId);
-    return subject?.name_ar || subject?.name || m.academics_studio_unknown_subject();
-  }
+function getRoomName(roomId?: string | null): string {
+  if (!roomId) return "";
+  const room = rooms.find((item) => item.id === roomId);
+  return room?.name_ar || room?.name || "";
+}
 
-  function getTeacherName(teacherId?: string | null): string {
-    if (!teacherId) return m.academics_studio_unassigned();
-    const teacher = teachersById.get(teacherId);
-    return teacher?.full_name_ar || teacher?.full_name || m.academics_studio_unassigned();
-  }
+function getDayName(day: number): string {
+  const labels: Record<number, () => string> = {
+    1: m.common_day_sunday,
+    2: m.common_day_monday,
+    3: m.common_day_tuesday,
+    4: m.common_day_wednesday,
+    5: m.common_day_thursday,
+    6: m.common_day_friday,
+    7: m.common_day_saturday,
+  };
+  return labels[day]?.() ?? String(day);
+}
 
-  function getRoomName(roomId?: string | null): string {
-    if (!roomId) return "";
-    const room = rooms.find((item) => item.id === roomId);
-    return room?.name_ar || room?.name || "";
-  }
-
-  function getDayName(day: number): string {
-    const labels: Record<number, () => string> = {
-      1: m.common_day_sunday,
-      2: m.common_day_monday,
-      3: m.common_day_tuesday,
-      4: m.common_day_wednesday,
-      5: m.common_day_thursday,
-      6: m.common_day_friday,
-      7: m.common_day_saturday,
-    };
-    return labels[day]?.() ?? String(day);
-  }
-
-  function lessonsForDay(day: number) {
-    return visiblePlannerLessons
-      .flatMap((lesson) => {
-        const slot = timeSlotById.get(lesson.time_slot_id);
-        const item = sectionSubjectById.get(lesson.section_subject_id);
-        if (!slot || !item || slot.day_of_week !== day) return [];
-        return [{ lesson, slot, item }];
-      })
-      .sort((left, right) => left.slot.slot_index - right.slot.slot_index);
-  }
-
-  function curriculumForDay(day: number) {
-    const dayLessons = lessonsForDay(day);
-    return visibleSectionSubjects.filter((item) =>
-      dayLessons.some((entry) => entry.item.id === item.id),
-    );
-  }
-
-  function teacherLessonsForDay(day: number, teacherId: string) {
-    return lessonsForDay(day).filter(
-      ({ lesson, item }) =>
-        (lesson.teacher_id || item.instructor_id) === teacherId,
-    );
-  }
-
-  function toggleSubjectFilter(subjectId: string) {
-    const current =
-      selectedSubjectIds.length === 0
-        ? subjects.map((subject) => subject.id)
-        : selectedSubjectIds;
-    const next = current.includes(subjectId)
-      ? current.filter((id) => id !== subjectId)
-      : [...current, subjectId];
-    selectedSubjectIds =
-      next.length === subjects.length ? [] : next;
-  }
-
-  function dateRange(start: string, end: string): string {
-    return `${formatDate(start, "date")} – ${formatDate(end, "date")}`;
-  }
-
-  function handleYearChange(value: string | undefined) {
-    activeYearId = value ?? "";
-    selectedClassId = "all";
-    const yearPeriods = periods.filter((period) => period.year_id === activeYearId);
-    activePeriodId =
-      yearPeriods.find((period) => period.status === "active")?.id ??
-      yearPeriods[0]?.id ??
-      "";
-    activeJobId = "";
-    activeJobApplied = false;
-  }
-
-  function handlePeriodChange(value: string | undefined) {
-    activePeriodId = value ?? "";
-    selectedClassId = "all";
-    activeJobId = "";
-    activeJobApplied = false;
-  }
-
-  async function handleQuotaChange(item: SectionSubjectDto, value: string) {
-    const weeklyHours = Number(value);
-    if (!Number.isInteger(weeklyHours) || weeklyHours < 0 || weeklyHours > 60) {
-      toast.error(m.academics_studio_invalid_weekly_hours());
-      await queryClient.invalidateQueries({
-        queryKey: ["all-class-subjects-matrix", orgId, effectiveActivePeriodId],
-      });
-      return;
-    }
-
-    try {
-      await api.updateSectionSubject(item.id, { weekly_hours: weeklyHours });
-      toast.success(m.academics_studio_weekly_hours());
-      await queryClient.invalidateQueries({
-        queryKey: ["all-class-subjects-matrix", orgId],
-      });
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    }
-  }
-
-  async function handleTeacherChange(
-    item: SectionSubjectDto,
-    value: string | undefined,
-  ) {
-    try {
-      await api.updateSectionSubject(item.id, {
-        instructor_id: value === "unassigned" ? null : value ?? null,
-      });
-      toast.success(m.academics_studio_assigned_teacher());
-      await queryClient.invalidateQueries({
-        queryKey: ["all-class-subjects-matrix", orgId],
-      });
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    }
-  }
-
-  function buildTimetableProblem(): TimetableProblem {
-    const jobId = crypto.randomUUID();
-    const hourAssignments: TimetableProblem["assignments"] = [];
-    for (const item of sectionSubjects) {
-      const scheduled = lessons.filter(
-        (lesson) => lesson.section_subject_id === item.id,
-      ).length;
-      const outstanding = Math.max(
-        0,
-        (Number(item.weekly_hours) || 0) - scheduled,
-      );
-      for (let hourIndex = 0; hourIndex < outstanding; hourIndex += 1) {
-        hourAssignments.push({
-          id: `${item.id}-${hourIndex}`,
-          section_subject_id: item.id,
-          section_id: item.section_id,
-          subject_id: item.subject_id,
-          teacher_id: item.instructor_id ?? "",
-          hour_index: hourIndex,
-        });
-      }
-    }
-
-    const pinnedLessons = lessons.flatMap((lesson) => {
-      const item = sectionSubjectById.get(lesson.section_subject_id);
+function lessonsForDay(day: number) {
+  return visiblePlannerLessons
+    .flatMap((lesson) => {
       const slot = timeSlotById.get(lesson.time_slot_id);
-      const teacherId = lesson.teacher_id || item?.instructor_id;
-      if (!item || !slot || slot.is_break || !teacherId) return [];
+      const item = sectionSubjectById.get(lesson.section_subject_id);
+      if (!slot || !item || slot.day_of_week !== day) return [];
+      return [{ lesson, slot, item }];
+    })
+    .sort((left, right) => left.slot.slot_index - right.slot.slot_index);
+}
+
+function curriculumForDay(day: number) {
+  const dayLessons = lessonsForDay(day);
+  return visibleSectionSubjects.filter((item) =>
+    dayLessons.some((entry) => entry.item.id === item.id),
+  );
+}
+
+function teacherLessonsForDay(day: number, teacherId: string) {
+  return lessonsForDay(day).filter(
+    ({ lesson, item }) =>
+      (lesson.teacher_id || item.instructor_id) === teacherId,
+  );
+}
+
+function toggleSubjectFilter(subjectId: string) {
+  const current =
+    selectedSubjectIds.length === 0
+      ? subjects.map((subject) => subject.id)
+      : selectedSubjectIds;
+  const next = current.includes(subjectId)
+    ? current.filter((id) => id !== subjectId)
+    : [...current, subjectId];
+  selectedSubjectIds = next.length === subjects.length ? [] : next;
+}
+
+function dateRange(start: string, end: string): string {
+  return `${formatDate(start, "date")} – ${formatDate(end, "date")}`;
+}
+
+function handleYearChange(value: string | undefined) {
+  activeYearId = value ?? "";
+  selectedClassId = "all";
+  const yearPeriods = periods.filter(
+    (period) => period.year_id === activeYearId,
+  );
+  activePeriodId =
+    yearPeriods.find((period) => period.status === "active")?.id ??
+    yearPeriods[0]?.id ??
+    "";
+  activeJobId = "";
+  activeJobApplied = false;
+}
+
+function handlePeriodChange(value: string | undefined) {
+  activePeriodId = value ?? "";
+  selectedClassId = "all";
+  activeJobId = "";
+  activeJobApplied = false;
+}
+
+async function handleQuotaChange(item: SectionSubjectDto, value: string) {
+  const weeklyHours = Number(value);
+  if (!Number.isInteger(weeklyHours) || weeklyHours < 0 || weeklyHours > 60) {
+    toast.error(m.academics_studio_invalid_weekly_hours());
+    await queryClient.invalidateQueries({
+      queryKey: ["all-class-subjects-matrix", orgId, effectiveActivePeriodId],
+    });
+    return;
+  }
+
+  try {
+    await api.updateSectionSubject(item.id, { weekly_hours: weeklyHours });
+    toast.success(m.academics_studio_weekly_hours());
+    await queryClient.invalidateQueries({
+      queryKey: ["all-class-subjects-matrix", orgId],
+    });
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
+}
+
+async function handleTeacherChange(
+  item: SectionSubjectDto,
+  value: string | undefined,
+) {
+  try {
+    await api.updateSectionSubject(item.id, {
+      instructor_id: value === "unassigned" ? null : (value ?? null),
+    });
+    toast.success(m.academics_studio_assigned_teacher());
+    await queryClient.invalidateQueries({
+      queryKey: ["all-class-subjects-matrix", orgId],
+    });
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
+}
+
+function buildTimetableProblem(): TimetableProblem {
+  const jobId = crypto.randomUUID();
+  const hourAssignments: TimetableProblem["assignments"] = [];
+  for (const item of sectionSubjects) {
+    const scheduled = lessons.filter(
+      (lesson) => lesson.section_subject_id === item.id,
+    ).length;
+    const outstanding = Math.max(
+      0,
+      (Number(item.weekly_hours) || 0) - scheduled,
+    );
+    for (let hourIndex = 0; hourIndex < outstanding; hourIndex += 1) {
+      hourAssignments.push({
+        id: `${item.id}-${hourIndex}`,
+        section_subject_id: item.id,
+        section_id: item.section_id,
+        subject_id: item.subject_id,
+        teacher_id: item.instructor_id ?? "",
+        hour_index: hourIndex,
+      });
+    }
+  }
+
+  const pinnedLessons = lessons.flatMap((lesson) => {
+    const item = sectionSubjectById.get(lesson.section_subject_id);
+    const slot = timeSlotById.get(lesson.time_slot_id);
+    const teacherId = lesson.teacher_id || item?.instructor_id;
+    if (!item || !slot || slot.is_break || !teacherId) return [];
+    return [
+      {
+        id: lesson.id,
+        section_id: item.section_id,
+        teacher_id: teacherId,
+        subject_id: item.subject_id,
+        section_subject_id: item.id,
+        time_slot_id: slot.id,
+        day_of_week: slot.day_of_week,
+        room_id: lesson.room_id ?? null,
+      },
+    ];
+  });
+
+  return {
+    job_id: jobId,
+    org_id: orgId,
+    period_id: effectiveActivePeriodId,
+    mode: pinnedLessons.length > 0 ? "incremental" : "full",
+    time_slots: timeSlots.map((slot) => ({
+      id: slot.id,
+      slot_number: slot.slot_index,
+      start_time: slot.start_time.slice(0, 5),
+      end_time: slot.end_time.slice(0, 5),
+      is_break: slot.is_break,
+      applicable_days: [slot.day_of_week],
+    })),
+    rooms: rooms.map((room) => ({
+      id: room.id,
+      name: room.name_ar || room.name,
+      capacity: room.capacity,
+      room_type: room.room_type,
+    })),
+    assignments: hourAssignments,
+    pinned_lessons: pinnedLessons,
+    unavailable_slots: [],
+  };
+}
+
+async function handleGenerate() {
+  if (!canGenerate) return;
+  isSolving = true;
+  activeJobId = "";
+  activeJobApplied = false;
+  activeTab = "generator";
+
+  try {
+    const problem = buildTimetableProblem();
+    await api.submitTimetable(problem);
+    activeJobId = problem.job_id;
+    toast.success(m.academics_schedule_solver_started());
+    await queryClient.invalidateQueries({
+      queryKey: ["solver-sidecar-status", orgId],
+    });
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isSolving = false;
+  }
+}
+
+async function handleApplySolution() {
+  if (!canApplySolution) return;
+  isApplying = true;
+  try {
+    const requests = newSolutionAssignments.flatMap((assignment) => {
+      if (!assignment.time_slot_id) return [];
       return [
         {
-          id: lesson.id,
-          section_id: item.section_id,
-          teacher_id: teacherId,
-          subject_id: item.subject_id,
-          section_subject_id: item.id,
-          time_slot_id: slot.id,
-          day_of_week: slot.day_of_week,
-          room_id: lesson.room_id ?? null,
+          section_subject_id: assignment.section_subject_id,
+          time_slot_id: assignment.time_slot_id,
+          teacher_id: assignment.teacher_id || undefined,
+          room_id: assignment.room_id || undefined,
         },
       ];
     });
-
-    return {
-      job_id: jobId,
-      org_id: orgId,
-      period_id: effectiveActivePeriodId,
-      mode: pinnedLessons.length > 0 ? "incremental" : "full",
-      time_slots: timeSlots.map((slot) => ({
-        id: slot.id,
-        slot_number: slot.slot_index,
-        start_time: slot.start_time.slice(0, 5),
-        end_time: slot.end_time.slice(0, 5),
-        is_break: slot.is_break,
-        applicable_days: [slot.day_of_week],
-      })),
-      rooms: rooms.map((room) => ({
-        id: room.id,
-        name: room.name_ar || room.name,
-        capacity: room.capacity,
-        room_type: room.room_type,
-      })),
-      assignments: hourAssignments,
-      pinned_lessons: pinnedLessons,
-      unavailable_slots: [],
-    };
+    await api.bulkScheduleLessons({ lessons: requests });
+    activeJobApplied = true;
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: ["period-schedule", orgId, effectiveActivePeriodId],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["class-schedule"],
+      }),
+    ]);
+    toast.success(m.academics_schedule_solver_applied());
+    activeTab = "schedule";
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  } finally {
+    isApplying = false;
   }
+}
 
-  async function handleGenerate() {
-    if (!canGenerate) return;
-    isSolving = true;
-    activeJobId = "";
-    activeJobApplied = false;
-    activeTab = "generator";
+function openSchedule() {
+  goto(resolve(localizeHref(`/${orgId}/academics/schedule`)));
+}
 
-    try {
-      const problem = buildTimetableProblem();
-      await api.submitTimetable(problem);
-      activeJobId = problem.job_id;
-      toast.success(m.academics_schedule_solver_started());
-      await queryClient.invalidateQueries({
-        queryKey: ["solver-sidecar-status", orgId],
-      });
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isSolving = false;
-    }
-  }
+function openYearSettings() {
+  goto(resolve(localizeHref(`/${orgId}/settings/academic-calendars`)));
+}
 
-  async function handleApplySolution() {
-    if (!canApplySolution) return;
-    isApplying = true;
-    try {
-      const requests = newSolutionAssignments.flatMap((assignment) => {
-        if (!assignment.time_slot_id) return [];
-        return [
-          {
-            section_subject_id: assignment.section_subject_id,
-            time_slot_id: assignment.time_slot_id,
-            teacher_id: assignment.teacher_id || undefined,
-            room_id: assignment.room_id || undefined,
-          },
-        ];
-      });
-      await api.bulkScheduleLessons({ lessons: requests });
-      activeJobApplied = true;
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["period-schedule", orgId, effectiveActivePeriodId],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["class-schedule"],
-        }),
-      ]);
-      toast.success(m.academics_schedule_solver_applied());
-      activeTab = "schedule";
-    } catch (error) {
-      toast.error(extractErrorMessage(error));
-    } finally {
-      isApplying = false;
-    }
-  }
+function openPeriodSettings() {
+  goto(resolve(localizeHref(`/${orgId}/settings/periods`)));
+}
 
-  function openSchedule() {
-    goto(resolve(localizeHref(`/${orgId}/academics/schedule`)));
-  }
-
-  function openYearSettings() {
-    goto(resolve(localizeHref(`/${orgId}/settings/academic-calendars`)));
-  }
-
-  function openPeriodSettings() {
-    goto(resolve(localizeHref(`/${orgId}/settings/periods`)));
-  }
-
-  const pageError = $derived(
-    yearsQuery.error ||
-      periodsQuery.error ||
-      classesQuery.error ||
-      subjectsQuery.error ||
-      teachersQuery.error ||
-      roomsQuery.error ||
-      timeSlotsQuery.error ||
-      lessonsQuery.error ||
-      sectionSubjectsQuery.error ||
-      solveStatusQuery.error,
-  );
+const pageError = $derived(
+  yearsQuery.error ||
+    periodsQuery.error ||
+    classesQuery.error ||
+    subjectsQuery.error ||
+    teachersQuery.error ||
+    roomsQuery.error ||
+    timeSlotsQuery.error ||
+    lessonsQuery.error ||
+    sectionSubjectsQuery.error ||
+    solveStatusQuery.error,
+);
 </script>
 
 <div class="flex h-full w-full flex-col overflow-hidden bg-background text-start">

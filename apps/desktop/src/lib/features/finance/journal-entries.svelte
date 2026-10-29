@@ -23,14 +23,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
 import { toast } from "@orbis/ui";
-import {
-  Plus,
-  Refresh,
-  Search,
-  Download,
-  XMark,
-  Printer,
-} from "@orbis/icons";
+import { Plus, Refresh, Search, Download, XMark, Printer } from "@orbis/icons";
 import {
   OrbisGrid,
   type OrbisColumnDef,
@@ -69,13 +62,16 @@ let searchQuery = $state("");
 let filterDate = $state(getLocalDateInputValue());
 
 function getLocalDateInputValue(date = new Date()) {
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 10);
 }
 
 const journalAccounts = $derived(
-  accounts.filter((account) =>
-    account.is_active &&
-    account.currency.toUpperCase() === selectedCurrency.toUpperCase()
+  accounts.filter(
+    (account) =>
+      account.is_active &&
+      account.currency.toUpperCase() === selectedCurrency.toUpperCase(),
   ),
 );
 
@@ -128,8 +124,10 @@ function clearForm() {
 function handleCurrencyChange(currency: string | undefined) {
   if (!currency || currency === selectedCurrency) return;
   selectedCurrency = currency;
-  if (!journalAccounts.some((account) => account.id === debitAccountId)) debitAccountId = "";
-  if (!journalAccounts.some((account) => account.id === creditAccountId)) creditAccountId = "";
+  if (!journalAccounts.some((account) => account.id === debitAccountId))
+    debitAccountId = "";
+  if (!journalAccounts.some((account) => account.id === creditAccountId))
+    creditAccountId = "";
 }
 
 function getAccountName(id?: string | null): string {
@@ -171,9 +169,13 @@ async function handleSaveNew() {
   isSubmitting = true;
   try {
     const amountValue = String(amount);
-    const description = notes.trim() || (referenceNumber
-      ? m.finance_ui_journal_entry_numbered_description({ number: referenceNumber })
-      : m.finance_ui_journal_entry_default_description());
+    const description =
+      notes.trim() ||
+      (referenceNumber
+        ? m.finance_ui_journal_entry_numbered_description({
+            number: referenceNumber,
+          })
+        : m.finance_ui_journal_entry_default_description());
     const payload: CreateJournalEntryRequest = {
       reference_number: referenceNumber.trim() || undefined,
       accounting_date: accountingDate,
@@ -188,13 +190,15 @@ async function handleSaveNew() {
           account_id: debitAccountId,
           debit_amount: amountValue,
           credit_amount: "0",
-          description: notes.trim() || m.finance_ui_journal_from_account_description(),
+          description:
+            notes.trim() || m.finance_ui_journal_from_account_description(),
         },
         {
           account_id: creditAccountId,
           debit_amount: "0",
           credit_amount: amountValue,
-          description: notes.trim() || m.finance_ui_journal_to_account_description(),
+          description:
+            notes.trim() || m.finance_ui_journal_to_account_description(),
         },
       ],
     };
@@ -215,7 +219,9 @@ async function handleSaveNew() {
 async function handleReverse(entry: JournalEntryDto) {
   const confirmed = await confirmStore.prompt({
     title: m.finance_ui_reverse_journal_entry(),
-    description: m.finance_ui_reverse_journal_entry_confirm({ number: entry.reference_number || entry.id.slice(0, 8) }),
+    description: m.finance_ui_reverse_journal_entry_confirm({
+      number: entry.reference_number || entry.id.slice(0, 8),
+    }),
     confirmText: m.finance_ui_reverse_entry(),
     cancelText: m.finance_ui_cancel(),
     variant: "destructive",
@@ -224,7 +230,9 @@ async function handleReverse(entry: JournalEntryDto) {
   if (!confirmed) return;
 
   try {
-    await api.reverseJournalEntry(entry.id, { reason: m.finance_ui_journal_manual_reverse_reason() });
+    await api.reverseJournalEntry(entry.id, {
+      reason: m.finance_ui_journal_manual_reverse_reason(),
+    });
     toast.success(m.finance_ui_journal_entry_reversed_success());
     await loadData();
   } catch (err: any) {
@@ -238,13 +246,22 @@ const gridSource = $derived(
   journalEntries.map((e, idx) => {
     const debitAcc = e.debit_account_id
       ? getAccountName(e.debit_account_id)
-      : (e.lines && e.lines.length > 0 ? getAccountName(e.lines[0].account_id) : "—");
+      : e.lines && e.lines.length > 0
+        ? getAccountName(e.lines[0].account_id)
+        : "—";
 
     const creditAcc = e.credit_account_id
       ? getAccountName(e.credit_account_id)
-      : (e.lines && e.lines.length > 1 ? getAccountName(e.lines[1].account_id) : "—");
+      : e.lines && e.lines.length > 1
+        ? getAccountName(e.lines[1].account_id)
+        : "—";
 
-    const amt = Number(e.amount || (e.lines && e.lines.length > 0 ? e.lines[0].debit || e.lines[0].credit : 0));
+    const amt = Number(
+      e.amount ||
+        (e.lines && e.lines.length > 0
+          ? e.lines[0].debit || e.lines[0].credit
+          : 0),
+    );
     const curr = e.currency_code || e.currency || "YER";
 
     return {
@@ -257,18 +274,24 @@ const gridSource = $derived(
       debit_account_display: debitAcc,
       credit_account_display: creditAcc,
       notes_display: e.description_ar || e.description || "—",
-      status_display: e.is_posted ? m.finance_ui_posted_status() : m.finance_ui_draft_status(),
+      status_display: e.is_posted
+        ? m.finance_ui_posted_status()
+        : m.finance_ui_draft_status(),
     };
-  })
+  }),
 );
 
 const filteredSource = $derived(
   gridSource.filter((row) => {
-    if (filterDate && (!row.accounting_date || !String(row.accounting_date).startsWith(filterDate))) {
+    if (
+      filterDate &&
+      (!row.accounting_date ||
+        !String(row.accounting_date).startsWith(filterDate))
+    ) {
       return false;
     }
     return true;
-  })
+  }),
 );
 const selectedJournalEntries = $derived(
   filteredSource.filter((entry) =>
@@ -304,15 +327,98 @@ function handleJournalSelection(selection: SelectionSnapshot) {
 }
 
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "ref_display", prop: "ref_display", header: m.finance_ui_voucher_number(), name: m.finance_ui_voucher_number(), width: 110, size: 110, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "date_display", prop: "date_display", header: m.finance_ui_date(), name: m.finance_ui_date(), width: 110, size: 110, readonly: true, align: "center" },
-  { id: "debit_account_display", prop: "debit_account_display", header: m.finance_ui_debit_account(), name: m.finance_ui_debit_account(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "credit_account_display", prop: "credit_account_display", header: m.finance_ui_credit_account(), name: m.finance_ui_credit_account(), width: 220, size: 220, readonly: true, cellClass: "font-medium" },
-  { id: "amount_formatted", prop: "amount_formatted", header: m.finance_ui_amount(), name: m.finance_ui_amount(), width: 140, size: 140, readonly: true, align: "end", cellClass: "font-mono font-bold text-primary" },
-  { id: "currency_display", prop: "currency_display", header: m.finance_ui_currency(), name: m.finance_ui_currency(), width: 80, size: 80, readonly: true, align: "center" },
-  { id: "notes_display", prop: "notes_display", header: m.finance_ui_description_notes(), name: m.finance_ui_description_notes(), width: 240, size: 240, readonly: true },
-  { id: "status_display", prop: "status_display", header: m.finance_ui_status(), name: m.finance_ui_status(), width: 90, size: 90, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "ref_display",
+    prop: "ref_display",
+    header: m.finance_ui_voucher_number(),
+    name: m.finance_ui_voucher_number(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "date_display",
+    prop: "date_display",
+    header: m.finance_ui_date(),
+    name: m.finance_ui_date(),
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "debit_account_display",
+    prop: "debit_account_display",
+    header: m.finance_ui_debit_account(),
+    name: m.finance_ui_debit_account(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "credit_account_display",
+    prop: "credit_account_display",
+    header: m.finance_ui_credit_account(),
+    name: m.finance_ui_credit_account(),
+    width: 220,
+    size: 220,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "amount_formatted",
+    prop: "amount_formatted",
+    header: m.finance_ui_amount(),
+    name: m.finance_ui_amount(),
+    width: 140,
+    size: 140,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-primary",
+  },
+  {
+    id: "currency_display",
+    prop: "currency_display",
+    header: m.finance_ui_currency(),
+    name: m.finance_ui_currency(),
+    width: 80,
+    size: 80,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "notes_display",
+    prop: "notes_display",
+    header: m.finance_ui_description_notes(),
+    name: m.finance_ui_description_notes(),
+    width: 240,
+    size: 240,
+    readonly: true,
+  },
+  {
+    id: "status_display",
+    prop: "status_display",
+    header: m.finance_ui_status(),
+    name: m.finance_ui_status(),
+    width: 90,
+    size: 90,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
 ];
 
 function exportCsv() {
@@ -327,12 +433,25 @@ function exportCsv() {
     e.status_display,
   ]);
   const csv = [
-    [m.finance_ui_voucher_number(), m.finance_ui_date(), m.finance_ui_debit_account(), m.finance_ui_credit_account(), m.finance_ui_amount(), m.finance_ui_currency(), m.finance_ui_notes(), m.finance_ui_status()],
+    [
+      m.finance_ui_voucher_number(),
+      m.finance_ui_date(),
+      m.finance_ui_debit_account(),
+      m.finance_ui_credit_account(),
+      m.finance_ui_amount(),
+      m.finance_ui_currency(),
+      m.finance_ui_notes(),
+      m.finance_ui_status(),
+    ],
     ...rows,
   ]
-    .map((row) => row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","))
+    .map((row) =>
+      row.map((v) => `"${String(v ?? "").replaceAll('"', '""')}"`).join(","),
+    )
     .join("\n");
-  const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(
+    new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }),
+  );
   const link = document.createElement("a");
   link.href = url;
   link.download = `journal-entries-${orgId}.csv`;

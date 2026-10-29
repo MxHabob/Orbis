@@ -5,11 +5,7 @@
  */
 
 import React from "react";
-import {
-  View,
-  Text,
-  type ViewProps,
-} from "react-native";
+import { View, Text, type ViewProps } from "react-native";
 
 type SpacingScale =
   | "half"
@@ -57,7 +53,6 @@ export function Section({
   children,
   ...props
 }: SectionProps) {
-
   const hasHeader = title || subtitle || action;
   const sectionSpacingClass =
     typeof spacing === "string" ? marginBottomClasses[spacing] : undefined;

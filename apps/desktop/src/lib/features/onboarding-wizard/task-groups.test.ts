@@ -6,9 +6,7 @@ import type {
   SetupTaskDto,
 } from "$lib/api/types";
 
-const category = (
-  id: OnboardingTaskCategory,
-): CategoryProgressDto => ({
+const category = (id: OnboardingTaskCategory): CategoryProgressDto => ({
   category: id,
   label: id,
   label_ar: id,

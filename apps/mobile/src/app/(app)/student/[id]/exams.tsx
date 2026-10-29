@@ -18,12 +18,7 @@ import {
 } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import {
-  AcademicCap,
-  Calendar,
-  Clock,
-  Sparkles,
-} from "@orbis/icons/native";
+import { AcademicCap, Calendar, Clock, Sparkles } from "@orbis/icons/native";
 
 export default function StudentExamsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,13 +26,8 @@ export default function StudentExamsScreen() {
   const { t, isArabic, formatDate } = useI18n();
 
   const requestedStudentId = typeof id === "string" ? id : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const examsQuery = useStudentExamsQuery(studentId);
   const exams = examsQuery.data ?? [];
@@ -55,23 +45,19 @@ export default function StudentExamsScreen() {
           ? undefined
           : t("student_access_denied")
       }
-      onRetry={() =>
-        void (isLinked ? examsQuery.refetch() : retryIdentity())
-      }
+      onRetry={() => void (isLinked ? examsQuery.refetch() : retryIdentity())}
     >
       {/* 1. Exam Count Banner */}
       {exams.length > 0 ? (
-        <Card
-          variant="default"
-          padding="four"
-        >
+        <Card variant="default" padding="four">
           <View className="flex-row items-center justify-between">
             <View className="gap-half">
               <Text className="text-xs font-semibold text-muted-foreground">
                 {t("upcoming_exams_label") || "Upcoming Exams"}
               </Text>
               <Text className="text-2xl font-extrabold text-foreground">
-                {formatNumber(exams.length)} {t("exams_scheduled") || "Scheduled"}
+                {formatNumber(exams.length)}{" "}
+                {t("exams_scheduled") || "Scheduled"}
               </Text>
             </View>
 
@@ -87,7 +73,10 @@ export default function StudentExamsScreen() {
         <View className="py-ten">
           <EmptyState
             title={t("student_no_exams")}
-            description={t("student_no_exams_description") || "No exams are currently scheduled for your courses."}
+            description={
+              t("student_no_exams_description") ||
+              "No exams are currently scheduled for your courses."
+            }
             icon={<AcademicCap size={32} className="text-muted-foreground" />}
           />
         </View>

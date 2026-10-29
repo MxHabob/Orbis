@@ -28,7 +28,11 @@ const strokeColor = $derived(
 );
 
 const label = $derived(
-  score >= 80 ? m.operations_ui_readiness_ready() : score >= 50 ? m.operations_ui_readiness_partial() : m.operations_ui_readiness_not_ready(),
+  score >= 80
+    ? m.operations_ui_readiness_ready()
+    : score >= 50
+      ? m.operations_ui_readiness_partial()
+      : m.operations_ui_readiness_not_ready(),
 );
 </script>
 

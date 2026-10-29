@@ -3,402 +3,402 @@
 Manages assessment schemes (weighted grade composition structures).
 -->
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import {
-    api,
-    extractErrorMessage,
-    type AssessmentComponent,
-  } from "$lib/api";
-  import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
-  import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
-  import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
-  import { AdjustmentsHorizontal, ChevronRight, Keyframes, Pencil, Plus, Scale, Trash } from "@orbis/icons";
-  import { toast } from "@orbis/ui";
-  import { Badge } from "@orbis/ui/badge";
-  import { Button } from "@orbis/ui/button";
-  import { Separator } from "@orbis/ui/separator";
-  import {
-    Card,
-    CardHeader,
-    CardTitle,
-    CardAction,
-    CardContent,
-  } from "@orbis/ui/card";
-  import { createQuery, useQueryClient } from "@tanstack/svelte-query";
+import * as m from "$lib/paraglide/messages";
+import { api, extractErrorMessage, type AssessmentComponent } from "$lib/api";
+import AssessmentComponentDialog from "./components/assessment-component-dialog.svelte";
+import AssessmentSchemeDialog from "./components/assessment-scheme-dialog.svelte";
+import SettingsFormSkeleton from "$lib/shared/skeletons/settings-form-skeleton.svelte";
+import {
+  AdjustmentsHorizontal,
+  ChevronRight,
+  Keyframes,
+  Pencil,
+  Plus,
+  Scale,
+  Trash,
+} from "@orbis/icons";
+import { toast } from "@orbis/ui";
+import { Badge } from "@orbis/ui/badge";
+import { Button } from "@orbis/ui/button";
+import { Separator } from "@orbis/ui/separator";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardAction,
+  CardContent,
+} from "@orbis/ui/card";
+import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 
-  let { orgId }: { orgId: string } = $props();
-  const queryClient = useQueryClient();
+let { orgId }: { orgId: string } = $props();
+const queryClient = useQueryClient();
 
-  interface SchemeComponent {
-    id: string;
-    code: string;
-    name: string;
-    name_ar?: string | null;
-    component_type: string;
-    weight: number;
-    max_score: number;
-    passing_score: number;
-    sort_order: number;
-    is_required: boolean;
-    stored_weight: number | null;
-    stored_component_type: string | null;
-    displayed_weight: number;
-  }
+interface SchemeComponent {
+  id: string;
+  code: string;
+  name: string;
+  name_ar?: string | null;
+  component_type: string;
+  weight: number;
+  max_score: number;
+  passing_score: number;
+  sort_order: number;
+  is_required: boolean;
+  stored_weight: number | null;
+  stored_component_type: string | null;
+  displayed_weight: number;
+}
 
-  // ── Queries ──────────────────────────────────────────────────
-  const schemesQuery = createQuery(() => ({
-    queryKey: ["assessment-schemes", orgId],
-    queryFn: () => api.listAssessmentSchemes(),
-  }));
+// ── Queries ──────────────────────────────────────────────────
+const schemesQuery = createQuery(() => ({
+  queryKey: ["assessment-schemes", orgId],
+  queryFn: () => api.listAssessmentSchemes(),
+}));
 
-  let activeSchemeId = $state<string | null>(null);
+let activeSchemeId = $state<string | null>(null);
 
-  const schemes = $derived((schemesQuery.data as any[] | undefined) ?? []);
-  const selectedScheme = $derived(
-    (activeSchemeId ? schemes.find((s: any) => s.id === activeSchemeId) : null) ??
-      schemes[0] ??
-      null,
-  );
-  const selectedSchemeId = $derived(selectedScheme?.id ?? null);
+const schemes = $derived((schemesQuery.data as any[] | undefined) ?? []);
+const selectedScheme = $derived(
+  (activeSchemeId ? schemes.find((s: any) => s.id === activeSchemeId) : null) ??
+    schemes[0] ??
+    null,
+);
+const selectedSchemeId = $derived(selectedScheme?.id ?? null);
 
-  const schemeComponents = $derived.by<SchemeComponent[]>(() => {
-    if (!selectedScheme) return [];
-    const formula = selectedScheme.formula as any;
-    const formulaComponents = Array.isArray(formula?.components)
-      ? formula.components
-      : Array.isArray(formula)
-        ? formula
-        : null;
-    const storedComponents: unknown[] = Array.isArray(selectedScheme.components)
-      ? selectedScheme.components
-      : [];
-    const usesSchemeComponents = storedComponents.length > 0;
-    const components =
-      usesSchemeComponents
-        ? storedComponents
-        : formulaComponents ?? storedComponents;
-    const schemeMaxScore = Number(selectedScheme.max_score) || 100;
+const schemeComponents = $derived.by<SchemeComponent[]>(() => {
+  if (!selectedScheme) return [];
+  const formula = selectedScheme.formula as any;
+  const formulaComponents = Array.isArray(formula?.components)
+    ? formula.components
+    : Array.isArray(formula)
+      ? formula
+      : null;
+  const storedComponents: unknown[] = Array.isArray(selectedScheme.components)
+    ? selectedScheme.components
+    : [];
+  const usesSchemeComponents = storedComponents.length > 0;
+  const components = usesSchemeComponents
+    ? storedComponents
+    : (formulaComponents ?? storedComponents);
+  const schemeMaxScore = Number(selectedScheme.max_score) || 100;
 
-    const usedIds: string[] = [];
-    return components.map((component, index) => {
-      const value =
-        typeof component === "object" && component !== null
-          ? (component as Record<string, unknown>)
-          : {};
-      const baseId =
-        (typeof value.id === "string" && value.id) ||
-        (typeof value.code === "string" && value.code) ||
-        `${selectedScheme.id}-component-${index}`;
-      let id = baseId;
-      let duplicateIndex = 1;
-      while (usedIds.includes(id)) {
-        id = `${baseId}-${duplicateIndex++}`;
-      }
-      usedIds.push(id);
+  const usedIds: string[] = [];
+  return components.map((component, index) => {
+    const value =
+      typeof component === "object" && component !== null
+        ? (component as Record<string, unknown>)
+        : {};
+    const baseId =
+      (typeof value.id === "string" && value.id) ||
+      (typeof value.code === "string" && value.code) ||
+      `${selectedScheme.id}-component-${index}`;
+    let id = baseId;
+    let duplicateIndex = 1;
+    while (usedIds.includes(id)) {
+      id = `${baseId}-${duplicateIndex++}`;
+    }
+    usedIds.push(id);
 
-      const maxScore = Number(value.max_score ?? value.maxScore) || 0;
-      const storedWeight = Number(value.weight) || 0;
-      const storedType = String(
-        value.component_type ?? value.componentType ?? "",
-      );
-      const displayedWeight = usesSchemeComponents
-        ? storedWeight === 1
-          ? schemeMaxScore > 0
-            ? (maxScore / schemeMaxScore) * 100
-            : 0
-          : storedWeight * 100
-        : storedWeight;
-      const componentType =
-        storedType === "assignment"
-          ? "homework"
-          : storedType === "coursework"
-            ? "classwork"
-            : storedType === "final_exam" || storedType === "midterm"
-              ? "exam"
-              : storedType;
-      return {
-        id,
-        code: String(value.code ?? id),
-        name: String(value.name ?? ""),
-        name_ar:
-          typeof value.name_ar === "string"
-            ? value.name_ar
-            : typeof value.nameAr === "string"
-              ? value.nameAr
-              : null,
-        component_type: componentType || "exam",
-        weight: displayedWeight,
-        max_score: maxScore,
-        passing_score: Number(
-          value.passing_score ?? value.min_score ?? value.minScore,
-        ) || 0,
-        sort_order: Number(value.sort_order ?? value.sortOrder) || index + 1,
-        is_required: Boolean(value.is_required ?? value.isRequired ?? true),
-        stored_weight: usesSchemeComponents ? storedWeight : null,
-        stored_component_type: storedType || null,
-        displayed_weight: displayedWeight,
-      };
-    });
-  });
-
-  function toAssessmentComponents(
-    components: SchemeComponent[],
-  ): AssessmentComponent[] {
-    return components.map((component, index) => {
-      const weight =
-        component.stored_weight !== null &&
-        component.weight === component.displayed_weight
-          ? component.stored_weight
-          : component.weight / 100;
-      const componentType =
-        component.component_type === "homework"
-          ? "assignment"
-          : component.component_type === "classwork"
-            ? "coursework"
-            : component.component_type === "exam"
-              ? "final_exam"
-              : component.component_type;
-
-      return {
-        code: component.code,
-        name: component.name,
-        nameAr: component.name_ar,
-        maxScore: String(component.max_score),
-        weight: String(weight),
-        sortOrder: component.sort_order || index + 1,
-        isRequired: component.is_required,
-        componentType:
-          component.stored_component_type &&
-          component.component_type ===
-            (component.stored_component_type === "assignment"
-              ? "homework"
-              : component.stored_component_type === "coursework"
-                ? "classwork"
-                : component.stored_component_type === "final_exam" ||
-                    component.stored_component_type === "midterm"
-                  ? "exam"
-                  : component.stored_component_type)
-            ? component.stored_component_type
-            : componentType,
-        minScore:
-          component.passing_score > 0
-            ? String(component.passing_score)
+    const maxScore = Number(value.max_score ?? value.maxScore) || 0;
+    const storedWeight = Number(value.weight) || 0;
+    const storedType = String(
+      value.component_type ?? value.componentType ?? "",
+    );
+    const displayedWeight = usesSchemeComponents
+      ? storedWeight === 1
+        ? schemeMaxScore > 0
+          ? (maxScore / schemeMaxScore) * 100
+          : 0
+        : storedWeight * 100
+      : storedWeight;
+    const componentType =
+      storedType === "assignment"
+        ? "homework"
+        : storedType === "coursework"
+          ? "classwork"
+          : storedType === "final_exam" || storedType === "midterm"
+            ? "exam"
+            : storedType;
+    return {
+      id,
+      code: String(value.code ?? id),
+      name: String(value.name ?? ""),
+      name_ar:
+        typeof value.name_ar === "string"
+          ? value.name_ar
+          : typeof value.nameAr === "string"
+            ? value.nameAr
             : null,
-      };
-    });
-  }
-
-  async function saveSchemeComponents(components: SchemeComponent[]) {
-    if (!selectedScheme) return;
-
-    const request: {
-      components: AssessmentComponent[];
-      formula?: unknown;
-    } = {
-      components: toAssessmentComponents(components),
+      component_type: componentType || "exam",
+      weight: displayedWeight,
+      max_score: maxScore,
+      passing_score:
+        Number(value.passing_score ?? value.min_score ?? value.minScore) || 0,
+      sort_order: Number(value.sort_order ?? value.sortOrder) || index + 1,
+      is_required: Boolean(value.is_required ?? value.isRequired ?? true),
+      stored_weight: usesSchemeComponents ? storedWeight : null,
+      stored_component_type: storedType || null,
+      displayed_weight: displayedWeight,
     };
-    const formula = selectedScheme.formula;
-    if (
-      formula &&
-      typeof formula === "object" &&
-      !Array.isArray(formula) &&
-      Array.isArray((formula as { components?: unknown }).components)
-    ) {
-      request.formula = {
-        ...formula,
-        components,
-      };
-    } else if (Array.isArray(formula)) {
-      request.formula = components;
-    }
+  });
+});
 
-    await api.updateAssessmentScheme(selectedScheme.id, request);
+function toAssessmentComponents(
+  components: SchemeComponent[],
+): AssessmentComponent[] {
+  return components.map((component, index) => {
+    const weight =
+      component.stored_weight !== null &&
+      component.weight === component.displayed_weight
+        ? component.stored_weight
+        : component.weight / 100;
+    const componentType =
+      component.component_type === "homework"
+        ? "assignment"
+        : component.component_type === "classwork"
+          ? "coursework"
+          : component.component_type === "exam"
+            ? "final_exam"
+            : component.component_type;
+
+    return {
+      code: component.code,
+      name: component.name,
+      nameAr: component.name_ar,
+      maxScore: String(component.max_score),
+      weight: String(weight),
+      sortOrder: component.sort_order || index + 1,
+      isRequired: component.is_required,
+      componentType:
+        component.stored_component_type &&
+        component.component_type ===
+          (component.stored_component_type === "assignment"
+            ? "homework"
+            : component.stored_component_type === "coursework"
+              ? "classwork"
+              : component.stored_component_type === "final_exam" ||
+                  component.stored_component_type === "midterm"
+                ? "exam"
+                : component.stored_component_type)
+          ? component.stored_component_type
+          : componentType,
+      minScore:
+        component.passing_score > 0 ? String(component.passing_score) : null,
+    };
+  });
+}
+
+async function saveSchemeComponents(components: SchemeComponent[]) {
+  if (!selectedScheme) return;
+
+  const request: {
+    components: AssessmentComponent[];
+    formula?: unknown;
+  } = {
+    components: toAssessmentComponents(components),
+  };
+  const formula = selectedScheme.formula;
+  if (
+    formula &&
+    typeof formula === "object" &&
+    !Array.isArray(formula) &&
+    Array.isArray((formula as { components?: unknown }).components)
+  ) {
+    request.formula = {
+      ...formula,
+      components,
+    };
+  } else if (Array.isArray(formula)) {
+    request.formula = components;
   }
 
-  // ── Weight summary ───────────────────────────────────────────
-  const totalWeight = $derived(
-    schemeComponents.reduce(
-      (sum: number, c: SchemeComponent) => sum + (Number(c.weight) || 0),
-      0,
-    ),
-  );
+  await api.updateAssessmentScheme(selectedScheme.id, request);
+}
 
-  // ── Create Scheme Dialog ─────────────────────────────────────
-  let showCreateDialog = $state(false);
-  let newSchemeName = $state("");
-  let newSchemeDesc = $state("");
-  let isCreating = $state(false);
+// ── Weight summary ───────────────────────────────────────────
+const totalWeight = $derived(
+  schemeComponents.reduce(
+    (sum: number, c: SchemeComponent) => sum + (Number(c.weight) || 0),
+    0,
+  ),
+);
 
-  async function handleCreateScheme() {
-    if (!newSchemeName.trim()) return;
-    isCreating = true;
-    try {
-      const created = await api.createAssessmentScheme({
-        name: newSchemeName.trim(),
-        description: newSchemeDesc.trim() || null,
-        max_score: 100,
-        formula: {
-          type: "weighted_average",
-          components: [],
-        },
-      });
-      toast.success(m.settings_ui_assessment_scheme_created());
-      activeSchemeId = created.id;
-      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-      showCreateDialog = false;
-      newSchemeName = "";
-      newSchemeDesc = "";
-    } catch (err: unknown) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isCreating = false;
-    }
+// ── Create Scheme Dialog ─────────────────────────────────────
+let showCreateDialog = $state(false);
+let newSchemeName = $state("");
+let newSchemeDesc = $state("");
+let isCreating = $state(false);
+
+async function handleCreateScheme() {
+  if (!newSchemeName.trim()) return;
+  isCreating = true;
+  try {
+    const created = await api.createAssessmentScheme({
+      name: newSchemeName.trim(),
+      description: newSchemeDesc.trim() || null,
+      max_score: 100,
+      formula: {
+        type: "weighted_average",
+        components: [],
+      },
+    });
+    toast.success(m.settings_ui_assessment_scheme_created());
+    activeSchemeId = created.id;
+    await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+    showCreateDialog = false;
+    newSchemeName = "";
+    newSchemeDesc = "";
+  } catch (err: unknown) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isCreating = false;
   }
+}
 
-  // ── Create Component Dialog ──────────────────────────────────
-  let showComponentDialog = $state(false);
-  let editingComponentId = $state<string | null>(null);
-  let componentForm = $state({
+// ── Create Component Dialog ──────────────────────────────────
+let showComponentDialog = $state(false);
+let editingComponentId = $state<string | null>(null);
+let componentForm = $state({
+  name: "",
+  component_type: "exam",
+  weight: 30,
+  max_score: 100,
+  passing_score: 50,
+});
+
+function resetComponentForm() {
+  editingComponentId = null;
+  componentForm = {
     name: "",
     component_type: "exam",
     weight: 30,
     max_score: 100,
     passing_score: 50,
-  });
+  };
+}
 
-  function resetComponentForm() {
-    editingComponentId = null;
-    componentForm = {
-      name: "",
-      component_type: "exam",
-      weight: 30,
-      max_score: 100,
-      passing_score: 50,
-    };
-  }
+function openAddComponent() {
+  resetComponentForm();
+  showComponentDialog = true;
+}
 
-  function openAddComponent() {
-    resetComponentForm();
-    showComponentDialog = true;
-  }
+function openEditComponent(c: SchemeComponent) {
+  editingComponentId = c.id;
+  componentForm = {
+    name: c.name,
+    component_type: c.component_type,
+    weight: c.weight,
+    max_score: c.max_score,
+    passing_score: c.passing_score ?? 50,
+  };
+  showComponentDialog = true;
+}
 
-  function openEditComponent(c: SchemeComponent) {
-    editingComponentId = c.id;
-    componentForm = {
-      name: c.name,
-      component_type: c.component_type,
-      weight: c.weight,
-      max_score: c.max_score,
-      passing_score: c.passing_score ?? 50,
-    };
-    showComponentDialog = true;
-  }
+let isSavingComponent = $state(false);
 
-  let isSavingComponent = $state(false);
-
-  async function handleSaveComponent() {
-    if (!componentForm.name.trim() || !selectedScheme) return;
-    isSavingComponent = true;
-    try {
-      const current = [...schemeComponents];
-      if (editingComponentId) {
-        const idx = current.findIndex((c) => c.id === editingComponentId);
-        if (idx >= 0) {
-          current[idx] = {
-            ...current[idx],
-            name: componentForm.name.trim(),
-            component_type: componentForm.component_type,
-            weight: Number(componentForm.weight) || 0,
-            max_score: Number(componentForm.max_score) || 100,
-            passing_score: Number(componentForm.passing_score) || 50,
-          };
-        }
-      } else {
-        const id = `comp-${Date.now()}`;
-        const newComp: SchemeComponent = {
-          id,
-          code: id,
+async function handleSaveComponent() {
+  if (!componentForm.name.trim() || !selectedScheme) return;
+  isSavingComponent = true;
+  try {
+    const current = [...schemeComponents];
+    if (editingComponentId) {
+      const idx = current.findIndex((c) => c.id === editingComponentId);
+      if (idx >= 0) {
+        current[idx] = {
+          ...current[idx],
           name: componentForm.name.trim(),
-          name_ar: null,
           component_type: componentForm.component_type,
           weight: Number(componentForm.weight) || 0,
           max_score: Number(componentForm.max_score) || 100,
           passing_score: Number(componentForm.passing_score) || 50,
-          sort_order: current.length + 1,
-          is_required: true,
-          stored_weight: null,
-          stored_component_type: null,
-          displayed_weight: Number(componentForm.weight) || 0,
         };
-        current.push(newComp);
       }
-      await saveSchemeComponents(current);
-      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-      toast.success(
-        editingComponentId
-          ? m.settings_ui_assessment_component_updated()
-          : m.settings_ui_assessment_component_added(),
-      );
-      showComponentDialog = false;
-      resetComponentForm();
-    } catch (err: unknown) {
-      toast.error(extractErrorMessage(err));
-    } finally {
-      isSavingComponent = false;
+    } else {
+      const id = `comp-${Date.now()}`;
+      const newComp: SchemeComponent = {
+        id,
+        code: id,
+        name: componentForm.name.trim(),
+        name_ar: null,
+        component_type: componentForm.component_type,
+        weight: Number(componentForm.weight) || 0,
+        max_score: Number(componentForm.max_score) || 100,
+        passing_score: Number(componentForm.passing_score) || 50,
+        sort_order: current.length + 1,
+        is_required: true,
+        stored_weight: null,
+        stored_component_type: null,
+        displayed_weight: Number(componentForm.weight) || 0,
+      };
+      current.push(newComp);
     }
+    await saveSchemeComponents(current);
+    await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+    toast.success(
+      editingComponentId
+        ? m.settings_ui_assessment_component_updated()
+        : m.settings_ui_assessment_component_added(),
+    );
+    showComponentDialog = false;
+    resetComponentForm();
+  } catch (err: unknown) {
+    toast.error(extractErrorMessage(err));
+  } finally {
+    isSavingComponent = false;
   }
+}
 
-  // ── Delete ───────────────────────────────────────────────────
-  async function handleDeleteScheme(id: string) {
-    try {
-      await api.deleteAssessmentScheme(id);
-      toast.success(m.settings_ui_assessment_scheme_deleted());
-      if (activeSchemeId === id) activeSchemeId = null;
-      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-    } catch (err: unknown) {
-      toast.error(extractErrorMessage(err));
-    }
+// ── Delete ───────────────────────────────────────────────────
+async function handleDeleteScheme(id: string) {
+  try {
+    await api.deleteAssessmentScheme(id);
+    toast.success(m.settings_ui_assessment_scheme_deleted());
+    if (activeSchemeId === id) activeSchemeId = null;
+    await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+  } catch (err: unknown) {
+    toast.error(extractErrorMessage(err));
   }
+}
 
-  async function handleDeleteComponent(id: string) {
-    if (!selectedScheme) return;
-    try {
-      const updated = schemeComponents.filter((c) => c.id !== id);
-      await saveSchemeComponents(updated);
-      await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
-      toast.success(m.settings_ui_assessment_component_deleted());
-    } catch (err: unknown) {
-      toast.error(extractErrorMessage(err));
-    }
+async function handleDeleteComponent(id: string) {
+  if (!selectedScheme) return;
+  try {
+    const updated = schemeComponents.filter((c) => c.id !== id);
+    await saveSchemeComponents(updated);
+    await queryClient.invalidateQueries({ queryKey: ["assessment-schemes"] });
+    toast.success(m.settings_ui_assessment_component_deleted());
+  } catch (err: unknown) {
+    toast.error(extractErrorMessage(err));
   }
+}
 
-  function getTypeLabel(t: string) {
-    switch (t) {
-      case "exam":
-        return m.settings_ui_assessment_type_exam();
-      case "quiz":
-        return m.settings_ui_assessment_type_quiz();
-      case "homework":
-        return m.settings_ui_assessment_type_homework();
-      case "participation":
-        return m.settings_ui_assessment_type_participation();
-      case "project":
-        return m.settings_ui_assessment_type_project();
-      case "practical":
-        return m.settings_ui_assessment_type_practical();
-      default:
-        return t;
-    }
+function getTypeLabel(t: string) {
+  switch (t) {
+    case "exam":
+      return m.settings_ui_assessment_type_exam();
+    case "quiz":
+      return m.settings_ui_assessment_type_quiz();
+    case "homework":
+      return m.settings_ui_assessment_type_homework();
+    case "participation":
+      return m.settings_ui_assessment_type_participation();
+    case "project":
+      return m.settings_ui_assessment_type_project();
+    case "practical":
+      return m.settings_ui_assessment_type_practical();
+    default:
+      return t;
   }
+}
 
-  const componentTypes = [
-    { v: "exam", l: m.settings_ui_assessment_type_exam() },
-    { v: "quiz", l: m.settings_ui_assessment_type_quiz() },
-    { v: "homework", l: m.settings_ui_assessment_type_homework() },
-    { v: "participation", l: m.settings_ui_assessment_type_participation() },
-    { v: "project", l: m.settings_ui_assessment_type_project() },
-    { v: "practical", l: m.settings_ui_assessment_type_practical() },
-  ];
+const componentTypes = [
+  { v: "exam", l: m.settings_ui_assessment_type_exam() },
+  { v: "quiz", l: m.settings_ui_assessment_type_quiz() },
+  { v: "homework", l: m.settings_ui_assessment_type_homework() },
+  { v: "participation", l: m.settings_ui_assessment_type_participation() },
+  { v: "project", l: m.settings_ui_assessment_type_project() },
+  { v: "practical", l: m.settings_ui_assessment_type_practical() },
+];
 </script>
 
 <div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-6 scrollbar-hide text-start">

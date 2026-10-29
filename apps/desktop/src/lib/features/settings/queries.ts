@@ -61,7 +61,13 @@ export function createUserQuery(orgId: () => string, userId: () => string) {
 }
 
 import type { UniversalFilter } from "@orbis/ui/filter-builder";
-import type { OrgUnitDto, CreateOrgUnitRequest, UpdateOrgUnitRequest, OrganizationSettingsDto, UpdateOrgRequest } from "$lib/api";
+import type {
+  OrgUnitDto,
+  CreateOrgUnitRequest,
+  UpdateOrgUnitRequest,
+  OrganizationSettingsDto,
+  UpdateOrgRequest,
+} from "$lib/api";
 
 /** Paginated users query using infinite scrolling. */
 export function createUsersPaginatedQuery(
@@ -169,7 +175,8 @@ export function createOrgSettingsQuery(orgId: () => string) {
 export function createUpdateOrgSettingsMutation() {
   const queryClient = useQueryClient();
   return createMutation(() => ({
-    mutationFn: (settings: OrganizationSettingsDto) => api.updateSettings(settings),
+    mutationFn: (settings: OrganizationSettingsDto) =>
+      api.updateSettings(settings),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.org.all,

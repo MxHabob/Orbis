@@ -17,14 +17,55 @@ interface LocaleOption {
 }
 
 const localeOptions: LocaleOption[] = [
-  { code: "ar", name: "Arabic", nativeName: m.shared_ui_locale_arabic(), flag: "🌐" },
+  {
+    code: "ar",
+    name: "Arabic",
+    nativeName: m.shared_ui_locale_arabic(),
+    flag: "🌐",
+  },
   { code: "en", name: "English", nativeName: "English", flag: "🌐" },
-  { code: "ar-YE", name: "Arabic (Yemen)", nativeName: m.shared_ui_locale_arabic_yemen(), flag: "🇾🇪", region: m.shared_ui_country_yemen() },
-  { code: "ar-SA", name: "Arabic (Saudi Arabia)", nativeName: m.shared_ui_locale_arabic_saudi(), flag: "🇸🇦", region: m.shared_ui_country_saudi_arabia() },
-  { code: "ar-EG", name: "Arabic (Egypt)", nativeName: m.shared_ui_locale_arabic_egypt(), flag: "🇪🇬", region: m.shared_ui_country_egypt() },
-  { code: "ar-AE", name: "Arabic (UAE)", nativeName: m.shared_ui_locale_arabic_uae(), flag: "🇦🇪", region: m.shared_ui_country_united_arab_emirates() },
-  { code: "en-US", name: "English (United States)", nativeName: "English (US)", flag: "🇺🇸", region: "United States" },
-  { code: "en-GB", name: "English (United Kingdom)", nativeName: "English (UK)", flag: "🇬🇧", region: "United Kingdom" },
+  {
+    code: "ar-YE",
+    name: "Arabic (Yemen)",
+    nativeName: m.shared_ui_locale_arabic_yemen(),
+    flag: "🇾🇪",
+    region: m.shared_ui_country_yemen(),
+  },
+  {
+    code: "ar-SA",
+    name: "Arabic (Saudi Arabia)",
+    nativeName: m.shared_ui_locale_arabic_saudi(),
+    flag: "🇸🇦",
+    region: m.shared_ui_country_saudi_arabia(),
+  },
+  {
+    code: "ar-EG",
+    name: "Arabic (Egypt)",
+    nativeName: m.shared_ui_locale_arabic_egypt(),
+    flag: "🇪🇬",
+    region: m.shared_ui_country_egypt(),
+  },
+  {
+    code: "ar-AE",
+    name: "Arabic (UAE)",
+    nativeName: m.shared_ui_locale_arabic_uae(),
+    flag: "🇦🇪",
+    region: m.shared_ui_country_united_arab_emirates(),
+  },
+  {
+    code: "en-US",
+    name: "English (United States)",
+    nativeName: "English (US)",
+    flag: "🇺🇸",
+    region: "United States",
+  },
+  {
+    code: "en-GB",
+    name: "English (United Kingdom)",
+    nativeName: "English (UK)",
+    flag: "🇬🇧",
+    region: "United Kingdom",
+  },
 ];
 
 let {
@@ -57,7 +98,10 @@ const selectedLocale = $derived.by(() => {
     return currentLocale;
   }
   const language = currentLocale.split("-")[0]?.toLowerCase();
-  return supportedLocales.find((option) => option.code === language)?.code ?? locales[0];
+  return (
+    supportedLocales.find((option) => option.code === language)?.code ??
+    locales[0]
+  );
 });
 
 function getLocaleValue(loc: LocaleOption): string {

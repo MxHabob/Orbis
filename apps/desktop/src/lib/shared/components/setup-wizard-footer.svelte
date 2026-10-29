@@ -1,30 +1,30 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { Button } from "@orbis/ui/button";
-  import { ChevronLeft, ChevronRight } from "@orbis/icons";
-  import { LoadingIndicator } from "@orbis/ui";
+import * as m from "$lib/paraglide/messages";
+import { Button } from "@orbis/ui/button";
+import { ChevronLeft, ChevronRight } from "@orbis/icons";
+import { LoadingIndicator } from "@orbis/ui";
 
-  let {
-    backLabel,
-    nextLabel,
-    secondaryLabel,
-    canGoBack = true,
-    canGoNext = true,
-    isSubmitting = false,
-    onBack,
-    onNext,
-    onSecondary,
-  }: {
-    backLabel: string;
-    nextLabel: string;
-    secondaryLabel?: string;
-    canGoBack?: boolean;
-    canGoNext?: boolean;
-    isSubmitting?: boolean;
-    onBack?: () => void;
-    onNext?: () => void;
-    onSecondary?: () => void;
-  } = $props();
+let {
+  backLabel,
+  nextLabel,
+  secondaryLabel,
+  canGoBack = true,
+  canGoNext = true,
+  isSubmitting = false,
+  onBack,
+  onNext,
+  onSecondary,
+}: {
+  backLabel: string;
+  nextLabel: string;
+  secondaryLabel?: string;
+  canGoBack?: boolean;
+  canGoNext?: boolean;
+  isSubmitting?: boolean;
+  onBack?: () => void;
+  onNext?: () => void;
+  onSecondary?: () => void;
+} = $props();
 </script>
 
 <footer

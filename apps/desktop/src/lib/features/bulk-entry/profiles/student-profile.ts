@@ -2,9 +2,16 @@ import type { OrbisColumnDef } from "@orbis/svelte-grid";
 import { api, type BulkRegisterStudentCommandItem } from "$lib/api";
 import { orgContext } from "$lib/stores/org-context.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
-import { parseRegistrationFieldPolicies, normalizeRegistrationFieldKey } from "$lib/features/students/registration-fields";
+import {
+  parseRegistrationFieldPolicies,
+  normalizeRegistrationFieldKey,
+} from "$lib/features/students/registration-fields";
 import { splitPersonName } from "$lib/shared/utils/person-name";
-import { createBulkValidationContext, findDuplicateIndex, type BulkValidationContext } from "../engine/duplicate-index";
+import {
+  createBulkValidationContext,
+  findDuplicateIndex,
+  type BulkValidationContext,
+} from "../engine/duplicate-index";
 import {
   ensureStudentRegistrationArtifacts,
   provisionStudentLoginAccount,
@@ -181,7 +188,16 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
     headerEn: "Study Mode",
     required: false,
     type: "enum",
-    allowedValues: ["regular", "part_time", "distance_learning", "homeschooled", "auditor", "visiting", "exchange", "special_needs"],
+    allowedValues: [
+      "regular",
+      "part_time",
+      "distance_learning",
+      "homeschooled",
+      "auditor",
+      "visiting",
+      "exchange",
+      "special_needs",
+    ],
     example: "regular",
   },
   {
@@ -215,8 +231,10 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
     required: false,
     type: "reference",
     referenceSource: "userGroups",
-    descriptionAr: "أدخل رمز المجموعة أو اسمها، وافصل بين المجموعات بالرمز |. يتطلب تفعيل إنشاء حساب الدخول.",
-    descriptionEn: "Enter group codes or names separated by |. Requires login account creation.",
+    descriptionAr:
+      "أدخل رمز المجموعة أو اسمها، وافصل بين المجموعات بالرمز |. يتطلب تفعيل إنشاء حساب الدخول.",
+    descriptionEn:
+      "Enter group codes or names separated by |. Requires login account creation.",
     example: "",
   },
   {
@@ -254,42 +272,124 @@ export const studentColumnMetadata: ColumnDefinitionMetadata[] = [
 ];
 
 export const studentGridColumns: OrbisColumnDef[] = [
-  { id: "__idx", header: m.bulk_entry_grid_row_number(), width: 50, pin: "left", readonly: true },
-  { id: "status", header: m.bulk_entry_grid_status(), width: 110, pin: "left", type: "badge", readonly: true },
+  {
+    id: "__idx",
+    header: m.bulk_entry_grid_row_number(),
+    width: 50,
+    pin: "left",
+    readonly: true,
+  },
+  {
+    id: "status",
+    header: m.bulk_entry_grid_status(),
+    width: 110,
+    pin: "left",
+    type: "badge",
+    readonly: true,
+  },
   { id: "full_name_ar", header: "الاسم الكامل (عربي)*", width: 210 },
   { id: "full_name_en", header: "الاسم الكامل (إنجليزي)", width: 210 },
-  { id: "national_id", header: m.bulk_entry_student_header_national_id(), width: 130 },
-  { id: "gender", header: m.bulk_entry_header_gender(), width: 90, type: "enum", options: [{ value: "male", label: m.bulk_entry_enum_gender_male() }, { value: "female", label: m.bulk_entry_enum_gender_female() }] },
-  { id: "birth_date", header: m.bulk_entry_student_header_birth_date(), width: 120, type: "date" },
+  {
+    id: "national_id",
+    header: m.bulk_entry_student_header_national_id(),
+    width: 130,
+  },
+  {
+    id: "gender",
+    header: m.bulk_entry_header_gender(),
+    width: 90,
+    type: "enum",
+    options: [
+      { value: "male", label: m.bulk_entry_enum_gender_male() },
+      { value: "female", label: m.bulk_entry_enum_gender_female() },
+    ],
+  },
+  {
+    id: "birth_date",
+    header: m.bulk_entry_student_header_birth_date(),
+    width: 120,
+    type: "date",
+  },
   { id: "place_of_birth", header: "مكان الميلاد", width: 130 },
   { id: "nationality", header: "الجنسية", width: 110 },
   { id: "passport_number", header: "رقم جواز السفر", width: 130 },
-  { id: "blood_type", header: "فصيلة الدم", width: 90, type: "enum", options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((value) => ({ value, label: value })) },
-  { id: "class_name", header: m.bulk_entry_student_header_class_name(), width: 150 },
-  { id: "student_number", header: m.bulk_entry_student_header_student_number(), width: 120 },
-  { id: "study_mode", header: "نمط الدراسة", width: 130, type: "enum", options: [
-    { value: "regular", label: m.operations_ui_study_mode_regular() },
-    { value: "part_time", label: m.operations_ui_study_mode_part_time() },
-    { value: "distance_learning", label: m.operations_ui_study_mode_distance() },
-    { value: "homeschooled", label: m.operations_ui_study_mode_homeschooled() },
-    { value: "auditor", label: m.operations_ui_study_mode_auditor() },
-    { value: "visiting", label: m.operations_ui_study_mode_visiting() },
-    { value: "exchange", label: m.operations_ui_study_mode_exchange() },
-    { value: "special_needs", label: m.operations_ui_study_mode_special_needs() },
-  ] },
-  { id: "guardian_name", header: m.bulk_entry_student_header_guardian_name(), width: 150 },
-  { id: "guardian_phone", header: m.bulk_entry_student_header_guardian_phone(), width: 130 },
-  { id: "guardian_relationship", header: m.bulk_entry_student_header_guardian_relationship(), width: 100 },
+  {
+    id: "blood_type",
+    header: "فصيلة الدم",
+    width: 90,
+    type: "enum",
+    options: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+      (value) => ({ value, label: value }),
+    ),
+  },
+  {
+    id: "class_name",
+    header: m.bulk_entry_student_header_class_name(),
+    width: 150,
+  },
+  {
+    id: "student_number",
+    header: m.bulk_entry_student_header_student_number(),
+    width: 120,
+  },
+  {
+    id: "study_mode",
+    header: "نمط الدراسة",
+    width: 130,
+    type: "enum",
+    options: [
+      { value: "regular", label: m.operations_ui_study_mode_regular() },
+      { value: "part_time", label: m.operations_ui_study_mode_part_time() },
+      {
+        value: "distance_learning",
+        label: m.operations_ui_study_mode_distance(),
+      },
+      {
+        value: "homeschooled",
+        label: m.operations_ui_study_mode_homeschooled(),
+      },
+      { value: "auditor", label: m.operations_ui_study_mode_auditor() },
+      { value: "visiting", label: m.operations_ui_study_mode_visiting() },
+      { value: "exchange", label: m.operations_ui_study_mode_exchange() },
+      {
+        value: "special_needs",
+        label: m.operations_ui_study_mode_special_needs(),
+      },
+    ],
+  },
+  {
+    id: "guardian_name",
+    header: m.bulk_entry_student_header_guardian_name(),
+    width: 150,
+  },
+  {
+    id: "guardian_phone",
+    header: m.bulk_entry_student_header_guardian_phone(),
+    width: 130,
+  },
+  {
+    id: "guardian_relationship",
+    header: m.bulk_entry_student_header_guardian_relationship(),
+    width: 100,
+  },
   { id: "phone", header: m.bulk_entry_header_phone(), width: 120 },
   { id: "email", header: m.bulk_entry_header_email(), width: 160 },
   { id: "address", header: "العنوان", width: 180 },
   { id: "medical_notes", header: "ملاحظات طبية", width: 180 },
   { id: "special_needs_notes", header: "الاحتياجات الخاصة", width: 180 },
-  { id: "create_login_account", header: "إنشاء حساب دخول للنظام", width: 170, type: "boolean" },
+  {
+    id: "create_login_account",
+    header: "إنشاء حساب دخول للنظام",
+    width: 170,
+    type: "boolean",
+  },
   { id: "user_group_names", header: "مجموعات المستخدمين", width: 180 },
 ];
 
-export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPreviewDetails> = {
+export const studentImportProfile: BulkImportProfile<
+  StudentRowData,
+  StudentPreviewDetails
+> = {
   id: "students",
   displayName: {
     ar: "استيراد وقيد الطلاب الجدد",
@@ -353,12 +453,24 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         studyModes: [
           { value: "regular", labelAr: "منتظم", labelEn: "Regular" },
           { value: "part_time", labelAr: "دوام جزئي", labelEn: "Part-time" },
-          { value: "distance_learning", labelAr: "تعليم عن بعد", labelEn: "Distance Learning" },
-          { value: "homeschooled", labelAr: "تعليم منزلي", labelEn: "Homeschooled" },
+          {
+            value: "distance_learning",
+            labelAr: "تعليم عن بعد",
+            labelEn: "Distance Learning",
+          },
+          {
+            value: "homeschooled",
+            labelAr: "تعليم منزلي",
+            labelEn: "Homeschooled",
+          },
           { value: "auditor", labelAr: "مستمع", labelEn: "Auditor" },
           { value: "visiting", labelAr: "زائر", labelEn: "Visiting" },
           { value: "exchange", labelAr: "تبادل", labelEn: "Exchange" },
-          { value: "special_needs", labelAr: "احتياجات خاصة", labelEn: "Special Needs" },
+          {
+            value: "special_needs",
+            labelAr: "احتياجات خاصة",
+            labelEn: "Special Needs",
+          },
         ],
         employeeTypes: [],
         employmentTypes: [],
@@ -374,9 +486,15 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     };
   },
 
-  validateCell(colId: string, value: unknown, row: StudentRowData, refData: BulkReferenceData): BulkCellIssue | null {
+  validateCell(
+    colId: string,
+    value: unknown,
+    row: StudentRowData,
+    refData: BulkReferenceData,
+  ): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
-    const policy = refData.registrationFields?.[normalizeRegistrationFieldKey(colId)];
+    const policy =
+      refData.registrationFields?.[normalizeRegistrationFieldKey(colId)];
     if (
       colId !== "full_name_ar" &&
       colId !== "class_name" &&
@@ -386,8 +504,11 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     }
 
     // Required fields check
-    const required = colId === "full_name_ar" || colId === "class_name" ||
-      (policy?.required ?? ["national_id", "gender", "birth_date"].includes(colId));
+    const required =
+      colId === "full_name_ar" ||
+      colId === "class_name" ||
+      (policy?.required ??
+        ["national_id", "gender", "birth_date"].includes(colId));
     if (required) {
       if (!strVal) {
         return {
@@ -440,7 +561,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: m.bulk_entry_student_validation_class_not_found({ name: strVal }),
+          message: m.bulk_entry_student_validation_class_not_found({
+            name: strVal,
+          }),
         };
       }
     }
@@ -450,7 +573,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         !(
           row.create_login_account === true ||
           ["true", "1", "نعم", "yes"].includes(
-            String(row.create_login_account ?? "").trim().toLowerCase(),
+            String(row.create_login_account ?? "")
+              .trim()
+              .toLowerCase(),
           )
         )
       ) {
@@ -460,9 +585,12 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
           message: m.bulk_entry_group_requires_login(),
         };
       }
-      const tokens = strVal.split(/[|;]/).map((token) => token.trim()).filter(Boolean);
-      const unmatched = tokens.find((token) =>
-        !resolveReferenceItem(refData.userGroups, token),
+      const tokens = strVal
+        .split(/[|;]/)
+        .map((token) => token.trim())
+        .filter(Boolean);
+      const unmatched = tokens.find(
+        (token) => !resolveReferenceItem(refData.userGroups, token),
       );
       if (unmatched) {
         return {
@@ -503,13 +631,17 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     ) {
       const nid = row.national_id.trim();
       const duplicateIndex = context
-        ? findDuplicateIndex(context, "national_id", nid, rowIndex) ?? -1
-        : allRows.findIndex((r, idx) => idx !== rowIndex && r.national_id?.trim() === nid);
+        ? (findDuplicateIndex(context, "national_id", nid, rowIndex) ?? -1)
+        : allRows.findIndex(
+            (r, idx) => idx !== rowIndex && r.national_id?.trim() === nid,
+          );
       if (duplicateIndex !== -1) {
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "national_id",
-          message: m.bulk_entry_validation_duplicate_national_id({ row: duplicateIndex + 1 }),
+          message: m.bulk_entry_validation_duplicate_national_id({
+            row: duplicateIndex + 1,
+          }),
         });
       }
     }
@@ -518,13 +650,17 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     if (row.student_number?.trim()) {
       const sn = row.student_number.trim();
       const duplicateIndex = context
-        ? findDuplicateIndex(context, "student_number", sn, rowIndex) ?? -1
-        : allRows.findIndex((r, idx) => idx !== rowIndex && r.student_number?.trim() === sn);
+        ? (findDuplicateIndex(context, "student_number", sn, rowIndex) ?? -1)
+        : allRows.findIndex(
+            (r, idx) => idx !== rowIndex && r.student_number?.trim() === sn,
+          );
       if (duplicateIndex !== -1) {
         issues.push({
           severity: "BLOCKING_ERROR",
           columnId: "student_number",
-          message: m.bulk_entry_student_validation_duplicate_student_number({ row: duplicateIndex + 1 }),
+          message: m.bulk_entry_student_validation_duplicate_student_number({
+            row: duplicateIndex + 1,
+          }),
         });
       }
     }
@@ -532,7 +668,10 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     return issues;
   },
 
-  async generatePreview(rows: StudentRowData[], refData: BulkReferenceData): Promise<BulkPreviewSummary<StudentPreviewDetails>> {
+  async generatePreview(
+    rows: StudentRowData[],
+    refData: BulkReferenceData,
+  ): Promise<BulkPreviewSummary<StudentPreviewDetails>> {
     let validCount = 0;
     let errorCount = 0;
     let warningCount = 0;
@@ -544,22 +683,31 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       rows as Record<string, unknown>[],
     );
 
-    const mandatoryTemplates = refData.feeTemplates.filter((t) => (t.meta as any)?.is_mandatory);
+    const mandatoryTemplates = refData.feeTemplates.filter(
+      (t) => (t.meta as any)?.is_mandatory,
+    );
     const mandatoryTotalPerStudent = mandatoryTemplates.reduce(
       (sum, t) => sum + (Number((t.meta as any)?.default_amount) || 0),
       0,
     );
 
     for (const [rowIndex, row] of rows.entries()) {
-      const enabledColumns = studentColumnMetadata.filter((column) =>
-        column.id === "full_name_ar" || column.id === "class_name" ||
-        refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]?.active !== false,
+      const enabledColumns = studentColumnMetadata.filter(
+        (column) =>
+          column.id === "full_name_ar" ||
+          column.id === "class_name" ||
+          refData.registrationFields?.[normalizeRegistrationFieldKey(column.id)]
+            ?.active !== false,
       );
-      const hasErrors = enabledColumns.some((column) =>
-        this.validateCell(column.id, row[column.id], row, refData)?.severity === "BLOCKING_ERROR",
-      ) || this.validateRow(row, rows, rowIndex, refData, validationContext).some(
-        (issue) => issue.severity === "BLOCKING_ERROR",
-      );
+      const hasErrors =
+        enabledColumns.some(
+          (column) =>
+            this.validateCell(column.id, row[column.id], row, refData)
+              ?.severity === "BLOCKING_ERROR",
+        ) ||
+        this.validateRow(row, rows, rowIndex, refData, validationContext).some(
+          (issue) => issue.severity === "BLOCKING_ERROR",
+        );
       if (hasErrors) {
         errorCount++;
       } else {
@@ -572,7 +720,9 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         if (
           row.create_login_account === true ||
           ["true", "1", "نعم", "yes"].includes(
-            String(row.create_login_account ?? "").trim().toLowerCase(),
+            String(row.create_login_account ?? "")
+              .trim()
+              .toLowerCase(),
           )
         ) {
           userAccountsToProvision++;
@@ -604,7 +754,11 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
     };
   },
 
-  async commitChunk(rows: StudentRowData[], _orgId: string, refData: BulkReferenceData) {
+  async commitChunk(
+    rows: StudentRowData[],
+    _orgId: string,
+    refData: BulkReferenceData,
+  ) {
     const items: BulkRegisterStudentCommandItem[] = [];
 
     for (let i = 0; i < rows.length; i++) {
@@ -623,10 +777,18 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
       const namePartsEn = splitPersonName(fullNameEn);
       const classPeriodId = matchedClass?.meta?.periodId;
 
-      const rawGender = String(row.gender || "").toLowerCase().trim();
-      const genderStr = rawGender === "female" || rawGender === "أنثى" ? "female" : rawGender === "male" || rawGender === "ذكر" ? "male" : undefined;
+      const rawGender = String(row.gender || "")
+        .toLowerCase()
+        .trim();
+      const genderStr =
+        rawGender === "female" || rawGender === "أنثى"
+          ? "female"
+          : rawGender === "male" || rawGender === "ذكر"
+            ? "male"
+            : undefined;
       const fieldActive = (id: string) =>
-        refData.registrationFields?.[normalizeRegistrationFieldKey(id)]?.active !== false;
+        refData.registrationFields?.[normalizeRegistrationFieldKey(id)]
+          ?.active !== false;
 
       items.push({
         row_index: row.rowNumber || i + 1,
@@ -639,18 +801,40 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
           middle_name_ar: namePartsAr.middleName,
           last_name_ar: namePartsAr.lastName,
           display_name: fullNameAr,
-          national_id: fieldActive("national_id") ? row.national_id?.trim() || undefined : undefined,
-          passport_number: fieldActive("passport_number") ? row.passport_number?.trim() || undefined : undefined,
+          national_id: fieldActive("national_id")
+            ? row.national_id?.trim() || undefined
+            : undefined,
+          passport_number: fieldActive("passport_number")
+            ? row.passport_number?.trim() || undefined
+            : undefined,
           gender: fieldActive("gender") ? genderStr : undefined,
-          birth_date: fieldActive("birth_date") ? row.birth_date?.trim() || undefined : undefined,
-          place_of_birth: fieldActive("place_of_birth") ? row.place_of_birth?.trim() || undefined : undefined,
-          nationality: fieldActive("nationality") ? row.nationality?.trim() || undefined : undefined,
-          blood_type: fieldActive("blood_type") ? row.blood_type?.trim() || undefined : undefined,
-          medical_notes: fieldActive("medical_notes") ? row.medical_notes?.trim() || undefined : undefined,
-          special_needs_notes: fieldActive("special_needs_notes") ? row.special_needs_notes?.trim() || undefined : undefined,
-          address: fieldActive("address") ? row.address?.trim() || undefined : undefined,
-          phone: fieldActive("phone") ? row.phone?.trim() || undefined : undefined,
-          email: fieldActive("email") ? row.email?.trim() || undefined : undefined,
+          birth_date: fieldActive("birth_date")
+            ? row.birth_date?.trim() || undefined
+            : undefined,
+          place_of_birth: fieldActive("place_of_birth")
+            ? row.place_of_birth?.trim() || undefined
+            : undefined,
+          nationality: fieldActive("nationality")
+            ? row.nationality?.trim() || undefined
+            : undefined,
+          blood_type: fieldActive("blood_type")
+            ? row.blood_type?.trim() || undefined
+            : undefined,
+          medical_notes: fieldActive("medical_notes")
+            ? row.medical_notes?.trim() || undefined
+            : undefined,
+          special_needs_notes: fieldActive("special_needs_notes")
+            ? row.special_needs_notes?.trim() || undefined
+            : undefined,
+          address: fieldActive("address")
+            ? row.address?.trim() || undefined
+            : undefined,
+          phone: fieldActive("phone")
+            ? row.phone?.trim() || undefined
+            : undefined,
+          email: fieldActive("email")
+            ? row.email?.trim() || undefined
+            : undefined,
           initial_period_id:
             effectiveContext.currentPeriodId ||
             (typeof classPeriodId === "string" ? classPeriodId : undefined),
@@ -672,43 +856,63 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
         if (!item.success && item.error) {
           rowErrors.push({
             rowNumber: item.row_index,
-            reason: m.bulk_entry_row_error({ row: item.row_index, reason: item.error }),
+            reason: m.bulk_entry_row_error({
+              row: item.row_index,
+              reason: item.error,
+            }),
           });
         }
       }
 
-      const succeededItems = bulkRes.items.filter((item) => item.success && item.student_id);
+      const succeededItems = bulkRes.items.filter(
+        (item) => item.success && item.student_id,
+      );
       let accounts: Awaited<ReturnType<typeof api.listAccounts>> | undefined;
       let accountListError: string | undefined;
       if (succeededItems.length > 0) {
         try {
           accounts = await api.listAccounts();
         } catch (error) {
-          accountListError = error instanceof Error ? error.message : String(error);
+          accountListError =
+            error instanceof Error ? error.message : String(error);
         }
       }
       for (let offset = 0; offset < succeededItems.length; offset += 10) {
         const batch = succeededItems.slice(offset, offset + 10);
         const artifactResults = await Promise.all(
           batch.map(async (item) => {
-            const row = rows.find((candidate) => candidate.rowNumber === item.row_index);
+            const row = rows.find(
+              (candidate) => candidate.rowNumber === item.row_index,
+            );
             const studentId = item.student_id;
             if (!studentId) return { rowNumber: item.row_index, errors: [] };
-            const name = row?.full_name_ar?.trim() || row?.full_name_en?.trim() || item.student_number || "";
-            const artifacts = await ensureStudentRegistrationArtifacts(studentId, name, {
-              accounts,
-              accountListError,
-            });
+            const name =
+              row?.full_name_ar?.trim() ||
+              row?.full_name_en?.trim() ||
+              item.student_number ||
+              "";
+            const artifacts = await ensureStudentRegistrationArtifacts(
+              studentId,
+              name,
+              {
+                accounts,
+                accountListError,
+              },
+            );
             const errors = [...artifacts.warnings];
             if (artifacts.folderError) {
               errors.push(
-                m.students_archive_folder_failed({ error: artifacts.folderError }),
+                m.students_archive_folder_failed({
+                  error: artifacts.folderError,
+                }),
               );
             }
             if (
               row?.create_login_account === true ||
               ["true", "1", "نعم", "yes"].includes(
-                String(row?.create_login_account ?? "").trim().toLowerCase(),
+                String(row?.create_login_account ?? "")
+                  .trim()
+                  .toLowerCase(),
               )
             ) {
               try {
@@ -719,10 +923,16 @@ export const studentImportProfile: BulkImportProfile<StudentRowData, StudentPrev
                   email: row?.email,
                   phone: row?.phone,
                   groupIds: resolveGroupIds(row?.user_group_names, refData),
-                  preferredUsername: row?.email || row?.phone || row?.student_number || undefined,
+                  preferredUsername:
+                    row?.email ||
+                    row?.phone ||
+                    row?.student_number ||
+                    undefined,
                 });
               } catch (error) {
-                errors.push(error instanceof Error ? error.message : String(error));
+                errors.push(
+                  error instanceof Error ? error.message : String(error),
+                );
               }
             }
             return { rowNumber: item.row_index, errors };
@@ -762,12 +972,17 @@ function resolveReferenceItem(
   return matches.length === 1 ? matches[0] : undefined;
 }
 
-function resolveGroupIds(value: string | undefined, refData: BulkReferenceData) {
+function resolveGroupIds(
+  value: string | undefined,
+  refData: BulkReferenceData,
+) {
   if (!value) return [];
-  return [...new Set(
-    value
-      .split(/[|;]/)
-      .map((token) => resolveReferenceItem(refData.userGroups, token)?.id)
-      .filter((id): id is string => Boolean(id)),
-  )];
+  return [
+    ...new Set(
+      value
+        .split(/[|;]/)
+        .map((token) => resolveReferenceItem(refData.userGroups, token)?.id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
 }

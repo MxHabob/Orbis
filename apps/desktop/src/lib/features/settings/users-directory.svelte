@@ -11,7 +11,12 @@ import { formatDate, l } from "$lib/core/i18n";
 import { Search, Refresh, ShieldCheck, UserPlus } from "@orbis/icons";
 
 import type { User, AccountProvisioningResultDto } from "$lib/api";
-import { OrbisGrid, type OrbisColumnDef, type GridActionEvent, type ActionItem } from "@orbis/svelte-grid";
+import {
+  OrbisGrid,
+  type OrbisColumnDef,
+  type GridActionEvent,
+  type ActionItem,
+} from "@orbis/svelte-grid";
 import { createUsersPaginatedQuery } from "$lib/features/settings/queries";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { userFilterFields } from "$lib/core/filter-configs";
@@ -38,10 +43,15 @@ let activeFilter = $state<UniversalFilter>({
 // Provisioning & Credential modal state
 let createUserSheetOpen = $state(false);
 let credentialModalOpen = $state(false);
-let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(null);
+let activeProvisioningResult = $state<AccountProvisioningResultDto | null>(
+  null,
+);
 let activeUserName = $state("");
 
-function handleUserProvisioned(result: AccountProvisioningResultDto, name: string) {
+function handleUserProvisioned(
+  result: AccountProvisioningResultDto,
+  name: string,
+) {
   activeProvisioningResult = result;
   activeUserName = name;
   credentialModalOpen = true;
@@ -50,8 +60,17 @@ function handleUserProvisioned(result: AccountProvisioningResultDto, name: strin
 
 const userActions: ActionItem[] = [
   { id: "edit", label: m.common_action_edit(), icon: "Pencil" },
-  { id: "reset_password", label: m.settings_user_detail_btn_reset_pass(), icon: "LockClosed" },
-  { id: "delete", label: m.common_action_delete(), icon: "Trash2", variant: "destructive" },
+  {
+    id: "reset_password",
+    label: m.settings_user_detail_btn_reset_pass(),
+    icon: "LockClosed",
+  },
+  {
+    id: "delete",
+    label: m.common_action_delete(),
+    icon: "Trash2",
+    variant: "destructive",
+  },
 ];
 
 // ── Data Loading ────────────────────────────────────────────────────────
@@ -121,21 +140,107 @@ const gridSource = $derived(
     full_name: l(u.name_ar, u.full_name) || u.full_name || "—",
     role: u.roles?.[0] || "staff",
     status: u.is_deleted ? "inactive" : "active",
-    created_at_display: u.created_at ? formatDate(u.created_at, "datetime") : "—",
-    updated_at_display: u.updated_at ? formatDate(u.updated_at, "datetime") : "—",
+    created_at_display: u.created_at
+      ? formatDate(u.created_at, "datetime")
+      : "—",
+    updated_at_display: u.updated_at
+      ? formatDate(u.updated_at, "datetime")
+      : "—",
   })),
 );
 
 // ── Columns ─────────────────────────────────────────────────────────────
 const columns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, minWidth: 48, readonly: true, pin: "left", align: "center", flex: 0 },
-  { id: "full_name", prop: "full_name", header: m.common_col_name(), name: m.common_col_name(), width: 220, minWidth: 180, type: "avatar", readonly: true, pin: "left", flex: 2 },
-  { id: "email", prop: "email", header: m.common_word_email(), name: m.common_word_email(), width: 200, minWidth: 160, readonly: true, flex: 1.5 },
-  { id: "phone", prop: "phone", header: m.common_bulk_col_phone(), name: m.common_bulk_col_phone(), width: 140, minWidth: 120, readonly: true, cellClass: "font-mono", flex: 1 },
-  { id: "role", prop: "role", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 110, minWidth: 100, readonly: true, align: "center", flex: 1 },
-  { id: "status", prop: "status", header: m.common_word_status(), name: m.common_word_status(), width: 100, minWidth: 90, type: "badge", align: "center", readonly: true, flex: 0 },
-  { id: "created_at_display", prop: "created_at_display", header: m.ui_copy_created_at_01f6ea5f(), name: m.ui_copy_created_at_01f6ea5f(), width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
-  { id: "updated_at_display", prop: "updated_at_display", header: m.ui_copy_updated_at_ba0d0a9f(), name: m.ui_copy_updated_at_ba0d0a9f(), width: 130, minWidth: 120, readonly: true, cellClass: "font-mono text-xs text-muted-foreground", flex: 1 },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    minWidth: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+    flex: 0,
+  },
+  {
+    id: "full_name",
+    prop: "full_name",
+    header: m.common_col_name(),
+    name: m.common_col_name(),
+    width: 220,
+    minWidth: 180,
+    type: "avatar",
+    readonly: true,
+    pin: "left",
+    flex: 2,
+  },
+  {
+    id: "email",
+    prop: "email",
+    header: m.common_word_email(),
+    name: m.common_word_email(),
+    width: 200,
+    minWidth: 160,
+    readonly: true,
+    flex: 1.5,
+  },
+  {
+    id: "phone",
+    prop: "phone",
+    header: m.common_bulk_col_phone(),
+    name: m.common_bulk_col_phone(),
+    width: 140,
+    minWidth: 120,
+    readonly: true,
+    cellClass: "font-mono",
+    flex: 1,
+  },
+  {
+    id: "role",
+    prop: "role",
+    header: m.common_user_form_role(),
+    name: m.common_user_form_role(),
+    width: 110,
+    minWidth: 100,
+    readonly: true,
+    align: "center",
+    flex: 1,
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: m.common_word_status(),
+    name: m.common_word_status(),
+    width: 100,
+    minWidth: 90,
+    type: "badge",
+    align: "center",
+    readonly: true,
+    flex: 0,
+  },
+  {
+    id: "created_at_display",
+    prop: "created_at_display",
+    header: m.ui_copy_created_at_01f6ea5f(),
+    name: m.ui_copy_created_at_01f6ea5f(),
+    width: 130,
+    minWidth: 120,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+    flex: 1,
+  },
+  {
+    id: "updated_at_display",
+    prop: "updated_at_display",
+    header: m.ui_copy_updated_at_ba0d0a9f(),
+    name: m.ui_copy_updated_at_ba0d0a9f(),
+    width: 130,
+    minWidth: 120,
+    readonly: true,
+    cellClass: "font-mono text-xs text-muted-foreground",
+    flex: 1,
+  },
   {
     id: "actions",
     prop: "actions",
@@ -160,8 +265,10 @@ async function handleAction(event: GridActionEvent) {
     const confirmed = await confirmStore.prompt({
       title: m.settings_user_detail_btn_reset_pass(),
       description: l(
-        m.settings_ui_user_reset_password_confirm({ user: user.full_name || user.email }),
-        `Are you sure you want to generate a new temporary password for ${user.full_name || user.email}?`
+        m.settings_ui_user_reset_password_confirm({
+          user: user.full_name || user.email,
+        }),
+        `Are you sure you want to generate a new temporary password for ${user.full_name || user.email}?`,
       ),
       confirmText: m.settings_user_detail_btn_reset_pass(),
     });
@@ -173,7 +280,9 @@ async function handleAction(event: GridActionEvent) {
         credentialModalOpen = true;
         toast.success(m.employees_password_reset_success());
       } catch (e) {
-        toast.error((e as any)?.message || m.settings_ui_user_reset_password_error());
+        toast.error(
+          (e as any)?.message || m.settings_ui_user_reset_password_error(),
+        );
       }
     }
   } else if (event.actionId === "delete") {

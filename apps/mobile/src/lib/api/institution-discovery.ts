@@ -1,8 +1,4 @@
-import {
-  getSecureItem,
-  STORAGE_KEYS,
-  setSecureItem,
-} from "./storage";
+import { getSecureItem, STORAGE_KEYS, setSecureItem } from "./storage";
 
 export interface DirectoryInstitution {
   organization_id: string;
@@ -27,7 +23,9 @@ export function parseLocalInstitutionQr(data: string): DirectoryInstitution {
   try {
     payload = JSON.parse(data);
   } catch {
-    throw new Error("The QR code does not contain a valid Orbis configuration.");
+    throw new Error(
+      "The QR code does not contain a valid Orbis configuration.",
+    );
   }
 
   if (
@@ -40,7 +38,9 @@ export function parseLocalInstitutionQr(data: string): DirectoryInstitution {
     !("institution" in payload) ||
     !isDirectoryInstitution(payload.institution)
   ) {
-    throw new Error("The QR code does not contain a supported Orbis institution.");
+    throw new Error(
+      "The QR code does not contain a supported Orbis institution.",
+    );
   }
 
   return { ...payload.institution, is_local: true };
@@ -124,7 +124,9 @@ export async function searchInstitutionDirectory(
   }
 
   if (!payload.every(isDirectoryInstitution)) {
-    throw new Error("Mulverse returned invalid institution connection details.");
+    throw new Error(
+      "Mulverse returned invalid institution connection details.",
+    );
   }
   return payload;
 }
@@ -144,7 +146,10 @@ export async function saveSelectedInstitution(
   ];
   await Promise.all([
     setSecureItem(STORAGE_KEYS.INSTITUTIONS, JSON.stringify(nextInstitutions)),
-    setSecureItem(STORAGE_KEYS.ACTIVE_INSTITUTION_ID, institution.deployment_id),
+    setSecureItem(
+      STORAGE_KEYS.ACTIVE_INSTITUTION_ID,
+      institution.deployment_id,
+    ),
     setSecureItem(STORAGE_KEYS.API_BASE_URL, institution.endpoint_url),
   ]);
   return nextInstitutions;
@@ -233,10 +238,16 @@ function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
       typeof institution.is_local === "boolean") &&
     hasValidCoordinate &&
     hasValidLongitude &&
-    !(institution.latitude !== undefined && institution.latitude !== null &&
-      (institution.longitude === undefined || institution.longitude === null)) &&
-    !(institution.longitude !== undefined && institution.longitude !== null &&
-      (institution.latitude === undefined || institution.latitude === null))
+    !(
+      institution.latitude !== undefined &&
+      institution.latitude !== null &&
+      (institution.longitude === undefined || institution.longitude === null)
+    ) &&
+    !(
+      institution.longitude !== undefined &&
+      institution.longitude !== null &&
+      (institution.latitude === undefined || institution.latitude === null)
+    )
   );
 }
 

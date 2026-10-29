@@ -19,11 +19,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
-import {
-  Calendar,
-  Clock,
-  Sparkles,
-} from "@orbis/icons/native";
+import { Calendar, Clock, Sparkles } from "@orbis/icons/native";
 
 const weekdayKeys: TranslationKey[] = [
   "student_schedule_day_1",
@@ -39,13 +35,8 @@ export default function StudentScheduleScreen() {
   const { t, isArabic } = useI18n();
 
   const requestedStudentId = typeof id === "string" ? id : undefined;
-  const {
-    studentId,
-    isLinked,
-    isResolving,
-    identityMissing,
-    retryIdentity,
-  } = useLinkedStudentId(requestedStudentId);
+  const { studentId, isLinked, isResolving, identityMissing, retryIdentity } =
+    useLinkedStudentId(requestedStudentId);
 
   const scheduleQuery = useStudentScheduleQuery(studentId);
   const schedule = scheduleQuery.data ?? [];
@@ -93,7 +84,9 @@ export default function StudentScheduleScreen() {
             >
               <Text
                 className={`text-xs font-bold ${
-                  isSelected ? "text-primary-foreground" : "text-muted-foreground"
+                  isSelected
+                    ? "text-primary-foreground"
+                    : "text-muted-foreground"
                 }`}
                 numberOfLines={1}
               >
@@ -109,7 +102,10 @@ export default function StudentScheduleScreen() {
         <View className="py-ten">
           <EmptyState
             title={t("student_no_schedule") || "No Classes Scheduled"}
-            description={t("schedule_day_off_hint") || "No lessons are assigned for this day."}
+            description={
+              t("schedule_day_off_hint") ||
+              "No lessons are assigned for this day."
+            }
             icon={<Calendar size={32} className="text-muted-foreground" />}
           />
         </View>
@@ -122,11 +118,7 @@ export default function StudentScheduleScreen() {
               t("domain_schedule");
 
             return (
-              <Card
-                key={lesson.id}
-                variant="outline"
-                padding="four"
-              >
+              <Card key={lesson.id} variant="outline" padding="four">
                 <View className="flex-row items-center justify-between pb-two">
                   <View className="gap-half flex-1">
                     <Text className="text-base font-bold text-foreground">
@@ -134,12 +126,17 @@ export default function StudentScheduleScreen() {
                     </Text>
                     {timeSlot.name ? (
                       <Text className="text-xs text-muted-foreground">
-                        {isArabic ? timeSlot.name_ar || timeSlot.name : timeSlot.name}
+                        {isArabic
+                          ? timeSlot.name_ar || timeSlot.name
+                          : timeSlot.name}
                       </Text>
                     ) : null}
                   </View>
 
-                  <Badge variant="secondary" className="flex-row items-center gap-one px-two py-half">
+                  <Badge
+                    variant="secondary"
+                    className="flex-row items-center gap-one px-two py-half"
+                  >
                     <Clock size={12} color={theme.primary} />
                     <Text className="text-xs font-bold text-primary">
                       {timeSlot.start_time} – {timeSlot.end_time}

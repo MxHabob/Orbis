@@ -33,7 +33,14 @@ let totalPaid = $derived(
   fees.reduce((s, f) => s + Number(f.paid_amount || 0), 0),
 );
 let balanceDue = $derived(
-  fees.reduce((s, f) => s + Number(f.balance_due ?? (Number(f.net_amount || 0) - Number(f.paid_amount || 0))), 0),
+  fees.reduce(
+    (s, f) =>
+      s +
+      Number(
+        f.balance_due ?? Number(f.net_amount || 0) - Number(f.paid_amount || 0),
+      ),
+    0,
+  ),
 );
 
 onMount(() => loadFinance());
@@ -62,7 +69,9 @@ const feesSource = $derived(
     const paidAmount = Number(f.paid_amount ?? 0);
     const discountAmount = Number(f.discount_amount || 0);
     const originalAmount = Number(f.original_amount || 0);
-    const balance = Number(f.balance_due ?? Math.max(0, Number(f.net_amount || 0) - paidAmount));
+    const balance = Number(
+      f.balance_due ?? Math.max(0, Number(f.net_amount || 0) - paidAmount),
+    );
 
     let displayStatus = f.status || "unpaid";
     if (displayStatus === "partially_paid") {
@@ -83,20 +92,125 @@ const feesSource = $derived(
 );
 
 const feesCols: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "fee_name", prop: "fee_name", header: m.finance_fees_col_description(), name: "Fee", width: 180, size: 180, readonly: true },
-  { id: "total", prop: "total", header: m.common_ft_col_amount(), name: "Total", width: 110, size: 110, readonly: true, align: "end", cellClass: "font-mono font-medium" },
-  { id: "paid", prop: "paid", header: m.finance_fees_total_collected(), name: "Paid", width: 110, size: 110, readonly: true, align: "end", cellClass: "font-mono text-emerald-600 font-medium" },
-  { id: "balance", prop: "balance", header: m.finance_fees_total_due(), name: "Balance", width: 110, size: 110, readonly: true, align: "end", cellClass: "font-mono font-bold text-rose-600" },
-  { id: "status", prop: "status", header: "Status", name: "Status", width: 100, size: 100, type: "badge", align: "center", readonly: true },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "fee_name",
+    prop: "fee_name",
+    header: m.finance_fees_col_description(),
+    name: "Fee",
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+  {
+    id: "total",
+    prop: "total",
+    header: m.common_ft_col_amount(),
+    name: "Total",
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-medium",
+  },
+  {
+    id: "paid",
+    prop: "paid",
+    header: m.finance_fees_total_collected(),
+    name: "Paid",
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono text-emerald-600 font-medium",
+  },
+  {
+    id: "balance",
+    prop: "balance",
+    header: m.finance_fees_total_due(),
+    name: "Balance",
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-rose-600",
+  },
+  {
+    id: "status",
+    prop: "status",
+    header: "Status",
+    name: "Status",
+    width: 100,
+    size: 100,
+    type: "badge",
+    align: "center",
+    readonly: true,
+  },
 ];
 
 const paymentsCols: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, pin: "left", align: "center" },
-  { id: "receipt", prop: "receipt", header: m.finance_fees_col_receipt(), name: "Receipt", width: 120, size: 120, readonly: true, cellClass: "font-mono font-bold" },
-  { id: "method", prop: "method", header: m.finance_fees_col_method(), name: "Method", width: 110, size: 110, readonly: true, align: "center" },
-  { id: "date", prop: "date", header: m.finance_fees_col_pay_date(), name: "Date", width: 120, size: 120, readonly: true, cellClass: "font-mono" },
-  { id: "amount", prop: "amount", header: m.finance_payments_col_amount(), name: "Amount", width: 120, size: 120, readonly: true, align: "end", cellClass: "font-mono font-bold text-emerald-600" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    pin: "left",
+    align: "center",
+  },
+  {
+    id: "receipt",
+    prop: "receipt",
+    header: m.finance_fees_col_receipt(),
+    name: "Receipt",
+    width: 120,
+    size: 120,
+    readonly: true,
+    cellClass: "font-mono font-bold",
+  },
+  {
+    id: "method",
+    prop: "method",
+    header: m.finance_fees_col_method(),
+    name: "Method",
+    width: 110,
+    size: 110,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "date",
+    prop: "date",
+    header: m.finance_fees_col_pay_date(),
+    name: "Date",
+    width: 120,
+    size: 120,
+    readonly: true,
+    cellClass: "font-mono",
+  },
+  {
+    id: "amount",
+    prop: "amount",
+    header: m.finance_payments_col_amount(),
+    name: "Amount",
+    width: 120,
+    size: 120,
+    readonly: true,
+    align: "end",
+    cellClass: "font-mono font-bold text-emerald-600",
+  },
 ];
 
 const paymentsSource = $derived(

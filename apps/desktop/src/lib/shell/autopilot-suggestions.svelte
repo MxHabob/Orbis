@@ -19,7 +19,9 @@ let {
 } = $props();
 
 const sortedTasks = $derived(
-  [...tasks].sort((a, b) => (a.scheduled_at || "").localeCompare(b.scheduled_at || "")),
+  [...tasks].sort((a, b) =>
+    (a.scheduled_at || "").localeCompare(b.scheduled_at || ""),
+  ),
 );
 </script>
 

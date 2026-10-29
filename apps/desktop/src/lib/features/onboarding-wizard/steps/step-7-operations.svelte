@@ -53,19 +53,60 @@ let docBlocksEnrollment = $state(false);
 let docCondition = $state("all_students");
 
 const PRESET_DOCUMENTS = [
-  { code: "DOC_BIRTH_CERT", nameEn: "Birth Certificate", nameAr: "شهادة الميلاد الرسمية", mandatory: true, blocks: true, condition: "all_students" },
-  { code: "DOC_NATIONAL_ID", nameEn: "National ID / Iqama Copy", nameAr: "صورة الهوية الوطنية أو الإقامة", mandatory: true, blocks: true, condition: "all_students" },
-  { code: "DOC_PREV_RECORD", nameEn: "Previous Academic Transcripts", nameAr: "الشهادات والسجلات الدراسية السابقة", mandatory: true, blocks: false, condition: "transfer_students_only" },
-  { code: "DOC_VACCINE_CARD", nameEn: "Vaccination & Health Card", nameAr: "كارت التطعيمات والسجل الصحي", mandatory: false, blocks: false, condition: "all_students" },
-  { code: "DOC_PHOTO", nameEn: "Recent Passport Photographs (4x6)", nameAr: "الصور الشخصية الحديثة (4×6)", mandatory: true, blocks: false, condition: "all_students" },
+  {
+    code: "DOC_BIRTH_CERT",
+    nameEn: "Birth Certificate",
+    nameAr: "شهادة الميلاد الرسمية",
+    mandatory: true,
+    blocks: true,
+    condition: "all_students",
+  },
+  {
+    code: "DOC_NATIONAL_ID",
+    nameEn: "National ID / Iqama Copy",
+    nameAr: "صورة الهوية الوطنية أو الإقامة",
+    mandatory: true,
+    blocks: true,
+    condition: "all_students",
+  },
+  {
+    code: "DOC_PREV_RECORD",
+    nameEn: "Previous Academic Transcripts",
+    nameAr: "الشهادات والسجلات الدراسية السابقة",
+    mandatory: true,
+    blocks: false,
+    condition: "transfer_students_only",
+  },
+  {
+    code: "DOC_VACCINE_CARD",
+    nameEn: "Vaccination & Health Card",
+    nameAr: "كارت التطعيمات والسجل الصحي",
+    mandatory: false,
+    blocks: false,
+    condition: "all_students",
+  },
+  {
+    code: "DOC_PHOTO",
+    nameEn: "Recent Passport Photographs (4x6)",
+    nameAr: "الصور الشخصية الحديثة (4×6)",
+    mandatory: true,
+    blocks: false,
+    condition: "all_students",
+  },
 ];
 
-const stepTasks = $derived(getTasksForStep("operations", systemStore.onboardingTasks));
-const isTaskComplete = $derived(stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"));
+const stepTasks = $derived(
+  getTasksForStep("operations", systemStore.onboardingTasks),
+);
+const isTaskComplete = $derived(
+  stepTasks.length > 0 && stepTasks.every((t) => t.status === "completed"),
+);
 const studentNumberPreview = $derived.by(() => {
   const parts: string[] = [];
-  if (studentNumberPrefix.trim()) parts.push(studentNumberPrefix.trim().toUpperCase());
-  if (studentNumberYearFormat === "full") parts.push(String(new Date().getFullYear()));
+  if (studentNumberPrefix.trim())
+    parts.push(studentNumberPrefix.trim().toUpperCase());
+  if (studentNumberYearFormat === "full")
+    parts.push(String(new Date().getFullYear()));
   if (studentNumberYearFormat === "short") {
     parts.push(String(new Date().getFullYear()).slice(-2));
   }
@@ -94,18 +135,19 @@ async function loadData() {
 
     docRequirements = docsRes;
     studentNumberPrefix = settingsRes.admission?.numbering?.prefix ?? "";
-    studentNumberSeparator =
-      settingsRes.admission?.numbering?.separator || "-";
+    studentNumberSeparator = settingsRes.admission?.numbering?.separator || "-";
     const savedYearFormat = settingsRes.admission?.numbering?.year_format;
-    studentNumberYearFormat = savedYearFormat === "short" || savedYearFormat === "none"
-      ? savedYearFormat
-      : "none";
+    studentNumberYearFormat =
+      savedYearFormat === "short" || savedYearFormat === "none"
+        ? savedYearFormat
+        : "none";
     studentNumberDigits = Math.min(
       6,
       Math.max(3, settingsRes.admission?.numbering?.sequence_digits ?? 4),
     );
-    preventDuplicateNationalId =
-      !(settingsRes.admission?.policy?.allow_duplicate_national_id ?? false);
+    preventDuplicateNationalId = !(
+      settingsRes.admission?.policy?.allow_duplicate_national_id ?? false
+    );
   } catch (err: any) {
     console.error("Failed to load operations data:", err);
     toast.error(err?.message || m.onboarding_step7_err_load());
@@ -215,7 +257,7 @@ async function handleCreateDocRequirement() {
   }
 }
 
-function applyDocumentPreset(preset: typeof PRESET_DOCUMENTS[number]) {
+function applyDocumentPreset(preset: (typeof PRESET_DOCUMENTS)[number]) {
   docNameEn = preset.nameEn;
   docNameAr = preset.nameAr;
   docCode = preset.code;
@@ -243,7 +285,6 @@ function conditionLabel(condition: string): string {
       return m.ui_copy_all_new_students_b14cd3e5();
   }
 }
-
 </script>
 
 <div class="space-y-6">

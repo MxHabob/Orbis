@@ -18,7 +18,13 @@ import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
 import { Pencil, Plus, Trash, Users } from "@orbis/icons";
-import { api, extractErrorMessage, queryKeys, type GuardianDto, type UserDto } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  queryKeys,
+  type GuardianDto,
+  type UserDto,
+} from "$lib/api";
 import GuardianLinkSheet from "$lib/features/students/components/guardian-link-sheet.svelte";
 
 let { orgId, studentId }: { orgId: string; studentId: string } = $props();

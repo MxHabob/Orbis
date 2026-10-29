@@ -23,7 +23,6 @@ import {
   CardDescription,
   CardAction,
   CardContent,
-  CardFooter,
 } from "@orbis/ui/card";
 import AttendanceTrendsCard from "$lib/features/metrics/cards/attendance-trends-card.svelte";
 import GradeDistributionCard from "$lib/features/metrics/cards/grade-distribution-card.svelte";
@@ -62,6 +61,7 @@ import {
 import { queryClient } from "$lib/api";
 import { academicContext } from "$lib/stores";
 import AuditTimeline from "$lib/shared/components/audit-timeline.svelte";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -80,6 +80,7 @@ const classes = $derived(classesQuery.data ?? []);
 const isLoading = $derived(studentQuery.isLoading || classesQuery.isLoading);
 
 let isSaving = $state(false);
+let auditTimelineVersion = $state(0);
 
 // Form fields
 let nameAr = $state("");
@@ -102,19 +103,46 @@ let specialNeedsNotes = $state("");
 let birthDay = $state("");
 let birthMonth = $state("");
 let birthYear = $state("");
+let savedFormSnapshot = $state("");
+
+function createFormSnapshot(): string {
+  return JSON.stringify({
+    nameAr,
+    nameEn,
+    sex,
+    classId,
+    email,
+    phone,
+    address,
+    isActiveState,
+    nationalId,
+    passportNumber,
+    nationality,
+    placeOfBirth,
+    bloodType,
+    medicalNotes,
+    specialNeedsNotes,
+    birthDay,
+    birthMonth,
+    birthYear,
+  });
+}
+
+const formSnapshot = $derived(createFormSnapshot());
+const isDirty = $derived(
+  savedFormSnapshot !== "" && formSnapshot !== savedFormSnapshot,
+);
 
 const birthDate = $derived(
   birthDay && birthMonth && birthYear
     ? `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`
-    : ""
+    : "",
 );
 
 const selectedClassName = $derived(
   (() => {
     const cls = classes.find((c: ClassDto) => String(c.id) === classId);
-    return cls
-      ? cls.name || String(cls.id)
-      : m.common_form_select_class();
+    return cls ? cls.name || String(cls.id) : m.common_form_select_class();
   })(),
 );
 
@@ -158,7 +186,13 @@ function populateForm(detail: StudentDetailDto) {
     p?.display_name ||
     p?.full_name ||
     "";
-  nameEn = p?.full_name || "";
+  const englishName = [p?.first_name, p?.middle_name, p?.last_name]
+    .filter((part) => part?.trim())
+    .join(" ");
+  nameEn =
+    /[\u0600-\u06FF]/.test(englishName) && !/[A-Za-z]/.test(englishName)
+      ? ""
+      : englishName;
   const rawBirth = p?.birth_date ? String(p.birth_date).slice(0, 10) : "";
   if (rawBirth) {
     const parts = rawBirth.split("-");
@@ -183,6 +217,7 @@ function populateForm(detail: StudentDetailDto) {
   bloodType = p?.blood_type || "";
   medicalNotes = p?.medical_notes || "";
   specialNeedsNotes = p?.special_needs_notes || "";
+  savedFormSnapshot = createFormSnapshot();
 }
 
 onMount(async () => {
@@ -203,10 +238,12 @@ onMount(async () => {
             enrollments.find(
               (item) =>
                 item.period_id === academicContext.effectivePeriodId &&
-                (item.status === "active" || item.status === "pending_approval"),
+                (item.status === "active" ||
+                  item.status === "pending_approval"),
             ) ??
             enrollments.find(
-              (item) => item.status === "active" || item.status === "pending_approval",
+              (item) =>
+                item.status === "active" || item.status === "pending_approval",
             ) ??
             enrollments[0] ??
             null;
@@ -225,8 +262,12 @@ onMount(async () => {
       const [attRes, behRes, termRes, gpaRes] = await Promise.allSettled([
         api.listStudentAttendance(studentId),
         api.listStudentBehaviorRecords(studentId),
-        periodId ? api.getStudentTermResults(studentId, periodId, classId || undefined) : Promise.resolve(null),
-        periodId ? api.calculateGpa({ student_id: studentId, period_id: periodId }) : Promise.resolve(null),
+        periodId
+          ? api.getStudentTermResults(studentId, periodId, classId || undefined)
+          : Promise.resolve(null),
+        periodId
+          ? api.calculateGpa({ student_id: studentId, period_id: periodId })
+          : Promise.resolve(null),
       ]);
 
       if (attRes.status === "fulfilled" && Array.isArray(attRes.value)) {
@@ -265,7 +306,9 @@ const academicStats = $derived.by(() => {
         failed++;
       }
     }
-    const avg = Math.round(Number(termReport.overall_percentage ?? (totalPct / subs.length)));
+    const avg = Math.round(
+      Number(termReport.overall_percentage ?? totalPct / subs.length),
+    );
     let letter = "F";
     if (avg >= 90) letter = "A";
     else if (avg >= 85) letter = "B+";
@@ -313,20 +356,40 @@ const academicStats = $derived.by(() => {
       passed,
       failed,
       gradeLetter: letter,
-      gpa: (gpaReport as any)?.gpa != null ? Number((gpaReport as any).gpa).toFixed(2) : null,
+      gpa:
+        (gpaReport as any)?.gpa != null
+          ? Number((gpaReport as any).gpa).toFixed(2)
+          : null,
       rank: null,
       totalStudents: null,
       hasData: true,
     };
   }
 
-  return { avg: 0, passed: 0, failed: 0, gradeLetter: "—", gpa: null, rank: null, totalStudents: null, hasData: false };
+  return {
+    avg: 0,
+    passed: 0,
+    failed: 0,
+    gradeLetter: "—",
+    gpa: null,
+    rank: null,
+    totalStudents: null,
+    hasData: false,
+  };
 });
 
 // Derived attendance statistics
 const attendanceStats = $derived.by(() => {
   if (!attendanceRecords.length) {
-    return { present: 0, absent: 0, late: 0, excused: 0, total: 0, rate: 100, hasData: false };
+    return {
+      present: 0,
+      absent: 0,
+      late: 0,
+      excused: 0,
+      total: 0,
+      rate: 100,
+      hasData: false,
+    };
   }
   let present = 0;
   let absent = 0;
@@ -340,7 +403,8 @@ const attendanceStats = $derived.by(() => {
     else if (st.includes("excused") || st.includes("معذور")) excused++;
   }
   const total = present + absent + late + excused;
-  const rate = total > 0 ? Math.round(((present + late * 0.5) / total) * 100) : 100;
+  const rate =
+    total > 0 ? Math.round(((present + late * 0.5) / total) * 100) : 100;
   return { present, absent, late, excused, total, rate, hasData: total > 0 };
 });
 
@@ -350,7 +414,9 @@ const behaviorStats = $derived.by(() => {
   let negative = 0;
   let points = 100;
   for (const rec of behaviorRecords) {
-    const type = String(rec.record_type || (rec as any).behavior_type || "").toLowerCase();
+    const type = String(
+      rec.record_type || (rec as any).behavior_type || "",
+    ).toLowerCase();
     const pts = Math.abs(Number(rec.points || 0));
     if (type === "positive") {
       positive++;
@@ -369,7 +435,10 @@ const decisionHelper = $derived.by(() => {
   const attRate = attendanceStats.rate;
   const negBeh = behaviorStats.negative;
 
-  const hasNoData = !academicStats.hasData && !attendanceStats.hasData && !behaviorStats.hasData;
+  const hasNoData =
+    !academicStats.hasData &&
+    !attendanceStats.hasData &&
+    !behaviorStats.hasData;
 
   if (hasNoData) {
     return {
@@ -416,8 +485,8 @@ const decisionHelper = $derived.by(() => {
   }
 });
 
-async function saveStudentDetails(e: Event) {
-  e.preventDefault();
+async function saveStudentDetails(e?: Event) {
+  e?.preventDefault();
   if (!studentDetail) return;
   if (!nameAr.trim()) {
     toast.error(m.common_form_error_name_required());
@@ -435,28 +504,38 @@ async function saveStudentDetails(e: Event) {
   isSaving = true;
   try {
     const arParts = nameAr.trim().split(/\s+/);
-    const enParts = nameEn.trim().split(/\s+/);
-
-    const firstName = enParts[0] || arParts[0] || "طالب";
-    const lastName = enParts.length > 1 ? enParts[enParts.length - 1] : (arParts.length > 1 ? arParts[arParts.length - 1] : "جديد");
-    const middleName = enParts.length > 2 ? enParts.slice(1, -1).join(" ") : undefined;
+    const enteredEnglishName = nameEn.trim();
+    const enParts =
+      /[\u0600-\u06FF]/.test(enteredEnglishName) &&
+      !/[A-Za-z]/.test(enteredEnglishName)
+        ? []
+        : enteredEnglishName.split(/\s+/).filter(Boolean);
 
     const firstNameAr = arParts[0] || undefined;
-    const lastNameAr = arParts.length > 1 ? arParts[arParts.length - 1] : undefined;
-    const middleNameAr = arParts.length > 2 ? arParts.slice(1, -1).join(" ") : undefined;
+    const lastNameAr =
+      arParts.length > 1 ? arParts[arParts.length - 1] : undefined;
+    const middleNameAr =
+      arParts.length > 2 ? arParts.slice(1, -1).join(" ") : undefined;
+    const firstName = enParts[0];
+    const lastName = enParts.length > 1 ? enParts[enParts.length - 1] : "";
+    const middleName = enParts.length > 2 ? enParts.slice(1, -1).join(" ") : "";
 
     const targetStudentId = student?.id || studentId;
 
     // 1. Update Profile Fields
     await api.updateStudentProfile({
       student_id: targetStudentId,
-      first_name: firstName,
-      middle_name: middleName,
-      last_name: lastName,
+      ...(firstName
+        ? {
+            first_name: firstName,
+            middle_name: middleName,
+            last_name: lastName,
+          }
+        : {}),
       first_name_ar: firstNameAr,
-      middle_name_ar: middleNameAr,
-      last_name_ar: lastNameAr,
-      display_name: nameAr.trim() || nameEn.trim() || undefined,
+      middle_name_ar: middleNameAr || "",
+      last_name_ar: lastNameAr || "",
+      display_name: nameAr.trim() || undefined,
       gender: sex || undefined,
       birth_date: birthDate || undefined,
       national_id: nationalId.trim() || undefined,
@@ -482,33 +561,44 @@ async function saveStudentDetails(e: Event) {
 
     // 3. Update Class / Enrollment if changed
     if (classId) {
-      if (activeEnrollment && String(activeEnrollment.section_id) !== String(classId)) {
-        await api.transferClass({
-          enrollment_id: activeEnrollment.id,
-          target_class_id: classId,
-          reason: "Class changed from student details profile",
-        }).catch((err) => {
-          console.warn("Transfer class warning:", err);
-        });
+      if (
+        activeEnrollment &&
+        String(activeEnrollment.section_id) !== String(classId)
+      ) {
+        await api
+          .transferClass({
+            enrollment_id: activeEnrollment.id,
+            target_class_id: classId,
+            reason: "Class changed from student details profile",
+          })
+          .catch((err) => {
+            console.warn("Transfer class warning:", err);
+          });
       } else if (!activeEnrollment) {
         const periodId = academicContext.effectivePeriodId;
         if (periodId) {
-          await api.enrollStudent({
-            period_id: periodId,
-            student_id: targetStudentId,
-            section_id: classId,
-            student_number: studentNumber || targetStudentId.slice(0, 8),
-          }).catch((err) => {
-            console.warn("Enroll student warning:", err);
-          });
+          await api
+            .enrollStudent({
+              period_id: periodId,
+              student_id: targetStudentId,
+              section_id: classId,
+              student_number: studentNumber || targetStudentId.slice(0, 8),
+            })
+            .catch((err) => {
+              console.warn("Enroll student warning:", err);
+            });
         }
       }
     }
 
+    savedFormSnapshot = createFormSnapshot();
+    auditTimelineVersion += 1;
     toast.success(m.common_form_success_update());
 
     queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
-    queryClient.invalidateQueries({ queryKey: queryKeys.student.detail(studentId) });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.student.detail(studentId),
+    });
   } catch (e: unknown) {
     console.error("Save error:", e);
     toast.error(extractErrorMessage(e));
@@ -516,9 +606,17 @@ async function saveStudentDetails(e: Event) {
     isSaving = false;
   }
 }
+
+async function resetStudentDetails() {
+  try {
+    populateForm(await api.getStudent(studentId));
+  } catch (error: unknown) {
+    toast.error(extractErrorMessage(error));
+  }
+}
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-10">
+<div class="h-full w-full overflow-y-auto scrollbar-hide text-start pb-24">
   {#if isLoading}
     <div class="flex flex-col gap-6">
       <Skeleton class="h-32 w-full rounded-xl" />
@@ -755,7 +853,7 @@ async function saveStudentDetails(e: Event) {
                   <span class="truncate">{birthDay || m.common_form_day()}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                  {#each daysList as dy}
+                  {#each daysList as dy (dy)}
                     <SelectItem value={dy} class="text-xs text-start justify-start cursor-pointer">
                       {dy}
                     </SelectItem>
@@ -768,7 +866,7 @@ async function saveStudentDetails(e: Event) {
                   <span class="truncate">{monthsList.find(m => m.value === birthMonth)?.label || m.common_form_month()}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                  {#each monthsList as mo}
+                  {#each monthsList as mo (mo.value)}
                     <SelectItem value={mo.value} class="text-xs text-start justify-start cursor-pointer">
                       {mo.label}
                     </SelectItem>
@@ -781,7 +879,7 @@ async function saveStudentDetails(e: Event) {
                   <span class="truncate">{birthYear || m.common_form_year()}</span>
                 </SelectTrigger>
                 <SelectContent class="text-start max-h-48 overflow-y-auto" align="end">
-                  {#each yearsList as yr}
+                  {#each yearsList as yr (yr)}
                     <SelectItem value={String(yr)} class="text-xs text-start justify-start cursor-pointer">
                       {yr}
                     </SelectItem>
@@ -924,29 +1022,24 @@ async function saveStudentDetails(e: Event) {
           </div>
         </CardContent>
 
-        <!-- Card Footer Actions -->
-        <CardFooter class="flex justify-end gap-3 px-6 py-4 bg-muted/20 border-t border-border">
-          <Button type="button" variant="ghost" size="sm" onclick={() => { if (studentDetail) populateForm(studentDetail); }}>
-            {m.common_switcher_reset()}
-          </Button>
-          <Button
-            type="submit"
-            variant="lime"
-            size="sm"
-            class="font-bold text-xs px-6"
-            disabled={isSaving}
-          >
-            {isSaving ? "..." : m.settings_user_detail_btn_save_details()}
-          </Button>
-        </CardFooter>
       </Card>
 
     </form>
 
     <!-- Audit Timeline History -->
     <div class="mt-4">
-      <AuditTimeline entityType="student" entityId={studentId} />
+      {#key auditTimelineVersion}
+        <AuditTimeline entityType="student" entityId={studentId} />
+      {/key}
     </div>
     </div>
   {/if}
 </div>
+
+<SettingsBottomBar
+  visible={isDirty}
+  {isDirty}
+  {isSaving}
+  onsave={() => saveStudentDetails()}
+  onreset={resetStudentDetails}
+/>

@@ -92,11 +92,13 @@ export function formatCurrency(
     }).format(amount);
   } catch {
     // Fallback if currency code is unrecognized by Intl
-    return new Intl.NumberFormat(locale, {
-      style: "decimal",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2,
-    }).format(amount) + ` ${currencyCode}`;
+    return (
+      new Intl.NumberFormat(locale, {
+        style: "decimal",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount) + ` ${currencyCode}`
+    );
   }
 }
 
@@ -126,7 +128,8 @@ export function formatDate(
   if (value instanceof Date) {
     d = value;
   } else if (typeof value === "number") {
-    const normalized = Number.isFinite(value) && value < 1e12 ? value * 1000 : value;
+    const normalized =
+      Number.isFinite(value) && value < 1e12 ? value * 1000 : value;
     d = new Date(normalized);
   } else if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-").map(Number);
@@ -185,17 +188,20 @@ export function formatDate(
         ? "h23"
         : undefined;
   const baseOptions: Intl.DateTimeFormatOptions = {
-    ...(!hasGranularFields && type === "date" && { dateStyle: "medium" as const }),
-    ...(!hasGranularFields && type === "datetime" && {
-      dateStyle: "medium" as const,
-      timeStyle: "short" as const,
-      timeZone: timezone,
-    }),
-    ...(!hasGranularFields && type === "time" && {
-      hour: "numeric" as const,
-      minute: "2-digit" as const,
-      timeZone: timezone,
-    }),
+    ...(!hasGranularFields &&
+      type === "date" && { dateStyle: "medium" as const }),
+    ...(!hasGranularFields &&
+      type === "datetime" && {
+        dateStyle: "medium" as const,
+        timeStyle: "short" as const,
+        timeZone: timezone,
+      }),
+    ...(!hasGranularFields &&
+      type === "time" && {
+        hour: "numeric" as const,
+        minute: "2-digit" as const,
+        timeZone: timezone,
+      }),
     ...(hasGranularFields && { timeZone: dateTimezone }),
     ...options,
     ...((type === "time" || type === "datetime") && hourCycle && { hourCycle }),
@@ -254,7 +260,12 @@ function formatWithOrganizationDateFormat(
   }).formatToParts(date);
   const values: Record<string, string> = {};
   for (const part of parts) {
-    if (part.type === "day" || part.type === "month" || part.type === "year" || part.type === "weekday") {
+    if (
+      part.type === "day" ||
+      part.type === "month" ||
+      part.type === "year" ||
+      part.type === "weekday"
+    ) {
       values[part.type] = part.value;
     }
   }
@@ -279,14 +290,22 @@ function formatWithOrganizationDateFormat(
 
   return dateFormat.replace(dateFormatToken, (token) => {
     switch (token) {
-      case "YYYY": return values.year ?? "";
-      case "MMMM": return values.month ?? "";
-      case "MMM": return values.monthShort ?? "";
-      case "MM": return values.monthNumeric ?? "";
-      case "DD": return values.day ?? "";
-      case "D": return values.dayNumeric ?? "";
-      case "EEEE": return values.weekday ?? "";
-      default: return token;
+      case "YYYY":
+        return values.year ?? "";
+      case "MMMM":
+        return values.month ?? "";
+      case "MMM":
+        return values.monthShort ?? "";
+      case "MM":
+        return values.monthNumeric ?? "";
+      case "DD":
+        return values.day ?? "";
+      case "D":
+        return values.dayNumeric ?? "";
+      case "EEEE":
+        return values.weekday ?? "";
+      default:
+        return token;
     }
   });
 }

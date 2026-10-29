@@ -36,7 +36,9 @@ const currenciesQuery = createCurrenciesQuery(() => orgId);
 
 const accounts = $derived(accountsQuery.data ?? []);
 const currencies = $derived(currenciesQuery.data ?? []);
-const isLoading = $derived(accountsQuery.isLoading || currenciesQuery.isLoading);
+const isLoading = $derived(
+  accountsQuery.isLoading || currenciesQuery.isLoading,
+);
 const queryError = $derived(accountsQuery.error || currenciesQuery.error);
 
 function refetchAll() {
@@ -47,21 +49,29 @@ function refetchAll() {
 const activeCurrencies = $derived(
   currencies.length > 0
     ? currencies.filter((c) => c.is_active !== false)
-    : [{ code: "YER", name: m.finance_ui_currency_yer(), is_base: true, is_active: true }]
+    : [
+        {
+          code: "YER",
+          name: m.finance_ui_currency_yer(),
+          is_base: true,
+          is_active: true,
+        },
+      ],
 );
 
 const leafAccounts = $derived(
   accounts.filter(
-    (account) => !accounts.some((candidate) => candidate.parent_id === account.id)
-  )
+    (account) =>
+      !accounts.some((candidate) => candidate.parent_id === account.id),
+  ),
 );
 
 function getAccountBalance(account: any, currencyCode: string) {
   return Number(
     account.balances?.[currencyCode] ||
-    account.balances?.[currencyCode.toUpperCase()] ||
-    account.balances?.[currencyCode.toLowerCase()] ||
-    0
+      account.balances?.[currencyCode.toUpperCase()] ||
+      account.balances?.[currencyCode.toLowerCase()] ||
+      0,
   );
 }
 
@@ -70,7 +80,7 @@ const filteredAccounts = $derived(
     if (selectedTypeFilter === "all") return true;
     const type = String(acc.account_type || acc.sub_type || "").toLowerCase();
     return type === selectedTypeFilter;
-  })
+  }),
 );
 
 // Totals for Trial Balance
@@ -144,19 +154,32 @@ const trialColumns = $derived.by((): OrbisColumnDef[] => [
     {
       id: `${curr.code}_debit`,
       prop: `${curr.code}_debit`,
-      header: m.finance_ui_trial_debit_column({ currency: curr.name || curr.code, code: curr.code }),
-      name: m.finance_ui_trial_debit_column({ currency: curr.name || curr.code, code: curr.code }),
+      header: m.finance_ui_trial_debit_column({
+        currency: curr.name || curr.code,
+        code: curr.code,
+      }),
+      name: m.finance_ui_trial_debit_column({
+        currency: curr.name || curr.code,
+        code: curr.code,
+      }),
       width: 140,
       size: 140,
       readonly: true,
       align: "end" as const,
-      cellClass: "font-mono text-emerald-600 dark:text-emerald-400 font-semibold",
+      cellClass:
+        "font-mono text-emerald-600 dark:text-emerald-400 font-semibold",
     },
     {
       id: `${curr.code}_credit`,
       prop: `${curr.code}_credit`,
-      header: m.finance_ui_trial_credit_column({ currency: curr.name || curr.code, code: curr.code }),
-      name: m.finance_ui_trial_credit_column({ currency: curr.name || curr.code, code: curr.code }),
+      header: m.finance_ui_trial_credit_column({
+        currency: curr.name || curr.code,
+        code: curr.code,
+      }),
+      name: m.finance_ui_trial_credit_column({
+        currency: curr.name || curr.code,
+        code: curr.code,
+      }),
       width: 140,
       size: 140,
       readonly: true,
@@ -176,7 +199,9 @@ const accountTypeLabels: Record<string, string> = {
 
 const trialSource = $derived(
   filteredAccounts.map((account, idx) => {
-    const rawType = String(account.account_type || account.sub_type || "asset").toLowerCase();
+    const rawType = String(
+      account.account_type || account.sub_type || "asset",
+    ).toLowerCase();
     const typeLabel = accountTypeLabels[rawType] || rawType;
     const row: Record<string, unknown> = {
       __idx: idx + 1,
@@ -186,11 +211,13 @@ const trialSource = $derived(
     };
     for (const curr of activeCurrencies) {
       const amt = getAccountBalance(account, curr.code);
-      row[`${curr.code}_debit`] = amt > 0 ? formatCurrency(amt, curr.code) : "—";
-      row[`${curr.code}_credit`] = amt < 0 ? formatCurrency(Math.abs(amt), curr.code) : "—";
+      row[`${curr.code}_debit`] =
+        amt > 0 ? formatCurrency(amt, curr.code) : "—";
+      row[`${curr.code}_credit`] =
+        amt < 0 ? formatCurrency(Math.abs(amt), curr.code) : "—";
     }
     return row;
-  })
+  }),
 );
 
 function exportCurrentReport() {
@@ -199,10 +226,16 @@ function exportCurrentReport() {
   const keys = Object.keys(trialSource[0]);
   const csvContent = [
     keys.join(","),
-    ...trialSource.map((r) => keys.map((k) => `"${String(r[k] ?? "").replaceAll('"', '""')}"`).join(",")),
+    ...trialSource.map((r) =>
+      keys
+        .map((k) => `"${String(r[k] ?? "").replaceAll('"', '""')}"`)
+        .join(","),
+    ),
   ].join("\n");
 
-  const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob(["\ufeff" + csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

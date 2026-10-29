@@ -1,85 +1,85 @@
 <script lang="ts">
-  import * as m from "$lib/paraglide/messages";
-  import { licenseStore, uiStore } from "$lib/stores";
-  import { Button, toast } from "@orbis/ui";
-  import type { Snippet } from "svelte";
-  import type { EntitlementKey } from "$lib/api/types";
+import * as m from "$lib/paraglide/messages";
+import { licenseStore, uiStore } from "$lib/stores";
+import { Button, toast } from "@orbis/ui";
+import type { Snippet } from "svelte";
+import type { EntitlementKey } from "$lib/api/types";
 
-  let {
-    feature = null,
-    requireOperational = false,
-    licenseReady,
-    orgId = null,
-    blockOrganizationMismatch = true,
-    className = "",
-    children,
-  }: {
-    feature?: EntitlementKey | null;
-    requireOperational?: boolean;
-    licenseReady: boolean;
-    orgId?: string | null;
-    blockOrganizationMismatch?: boolean;
-    className?: string;
-    children: Snippet;
-  } = $props();
+let {
+  feature = null,
+  requireOperational = false,
+  licenseReady,
+  orgId = null,
+  blockOrganizationMismatch = true,
+  className = "",
+  children,
+}: {
+  feature?: EntitlementKey | null;
+  requireOperational?: boolean;
+  licenseReady: boolean;
+  orgId?: string | null;
+  blockOrganizationMismatch?: boolean;
+  className?: string;
+  children: Snippet;
+} = $props();
 
-  let isStartingTrial = $state(false);
-  const organizationMismatch = $derived(
-    Boolean(
-      orgId &&
-        licenseStore.organizationId &&
-        licenseStore.organizationId.toLowerCase() !== orgId.toLowerCase(),
-    ),
-  );
-  const isTrialAwaitingOrganization = $derived(
-    licenseStore.state === "pending" &&
-      licenseStore.plan?.toUpperCase() === "TRIAL" &&
-      !licenseStore.licenseState?.organization_id,
-  );
-  const locked = $derived(
-    licenseReady &&
-      ((blockOrganizationMismatch && organizationMismatch) ||
-        (requireOperational && !licenseStore.isOperational) ||
-        (feature !== null && !licenseStore.isFeatureEnabled(feature))),
-  );
-  const canRenderChildren = $derived(
-    !requireOperational || (licenseReady && licenseStore.isOperational),
-  );
-  const canStartTrial = $derived(
-    licenseStore.hasLoaded &&
-      !organizationMismatch &&
-      (licenseStore.state === "unavailable" || isTrialAwaitingOrganization) &&
-      (feature === null
-        ? licenseStore.trialFeatures.length > 0
-        : licenseStore.trialFeatures.includes(feature)),
-  );
+let isStartingTrial = $state(false);
+const organizationMismatch = $derived(
+  Boolean(
+    orgId &&
+      licenseStore.organizationId &&
+      licenseStore.organizationId.toLowerCase() !== orgId.toLowerCase(),
+  ),
+);
+const isTrialAwaitingOrganization = $derived(
+  licenseStore.state === "pending" &&
+    licenseStore.plan?.toUpperCase() === "TRIAL" &&
+    !licenseStore.licenseState?.organization_id,
+);
+const locked = $derived(
+  licenseReady &&
+    ((blockOrganizationMismatch && organizationMismatch) ||
+      (requireOperational && !licenseStore.isOperational) ||
+      (feature !== null && !licenseStore.isFeatureEnabled(feature))),
+);
+const canRenderChildren = $derived(
+  !requireOperational || (licenseReady && licenseStore.isOperational),
+);
+const canStartTrial = $derived(
+  licenseStore.hasLoaded &&
+    !organizationMismatch &&
+    (licenseStore.state === "unavailable" || isTrialAwaitingOrganization) &&
+    (feature === null
+      ? licenseStore.trialFeatures.length > 0
+      : licenseStore.trialFeatures.includes(feature)),
+);
 
-  async function retryLicenseState() {
-    await licenseStore.loadState();
-  }
+async function retryLicenseState() {
+  await licenseStore.loadState();
+}
 
-  async function startTrial() {
-    isStartingTrial = true;
-    try {
-      const trial = await licenseStore.startTrial();
-      if (trial) {
-        toast.success(m.license_trial_started());
-      } else if (licenseStore.error) {
-        toast.error(licenseStore.error);
-      }
-    } finally {
-      isStartingTrial = false;
+async function startTrial() {
+  isStartingTrial = true;
+  try {
+    const trial = await licenseStore.startTrial();
+    if (trial) {
+      toast.success(m.license_trial_started());
+    } else if (licenseStore.error) {
+      toast.error(licenseStore.error);
     }
+  } finally {
+    isStartingTrial = false;
   }
+}
 
-  function openLicenseAction() {
-    if (organizationMismatch) return;
-    if (licenseStore.isOperational && !requireOperational) {
-      uiStore.setUpgradeDialog(true);
-      return;
-    }
-    uiStore.setActivationDialog(true);
+function openLicenseAction() {
+  if (organizationMismatch) return;
+  if (licenseStore.isOperational && !requireOperational) {
+    uiStore.setUpgradeDialog(true);
+    return;
   }
+  uiStore.setActivationDialog(true);
+}
 </script>
 
 <div

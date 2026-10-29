@@ -7,21 +7,21 @@ import { LoadingIndicator, toast } from "@orbis/ui";
  * Browse, upload, and drag assets onto the canvas.
  */
 import {
-    getDocumentSource,
-    resolveDocumentUrl,
-    useDeleteDocument,
-    useDocuments,
-    useUploadFile,
+  getDocumentSource,
+  resolveDocumentUrl,
+  useDeleteDocument,
+  useDocuments,
+  useUploadFile,
 } from "$lib/features/documents/queries";
 import { ArrowUpTray, Photo, Plus, Search, Trash } from "@orbis/icons";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from "@orbis/ui/tooltip";
 import type { EditorStore } from "../stores/editor-store.svelte";
 
@@ -106,7 +106,9 @@ function handleFileSelect(e: Event) {
   const target = e.target as HTMLInputElement;
   if (!target.files?.length) return;
   const file = target.files[0];
-  const uploadToast = toast.loading(m.template_asset_uploading(), { duration: 0 });
+  const uploadToast = toast.loading(m.template_asset_uploading(), {
+    duration: 0,
+  });
 
   uploadMutation.mutate(
     {
@@ -137,7 +139,10 @@ function handleFileSelect(e: Event) {
       },
       onError: (error) => {
         uploadToast.update({
-          title: error instanceof Error ? error.message : m.template_asset_upload_failed(),
+          title:
+            error instanceof Error
+              ? error.message
+              : m.template_asset_upload_failed(),
           variant: "error",
           duration: 5000,
         });

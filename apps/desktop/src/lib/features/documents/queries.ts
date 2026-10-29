@@ -52,8 +52,7 @@ export async function resolveDocumentUrl(
     if (cachedDocumentUrl) return cachedDocumentUrl;
 
     const file = await api.downloadDocumentFile(documentId);
-    const blob =
-      file instanceof Blob ? file : new Blob([file.slice().buffer]);
+    const blob = file instanceof Blob ? file : new Blob([file.slice().buffer]);
     const documentUrl = URL.createObjectURL(blob);
     downloadedDocumentUrls.set(cacheKey, documentUrl);
     return documentUrl;
@@ -168,15 +167,28 @@ export function useDocuments(
     entityId?: string;
   },
 ) {
-  return createInfiniteQuery<DocumentPageResult, Error, DocumentPageResult, readonly unknown[], string | undefined>(() => {
+  return createInfiniteQuery<
+    DocumentPageResult,
+    Error,
+    DocumentPageResult,
+    readonly unknown[],
+    string | undefined
+  >(() => {
     const f = filter ? filter() : undefined;
     return {
-      queryKey: queryKeys.document.list(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined),
+      queryKey: queryKeys.document.list(
+        f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined,
+      ),
       placeholderData: (previousData) => previousData,
       queryFn: async () => {
-        const items = f?.entityType && f?.entityId
-          ? await api.listDocumentsByEntity(f.entityType, f.entityId)
-          : await api.listDocuments(f ? { entity_type: f.entityType, entity_id: f.entityId } : undefined);
+        const items =
+          f?.entityType && f?.entityId
+            ? await api.listDocumentsByEntity(f.entityType, f.entityId)
+            : await api.listDocuments(
+                f
+                  ? { entity_type: f.entityType, entity_id: f.entityId }
+                  : undefined,
+              );
         return {
           items,
           count: items.length,
@@ -283,7 +295,9 @@ export function useUpdateDocument() {
       api.updateDocument(id, req),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.detail(vars.id),
+      });
     },
   }));
 }
@@ -307,7 +321,9 @@ export function useCreateDocumentRequirement() {
     mutationFn: (req: CreateDocumentRequirementRequest) =>
       api.createDocumentRequirement(req),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirements(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -317,11 +333,20 @@ export function useUpdateDocumentRequirement() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: ({ id, req }: { id: string; req: UpdateDocumentRequirementRequest }) =>
-      api.updateDocumentRequirement(id, req),
+    mutationFn: ({
+      id,
+      req,
+    }: {
+      id: string;
+      req: UpdateDocumentRequirementRequest;
+    }) => api.updateDocumentRequirement(id, req),
     onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirement(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirements(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirement(vars.id),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -333,7 +358,9 @@ export function useDeleteDocumentRequirement() {
   return createMutation(() => ({
     mutationFn: (id: string) => api.deleteDocumentRequirement(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.requirements() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.requirements(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
   }));
@@ -341,9 +368,7 @@ export function useDeleteDocumentRequirement() {
 
 // ── Storage & Archive Hooks ─────────────────────────────────
 
-export function useUploadFile(
-  options: { invalidateOnSuccess?: boolean } = {},
-) {
+export function useUploadFile(options: { invalidateOnSuccess?: boolean } = {}) {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
@@ -386,7 +411,9 @@ export function useArchiveDocument() {
       api.archiveDocument(id, reason),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.detail(vars.id),
+      });
     },
   }));
 }
@@ -398,7 +425,9 @@ export function useRestoreDocument() {
     mutationFn: (id: string) => api.restoreDocument(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.document.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.document.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.document.detail(id),
+      });
     },
   }));
 }
@@ -491,7 +520,9 @@ export function useCreateFolder() {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
       if (vars.parent_id) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.parent_id) });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.folder.contents(vars.parent_id),
+        });
       }
     },
   }));
@@ -501,9 +532,12 @@ export function useCreateCurriculumFolder() {
   const queryClient = useQueryClient();
 
   return createMutation(() => ({
-    mutationFn: (req: CreateCurriculumFolderRequest) => api.getOrCreateCurriculumFolder(req),
+    mutationFn: (req: CreateCurriculumFolderRequest) =>
+      api.getOrCreateCurriculumFolder(req),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.folder.curriculum() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.curriculum(),
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
     },
   }));
@@ -517,8 +551,12 @@ export function useUpdateFolder() {
       api.updateFolder(id, req),
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.folder.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.folder.detail(vars.id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.folder.contents(vars.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.detail(vars.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.folder.contents(vars.id),
+      });
     },
   }));
 }
