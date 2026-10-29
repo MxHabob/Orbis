@@ -174,7 +174,7 @@ export default function ClassGradesScreen() {
             <EmptyState title={t("teacher_no_students")} />
           ) : (
             <>
-              {classQuery.data?.roster.map(({ student, enrollment }) => {
+              {classQuery.data?.roster.map(({ student, enrollment }: TeacherRosterEntry) => {
                 const grade = existingGrades.get(student.id);
                 const studentName = isArabic
                   ? student.name_ar || student.full_name
