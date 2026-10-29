@@ -19,13 +19,14 @@ export function useTactilePress(
 
   const animateTo = useCallback(
     (toValue: number) => {
-      progress.value =
+      progress.set(
         toValue === 1
           ? withTiming(1, {
               duration: 90,
               easing: Easing.out(Easing.quad),
             })
           : withSpring(0, { damping: 18, stiffness: 240, mass: 0.7 });
+      );
     },
     [progress],
   );

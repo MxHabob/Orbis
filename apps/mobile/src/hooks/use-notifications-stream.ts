@@ -24,7 +24,9 @@ export function useNotificationsStream(): void {
   const { isArabic } = useI18n();
 
   const isArabicRef = useRef(isArabic);
-  isArabicRef.current = isArabic;
+  useEffect(() => {
+    isArabicRef.current = isArabic;
+  }, [isArabic]);
 
   useEffect(() => {
     if (!isAuthenticated) return;

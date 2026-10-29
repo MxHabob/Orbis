@@ -163,12 +163,15 @@ export function EffectiveContextProvider({
 
     let cancelled = false;
     if (!userId) {
-      setActiveRoleOverride(null);
-      setActivePeriodOverride(null);
-      setSelectedDependentIdState(null);
-      setSelectedClassIdState(null);
-      setSelectedSubjectIdState(null);
-      setLoadedScope("guest");
+      void Promise.resolve().then(() => {
+        if (cancelled) return;
+        setActiveRoleOverride(null);
+        setActivePeriodOverride(null);
+        setSelectedDependentIdState(null);
+        setSelectedClassIdState(null);
+        setSelectedSubjectIdState(null);
+        setLoadedScope("guest");
+      });
       return () => {
         cancelled = true;
       };

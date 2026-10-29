@@ -95,7 +95,7 @@ async function main() {
       if (!namespace) continue;
       const escapedNamespace = namespace.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const messageReferencePattern = new RegExp(
-        `\\b${escapedNamespace}\\.([A-Za-z0-9_]+)\\b`,
+        `\\b${escapedNamespace}\\s*\\.([A-Za-z0-9_]+)\\b`,
         "g",
       );
       for (const match of text.matchAll(messageReferencePattern)) {

@@ -38,17 +38,18 @@ export default function ClassGradesScreen() {
   const { t, isArabic, formatDate } = useI18n();
   const toast = useToast();
   const canRecord = hasPermission("grade:write");
+  const classItem = classQuery.data?.classItem;
   const existingGrades = useMemo(
     () =>
       new Map(
         (gradesQuery.data ?? [])
           .filter(
             (grade: GradeDto) =>
-              grade.period_id === classQuery.data?.classItem.period_id,
+              grade.period_id === classItem?.period_id,
           )
           .map((grade: GradeDto) => [grade.student_id, grade]),
       ),
-    [gradesQuery.data, classQuery.data?.classItem.period_id],
+    [gradesQuery.data, classItem],
   );
 
   const isPending =

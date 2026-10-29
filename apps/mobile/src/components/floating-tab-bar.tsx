@@ -10,7 +10,7 @@
  *   [ Apps / Home (with desktop lime badge) ]    [ Digital ID ]    [ Analytics / Behavior AI ]
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Animated,
   Keyboard,
@@ -80,8 +80,8 @@ export function FloatingTabBar({ state, navigation }: FloatingTabBarProps) {
   const router = useRouter();
   const { t, isArabic } = useI18n();
 
-  const translateY = useRef(new Animated.Value(0)).current;
-  const opacity = useRef(new Animated.Value(1)).current;
+  const [translateY] = useState(() => new Animated.Value(0));
+  const [opacity] = useState(() => new Animated.Value(1));
 
   useEffect(() => {
     const showEvent =

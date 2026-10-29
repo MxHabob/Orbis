@@ -63,7 +63,7 @@ interface DropdownMenuContextValue {
   open: boolean;
   openMenu: () => void;
   closeMenu: (callback?: () => void) => void;
-  triggerRef: React.RefObject<View | null>;
+  setTriggerRef: (node: View | null) => void;
   menuPosition: {
     top: number;
     left?: number;
@@ -103,6 +103,9 @@ export const DropdownMenu = ({
 }: DropdownMenuProps) => {
   const [visible, setVisible] = useState(false);
   const triggerRef = useRef<View>(null);
+  const setTriggerRef = useCallback((node: View | null) => {
+    triggerRef.current = node;
+  }, []);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -161,7 +164,7 @@ export const DropdownMenu = ({
     open: visible,
     openMenu,
     closeMenu,
-    triggerRef,
+    setTriggerRef,
     menuPosition,
   };
 
@@ -189,7 +192,7 @@ export const DropdownMenuTrigger = ({
 
   if (asChild && isValidElement(children)) {
     return (
-      <View ref={context.triggerRef} collapsable={false}>
+      <View ref={context.setTriggerRef} collapsable={false}>
         {cloneElement(children as ReactElement<any>, {
           onPress: (event: any) => {
             (children as ReactElement<any>).props?.onPress?.(event);
@@ -203,7 +206,7 @@ export const DropdownMenuTrigger = ({
   }
 
   return (
-    <View ref={context.triggerRef} collapsable={false}>
+    <View ref={context.setTriggerRef} collapsable={false}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handlePress}

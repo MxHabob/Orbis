@@ -87,17 +87,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   const dismiss = useCallback(() => {
-    translateY.value = withTiming(4, {
+    translateY.set(withTiming(4, {
       duration: 120,
       easing: Easing.out(Easing.ease),
-    });
-    opacity.value = withTiming(
+    }));
+    opacity.set(withTiming(
       0,
       { duration: 120, easing: Easing.out(Easing.ease) },
       () => {
         runOnJS(setCurrent)(null);
       },
-    );
+    ));
   }, [opacity, translateY]);
 
   const showToast = useCallback(
@@ -119,14 +119,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         variant,
       });
 
-      opacity.value = withTiming(1, {
+      opacity.set(withTiming(1, {
         duration: 140,
         easing: Easing.out(Easing.ease),
-      });
-      translateY.value = withTiming(0, {
+      }));
+      translateY.set(withTiming(0, {
         duration: 140,
         easing: Easing.out(Easing.ease),
-      });
+      }));
 
       timeoutRef.current = setTimeout(() => {
         dismiss();
@@ -135,9 +135,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [opacity, translateY, dismiss],
   );
 
-  const toastHandler = Object.assign(
-    (payload: string | ToastPayload) => showToast(payload),
-    {
+  const toastHandler = React.useMemo<ToastContextValue["toast"]>(() => {
+    const handler = (payload: string | ToastPayload) => showToast(payload);
+    return Object.assign(handler, {
       success: (message: string, duration?: number) =>
         showToast({ message, variant: "success", duration }),
       error: (message: string, duration?: number) =>
@@ -146,8 +146,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         showToast({ message, variant: "warning", duration }),
       info: (message: string, duration?: number) =>
         showToast({ message, variant: "info", duration }),
-    },
-  );
+    });
+  }, [showToast]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

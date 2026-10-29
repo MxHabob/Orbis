@@ -65,8 +65,6 @@ export function Dialog({ visible, onClose, children }: DialogProps) {
         setShouldRender(false);
       }, 200);
       return () => clearTimeout(timer);
-    } else {
-      setShouldRender(true);
     }
   }, [visible]);
 

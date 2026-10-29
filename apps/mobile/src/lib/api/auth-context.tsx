@@ -141,7 +141,9 @@ function isEffectiveContextDto(value: unknown): value is EffectiveContextDto {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserDto | null>(null);
   const userRef = useRef(user);
-  userRef.current = user;
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
   const [effectiveContext, setEffectiveContext] =
     useState<EffectiveContextDto | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -153,7 +155,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [selectedInstitution, setSelectedInstitution] =
     useState<DirectoryInstitution | null>(null);
   const selectedInstitutionRef = useRef(selectedInstitution);
-  selectedInstitutionRef.current = selectedInstitution;
+  useEffect(() => {
+    selectedInstitutionRef.current = selectedInstitution;
+  }, [selectedInstitution]);
 
   const isAuthenticated = useMemo(() => !!token && !!user, [token, user]);
   const orgId = useMemo(() => user?.org_id ?? "", [user]);

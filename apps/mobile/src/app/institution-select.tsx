@@ -229,16 +229,23 @@ export default function InstitutionSelectScreen() {
 
   useEffect(() => {
     if (!institutionQr) return;
-    try {
-      setLocalCandidate(parseLocalInstitutionQr(institutionQr));
-    } catch (caught: unknown) {
-      console.warn(
-        "[Institution Select] Rejected an unsupported QR code.",
-        caught,
-      );
-      setScreenError(t("auth_institution_local_qr_error"));
-    }
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      try {
+        setLocalCandidate(parseLocalInstitutionQr(institutionQr));
+      } catch (caught: unknown) {
+        console.warn(
+          "[Institution Select] Rejected an unsupported QR code.",
+          caught,
+        );
+        setScreenError(t("auth_institution_local_qr_error"));
+      }
+    });
     router.setParams({ institutionQr: undefined });
+    return () => {
+      cancelled = true;
+    };
   }, [institutionQr, router, t]);
 
   const submitManualInstitution = useCallback(() => {

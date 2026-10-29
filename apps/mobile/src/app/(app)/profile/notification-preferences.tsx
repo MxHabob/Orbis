@@ -85,8 +85,6 @@ export default function NotificationPreferencesScreen() {
   const [isError, setIsError] = useState(false);
 
   const loadPrefs = useCallback(async () => {
-    setIsLoading(true);
-    setIsError(false);
     try {
       const data = await fetchNotificationPreferences();
       const map: PrefsMap = {};

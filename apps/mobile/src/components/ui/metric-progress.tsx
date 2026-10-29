@@ -29,8 +29,7 @@ export interface MetricProgressProps {
   showProgress?: boolean;
 }
 
-export const MetricProgress = React.memo<MetricProgressProps>(
-  ({
+export const MetricProgress = React.memo(function MetricProgress({
     title,
     subtitle,
     value = 0,
@@ -39,7 +38,7 @@ export const MetricProgress = React.memo<MetricProgressProps>(
     segments = [],
     tone = "primary",
     showProgress = true,
-  }) => {
+}: MetricProgressProps) {
     const theme = useTheme();
     const percentage = Math.min(
       100,
@@ -125,8 +124,7 @@ export const MetricProgress = React.memo<MetricProgressProps>(
           ))}
       </View>
     );
-  },
-);
+});
 
 function getToneColor(
   tone: MetricTone = "primary",
