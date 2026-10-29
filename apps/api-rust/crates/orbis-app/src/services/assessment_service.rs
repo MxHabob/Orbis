@@ -559,12 +559,20 @@ impl AssessmentService {
             .await?;
 
         let now = Utc::now();
+        let existing_attendances = self
+            .attendance_repo
+            .find_by_section_and_date(section_id, date)
+            .await?;
         let mut attendances = Vec::with_capacity(items.len());
 
         for item in items {
-            let att_id = Uuid::new_v4();
+            let existing = existing_attendances.iter().find(|attendance| {
+                attendance.student_id == item.student_id
+                    && attendance.section_subject_id == item.section_subject_id
+                    && attendance.scheduled_lesson_id == item.scheduled_lesson_id
+            });
             attendances.push(Attendance {
-                id: att_id,
+                id: existing.map_or_else(Uuid::new_v4, |attendance| attendance.id),
                 student_id: item.student_id,
                 section_id: Some(section_id),
                 section_subject_id: item.section_subject_id,
@@ -573,7 +581,7 @@ impl AssessmentService {
                 status: item.status,
                 notes: item.notes,
                 marked_by: ctx.user_id(),
-                created_at: now,
+                created_at: existing.map_or(now, |attendance| attendance.created_at),
                 updated_at: now,
             });
         }

@@ -70,7 +70,12 @@ export const ar = {
   teacher_no_students: "لا يوجد طلاب مسجلون في هذا الشعبة حالياً.",
   teacher_no_subjects: "لا توجد مواد دراسية نشطة لهذا الشعبة.",
   teacher_no_permission: "لا تملك الصلاحية لتنفيذ هذا الإجراء.",
+  teacher_no_lesson_today: "لا توجد حصة مجدولة لهذا اليوم.",
+  teacher_no_lesson_today_hint:
+    "اختر يومًا آخر أو راجع جدول الشعبة إذا كان هذا غير متوقع.",
   teacher_select_subject: "اختر المادة",
+  teacher_select_lesson: "اختر الحصة لتسجيل حضورها",
+  teacher_select_lesson_hint: "يُحفظ الحضور بشكل مستقل لكل حصة ومدرس.",
   teacher_select_status: "حدد حالة الحضور",
   teacher_already_recorded: "تم تسجيل الحضور",
   teacher_grade_already_recorded: "تم رصد الدرجة",

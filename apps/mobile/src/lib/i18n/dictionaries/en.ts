@@ -78,7 +78,13 @@ export const en: Record<TranslationKey, string> = {
   teacher_no_students: "There are no students enrolled in this section yet.",
   teacher_no_subjects: "There are no active subjects for this section.",
   teacher_no_permission: "You do not have permission to perform this action.",
+  teacher_no_lesson_today: "There are no lessons scheduled for this day.",
+  teacher_no_lesson_today_hint:
+    "Choose another day or check the section schedule if this seems incorrect.",
   teacher_select_subject: "Select subject",
+  teacher_select_lesson: "Select a lesson to record attendance",
+  teacher_select_lesson_hint:
+    "Attendance is saved separately for each lesson and teacher.",
   teacher_select_status: "Choose an attendance status",
   teacher_already_recorded: "Attendance already recorded",
   teacher_grade_already_recorded: "Grade already recorded",

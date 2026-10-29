@@ -1,7 +1,17 @@
 <script lang="ts">
+import { page } from "$app/state";
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api, extractErrorMessage } from "$lib/api";
+import {
+  api,
+  extractErrorMessage,
+  type AttendanceDto,
+  type ScheduledLessonDto,
+  type SectionSubjectDto,
+  type StudentDetailDto,
+  type SubjectDto,
+  type TimeSlotDto,
+} from "$lib/api";
 import { academicContext } from "$lib/stores";
 import { l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
@@ -37,14 +47,23 @@ interface AttendanceRow {
   studentId: string;
   studentNumber: string;
   fullName: string;
-  status: AttendanceStatus;
+  status: AttendanceStatus | "unmarked";
   remarks: string;
-  existingId?: string;
+}
+
+interface AttendanceLessonOption {
+  id: string;
+  sectionSubjectId: string;
+  label: string;
 }
 
 let classes = $state<any[]>([]);
 let selectedClassId = $state("");
 let selectedDate = $state(new Date().toISOString().slice(0, 10));
+let selectedLessonId = $state("");
+let lessonOptions = $state<AttendanceLessonOption[]>([]);
+let rosterStudents = $state<StudentDetailDto[]>([]);
+let existingAttendance = $state<AttendanceDto[]>([]);
 let attendanceRows = $state<AttendanceRow[]>([]);
 let searchQuery = $state("");
 let statusFilter = $state("all");
@@ -109,7 +128,11 @@ async function loadClasses() {
   try {
     classes = await api.listSections();
     if (classes.length > 0) {
-      selectedClassId = String(classes[0].id);
+      const requestedClassId = page.url.searchParams.get("classId");
+      selectedClassId = String(
+        classes.find((item) => String(item.id) === requestedClassId)?.id ??
+          classes[0].id,
+      );
       await loadRosterAndAttendance();
     }
   } catch (error) {
@@ -131,50 +154,116 @@ async function loadRosterAndAttendance() {
   isLoadingRoster = true;
   rosterLoadError = false;
   try {
+    lessonOptions = [];
+    selectedLessonId = "";
+    attendanceRows = [];
     const periodId = academicContext.effectivePeriodId;
-    const [enrollments, existingAttendance] = await Promise.all([
-      api.listEnrollments({
-        classId: selectedClassId,
-        periodId: periodId || undefined,
-        status: "active",
+    const [
+      studentsPage,
+      records,
+      sectionSubjects,
+      timeSlots,
+      subjects,
+      lessons,
+    ] = await Promise.all([
+      api.listStudents({
+        class_id: selectedClassId,
+        period_id: periodId || undefined,
+        page: 1,
+        page_size: 100,
       }),
       api.listAttendance(selectedClassId, selectedDate),
+      periodId
+        ? api.listSectionSubjects(selectedClassId, periodId)
+        : Promise.resolve([] as SectionSubjectDto[]),
+      periodId
+        ? api.listTimeSlots(periodId)
+        : Promise.resolve([] as TimeSlotDto[]),
+      api.listSubjects(),
+      periodId
+        ? api.listScheduledLessons(periodId)
+        : Promise.resolve([] as ScheduledLessonDto[]),
     ]);
 
-    const attendanceByStudent = new Map(
-      existingAttendance.map((record) => [String(record.student_id), record]),
+    const students: StudentDetailDto[] = [...studentsPage.items];
+    for (let page = 2; page <= studentsPage.total_pages; page += 5) {
+      const pageNumbers = Array.from(
+        { length: Math.min(5, studentsPage.total_pages - page + 1) },
+        (_, index) => page + index,
+      );
+      const pages = await Promise.all(
+        pageNumbers.map((pageNumber) =>
+          api.listStudents({
+            class_id: selectedClassId,
+            period_id: periodId || undefined,
+            page: pageNumber,
+            page_size: 100,
+          }),
+        ),
+      );
+      students.push(...pages.flatMap((result) => result.items));
+    }
+
+    const sectionSubjectById = new Map(
+      sectionSubjects.map((sectionSubject) => [
+        sectionSubject.id,
+        sectionSubject,
+      ]),
+    );
+    const subjectById = new Map(
+      subjects.map((subject) => [subject.id, subject]),
+    );
+    const timeSlotById = new Map(
+      timeSlots.map((timeSlot) => [timeSlot.id, timeSlot]),
+    );
+    const weekday = new Date(`${selectedDate}T00:00:00`).getDay() + 1;
+    const classSectionSubjectIds = new Set(
+      sectionSubjects.map((item) => item.id),
     );
 
-    attendanceRows = enrollments.map((enrollment: any) => {
-      const studentId = String(enrollment.student_id || enrollment.id);
-      const existing = attendanceByStudent.get(studentId);
-      const rawStatus = existing?.status?.toLowerCase();
-      const status: AttendanceStatus =
-        rawStatus === "absent" || rawStatus === "غائب"
-          ? "absent"
-          : rawStatus === "late" || rawStatus === "متأخر"
-            ? "late"
-            : rawStatus === "excused" || rawStatus === "مبرر"
-              ? "excused"
-              : "present";
+    lessonOptions = lessons
+      .filter((lesson) => classSectionSubjectIds.has(lesson.section_subject_id))
+      .flatMap((lesson) => {
+        const sectionSubject = sectionSubjectById.get(
+          lesson.section_subject_id,
+        );
+        const timeSlot = timeSlotById.get(lesson.time_slot_id);
+        if (!sectionSubject || !timeSlot || timeSlot.day_of_week !== weekday) {
+          return [];
+        }
 
-      return {
-        studentId,
-        studentNumber:
-          enrollment.student_number ||
-          enrollment.student?.student_number ||
-          "—",
-        fullName:
-          enrollment.full_name ||
-          enrollment.name_ar ||
-          enrollment.name_en ||
-          enrollment.student?.full_name ||
-          m.operations_ui_student_fallback(),
-        status,
-        remarks: existing?.remarks || "",
-        existingId: existing?.id,
-      };
-    });
+        const subject = subjectById.get(sectionSubject.subject_id);
+        const subjectName =
+          l(subject?.name_ar, subject?.name) ||
+          subject?.name_ar ||
+          subject?.name ||
+          sectionSubject.subject_id;
+
+        return [
+          {
+            id: lesson.id,
+            sectionSubjectId: sectionSubject.id,
+            label: [
+              subjectName,
+              `${timeSlot.start_time.slice(0, 5)} - ${timeSlot.end_time.slice(0, 5)}`,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+          },
+        ];
+      })
+      .sort((left, right) => left.label.localeCompare(right.label));
+
+    rosterStudents = students;
+    existingAttendance = records;
+    selectedLessonId = lessonOptions.some(
+      (lesson) => lesson.id === selectedLessonId,
+    )
+      ? selectedLessonId
+      : lessonOptions.length === 1
+        ? lessonOptions[0].id
+        : "";
+    buildAttendanceRows(selectedLessonId);
   } catch (error) {
     rosterLoadError = true;
     console.error("Failed to load attendance roster:", error);
@@ -182,6 +271,60 @@ async function loadRosterAndAttendance() {
   } finally {
     isLoadingRoster = false;
   }
+}
+
+function buildAttendanceRows(lessonId: string) {
+  const lesson = lessonOptions.find((option) => option.id === lessonId);
+  if (!lesson) {
+    attendanceRows = [];
+    return;
+  }
+
+  const attendanceByStudent = new Map(
+    existingAttendance
+      .filter(
+        (record) =>
+          record.scheduled_lesson_id === lesson.id &&
+          record.section_subject_id === lesson.sectionSubjectId,
+      )
+      .map((record) => [String(record.student_id), record]),
+  );
+
+  attendanceRows = rosterStudents.map((student) => {
+    const studentId = String(student.student.id);
+    const existing = attendanceByStudent.get(studentId);
+    const rawStatus = existing?.status?.toLowerCase();
+    const status: AttendanceRow["status"] = !rawStatus
+      ? "unmarked"
+      : rawStatus === "absent" || rawStatus === "غائب"
+        ? "absent"
+        : rawStatus === "late" || rawStatus === "متأخر"
+          ? "late"
+          : rawStatus === "excused" || rawStatus === "مبرر"
+            ? "excused"
+            : "present";
+
+    return {
+      studentId,
+      studentNumber:
+        student.enrollment?.student_number ||
+        student.student.student_number ||
+        "—",
+      fullName:
+        student.person.full_name_ar ||
+        student.person.full_name ||
+        student.person.display_name ||
+        student.student.student_number ||
+        m.operations_ui_student_fallback(),
+      status,
+      remarks: existing?.notes || "",
+    };
+  });
+}
+
+function selectLesson(lessonId: string) {
+  selectedLessonId = lessonId;
+  buildAttendanceRows(lessonId);
 }
 
 function isAttendanceStatus(value: unknown): value is AttendanceStatus {
@@ -217,18 +360,29 @@ function markAll(status: AttendanceStatus) {
 }
 
 async function handleSaveAttendance() {
-  if (!selectedClassId || attendanceRows.length === 0) return;
+  const lesson = lessonOptions.find((option) => option.id === selectedLessonId);
+  if (!selectedClassId || !lesson || attendanceRows.length === 0) return;
 
   isSaving = true;
   try {
+    const items = attendanceRows.flatMap((row) =>
+      row.status === "unmarked"
+        ? []
+        : [
+            {
+              student_id: row.studentId,
+              section_subject_id: lesson.sectionSubjectId,
+              scheduled_lesson_id: lesson.id,
+              status: row.status,
+              notes: row.remarks || undefined,
+            },
+          ],
+    );
+    if (items.length === 0) return;
     await api.batchMarkAttendance({
       section_id: selectedClassId,
       date: selectedDate,
-      items: attendanceRows.map((row) => ({
-        student_id: row.studentId,
-        status: row.status,
-        notes: row.remarks || undefined,
-      })),
+      items,
     });
     toast.success(m.operations_ui_attendance_save_success());
     await loadRosterAndAttendance();
@@ -274,7 +428,9 @@ function handleExport() {
               ? m.operations_ui_attendance_absent()
               : row.status === "late"
                 ? m.operations_ui_attendance_late()
-                : m.operations_ui_attendance_excused(),
+                : row.status === "excused"
+                  ? m.operations_ui_attendance_excused()
+                  : m.operations_ui_attendance_unmarked(),
       },
       { header: m.operations_ui_notes(), accessor: (row) => row.remarks },
     ],
@@ -302,7 +458,7 @@ const gridSource = $derived(
     studentId: row.studentId,
     fullName: row.fullName,
     studentNumber: row.studentNumber,
-    status: row.status,
+    status: row.status === "unmarked" ? "" : row.status,
     remarks: row.remarks,
   })),
 );
@@ -317,6 +473,7 @@ const absentCount = $derived(
 <div class="flex h-full min-h-0 w-full flex-col gap-3 p-3 font-sans text-start sm:p-4">
   <div class="flex flex-wrap items-center gap-2">
     <Select
+      type="single"
       value={selectedClassId}
       onValueChange={(value) => {
         selectedClassId = value;
@@ -360,13 +517,39 @@ const absentCount = $derived(
       />
     </div>
 
-    <Button
-      variant="default"
-      size="sm"
-      onclick={handleSaveAttendance}
-      disabled={isSaving || attendanceRows.length === 0}
-      class="h-9 gap-1.5 text-xs font-semibold sm:ms-auto"
-    >
+      <Select
+        type="single"
+        value={selectedLessonId}
+        onValueChange={selectLesson}
+        disabled={isLoadingRoster || lessonOptions.length === 0}
+      >
+        <SelectTrigger
+          class="h-9 w-full text-xs sm:w-72"
+          aria-label={m.operations_ui_attendance_select_lesson()}
+        >
+          <span class="truncate">
+            {lessonOptions.find((lesson) => lesson.id === selectedLessonId)
+              ?.label || m.operations_ui_attendance_select_lesson()}
+          </span>
+        </SelectTrigger>
+        <SelectContent>
+          {#each lessonOptions as lesson (lesson.id)}
+            <SelectItem value={lesson.id}>{lesson.label}</SelectItem>
+          {/each}
+        </SelectContent>
+      </Select>
+
+      <Button
+        variant="default"
+        size="sm"
+        onclick={handleSaveAttendance}
+        disabled={
+          isSaving ||
+          !selectedLessonId ||
+          !attendanceRows.some((row) => row.status !== "unmarked")
+        }
+        class="h-9 gap-1.5 text-xs font-semibold sm:ms-auto"
+      >
       <FloppyDisk size={14} />
       {isSaving
         ? m.operations_ui_saving()
@@ -399,6 +582,12 @@ const absentCount = $derived(
         {m.operations_ui_attendance_no_classes()}
       </p>
     </div>
+  {:else if !isLoadingRoster && !rosterLoadError && lessonOptions.length === 0}
+    <div class="flex flex-1 items-center justify-center text-center">
+      <p class="text-xs text-muted-foreground">
+        {m.operations_ui_attendance_no_lessons_today()}
+      </p>
+    </div>
   {:else}
     <Card class="flex min-h-0 flex-1 flex-col overflow-hidden border-border/60 shadow-none">
       <div class="flex flex-wrap items-center gap-2 border-b border-border/50 p-3">
@@ -416,6 +605,7 @@ const absentCount = $derived(
         </div>
 
         <Select
+          type="single"
           value={statusFilter}
           onValueChange={(value) => (statusFilter = value)}
         >
@@ -489,6 +679,11 @@ const absentCount = $derived(
           <InfoCircle size={13} />
           {attendanceRows.filter((row) => row.status === "excused").length}
         </span>
+        <span class="text-[11px] text-muted-foreground">
+          {m.operations_ui_attendance_unmarked()}: {attendanceRows.filter(
+            (row) => row.status === "unmarked",
+          ).length}
+        </span>
 
         <div class="flex w-full flex-wrap items-center gap-1.5 sm:ms-auto sm:w-auto">
           <Button
@@ -538,16 +733,24 @@ const absentCount = $derived(
             </Button>
           </div>
         {:else}
-          <OrbisGrid
-            {columns}
-            source={gridSource}
-            loading={isLoadingRoster}
-            height="100%"
-            rowSize={44}
-            rtl={getLocale() === "ar"}
-            oncelledit={handleGridEdit}
-            emptyTitle={m.operations_ui_attendance_no_students()}
-          />
+          {#if !selectedLessonId}
+            <div class="flex h-full items-center justify-center p-6 text-center">
+              <p class="text-xs text-muted-foreground">
+                {m.operations_ui_attendance_select_lesson()}
+              </p>
+            </div>
+          {:else}
+            <OrbisGrid
+              {columns}
+              source={gridSource}
+              loading={isLoadingRoster}
+              height="100%"
+              rowSize={44}
+              rtl={getLocale() === "ar"}
+              oncelledit={handleGridEdit}
+              emptyTitle={m.operations_ui_attendance_no_students()}
+            />
+          {/if}
         {/if}
       </CardContent>
     </Card>
