@@ -140,7 +140,15 @@ async function initEditor() {
             type: "string",
             label: m.template_schema_student_number(),
           },
+          studentNumber: {
+            type: "string",
+            label: m.template_schema_student_number(),
+          },
           national_id: {
+            type: "string",
+            label: m.template_schema_student_national_id(),
+          },
+          nationalId: {
             type: "string",
             label: m.template_schema_student_national_id(),
           },
@@ -149,6 +157,18 @@ async function initEditor() {
             label: m.template_schema_student_seat_number(),
           },
           class_name: {
+            type: "string",
+            label: m.template_schema_student_class_section(),
+          },
+          className: {
+            type: "string",
+            label: m.template_schema_student_class_section(),
+          },
+          classNameAr: {
+            type: "string",
+            label: m.template_schema_student_class_section(),
+          },
+          class_name_ar: {
             type: "string",
             label: m.template_schema_student_class_section(),
           },
@@ -174,6 +194,10 @@ async function initEditor() {
             label: m.template_schema_guardian_name(),
           },
           avatar_url: {
+            type: "image",
+            label: m.ui_copy_student_profile_photo_de522661(),
+          },
+          avatarUrl: {
             type: "image",
             label: m.ui_copy_student_profile_photo_de522661(),
           },

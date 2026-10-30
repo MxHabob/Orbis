@@ -212,6 +212,28 @@ fn detect_mime_type(data: &[u8]) -> &'static str {
     }
 }
 
+fn apply_text_direction(content: &str, direction: TextDirection) -> String {
+    let mark = match direction {
+        TextDirection::Rtl => '\u{200f}',
+        TextDirection::Ltr => '\u{200e}',
+        TextDirection::Auto => return content.to_string(),
+    };
+
+    content
+        .split_inclusive('\n')
+        .map(|paragraph| format!("{mark}{paragraph}"))
+        .collect()
+}
+
+fn resolve_line_alignment(align: TextAlign, is_rtl: bool) -> cosmic_text::Align {
+    match (align, is_rtl) {
+        (TextAlign::Center, _) => cosmic_text::Align::Center,
+        (TextAlign::Justify, _) => cosmic_text::Align::Justified,
+        (TextAlign::Start, true) | (TextAlign::End, false) => cosmic_text::Align::Right,
+        (TextAlign::Start, false) | (TextAlign::End, true) => cosmic_text::Align::Left,
+    }
+}
+
 /// Render a single positioned text element to page surface using cosmic-text + krilla low-level glyphs API.
 fn render_text_to_surface(
     surface: &mut krilla::surface::Surface,
@@ -270,22 +292,21 @@ fn render_text_to_surface(
         Some(text_elem.height),
     );
 
-    let align = match text_elem.text_align {
-        TextAlign::Center => cosmic_text::Align::Center,
-        TextAlign::End => cosmic_text::Align::Right,
-        TextAlign::Justify => cosmic_text::Align::Justified,
-        TextAlign::Start => cosmic_text::Align::Left,
-    };
+    let content = apply_text_direction(&text_elem.content, text_elem.direction);
 
     buffer.set_text(
         &mut font_system,
-        &text_elem.content,
+        &content,
         attrs,
         cosmic_text::Shaping::Advanced,
     );
 
     for line in buffer.lines.iter_mut() {
-        line.set_align(Some(align));
+        let is_rtl = unicode_bidi::BidiInfo::new(line.text(), None)
+            .paragraphs
+            .first()
+            .is_some_and(|paragraph| paragraph.level.is_rtl());
+        line.set_align(Some(resolve_line_alignment(text_elem.text_align, is_rtl)));
     }
 
     buffer.shape_until_scroll(&mut font_system, false);
@@ -437,6 +458,42 @@ mod tests {
     use crate::render::barcode_gen::{
         generate_barcode_svg, generate_qr_svg, BarcodeFormat, QrErrorCorrection,
     };
+
+    #[test]
+    fn test_text_direction_sets_paragraph_base_and_logical_alignment() {
+        let rtl_content =
+            apply_text_direction("STD-0195 :الرقم الأكاديمي\nالشعبة: 1-A", TextDirection::Rtl);
+        let rtl_paragraphs = unicode_bidi::BidiInfo::new(&rtl_content, None).paragraphs;
+        assert!(rtl_paragraphs
+            .iter()
+            .all(|paragraph| paragraph.level.is_rtl()));
+        assert!(rtl_content.contains("\n\u{200f}"));
+
+        let ltr_content = apply_text_direction("رقم الطالب: STD-0195", TextDirection::Ltr);
+        assert!(
+            !unicode_bidi::BidiInfo::new(&ltr_content, None).paragraphs[0]
+                .level
+                .is_rtl()
+        );
+
+        assert_eq!(
+            resolve_line_alignment(TextAlign::Start, true),
+            cosmic_text::Align::Right
+        );
+        assert_eq!(
+            resolve_line_alignment(TextAlign::End, true),
+            cosmic_text::Align::Left
+        );
+        assert_eq!(
+            resolve_line_alignment(TextAlign::Start, false),
+            cosmic_text::Align::Left
+        );
+        assert_eq!(
+            resolve_line_alignment(TextAlign::End, false),
+            cosmic_text::Align::Right
+        );
+        assert_eq!(apply_text_direction("auto", TextDirection::Auto), "auto");
+    }
 
     #[test]
     fn test_render_empty_page() {

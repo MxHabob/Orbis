@@ -278,10 +278,25 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
     const students = await Promise.all(
       entityIds.map((id) => api.getStudent(id)),
     );
+    const enrollments = await Promise.all(
+      students.map(({ student }) =>
+        api.listEnrollments({ student_id: student.id, page_size: 100 }),
+      ),
+    );
+    const activeEnrollments = enrollments.map((studentEnrollments) => {
+      const latestWithStatus = (status: string) =>
+        studentEnrollments
+          .filter((item) => item.status === status)
+          .sort((left, right) =>
+            right.enrollment_date.localeCompare(left.enrollment_date),
+          )[0] ?? null;
+
+      return latestWithStatus("active") ?? latestWithStatus("pending_approval");
+    });
     const classIds = [
       ...new Set(
-        students
-          .map(({ enrollment }) => enrollment?.section_id)
+        activeEnrollments
+          .map((enrollment) => enrollment?.section_id)
           .filter((id): id is string => Boolean(id)),
       ),
     ];
@@ -289,7 +304,8 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
     const classesById = new Map(classes.map((item) => [item.id, item]));
 
     return Promise.all(
-      students.map(async ({ student, person, enrollment }, index) => {
+      students.map(async ({ student, person }, index) => {
+        const enrollment = activeEnrollments[index];
         const classInfo = enrollment?.section_id
           ? classesById.get(enrollment.section_id)
           : undefined;
@@ -307,12 +323,29 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
             name: person.full_name,
             nameAr: person.full_name_ar ?? student.name_ar ?? student.full_name,
             studentNumber: student.student_number,
-            nationalId: person.national_id ?? student.national_id,
+            student_number: student.student_number,
+            nationalId:
+              person.national_id ??
+              student.national_id ??
+              person.passport_number ??
+              student.passport_number,
+            national_id:
+              person.national_id ??
+              student.national_id ??
+              person.passport_number ??
+              student.passport_number,
             avatar_url: avatarUrl,
             avatarUrl,
             classId: enrollment?.section_id,
-            className: classInfo?.name,
+            className: isRtl
+              ? classInfo?.name_ar ?? classInfo?.name
+              : classInfo?.name,
             classNameAr: classInfo?.name_ar,
+            class_name: isRtl
+              ? classInfo?.name_ar ?? classInfo?.name
+              : classInfo?.name,
+            class_name_ar: classInfo?.name_ar,
+            class_code: classInfo?.code,
             level: classInfo?.level,
           },
           person: { ...person, avatar_url: avatarUrl },
