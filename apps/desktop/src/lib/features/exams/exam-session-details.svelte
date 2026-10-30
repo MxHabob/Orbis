@@ -15,24 +15,7 @@ import {
 import { toast } from "@orbis/ui";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import {
-  ArrowLeft,
-  ArrowsRightLeft,
-  Bolt,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  Hashtag,
-  Home,
-  Lock,
-  Pencil,
-  Play,
-  Plus,
-  Printer,
-  Trash,
-  UserBadgeCheck,
-  XMark,
-} from "@orbis/icons";
+import { Card } from "@orbis/ui/card";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
@@ -186,13 +169,6 @@ function getClassName(classId: string) {
   return cls ? cls.name_ar || cls.name : classId;
 }
 
-function getSubjectColor(subjectId: string) {
-  const sub = schoolSubjects.find(
-    (s: any) => String(s.id) === String(subjectId),
-  );
-  return sub ? sub.color : "#3b82f6";
-}
-
 function formatDateWithDay(dateStr: string): string {
   return (
     formatDate(dateStr, "date", {
@@ -226,31 +202,26 @@ const tabs = $derived([
   {
     id: "subjects",
     label: m.common_exams_detail_subjects(),
-    icon: BookOpen,
     count: subjects.length,
   },
   {
     id: "schedule",
     label: m.common_exams_detail_schedule(),
-    icon: Calendar,
     count: activeSchedules.length,
   },
   {
     id: "seating",
     label: m.common_exams_detail_seating(),
-    icon: Hashtag,
     count: seatingNumbers.length,
   },
   {
     id: "halls",
     label: m.common_exams_stat_halls(),
-    icon: Home,
     count: halls.length,
   },
   {
     id: "proctors",
     label: m.common_exams_stat_proctors(),
-    icon: UserBadgeCheck,
     count: proctors.length,
   },
 ]);
@@ -600,10 +571,10 @@ async function handleAssignProctors() {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none">
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none text-start">
 	{#if isLoading}
-		<Skeleton class="h-20 w-full rounded-xl" />
-		<Skeleton class="h-10 w-full rounded-lg" />
+		<Skeleton class="h-24 w-full rounded-xl" />
+		<Skeleton class="h-12 w-full rounded-lg" />
 		<Skeleton class="h-64 w-full rounded-xl" />
 	{:else}
 		<!-- Back + Header -->
@@ -611,68 +582,57 @@ async function handleAssignProctors() {
 			<Button
 				href={localizeHref(`/${orgId}/academics/exams/sessions`)}
 				variant="ghost"
-				class="w-fit h-7 px-2 text-[10px] text-muted-foreground flex items-center gap-1 cursor-pointer"
+				class="h-8 w-fit px-2 text-xs text-muted-foreground"
 			>
-				<ArrowLeft size={12} />
-				<span>{m.common_action_back()}</span>
+				{m.common_action_back()}
 			</Button>
 
-			<!-- Session Info Banner -->
-			<div class="card-tactile bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+			<Card class="flex flex-col gap-4 rounded-xl border-border/60 bg-card p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
 				<div class="flex flex-col gap-1.5">
 					<div class="flex items-center gap-2">
-						<h1 class="text-sm font-bold text-foreground">
+						<span class="text-sm font-semibold text-foreground">
 							{session?.name_ar || session?.name || `Session ${sessionId}`}
-						</h1>
+						</span>
 						<ExamStatusBadge status={session?.status || "draft"} />
 					</div>
 					{#if session}
-						<div class="flex items-center gap-3 text-[10px] text-muted-foreground">
-							<span class="flex items-center gap-1">
-								<Calendar size={10} />
-								{session.start_date} → {session.end_date}
-							</span>
-							<span class="px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 text-[9px]">
-								{session.session_type}
-							</span>
+						<div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+							<span>{session.start_date} – {session.end_date}</span>
 						</div>
 					{/if}
 				</div>
 				<div class="flex items-center gap-2">
 					<Button
 						variant="outline"
-						class="h-7 px-3 text-[10px] flex items-center gap-1 cursor-pointer"
+						class="h-9 px-3 text-xs"
 						onclick={() => isEditSheetOpen = true}
 					>
-						<Pencil size={10} />
 						{m.common_action_edit()}
 					</Button>
 					<Button
-						variant="default"
-						class="h-7 px-3 text-[10px] flex items-center gap-1 cursor-pointer"
+						variant="lime"
+						class="h-9 px-3 text-xs font-semibold"
 						onclick={handleActivate}
 					>
-						<Play size={10} />
 						{m.common_exams_detail_activate()}
 					</Button>
 				</div>
-			</div>
+			</Card>
 		</div>
 
 		<!-- Tabs -->
-		<div class="flex items-center gap-1 border-b border-border pb-0" in:fade={{ delay: 50, duration: 200 }}>
+		<div class="flex items-center gap-1 overflow-x-auto border-b border-border/60 pb-0 scrollbar-hide" in:fade={{ delay: 50, duration: 200 }}>
 			{#each tabs as tab (tab.id)}
 				<button
-					class="px-3 py-2 text-[10px] font-medium transition-all duration-150 border-b-2 cursor-pointer flex items-center gap-1.5
+					class="flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3 py-3 text-xs font-medium transition-colors
 						{activeTab === tab.id
 							? 'border-primary text-primary font-semibold'
 							: 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}"
 					onclick={() => activeTab = tab.id}
 				>
-					<tab.icon size={12} />
 					<span>{tab.label}</span>
 					{#if tab.count > 0}
-						<span class="text-[8px] px-1 py-0.5 rounded bg-muted/60 font-mono">{tab.count}</span>
+						<span class="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{tab.count}</span>
 					{/if}
 				</button>
 			{/each}
@@ -686,15 +646,13 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if subjects.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<BookOpen size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_subjects()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
-								<Plus size={12} class="me-1" />
 								{m.common_exams_subjects_add()}
 							</Button>
 						</div>
 					{:else}
-						<div class="card-tactile bg-card overflow-hidden">
+						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
 							<Grid>
 								<TableHeader>
 									<TableRow class="text-[10px]">
@@ -713,7 +671,7 @@ async function handleAssignProctors() {
 											<TableCell class="font-mono">{subject.max_score}</TableCell>
 											<TableCell class="font-mono">{subject.duration_minutes}{m.academics_exams_duration_minutes_abbr()}</TableCell>
 											<TableCell>
-												<span class="px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 text-[9px]">
+												<span class="rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[10px]">
 													{subject.exam_type}
 												</span>
 											</TableCell>
@@ -721,9 +679,8 @@ async function handleAssignProctors() {
 									{/each}
 								</TableBody>
 							</Grid>
-						</div>
+						</Card>
 						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
-							<Plus size={12} class="me-1" />
 							{m.common_exams_subjects_add()}
 						</Button>
 					{/if}
@@ -734,15 +691,13 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if activeSchedules.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Calendar size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_exams_scheduled()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAutoSchedule}>
-								<Bolt size={12} class="me-1" />
 								{m.common_exams_actions_auto_schedule()}
 							</Button>
 						</div>
 					{:else}
-						<div class="timetable-container border rounded-2xl flex flex-col overflow-hidden shadow-sm select-none">
+						<Card class="timetable-container flex flex-col overflow-hidden rounded-xl border-border/60 shadow-xs select-none">
 							<div 
 								class="grid gap-px text-xs w-full bg-border-line"
 								style="grid-template-columns: 180px 1fr 1fr;"
@@ -770,15 +725,13 @@ async function handleAssignProctors() {
 									<!-- Morning Cell -->
 									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
 										{#each getExamsInCell(date, "morning") as sched (sched.id)}
-											<div 
-												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
+											<div
 												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
 													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/2' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
 													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
 											>
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
-														<span class="w-1.5 h-1.5 rounded-full bg-(--subject-color) shrink-0"></span>
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
 															{getSubjectName(sched.exam_subject_id)}
 														</span>
@@ -789,32 +742,27 @@ async function handleAssignProctors() {
 													
 													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
 														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
-														<span class="opacity-60">•</span>
 														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
 													</div>
 												</div>
 
 												{#if !sched.isDraft}
 													<div class="flex items-center gap-1 shrink-0 self-center">
-														<button 
+														<button
 															type="button" 
-															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
+															class="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
 															onclick={() => handleToggleScheduleStatus(sched)}
 															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														>
-															{#if sched.status === "cancelled"}
-																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
-															{:else}
-																<XMark size={12} class="text-amber-500 hover:text-amber-600" />
-															{/if}
+															{sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														</button>
-														<button 
+														<button
 															type="button" 
-															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
+															class="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
 															onclick={() => handleDeleteSchedule(sched.id)}
 															title={m.operations_ui_delete_exam_permanently()}
 														>
-															<Trash size={12} />
+															{m.common_action_delete()}
 														</button>
 													</div>
 												{/if}
@@ -825,15 +773,13 @@ async function handleAssignProctors() {
 									<!-- Afternoon Cell -->
 									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
 										{#each getExamsInCell(date, "afternoon") as sched (sched.id)}
-											<div 
-												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
+											<div
 												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
 													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/2' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
 													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
 											>
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
-														<span class="w-1.5 h-1.5 rounded-full bg-(--subject-color) shrink-0"></span>
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
 															{getSubjectName(sched.exam_subject_id)}
 														</span>
@@ -844,32 +790,27 @@ async function handleAssignProctors() {
 													
 													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
 														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
-														<span class="opacity-60">•</span>
 														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
 													</div>
 												</div>
 
 												{#if !sched.isDraft}
 													<div class="flex items-center gap-1 shrink-0 self-center">
-														<button 
+														<button
 															type="button" 
-															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
+															class="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-foreground"
 															onclick={() => handleToggleScheduleStatus(sched)}
 															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														>
-															{#if sched.status === "cancelled"}
-																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
-															{:else}
-																<XMark size={12} class="text-amber-500 hover:text-amber-600" />
-															{/if}
+															{sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
 														</button>
-														<button 
+														<button
 															type="button" 
-															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
+															class="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
 															onclick={() => handleDeleteSchedule(sched.id)}
 															title={m.operations_ui_delete_exam_permanently()}
 														>
-															<Trash size={12} />
+															{m.common_action_delete()}
 														</button>
 													</div>
 												{/if}
@@ -878,7 +819,7 @@ async function handleAssignProctors() {
 									</div>
 								{/each}
 							</div>
-						</div>
+						</Card>
 					{/if}
 				</div>
 
@@ -887,10 +828,8 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if seatingNumbers.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Hashtag size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_seating_numbers()}</p>
 							<Button variant="default" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleGenerateSeating}>
-								<Hashtag size={12} class="me-1" />
 								{m.common_exams_actions_generate_seating()}
 							</Button>
 						</div>
@@ -900,15 +839,14 @@ async function handleAssignProctors() {
 							{#if selectedSeatIds.size > 0}
 								<Button 
 									variant="outline" 
-									class="h-7 px-3 text-[10px] flex items-center gap-1.5 cursor-pointer border-primary/30 text-primary"
+									class="h-7 px-3 text-[10px] cursor-pointer border-primary/30 text-primary"
 									onclick={() => printDialogOpen = true}
 								>
-									<Printer size={12} />
-									<span>{m.common_print_templates()} ({selectedSeatIds.size})</span>
+									{m.common_print_templates()} ({selectedSeatIds.size})
 								</Button>
 							{/if}
 						</div>
-						<div class="card-tactile bg-card overflow-hidden">
+						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
 							<Grid>
 								<TableHeader>
 									<TableRow class="text-[10px]">
@@ -951,14 +889,14 @@ async function handleAssignProctors() {
 													onclick={() => handleDeleteSeating(sn.id)}
 													title={m.operations_ui_delete_seating_number()}
 												>
-													<Trash size={12} />
+													{m.common_action_delete()}
 												</button>
 											</TableCell>
 										</TableRow>
 									{/each}
 								</TableBody>
 							</Grid>
-						</div>
+						</Card>
 					{/if}
 				</div>
 
@@ -968,14 +906,12 @@ async function handleAssignProctors() {
 					<div class="flex items-center justify-between text-xs text-muted-foreground select-none px-1">
 						<span>{m.academics_exams_activated()}{halls.length}{m.academics_exams_committees_out_of()}{rooms.length}{m.academics_exams_available_classrooms_suffix()}</span>
 						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-							<ArrowsRightLeft size={10} class="me-1" />
 							{m.operations_ui_distribute_students_automatically()}
 						</Button>
 					</div>
 
 					{#if rooms.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Home size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_classrooms()}</p>
 						</div>
 					{:else}
@@ -983,12 +919,12 @@ async function handleAssignProctors() {
 							{#each rooms as room (room.id)}
 								{@const activeHall = halls.find((h) => h.room_id === room.id)}
 								{@const isAct = !!activeHall}
-								<div class="card-tactile bg-card p-4 flex flex-col gap-3 transition-all duration-200 {isAct ? 'border-primary/40 shadow-sm ring-1 ring-primary/10' : 'opacity-85 hover:opacity-100'}">
+								<Card class="flex flex-col gap-3 rounded-xl border-border/60 bg-card p-4 shadow-xs transition-colors {isAct ? 'border-primary/40 ring-1 ring-primary/10' : 'hover:border-primary/30'}">
 									<div class="flex items-center justify-between">
 										<div class="flex flex-col">
-											<span class="text-xs font-bold text-foreground">{room.room_number || room.name}</span>
+											<span class="text-sm font-semibold text-foreground">{room.room_number || room.name}</span>
 											{#if room.building}
-												<span class="text-[8px] text-muted-foreground mt-0.5">{room.building}{m.academics_exams_floor_connector()}{room.floor}</span>
+												<span class="mt-1 text-xs text-muted-foreground">{room.building}{m.academics_exams_floor_connector()}{room.floor}</span>
 											{/if}
 										</div>
 										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
@@ -1012,18 +948,17 @@ async function handleAssignProctors() {
 										</div>
 									{:else}
 										<div class="flex items-center justify-between mt-1">
-											<span class="text-[9px] text-muted-foreground">{m.academics_exams_default_capacity()}{room.capacity || 30}</span>
+											<span class="text-xs text-muted-foreground">{m.academics_exams_default_capacity()}{room.capacity || 30}</span>
 											<Button
 												variant="ghost"
-												class="h-6 px-2 text-[9px] font-semibold text-primary hover:bg-primary/5 cursor-pointer"
+												class="h-8 px-2 text-xs font-medium text-primary hover:bg-primary/5"
 												onclick={() => handleToggleHall(room)}
 											>
-												<Plus size={10} class="me-1" />
 												{m.operations_ui_activate_as_committee()}
 											</Button>
 										</div>
 									{/if}
-								</div>
+								</Card>
 							{/each}
 						</div>
 					{/if}
@@ -1034,15 +969,13 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if proctors.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<UserBadgeCheck size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_proctors_assigned()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
-								<UserBadgeCheck size={12} class="me-1" />
 								{m.common_exams_actions_assign_proctors()}
 							</Button>
 						</div>
 					{:else}
-						<div class="card-tactile bg-card overflow-hidden">
+						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
 							<Grid>
 								<TableHeader>
 									<TableRow class="text-[10px]">
@@ -1061,7 +994,7 @@ async function handleAssignProctors() {
 											<TableCell>{p.role}</TableCell>
 											<TableCell>
 												{#if p.is_confirmed === 1}
-													<CheckCircle size={14} class="text-emerald-500" />
+													<span class="text-xs text-emerald-600">Confirmed</span>
 												{:else}
 													<span class="text-[9px] text-amber-500">{m.academics_exams_pending_confirmation()}</span>
 												{/if}
@@ -1073,36 +1006,24 @@ async function handleAssignProctors() {
 													onclick={() => handleDeleteProctor(p.id)}
 													title={m.operations_ui_cancel_proctor_assignment()}
 												>
-													<Trash size={12} />
+													{m.common_action_delete()}
 												</button>
 											</TableCell>
 										</TableRow>
 									{/each}
 								</TableBody>
 							</Grid>
-						</div>
+						</Card>
 					{/if}
 				</div>
 			{/if}
 		</div>
 
 		{#if activeJob}
-			<div class="border border-border rounded-xl p-4 bg-muted/40 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4" transition:fade>
-				<div class="flex items-center gap-3">
-					<div class="relative flex h-3 w-3">
-						{#if activeJob.status === 'running'}
-							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-						{:else if activeJob.status === 'completed'}
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-						{:else if activeJob.status === 'failed'}
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-						{:else}
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-						{/if}
-					</div>
-					<div>
-						<h4 class="text-xs font-bold flex items-center gap-1.5">
+			<Card class="mb-4 flex flex-col justify-between gap-4 rounded-xl border-border/60 bg-card p-4 shadow-xs sm:flex-row sm:items-center">
+					<div class="flex items-center gap-3">
+						<div>
+							<p class="text-sm font-medium text-foreground">
 							{#if activeJob.status === 'running'}
 								{m.operations_ui_auto_schedule_optimizing()}
 							{:else if activeJob.status === 'completed'}
@@ -1112,7 +1033,7 @@ async function handleAssignProctors() {
 							{:else}
 								{m.operations_ui_auto_schedule_cancelled()}
 							{/if}
-						</h4>
+						</p>
 						<p class="text-[10px] text-muted-foreground mt-0.5 font-mono">
 							{#if activeJob.status === 'running'}
 								{m.operations_ui_scheduling_elapsed_score({ elapsed: timeElapsed, score: activeJob.score || "—" })}
@@ -1136,23 +1057,22 @@ async function handleAssignProctors() {
 						</Button>
 					{/if}
 				</div>
-			</div>
+		</Card>
 		{/if}
 
 		<!-- Quick Actions Bar -->
-		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
-			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">{m.academics_exams_quick_actions()}</span>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSeating}>
-				<Hashtag size={10} /> {m.operations_ui_seating_numbers()}
+		<div class="flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
+			<Button variant="outline" class="h-8 px-3 text-xs" onclick={handleGenerateSeating}>
+				{m.operations_ui_seating_numbers()}
 			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSecrets}>
-				<Lock size={10} /> {m.operations_ui_secret_numbers()}
+			<Button variant="outline" class="h-8 px-3 text-xs" onclick={handleGenerateSecrets}>
+				{m.operations_ui_secret_numbers()}
 			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
-				<Bolt size={10} /> {m.operations_ui_automatic_scheduling()}
+			<Button variant="outline" class="h-8 px-3 text-xs" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
+				{m.operations_ui_automatic_scheduling()}
 			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-				<ArrowsRightLeft size={10} /> {m.operations_ui_committee_distribution()}
+			<Button variant="outline" class="h-8 px-3 text-xs" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
+				{m.operations_ui_committee_distribution()}
 			</Button>
 		</div>
 	{/if}
@@ -1190,7 +1110,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'schedule' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "schedule"}
 				>
-					🗓️ {m.operations_ui_schedule_periods()}
+					{m.operations_ui_schedule_periods()}
 				</button>
 				<button 
 					type="button" 
@@ -1198,7 +1118,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'halls' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "halls"}
 				>
-					🏫 {m.operations_ui_distribute_committees_students()}
+					{m.operations_ui_distribute_committees_students()}
 				</button>
 				<button 
 					type="button" 
@@ -1206,7 +1126,7 @@ async function handleAssignProctors() {
 						{activeConfigTab === 'proctors' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
 					onclick={() => activeConfigTab = "proctors"}
 				>
-					👮 {m.operations_ui_assign_proctors()}
+					{m.operations_ui_assign_proctors()}
 				</button>
 			</div>
 
@@ -1253,7 +1173,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
-							<Bolt size={12} class="me-1" /> {m.operations_ui_start_smart_scheduling()}
+							{m.operations_ui_start_smart_scheduling()}
 						</Button>
 					</div>
 
@@ -1288,7 +1208,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
-							<ArrowsRightLeft size={12} class="me-1" /> {m.operations_ui_start_automatic_distribution()}
+							{m.operations_ui_start_automatic_distribution()}
 						</Button>
 					</div>
 
@@ -1330,7 +1250,7 @@ async function handleAssignProctors() {
 					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
 						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
 						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
-							<UserBadgeCheck size={12} class="me-1" /> {m.operations_ui_assign_proctors_automatically()}
+							{m.operations_ui_assign_proctors_automatically()}
 						</Button>
 					</div>
 				{/if}
