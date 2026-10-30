@@ -252,12 +252,6 @@ const advisorInsights = $derived.by(() => {
 
 function handleSelectReport(code: string) {
   selectedCode = code;
-  const rep = allExamReports.find((r) => r.code === code);
-  if (rep) {
-    toast.info(
-      m.operations_ui_report_selected({ title: rep.name_ar || rep.name }),
-    );
-  }
 }
 
 function buildParameters(): Record<string, any> {
