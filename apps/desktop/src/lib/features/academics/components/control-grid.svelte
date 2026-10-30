@@ -47,10 +47,26 @@ let {
 }: Props = $props();
 </script>
 
-<Card class="flex flex-col gap-4 rounded-xl border-border/60 bg-card p-4 shadow-xs">
-  <div class="flex justify-end">
+<Card class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden rounded-xl border-border/60 bg-card p-3 shadow-xs sm:p-4">
+  <div class="flex shrink-0 flex-col gap-2 xl:flex-row xl:items-center">
+    <!-- Class Selector -->
+    <ClassSelect
+      bind:value={selectedClassId}
+      disabled={!selectedPeriodId}
+      placeholder={m.common_control_select_class()}
+      class="h-9 w-full min-w-0 text-xs xl:min-w-[180px] xl:flex-1"
+    />
+
+    <!-- Subject Selector -->
+    <SubjectSelect
+      bind:value={selectedSubjectId}
+      disabled={!selectedClassId}
+      placeholder={m.common_control_select_subject()}
+      class="h-9 w-full min-w-0 text-xs xl:min-w-[180px] xl:flex-1"
+    />
+
     {#if matrixData && canEnterGrades}
-      <div class="flex items-center gap-2 flex-nowrap shrink-0">
+      <div class="flex shrink-0 flex-wrap items-center gap-2 xl:ms-auto xl:flex-nowrap">
         {#if onCalculateRankings}
           <Button
             variant="outline"
@@ -89,50 +105,30 @@ let {
     {/if}
   </div>
 
-  <!-- Filters Row -->
-  <div class="flex items-center gap-3 flex-wrap">
-    <!-- Class Selector -->
-    <ClassSelect
-      bind:value={selectedClassId}
-      disabled={!selectedPeriodId}
-      placeholder={m.common_control_select_class()}
-      class="min-w-[180px] text-xs h-9"
-    />
-
-    <!-- Subject Selector -->
-    <SubjectSelect
-      bind:value={selectedSubjectId}
-      disabled={!selectedClassId}
-      placeholder={m.common_control_select_subject()}
-      class="min-w-[180px] text-xs h-9"
-    />
-  </div>
-
-  <!-- Grade Matrix Grid -->
   {#if isMatrixLoading}
-    <div class="flex flex-col gap-2">
-      {#each Array(6) as _}
-        <Skeleton class="h-10 w-full rounded-lg" />
+    <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+      {#each Array(6) as _, index (index)}
+        <Skeleton class="min-h-8 w-full flex-1 rounded-lg" />
       {/each}
     </div>
   {:else if matrixData && gridSource.length > 0}
-    <div>
+    <div class="min-h-0 flex-1 overflow-hidden">
       <OrbisGrid
         columns={gridColumns}
         source={gridSource}
-        height="calc(100vh - 420px)"
+        height="100%"
         rtl={getLocale() === "ar"}
         readonly={!canEnterGrades}
         oncelledit={onCellEdit}
       />
     </div>
   {:else if selectedPeriodId && selectedClassId && selectedSubjectId && !isMatrixLoading}
-    <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
       <p class="text-sm">{m.common_control_no_data()}</p>
       <p class="text-xs">{m.common_control_no_data_hint()}</p>
     </div>
   {:else}
-    <div class="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+    <div class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
       <p class="text-sm">{m.common_control_select_filters()}</p>
     </div>
   {/if}

@@ -188,8 +188,8 @@ async function requestActivate(periodId: string) {
 
   try {
     await api.unlockAcademicPeriod(periodId);
+    await handleRefresh();
     toast.success(m.ui_copy_period_activated_successfully_de714514());
-    await loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
@@ -207,8 +207,8 @@ async function requestLock(periodId: string) {
 
   try {
     await api.lockAcademicPeriod(periodId);
+    await handleRefresh();
     toast.success(m.ui_copy_period_locked_successfully_c75e6ca2());
-    await loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
@@ -226,8 +226,8 @@ async function requestDelete(periodId: string) {
 
   try {
     await api.deleteAcademicPeriod(periodId);
+    await handleRefresh();
     toast.success(m.periods_manager_delete_success());
-    await loadPeriods();
   } catch (e: unknown) {
     toast.error(extractErrorMessage(e));
   }
