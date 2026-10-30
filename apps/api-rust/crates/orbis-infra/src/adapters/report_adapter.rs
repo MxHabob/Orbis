@@ -683,9 +683,9 @@ impl DocumentRenderer for PdfRenderer {
             }
         }
 
-        Err(DomainError::Validation(
-            "PDF output requires a published DocForge report template. Select a compatible template or use HTML output.".into(),
-        ))
+        // When no DocForge visual template is bound, fall back to HtmlRenderer
+        let html_renderer = HtmlRenderer;
+        html_renderer.render(dataset, template, _master).await
     }
 }
 

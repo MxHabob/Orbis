@@ -8,7 +8,7 @@ use crate::error::DocforgeError;
 use crate::layout::expr_eval::{evaluate_node_tree, EvaluatedNode, EvaluatedTable};
 use crate::model::document::{Orientation, PageSetup, PageSize, TemplateDocument};
 use crate::model::nodes::TextProps;
-use crate::render::font_cache::FontCache;
+use crate::render::font_cache::{create_font_system_for_font, FontCache};
 use crate::render::types::*;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -1027,19 +1027,17 @@ fn measure_text_height(
     max_width: f32,
     fonts: &FontCache,
 ) -> f32 {
-    let mut font_system = cosmic_text::FontSystem::new();
-    // Load font data if cached
-    if let Some(cached_font) = fonts.get_font(
+    let (mut font_system, shaping_family) = if let Some(cached_font) = fonts.get_font(
         family,
         400,
         crate::render::font_cache::FontStyleKind::Normal,
     ) {
-        font_system
-            .db_mut()
-            .load_font_data(cached_font.data.as_ref().clone());
-    }
+        create_font_system_for_font(cached_font)
+    } else {
+        (cosmic_text::FontSystem::new(), family.to_string())
+    };
 
-    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
+    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(&shaping_family));
     let metrics = cosmic_text::Metrics::new(font_size, line_height);
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
 
@@ -1072,18 +1070,17 @@ fn measure_text_size(
     max_width: f32,
     fonts: &FontCache,
 ) -> (f32, f32) {
-    let mut font_system = cosmic_text::FontSystem::new();
-    if let Some(cached_font) = fonts.get_font(
+    let (mut font_system, shaping_family) = if let Some(cached_font) = fonts.get_font(
         family,
         400,
         crate::render::font_cache::FontStyleKind::Normal,
     ) {
-        font_system
-            .db_mut()
-            .load_font_data(cached_font.data.as_ref().clone());
-    }
+        create_font_system_for_font(cached_font)
+    } else {
+        (cosmic_text::FontSystem::new(), family.to_string())
+    };
 
-    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(family));
+    let attrs = cosmic_text::Attrs::new().family(cosmic_text::Family::Name(&shaping_family));
     let metrics = cosmic_text::Metrics::new(font_size, line_height);
     let mut buffer = cosmic_text::Buffer::new(&mut font_system, metrics);
 

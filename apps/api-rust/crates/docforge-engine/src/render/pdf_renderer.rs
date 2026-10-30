@@ -14,8 +14,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 use crate::error::DocforgeError;
-use crate::render::font_cache::{FontCache, FontStyleKind};
+use crate::render::font_cache::{create_font_system_for_font, FontCache, FontStyleKind};
 use crate::render::types::*;
+use std::ops::Range;
 
 /// Configuration for PDF rendering
 #[derive(Debug, Clone)]
@@ -243,16 +244,13 @@ fn render_text_to_surface(
     let krilla_font = krilla::text::Font::new(cached_font.data.as_ref().clone().into(), 0)
         .ok_or_else(|| DocforgeError::Render("Failed to load font in krilla".to_string()))?;
 
-    let mut font_system = cosmic_text::FontSystem::new();
-    font_system
-        .db_mut()
-        .load_font_data(cached_font.data.as_ref().clone());
+    let (mut font_system, shaping_family) = create_font_system_for_font(cached_font);
 
     let mut attrs = cosmic_text::Attrs::new()
-        .family(cosmic_text::Family::Name(&text_elem.font_family))
-        .weight(cosmic_text::Weight(text_elem.font_weight.to_css_weight()));
+        .family(cosmic_text::Family::Name(&shaping_family))
+        .weight(cosmic_text::Weight(cached_font.weight));
 
-    if text_elem.font_style == FontStyle::Italic {
+    if cached_font.style == FontStyleKind::Italic {
         attrs = attrs.style(cosmic_text::Style::Italic);
     }
 
@@ -301,41 +299,59 @@ fn render_text_to_surface(
     surface.set_stroke(None);
 
     for run in buffer.layout_runs() {
-        let mut krilla_glyphs = Vec::new();
-        let run_y = run.line_y;
+        for glyph_range in glyph_run_ranges(run.glyphs) {
+            let glyphs = &run.glyphs[glyph_range];
+            let krilla_glyphs: Vec<_> = glyphs
+                .iter()
+                .enumerate()
+                .map(|(index, glyph)| {
+                    let x_advance = glyphs.get(index + 1).map_or(0.0, |next| next.x - glyph.x);
 
-        for (i, glyph) in run.glyphs.iter().enumerate() {
-            let x_advance = if i + 1 < run.glyphs.len() {
-                run.glyphs[i + 1].x - glyph.x
-            } else {
-                glyph.w
-            };
+                    krilla::text::KrillaGlyph {
+                        glyph_id: krilla::text::GlyphId::new(glyph.glyph_id as u32),
+                        text_range: glyph.start..glyph.end,
+                        x_advance: x_advance / font_size,
+                        x_offset: glyph.x_offset / font_size,
+                        y_offset: glyph.y_offset / font_size,
+                        y_advance: 0.0,
+                        location: None,
+                    }
+                })
+                .collect();
 
-            krilla_glyphs.push(krilla::text::KrillaGlyph {
-                glyph_id: krilla::text::GlyphId::new(glyph.glyph_id as u32),
-                text_range: glyph.start..glyph.end,
-                x_advance: x_advance / font_size,
-                x_offset: glyph.x_offset / font_size,
-                y_offset: glyph.y_offset / font_size,
-                y_advance: 0.0,
-                location: None,
-            });
+            surface.draw_glyphs(
+                Point::from_xy(text_elem.x + glyphs[0].x, text_elem.y + run.line_y),
+                &krilla_glyphs,
+                krilla_font.clone(),
+                run.text,
+                font_size,
+                false,
+            );
         }
-
-        let run_x = run.glyphs.first().map(|g| g.x).unwrap_or(0.0);
-        let start_point = Point::from_xy(text_elem.x + run_x, text_elem.y + run_y);
-
-        surface.draw_glyphs(
-            start_point,
-            &krilla_glyphs,
-            krilla_font.clone(),
-            run.text,
-            font_size,
-            false,
-        );
     }
 
     Ok(())
+}
+
+fn glyph_run_ranges(glyphs: &[cosmic_text::LayoutGlyph]) -> Vec<Range<usize>> {
+    let Some(first) = glyphs.first() else {
+        return Vec::new();
+    };
+
+    let mut ranges = Vec::new();
+    let mut start = 0;
+    let mut level = first.level;
+
+    for (index, glyph) in glyphs.iter().enumerate().skip(1) {
+        if glyph.level != level {
+            ranges.push(start..index);
+            start = index;
+            level = glyph.level;
+        }
+    }
+
+    ranges.push(start..glyphs.len());
+    ranges
 }
 
 /// Draw simple SVG rect shapes (like native Barcode/QR components) onto the surface.
@@ -521,10 +537,7 @@ mod tests {
             return;
         }
 
-        let mut fonts = FontCache::new("Tahoma");
-        fonts
-            .load_font_file("Tahoma", 400, FontStyleKind::Normal, font_path)
-            .expect("Should load Tahoma font successfully");
+        let fonts = FontCache::with_system_fonts();
 
         // Generate Barcode SVG & QR SVG using barcode_gen
         let barcode_svg =
@@ -627,5 +640,97 @@ mod tests {
             .expect("Should successfully write Arabic PDF PoC to artifact folder");
 
         println!("PoC PDF successfully written to: {}", pdf_path.display());
+    }
+
+    #[test]
+    fn test_mixed_direction_text_keeps_shaped_glyph_runs() {
+        let font_path = "C:\\Windows\\Fonts\\tahoma.ttf";
+        if !std::path::Path::new(font_path).exists() {
+            println!("Skipping mixed-direction text test: Tahoma font not found.");
+            return;
+        }
+
+        let fonts = FontCache::with_system_fonts();
+        let cached_font = fonts
+            .get_font("Tahoma", 400, FontStyleKind::Normal)
+            .expect("System font cache should include Tahoma");
+        let (mut font_system, shaping_family) = create_font_system_for_font(cached_font);
+        assert_eq!(
+            font_system.db().len(),
+            1,
+            "Shaping must only use the exact font embedded in the PDF"
+        );
+
+        let text = "مُدَرِّس رقم 123 - STUDENT";
+        let mut buffer =
+            cosmic_text::Buffer::new(&mut font_system, cosmic_text::Metrics::new(16.0, 20.0));
+        buffer.set_size(&mut font_system, Some(500.0), Some(80.0));
+        buffer.set_text(
+            &mut font_system,
+            text,
+            cosmic_text::Attrs::new().family(cosmic_text::Family::Name(&shaping_family)),
+            cosmic_text::Shaping::Advanced,
+        );
+        buffer.shape_until_scroll(&mut font_system, false);
+
+        let runs: Vec<_> = buffer.layout_runs().collect();
+        let glyph_run_ranges = glyph_run_ranges(runs[0].glyphs);
+        assert!(
+            glyph_run_ranges.len() > 1,
+            "Mixed directions should form separate runs"
+        );
+        assert!(glyph_run_ranges.iter().any(|range| {
+            runs[0].glyphs[range.clone()]
+                .iter()
+                .all(|glyph| glyph.level.is_rtl())
+        }));
+        assert!(glyph_run_ranges.iter().any(|range| {
+            runs[0].glyphs[range.clone()]
+                .iter()
+                .all(|glyph| !glyph.level.is_rtl())
+        }));
+        assert_eq!(
+            glyph_run_ranges
+                .iter()
+                .map(|range| range.len())
+                .sum::<usize>(),
+            runs[0].glyphs.len(),
+            "Grouping must retain each shaped glyph exactly once"
+        );
+        assert!(
+            runs[0].glyphs.iter().any(|glyph| {
+                text[glyph.start..glyph.end]
+                    .chars()
+                    .any(|character| matches!(character, '\u{064f}' | '\u{0650}' | '\u{0651}'))
+            }),
+            "Shaped glyph clusters should retain Arabic combining marks"
+        );
+        assert!(
+            runs[0].glyphs.iter().all(|glyph| glyph.glyph_id != 0),
+            "The embedded font should provide every glyph in the mixed-script test"
+        );
+
+        let output = render_single_page(
+            210.0,
+            297.0,
+            vec![PositionedElement::Text(TextElement {
+                x: 30.0,
+                y: 30.0,
+                width: 150.0,
+                height: 30.0,
+                content: text.to_string(),
+                font_family: "Tahoma".to_string(),
+                font_size: 16.0,
+                font_weight: FontWeight::Normal,
+                font_style: FontStyle::Normal,
+                color: Color::BLACK,
+                text_align: TextAlign::Start,
+                direction: TextDirection::Auto,
+                line_height: 20.0,
+            })],
+            &fonts,
+        )
+        .expect("Mixed-direction Arabic and Latin text should render");
+        assert!(!output.bytes.is_empty());
     }
 }
