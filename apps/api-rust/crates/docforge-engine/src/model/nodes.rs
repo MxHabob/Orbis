@@ -173,6 +173,8 @@ pub struct ImageProps {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub src: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub expression: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub position: Option<Position>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub width: Option<f64>,

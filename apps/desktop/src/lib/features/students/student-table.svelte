@@ -15,6 +15,7 @@ import { goto } from "$app/navigation";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import { FilterTrigger, type UniversalFilter } from "@orbis/ui/filter-builder";
 import { studentFilterFields } from "$lib/core/filter-configs";
+import { resolveEntityDocumentUrl } from "$lib/features/documents/queries";
 
 let {
   students = [],
@@ -185,6 +186,37 @@ let activeFilter = $state<UniversalFilter>({
   conditions: [],
   groups: [],
 });
+let resolvedAvatarUrls = $state<Record<string, string>>({});
+
+$effect(() => {
+  const avatars = (students || [])
+    .map((detail) => ({
+      id: String(detail.student.id),
+      source: detail.person.avatar_url ?? detail.student.avatar_url,
+    }))
+    .filter((avatar): avatar is { id: string; source: string } =>
+      Boolean(avatar.source),
+    );
+  let isCurrent = true;
+
+  void Promise.all(
+    avatars.map(async ({ id, source }) => {
+      try {
+        const url = await resolveEntityDocumentUrl(source, "student", id);
+        return [id, url] as const;
+      } catch (error) {
+        console.error(`Failed to resolve avatar for student ${id}:`, error);
+        return [id, ""] as const;
+      }
+    }),
+  ).then((entries) => {
+    if (isCurrent) resolvedAvatarUrls = Object.fromEntries(entries);
+  });
+
+  return () => {
+    isCurrent = false;
+  };
+});
 
 function formatStanding(standing: string): string {
   switch (standing) {
@@ -242,7 +274,11 @@ let gridSource = $derived(
       updated_at_display: s.updated_at
         ? formatDate(s.updated_at, "datetime")
         : "—",
-      avatar_url: p.avatar_url,
+      avatar_url:
+        resolvedAvatarUrls[String(s.id)] ||
+        p.avatar_url ||
+        s.avatar_url ||
+        undefined,
     };
   }),
 );

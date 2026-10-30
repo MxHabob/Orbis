@@ -173,6 +173,10 @@ async function initEditor() {
             type: "string",
             label: m.template_schema_guardian_name(),
           },
+          avatar_url: {
+            type: "image",
+            label: m.ui_copy_student_profile_photo_de522661(),
+          },
         },
       },
       academic: {

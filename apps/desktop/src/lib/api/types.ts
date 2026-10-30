@@ -340,6 +340,7 @@ export interface PersonDto {
   phone?: string | null;
   email?: string | null;
   address?: string | null;
+  avatar_url?: string | null;
   created_at: string;
   updated_at: string;
 }

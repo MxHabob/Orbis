@@ -52,6 +52,7 @@ import type { MultiUpConfig, MultiUpLayout } from "@docforge/core";
 
 import MultiUpPreview from "./multi-up-preview.svelte";
 import PrintConfigPanel from "./print-config-panel.svelte";
+import { resolveDocumentImageDataUri } from "$lib/features/documents/queries";
 
 // ── Props ────────────────────────────────────────────────────
 
@@ -287,29 +288,40 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
     const classes = await Promise.all(classIds.map((id) => api.getSection(id)));
     const classesById = new Map(classes.map((item) => [item.id, item]));
 
-    return students.map(({ student, person, enrollment }, index) => {
-      const classInfo = enrollment?.section_id
-        ? classesById.get(enrollment.section_id)
-        : undefined;
-      return {
-        student: {
-          ...student,
-          name: person.full_name,
-          nameAr: person.full_name_ar ?? student.name_ar ?? student.full_name,
-          studentNumber: student.student_number,
-          nationalId: person.national_id ?? student.national_id,
-          avatarUrl: student.avatar_url,
-          classId: enrollment?.section_id,
-          className: classInfo?.name,
-          classNameAr: classInfo?.name_ar,
-          level: classInfo?.level,
-        },
-        person,
-        enrollment,
-        class: classInfo,
-        label: entityLabels[index],
-      };
-    });
+    return Promise.all(
+      students.map(async ({ student, person, enrollment }, index) => {
+        const classInfo = enrollment?.section_id
+          ? classesById.get(enrollment.section_id)
+          : undefined;
+        const avatarSource = person.avatar_url ?? student.avatar_url;
+        const avatarUrl = avatarSource
+          ? await resolveDocumentImageDataUri(
+              avatarSource,
+              "student",
+              student.id,
+            )
+          : undefined;
+        return {
+          student: {
+            ...student,
+            name: person.full_name,
+            nameAr: person.full_name_ar ?? student.name_ar ?? student.full_name,
+            studentNumber: student.student_number,
+            nationalId: person.national_id ?? student.national_id,
+            avatar_url: avatarUrl,
+            avatarUrl,
+            classId: enrollment?.section_id,
+            className: classInfo?.name,
+            classNameAr: classInfo?.name_ar,
+            level: classInfo?.level,
+          },
+          person: { ...person, avatar_url: avatarUrl },
+          enrollment,
+          class: classInfo,
+          label: entityLabels[index],
+        };
+      }),
+    );
   }
   return entityIds.map((id, index) => ({
     entity: { id, label: entityLabels[index] },
@@ -390,8 +402,9 @@ async function handlePrintAction() {
         throw new Error(m.shared_ui_print_generation_failed());
       batchProgress = 80;
 
+      const pdfBuffer = new Uint8Array(pdfBytes).buffer;
       const blobUrl = URL.createObjectURL(
-        new Blob([pdfBytes], { type: "application/pdf" }),
+        new Blob([pdfBuffer], { type: "application/pdf" }),
       );
       printWin.addEventListener(
         "load",

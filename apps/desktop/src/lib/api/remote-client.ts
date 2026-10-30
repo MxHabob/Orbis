@@ -340,6 +340,44 @@ function isReleaseImage(
   );
 }
 
+export function mapStudentDtoToDetail(
+  student: StudentDto,
+  enrollment?: EnrollmentDto | null,
+): StudentDetailDto {
+  return {
+    student,
+    enrollment: enrollment ?? null,
+    person: {
+      id: student.person_id || student.id,
+      org_id: student.org_id,
+      first_name: student.first_name,
+      middle_name: student.middle_name,
+      last_name: student.last_name,
+      first_name_ar: student.first_name_ar,
+      middle_name_ar: student.middle_name_ar,
+      last_name_ar: student.last_name_ar,
+      display_name: student.display_name,
+      full_name: student.full_name,
+      full_name_ar: student.name_ar,
+      national_id: student.national_id,
+      passport_number: student.passport_number,
+      gender: student.gender,
+      birth_date: student.date_of_birth,
+      place_of_birth: student.place_of_birth,
+      nationality: student.nationality,
+      blood_type: student.blood_type,
+      medical_notes: student.medical_notes,
+      special_needs_notes: student.special_needs_notes,
+      phone: student.phone,
+      email: student.email,
+      address: student.address,
+      avatar_url: student.avatar_url,
+      created_at: student.created_at,
+      updated_at: student.updated_at,
+    },
+  };
+}
+
 export class RemoteClient implements OrbisApiClient {
   private baseUrl: string;
   private token: string | null = null;
@@ -780,43 +818,6 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   // ── Student ─────────────────────────────────────────────────
-  private mapStudentDtoToDetail(
-    student: StudentDto,
-    enrollment?: EnrollmentDto | null,
-  ): StudentDetailDto {
-    return {
-      student,
-      enrollment: enrollment ?? null,
-      person: {
-        id: student.person_id || student.id,
-        org_id: student.org_id,
-        first_name: student.first_name,
-        middle_name: student.middle_name,
-        last_name: student.last_name,
-        first_name_ar: student.first_name_ar,
-        middle_name_ar: student.middle_name_ar,
-        last_name_ar: student.last_name_ar,
-        display_name: student.display_name,
-        full_name: student.full_name,
-        full_name_ar: student.name_ar,
-        national_id: student.national_id,
-        passport_number: student.passport_number,
-        gender: student.gender,
-        birth_date: student.date_of_birth,
-        place_of_birth: student.place_of_birth,
-        nationality: student.nationality,
-        blood_type: student.blood_type,
-        medical_notes: student.medical_notes,
-        special_needs_notes: student.special_needs_notes,
-        phone: student.phone,
-        email: student.email,
-        address: student.address,
-        created_at: student.created_at,
-        updated_at: student.updated_at,
-      },
-    };
-  }
-
   async registerStudent(req: RegisterStudentInput): Promise<StudentDetailDto> {
     const res = await this.call(
       sdk.registerStudent({ client: this.client, body: req as any }),
@@ -824,7 +825,7 @@ export class RemoteClient implements OrbisApiClient {
     if ((res as any)?.student && (res as any)?.person) {
       return res as any;
     }
-    return this.mapStudentDtoToDetail(res as unknown as StudentDto);
+    return mapStudentDtoToDetail(res as unknown as StudentDto);
   }
 
   async checkDuplicate(
@@ -853,7 +854,7 @@ export class RemoteClient implements OrbisApiClient {
       const items: StudentDetailDto[] = (res as StudentDto[]).map((student) =>
         (student as any)?.student && (student as any)?.person
           ? (student as any)
-          : this.mapStudentDtoToDetail(student),
+          : mapStudentDtoToDetail(student),
       );
       return {
         items,
@@ -881,7 +882,7 @@ export class RemoteClient implements OrbisApiClient {
     if ((res as any)?.student && (res as any)?.person) {
       return res as any;
     }
-    return this.mapStudentDtoToDetail(res as unknown as StudentDto);
+    return mapStudentDtoToDetail(res as unknown as StudentDto);
   }
 
   async updateStudentStatus(
@@ -910,7 +911,7 @@ export class RemoteClient implements OrbisApiClient {
     if ((res as any)?.student && (res as any)?.person) {
       return res as any;
     }
-    return this.mapStudentDtoToDetail(res as unknown as StudentDto);
+    return mapStudentDtoToDetail(res as unknown as StudentDto);
   }
 
   async deleteStudent(id: string): Promise<boolean> {
