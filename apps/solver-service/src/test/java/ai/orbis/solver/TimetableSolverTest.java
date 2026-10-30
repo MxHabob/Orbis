@@ -98,6 +98,33 @@ class TimetableSolverTest {
     }
 
     @Test
+    void preventsSectionConflictsWhenLessonsOverlap() {
+        TimeSlot first = slot("slot-1", 8 * 60, 9 * 60);
+        TimeSlot overlapping = slot("slot-2", 8 * 60 + 30, 9 * 60 + 30);
+        LessonAssignment lesson1 = assignment("lesson-1", "section-1");
+        lesson1.setTimeSlot(first);
+        lesson1.setDayOfWeek(1);
+        LessonAssignment lesson2 = assignment("lesson-2", "section-1");
+        lesson2.setTeacherId("teacher-2");
+        lesson2.setTimeSlot(overlapping);
+        lesson2.setDayOfWeek(1);
+
+        assertEquals(HardSoftScore.ofHard(-1),
+                score(timetable(List.of(first, overlapping), List.of(lesson1, lesson2)), solverFactory()));
+    }
+
+    @Test
+    void rejectsDaysNotConfiguredForTheSelectedTimeSlot() {
+        TimeSlot slot = slot("slot-1", 8 * 60, 9 * 60);
+        LessonAssignment lesson = assignment("lesson-1", "section-1");
+        lesson.setTimeSlot(slot);
+        lesson.setDayOfWeek(2);
+
+        assertEquals(HardSoftScore.ofHard(-1),
+                score(timetable(List.of(slot), List.of(lesson)), solverFactory()));
+    }
+
+    @Test
     void preventsLessonsDuringOverlappingTeacherUnavailability() {
         TimeSlot lessonSlot = slot("slot-1", 8 * 60, 9 * 60);
         TimeSlot unavailableSlot = slot("slot-2", 8 * 60 + 30, 9 * 60 + 30);
