@@ -1219,27 +1219,22 @@ fn extract_positioned_elements(
 // ── Page Size Resolution Helpers ──────────────────────────────
 
 fn get_page_dimensions(setup: &PageSetup) -> (f32, f32) {
+    let (w_mm, h_mm) = if let PageSize::Custom = setup.size {
+        let (default_width, default_height) = setup.size.dimensions();
+        (
+            setup.width.unwrap_or(default_width),
+            setup.height.unwrap_or(default_height),
+        )
+    } else {
+        setup.size.dimensions()
+    };
+
     let (w_mm, h_mm) = match setup.orientation {
-        Orientation::Portrait => setup.size.dimensions(),
-        Orientation::Landscape => {
-            let (w, h) = setup.size.dimensions();
-            (h, w)
-        }
+        Orientation::Portrait => (w_mm, h_mm),
+        Orientation::Landscape => (h_mm, w_mm),
     };
 
-    // Check custom size dimensions if preset is Custom
-    let w_mm_final = if let PageSize::Custom = setup.size {
-        setup.width.unwrap_or(w_mm)
-    } else {
-        w_mm
-    };
-    let h_mm_final = if let PageSize::Custom = setup.size {
-        setup.height.unwrap_or(h_mm)
-    } else {
-        h_mm
-    };
-
-    (mm_to_pt(w_mm_final), mm_to_pt(h_mm_final))
+    (mm_to_pt(w_mm), mm_to_pt(h_mm))
 }
 
 #[cfg(test)]
@@ -1248,6 +1243,43 @@ mod tests {
     use crate::model::document::*;
     use crate::model::nodes::*;
     use serde_json::json;
+
+    #[test]
+    fn page_dimensions_follow_orientation_for_presets_and_custom_sizes() {
+        let landscape_a4 = PageSetup {
+            size: PageSize::A4,
+            width: None,
+            height: None,
+            orientation: Orientation::Landscape,
+            margins: Spacing {
+                top: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+                right: 0.0,
+            },
+            unit: "mm".to_string(),
+        };
+        let (width, height) = get_page_dimensions(&landscape_a4);
+        assert!((width - mm_to_pt(297.0)).abs() < 0.01);
+        assert!((height - mm_to_pt(210.0)).abs() < 0.01);
+
+        let landscape_custom = PageSetup {
+            size: PageSize::Custom,
+            width: Some(100.0),
+            height: Some(200.0),
+            orientation: Orientation::Landscape,
+            margins: Spacing {
+                top: 0.0,
+                bottom: 0.0,
+                left: 0.0,
+                right: 0.0,
+            },
+            unit: "mm".to_string(),
+        };
+        let (width, height) = get_page_dimensions(&landscape_custom);
+        assert!((width - mm_to_pt(200.0)).abs() < 0.01);
+        assert!((height - mm_to_pt(100.0)).abs() < 0.01);
+    }
 
     #[test]
     fn test_layout_simple_flex() {

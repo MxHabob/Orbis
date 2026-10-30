@@ -44,6 +44,7 @@ import {
   computeTotalSheets,
   suggestLayouts,
   createDefaultMultiUpConfig,
+  getPageDimensions,
   layoutLabel,
   layoutLabelAr,
 } from "@docforge/core";
@@ -185,22 +186,15 @@ function updateConfigFromTemplate(template: any) {
     const doc = typeof rawJson === "string" ? JSON.parse(rawJson) : rawJson;
     const pageSetup = doc?.meta?.pageSetup ?? doc?.meta?.page_setup;
     if (pageSetup) {
-      const dimensions: Record<string, [number, number]> = {
-        A4: [210, 297],
-        A3: [297, 420],
-        A5: [148, 210],
-        Letter: [216, 279],
-        Legal: [216, 356],
-        ID_CARD: [85.6, 53.98],
-        BADGE: [86, 54],
-      };
-      const [presetWidth, presetHeight] = dimensions[pageSetup.size] ?? [
-        90, 50,
-      ];
-      const w = pageSetup.width ?? pageSetup.width_mm ?? presetWidth;
-      const h = pageSetup.height ?? pageSetup.height_mm ?? presetHeight;
-      multiUpConfig = createDefaultMultiUpConfig(w, h);
-      multiUpConfig.sheetOrientation = pageSetup.orientation ?? "portrait";
+      const orientation = pageSetup.orientation ?? "portrait";
+      const { width, height } = getPageDimensions(
+        pageSetup.size ?? "A4",
+        orientation,
+        pageSetup.width ?? pageSetup.width_mm,
+        pageSetup.height ?? pageSetup.height_mm,
+      );
+      multiUpConfig = createDefaultMultiUpConfig(width, height);
+      multiUpConfig.sheetOrientation = orientation;
       // Set fill order based on locale
       multiUpConfig.fillOrder = isRtl ? "rtl-ttb" : "ltr-ttb";
     }

@@ -37,8 +37,11 @@ export function getPageDimensions(
 ): PageDimensions {
   let dims: PageDimensions;
 
-  if (size === "Custom" && customWidth && customHeight) {
-    dims = { width: customWidth, height: customHeight };
+  if (size === "Custom") {
+    dims = {
+      width: customWidth ?? PAGE_SIZES.Custom.width,
+      height: customHeight ?? PAGE_SIZES.Custom.height,
+    };
   } else {
     dims = { ...PAGE_SIZES[size] };
   }
