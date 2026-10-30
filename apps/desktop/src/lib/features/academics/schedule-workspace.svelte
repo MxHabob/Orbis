@@ -5,6 +5,7 @@
 -->
 <script lang="ts">
 import { goto } from "$app/navigation";
+import { resolve } from "$app/paths";
 import {
   api,
   extractErrorMessage,
@@ -336,22 +337,25 @@ const draftLessons = $derived.by(() => {
 });
 
 // Name Resolution Helpers
-function getSubjectName(subjectId: string): string {
+function getSubjectName(subjectId?: string | null): string {
+  if (!subjectId) return m.common_search_group_subjects();
   const sub = subjects.find((s) => String(s.id) === String(subjectId));
   return sub ? sub.name_ar || sub.name : m.common_search_group_subjects();
 }
 
-function getTeacherName(teacherId: string): string {
+function getTeacherName(teacherId?: string | null): string {
+  if (!teacherId) return "";
   const teach = teachers.find((t) => String(t.id) === String(teacherId));
-  return teach ? teach.name_ar || teach.full_name : "";
+  return teach ? teach.full_name_ar || teach.full_name : "";
 }
 
-function getClassName(clsId: string): string {
+function getClassName(clsId?: string | null): string {
+  if (!clsId) return "";
   const cls = classes.find((c) => String(c.id) === String(clsId));
   return cls ? cls.name_ar || cls.name : "";
 }
 
-function getRoomName(roomId?: string): string {
+function getRoomName(roomId?: string | null): string {
   if (!roomId) return "";
   const rm = rooms.find((r) => String(r.id) === String(roomId));
   return rm ? rm.name_ar || rm.name : "";
@@ -419,7 +423,7 @@ function openNewLessonSheet(day?: number, slotId?: string) {
     ) ??
     timeSlots.find((slot) => !slot.is_break);
   activeCellDay = Number(
-    selectedSlot?.day_of_week ?? day ?? weekdays[0]?.value ?? 1,
+    selectedSlot?.day_of_week ?? day ?? weekdays[0]?.value ?? 0,
   );
   activeCellSlotId = selectedSlot ? String(selectedSlot.id) : "";
   isLessonSheetOpen = true;
@@ -427,7 +431,7 @@ function openNewLessonSheet(day?: number, slotId?: string) {
 
 function openEditLessonSheet(lesson: any) {
   targetLesson = lesson;
-  activeCellDay = Number(lesson?.day_of_week) || 1;
+  activeCellDay = Number(lesson?.day_of_week) || 0;
   activeCellSlotId = String(lesson?.time_slot_id || "");
   isLessonSheetOpen = true;
 }
@@ -449,7 +453,13 @@ function openLessonAttendance(lesson: any) {
     date: dateValue,
   });
 
-  goto(localizeHref(`/${orgId}/academics/attendance?${params.toString()}`));
+  goto(
+    resolve(
+      localizeHref(
+        `/${orgId}/academics/attendance?${params.toString()}`,
+      ),
+    ),
+  );
 }
 
 async function handleMoveLesson(
@@ -512,7 +522,8 @@ function handleDirectPrint() {
     (p) => String(p.id) === String(effectiveActivePeriodId),
   );
   const periodTitle = activePeriod
-    ? l(activePeriod.name_ar, activePeriod.name) || activePeriod.name
+    ? l(activePeriod.name_ar ?? undefined, activePeriod.name) ||
+      activePeriod.name
     : "";
 
   let targetId = "master";
@@ -523,7 +534,9 @@ function handleDirectPrint() {
     const cls = classes.find((c) => String(c.id) === String(selectedClassId));
     targetId = String(selectedClassId);
     targetTitle = cls
-      ? m.academics_schedule_print_class({ name: l(cls.name_ar, cls.name) })
+      ? m.academics_schedule_print_class({
+          name: l(cls.name_ar ?? undefined, cls.name) || cls.name,
+        })
       : m.academics_schedule_print_class_fallback();
     relevantLessons = scheduledLessons.filter(
       (l) => String(l.section_id) === String(selectedClassId),
@@ -535,7 +548,9 @@ function handleDirectPrint() {
     targetId = String(selectedTeacherId);
     targetTitle = teach
       ? m.academics_schedule_print_teacher({
-          name: l(teach.full_name_ar, teach.full_name),
+          name:
+            l(teach.full_name_ar ?? undefined, teach.full_name) ||
+            teach.full_name,
         })
       : m.academics_schedule_print_teacher_fallback();
     relevantLessons = scheduledLessons.filter(
@@ -545,7 +560,9 @@ function handleDirectPrint() {
     const rm = rooms.find((r) => String(r.id) === String(selectedRoomId));
     targetId = String(selectedRoomId);
     targetTitle = rm
-      ? m.academics_schedule_print_room({ name: l(rm.name_ar, rm.name) })
+      ? m.academics_schedule_print_room({
+          name: l(rm.name_ar ?? undefined, rm.name) || rm.name,
+        })
       : m.academics_schedule_print_room_fallback();
     relevantLessons = scheduledLessons.filter(
       (l) => String(l.room_id) === String(selectedRoomId),
@@ -554,7 +571,7 @@ function handleDirectPrint() {
 
   const scheduleRows = timeSlots.map((slot) => {
     const isBreak = Boolean(slot.is_break);
-    const slotName = l(slot.name_ar, slot.name) || `P${slot.slot_number}`;
+    const slotName = l(slot.name_ar ?? undefined, slot.name) || `P${slot.slot_index}`;
     const timeRange = `${slot.start_time?.slice(0, 5) || ""} - ${slot.end_time?.slice(0, 5) || ""}`;
     const rowObj: Record<string, string> = {
       slotName: `${slotName} (${timeRange})`,
@@ -565,7 +582,8 @@ function handleDirectPrint() {
       const dayVal = String(day.value ?? day.day);
       if (isBreak) {
         rowObj[`day_${dayVal}`] =
-          l(slot.name_ar, slot.name) || m.common_onboarding_break_recess();
+          l(slot.name_ar ?? undefined, slot.name) ||
+          m.common_onboarding_break_recess();
       } else {
         const lesson = relevantLessons.find(
           (l) =>
@@ -611,7 +629,7 @@ function handleDirectPrint() {
     })),
     timeSlots: timeSlots.map((s) => ({
       id: s.id,
-      name: l(s.name_ar, s.name) || `P${s.slot_number}`,
+      name: l(s.name_ar ?? undefined, s.name) || `P${s.slot_index}`,
       timeRange: `${s.start_time?.slice(0, 5) || ""} - ${s.end_time?.slice(0, 5) || ""}`,
       isBreak: Boolean(s.is_break),
     })),
@@ -654,7 +672,14 @@ function handleDirectPrint() {
       activePeriodId = val;
       refetchSchedule();
     }}
-    onAutoScheduleClick={() => goto(localizeHref(`/${orgId}/academics/schedule/generator?periodId=${effectiveActivePeriodId}`))}
+    onAutoScheduleClick={() =>
+      goto(
+        resolve(
+          localizeHref(
+            `/${orgId}/academics/schedule/generator?periodId=${effectiveActivePeriodId}`,
+          ),
+        ),
+      )}
     onTimeSlotsClick={() => (isTimeSlotsSheetOpen = true)}
     onExportClick={handleDirectPrint}
     onNewLessonClick={() => openNewLessonSheet()}
@@ -672,14 +697,14 @@ function handleDirectPrint() {
             <Skeleton class="ms-auto h-7 w-40 rounded-md" />
           </div>
           <div class="grid shrink-0 grid-cols-6 border-b border-border/60">
-            {#each Array(6) as _}
+            {#each Array(6) as _, index (index)}
               <Skeleton class="m-2 h-7 rounded-md" />
             {/each}
           </div>
           <div class="flex-1 space-y-3 overflow-hidden p-4">
-            {#each Array(5) as _}
+            {#each Array(5) as _, rowIndex (rowIndex)}
               <div class="grid grid-cols-6 gap-3">
-                {#each Array(6) as _}
+                {#each Array(6) as _, columnIndex (columnIndex)}
                   <Skeleton class="h-20 rounded-lg" />
                 {/each}
               </div>
@@ -698,7 +723,8 @@ function handleDirectPrint() {
           title={m.academics_studio_no_periods()}
           description={m.academics_schedule_no_periods_desc()}
           actionLabel={m.academics_studio_manage_periods()}
-          onaction={() => goto(localizeHref(`/${orgId}/settings/periods`))}
+          onaction={() =>
+            goto(resolve(localizeHref(`/${orgId}/settings/periods`)))}
           class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
         />
       {:else if timeSlots.length === 0}

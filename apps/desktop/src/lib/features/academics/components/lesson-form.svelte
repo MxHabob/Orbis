@@ -72,7 +72,7 @@ let selectedSubjectId = $state(untrack(() => String(lesson?.subject_id || "")));
 let selectedTeacherId = $state(untrack(() => String(lesson?.teacher_id || "")));
 let selectedRoomId = $state(untrack(() => String(lesson?.room_id || "")));
 let selectedDay = $state(
-  untrack(() => Number(lesson?.day_of_week || dayOfWeek || 1)),
+  untrack(() => Number(lesson?.day_of_week || dayOfWeek || 0)),
 );
 let selectedSlotId = $state(
   untrack(() => String(lesson?.time_slot_id || timeSlotId || "")),
@@ -103,26 +103,22 @@ const SectionSubjectsQuery = createSectionSubjectsQuery(
 const SectionSubjects = $derived(SectionSubjectsQuery.data ?? []);
 const availableSubjects = $derived.by(() => {
   const linkedIds = new Set(
-    SectionSubjects.map((item: any) => String(item.subject_id)),
+    SectionSubjects.map((item) => String(item.subject_id)),
   );
   return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
 });
 const selectedSectionSubject = $derived(
   SectionSubjects.find(
-    (item: any) => String(item.subject_id) === selectedSubjectId,
+    (item) => String(item.subject_id) === selectedSubjectId,
   ),
 );
 const availableTeachers = $derived.by(() => {
   const linkedIds = SectionSubjects.filter(
-    (item: any) =>
+    (item) =>
       !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
   )
-    .map((item: any) =>
-      String(
-        item.instructor_id || item.primary_teacher_id || item.teacher_id || "",
-      ),
-    )
-    .filter(Boolean);
+    .map((item) => item.instructor_id)
+    .filter((id): id is string => Boolean(id));
   return teachers.filter((teacher: any) =>
     linkedIds.includes(String(teacher.id)),
   );
@@ -169,13 +165,9 @@ const effectiveSelectedSlotId = $derived(
 function handleSubjectChange(value: string | undefined) {
   selectedSubjectId = value ?? "";
   const cs = SectionSubjects.find(
-    (item: any) => String(item.subject_id) === selectedSubjectId,
+    (item) => String(item.subject_id) === selectedSubjectId,
   );
-  const teacherId =
-    cs?.instructor_id || cs?.primary_teacher_id || cs?.teacher_id;
-  if (teacherId) {
-    selectedTeacherId = String(teacherId);
-  }
+  selectedTeacherId = cs?.instructor_id ?? "";
 }
 
 function handleDayChange(value: string | undefined) {

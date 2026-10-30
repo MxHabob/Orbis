@@ -6,7 +6,10 @@ use orbis_domain::entities::room::Room as DomainRoom;
 use orbis_domain::entities::scheduled_lesson::ScheduledLesson as DomainScheduledLesson;
 use orbis_domain::entities::time_slot::TimeSlot as DomainTimeSlot;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    TransactionTrait,
+};
 use std::collections::HashMap;
 use uuid::Uuid;
 
@@ -360,7 +363,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .into_iter()
             .collect();
         let mut query = ScheduledLessonEntity::find()
-            .filter(scheduled_lesson::Column::TimeSlotId.is_in(time_slot_ids));
+            .filter(scheduled_lesson::Column::TimeSlotId.is_in(time_slot_ids.clone()));
         if !exclude_ids.is_empty() {
             query = query.filter(scheduled_lesson::Column::Id.is_not_in(exclude_ids.to_vec()));
         }
@@ -393,10 +396,36 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .all(&self.db)
             .await
             .map_err(|error| DomainError::Internal(error.to_string()))?;
-        let section_by_offering: HashMap<Uuid, Uuid> = section_subjects
+        let section_by_offering: HashMap<Uuid, (Uuid, Uuid)> = section_subjects
             .into_iter()
-            .map(|offering| (offering.id, offering.section_id))
+            .map(|offering| (offering.id, (offering.section_id, offering.period_id)))
             .collect();
+
+        let time_slots = TimeSlotEntity::find()
+            .filter(time_slot::Column::Id.is_in(time_slot_ids))
+            .all(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let period_by_slot: HashMap<Uuid, Uuid> = time_slots
+            .into_iter()
+            .map(|slot| (slot.id, slot.period_id))
+            .collect();
+        for lesson in lessons {
+            let Some((_, section_period_id)) =
+                section_by_offering.get(&lesson.section_subject_id)
+            else {
+                return Err(DomainError::NotFound("Section subject not found".into()));
+            };
+            let Some(slot_period_id) = period_by_slot.get(&lesson.time_slot_id) else {
+                return Err(DomainError::NotFound("Time slot not found".into()));
+            };
+            if section_period_id != slot_period_id {
+                return Err(DomainError::Validation(
+                    "Section subject and time slot must belong to the same academic period"
+                        .into(),
+                ));
+            }
+        }
 
         let existing_count = existing.len();
         let placements: Vec<&DomainScheduledLesson> =
@@ -413,7 +442,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
                 let same_section = section_by_offering
                     .get(&lesson.section_subject_id)
                     .zip(section_by_offering.get(&other.section_subject_id))
-                    .is_some_and(|(left, right)| left == right);
+                    .is_some_and(|(left, right)| left.0 == right.0);
                 let same_teacher =
                     lesson.teacher_id.is_some() && lesson.teacher_id == other.teacher_id;
                 let same_room = lesson.room_id.is_some() && lesson.room_id == other.room_id;
@@ -457,9 +486,34 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
     }
 
     async fn save_bulk(&self, lessons: &[DomainScheduledLesson]) -> Result<(), DomainError> {
-        for lesson in lessons {
-            ScheduledLessonRepository::save(self, lesson).await?;
+        if lessons.is_empty() {
+            return Ok(());
         }
+
+        let transaction = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        for lesson in lessons {
+            let active = scheduled_lesson::ActiveModel {
+                id: Set(lesson.id),
+                section_subject_id: Set(lesson.section_subject_id),
+                room_id: Set(lesson.room_id),
+                time_slot_id: Set(lesson.time_slot_id),
+                teacher_id: Set(lesson.teacher_id),
+                created_at: Set(lesson.created_at),
+                updated_at: Set(lesson.updated_at),
+            };
+            active
+                .insert(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+        }
+        transaction
+            .commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
         Ok(())
     }
 
