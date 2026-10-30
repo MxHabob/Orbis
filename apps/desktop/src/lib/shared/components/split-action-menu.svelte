@@ -1,11 +1,12 @@
 <script lang="ts">
-import type { Component } from "svelte";
+import type { Component, Snippet } from "svelte";
 import { ChevronDown } from "@orbis/icons";
 import { Button } from "@orbis/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@orbis/ui/dropdown-menu";
 
@@ -16,6 +17,7 @@ export interface SplitActionItem {
   badge?: string;
   destructive?: boolean;
   disabled?: boolean;
+  separatorBefore?: boolean;
   onSelect: () => void;
 }
 
@@ -25,30 +27,39 @@ let {
   icon,
   actions,
   onprimary,
+  primary,
+  variant = "default",
   disabled = false,
 }: {
   label: string;
   menuLabel: string;
   icon?: Component<{ class?: string }>;
   actions: SplitActionItem[];
-  onprimary: () => void;
+  onprimary?: () => void;
+  primary?: Snippet;
+  variant?: "default" | "outline";
   disabled?: boolean;
 } = $props();
 </script>
 
 <div class="inline-flex items-center">
-  <Button
-    size="sm"
-    class="rounded-e-none gap-1.5"
-    {disabled}
-    onclick={onprimary}
-  >
-    {#if icon}
-      {@const Icon = icon}
-      <Icon class="size-4" />
-    {/if}
-    <span>{label}</span>
-  </Button>
+  {#if primary}
+    {@render primary()}
+  {:else}
+    <Button
+      size="sm"
+      {variant}
+      class="rounded-e-none gap-1.5"
+      {disabled}
+      onclick={() => onprimary?.()}
+    >
+      {#if icon}
+        {@const Icon = icon}
+        <Icon class="size-4" />
+      {/if}
+      <span>{label}</span>
+    </Button>
+  {/if}
 
   <DropdownMenu>
     <DropdownMenuTrigger class="outline-none">
@@ -56,7 +67,8 @@ let {
         <Button
           {...props}
           size="sm"
-          class="rounded-s-none border-s border-primary-foreground/20 px-2"
+          {variant}
+          class="rounded-s-none border-s {variant === 'outline' ? 'border-border' : 'border-primary-foreground/20'} px-2"
           {disabled}
           aria-label={menuLabel}
         >
@@ -66,6 +78,9 @@ let {
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" class="min-w-48">
       {#each actions as action (action.id)}
+        {#if action.separatorBefore}
+          <DropdownMenuSeparator />
+        {/if}
         <DropdownMenuItem
           disabled={action.disabled}
           class="gap-2 text-sm {action.destructive ? 'text-destructive focus:text-destructive' : ''}"

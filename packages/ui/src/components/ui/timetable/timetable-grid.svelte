@@ -27,6 +27,7 @@ interface Props {
   onDeleteLesson?: (id: string) => void;
   onEditLesson?: (lesson: any) => void;
   onLessonClick?: (lesson: any) => void;
+  onAttendanceClick?: (lesson: any) => void;
   onMoveLesson?: (lesson: any, targetDay: number, targetSlotId: string) => void;
 }
 
@@ -51,6 +52,7 @@ let {
   onDeleteLesson,
   onEditLesson,
   onLessonClick,
+  onAttendanceClick,
   onMoveLesson,
 }: Props = $props();
 
@@ -201,6 +203,7 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
                         onDelete={onDeleteLesson}
                         onEdit={onEditLesson}
                         onClick={onLessonClick}
+                        onAttendance={onAttendanceClick}
                       />
                     {/each}
                   {:else}

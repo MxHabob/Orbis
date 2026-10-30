@@ -36,9 +36,9 @@ import {
   Document,
   DocumentCheck,
   DocumentPage,
-  EllipsisHorizontal,
   Phone,
   Printer,
+  Sparkles,
   User,
   UserBadgeCheck,
   Users,
@@ -54,18 +54,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@orbis/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@orbis/ui/dropdown-menu";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { useQueryClient } from "@tanstack/svelte-query";
 import type { Snippet } from "svelte";
 
-import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
 
 let { children }: { children: Snippet } = $props();
 const queryClient = useQueryClient();
@@ -92,6 +85,22 @@ const studentFullName = $derived(
     person?.full_name ||
     "",
 );
+
+function handleAskOrbis() {
+  const newUrl = new URL(page.url.href);
+  newUrl.searchParams.set(
+    "ask_orbis",
+    m.academics_student_evaluation_ai_ask_orbis_query({
+      name: studentFullName,
+    }),
+  );
+  goto(newUrl.pathname + newUrl.search, {
+    replaceState: true,
+    keepFocus: true,
+    noScroll: true,
+  });
+}
+
 const studentFolderQuery = useStudentFolder(
   () => student?.id || studentId,
   () => studentFullName,
@@ -360,88 +369,56 @@ const relatedFooterActions = $derived<FooterAction[]>(
 
     {#snippet actions()}
       {#if studentDetail}
-        <AskOrbisButton
-          query={m.academics_student_evaluation_ai_ask_orbis_query({
-            name: studentFullName || "",
-          })}
-          label={m.academics_student_evaluation_ask_orbis_btn({
-            name: studentFullName || "",
-          })}
+        <SplitActionMenu
+          label={m.academics_student_evaluation_ask_orbis_btn_short()}
+          menuLabel={m.operations_ui_actions()}
+          icon={Sparkles}
           variant="outline"
-          size="sm"
-          class="h-8 text-[11px]"
+          onprimary={handleAskOrbis}
+          actions={[
+            {
+              id: "call-guardian",
+              label: m.students_detail_call_guardian(),
+              icon: Phone,
+              onSelect: () =>
+                toast.info(
+                  m.students_detail_call_guardian_toast({
+                    phone:
+                      person?.phone ||
+                      m.students_detail_phone_unavailable(),
+                  }),
+                ),
+            },
+            {
+              id: "print-certificate",
+              label: m.shared_ui_print_enrollment_certificate(),
+              icon: Printer,
+              onSelect: () => (showPrintCertificate = true),
+            },
+            {
+              id: "record-payment",
+              label: m.shared_ui_record_payment(),
+              icon: Banknotes,
+              onSelect: () =>
+                goto(`/${orgId}/finance/payments?studentId=${studentId}`),
+            },
+            {
+              id: "transfer-class",
+              label: m.common_student_layout_transfer_class(),
+              icon: ArrowsRightLeft,
+              onSelect: () => (showTransferDialog = true),
+            },
+            {
+              id: "withdraw",
+              label: m.common_inspector_withdraw(),
+              icon: UserBadgeCheck,
+              destructive: true,
+              disabled: isWithdrawing,
+              separatorBefore: true,
+              onSelect: withdrawStudent,
+            },
+          ]}
         />
-
-        <Button
-          variant="outline"
-          size="sm"
-          class="h-8 text-[11px] gap-1.5 font-semibold"
-          onclick={() =>
-            toast.info(
-              m.students_detail_call_guardian_toast({
-                phone:
-                  person?.phone ||
-                  m.students_detail_phone_unavailable(),
-              }),
-            )}
-        >
-          <Phone size={12} />
-          {m.students_detail_call_guardian()}
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            {#snippet child({ props })}
-              <Button
-                variant="outline"
-                size="sm"
-                class="h-8 w-8 p-0 cursor-pointer"
-                {...props}
-              >
-                <EllipsisHorizontal size={14} />
-              </Button>
-            {/snippet}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            class="w-52 p-1 z-50 bg-popover border border-border shadow-md rounded-md select-none"
-          >
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => (showPrintCertificate = true)}
-            >
-              <Printer size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.shared_ui_print_enrollment_certificate()}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => goto(`/${orgId}/finance/payments?studentId=${studentId}`)}
-            >
-              <Banknotes size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.shared_ui_record_payment()}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-foreground hover:bg-accent rounded-sm text-start"
-              onclick={() => (showTransferDialog = true)}
-            >
-              <ArrowsRightLeft size={12} class="text-muted-foreground shrink-0" />
-              <span>{m.common_student_layout_transfer_class()}</span>
-            </DropdownMenuItem>
-
-            <DropdownMenuSeparator class="bg-border/60 my-1" />
-
-            <DropdownMenuItem
-              class="flex items-center gap-2 px-2.5 py-2 text-[11px] font-semibold cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5 hover:bg-destructive/5 rounded-sm text-start"
-              onclick={withdrawStudent}
-              disabled={isWithdrawing}
-            >
-              <UserBadgeCheck size={12} class="text-destructive shrink-0" />
-              <span>{m.common_inspector_withdraw()}</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       {/if}
     {/snippet}
   </DetailPageHeader>

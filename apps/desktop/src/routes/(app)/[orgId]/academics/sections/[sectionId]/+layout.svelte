@@ -5,13 +5,18 @@
   class capacity badges, and sub-page context.
 -->
 <script lang="ts">
+import { goto } from "$app/navigation";
 import { page } from "$app/state";
+import { toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Users } from "@orbis/icons";
+import { Share, Sparkles, Users } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
+import { extractErrorMessage } from "$lib/api";
 import DetailPageHeader from "$lib/shell/detail-page-header.svelte";
+import SplitActionMenu from "$lib/shared/components/split-action-menu.svelte";
+import type { SplitActionItem } from "$lib/shared/components/split-action-menu.svelte";
 import CapacityIndicator from "$lib/shared/components/capacity-indicator.svelte";
 import {
   createClassQuery,
@@ -74,11 +79,53 @@ const backLabel = $derived.by(() => {
   }
   return m.common_card_active_classes();
 });
+
+async function handleShareLink() {
+  try {
+    await navigator.clipboard.writeText(page.url.href);
+    toast.success(m.common_copied_to_clipboard());
+  } catch (error) {
+    toast.error(extractErrorMessage(error));
+  }
+}
+
+function handleAskOrbis() {
+  const newUrl = new URL(page.url.href);
+  newUrl.searchParams.set(
+    "ask_orbis",
+    m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName }),
+  );
+  goto(newUrl.pathname + newUrl.search, {
+    replaceState: true,
+    keepFocus: true,
+    noScroll: true,
+  });
+}
+
+const classHeaderActions = $derived<SplitActionItem[]>([
+  {
+    id: "ask-orbis",
+    label: m.academics_student_evaluation_ask_orbis_btn_short(),
+    icon: Sparkles,
+    onSelect: handleAskOrbis,
+  },
+]);
 </script>
 
 <div class="h-full w-full flex flex-col overflow-hidden bg-background font-sans text-start">
   <!-- Unified Breadcrumb Header -->
-  <DetailPageHeader {backHref} {backLabel}>
+  {#snippet headerActions()}
+    {#if classData}
+      <SplitActionMenu
+        label={m.common_action_share()}
+        menuLabel={m.operations_ui_actions()}
+        icon={Share}
+        actions={classHeaderActions}
+        onprimary={handleShareLink}
+      />
+    {/if}
+  {/snippet}
+  <DetailPageHeader {backHref} {backLabel} actions={headerActions}>
     {#if isLoading}
       <Skeleton class="h-6 w-36" />
       <Skeleton class="h-4.5 w-16" />

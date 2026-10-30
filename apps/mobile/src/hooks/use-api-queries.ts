@@ -192,22 +192,35 @@ export function useTeacherClassDataQuery(classId?: string) {
       if (!classItem) {
         throw new Error("The section response was invalid.");
       }
-      const [enrollmentsResponse, classSubjectsResponse, subjectsResponse] =
-        await Promise.all([
-          api.listEnrollments2({
-            query: { section_id: classId },
-            throwOnError: true,
-          }),
-          api.listSectionSubjects2({
-            query: {
-              section_id: classId,
-              period_id: classItem.period_id ?? "",
-            },
-            throwOnError: true,
-          }),
-          api.listSubjects({ throwOnError: true }),
-        ]);
-      const enrollments = extractData<EnrollmentDto[]>(enrollmentsResponse);
+      const [classSubjectsResponse, subjectsResponse] = await Promise.all([
+        api.listSectionSubjects2({
+          query: {
+            section_id: classId,
+            period_id: classItem.period_id ?? "",
+          },
+          throwOnError: true,
+        }),
+        api.listSubjects({ throwOnError: true }),
+      ]);
+      const pageSize = 100;
+      const enrollments: EnrollmentDto[] = [];
+      for (let page = 1; ; page += 1) {
+        const response = await api.listEnrollments2({
+          query: {
+            section_id: classId,
+            period_id: classItem.period_id ?? undefined,
+            page,
+            page_size: pageSize,
+          },
+          throwOnError: true,
+        });
+        const pageEnrollments = extractData<EnrollmentDto[]>(response);
+        if (!Array.isArray(pageEnrollments)) {
+          throw new Error("The enrollment list response was not a list.");
+        }
+        enrollments.push(...pageEnrollments);
+        if (pageEnrollments.length < pageSize) break;
+      }
       const classSubjects = extractData<SectionSubjectDto[]>(
         classSubjectsResponse,
       );
@@ -229,12 +242,7 @@ export function useTeacherClassDataQuery(classId?: string) {
         activeEnrollments.map((enrollment) => enrollment.student_id),
       );
       const studentsById = new Map<string, StudentDto>();
-      const pageSize = 100;
-      for (
-        let page = 1;
-        page <= Math.ceil(activeStudentIds.size / pageSize);
-        page += 1
-      ) {
+      for (let page = 1; ; page += 1) {
         const response = await api.listStudents({
           query: {
             section_id: classId,

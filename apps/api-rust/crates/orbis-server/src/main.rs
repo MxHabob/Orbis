@@ -296,7 +296,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(calendar_repo.clone()),
             Some(student_repo.clone()),
             Some(settings_repo.clone()),
-        ),
+        )
+        .with_attendance_scope_repos(employee_repo.clone(), scheduling_repo.clone()),
     );
 
     let auth_service = Arc::new(

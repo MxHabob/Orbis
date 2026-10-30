@@ -1185,8 +1185,25 @@ export type CumulativeGpaRecordDto = {
 
 export type CurrencyDto = {
   code: string;
+  decimal_places: number;
+  exchange_rate: string;
+  is_active: boolean;
+  is_base: boolean;
   name: string;
+  name_ar?: string | null;
   symbol: string;
+  symbol_position: string;
+};
+
+export type CurrencyInput = {
+  code: string;
+  decimal_places: number;
+  exchange_rate: string;
+  is_base: boolean;
+  name: string;
+  name_ar?: string | null;
+  symbol: string;
+  symbol_position: string;
 };
 
 export type DashboardCountsDto = {
@@ -4432,6 +4449,33 @@ export type ListCurrenciesResponses = {
 
 export type ListCurrenciesResponse =
   ListCurrenciesResponses[keyof ListCurrenciesResponses];
+
+export type CreateCurrencyData = {
+  body: CurrencyInput;
+  path?: never;
+  query?: never;
+  url: "/api/v1/currencies";
+};
+
+export type CreateCurrencyResponses = {
+  200: unknown;
+};
+
+export type UpdateCurrencyData = {
+  body: CurrencyInput;
+  path: {
+    /**
+     * Currency ISO code
+     */
+    code: string;
+  };
+  query?: never;
+  url: "/api/v1/currencies/{code}";
+};
+
+export type UpdateCurrencyResponses = {
+  200: unknown;
+};
 
 export type ListDiscountTemplatesData = {
   body?: never;

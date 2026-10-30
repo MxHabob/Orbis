@@ -3,7 +3,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
 };
 use chrono::{DateTime, NaiveDate, Utc};
 use rust_decimal::Decimal;
@@ -228,7 +228,25 @@ pub struct ProcessPaymentRequest {
 pub struct CurrencyDto {
     pub code: String,
     pub name: String,
+    pub name_ar: Option<String>,
     pub symbol: String,
+    pub symbol_position: String,
+    pub decimal_places: u32,
+    pub exchange_rate: Decimal,
+    pub is_base: bool,
+    pub is_active: bool,
+}
+
+#[derive(Deserialize, ToSchema, Clone)]
+pub struct CurrencyInput {
+    pub code: String,
+    pub name: String,
+    pub name_ar: Option<String>,
+    pub symbol: String,
+    pub symbol_position: String,
+    pub decimal_places: u32,
+    pub exchange_rate: Decimal,
+    pub is_base: bool,
 }
 
 #[derive(Serialize, Deserialize, ToSchema, Clone)]
@@ -1031,16 +1049,164 @@ pub async fn list_currencies(
     ctx: AuthContext,
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<CurrencyDto>>>, ApiError> {
+    let organization = state
+        .org_repo
+        .find_by_id(ctx.tenant_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Organization not found"))?;
+    let base_code = organization
+        .base_currency_code
+        .unwrap_or_else(|| "YER".to_string());
     let currencies = state.currency_repo.find_by_org(ctx.tenant_id).await?;
-    let dtos = currencies
-        .into_iter()
-        .map(|c| CurrencyDto {
+    let mut dtos = Vec::with_capacity(currencies.len());
+    for c in currencies {
+        let exchange_rate = if c.is_base {
+            Decimal::ONE
+        } else {
+            state
+                .currency_repo
+                .get_exchange_rate(ctx.tenant_id, &base_code, &c.code)
+                .await?
+                .map(|rate| rate.rate)
+                .unwrap_or(Decimal::ONE)
+        };
+        dtos.push(CurrencyDto {
             code: c.code,
             name: c.name,
+            name_ar: c.name_ar,
             symbol: c.symbol,
-        })
-        .collect();
+            symbol_position: c.symbol_position,
+            decimal_places: c.decimal_places,
+            exchange_rate,
+            is_base: c.is_base,
+            is_active: c.is_active,
+        });
+    }
     Ok(ApiResponse::ok(dtos))
+}
+
+#[utoipa::path(post, path = "/api/v1/currencies",
+    request_body = CurrencyInput,
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Finance")]
+pub async fn create_currency(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Json(request): Json<CurrencyInput>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    save_currency(ctx, state, request, false).await?;
+    Ok(ApiResponse::ok(()))
+}
+
+#[utoipa::path(patch, path = "/api/v1/currencies/{code}",
+    params(("code" = String, Path, description = "Currency ISO code")),
+    request_body = CurrencyInput,
+    responses((status = 200, body = ())), security(("bearer" = [])), tag = "Finance")]
+pub async fn update_currency(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(code): Path<String>,
+    Json(mut request): Json<CurrencyInput>,
+) -> Result<Json<ApiResponse<()>>, ApiError> {
+    request.code = code;
+    save_currency(ctx, state, request, true).await?;
+    Ok(ApiResponse::ok(()))
+}
+
+async fn save_currency(
+    ctx: AuthContext,
+    state: AppState,
+    request: CurrencyInput,
+    updating: bool,
+) -> Result<(), ApiError> {
+    let code = request.code.trim().to_ascii_uppercase();
+    if !(2..=3).contains(&code.len())
+        || !code.bytes().all(|byte| byte.is_ascii_alphabetic())
+        || request.name.trim().is_empty()
+        || request.symbol.trim().is_empty()
+        || !matches!(request.symbol_position.as_str(), "before" | "after")
+        || request.decimal_places > 4
+        || request.exchange_rate <= Decimal::ZERO
+    {
+        return Err(ApiError::bad_request("Invalid currency details"));
+    }
+
+    let existing = state
+        .currency_repo
+        .find_by_code(ctx.tenant_id, &code)
+        .await?;
+    if updating && existing.is_none() {
+        return Err(ApiError::not_found(format!("Currency {code} not found")));
+    }
+    if !updating && existing.is_some() {
+        return Err(ApiError::conflict(format!(
+            "Currency {code} already exists"
+        )));
+    }
+
+    let mut organization = state
+        .org_repo
+        .find_by_id(ctx.tenant_id)
+        .await?
+        .ok_or_else(|| ApiError::not_found("Organization not found"))?;
+    if request.is_base {
+        organization.base_currency_code = Some(code.clone());
+    } else if organization
+        .base_currency_code
+        .as_deref()
+        .map_or(true, |base_code| base_code.eq_ignore_ascii_case(&code))
+    {
+        return Err(ApiError::bad_request(
+            "Choose a different base currency before changing this currency",
+        ));
+    }
+
+    let currency = orbis_domain::entities::currency::Currency {
+        code: code.clone(),
+        org_id: ctx.tenant_id,
+        name: request.name.trim().to_string(),
+        name_ar: request
+            .name_ar
+            .as_deref()
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .map(str::to_string),
+        symbol: request.symbol.trim().to_string(),
+        symbol_position: request.symbol_position,
+        decimal_places: request.decimal_places,
+        is_base: request.is_base,
+        is_active: true,
+        updated_at: Utc::now(),
+    };
+    state.currency_repo.save(&currency).await?;
+    if request.is_base {
+        state.org_repo.save(&organization).await?;
+    } else {
+        let base_code = organization
+            .base_currency_code
+            .as_deref()
+            .ok_or_else(|| ApiError::bad_request("A base currency is required"))?;
+        let existing_rate = state
+            .currency_repo
+            .get_exchange_rate(ctx.tenant_id, base_code, &code)
+            .await?;
+        let now = Utc::now();
+        state
+            .currency_repo
+            .save_rate(&orbis_domain::entities::exchange_rate::ExchangeRate {
+                id: existing_rate
+                    .as_ref()
+                    .map(|rate| rate.id)
+                    .unwrap_or_else(Uuid::new_v4),
+                org_id: ctx.tenant_id,
+                from_currency: base_code.to_string(),
+                to_currency: code,
+                rate: request.exchange_rate,
+                effective_date: now,
+                created_at: existing_rate.map(|rate| rate.created_at).unwrap_or(now),
+            })
+            .await?;
+    }
+    Ok(())
 }
 
 #[utoipa::path(get, path = "/api/v1/journal-entries",
@@ -1783,7 +1949,11 @@ pub fn routes() -> Router<AppState> {
         .route("/api/v1/student-fees/:id/refund", post(refund_fee))
         .route("/api/v1/payments", post(process_payment).get(list_payments))
         .route("/api/v1/payments/:id", delete(delete_payment))
-        .route("/api/v1/currencies", get(list_currencies))
+        .route(
+            "/api/v1/currencies",
+            get(list_currencies).post(create_currency),
+        )
+        .route("/api/v1/currencies/:code", patch(update_currency))
         .route(
             "/api/v1/journal-entries",
             post(create_journal_entry).get(list_journal_entries),

@@ -9,6 +9,7 @@ pub struct Model {
     pub name: String,
     pub name_ar: Option<String>,
     pub symbol: String,
+    pub symbol_position: String,
     pub decimal_places: i32,
     pub is_active: bool,
     pub created_at: DateTimeUtc,

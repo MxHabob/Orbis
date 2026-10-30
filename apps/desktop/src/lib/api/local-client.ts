@@ -128,6 +128,7 @@ import type {
   PaymentDto,
   ProcessPaymentRequest,
   CurrencyDto,
+  CurrencyInput,
   IntegrationDto,
   IntegrationStatusResponse,
   ConnectAppRequest,
@@ -1280,6 +1281,12 @@ export class LocalClient implements OrbisApiClient {
   async listCurrencies(): Promise<CurrencyDto[]> {
     return unwrap(await invoke("finance_list_currencies"));
   }
+  async createCurrency(request: CurrencyInput): Promise<void> {
+    unwrap(await invoke("finance_create_currency", { request }));
+  }
+  async updateCurrency(code: string, request: CurrencyInput): Promise<void> {
+    unwrap(await invoke("finance_update_currency", { code, request }));
+  }
   async listJournalEntries(): Promise<JournalEntryDto[]> {
     return unwrap(await invoke("finance_list_journal_entries"));
   }
@@ -2164,60 +2171,36 @@ export class LocalClient implements OrbisApiClient {
     limit?: number;
     offset?: number;
   }): Promise<NotificationDto[]> {
-    try {
-      return unwrap(await invoke("notification_list", { params }));
-    } catch {
-      return [];
-    }
+    return unwrap(await invoke("notification_list", { params }));
   }
 
   async getUnreadNotificationCount(): Promise<{ count: number }> {
-    try {
-      return unwrap(await invoke("notification_unread_count"));
-    } catch {
-      return { count: 0 };
-    }
+    return unwrap(await invoke("notification_unread_count"));
   }
 
   async markNotificationRead(id: string): Promise<void> {
-    try {
-      await invoke("notification_mark_read", { id });
-    } catch {}
+    await invoke("notification_mark_read", { id });
   }
 
   async markAllNotificationsRead(): Promise<{ updated: number }> {
-    try {
-      return unwrap(await invoke("notification_mark_all_read"));
-    } catch {
-      return { updated: 0 };
-    }
+    return unwrap(await invoke("notification_mark_all_read"));
   }
 
   async dismissNotification(id: string): Promise<void> {
-    try {
-      await invoke("notification_dismiss", { id });
-    } catch {}
+    await invoke("notification_dismiss", { id });
   }
 
   async getNotificationPreferences(): Promise<
     NotificationPreferenceResponseDto[]
   > {
-    try {
-      return unwrap(await invoke("notification_get_preferences"));
-    } catch {
-      return [];
-    }
+    return unwrap(await invoke("notification_get_preferences"));
   }
 
   async updateNotificationPreferences(
     preferences: NotificationPreferenceDto[],
   ): Promise<NotificationPreferenceResponseDto[]> {
-    try {
-      return unwrap(
-        await invoke("notification_update_preferences", { preferences }),
-      );
-    } catch {
-      return [];
-    }
+    return unwrap(
+      await invoke("notification_update_preferences", { preferences }),
+    );
   }
 }

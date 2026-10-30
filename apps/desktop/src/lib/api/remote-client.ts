@@ -143,6 +143,7 @@ import type {
   PaymentDto,
   ProcessPaymentRequest,
   CurrencyDto,
+  CurrencyInput,
   IntegrationDto,
   IntegrationStatusResponse,
   MulverseConnectionDto,
@@ -2049,7 +2050,21 @@ export class RemoteClient implements OrbisApiClient {
   }
 
   async listCurrencies(): Promise<CurrencyDto[]> {
-    return this.call(sdk.listCurrencies({ client: this.client })) ?? [];
+    return this.fetchApi("/api/v1/currencies");
+  }
+
+  async createCurrency(request: CurrencyInput): Promise<void> {
+    await this.fetchApi("/api/v1/currencies", {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateCurrency(code: string, request: CurrencyInput): Promise<void> {
+    await this.fetchApi(`/api/v1/currencies/${encodeURIComponent(code)}`, {
+      method: "PATCH",
+      body: JSON.stringify(request),
+    });
   }
 
   async listJournalEntries(): Promise<JournalEntryDto[]> {

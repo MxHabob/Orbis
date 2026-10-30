@@ -1748,6 +1748,63 @@
           }
         },
         "security": [{ "bearer": [] }]
+      },
+      "post": {
+        "tags": ["Finance"],
+        "operationId": "create_currency",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CurrencyInput" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "default": null, "nullable": true }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }]
+      }
+    },
+    "/api/v1/currencies/{code}": {
+      "patch": {
+        "tags": ["Finance"],
+        "operationId": "update_currency",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "description": "Currency ISO code",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CurrencyInput" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "default": null, "nullable": true }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }]
       }
     },
     "/api/v1/discount-templates": {
@@ -5613,20 +5670,13 @@
             "name": "entity_type",
             "in": "query",
             "required": false,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            }
+            "schema": { "type": "string", "nullable": true }
           },
           {
             "name": "entity_id",
             "in": "query",
             "required": false,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "nullable": true
-            }
+            "schema": { "type": "string", "format": "uuid", "nullable": true }
           }
         ],
         "responses": {
@@ -9961,11 +10011,56 @@
       },
       "CurrencyDto": {
         "type": "object",
-        "required": ["code", "name", "symbol"],
+        "required": [
+          "code",
+          "name",
+          "symbol",
+          "symbol_position",
+          "decimal_places",
+          "exchange_rate",
+          "is_base",
+          "is_active"
+        ],
         "properties": {
           "code": { "type": "string" },
+          "decimal_places": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "exchange_rate": { "type": "string" },
+          "is_active": { "type": "boolean" },
+          "is_base": { "type": "boolean" },
           "name": { "type": "string" },
-          "symbol": { "type": "string" }
+          "name_ar": { "type": "string", "nullable": true },
+          "symbol": { "type": "string" },
+          "symbol_position": { "type": "string" }
+        }
+      },
+      "CurrencyInput": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "symbol",
+          "symbol_position",
+          "decimal_places",
+          "exchange_rate",
+          "is_base"
+        ],
+        "properties": {
+          "code": { "type": "string" },
+          "decimal_places": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "exchange_rate": { "type": "string" },
+          "is_base": { "type": "boolean" },
+          "name": { "type": "string" },
+          "name_ar": { "type": "string", "nullable": true },
+          "symbol": { "type": "string" },
+          "symbol_position": { "type": "string" }
         }
       },
       "DashboardCountsDto": {

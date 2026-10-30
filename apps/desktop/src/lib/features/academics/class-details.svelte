@@ -21,7 +21,6 @@ import {
   DocumentPage,
   GlobeAlt,
   InfoCircle,
-  Share,
   Users,
 } from "@orbis/icons";
 import { academicContext } from "$lib/stores";
@@ -41,7 +40,6 @@ import RelatedActions, {
 import ClassScheduleWidget from "$lib/shared/components/class-schedule-widget.svelte";
 import SectionSubjectsWidget from "$lib/shared/components/class-subjects-widget.svelte";
 import ClassRecommendationsWidget from "$lib/shared/components/class-recommendations-widget.svelte";
-import AskOrbisButton from "$lib/shared/components/ask-orbis-button.svelte";
 import QuickActionButton from "$lib/shared/components/quick-action-button.svelte";
 
 let { orgId, classId }: { orgId: string; classId: string } = $props();
@@ -109,13 +107,6 @@ function refetchAll() {
   attendanceQuery.refetch();
 }
 
-function handleShareLink() {
-  if (typeof window !== "undefined") {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success(m.common_copied_to_clipboard());
-  }
-}
-
 function handleNotifications() {
   toast.success(m.common_notifications_enabled());
 }
@@ -176,31 +167,6 @@ const relatedActionGroups = $derived<ActionGroup[]>(
 </script>
 
 <div class="h-full w-full flex flex-col font-sans gap-4 pb-6 text-start">
-  <!-- Top Bar with Primary Query / Share Actions -->
-  <div class="flex flex-wrap items-center justify-between gap-2">
-    {#if classData}
-      <AskOrbisButton
-        query={m.academics_class_evaluation_ai_ask_orbis_query({ name: classDisplayName })}
-        label={m.academics_class_evaluation_ask_orbis_btn({ name: classDisplayName })}
-        variant="default"
-        size="sm"
-        class="h-9 px-3.5 text-xs font-bold gap-1.5 shadow-sm"
-      />
-    {/if}
-
-    <div class="flex items-center gap-1.5 ms-auto">
-      <Button
-        variant="outline"
-        size="sm"
-        class="h-8 px-2.5 text-xs font-semibold gap-1.5"
-        onclick={handleShareLink}
-      >
-        <Share size={12} />
-        {m.common_action_share()}
-      </Button>
-    </div>
-  </div>
-
   {#if isLoading}
     <div class="space-y-4" aria-busy="true">
       <div class="grid grid-cols-1 gap-3 md:grid-cols-3">

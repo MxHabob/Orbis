@@ -6,6 +6,7 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 
+import { isAr } from "$lib/core/i18n";
 import { countries } from "@orbis/location/countries-intl";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
 
@@ -107,21 +108,24 @@ interface CountryItem {
   alpha2: string;
   alpha3: string;
   name: string;
-  localDemonym: string;
+  name_ar: string;
   emoji: string;
   demonym: string;
 }
 
 const countryList = $derived.by<CountryItem[]>(() => {
+  const arabicCountryNames = new Intl.DisplayNames(["ar"], {
+    type: "region",
+  });
+
   const mapped: CountryItem[] = countries.map((c) => {
     const known = NATIONALITY_MESSAGES[c.alpha2];
     const demonym = known ? known() : c.name;
-    const localDemonym = demonym;
     return {
       alpha2: c.alpha2,
       alpha3: c.alpha3,
       name: c.name,
-      localDemonym,
+      name_ar: arabicCountryNames.of(c.alpha2) || c.name,
       emoji: c.emoji || "🌐",
       demonym,
     };
@@ -142,15 +146,9 @@ function getCountryValue(c: CountryItem): string {
 }
 
 function getCountryLabel(c: CountryItem): string {
-  return `${c.emoji} ${c.demonym} (${c.name})`;
-}
-
-function getCountrySubtitle(c: CountryItem): string | undefined {
-  return `${c.name} — ${c.localDemonym !== c.name ? c.localDemonym : ""}`;
-}
-
-function getCountryBadge(c: CountryItem): string | undefined {
-  return c.alpha2;
+  const name =
+    isAr() && !NATIONALITY_MESSAGES[c.alpha2] ? c.name_ar : c.demonym;
+  return `${c.emoji} ${name}`;
 }
 
 function handleChange(val: string | null) {
@@ -171,8 +169,6 @@ function handleChange(val: string | null) {
   {id}
   getItemValue={getCountryValue}
   getItemLabel={getCountryLabel}
-  getItemSubtitle={getCountrySubtitle}
-  getItemBadge={getCountryBadge}
   onchange={handleChange}
   class={className}
 />

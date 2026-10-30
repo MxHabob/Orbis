@@ -148,6 +148,7 @@ import type {
   PaymentDto,
   ProcessPaymentRequest,
   CurrencyDto,
+  CurrencyInput,
   FolderDto,
   FolderContentsDto,
   CreateFolderRequest,
@@ -2116,6 +2117,8 @@ export interface OrbisApiClient {
   ): Promise<PaginatedList<PaymentDto>>;
   deletePayment(id: string): Promise<boolean>;
   listCurrencies(): Promise<CurrencyDto[]>;
+  createCurrency(request: CurrencyInput): Promise<void>;
+  updateCurrency(code: string, request: CurrencyInput): Promise<void>;
   listJournalEntries(): Promise<JournalEntryDto[]>;
   getJournalEntry(id: string): Promise<JournalEntryDto>;
   createJournalEntry(req: CreateJournalEntryRequest): Promise<JournalEntryDto>;

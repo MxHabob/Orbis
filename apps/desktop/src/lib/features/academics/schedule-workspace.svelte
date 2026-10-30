@@ -340,6 +340,26 @@ function openEditLessonSheet(lesson: any) {
   isLessonSheetOpen = true;
 }
 
+function openLessonAttendance(lesson: any) {
+  if (!lesson.section_id || !lesson.id) return;
+
+  const date = new Date();
+  const dayOffset = (Number(lesson.day_of_week) - 1 - date.getDay() + 7) % 7;
+  date.setDate(date.getDate() + dayOffset);
+  const dateValue = [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+  const params = new URLSearchParams({
+    classId: String(lesson.section_id),
+    lessonId: String(lesson.id),
+    date: dateValue,
+  });
+
+  goto(localizeHref(`/${orgId}/academics/attendance?${params.toString()}`));
+}
+
 async function handleMoveLesson(
   lesson: any,
   _targetDay: number,
@@ -645,6 +665,7 @@ function handleDirectPrint() {
             onCellClick={(day, slotId) => openNewLessonSheet(day, slotId)}
             onEditLesson={openEditLessonSheet}
             onLessonClick={openEditLessonSheet}
+            onAttendanceClick={openLessonAttendance}
             onDeleteLesson={handleDeleteLesson}
             onMoveLesson={handleMoveLesson}
           />

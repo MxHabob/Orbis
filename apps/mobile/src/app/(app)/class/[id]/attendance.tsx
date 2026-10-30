@@ -5,13 +5,15 @@ import { StudentRecordLayout } from "@/components/student-record-layout";
 import {
   useBatchMarkAttendanceMutation,
   useClassAttendanceQuery,
+  useClassScheduleQuery,
   useTeacherClassDataQuery,
+  type StudentScheduleItem,
+  type TeacherRosterEntry,
 } from "@/hooks/use-api-queries";
 import { useEffectiveContext } from "@/providers/effective-context";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/types";
 import type { AttendanceDto } from "@/lib/api/types";
-import type { TeacherRosterEntry } from "@/hooks/use-api-queries";
 import { useToast } from "@/components/ui/toast";
 import { useLocalSearchParams } from "expo-router";
 import { useMemo, useState } from "react";
@@ -34,6 +36,14 @@ function getLocalDate(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
+function isValidDate(value: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return (
+    !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+  );
+}
+
 function shiftDate(value: string, amount: number) {
   const [year, month, day] = value.split("-").map(Number);
   const date = new Date(year, month - 1, day);
@@ -42,13 +52,29 @@ function shiftDate(value: string, amount: number) {
 }
 
 export default function ClassAttendanceScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const {
+    id,
+    lessonId,
+    date: requestedDate,
+  } = useLocalSearchParams<{
+    id: string;
+    lessonId?: string;
+    date?: string;
+  }>();
   const classId = typeof id === "string" ? id : undefined;
-  const [date, setDate] = useState(() => getLocalDate(new Date()));
+  const initialDate =
+    typeof requestedDate === "string" && isValidDate(requestedDate)
+      ? requestedDate
+      : getLocalDate(new Date());
+  const [date, setDate] = useState(initialDate);
+  const [selectedLessonId, setSelectedLessonId] = useState(
+    typeof lessonId === "string" ? lessonId : "",
+  );
   const [selectedStatuses, setSelectedStatuses] = useState<
     Record<string, string>
   >({});
   const classQuery = useTeacherClassDataQuery(classId);
+  const scheduleQuery = useClassScheduleQuery(classId);
   const attendanceQuery = useClassAttendanceQuery(
     classId,
     date,
@@ -59,37 +85,74 @@ export default function ClassAttendanceScreen() {
   const { t, isArabic, formatDate } = useI18n();
   const toast = useToast();
   const canRecord = hasPermission("attendance:write");
+  const weekday = new Date(`${date}T12:00:00`).getDay() + 1;
+  const lessonsToday = useMemo(
+    () =>
+      (scheduleQuery.data ?? []).filter(
+        (item: StudentScheduleItem) =>
+          item.timeSlot.day_of_week === weekday && !item.timeSlot.is_break,
+      ),
+    [scheduleQuery.data, weekday],
+  );
+  const selectedLesson =
+    lessonsToday.find(({ lesson }) => lesson.id === selectedLessonId) ??
+    (lessonsToday.length === 1 ? lessonsToday[0] : undefined);
+  const activeLessonId = selectedLesson?.lesson.id;
   const recordedByStudent = useMemo(
     () =>
       new Map(
-        (attendanceQuery.data ?? []).map((record: AttendanceDto) => [
-          record.student_id,
-          record,
-        ]),
+        (attendanceQuery.data ?? [])
+          .filter(
+            (record: AttendanceDto) =>
+              record.scheduled_lesson_id === activeLessonId &&
+              record.section_subject_id ===
+                selectedLesson?.lesson.section_subject_id,
+          )
+          .map((record: AttendanceDto) => [record.student_id, record]),
       ),
-    [attendanceQuery.data],
+    [activeLessonId, attendanceQuery.data, selectedLesson],
   );
   const roster = classQuery.data?.roster ?? [];
-  const markedCount = roster.filter(
-    ({ student }: TeacherRosterEntry) =>
-      !recordedByStudent.has(student.id) && selectedStatuses[student.id],
-  ).length;
+  const markedCount = roster.filter(({ student }: TeacherRosterEntry) => {
+    const status = selectedStatuses[student.id];
+    const existingStatus = recordedByStudent
+      .get(student.id)
+      ?.status.toLowerCase();
+    return status && status !== existingStatus;
+  }).length;
   const isPending =
-    classQuery.isInScope && (classQuery.isPending || attendanceQuery.isPending);
+    classQuery.isInScope &&
+    (classQuery.isPending ||
+      scheduleQuery.isPending ||
+      attendanceQuery.isPending);
   const isError =
-    !classQuery.isInScope || classQuery.isError || attendanceQuery.isError;
+    !classQuery.isInScope ||
+    classQuery.isError ||
+    scheduleQuery.isError ||
+    attendanceQuery.isError;
 
   const saveAttendance = async () => {
-    if (!classId || !canRecord) return;
+    if (!classId || !canRecord || !selectedLesson) return;
     const items = roster.flatMap(({ student }: TeacherRosterEntry) => {
       const status = selectedStatuses[student.id];
-      if (!status || recordedByStudent.has(student.id)) return [];
-      return [{ student_id: student.id, status }];
+      const existingStatus = recordedByStudent
+        .get(student.id)
+        ?.status.toLowerCase();
+      if (!status || status === existingStatus) return [];
+      return [
+        {
+          student_id: student.id,
+          status,
+          section_subject_id: selectedLesson.lesson.section_subject_id,
+          scheduled_lesson_id: selectedLesson.lesson.id,
+        },
+      ];
     });
     if (items.length === 0) return;
     try {
       await mutation.mutateAsync({ section_id: classId, date, items });
       setSelectedStatuses({});
+      await attendanceQuery.refetch();
       toast.success(t("teacher_save_success"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("common_error"));
@@ -107,6 +170,7 @@ export default function ClassAttendanceScreen() {
       }
       onRetry={() => {
         void classQuery.refetch();
+        void scheduleQuery.refetch();
         void attendanceQuery.refetch();
       }}
     >
@@ -117,6 +181,7 @@ export default function ClassAttendanceScreen() {
             accessibilityLabel={t("teacher_previous_day")}
             onPress={() => {
               setDate((current) => shiftDate(current, -1));
+              setSelectedLessonId("");
               setSelectedStatuses({});
             }}
             className="rounded-md border border-border bg-card px-three py-two"
@@ -138,6 +203,7 @@ export default function ClassAttendanceScreen() {
             accessibilityLabel={t("teacher_next_day")}
             onPress={() => {
               setDate((current) => shiftDate(current, 1));
+              setSelectedLessonId("");
               setSelectedStatuses({});
             }}
             className="rounded-md border border-border bg-card px-three py-two"
@@ -147,12 +213,72 @@ export default function ClassAttendanceScreen() {
         </View>
         {!canRecord ? (
           <EmptyState title={t("teacher_no_permission")} />
+        ) : scheduleQuery.data && lessonsToday.length === 0 ? (
+          <EmptyState
+            title={t("teacher_no_lesson_today")}
+            description={t("teacher_no_lesson_today_hint")}
+          />
+        ) : lessonsToday.length > 1 && !selectedLesson ? (
+          <View className="gap-three">
+            <Text className="text-sm font-semibold text-foreground">
+              {t("teacher_select_lesson")}
+            </Text>
+            {lessonsToday.map(({ lesson, timeSlot, subject }) => {
+              const isSelected = selectedLessonId === lesson.id;
+              const subjectName = isArabic
+                ? subject?.name_ar || subject?.name
+                : subject?.name || subject?.name_ar;
+              return (
+                <Pressable
+                  key={lesson.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => {
+                    setSelectedLessonId(lesson.id);
+                    setSelectedStatuses({});
+                  }}
+                  className={`min-h-12 rounded-md border px-four py-three ${
+                    isSelected
+                      ? "border-primary bg-primary/10"
+                      : "border-border bg-card"
+                  }`}
+                >
+                  <Text className="text-sm font-semibold text-foreground">
+                    {subjectName || t("domain_schedule")}
+                  </Text>
+                  <Text className="mt-one text-xs text-muted-foreground">
+                    {timeSlot.start_time} – {timeSlot.end_time}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : !selectedLesson ? (
+          <EmptyState
+            title={t("teacher_select_lesson")}
+            description={t("teacher_select_lesson_hint")}
+          />
         ) : roster.length === 0 ? (
           <EmptyState title={t("teacher_no_students")} />
         ) : (
           <>
+            <View className="gap-one">
+              <Text className="text-base font-semibold text-foreground">
+                {isArabic
+                  ? selectedLesson.subject?.name_ar ||
+                    selectedLesson.subject?.name
+                  : selectedLesson.subject?.name ||
+                    selectedLesson.subject?.name_ar}
+              </Text>
+              <Text className="text-xs text-muted-foreground">
+                {selectedLesson.timeSlot.start_time} –{" "}
+                {selectedLesson.timeSlot.end_time}
+              </Text>
+            </View>
             {roster.map(({ student, enrollment }: TeacherRosterEntry) => {
               const record = recordedByStudent.get(student.id);
+              const selectedStatus =
+                selectedStatuses[student.id] ?? record?.status.toLowerCase();
               const studentName = isArabic
                 ? student.name_ar || student.full_name
                 : student.display_name || student.full_name;
@@ -169,60 +295,47 @@ export default function ClassAttendanceScreen() {
                     </View>
                     {record ? (
                       <Text className="text-xs font-medium text-success">
-                        {t("teacher_already_recorded")}:{" "}
-                        {attendanceOptions.find(
-                          (option) =>
-                            option.value === record.status.toLowerCase(),
-                        )
-                          ? t(
-                              attendanceOptions.find(
-                                (option) =>
-                                  option.value === record.status.toLowerCase(),
-                              )!.key,
-                            )
-                          : record.status}
+                        {t("teacher_already_recorded")}
                       </Text>
-                    ) : (
-                      <View className="gap-two">
-                        <Text className="text-xs text-muted-foreground">
-                          {t("teacher_select_status")}
-                        </Text>
-                        <View className="flex-row flex-wrap gap-two">
-                          {attendanceOptions.map((option) => {
-                            const isSelected =
-                              selectedStatuses[student.id] === option.value;
-                            return (
-                              <Pressable
-                                key={option.value}
-                                accessibilityRole="button"
-                                accessibilityState={{ selected: isSelected }}
-                                onPress={() =>
-                                  setSelectedStatuses((current) => ({
-                                    ...current,
-                                    [student.id]: option.value,
-                                  }))
-                                }
-                                className={`min-h-10 items-center justify-center rounded-md border px-three py-two ${
+                    ) : null}
+                    <View className="gap-two">
+                      <Text className="text-xs text-muted-foreground">
+                        {t("teacher_select_status")}
+                      </Text>
+                      <View className="flex-row flex-wrap gap-two">
+                        {attendanceOptions.map((option) => {
+                          const isSelected = selectedStatus === option.value;
+                          return (
+                            <Pressable
+                              key={option.value}
+                              accessibilityRole="button"
+                              accessibilityState={{ selected: isSelected }}
+                              onPress={() =>
+                                setSelectedStatuses((current) => ({
+                                  ...current,
+                                  [student.id]: option.value,
+                                }))
+                              }
+                              className={`min-h-11 items-center justify-center rounded-md border px-three py-two ${
+                                isSelected
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border bg-card"
+                              }`}
+                            >
+                              <Text
+                                className={`text-xs font-semibold ${
                                   isSelected
-                                    ? "border-primary bg-primary/10"
-                                    : "border-border bg-card"
+                                    ? "text-primary"
+                                    : "text-foreground"
                                 }`}
                               >
-                                <Text
-                                  className={`text-xs font-semibold ${
-                                    isSelected
-                                      ? "text-primary"
-                                      : "text-foreground"
-                                  }`}
-                                >
-                                  {t(option.key)}
-                                </Text>
-                              </Pressable>
-                            );
-                          })}
-                        </View>
+                                {t(option.key)}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
                       </View>
-                    )}
+                    </View>
                   </View>
                 </Card>
               );
@@ -231,7 +344,11 @@ export default function ClassAttendanceScreen() {
               title={t("teacher_save_attendance")}
               onPress={() => void saveAttendance()}
               loading={mutation.isPending}
-              disabled={markedCount === 0 || attendanceQuery.isPending}
+              disabled={
+                markedCount === 0 ||
+                attendanceQuery.isPending ||
+                !selectedLesson
+              }
               fullWidth
             />
           </>

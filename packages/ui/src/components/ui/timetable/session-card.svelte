@@ -2,6 +2,7 @@
 import {
   AdjustmentsHorizontal,
   BookOpen,
+  CheckSquare,
   ClockRotateRight,
   InfoCircle,
   Pencil,
@@ -29,6 +30,7 @@ interface Props {
   onDelete?: (id: string) => void;
   onEdit?: (lesson: any) => void;
   onClick?: (lesson: any) => void;
+  onAttendance?: (lesson: any) => void;
 }
 
 let {
@@ -49,6 +51,7 @@ let {
   onDelete,
   onEdit,
   onClick,
+  onAttendance,
 }: Props = $props();
 
 const isArabic = $derived(locale === "ar");
@@ -126,6 +129,11 @@ function handleEditClick(e: MouseEvent) {
 function handleDeleteClick(e: MouseEvent) {
   e.stopPropagation();
   onDelete?.(lesson.id);
+}
+
+function handleAttendanceClick(e: MouseEvent) {
+  e.stopPropagation();
+  onAttendance?.(lesson);
 }
 
 function handleDragStart(e: DragEvent) {
@@ -231,8 +239,20 @@ function handleDragStart(e: DragEvent) {
     </span>
 
     <!-- Hover Micro-Actions -->
-    {#if !isDraft && (onEdit || onDelete)}
-      <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+    {#if !isDraft && (onAttendance || onEdit || onDelete)}
+      <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+        {#if onAttendance}
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-7 w-7 rounded p-0 text-muted-foreground hover:text-primary"
+            onclick={handleAttendanceClick}
+            aria-label={isArabic ? "تسجيل الحضور" : "Record attendance"}
+            title={isArabic ? "تسجيل الحضور" : "Record attendance"}
+          >
+            <CheckSquare size={13} />
+          </Button>
+        {/if}
         {#if onEdit}
           <Button
             variant="ghost"

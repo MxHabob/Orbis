@@ -80,6 +80,8 @@ import type {
   CreateCalendarResponses,
   CreateCourseData,
   CreateCourseResponses,
+  CreateCurrencyData,
+  CreateCurrencyResponses,
   CreateCustomReportData,
   CreateCustomReportResponses,
   CreateDeploymentData,
@@ -570,6 +572,8 @@ import type {
   UnlockPeriodResponses,
   UpdateAccountData,
   UpdateAccountResponses,
+  UpdateCurrencyData,
+  UpdateCurrencyResponses,
   UpdateCurrentOrgData,
   UpdateCurrentOrgResponses,
   UpdateDeploymentData,
@@ -1434,6 +1438,38 @@ export const listCurrencies = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api/v1/currencies", ...options });
+
+export const createCurrency = <ThrowOnError extends boolean = false>(
+  options: Options<CreateCurrencyData, ThrowOnError>,
+): RequestResult<CreateCurrencyResponses, unknown, ThrowOnError> =>
+  (options.client ?? client).post<
+    CreateCurrencyResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/v1/currencies",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const updateCurrency = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateCurrencyData, ThrowOnError>,
+): RequestResult<UpdateCurrencyResponses, unknown, ThrowOnError> =>
+  (options.client ?? client).patch<
+    UpdateCurrencyResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/v1/currencies/{code}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const listDiscountTemplates = <ThrowOnError extends boolean = false>(
   options?: Options<ListDiscountTemplatesData, ThrowOnError>,
