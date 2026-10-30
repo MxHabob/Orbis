@@ -142,7 +142,7 @@ impl<'a> LayoutEngine<'a> {
                             };
                             let font_size = text_props.font_size as f32;
                             let line_height =
-                                text_props.line_height.unwrap_or(text_props.font_size * 1.2) as f32;
+                                resolve_text_line_height(font_size, text_props.line_height);
 
                             let (measured_w, height) = measure_text_size(
                                 &text_props.content,
@@ -353,7 +353,10 @@ fn layout_absolute_node(
                 color: col,
                 text_align: align,
                 direction: dir,
-                line_height: n.props.line_height.unwrap_or(n.props.font_size * 1.2) as f32,
+                line_height: resolve_text_line_height(
+                    n.props.font_size as f32,
+                    n.props.line_height,
+                ),
             })])
         }
         EvaluatedNode::Image(n) => {
@@ -1114,6 +1117,20 @@ fn measure_text_size(
     (max_run_width, final_height)
 }
 
+fn resolve_text_line_height(font_size: f32, line_height: Option<f64>) -> f32 {
+    let value = line_height
+        .map(|value| value as f32)
+        .filter(|value| value.is_finite() && *value > 0.0)
+        .unwrap_or(1.2);
+
+    // The editor stores CSS ratios; retain support for older documents storing point values.
+    if value <= 3.0 {
+        font_size * value
+    } else {
+        value
+    }
+}
+
 // ── Extract Positioned Elements ────────────────────────────────
 
 fn extract_positioned_elements(
@@ -1154,7 +1171,10 @@ fn extract_positioned_elements(
                 color: col,
                 text_align: align,
                 direction: dir,
-                line_height: n.props.line_height.unwrap_or(n.props.font_size * 1.2) as f32,
+                line_height: resolve_text_line_height(
+                    n.props.font_size as f32,
+                    n.props.line_height,
+                ),
             }));
         }
         EvaluatedNode::Separator(n) => {
@@ -1243,6 +1263,14 @@ mod tests {
     use crate::model::document::*;
     use crate::model::nodes::*;
     use serde_json::json;
+
+    #[test]
+    fn test_text_line_height_converts_editor_ratio_to_points() {
+        assert!((resolve_text_line_height(14.0, Some(1.5)) - 21.0).abs() < 0.01);
+        assert!((resolve_text_line_height(12.0, Some(15.0)) - 15.0).abs() < 0.01);
+        assert!((resolve_text_line_height(14.0, None) - 16.8).abs() < 0.01);
+        assert!((resolve_text_line_height(14.0, Some(f64::NAN)) - 16.8).abs() < 0.01);
+    }
 
     #[test]
     fn page_dimensions_follow_orientation_for_presets_and_custom_sizes() {
