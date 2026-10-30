@@ -411,8 +411,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .map(|slot| (slot.id, slot.period_id))
             .collect();
         for lesson in lessons {
-            let Some((_, section_period_id)) =
-                section_by_offering.get(&lesson.section_subject_id)
+            let Some((_, section_period_id)) = section_by_offering.get(&lesson.section_subject_id)
             else {
                 return Err(DomainError::NotFound("Section subject not found".into()));
             };
@@ -421,8 +420,7 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             };
             if section_period_id != slot_period_id {
                 return Err(DomainError::Validation(
-                    "Section subject and time slot must belong to the same academic period"
-                        .into(),
+                    "Section subject and time slot must belong to the same academic period".into(),
                 ));
             }
         }

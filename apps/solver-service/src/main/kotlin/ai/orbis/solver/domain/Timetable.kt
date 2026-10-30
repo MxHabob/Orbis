@@ -20,7 +20,7 @@ class Timetable {
     var rooms: List<Room> = emptyList()
 
     @ValueRangeProvider
-    var days: List<Int> = listOf(0, 1, 2, 3, 4, 5, 6)
+    var days: List<Int> = emptyList()
 
     @PlanningEntityCollectionProperty
     var assignments: List<@JvmSuppressWildcards LessonAssignment> = emptyList()

@@ -108,9 +108,7 @@ const availableSubjects = $derived.by(() => {
   return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
 });
 const selectedSectionSubject = $derived(
-  SectionSubjects.find(
-    (item) => String(item.subject_id) === selectedSubjectId,
-  ),
+  SectionSubjects.find((item) => String(item.subject_id) === selectedSubjectId),
 );
 const availableTeachers = $derived.by(() => {
   const linkedIds = SectionSubjects.filter(

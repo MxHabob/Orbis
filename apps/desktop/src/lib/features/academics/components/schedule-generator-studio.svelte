@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation";
 import { resolve } from "$app/paths";
 import { page } from "$app/state";
-import { formatDate } from "$lib/core/i18n";
+import { formatDate, getWeekdayOptions } from "$lib/core/i18n";
 import {
   api,
   extractErrorMessage,
@@ -11,7 +11,6 @@ import {
   type TimetableProblem,
   type TimetableSolveStatusDto,
 } from "$lib/api";
-import { localizeHref } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { toast } from "@orbis/ui";
@@ -196,6 +195,7 @@ const subjectById = $derived(
 const sectionSubjectById = $derived(
   new Map(sectionSubjects.map((item) => [item.id, item])),
 );
+const roomIds = $derived(new Set(rooms.map((room) => room.id)));
 const timeSlotById = $derived(
   new Map(timeSlots.map((slot) => [slot.id, slot])),
 );
@@ -243,7 +243,8 @@ const invalidPinnedLessons = $derived(
       !item ||
       !slot ||
       slot.is_break ||
-      !(lesson.teacher_id || item.instructor_id)
+      !(lesson.teacher_id || item.instructor_id) ||
+      (lesson.room_id != null && !roomIds.has(lesson.room_id))
     );
   }),
 );
@@ -341,6 +342,9 @@ const solveStatusQuery = createQuery(() => ({
 const solveStatus = $derived(
   (solveStatusQuery.data ?? null) as TimetableSolveStatusDto | null,
 );
+const hasFeasibleSolution = $derived(
+  /^0hard(?:\/|$)/.test(solveStatus?.score ?? ""),
+);
 const solutionAssignments = $derived(
   solveStatus?.best_solution?.assignments ?? [],
 );
@@ -383,6 +387,7 @@ const canGenerate = $derived(
 );
 const canApplySolution = $derived(
   solveStatus?.status === "completed" &&
+    hasFeasibleSolution &&
     unplacedAssignmentCount === 0 &&
     newSolutionAssignments.length > 0 &&
     !activeJobApplied &&
@@ -394,9 +399,12 @@ const slotIndexes = $derived(
   ),
 );
 const weekdays = $derived.by(() => {
-  const days = [...new Set(timeSlots.map((slot) => slot.day_of_week))];
-  const order = [7, 1, 2, 3, 4, 5, 6];
-  return days.sort((left, right) => order.indexOf(left) - order.indexOf(right));
+  const order = new Map(
+    getWeekdayOptions().map((weekday, index) => [weekday.value, index]),
+  );
+  return [...new Set(timeSlots.map((slot) => slot.day_of_week))]
+    .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+    .sort((left, right) => (order.get(left) ?? 0) - (order.get(right) ?? 0));
 });
 const teacherWorkloads = $derived.by(() => {
   const loads = new Map<string, number>();
@@ -415,9 +423,7 @@ const selectedScheduleClassId = $derived(
     classesWithCurriculum[0]?.id ||
     "",
 );
-const visibleDays = $derived(
-  weekdays.length > 0 ? weekdays : [7, 1, 2, 3, 4, 5],
-);
+const visibleDays = $derived(weekdays);
 const visibleSubjects = $derived(
   subjects.filter(
     (subject) =>
@@ -482,16 +488,10 @@ function getRoomName(roomId?: string | null): string {
 }
 
 function getDayName(day: number): string {
-  const labels: Record<number, () => string> = {
-    1: m.common_day_sunday,
-    2: m.common_day_monday,
-    3: m.common_day_tuesday,
-    4: m.common_day_wednesday,
-    5: m.common_day_thursday,
-    6: m.common_day_friday,
-    7: m.common_day_saturday,
-  };
-  return labels[day]?.() ?? String(day);
+  return (
+    getWeekdayOptions().find((weekday) => weekday.value === day)?.label ??
+    String(day)
+  );
 }
 
 function lessonsForDay(day: number) {
@@ -717,15 +717,15 @@ async function handleApplySolution() {
 }
 
 function openSchedule() {
-  goto(resolve(localizeHref(`/${orgId}/academics/schedule`)));
+  goto(resolve("/(app)/[orgId]/academics/schedule", { orgId }));
 }
 
 function openYearSettings() {
-  goto(resolve(localizeHref(`/${orgId}/settings/academic-calendars`)));
+  goto(resolve("/(app)/[orgId]/settings/academic-calendars", { orgId }));
 }
 
 function openPeriodSettings() {
-  goto(resolve(localizeHref(`/${orgId}/settings/periods`)));
+  goto(resolve("/(app)/[orgId]/settings/periods", { orgId }));
 }
 
 const pageError = $derived(
@@ -1432,6 +1432,11 @@ const pageError = $derived(
                     {#if unplacedAssignmentCount > 0}
                       <p class="mt-1 text-destructive">
                         {m.academics_studio_unplaced_lessons({ count: unplacedAssignmentCount })}
+                      </p>
+                    {/if}
+                    {#if !hasFeasibleSolution}
+                      <p class="mt-1 text-destructive">
+                        {m.academics_studio_infeasible_solution()}
                       </p>
                     {/if}
                   </div>

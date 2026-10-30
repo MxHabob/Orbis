@@ -13,7 +13,7 @@ import {
   type ScheduleLessonRequest,
   type OrgUnitDto,
 } from "$lib/api";
-import { getLocale, localizeHref } from "$lib/paraglide/runtime";
+import { getLocale } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { TimetableGrid } from "@orbis/ui";
@@ -454,11 +454,7 @@ function openLessonAttendance(lesson: any) {
   });
 
   goto(
-    resolve(
-      localizeHref(
-        `/${orgId}/academics/attendance?${params.toString()}`,
-      ),
-    ),
+    `${resolve("/(app)/[orgId]/academics/attendance", { orgId })}?${params.toString()}`,
   );
 }
 
@@ -571,7 +567,8 @@ function handleDirectPrint() {
 
   const scheduleRows = timeSlots.map((slot) => {
     const isBreak = Boolean(slot.is_break);
-    const slotName = l(slot.name_ar ?? undefined, slot.name) || `P${slot.slot_index}`;
+    const slotName =
+      l(slot.name_ar ?? undefined, slot.name) || `P${slot.slot_index}`;
     const timeRange = `${slot.start_time?.slice(0, 5) || ""} - ${slot.end_time?.slice(0, 5) || ""}`;
     const rowObj: Record<string, string> = {
       slotName: `${slotName} (${timeRange})`,
@@ -674,11 +671,7 @@ function handleDirectPrint() {
     }}
     onAutoScheduleClick={() =>
       goto(
-        resolve(
-          localizeHref(
-            `/${orgId}/academics/schedule/generator?periodId=${effectiveActivePeriodId}`,
-          ),
-        ),
+        `${resolve("/(app)/[orgId]/academics/schedule/generator", { orgId })}?periodId=${effectiveActivePeriodId}`,
       )}
     onTimeSlotsClick={() => (isTimeSlotsSheetOpen = true)}
     onExportClick={handleDirectPrint}
@@ -724,7 +717,7 @@ function handleDirectPrint() {
           description={m.academics_schedule_no_periods_desc()}
           actionLabel={m.academics_studio_manage_periods()}
           onaction={() =>
-            goto(resolve(localizeHref(`/${orgId}/settings/periods`)))}
+            goto(resolve("/(app)/[orgId]/settings/periods", { orgId }))}
           class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
         />
       {:else if timeSlots.length === 0}

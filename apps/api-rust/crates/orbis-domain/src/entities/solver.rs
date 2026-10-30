@@ -61,9 +61,9 @@ pub struct RoomDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LessonAssignmentDto {
     pub id: String,
-    #[serde(rename = "class_subject_id", alias = "section_subject_id")]
+    #[serde(rename = "section_subject_id", alias = "class_subject_id")]
     pub section_subject_id: String,
-    #[serde(rename = "class_id", alias = "section_id")]
+    #[serde(rename = "section_id", alias = "class_id")]
     pub section_id: String,
     pub subject_id: String,
     pub teacher_id: String,
@@ -79,11 +79,11 @@ pub struct LessonAssignmentDto {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PinnedLessonDto {
     pub id: String,
-    #[serde(rename = "class_id", alias = "section_id")]
+    #[serde(rename = "section_id", alias = "class_id")]
     pub section_id: String,
     pub teacher_id: String,
     pub subject_id: String,
-    #[serde(rename = "class_subject_id", alias = "section_subject_id")]
+    #[serde(rename = "section_subject_id", alias = "class_subject_id")]
     pub section_subject_id: String,
     pub time_slot_id: String,
     pub day_of_week: i32,
