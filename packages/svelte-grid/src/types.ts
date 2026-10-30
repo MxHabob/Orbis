@@ -143,6 +143,8 @@ export interface GridActionEvent {
   rowIndex: number;
   prop: string;
   originalEvent: MouseEvent | KeyboardEvent | PointerEvent;
+  selected?: boolean;
+  selectedIds?: string[];
 }
 
 export interface ActionItem {

@@ -252,10 +252,24 @@ function handleGridAction(event: GridActionEvent) {
     const id = String(event.row?.id || "");
     if (!id) return;
     const newSet = new Set(selectedIds);
-    if (newSet.has(id)) {
+    if (
+      event.selected === false ||
+      (event.selected === undefined && newSet.has(id))
+    ) {
       newSet.delete(id);
     } else {
       newSet.add(id);
+    }
+    selectedIds = newSet;
+    onSelectionChange?.(newSet);
+  } else if (event.actionId === "select-all") {
+    const newSet = new Set(selectedIds);
+    for (const id of event.selectedIds ?? []) {
+      if (event.selected) {
+        newSet.add(id);
+      } else {
+        newSet.delete(id);
+      }
     }
     selectedIds = newSet;
     onSelectionChange?.(newSet);
