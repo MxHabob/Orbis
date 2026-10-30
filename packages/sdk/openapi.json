@@ -6095,6 +6095,38 @@
           }
         },
         "security": [{ "bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Scheduling"],
+        "operationId": "update_lesson",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Scheduled Lesson ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ScheduleLessonRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledLessonDto" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }]
       }
     },
     "/api/v1/section-subjects": {

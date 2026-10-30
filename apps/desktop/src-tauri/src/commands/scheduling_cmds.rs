@@ -486,6 +486,42 @@ pub async fn scheduling_schedule_lesson(
 }
 
 #[tauri::command]
+pub async fn scheduling_update_scheduled_lesson(
+    id: String,
+    request: ScheduleLessonInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<ScheduledLessonDto>, String> {
+    let ctx = make_ctx(&state);
+    let id = Uuid::parse_str(&id).map_err(|_| "Invalid scheduled lesson ID")?;
+    let section_subject_id =
+        Uuid::parse_str(&request.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
+    let time_slot_id = Uuid::parse_str(&request.time_slot_id).map_err(|_| "Invalid timeSlotId")?;
+    let room_id = request
+        .room_id
+        .map(|room_id| Uuid::parse_str(&room_id).map_err(|_| "Invalid room ID"))
+        .transpose()?;
+    let teacher_id = request
+        .teacher_id
+        .map(|teacher_id| Uuid::parse_str(&teacher_id).map_err(|_| "Invalid teacher ID"))
+        .transpose()?;
+
+    let lesson = state
+        .scheduling_service
+        .update_scheduled_lesson(
+            &ctx,
+            id,
+            section_subject_id,
+            time_slot_id,
+            room_id,
+            teacher_id,
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+
+    Ok(ok(lesson_dto(lesson)))
+}
+
+#[tauri::command]
 pub async fn scheduling_bulk_schedule_lessons(
     request: BulkScheduleLessonsInput,
     state: State<'_, AppState>,

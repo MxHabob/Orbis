@@ -3,7 +3,6 @@ import { ClockRotateRight, Plus } from "@orbis/icons";
 import SessionCard from "./session-card.svelte";
 import TimeGutter from "./time-gutter.svelte";
 import CalendarHeader from "./calendar-header.svelte";
-import BreakRow from "./break-row.svelte";
 import { enrichTimeSlots, type EnrichedTimeSlot } from "./utils";
 
 interface Props {
@@ -63,6 +62,26 @@ const enrichedSlots = $derived<EnrichedTimeSlot[]>(
     ? timeSlots
     : enrichTimeSlots(timeSlots, locale),
 );
+
+const slotIndexes = $derived(
+  [
+    ...new Set(
+      enrichedSlots.map((slot) => Number(slot.slot_index ?? slot.slot_number)),
+    ),
+  ]
+    .filter((slotIndex) => Number.isInteger(slotIndex) && slotIndex > 0)
+    .sort((left, right) => left - right),
+);
+const slotsByDayAndIndex = $derived.by(() => {
+  const slots = new Map<string, EnrichedTimeSlot>();
+  for (const slot of enrichedSlots) {
+    slots.set(
+      `${Number(slot.day_of_week)}:${Number(slot.slot_index ?? slot.slot_number)}`,
+      slot,
+    );
+  }
+  return slots;
+});
 
 // Build quick map of lessons by day and slot
 const lessonMatrix = $derived.by(() => {
@@ -153,43 +172,41 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
 
     <!-- Body: Unified row-by-row structure containing Gutter + Columns -->
     <div class="flex flex-col min-w-[700px] flex-1">
-      {#each enrichedSlots as slot (slot.id)}
-        {@const isBreak = Boolean(slot.is_break)}
-        {#if isBreak}
-          <!-- Break Row: Gutter Cell + Break Banner (physically in the same horizontal row) -->
-          <div class="flex w-full border-b border-border/40 last:border-b-0 min-h-[38px] bg-primary/5">
-            <TimeGutter  {slot} {locale} {compact} />
-            <BreakRow {slot} weekdaysCount={weekdays.length} {locale} />
-          </div>
-        {:else}
-          <!-- Lesson Row: Gutter Cell + Weekday Cells (physically in the same horizontal row) -->
+      {#each slotIndexes as slotIndex (slotIndex)}
+        {@const daySlots = weekdays.map((day, idx) => {
+          const dayValue = day.value ?? day.day ?? idx + 1;
+          return slotsByDayAndIndex.get(`${dayValue}:${slotIndex}`);
+        })}
+        {@const rowSlot = daySlots.find(Boolean)}
+        {#if rowSlot}
           <div class="flex w-full border-b border-border/40 last:border-b-0 min-h-[76px]">
-            <TimeGutter {slot} {locale} {compact} />
-
-            <!-- Day Columns in this row -->
+            <TimeGutter slot={rowSlot} {locale} {compact} />
             <div class="flex flex-1 min-w-0">
               {#each weekdays as day, idx (day.value ?? day.day ?? idx)}
-                {@const dayValue = day.value ?? day.day ?? (idx + 1)}
-                {@const key = `${dayValue}:${slot.id}`}
-                {@const cellLessons = lessonMatrix.get(key) || []}
+                {@const dayValue = day.value ?? day.day ?? idx + 1}
+                {@const slot = slotsByDayAndIndex.get(`${dayValue}:${slotIndex}`)}
+                {@const key = slot ? `${dayValue}:${slot.id}` : `${dayValue}:${slotIndex}`}
+                {@const cellLessons = slot ? lessonMatrix.get(key) || [] : []}
                 {@const isOver = dragOverCellKey === key}
-
-                <!-- Cell Drop Target -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
-                  ondragover={(e) => handleDragOver(e, dayValue, String(slot.id))}
-                  ondragleave={handleDragLeave}
-                  ondrop={(e) => handleDrop(e, dayValue, String(slot.id))}
-                  class="group relative flex-1 min-w-0 border-e border-border/40 p-1 text-center transition-colors last:border-e-0 flex flex-col gap-1 {isOver
+                  class="group relative flex flex-1 min-w-0 flex-col gap-1 border-e border-border/40 p-1 text-center transition-colors last:border-e-0 {isOver
                     ? 'bg-primary/10 ring-2 ring-primary ring-inset'
-                    : 'hover:bg-muted/20'}"
+                    : 'hover:bg-muted/20'} {slot?.is_break ? 'bg-primary/5' : ''}"
+                  ondragover={slot && !slot.is_break ? (e) => handleDragOver(e, dayValue, String(slot.id)) : undefined}
+                  ondragleave={slot && !slot.is_break ? handleDragLeave : undefined}
+                  ondrop={slot && !slot.is_break ? (e) => handleDrop(e, dayValue, String(slot.id)) : undefined}
                 >
-                  {#if cellLessons.length > 0}
-                    <!-- Session Cards rendered in this cell -->
+                  {#if !slot}
+                    <div class="flex min-h-16 flex-1 items-center justify-center text-[10px] text-muted-foreground/50">—</div>
+                  {:else if slot.is_break}
+                    <div class="flex min-h-16 flex-1 items-center justify-center rounded-md text-[10px] font-medium text-primary">
+                      {slot.name_ar || slot.name || (isArabic ? "استراحة" : "Break")}
+                    </div>
+                  {:else if cellLessons.length > 0}
                     {#each cellLessons as lesson (lesson.id)}
                       <SessionCard
                         {lesson}
-                        timeSlot={slot}
+                        {slot}
                         {viewMode}
                         {locale}
                         {compact}

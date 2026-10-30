@@ -57,22 +57,23 @@ async function loadData() {
 
     if (sequence !== loadSequence) return;
 
-    const enrollmentIds = new Set(enrollments.map((enrollment) => enrollment.id));
+    const enrollmentIds = new Set(
+      enrollments.map((enrollment) => enrollment.id),
+    );
     const filteredFees = feesList.filter(
       (fee) =>
         selectedClass === "all" ||
         (fee.enrollment_id != null && enrollmentIds.has(fee.enrollment_id)),
     );
     const feeIds = new Set(filteredFees.map((fee) => fee.id));
-    const filteredPayments =
-      needsEnrollmentFilter
-        ? paymentsList.filter((payment) =>
-            payment.fee_id
-              ? feeIds.has(payment.fee_id)
-              : payment.enrollment_id != null &&
-                enrollmentIds.has(payment.enrollment_id),
-          )
-        : paymentsList;
+    const filteredPayments = needsEnrollmentFilter
+      ? paymentsList.filter((payment) =>
+          payment.fee_id
+            ? feeIds.has(payment.fee_id)
+            : payment.enrollment_id != null &&
+              enrollmentIds.has(payment.enrollment_id),
+        )
+      : paymentsList;
 
     const currentMonth = new Date();
     const monthBuckets = Array.from({ length: 6 }, (_, index) => {
@@ -96,7 +97,9 @@ async function loadData() {
         collected: 0,
       };
     });
-    const monthsByKey = new Map(monthBuckets.map((month) => [month.key, month]));
+    const monthsByKey = new Map(
+      monthBuckets.map((month) => [month.key, month]),
+    );
 
     for (const fee of filteredFees) {
       const monthKey = getMonthKey(fee.due_date);
@@ -145,9 +148,7 @@ const maxVal = $derived(
   getNiceMaximum(
     Math.max(
       0,
-      ...displayData.map((month) =>
-        Math.max(month.invoiced, month.collected),
-      ),
+      ...displayData.map((month) => Math.max(month.invoiced, month.collected)),
     ) * 1.1,
   ),
 );
@@ -196,8 +197,7 @@ function handleMouseLeave() {
 function formatVal(val: number) {
   if (val >= 1000000)
     return `${(val / 1000000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (val >= 1000)
-    return `${(val / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  if (val >= 1000) return `${(val / 1000).toFixed(1).replace(/\.0$/, "")}k`;
   return `${val}`;
 }
 
@@ -217,7 +217,8 @@ function getNiceMaximum(value: number): number {
   if (!Number.isFinite(value) || value <= 0) return 1000;
   const magnitude = 10 ** Math.floor(Math.log10(value));
   const normalized = value / magnitude;
-  const step = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  const step =
+    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
   return step * magnitude;
 }
 </script>

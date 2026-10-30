@@ -3,7 +3,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -531,6 +531,38 @@ async fn schedule_lesson(
     }))
 }
 
+#[utoipa::path(patch, path = "/api/v1/scheduled-lessons/{id}",
+    params(("id" = Uuid, Path, description = "Scheduled Lesson ID")),
+    request_body = ScheduleLessonRequest,
+    responses((status = 200, body = ScheduledLessonDto)), security(("bearer" = [])), tag = "Scheduling")]
+async fn update_lesson(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(p): Json<ScheduleLessonRequest>,
+) -> Result<Json<ApiResponse<ScheduledLessonDto>>, ApiError> {
+    let lesson = state
+        .scheduling_service
+        .update_scheduled_lesson(
+            &ctx,
+            id,
+            p.section_subject_id,
+            p.time_slot_id,
+            p.room_id,
+            p.teacher_id,
+        )
+        .await?;
+    Ok(ApiResponse::ok(ScheduledLessonDto {
+        id: lesson.id,
+        section_subject_id: lesson.section_subject_id,
+        time_slot_id: lesson.time_slot_id,
+        room_id: lesson.room_id,
+        teacher_id: lesson.teacher_id,
+        created_at: lesson.created_at,
+        updated_at: lesson.updated_at,
+    }))
+}
+
 #[utoipa::path(post, path = "/api/v1/scheduled-lessons/bulk", request_body = BulkScheduleLessonsRequest,
     responses((status = 201, body = Vec<ScheduledLessonDto>)), security(("bearer" = [])), tag = "Scheduling")]
 async fn bulk_schedule_lessons(
@@ -650,5 +682,8 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/scheduled-lessons/bulk",
             post(bulk_schedule_lessons),
         )
-        .route("/api/v1/scheduled-lessons/:id", delete(delete_lesson))
+        .route(
+            "/api/v1/scheduled-lessons/:id",
+            patch(update_lesson).delete(delete_lesson),
+        )
 }

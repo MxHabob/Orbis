@@ -779,6 +779,14 @@ export class LocalClient implements OrbisApiClient {
   ): Promise<ScheduledLessonDto> {
     return unwrap(await invoke("scheduling_schedule_lesson", { request: req }));
   }
+  async updateScheduledLesson(
+    id: string,
+    req: ScheduleLessonRequest,
+  ): Promise<ScheduledLessonDto> {
+    return unwrap(
+      await invoke("scheduling_update_scheduled_lesson", { id, request: req }),
+    );
+  }
   async bulkScheduleLessons(
     req: BulkScheduleLessonsRequest,
   ): Promise<ScheduledLessonDto[]> {

@@ -7,6 +7,7 @@ export {
   formatPercent,
   formatNumber,
   formatDecimal,
+  getWeekdayOptions,
 } from "./format";
 export { l, isAr } from "./locale";
 export {

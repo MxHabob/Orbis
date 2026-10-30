@@ -1273,6 +1273,15 @@ export class RemoteClient implements OrbisApiClient {
     return this.call(sdk.scheduleLesson({ client: this.client, body: req }));
   }
 
+  async updateScheduledLesson(
+    id: string,
+    req: ScheduleLessonRequest,
+  ): Promise<ScheduledLessonDto> {
+    return this.call(
+      sdk.updateLesson({ client: this.client, path: { id }, body: req }),
+    );
+  }
+
   async bulkScheduleLessons(
     req: BulkScheduleLessonsRequest,
   ): Promise<ScheduledLessonDto[]> {

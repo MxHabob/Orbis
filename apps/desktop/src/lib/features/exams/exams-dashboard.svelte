@@ -3,12 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Card } from "@orbis/ui/card";
-import {
-  ArrowRight,
-  Calendar,
-  ChartBar,
-  DocumentCheck,
-} from "@orbis/icons";
+import { ArrowRight, Calendar, ChartBar, DocumentCheck } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/core/i18n";
 import { extractErrorMessage, type ExamSessionDto } from "$lib/api";

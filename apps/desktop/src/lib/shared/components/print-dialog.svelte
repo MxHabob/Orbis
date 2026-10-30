@@ -338,11 +338,11 @@ async function resolveContexts(): Promise<Record<string, unknown>[]> {
             avatarUrl,
             classId: enrollment?.section_id,
             className: isRtl
-              ? classInfo?.name_ar ?? classInfo?.name
+              ? (classInfo?.name_ar ?? classInfo?.name)
               : classInfo?.name,
             classNameAr: classInfo?.name_ar,
             class_name: isRtl
-              ? classInfo?.name_ar ?? classInfo?.name
+              ? (classInfo?.name_ar ?? classInfo?.name)
               : classInfo?.name,
             class_name_ar: classInfo?.name_ar,
             class_code: classInfo?.code,

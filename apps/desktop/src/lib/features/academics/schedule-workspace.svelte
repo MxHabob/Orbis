@@ -16,10 +16,16 @@ import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { toast } from "@orbis/ui";
 import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { TimetableGrid } from "@orbis/ui";
-import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Badge } from "@orbis/ui/badge";
-import { ClockRotateRight, Pin, User } from "@orbis/icons";
+import {
+  BookOpen,
+  Calendar,
+  ClockRotateRight,
+  Pin,
+  User,
+  Users,
+} from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
 
 import {
@@ -30,7 +36,8 @@ import {
   SolverDrawer,
 } from "$lib/features/academics";
 import ErrorState from "$lib/shared/components/error-state.svelte";
-import { l, formatDate } from "$lib/core/i18n";
+import EmptyState from "$lib/shared/components/empty-state.svelte";
+import { l, formatDate, getWeekdayOptions } from "$lib/core/i18n";
 import { openPrintDialog } from "$lib/stores/print.svelte";
 
 let { orgId }: { orgId: string } = $props();
@@ -48,7 +55,7 @@ let selectedRoomId = $state<string>("");
 let selectedSubjectId = $state<string>("");
 let searchTerm = $state("");
 let compactView = $state(false);
-let selectedMatrixDay = $state(7);
+let selectedMatrixDay = $state(0);
 
 // Dialog & Sheet States
 let isLessonSheetOpen = $state(false);
@@ -57,7 +64,7 @@ let isSolverDrawerOpen = $state(false);
 
 // Active Lesson for editing / creating
 let targetLesson = $state<any | null>(null);
-let activeCellDay = $state(7);
+let activeCellDay = $state(0);
 let activeCellSlotId = $state("");
 
 // AI Solver Draft State
@@ -143,18 +150,82 @@ const periodScheduleQuery = createQuery(() => ({
   staleTime: 2 * 60 * 1000,
 }));
 
+const sectionSubjectsQuery = createQuery(() => ({
+  queryKey: [
+    "all-class-subjects-matrix",
+    orgId,
+    effectiveActivePeriodId,
+    classes.map((section) => section.id).join(","),
+  ],
+  queryFn: async () => {
+    const offerings = await Promise.all(
+      classes.map((section) =>
+        api.listSectionSubjects(String(section.id), effectiveActivePeriodId),
+      ),
+    );
+    return offerings.flat();
+  },
+  enabled: !!orgId && !!effectiveActivePeriodId && classes.length > 0,
+  staleTime: 2 * 60 * 1000,
+}));
+
 const timeSlots = $derived(timeSlotsQuery.data ?? []);
 const allLessons = $derived(periodScheduleQuery.data ?? []);
+const sectionSubjects = $derived(sectionSubjectsQuery.data ?? []);
+const timeSlotsById = $derived(
+  new Map(timeSlots.map((slot) => [String(slot.id), slot])),
+);
+const sectionSubjectsById = $derived(
+  new Map(sectionSubjects.map((item) => [String(item.id), item])),
+);
 
-// Weekdays definition (Saturday - Wednesday / Thursday for regional setup)
-const weekdays = $derived([
-  { value: 7, day: 7, label: m.common_day_saturday() },
-  { value: 1, day: 1, label: m.common_day_sunday() },
-  { value: 2, day: 2, label: m.common_day_monday() },
-  { value: 3, day: 3, label: m.common_day_tuesday() },
-  { value: 4, day: 4, label: m.common_day_wednesday() },
-  { value: 5, day: 5, label: m.common_day_thursday() },
-]);
+const weekdayOptions = getWeekdayOptions();
+const weekdayOrder = new Map(
+  weekdayOptions.map((weekday, index) => [weekday.value, index]),
+);
+const weekdays = $derived(
+  [...new Set(timeSlots.map((slot) => Number(slot.day_of_week)))]
+    .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+    .sort(
+      (left, right) =>
+        (weekdayOrder.get(left) ?? 0) - (weekdayOrder.get(right) ?? 0),
+    )
+    .map((day) => ({
+      value: day,
+      day,
+      label:
+        weekdayOptions.find((weekday) => weekday.value === day)?.label ?? "",
+    })),
+);
+const activeMatrixDay = $derived(
+  weekdays.some((day) => day.value === selectedMatrixDay)
+    ? selectedMatrixDay
+    : (weekdays[0]?.value ?? 0),
+);
+
+const scheduledLessons = $derived.by(() =>
+  allLessons.flatMap((lesson) => {
+    const sectionSubject = sectionSubjectsById.get(
+      String(lesson.section_subject_id),
+    );
+    const timeSlot = timeSlotsById.get(String(lesson.time_slot_id));
+    if (!sectionSubject || !timeSlot) return [];
+
+    return [
+      {
+        ...lesson,
+        section_id: sectionSubject.section_id,
+        class_id: sectionSubject.section_id,
+        subject_id: sectionSubject.subject_id,
+        day_of_week: timeSlot.day_of_week,
+        teacher_id:
+          lesson.teacher_id ?? sectionSubject.instructor_id ?? undefined,
+        time_slot_start: timeSlot.start_time,
+        time_slot_end: timeSlot.end_time,
+      },
+    ];
+  }),
+);
 
 // Conflict Detection
 const conflictLessonIds = $derived.by(() => {
@@ -163,7 +234,7 @@ const conflictLessonIds = $derived.by(() => {
   const roomOccupancy = new Map<string, string>();
   const classOccupancy = new Map<string, string>();
 
-  for (const lesson of allLessons) {
+  for (const lesson of scheduledLessons) {
     const key = `${lesson.day_of_week}_${lesson.time_slot_id}`;
     if (lesson.teacher_id) {
       const tKey = `${key}_${lesson.teacher_id}`;
@@ -203,33 +274,47 @@ const conflictLessonIds = $derived.by(() => {
 const filteredLessons = $derived.by(() => {
   if (viewMode === "class") {
     if (!selectedClassId) return [];
-    return allLessons.filter(
+    return scheduledLessons.filter(
       (l) => String(l.section_id) === String(selectedClassId),
     );
   }
 
   if (viewMode === "teacher") {
     if (!selectedTeacherId) return [];
-    return allLessons.filter(
+    return scheduledLessons.filter(
       (l) => String(l.teacher_id) === String(selectedTeacherId),
     );
   }
 
   if (viewMode === "room") {
     if (!selectedRoomId) return [];
-    return allLessons.filter(
+    return scheduledLessons.filter(
       (l) => String(l.room_id) === String(selectedRoomId),
     );
   }
 
   if (viewMode === "subject") {
     if (!selectedSubjectId) return [];
-    return allLessons.filter(
+    return scheduledLessons.filter(
       (l) => String(l.subject_id) === String(selectedSubjectId),
     );
   }
 
-  return allLessons;
+  return scheduledLessons;
+});
+
+const searchedLessons = $derived.by(() => {
+  const query = searchTerm.trim().toLocaleLowerCase();
+  if (!query) return filteredLessons;
+
+  return filteredLessons.filter((lesson) =>
+    [
+      getSubjectName(lesson.subject_id),
+      getTeacherName(lesson.teacher_id),
+      getClassName(lesson.section_id),
+      getRoomName(lesson.room_id),
+    ].some((value) => value.toLocaleLowerCase().includes(query)),
+  );
 });
 
 // Draft Lessons for AI Scheduler Preview
@@ -281,7 +366,7 @@ function getSubjectColor(subjectId: string): string {
 // Workload summary for Teacher view
 const teacherWorkload = $derived.by(() => {
   if (viewMode !== "teacher" || !selectedTeacherId) return null;
-  const teacherLessons = allLessons.filter(
+  const teacherLessons = scheduledLessons.filter(
     (l) => String(l.teacher_id) === selectedTeacherId,
   );
   const nonBreakSlotsCount = timeSlots.filter((s) => !s.is_break).length;
@@ -297,7 +382,7 @@ const teacherWorkload = $derived.by(() => {
 // Occupancy summary for Room view
 const roomOccupancy = $derived.by(() => {
   if (viewMode !== "room" || !selectedRoomId) return null;
-  const roomLessons = allLessons.filter(
+  const roomLessons = scheduledLessons.filter(
     (l) => String(l.room_id) === selectedRoomId,
   );
   const nonBreakSlotsCount = timeSlots.filter((s) => !s.is_break).length;
@@ -327,9 +412,16 @@ function refetchSchedule() {
 
 function openNewLessonSheet(day?: number, slotId?: string) {
   targetLesson = null;
-  activeCellDay = day || 1;
-  activeCellSlotId =
-    slotId || (timeSlots[0]?.id ? String(timeSlots[0].id) : "");
+  const selectedSlot =
+    timeSlots.find((slot) => String(slot.id) === String(slotId)) ??
+    timeSlots.find(
+      (slot) => !slot.is_break && Number(slot.day_of_week) === day,
+    ) ??
+    timeSlots.find((slot) => !slot.is_break);
+  activeCellDay = Number(
+    selectedSlot?.day_of_week ?? day ?? weekdays[0]?.value ?? 1,
+  );
+  activeCellSlotId = selectedSlot ? String(selectedSlot.id) : "";
   isLessonSheetOpen = true;
 }
 
@@ -366,16 +458,13 @@ async function handleMoveLesson(
   targetSlotId: string,
 ) {
   try {
-    if (lesson.id) {
-      await api.deleteScheduledLesson(lesson.id);
-    }
     const request: ScheduleLessonRequest = {
       section_subject_id: lesson.section_subject_id,
       time_slot_id: targetSlotId,
       room_id: lesson.room_id || undefined,
       teacher_id: lesson.teacher_id || undefined,
     };
-    await api.scheduleLesson(request);
+    await api.updateScheduledLesson(lesson.id, request);
 
     toast.success(m.academics_schedule_lesson_moved());
     refetchSchedule();
@@ -401,20 +490,26 @@ const isLoading = $derived(
     subjectsQuery.isLoading ||
     teachersQuery.isLoading ||
     roomsQuery.isLoading ||
-    timeSlotsQuery.isLoading ||
-    periodScheduleQuery.isLoading,
+    (Boolean(effectiveActivePeriodId) &&
+      (timeSlotsQuery.isLoading ||
+        periodScheduleQuery.isLoading ||
+        sectionSubjectsQuery.isLoading)),
 );
 
 const error = $derived(
   periodsQuery.error ||
     classesQuery.error ||
+    subjectsQuery.error ||
+    teachersQuery.error ||
+    roomsQuery.error ||
     timeSlotsQuery.error ||
-    periodScheduleQuery.error,
+    periodScheduleQuery.error ||
+    sectionSubjectsQuery.error,
 );
 
 function handleDirectPrint() {
   const activePeriod = periods.find(
-    (p) => String(p.id) === String(activePeriodId),
+    (p) => String(p.id) === String(effectiveActivePeriodId),
   );
   const periodTitle = activePeriod
     ? l(activePeriod.name_ar, activePeriod.name) || activePeriod.name
@@ -422,7 +517,7 @@ function handleDirectPrint() {
 
   let targetId = "master";
   let targetTitle = m.academics_schedule_master_title();
-  let relevantLessons = allLessons;
+  let relevantLessons = scheduledLessons;
 
   if (viewMode === "class" && selectedClassId) {
     const cls = classes.find((c) => String(c.id) === String(selectedClassId));
@@ -430,7 +525,7 @@ function handleDirectPrint() {
     targetTitle = cls
       ? m.academics_schedule_print_class({ name: l(cls.name_ar, cls.name) })
       : m.academics_schedule_print_class_fallback();
-    relevantLessons = allLessons.filter(
+    relevantLessons = scheduledLessons.filter(
       (l) => String(l.section_id) === String(selectedClassId),
     );
   } else if (viewMode === "teacher" && selectedTeacherId) {
@@ -443,7 +538,7 @@ function handleDirectPrint() {
           name: l(teach.full_name_ar, teach.full_name),
         })
       : m.academics_schedule_print_teacher_fallback();
-    relevantLessons = allLessons.filter(
+    relevantLessons = scheduledLessons.filter(
       (l) => String(l.teacher_id) === String(selectedTeacherId),
     );
   } else if (viewMode === "room" && selectedRoomId) {
@@ -452,7 +547,7 @@ function handleDirectPrint() {
     targetTitle = rm
       ? m.academics_schedule_print_room({ name: l(rm.name_ar, rm.name) })
       : m.academics_schedule_print_room_fallback();
-    relevantLessons = allLessons.filter(
+    relevantLessons = scheduledLessons.filter(
       (l) => String(l.room_id) === String(selectedRoomId),
     );
   }
@@ -570,9 +665,26 @@ function handleDirectPrint() {
     <!-- Central Schedule Workspace Canvas -->
     <main class="flex flex-1 min-h-0 min-w-0 flex-col p-3 gap-2 overflow-hidden">
       {#if isLoading}
-        <div class="flex-1 w-full flex flex-col bg-card border border-border/60 rounded-xl overflow-hidden p-4 gap-3">
-          <Skeleton class="h-10 w-full" />
-          <Skeleton class="flex-1 w-full" />
+        <div class="flex flex-1 flex-col overflow-hidden rounded-xl border border-border/60 bg-card">
+          <div class="flex h-12 shrink-0 items-center gap-3 border-b border-border/60 px-4">
+            <Skeleton class="h-7 w-32 rounded-md" />
+            <Skeleton class="h-7 w-56 rounded-md" />
+            <Skeleton class="ms-auto h-7 w-40 rounded-md" />
+          </div>
+          <div class="grid shrink-0 grid-cols-6 border-b border-border/60">
+            {#each Array(6) as _}
+              <Skeleton class="m-2 h-7 rounded-md" />
+            {/each}
+          </div>
+          <div class="flex-1 space-y-3 overflow-hidden p-4">
+            {#each Array(5) as _}
+              <div class="grid grid-cols-6 gap-3">
+                {#each Array(6) as _}
+                  <Skeleton class="h-20 rounded-lg" />
+                {/each}
+              </div>
+            {/each}
+          </div>
         </div>
       {:else if error}
         <ErrorState
@@ -580,24 +692,31 @@ function handleDirectPrint() {
           message={error instanceof Error ? error.message : m.shared_ui_error()}
           onRetry={refetchSchedule}
         />
+      {:else if !effectiveActivePeriodId}
+        <EmptyState
+          icon={Calendar}
+          title={m.academics_studio_no_periods()}
+          description={m.academics_schedule_no_periods_desc()}
+          actionLabel={m.academics_studio_manage_periods()}
+          onaction={() => goto(localizeHref(`/${orgId}/settings/periods`))}
+          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+        />
       {:else if timeSlots.length === 0}
-        <div class="flex-1 flex flex-col items-center justify-center p-12 border border-dashed border-border/60 bg-card rounded-2xl text-center gap-4 max-w-md mx-auto my-auto">
-          <div class="p-3.5 bg-primary/10 rounded-full text-primary">
-            <ClockRotateRight size={28} />
-          </div>
-          <div class="flex flex-col gap-1">
-            <h3 class="font-bold text-sm text-foreground">
-              {m.academics_schedule_no_slots()}
-            </h3>
-            <p class="text-xs text-muted-foreground leading-relaxed">
-              {m.academics_schedule_no_slots_desc()}
-            </p>
-          </div>
-          <Button size="sm" onclick={() => (isTimeSlotsSheetOpen = true)} class="gap-1.5 text-xs font-semibold">
-            <ClockRotateRight size={13} />
-            <span>{m.academics_schedule_config_slots_btn()}</span>
-          </Button>
-        </div>
+        <EmptyState
+          icon={ClockRotateRight}
+          title={m.academics_schedule_no_slots()}
+          description={m.academics_schedule_no_slots_desc()}
+          actionLabel={m.academics_schedule_config_slots_btn()}
+          onaction={() => (isTimeSlotsSheetOpen = true)}
+          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+        />
+      {:else if classes.length === 0}
+        <EmptyState
+          icon={Users}
+          title={m.academics_schedule_no_classes()}
+          description={m.academics_schedule_no_classes_desc()}
+          class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+        />
       {:else}
         <!-- Contextual Header Info Banner (For Teacher Workload / Room Occupancy) -->
         {#if teacherWorkload}
@@ -633,13 +752,14 @@ function handleDirectPrint() {
           <ScheduleMatrix
             {timeSlots}
             {classes}
-            selectedDay={selectedMatrixDay}
-            lessons={allLessons}
+            selectedDay={activeMatrixDay}
+            lessons={scheduledLessons}
             {getSubjectName}
             {getTeacherName}
             {getClassName}
             {getRoomName}
             {getSubjectColor}
+            onDayChange={(day) => (selectedMatrixDay = day)}
             onLessonClick={openEditLessonSheet}
             onCellClick={(clsId, slotId, day) => {
               selectedClassId = clsId;
@@ -647,28 +767,67 @@ function handleDirectPrint() {
             }}
           />
         {:else}
-          <TimetableGrid
-            {timeSlots}
-            {weekdays}
-            lessons={filteredLessons}
-            {conflictLessonIds}
-            {draftLessons}
-            {previewDraft}
-            {viewMode}
-            compact={compactView}
-            locale={getLocale()}
-            {getSubjectName}
-            {getTeacherName}
-            {getClassName}
-            {getRoomName}
-            {getSubjectColor}
-            onCellClick={(day, slotId) => openNewLessonSheet(day, slotId)}
-            onEditLesson={openEditLessonSheet}
-            onLessonClick={openEditLessonSheet}
-            onAttendanceClick={openLessonAttendance}
-            onDeleteLesson={handleDeleteLesson}
-            onMoveLesson={handleMoveLesson}
-          />
+          {@const hasSelection =
+            (viewMode === "class" && !!selectedClassId) ||
+            (viewMode === "teacher" && !!selectedTeacherId) ||
+            (viewMode === "room" && !!selectedRoomId) ||
+            (viewMode === "subject" && !!selectedSubjectId)}
+          {#if !hasSelection}
+            <EmptyState
+              icon={viewMode === "class"
+                ? Users
+                : viewMode === "teacher"
+                  ? User
+                  : viewMode === "room"
+                    ? Pin
+                    : BookOpen}
+              title={viewMode === "class"
+                ? m.academics_studio_select_class()
+                : viewMode === "teacher"
+                  ? m.academics_studio_select_teacher()
+                  : viewMode === "room"
+                    ? m.academics_studio_select_room()
+                    : m.academics_schedule_select_subject()}
+              description={m.academics_schedule_choose_view_item()}
+              class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+            />
+          {:else if searchedLessons.length === 0}
+            <EmptyState
+              icon={searchTerm.trim() ? BookOpen : Calendar}
+              title={searchTerm.trim()
+                ? m.academics_schedule_no_search_results()
+                : m.academics_schedule_no_lessons()}
+              description={searchTerm.trim()
+                ? m.academics_schedule_no_search_results_desc()
+                : m.academics_schedule_no_lessons_desc()}
+              actionLabel={searchTerm.trim() ? "" : m.academics_schedule_add_first_lesson()}
+              onaction={searchTerm.trim() ? undefined : () => openNewLessonSheet()}
+              class="mx-auto my-auto w-full max-w-xl rounded-xl border border-border/60 bg-card shadow-xs"
+            />
+          {:else}
+            <TimetableGrid
+              {timeSlots}
+              {weekdays}
+              lessons={searchedLessons}
+              {conflictLessonIds}
+              {draftLessons}
+              {previewDraft}
+              {viewMode}
+              compact={compactView}
+              locale={getLocale()}
+              {getSubjectName}
+              {getTeacherName}
+              {getClassName}
+              {getRoomName}
+              {getSubjectColor}
+              onCellClick={(day, slotId) => openNewLessonSheet(day, slotId)}
+              onEditLesson={openEditLessonSheet}
+              onLessonClick={openEditLessonSheet}
+              onAttendanceClick={openLessonAttendance}
+              onDeleteLesson={handleDeleteLesson}
+              onMoveLesson={handleMoveLesson}
+            />
+          {/if}
         {/if}
       {/if}
     </main>

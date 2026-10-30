@@ -594,6 +594,8 @@ import type {
   UpdateFolderResponses,
   UpdateGroupData,
   UpdateGroupResponses,
+  UpdateLessonData,
+  UpdateLessonResponses,
   UpdateOrgUnitData,
   UpdateOrgUnitResponses,
   UpdatePeriodData,
@@ -3437,6 +3439,22 @@ export const deleteLesson = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api/v1/scheduled-lessons/{id}", ...options });
+
+export const updateLesson = <ThrowOnError extends boolean = false>(
+  options: Options<UpdateLessonData, ThrowOnError>,
+): RequestResult<UpdateLessonResponses, unknown, ThrowOnError> =>
+  (options.client ?? client).patch<
+    UpdateLessonResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/v1/scheduled-lessons/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const listSectionSubjects2 = <ThrowOnError extends boolean = false>(
   options: Options<ListSectionSubjects2Data, ThrowOnError>,

@@ -7386,6 +7386,25 @@ export type DeleteLessonResponses = {
 export type DeleteLessonResponse =
   DeleteLessonResponses[keyof DeleteLessonResponses];
 
+export type UpdateLessonData = {
+  body: ScheduleLessonRequest;
+  path: {
+    /**
+     * Scheduled Lesson ID
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/scheduled-lessons/{id}";
+};
+
+export type UpdateLessonResponses = {
+  200: ScheduledLessonDto;
+};
+
+export type UpdateLessonResponse =
+  UpdateLessonResponses[keyof UpdateLessonResponses];
+
 export type ListSectionSubjects2Data = {
   body?: never;
   path?: never;

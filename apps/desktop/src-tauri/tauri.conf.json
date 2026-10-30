@@ -17,25 +17,15 @@
       "freezePrototype": false,
       "assetProtocol": {
         "enable": true,
-        "scope": [
-          "$APPDATA/**",
-          "$LOCALAPPDATA/**",
-          "$RESOURCE/**",
-          "$TEMP/**"
-        ]
+        "scope": ["$APPDATA/**", "$LOCALAPPDATA/**", "$RESOURCE/**", "$TEMP/**"]
       },
-      "capabilities": [
-        "default",
-        "desktop-capability"
-      ]
+      "capabilities": ["default", "desktop-capability"]
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
-    "externalBin": [
-      "binaries/solver-service"
-    ],
+    "externalBin": ["binaries/solver-service"],
     "createUpdaterArtifacts": false,
     "macOS": {
       "dmg": {
@@ -58,9 +48,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": [
-          "orbis"
-        ]
+        "schemes": ["orbis"]
       }
     },
     "updater": {

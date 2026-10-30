@@ -453,23 +453,9 @@ impl SchedulingService {
             .check(ctx, Permission::ScheduleWrite)
             .await?;
 
-        if let Some(tid) = teacher_id {
-            let teacher_lessons = self.lesson_repo.find_by_teacher(tid).await?;
-            if teacher_lessons
-                .iter()
-                .any(|l| l.time_slot_id == time_slot_id)
-            {
-                return Err(DomainError::Conflict(
-                    "Teacher is already scheduled for another lesson in this time slot".into(),
-                ));
-            }
-        }
-
         let now = Utc::now();
-        let lesson_id = Uuid::new_v4();
-
         let lesson = ScheduledLesson {
-            id: lesson_id,
+            id: Uuid::new_v4(),
             section_subject_id,
             time_slot_id,
             room_id,
@@ -478,13 +464,69 @@ impl SchedulingService {
             updated_at: now,
         };
 
+        if self
+            .lesson_repo
+            .has_conflicts(std::slice::from_ref(&lesson), &[])
+            .await?
+        {
+            return Err(DomainError::Conflict(
+                "The section, teacher, or room is already scheduled in this time slot".into(),
+            ));
+        }
+
         self.lesson_repo.save(&lesson).await?;
 
         let event = DomainEvent::LessonScheduled {
-            lesson_id,
+            lesson_id: lesson.id,
             section_subject_id,
             time_slot_id,
             timestamp: now,
+        };
+        self.event_bus.publish(ctx, &event).await?;
+
+        Ok(lesson)
+    }
+
+    pub async fn update_scheduled_lesson(
+        &self,
+        ctx: &RequestContext,
+        id: Uuid,
+        section_subject_id: Uuid,
+        time_slot_id: Uuid,
+        room_id: Option<Uuid>,
+        teacher_id: Option<Uuid>,
+    ) -> Result<ScheduledLesson, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::ScheduleWrite)
+            .await?;
+
+        let mut lesson = self
+            .lesson_repo
+            .find_by_id(id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Scheduled lesson not found".into()))?;
+        lesson.section_subject_id = section_subject_id;
+        lesson.time_slot_id = time_slot_id;
+        lesson.room_id = room_id;
+        lesson.teacher_id = teacher_id;
+        lesson.updated_at = Utc::now();
+
+        if self
+            .lesson_repo
+            .has_conflicts(std::slice::from_ref(&lesson), &[id])
+            .await?
+        {
+            return Err(DomainError::Conflict(
+                "The section, teacher, or room is already scheduled in this time slot".into(),
+            ));
+        }
+
+        self.lesson_repo.save(&lesson).await?;
+        let event = DomainEvent::LessonUpdated {
+            lesson_id: id,
+            section_subject_id,
+            time_slot_id,
+            timestamp: lesson.updated_at,
         };
         self.event_bus.publish(ctx, &event).await?;
 
@@ -538,6 +580,12 @@ impl SchedulingService {
                 updated_at: now,
             };
             lessons.push(lesson);
+        }
+
+        if self.lesson_repo.has_conflicts(&lessons, &[]).await? {
+            return Err(DomainError::Conflict(
+                "The section, teacher, or room is already scheduled in this time slot".into(),
+            ));
         }
 
         self.lesson_repo.save_bulk(&lessons).await?;

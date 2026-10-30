@@ -1967,6 +1967,10 @@ export interface OrbisApiClient {
   updateTimeSlot(id: string, req: UpdateTimeSlotRequest): Promise<TimeSlotDto>;
   deleteTimeSlot(id: string): Promise<void>;
   scheduleLesson(req: ScheduleLessonRequest): Promise<ScheduledLessonDto>;
+  updateScheduledLesson(
+    id: string,
+    req: ScheduleLessonRequest,
+  ): Promise<ScheduledLessonDto>;
   bulkScheduleLessons(
     req: BulkScheduleLessonsRequest,
   ): Promise<ScheduledLessonDto[]>;
