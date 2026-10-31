@@ -11,6 +11,7 @@ import { Skeleton } from "@orbis/ui/skeleton";
 import {
   OrbisGrid,
   type ActionItem,
+  type GridActionEvent,
   type OrbisColumnDef,
   type SelectionSnapshot,
 } from "@orbis/svelte-grid";
@@ -41,6 +42,28 @@ let selectedSeatIds = $state<Set<string>>(new Set());
 
 function handleSeatingSelection(selection: SelectionSnapshot) {
   selectedSeatIds = new Set(selection.ids);
+}
+
+function handleSeatingGridAction(event: GridActionEvent) {
+  if (event.actionId === "toggle-select") {
+    const id = String(event.row.id);
+    const next = new Set(selectedSeatIds);
+    if (event.selected) next.add(id);
+    else next.delete(id);
+    selectedSeatIds = next;
+    return;
+  }
+
+  if (event.actionId === "select-all") {
+    selectedSeatIds = event.selected
+      ? new Set(event.selectedIds ?? [])
+      : new Set();
+    return;
+  }
+
+  if (event.actionId === "delete") {
+    handleDeleteSeating(String(event.row.id));
+  }
 }
 
 const selectedSeatingContexts = $derived.by(() => {
@@ -1229,7 +1252,7 @@ async function handleToggleHall(room: any) {
 						</div>
 					{:else}
 						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-80 w-full">
+							<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
 								<OrbisGrid
 									columns={subjectColumns}
 									source={subjectGridSource}
@@ -1364,7 +1387,7 @@ async function handleToggleHall(room: any) {
 							<span class="text-xs text-muted-foreground">{m.academics_exams_issued()}{seatingNumbers.length}{m.academics_exams_seating_numbers_suffix()}</span>
 						</div>
 						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-96 w-full">
+							<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
 								<OrbisGrid
 									columns={seatingColumns}
 									source={seatingGridSource}
@@ -1373,11 +1396,7 @@ async function handleToggleHall(room: any) {
 									rowIdKey="id"
 									rtl={getLocale() === "ar"}
 									onselection={handleSeatingSelection}
-									onaction={(event) => {
-										if (event.actionId === "delete") {
-											handleDeleteSeating(String(event.row.id));
-										}
-									}}
+									onaction={handleSeatingGridAction}
 									emptyTitle={m.academics_exams_no_seating_numbers()}
 								/>
 							</div>
@@ -1393,7 +1412,7 @@ async function handleToggleHall(room: any) {
 					</div>
 				{:else}
 					<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-						<div class="h-96 w-full">
+						<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
 							<OrbisGrid
 								columns={secretColumns}
 								source={secretGridSource}
@@ -1494,7 +1513,7 @@ async function handleToggleHall(room: any) {
 						</div>
 					{:else}
 						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-80 w-full">
+							<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
 								<OrbisGrid
 									columns={proctorColumns}
 									source={proctorGridSource}
@@ -1592,7 +1611,7 @@ async function handleToggleHall(room: any) {
 {/snippet}
 
 <SettingsBottomBar
-	visible={activeTab === "seating" && selectedSeatIds.size > 0}
+	visible={selectedSeatIds.size > 0}
 	isDirty={selectedSeatIds.size > 0}
 	message={m.operations_ui_seating_selection_count({
 		selected: selectedSeatIds.size,

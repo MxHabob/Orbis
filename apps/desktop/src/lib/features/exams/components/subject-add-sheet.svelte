@@ -42,6 +42,7 @@ let {
 type ScheduleFormValues = {
   section_id: string;
   section_subject_id: string;
+  teacher_id: string;
   exam_date: string;
   start_time: string;
   end_time: string;
@@ -60,6 +61,7 @@ const scheduleSchema = z
       .string()
       .trim()
       .min(1, m.operations_ui_subject_selection_required()),
+    teacher_id: z.string(),
     exam_date: z.string().date(m.common_period_form_error_dates_required()),
     start_time: z
       .string()
@@ -108,6 +110,7 @@ const scheduleSchema = z
 let mode = $state<"select" | "create">("select");
 let sectionId = $state("");
 let sectionSubjectId = $state("");
+let teacherId = $state("");
 let examDate = $state("");
 let startTime = $state("08:00");
 let endTime = $state("10:00");
@@ -128,6 +131,25 @@ const subjectsQuery = createQuery(() => ({
   enabled: open && !!orgId,
   staleTime: 10 * 60 * 1000,
 }));
+const teachersQuery = createQuery(() => ({
+  queryKey: ["exam-session-teachers", orgId],
+  queryFn: async () => {
+    const employees = [];
+    for (let page = 1; ; page += 1) {
+      const result = await api.listEmployees({
+        employee_type: "teacher",
+        status: "active",
+        page,
+        page_size: 500,
+      });
+      employees.push(...result.items);
+      if (page >= result.total_pages) break;
+    }
+    return employees;
+  },
+  enabled: open && !!orgId,
+  staleTime: 5 * 60 * 1000,
+}));
 const offeringsQuery = createQuery(() => ({
   queryKey: ["exam-session-subject-offerings", orgId, periodId, sectionId],
   queryFn: () => api.listSectionSubjects(sectionId, periodId),
@@ -140,27 +162,59 @@ const sections = $derived(
 );
 const offerings = $derived(offeringsQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
-const subjectNames = $derived(
-  new Map(
-    subjects.map((subject) => [
-      String(subject.id),
-      subject.name_ar || subject.name,
-    ]),
-  ),
+const teachers = $derived(teachersQuery.data ?? []);
+const subjectOptions = $derived(
+  subjects
+    .filter((subject) => subject.is_active)
+    .map((subject) => ({
+      subject,
+      offering: offerings.find(
+        (offering) => String(offering.subject_id) === String(subject.id),
+      ),
+    })),
+);
+const selectedOffering = $derived(
+  offerings.find((offering) => String(offering.id) === sectionSubjectId) ??
+    null,
 );
 const isLoadingOptions = $derived(
   sectionsQuery.isLoading ||
     subjectsQuery.isLoading ||
+    teachersQuery.isLoading ||
     (mode === "select" && !!sectionId && offeringsQuery.isLoading),
 );
 const optionsError = $derived(
-  sectionsQuery.error || subjectsQuery.error || offeringsQuery.error,
+  sectionsQuery.error ||
+    subjectsQuery.error ||
+    teachersQuery.error ||
+    offeringsQuery.error,
 );
+
+function getTeacherName(teacherId: string | null | undefined) {
+  const teacher = teachers.find(
+    (item) => String(item.id) === String(teacherId),
+  );
+  return (
+    teacher?.full_name_ar ||
+    teacher?.full_name ||
+    teacher?.display_name ||
+    teacher?.employee_number ||
+    ""
+  );
+}
+
+function getSubjectOptionValue(subjectId: string) {
+  const offering = offerings.find(
+    (item) => String(item.subject_id) === String(subjectId),
+  );
+  return offering?.id ?? `subject:${subjectId}`;
+}
 
 const form = new FormController({
   initialValues: {
     section_id: "",
     section_subject_id: "",
+    teacher_id: "",
     exam_date: "",
     start_time: "08:00",
     end_time: "10:00",
@@ -187,9 +241,31 @@ const scheduleMutation = createMutation(() => ({
         section_id: payload.section_id,
         subject_id: newSubject.id,
         period_id: periodId,
+        instructor_id: payload.teacher_id || null,
         status: "active",
       });
       targetSectionSubjectId = offering.id;
+    } else if (payload.section_subject_id.startsWith("subject:")) {
+      const subjectId = payload.section_subject_id.slice("subject:".length);
+      const currentOfferings = await api.listSectionSubjects(
+        payload.section_id,
+        periodId,
+      );
+      const existingOffering = currentOfferings.find(
+        (offering) => String(offering.subject_id) === subjectId,
+      );
+      if (existingOffering) {
+        targetSectionSubjectId = existingOffering.id;
+      } else {
+        const offering = await api.assignSectionSubject({
+          section_id: payload.section_id,
+          subject_id: subjectId,
+          period_id: periodId,
+          instructor_id: payload.teacher_id || null,
+          status: "active",
+        });
+        targetSectionSubjectId = offering.id;
+      }
     }
 
     return api.scheduleExam({
@@ -207,6 +283,7 @@ const isSaving = $derived(form.isSubmitting || scheduleMutation.isPending);
 function resetForm() {
   sectionId = "";
   sectionSubjectId = "";
+  teacherId = "";
   examDate = examStartDate;
   startTime = "08:00";
   endTime = "10:00";
@@ -217,6 +294,7 @@ function resetForm() {
   form.values = {
     section_id: "",
     section_subject_id: "",
+    teacher_id: "",
     exam_date: "",
     start_time: "08:00",
     end_time: "10:00",
@@ -242,6 +320,7 @@ async function handleSubmit() {
   form.values = {
     section_id: sectionId,
     section_subject_id: mode === "create" ? "new-subject" : sectionSubjectId,
+    teacher_id: teacherId,
     exam_date: examDate,
     start_time: startTime,
     end_time: endTime,
@@ -301,6 +380,7 @@ async function handleSubmit() {
             onclick={() => {
               mode = "select";
               sectionSubjectId = "";
+              teacherId = "";
             }}
             disabled={isSaving}
           >
@@ -313,6 +393,7 @@ async function handleSubmit() {
             onclick={() => {
               mode = "create";
               sectionSubjectId = "";
+              teacherId = "";
             }}
             disabled={isSaving}
           >
@@ -328,6 +409,7 @@ async function handleSubmit() {
               onValueChange={(value) => {
                 sectionId = value ?? "";
                 sectionSubjectId = "";
+                teacherId = "";
               }}
               disabled={isSaving || isLoadingOptions}
             >
@@ -353,26 +435,52 @@ async function handleSubmit() {
               <Select
                 type="single"
                 value={sectionSubjectId}
-                onValueChange={(value) => sectionSubjectId = value ?? ""}
+                onValueChange={(value) => {
+                  sectionSubjectId = value ?? "";
+                  const offering = offerings.find(
+                    (item) => String(item.id) === sectionSubjectId,
+                  );
+                  teacherId = offering?.instructor_id ?? "";
+                }}
                 disabled={!sectionId || isSaving || offeringsQuery.isLoading}
               >
                 <SelectTrigger id="exam-subject" class="h-9 w-full text-sm">
-                  {offerings.find((item) => String(item.id) === sectionSubjectId)
-                    ? subjectNames.get(
-                        String(offerings.find((item) => String(item.id) === sectionSubjectId)?.subject_id),
-                      ) || m.operations_ui_select_course_subject()
-                    : m.operations_ui_select_course_subject()}
+                  {#if sectionSubjectId}
+                    {@const option = subjectOptions.find(
+                      (item) =>
+                        (item.offering?.id ??
+                          `subject:${item.subject.id}`) === sectionSubjectId,
+                    )}
+                    {option?.subject.name_ar ||
+                      option?.subject.name ||
+                      m.operations_ui_select_course_subject()}
+                  {:else}
+                    {m.operations_ui_select_course_subject()}
+                  {/if}
                 </SelectTrigger>
                 <SelectContent>
-                  {#each offerings as offering (offering.id)}
-                    <SelectItem value={String(offering.id)}>
-                      {subjectNames.get(String(offering.subject_id)) || offering.subject_id}
+                  {#each subjectOptions as option (option.subject.id)}
+                    <SelectItem
+                      value={getSubjectOptionValue(String(option.subject.id))}
+                    >
+                      {option.subject.name_ar || option.subject.name}
+                      {#if option.offering?.instructor_id}
+                        <span class="ms-1 text-muted-foreground">
+                          · {getTeacherName(option.offering.instructor_id)}
+                        </span>
+                      {/if}
                     </SelectItem>
                   {/each}
                 </SelectContent>
               </Select>
             {/snippet}
           </FormField>
+          {#if selectedOffering?.instructor_id}
+            <p class="text-xs text-muted-foreground">
+              {m.operations_ui_exam_subject_assigned_teacher()}:
+              {getTeacherName(selectedOffering.instructor_id)}
+            </p>
+          {/if}
         {:else}
           <div class="flex flex-col gap-4">
             <FormField id="new-sub-name-ar" label={m.operations_ui_subject_name_arabic()} error={form.errors.subject_name_ar?.[0]} required>
@@ -409,6 +517,38 @@ async function handleSubmit() {
               {/snippet}
             </FormField>
           </div>
+        {/if}
+
+        {#if mode === "create" ||
+          (mode === "select" && sectionSubjectId.startsWith("subject:"))}
+          <FormField
+            id="exam-teacher"
+            label={m.operations_ui_exam_subject_teacher()}
+          >
+            {#snippet children()}
+              <Select
+                type="single"
+                value={teacherId}
+                onValueChange={(value) => (teacherId = value ?? "")}
+                disabled={isSaving || isLoadingOptions}
+              >
+                <SelectTrigger id="exam-teacher" class="h-9 w-full text-sm">
+                  {getTeacherName(teacherId) ||
+                    m.operations_ui_exam_subject_teacher_optional()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each teachers as teacher (teacher.id)}
+                    <SelectItem value={teacher.id}>
+                      {teacher.full_name_ar ||
+                        teacher.full_name ||
+                        teacher.display_name ||
+                        teacher.employee_number}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
+            {/snippet}
+          </FormField>
         {/if}
 
         <FormField id="exam-date" label={m.common_overview_date()} error={form.errors.exam_date?.[0]} required>
@@ -454,7 +594,7 @@ async function handleSubmit() {
               {m.common_retry()}
             </Button>
           </div>
-        {:else if mode === "select" && sectionId && !offeringsQuery.isLoading && offerings.length === 0}
+        {:else if mode === "select" && sectionId && !offeringsQuery.isLoading && subjectOptions.length === 0}
           <p class="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
             {m.academics_exams_no_subjects()}
           </p>

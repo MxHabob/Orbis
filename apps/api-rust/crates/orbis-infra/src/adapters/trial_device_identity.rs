@@ -186,7 +186,7 @@ fn load_or_create_with_service(
 }
 
 fn load_or_create_locked(
-    app_data_dir: &Path,
+    _app_data_dir: &Path,
     installation_id: &str,
     service: &str,
 ) -> Result<SigningKey, String> {
@@ -205,9 +205,9 @@ fn load_or_create_locked(
             }
 
             #[cfg(windows)]
-            if let Some(seed) = load_legacy_seed(app_data_dir)? {
+            if let Some(seed) = load_legacy_seed(_app_data_dir)? {
                 store_seed(&entry, &seed)?;
-                remove_legacy_key(app_data_dir);
+                remove_legacy_key(_app_data_dir);
                 return Ok(SigningKey::from_bytes(&seed));
             }
 
