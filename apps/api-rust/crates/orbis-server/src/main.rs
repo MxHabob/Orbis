@@ -1,4 +1,5 @@
 use axum::serve;
+use mdns_sd::{ServiceDaemon, ServiceInfo};
 use orbis_infra::adapters::iam::db_permission_checker::DbPermissionChecker;
 use orbis_infra::event_bus::MemoryEventBus;
 use orbis_infra::repositories::{
@@ -9,9 +10,85 @@ use orbis_infra::security::{bcrypt::BcryptHasher, jwt::JwtTokenService};
 use orbis_server::app_router;
 use orbis_server::state::AppState;
 use sea_orm::Database;
+use std::net::IpAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tracing_subscriber::EnvFilter;
+
+fn start_lan_discovery(
+    bind_host: &str,
+    port: u16,
+    organization: Option<&orbis_domain::entities::organization::Organization>,
+) -> Option<ServiceDaemon> {
+    if bind_host.eq_ignore_ascii_case("localhost")
+        || bind_host
+            .parse::<IpAddr>()
+            .map(|address| address.is_loopback())
+            .unwrap_or(false)
+    {
+        return None;
+    }
+
+    let machine_name = std::env::var("HOSTNAME")
+        .or_else(|_| std::env::var("COMPUTERNAME"))
+        .unwrap_or_else(|_| "server".to_string());
+    let machine_label: String = machine_name
+        .chars()
+        .filter(|character| character.is_ascii_alphanumeric() || *character == '-')
+        .take(40)
+        .collect();
+    let machine_label = if machine_label.is_empty() {
+        "server"
+    } else {
+        &machine_label
+    };
+    let service_name = format!("Orbis-{machine_label}");
+    let host_name = format!("orbis-{machine_label}.local.");
+
+    let mut properties = vec![("app", "orbis".to_string())];
+    if let Some(organization) = organization {
+        properties.push(("organization_id", organization.id.to_string()));
+        properties.push(("name", organization.name.clone()));
+        if let Some(name_ar) = &organization.name_ar {
+            properties.push(("name_ar", name_ar.clone()));
+        }
+    }
+
+    let service = match ServiceInfo::new(
+        "_orbis-api._tcp.local.",
+        &service_name,
+        &host_name,
+        "",
+        port,
+        &properties[..],
+    ) {
+        Ok(service) => service.enable_addr_auto(),
+        Err(error) => {
+            tracing::warn!(%error, "Could not prepare Orbis LAN discovery.");
+            return None;
+        }
+    };
+
+    let daemon = match ServiceDaemon::new() {
+        Ok(daemon) => daemon,
+        Err(error) => {
+            tracing::warn!(%error, "Could not start Orbis LAN discovery.");
+            return None;
+        }
+    };
+    if let Err(error) = daemon.register(service) {
+        tracing::warn!(%error, "Could not advertise the Orbis API on the local network.");
+        let _ = daemon.shutdown();
+        return None;
+    }
+
+    tracing::info!(
+        service = %service_name,
+        port,
+        "Advertising Orbis API for local network discovery."
+    );
+    Some(daemon)
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -103,9 +180,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let folder_repo = Arc::new(orbis_infra::repositories::folder_repo::FolderRepoImpl::new(
         db.clone(),
     ));
-    let integration_repo = Arc::new(
-        orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() },
-    );
     let notification_repo = Arc::new(
         orbis_infra::repositories::notification_repos::NotificationRepoImpl { db: db.clone() },
     );
@@ -148,6 +222,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         _ => return Err("MFA_ENCRYPTION_KEY is required in production".into()),
     };
+    let integration_repo = Arc::new(
+        orbis_infra::repositories::integration_repos::IntegrationRepoImpl::new(
+            db.clone(),
+            &mfa_encryption_key,
+        ),
+    );
     let token_service = Arc::new(JwtTokenService::new(jwt_secret));
     let password_hasher = Arc::new(BcryptHasher);
 
@@ -697,17 +777,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     });
-    // Build Axum Router
-    let app = app_router(state);
+    let organization = match state.org_repo.find_first().await {
+        Ok(organization) => organization,
+        Err(error) => {
+            tracing::warn!(%error, "Could not load institution details for LAN discovery.");
+            None
+        }
+    };
 
     // Start Server
     let bind_host = std::env::var("BIND_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let port = std::env::var("PORT").unwrap_or_else(|_| "3000".to_string());
+    let port_number = port.parse::<u16>()?;
     let addr = format!("{}:{}", bind_host, port);
     let listener = TcpListener::bind(&addr).await?;
     println!("Server running on http://{}", addr);
 
-    serve(listener, app).await?;
+    // Build Axum Router
+    let app = app_router(state);
+    let mdns_daemon = start_lan_discovery(&bind_host, port_number, organization.as_ref());
+
+    let serve_result = serve(listener, app).await;
+    if let Some(daemon) = mdns_daemon {
+        if let Err(error) = daemon.shutdown() {
+            tracing::warn!(%error, "Could not stop the Orbis LAN discovery service cleanly.");
+        }
+    }
+    serve_result?;
 
     Ok(())
 }

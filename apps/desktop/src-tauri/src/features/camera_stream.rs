@@ -16,8 +16,8 @@ const READY_POLL_INTERVAL: Duration = Duration::from_millis(100);
 pub struct CameraStreamSource {
     pub id: Uuid,
     pub rtsp_url: String,
-    pub username: String,
-    pub password: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
 }
 
 struct CameraRuntime {
@@ -95,8 +95,11 @@ impl CameraStreamManager {
         let mut streams = HashMap::with_capacity(sources.len());
 
         for source in sources {
-            let rtsp_source =
-                make_authenticated_rtsp_url(&source.rtsp_url, &source.username, &source.password)?;
+            let rtsp_source = make_authenticated_rtsp_url(
+                &source.rtsp_url,
+                source.username.as_deref(),
+                source.password.as_deref(),
+            )?;
             let path_name = format!("camera-{}", source.id.simple());
             if let Err(error) = self
                 .configure_path(
@@ -312,8 +315,8 @@ impl CameraStreamManager {
 
 fn make_authenticated_rtsp_url(
     endpoint: &str,
-    username: &str,
-    password: &str,
+    username: Option<&str>,
+    password: Option<&str>,
 ) -> Result<String, String> {
     let mut url = Url::parse(endpoint.trim())
         .map_err(|_| "The camera RTSP stream URL is invalid".to_string())?;
@@ -322,14 +325,19 @@ fn make_authenticated_rtsp_url(
         || !url.username().is_empty()
         || url.password().is_some()
         || url.fragment().is_some()
-        || username.trim().is_empty()
-        || password.is_empty()
     {
         return Err("The camera RTSP URL or credentials are invalid".to_string());
     }
-    url.set_username(username)
+    let username = username
+        .map(str::trim)
+        .filter(|username| !username.is_empty());
+    let password = password.filter(|password| !password.is_empty());
+    if username.is_none() && password.is_none() {
+        return Ok(url.to_string());
+    }
+    url.set_username(username.unwrap_or_default())
         .map_err(|_| "The camera username cannot be used in an RTSP URL".to_string())?;
-    url.set_password(Some(password))
+    url.set_password(Some(password.unwrap_or_default()))
         .map_err(|_| "The camera password cannot be used in an RTSP URL".to_string())?;
     Ok(url.to_string())
 }
@@ -350,25 +358,47 @@ fn reserve_udp_port() -> Result<u16, String> {
 
 fn find_sidecar_binary() -> Option<PathBuf> {
     let target_triple = target_triple()?;
-    let filename = if cfg!(windows) {
+    let target_filename = if cfg!(windows) {
         format!("mediamtx-{target_triple}.exe")
     } else {
         format!("mediamtx-{target_triple}")
+    };
+    let bundled_filename = if cfg!(windows) {
+        "mediamtx.exe"
+    } else {
+        "mediamtx"
     };
 
     let mut candidates = Vec::new();
     if let Ok(current_exe) = std::env::current_exe()
         && let Some(exe_dir) = current_exe.parent()
     {
-        candidates.push(exe_dir.join(&filename));
-        candidates.push(exe_dir.join("binaries").join(&filename));
-        candidates.push(exe_dir.join("resources").join(&filename));
+        candidates.push(exe_dir.join(bundled_filename));
+        candidates.push(exe_dir.join("binaries").join(bundled_filename));
+        candidates.push(exe_dir.join("resources").join(bundled_filename));
+        candidates.push(exe_dir.join(&target_filename));
+        candidates.push(exe_dir.join("binaries").join(&target_filename));
+        candidates.push(exe_dir.join("resources").join(&target_filename));
     }
-    candidates.push(PathBuf::from("src-tauri").join("binaries").join(&filename));
+    candidates.push(
+        PathBuf::from("src-tauri")
+            .join("binaries")
+            .join(bundled_filename),
+    );
     candidates.push(
         PathBuf::from("apps/desktop/src-tauri")
             .join("binaries")
-            .join(&filename),
+            .join(bundled_filename),
+    );
+    candidates.push(
+        PathBuf::from("src-tauri")
+            .join("binaries")
+            .join(&target_filename),
+    );
+    candidates.push(
+        PathBuf::from("apps/desktop/src-tauri")
+            .join("binaries")
+            .join(&target_filename),
     );
 
     candidates.into_iter().find(|candidate| candidate.is_file())
@@ -407,8 +437,8 @@ mod tests {
     fn adds_credentials_without_exposing_them_in_stream_endpoint() {
         let source = make_authenticated_rtsp_url(
             "rtsp://192.168.1.20:554/stream?channel=1",
-            "camera user",
-            "p@ss:word",
+            Some("camera user"),
+            Some("p@ss:word"),
         )
         .expect("valid RTSP source");
         let parsed = Url::parse(&source).expect("valid URL");
@@ -423,10 +453,37 @@ mod tests {
         assert!(
             make_authenticated_rtsp_url(
                 "rtsp://admin:secret@192.168.1.20/stream",
-                "admin",
-                "secret"
+                Some("admin"),
+                Some("secret")
             )
             .is_err()
         );
+    }
+
+    #[test]
+    fn allows_public_rtsp_sources_without_credentials() {
+        assert_eq!(
+            make_authenticated_rtsp_url("rtsp://samples.example:8554/traffic", None, None)
+                .expect("public RTSP source"),
+            "rtsp://samples.example:8554/traffic"
+        );
+    }
+
+    #[test]
+    fn allows_username_only_rtsp_credentials() {
+        let source =
+            make_authenticated_rtsp_url("rtsp://camera.example/stream", Some("admin"), None)
+                .expect("username-only RTSP source");
+        assert_eq!(Url::parse(&source).unwrap().username(), "admin");
+    }
+
+    #[test]
+    fn allows_password_only_rtsp_credentials() {
+        let source =
+            make_authenticated_rtsp_url("rtsp://camera.example/stream", None, Some("secret"))
+                .expect("password-only RTSP source");
+        let parsed = Url::parse(&source).unwrap();
+        assert_eq!(parsed.username(), "");
+        assert_eq!(parsed.password(), Some("secret"));
     }
 }

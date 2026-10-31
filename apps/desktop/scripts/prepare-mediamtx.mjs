@@ -1,7 +1,17 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { createReadStream } from "node:fs";
-import { chmod, copyFile, mkdir, mkdtemp, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readdir,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,10 +44,11 @@ const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const tauriDir = path.resolve(scriptDir, "../src-tauri");
 const binariesDir = path.join(tauriDir, "binaries");
 const cacheDir = path.join(binariesDir, ".cache");
-const target = process.env.TAURI_ENV_TARGET_TRIPLE
-  ?? process.env.TAURI_TARGET_TRIPLE
-  ?? process.env.TARGET
-  ?? getRustHostTriple();
+const target =
+  process.env.TAURI_ENV_TARGET_TRIPLE ??
+  process.env.TAURI_TARGET_TRIPLE ??
+  process.env.TARGET ??
+  getRustHostTriple();
 const asset = releaseAssets[target];
 
 if (!asset) {
@@ -56,14 +67,22 @@ try {
   const extractionDir = path.join(temporaryDir, "extracted");
   await mkdir(extractionDir);
   const isWindowsArchive = asset.name.endsWith(".zip");
-  execFileSync("tar", [isWindowsArchive ? "-xf" : "-xzf", archivePath, "-C", extractionDir], {
-    stdio: "inherit",
-  });
+  execFileSync(
+    "tar",
+    [isWindowsArchive ? "-xf" : "-xzf", archivePath, "-C", extractionDir],
+    {
+      stdio: "inherit",
+    },
+  );
 
-  const executableName = target.includes("windows") ? "mediamtx.exe" : "mediamtx";
+  const executableName = target.includes("windows")
+    ? "mediamtx.exe"
+    : "mediamtx";
   const executablePath = await findFile(extractionDir, executableName);
   if (!executablePath) {
-    throw new Error(`The official MediaMTX archive did not contain ${executableName}.`);
+    throw new Error(
+      `The official MediaMTX archive did not contain ${executableName}.`,
+    );
   }
 
   const targetExecutableName = target.includes("windows")
@@ -86,7 +105,9 @@ async function downloadVerifiedArchive(releaseAsset, outputPath) {
   const url = `https://github.com/bluenviron/mediamtx/releases/download/v${version}/${releaseAsset.name}`;
   const response = await fetch(url, { redirect: "follow" });
   if (!response.ok) {
-    throw new Error(`Could not download MediaMTX (${response.status} ${response.statusText}).`);
+    throw new Error(
+      `Could not download MediaMTX (${response.status} ${response.statusText}).`,
+    );
   }
 
   const contentLength = Number(response.headers.get("content-length") ?? 0);
@@ -99,7 +120,9 @@ async function downloadVerifiedArchive(releaseAsset, outputPath) {
   }
   const actualHash = createHash("sha256").update(bytes).digest("hex");
   if (actualHash !== releaseAsset.sha256) {
-    throw new Error("The MediaMTX archive checksum does not match the pinned official release.");
+    throw new Error(
+      "The MediaMTX archive checksum does not match the pinned official release.",
+    );
   }
 
   const temporaryPath = `${outputPath}.tmp`;
@@ -138,6 +161,7 @@ async function findFile(directory, filename) {
 function getRustHostTriple() {
   const versionOutput = execFileSync("rustc", ["-vV"], { encoding: "utf8" });
   const host = versionOutput.match(/^host:\s*(.+)$/m)?.[1];
-  if (!host) throw new Error("Could not determine the Rust host target for MediaMTX.");
+  if (!host)
+    throw new Error("Could not determine the Rust host target for MediaMTX.");
   return host;
 }

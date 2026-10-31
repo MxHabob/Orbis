@@ -31,7 +31,7 @@ impl DahuaAdapter {
                 )
             })?;
         let api_url = camera_http_url(settings, "Dahua", 80)?;
-        HikvisionAdapter::check_digest_endpoint(
+        let response = HikvisionAdapter::check_digest_endpoint(
             &api_url,
             "/cgi-bin/magicBox.cgi?action=getSystemInfo",
             "Dahua",
@@ -41,6 +41,18 @@ impl DahuaAdapter {
             None,
         )
         .await?;
+        let body = response.text().await.map_err(|_| {
+            DomainError::Validation("Dahua camera returned an unreadable device response".into())
+        })?;
+        let lower_body = body.to_ascii_lowercase();
+        if !lower_body.contains("devicetype")
+            && !lower_body.contains("devicename")
+            && !lower_body.contains("serialnumber")
+        {
+            return Err(DomainError::Validation(
+                "The endpoint did not return valid Dahua system information".into(),
+            ));
+        }
         Ok(())
     }
 }

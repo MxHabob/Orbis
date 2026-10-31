@@ -26,7 +26,7 @@ impl HikvisionAdapter {
         username: &str,
         password: &str,
     ) -> Result<(), DomainError> {
-        Self::check_digest_endpoint(
+        let response = Self::check_digest_endpoint(
             api_url,
             "/ISAPI/System/deviceInfo",
             "Hikvision",
@@ -36,6 +36,16 @@ impl HikvisionAdapter {
             None,
         )
         .await?;
+        let body = response.text().await.map_err(|_| {
+            DomainError::Validation(
+                "Hikvision camera returned an unreadable device response".into(),
+            )
+        })?;
+        if !body.contains("<DeviceInfo") && !body.contains("<deviceInfo") {
+            return Err(DomainError::Validation(
+                "The endpoint did not return valid Hikvision device information".into(),
+            ));
+        }
         Ok(())
     }
 
@@ -143,6 +153,11 @@ pub(crate) fn digest_authorization(
     password: &str,
     cnonce: &str,
 ) -> Result<String, DomainError> {
+    if username.contains(['\r', '\n']) {
+        return Err(DomainError::Validation(
+            "Camera username contains invalid characters".into(),
+        ));
+    }
     let realm = challenge.get("realm").ok_or_else(|| {
         DomainError::Validation("Camera digest challenge is missing its realm".into())
     })?;

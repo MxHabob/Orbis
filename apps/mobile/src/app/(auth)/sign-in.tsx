@@ -5,13 +5,7 @@
  */
 
 import React, { useState } from "react";
-import {
-  ImageBackground,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Redirect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -109,12 +103,17 @@ export default function SignInScreen() {
   };
 
   return (
-    <View className="flex-1 bg-primary-dark">
-      <ImageBackground
-        source={require("../../../assets/Dreamy Arrival at the Historic Campus.png")}
-        resizeMode="cover"
-        className="flex-1"
-      >
+    <View
+      className="flex-1 bg-primary-dark"
+      style={{ direction: isArabic ? "rtl" : "ltr" }}
+    >
+      <View className="flex-1">
+        <Image
+          pointerEvents="none"
+          source={require("../../../assets/Dreamy Arrival at the Historic Campus.png")}
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+        />
         <LinearGradient
           pointerEvents="none"
           colors={[
@@ -134,7 +133,7 @@ export default function SignInScreen() {
           <View
             className="flex-1 px-5"
             style={{
-              paddingTop: insets.top + 8,
+              paddingTop: 8,
               paddingBottom: Math.max(insets.bottom, 12) + 4,
             }}
           >
@@ -285,7 +284,7 @@ export default function SignInScreen() {
             </View>
           </View>
         </KeyboardAwareView>
-      </ImageBackground>
+      </View>
     </View>
   );
 }

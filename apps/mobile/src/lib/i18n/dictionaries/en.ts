@@ -460,7 +460,7 @@ export const en: Record<TranslationKey, string> = {
   auth_institution_code: "Institution name",
   auth_institution_search_title: "Choose your institution",
   auth_institution_search_description:
-    "Find your institution or add a local connection.",
+    "Institutions available on your network appear first, followed by the institution directory.",
   auth_institution_featured_recommended: "For you",
   auth_institution_featured_nearby: "Nearest",
   auth_institution_local_scan: "Scan QR",
@@ -469,6 +469,19 @@ export const en: Record<TranslationKey, string> = {
   auth_institution_local_hint:
     "Scan a school QR code or enter its server address.",
   auth_institution_local_label: "Local institution",
+  auth_institution_lan_title: "Available on your network",
+  auth_institution_lan_description:
+    "Orbis automatically discovers institution servers on the same Wi-Fi network.",
+  auth_institution_lan_checking: "Checking access to the local network...",
+  auth_institution_lan_empty:
+    "No local server found yet. Make sure both devices are on the same Wi-Fi network.",
+  auth_institution_lan_permission_error:
+    "Allow Orbis to access your local network to discover institution servers.",
+  auth_institution_lan_error:
+    "Could not discover Orbis servers on the local network. Refresh and try again.",
+  auth_institution_lan_retry: "Refresh local server discovery",
+  auth_institution_lan_expo_go:
+    "Local server discovery requires an Orbis development build; Expo Go does not include local-network modules.",
   auth_institution_local_confirm: "Connect to this institution",
   auth_institution_local_name: "School name",
   auth_institution_local_server: "HTTPS server address",

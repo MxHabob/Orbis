@@ -62,24 +62,21 @@ pub async fn camera_stream_start(
             .unwrap_or_else(|| format!("{provider} {address}").trim().to_string());
 
         let integration_id = integration.id;
-        if let (Some(rtsp_url), Some(username)) = (rtsp_url, username) {
-            let secrets = state
+        if let Some(rtsp_url) = rtsp_url {
+            let password = state
                 .integration_repo
                 .get_secrets_by_config(integration_id)
                 .await
-                .map_err(|error| error.to_string())?;
-            if let Some(password) = secrets
+                .map_err(|error| error.to_string())?
                 .into_iter()
                 .find(|secret| secret.key_name == "password")
-                .map(|secret| secret.secret_key)
-            {
-                sources.push(CameraStreamSource {
-                    id: integration_id,
-                    rtsp_url,
-                    username,
-                    password,
-                });
-            }
+                .map(|secret| secret.secret_key);
+            sources.push(CameraStreamSource {
+                id: integration_id,
+                rtsp_url,
+                username,
+                password,
+            });
         }
 
         cameras.push((integration_id, name, address, location));

@@ -97,6 +97,7 @@ async function handleConnect(values: Record<string, unknown>) {
 
     for (const setting of app.settings) {
       const value = values[setting.id];
+      if (setting.id === "use_authentication") continue;
       if (value === undefined || value === null || value === "") continue;
       if (
         setting.type === "password" ||

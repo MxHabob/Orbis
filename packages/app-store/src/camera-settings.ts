@@ -67,13 +67,27 @@ export function createCameraApp({
           rtspSetting,
         ]),
     {
+      id: "use_authentication",
+      label: "Use camera credentials",
+      label_ar: "إضافة بيانات دخول الكاميرا",
+      description: "Enable only if the camera requires authentication.",
+      description_ar: "فعّل هذا الخيار فقط إذا كانت الكاميرا تتطلب بيانات دخول.",
+      type: "switch",
+      required: false,
+      value: false,
+    },
+    {
       id: "username",
       label: "Username",
       label_ar: "اسم المستخدم",
-      description: "Camera account used to verify the device connection.",
-      description_ar: "حساب الكاميرا المستخدم للتحقق من الاتصال بالجهاز.",
+      description: isRtsp
+        ? "Optional. Credentials are sent only when entered. Leave empty for a public stream."
+        : "Camera account used to verify the device connection.",
+      description_ar: isRtsp
+        ? "اختياري. تُرسل بيانات الدخول عند إدخالها فقط. اتركه فارغاً للبث العام."
+        : "حساب الكاميرا المستخدم للتحقق من الاتصال بالجهاز.",
       type: "text",
-      required: true,
+      required: false,
       value: "",
     },
     {
@@ -83,7 +97,7 @@ export function createCameraApp({
       description: "Stored as an integration secret.",
       description_ar: "تُحفظ كسر تكامل.",
       type: "password",
-      required: true,
+      required: false,
       value: "",
     },
     {

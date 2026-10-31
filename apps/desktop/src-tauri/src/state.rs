@@ -156,6 +156,7 @@ impl AppState {
         let db = sea_orm::Database::connect(db_url)
             .await
             .map_err(|e| e.to_string())?;
+        let mfa_encryption_key = Self::load_or_generate_mfa_encryption_key(app_data_dir)?;
 
         use orbis_infra::migration::Migrator;
         use sea_orm_migration::{MigratorTrait, SchemaManager};
@@ -219,7 +220,10 @@ impl AppState {
             orbis_infra::repositories::document_repos::DocumentRepoImpl { db: db.clone() },
         );
         let integration_repo = Arc::new(
-            orbis_infra::repositories::integration_repos::IntegrationRepoImpl { db: db.clone() },
+            orbis_infra::repositories::integration_repos::IntegrationRepoImpl::new(
+                db.clone(),
+                &mfa_encryption_key,
+            ),
         );
         let workflow_repo = Arc::new(
             orbis_infra::repositories::workflow_repos::WorkflowRepoImpl { db: db.clone() },
@@ -291,7 +295,6 @@ impl AppState {
         // Generate or load a per-installation JWT secret.
         // Stored as a file in AppData — never hardcoded.
         let jwt_secret = Self::load_or_generate_jwt_secret(app_data_dir)?;
-        let mfa_encryption_key = Self::load_or_generate_mfa_encryption_key(app_data_dir)?;
         let token_service = Arc::new(orbis_infra::security::jwt::JwtTokenService::new(jwt_secret));
         let password_hasher = Arc::new(orbis_infra::security::bcrypt::BcryptHasher);
 
@@ -606,8 +609,9 @@ impl AppState {
         ));
 
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
-        let camera_stream_manager =
-            Arc::new(crate::features::camera_stream::CameraStreamManager::new(app_data_dir));
+        let camera_stream_manager = Arc::new(
+            crate::features::camera_stream::CameraStreamManager::new(app_data_dir),
+        );
 
         // ── Employee Affairs & User Groups Wiring ───────────────────
         let group_repo =

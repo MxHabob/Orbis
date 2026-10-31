@@ -49,10 +49,14 @@ onMount(() => {
   let peerConnection: RTCPeerConnection | undefined;
   let sessionUrl: string | undefined;
   const abortController = new AbortController();
+  const connectTimeout = setTimeout(() => {
+    abortController.abort();
+  }, 15_000);
   isConnecting = true;
   hasError = false;
 
   const releaseStream = () => {
+    clearTimeout(connectTimeout);
     peerConnection?.close();
     peerConnection = undefined;
     video.srcObject = null;
@@ -79,9 +83,14 @@ onMount(() => {
       isConnecting = false;
     };
     peerConnection.onconnectionstatechange = () => {
-      if (!disposed && peerConnection?.connectionState === "failed") {
+      if (
+        !disposed &&
+        (peerConnection?.connectionState === "failed" ||
+          peerConnection?.connectionState === "disconnected")
+      ) {
         hasError = true;
         isConnecting = false;
+        releaseStream();
       }
     };
 
@@ -120,7 +129,13 @@ onMount(() => {
   };
 
   void connect().catch((error: unknown) => {
-    if (disposed || abortController.signal.aborted) return;
+    if (disposed) return;
+    if (abortController.signal.aborted) {
+      releaseStream();
+      hasError = true;
+      isConnecting = false;
+      return;
+    }
     console.error("Could not start the WHEP camera stream", error);
     releaseStream();
     hasError = true;

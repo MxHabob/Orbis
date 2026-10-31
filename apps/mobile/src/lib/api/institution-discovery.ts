@@ -84,6 +84,52 @@ export function createManualLocalInstitution(
   };
 }
 
+export interface DiscoveredOrbisService {
+  name: string;
+  host: string;
+  ipv4: string[];
+  port: number;
+  txt: Record<string, string>;
+}
+
+export function createDiscoveredLocalInstitution(
+  service: DiscoveredOrbisService,
+): DirectoryInstitution | null {
+  if (
+    service.txt.app !== "orbis" ||
+    !Number.isInteger(service.port) ||
+    service.port < 1 ||
+    service.port > 65535
+  ) {
+    return null;
+  }
+
+  const address = service.ipv4.find(isPrivateIpv4Address);
+  if (!address) return null;
+
+  const name = service.txt.name?.trim() || service.name.trim();
+  if (name.length < 2 || name.length > 100) return null;
+
+  const institution = createManualLocalInstitution(
+    name,
+    `http://${address}:${service.port}`,
+  );
+  const organizationId = service.txt.organization_id;
+  const hasValidOrganizationId =
+    typeof organizationId === "string" &&
+    /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(organizationId);
+  const nameAr = service.txt.name_ar?.trim();
+
+  return {
+    ...institution,
+    organization_id: hasValidOrganizationId
+      ? organizationId
+      : institution.organization_id,
+    name_ar: nameAr && nameAr.length <= 100 ? nameAr : null,
+    deployment_name: service.host || address,
+  };
+}
+
 const DIRECTORY_BASE_URL =
   process.env.EXPO_PUBLIC_MULVERSE_API_URL || "https://api.mulverse.com";
 

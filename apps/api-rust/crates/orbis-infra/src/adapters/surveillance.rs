@@ -55,27 +55,17 @@ pub fn camera_http_url(
 pub fn camera_credentials<'a>(
     settings: &'a Value,
     secrets: &'a HashMap<String, String>,
-    provider: &str,
+    _provider: &str,
 ) -> Result<(&'a str, &'a str), DomainError> {
     let username = settings
         .get("username")
         .and_then(Value::as_str)
         .map(str::trim)
-        .filter(|username| !username.is_empty())
-        .ok_or_else(|| {
-            DomainError::Validation(format!(
-                "The {provider} integration is missing the required 'username' setting"
-            ))
-        })?;
+        .unwrap_or_default();
     let password = secrets
         .get("password")
         .map(String::as_str)
-        .filter(|password| !password.is_empty())
-        .ok_or_else(|| {
-            DomainError::Validation(format!(
-                "The {provider} integration is missing the required 'password' credential"
-            ))
-        })?;
+        .unwrap_or_default();
     Ok((username, password))
 }
 
@@ -126,11 +116,6 @@ pub async fn check_http_digest_endpoint(
     password: &str,
     body: Option<&str>,
 ) -> Result<reqwest::Response, DomainError> {
-    if username.trim().is_empty() || password.is_empty() {
-        return Err(DomainError::Validation(format!(
-            "{provider} username and password are required"
-        )));
-    }
     let mut url = Url::parse(api_url)
         .map_err(|_| DomainError::Validation(format!("{provider} camera address is invalid")))?;
     if !matches!(url.scheme(), "http" | "https")
@@ -175,19 +160,19 @@ pub async fn check_http_digest_endpoint(
         .send()
         .await
         .map_err(|_| DomainError::Validation(format!("Could not reach the {provider} camera")))?;
+    if first_response.status().is_success() {
+        return Ok(first_response);
+    }
     if first_response.status() != reqwest::StatusCode::UNAUTHORIZED {
-        return Err(DomainError::Validation(
-            if first_response.status().is_success() {
-                format!(
-                    "{provider} camera allows unauthenticated access; credentials could not be verified"
-                )
-            } else {
-                format!(
-                    "{provider} camera rejected the connection check (HTTP {})",
-                    first_response.status().as_u16()
-                )
-            },
-        ));
+        return Err(DomainError::Validation(format!(
+            "{provider} camera rejected the connection check (HTTP {})",
+            first_response.status().as_u16()
+        )));
+    }
+    if username.is_empty() && password.is_empty() {
+        return Err(DomainError::Validation(format!(
+            "{provider} camera requires authentication; add the camera username and/or password"
+        )));
     }
 
     let challenge = first_response
@@ -223,6 +208,11 @@ pub async fn check_http_digest_endpoint(
         .send()
         .await
         .map_err(|_| DomainError::Validation(format!("Could not reach the {provider} camera")))?;
+    if response.status() == reqwest::StatusCode::UNAUTHORIZED {
+        return Err(DomainError::Validation(format!(
+            "{provider} camera rejected the supplied credentials"
+        )));
+    }
     if !response.status().is_success() {
         return Err(DomainError::Validation(format!(
             "{provider} rejected the connection check (HTTP {})",
@@ -235,6 +225,205 @@ pub async fn check_http_digest_endpoint(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tokio::{
+        io::{AsyncReadExt, AsyncWriteExt},
+        net::TcpListener,
+    };
+
+    async fn read_http_request(stream: &mut tokio::net::TcpStream) -> String {
+        let mut request = Vec::new();
+        let mut buffer = [0; 1024];
+        loop {
+            let count = stream.read(&mut buffer).await.unwrap();
+            if count == 0 {
+                break;
+            }
+            request.extend_from_slice(&buffer[..count]);
+            if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                break;
+            }
+        }
+        String::from_utf8_lossy(&request).into_owned()
+    }
+
+    async fn write_http_response(
+        stream: &mut tokio::net::TcpStream,
+        status: &str,
+        extra_headers: &str,
+    ) {
+        stream
+            .write_all(
+                format!(
+                    "HTTP/1.1 {status}\r\n{extra_headers}Content-Length: 0\r\nConnection: close\r\n\r\n"
+                )
+                .as_bytes(),
+            )
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn accepts_anonymous_api_access_without_camera_credentials() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let request = read_http_request(&mut stream).await;
+            assert!(request.starts_with("GET /device HTTP/1.1"));
+            assert!(!request.to_ascii_lowercase().contains("authorization:"));
+            write_http_response(&mut stream, "200 OK", "").await;
+        });
+
+        let response = check_http_digest_endpoint(
+            &format!("http://{address}"),
+            "/device",
+            "Camera",
+            reqwest::Method::GET,
+            "",
+            "",
+            None,
+        )
+        .await
+        .expect("public camera API should be accepted");
+
+        assert!(response.status().is_success());
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn retries_digest_auth_with_partial_credentials_when_challenged() {
+        for (username, password) in [("admin", ""), ("", "password-only")] {
+            let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let address = listener.local_addr().unwrap();
+            let server = tokio::spawn(async move {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                read_http_request(&mut stream).await;
+                write_http_response(
+                    &mut stream,
+                    "401 Unauthorized",
+                    "WWW-Authenticate: Digest realm=\"camera\", nonce=\"test\", qop=\"auth\"\r\n",
+                )
+                .await;
+
+                let (mut stream, _) = listener.accept().await.unwrap();
+                let request = read_http_request(&mut stream).await;
+                assert!(
+                    request
+                        .to_ascii_lowercase()
+                        .contains(&format!("authorization: digest username=\"{}\"", username))
+                );
+                write_http_response(&mut stream, "200 OK", "").await;
+            });
+
+            let response = check_http_digest_endpoint(
+                &format!("http://{address}"),
+                "/device",
+                "Camera",
+                reqwest::Method::GET,
+                username,
+                password,
+                None,
+            )
+            .await
+            .expect("partial digest credentials should be sent");
+
+            assert!(response.status().is_success());
+            server.await.unwrap();
+        }
+    }
+
+    #[tokio::test]
+    async fn requests_credentials_for_protected_api_when_none_were_provided() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+            write_http_response(
+                &mut stream,
+                "401 Unauthorized",
+                "WWW-Authenticate: Digest realm=\"camera\", nonce=\"test\", qop=\"auth\"\r\n",
+            )
+            .await;
+        });
+
+        let error = check_http_digest_endpoint(
+            &format!("http://{address}"),
+            "/device",
+            "Camera",
+            reqwest::Method::GET,
+            "",
+            "",
+            None,
+        )
+        .await
+        .expect_err("missing credentials should be requested");
+
+        assert!(error.to_string().contains("requires authentication"));
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn reports_failed_digest_authentication_without_echoing_credentials() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            for attempt in 0..2 {
+                let (mut stream, _) = listener.accept().await.unwrap();
+                read_http_request(&mut stream).await;
+                let headers = if attempt == 0 {
+                    "WWW-Authenticate: Digest realm=\"camera\", nonce=\"test\", qop=\"auth\"\r\n"
+                } else {
+                    ""
+                };
+                write_http_response(&mut stream, "401 Unauthorized", headers).await;
+            }
+        });
+
+        let error = check_http_digest_endpoint(
+            &format!("http://{address}"),
+            "/device",
+            "Camera",
+            reqwest::Method::GET,
+            "admin",
+            "secret-value",
+            None,
+        )
+        .await
+        .expect_err("rejected credentials should fail");
+
+        assert!(
+            error
+                .to_string()
+                .contains("rejected the supplied credentials")
+        );
+        assert!(!error.to_string().contains("secret-value"));
+        server.await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn reports_connection_interruption() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            read_http_request(&mut stream).await;
+        });
+
+        let result = check_http_digest_endpoint(
+            &format!("http://{address}"),
+            "/device",
+            "Camera",
+            reqwest::Method::GET,
+            "",
+            "",
+            None,
+        )
+        .await;
+
+        assert!(result.is_err());
+        server.await.unwrap();
+    }
 
     #[test]
     fn validates_secure_whep_endpoints_without_credentials() {

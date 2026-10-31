@@ -72,12 +72,14 @@ fn format_tool_execution_error(tool_name: &str, error: &DomainError) -> String {
     let error_text = error.to_string();
     let normalized = error_text.to_ascii_lowercase();
 
-    if matches!(tool_name, "generate_report" | "create_custom_report")
-        && (normalized.contains("report definition not found")
-            || normalized.contains("report code is required")
-            || normalized.contains("not found") && normalized.contains("report"))
+    if matches!(
+        tool_name,
+        "generate_report" | "inspect_report_source" | "create_custom_report"
+    ) && (normalized.contains("report definition not found")
+        || normalized.contains("report code is required")
+        || normalized.contains("not found") && normalized.contains("report"))
     {
-        return "The requested report definition could not be found. Please list available reports and use a valid report code before retrying.".to_string();
+        return "The requested report definition could not be found. Call list_available_reports, then use an exact report_code from its results before retrying.".to_string();
     }
 
     format!("Error executing {}: {}", tool_name, error)
@@ -792,8 +794,19 @@ impl AiOrchestrationService {
                 category: ToolCategory::Read,
             },
             AiToolDefinition {
+                name: "list_available_reports".into(),
+                description: "List active report definitions available to the current user, including their exact report codes, parameter schemas, and supported formats. Call this before inspect_report_source or creating a report; use an exact code from the results.".into(),
+                parameters_schema: json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+                required_permission: Some("data:export".into()),
+                is_consequential: false,
+                category: ToolCategory::Read,
+            },
+            AiToolDefinition {
                 name: "list_report_templates".into(),
-                description: "List available report and document templates in the system.".into(),
+                description: "List published visual templates that can be used to format reports. This does not list report definitions or report codes; use list_available_reports for those.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {}
@@ -804,7 +817,7 @@ impl AiOrchestrationService {
             },
             AiToolDefinition {
                 name: "inspect_report_source".into(),
-                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Returns no report rows.".into(),
+                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Call list_available_reports first and pass an exact report_code from its results. Returns no report rows.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
@@ -1704,6 +1717,34 @@ impl AiOrchestrationService {
                         "type": "unpaid_fees",
                         "items": rows
                     }
+                }))
+            }
+            "list_available_reports" => {
+                let definitions = self.report_service.list_reports(ctx, None, None).await?;
+                let mut reports = Vec::with_capacity(definitions.len());
+                for definition in definitions {
+                    if let Err(error) = self.check_report_domain_permission(ctx, &definition).await
+                    {
+                        if matches!(error, DomainError::Unauthorized(_)) {
+                            continue;
+                        }
+                        return Err(error);
+                    }
+                    reports.push(json!({
+                        "code": definition.code,
+                        "name": definition.name,
+                        "name_ar": definition.name_ar,
+                        "domain": definition.domain.to_string(),
+                        "category": definition.category,
+                        "description": definition.description,
+                        "description_ar": definition.description_ar,
+                        "parameters": definition.parameters,
+                        "supported_formats": definition.supported_formats.into_iter().map(|format| format.to_string()).collect::<Vec<_>>()
+                    }));
+                }
+                Ok(json!({
+                    "count": reports.len(),
+                    "reports": reports
                 }))
             }
             "list_report_templates" => {
@@ -2651,8 +2692,43 @@ mod tests {
             &DomainError::NotFound("Report definition not found".into()),
         );
 
-        assert!(message.contains("list available reports"));
+        assert!(message.contains("list_available_reports"));
         assert!(!message.contains("NotFound: Report definition not found"));
+    }
+
+    #[test]
+    fn inspect_report_missing_definition_points_to_report_discovery() {
+        let message = format_tool_execution_error(
+            "inspect_report_source",
+            &DomainError::NotFound("Report definition not found".into()),
+        );
+
+        assert!(message.contains("list_available_reports"));
+        assert!(message.contains("exact report_code"));
+    }
+
+    #[test]
+    fn report_discovery_is_registered_separately_from_template_listing() {
+        let tools = AiOrchestrationService::registered_tools();
+        let report_tool = tools
+            .iter()
+            .find(|tool| tool.name == "list_available_reports")
+            .expect("report discovery tool is registered");
+        let template_tool = tools
+            .iter()
+            .find(|tool| tool.name == "list_report_templates")
+            .expect("template listing tool is registered");
+
+        assert_eq!(
+            report_tool.required_permission.as_deref(),
+            Some("data:export")
+        );
+        assert!(report_tool.description.contains("exact report codes"));
+        assert!(
+            template_tool
+                .description
+                .contains("does not list report definitions")
+        );
     }
 
     #[test]

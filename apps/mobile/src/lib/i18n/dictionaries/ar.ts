@@ -433,7 +433,8 @@ export const ar = {
   auth_register_subtitle: "انضم إلى منظومة أوربس التعليمية",
   auth_institution_code: "اسم المؤسسة",
   auth_institution_search_title: "اختر مؤسستك",
-  auth_institution_search_description: "ابحث عن مؤسستك أو أضف اتصالًا محليًا.",
+  auth_institution_search_description:
+    "تظهر المؤسسات المتاحة على شبكتك أولاً، ثم يمكنك الاختيار من دليل المؤسسات.",
   auth_institution_featured_recommended: "مقترحة",
   auth_institution_featured_nearby: "الأقرب",
   auth_institution_local_scan: "مسح QR",
@@ -442,6 +443,19 @@ export const ar = {
   auth_institution_local_hint:
     "امسح رمز QR الذي وفرته المدرسة أو أدخل عنوان خادمها.",
   auth_institution_local_label: "مؤسسة محلية",
+  auth_institution_lan_title: "متاحة على شبكتك",
+  auth_institution_lan_description:
+    "يكتشف Orbis خوادم المؤسسة تلقائيًا على شبكة Wi-Fi نفسها.",
+  auth_institution_lan_checking: "جارٍ الاتصال بالشبكة المحلية...",
+  auth_institution_lan_empty:
+    "لم نعثر على خادم محلي بعد. تأكد من اتصال الجهازين بشبكة Wi-Fi نفسها.",
+  auth_institution_lan_permission_error:
+    "اسمح لـOrbis بالوصول إلى الشبكة المحلية لاكتشاف خادم المؤسسة.",
+  auth_institution_lan_error:
+    "تعذر اكتشاف خوادم Orbis المحلية. حدّث البحث وحاول مجددًا.",
+  auth_institution_lan_retry: "تحديث البحث عن الخوادم المحلية",
+  auth_institution_lan_expo_go:
+    "يتطلب اكتشاف الخوادم المحلية نسخة تطوير Orbis؛ لا يدعم Expo Go وحدات الشبكة المحلية.",
   auth_institution_local_confirm: "اتصال بهذه المؤسسة",
   auth_institution_local_name: "اسم المدرسة",
   auth_institution_local_server: "عنوان خادم HTTPS",

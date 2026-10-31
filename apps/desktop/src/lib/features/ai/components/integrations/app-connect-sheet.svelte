@@ -50,6 +50,7 @@ const formId = $derived(`app-connect-form-${app.id}`);
           {formId}
           settings={app.settings}
           {initialValues}
+          authenticationRequired={error?.toLowerCase().includes("authentication") ?? false}
           {onsubmit}
         />
       {/key}

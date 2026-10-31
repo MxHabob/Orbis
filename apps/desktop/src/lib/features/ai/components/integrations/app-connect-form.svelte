@@ -33,24 +33,34 @@ let {
   formId,
   settings,
   initialValues = {},
+  authenticationRequired = false,
   onsubmit,
 }: {
   appId: string;
   formId: string;
   settings: AppSetting[];
   initialValues?: Record<string, unknown>;
+  authenticationRequired?: boolean;
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
 let values = $state<Record<string, any>>(
-  untrack(() => Object.fromEntries(
-    settings.map((setting) => [
-      setting.id,
-      initialValues[setting.id] ??
-        setting.value ??
-        (setting.type === "switch" ? false : ""),
-    ]),
-  )),
+  untrack(() =>
+    Object.fromEntries(
+      settings.map((setting) => [
+        setting.id,
+        setting.id === "use_authentication"
+          ? Boolean(
+              initialValues.use_authentication ??
+                initialValues.username ??
+                initialValues.password,
+            )
+          : (initialValues[setting.id] ??
+            setting.value ??
+            (setting.type === "switch" ? false : "")),
+      ]),
+    ),
+  ),
 );
 const effectiveSettings = $derived(
   settings.map((setting) => {
@@ -67,9 +77,20 @@ const effectiveSettings = $derived(
 const isTauri = $derived(
   typeof window !== "undefined" && "__TAURI_INTERNALS__" in window,
 );
+
 const visibleSettings = $derived(
   effectiveSettings
     .filter((setting) => {
+      if (setting.id === "use_authentication") return !authenticationRequired;
+      if (setting.id === "username" || setting.id === "password") {
+        return (
+          !settings.some(
+            (candidate) => candidate.id === "use_authentication",
+          ) ||
+          values.use_authentication === true ||
+          authenticationRequired
+        );
+      }
       if (setting.id === "local_path") return values.provider === "local";
       if (
         ["bucket", "access_key", "secret_key", "region", "endpoint"].includes(
@@ -80,11 +101,12 @@ const visibleSettings = $derived(
       }
       return true;
     })
-    .map((setting) =>
-      setting.id === "endpoint"
-        ? { ...setting, required: values.provider !== "s3" }
-        : setting,
-    ),
+    .map((setting) => {
+      if (setting.id === "endpoint") {
+        return { ...setting, required: values.provider !== "s3" };
+      }
+      return setting;
+    }),
 );
 
 onMount(() => {
@@ -100,7 +122,9 @@ function handleSubmit(e: SubmitEvent) {
     toast.error(m.ui_copy_please_review_the_connection_settings_e94d1183());
     return;
   }
-  onsubmit?.(result.data);
+  const submittedValues = { ...result.data };
+  delete submittedValues.use_authentication;
+  onsubmit?.(submittedValues);
 }
 
 async function browseDirectory(settingId: string) {

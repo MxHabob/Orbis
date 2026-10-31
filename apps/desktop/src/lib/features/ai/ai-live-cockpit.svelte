@@ -13,7 +13,7 @@ let { orgId }: { orgId: string } = $props();
 
 // ── State ───────────────────────────────────────────────────
 type GridLayout = "1x1" | "2x2" | "3x3";
-let gridLayout = $state<GridLayout>("2x2");
+let gridLayout = $state<GridLayout>("1x1");
 let selectedIdx = $state<number | null>(null);
 let isLoading = $state(true);
 let loadError = $state(false);
@@ -33,14 +33,19 @@ onMount(() => {
   const startStreams = async () => {
     try {
       if (!isDesktopApp) {
-        throw new Error("Local camera streaming is available in Orbis Desktop.");
+        throw new Error(
+          "Local camera streaming is available in Orbis Desktop.",
+        );
       }
       const response = await invokeDesktopCommand<{ data: CameraFeed[] }>(
         "camera_stream_start",
       );
       if (!disposed) cameras = response.data;
     } catch (error) {
-      console.error("[AI Center] Local camera relay could not be started:", error);
+      console.error(
+        "[AI Center] Local camera relay could not be started:",
+        error,
+      );
       if (!disposed) loadError = true;
     } finally {
       if (!disposed) isLoading = false;
@@ -54,7 +59,10 @@ onMount(() => {
       try {
         await invokeDesktopCommand("camera_stream_stop");
       } catch (error) {
-        console.error("[AI Center] Local camera relay could not be stopped:", error);
+        console.error(
+          "[AI Center] Local camera relay could not be stopped:",
+          error,
+        );
       }
     });
   };
@@ -120,9 +128,7 @@ const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
         <div class="h-full grid {gridCols[gridLayout]} gap-3">
           {#each Array(gridSlots[gridLayout]) as _, i (i)}
             {@const cam = cameras[i]}
-            {@const streamActive = selectedIdx === null
-              ? i < Math.min(gridSlots[gridLayout], 4)
-              : selectedIdx === i}
+            {@const streamActive = selectedIdx === i}
             <div
               role="button"
               tabindex="0"

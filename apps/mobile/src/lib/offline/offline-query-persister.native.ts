@@ -1,4 +1,5 @@
 import * as Crypto from "expo-crypto";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import * as SecureStore from "expo-secure-store";
 import * as SQLite from "expo-sqlite";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
@@ -6,11 +7,32 @@ import { getOfflineQueryCacheKey } from "./offline-query-cache";
 
 const DATABASE_NAME = "orbis-mobile-offline-cache.db";
 const ENCRYPTION_KEY_STORAGE_KEY = "orbis_offline_cache_encryption_key";
+const isExpoGo =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 const fallbackQueryCache = new Map<string, Map<string, string>>();
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | undefined;
+let hasLoggedExpoGoFallback = false;
+
+function logFallback(message: string, error: unknown): void {
+  if (isExpoGo) {
+    if (!hasLoggedExpoGoFallback) {
+      console.info(
+        "[Orbis Mobile Cache] Expo Go does not include SQLCipher; using an in-memory cache until an Orbis development build is installed.",
+      );
+      hasLoggedExpoGoFallback = true;
+    }
+    return;
+  }
+
+  console.warn(message, error);
+}
 
 async function openEncryptedDatabase(): Promise<SQLite.SQLiteDatabase> {
+  if (isExpoGo) {
+    throw new Error("SQLCipher is unavailable in Expo Go.");
+  }
+
   if (!(await SecureStore.isAvailableAsync())) {
     throw new Error(
       "Secure storage is unavailable; offline cache cannot be encrypted.",
@@ -98,7 +120,7 @@ export function createOfflineQueryPersister(scope: string) {
           );
           return row?.cache_value ?? fallbackStore.get(key) ?? null;
         } catch (error) {
-          console.warn(
+          logFallback(
             "[Orbis Mobile Cache] Native encrypted cache unavailable; using in-memory fallback.",
             error,
           );
@@ -116,7 +138,7 @@ export function createOfflineQueryPersister(scope: string) {
             Date.now(),
           );
         } catch (error) {
-          console.warn(
+          logFallback(
             "[Orbis Mobile Cache] Failed to persist query cache in SQLite; using in-memory fallback.",
             error,
           );
@@ -131,7 +153,7 @@ export function createOfflineQueryPersister(scope: string) {
             key,
           );
         } catch (error) {
-          console.warn(
+          logFallback(
             "[Orbis Mobile Cache] Failed to remove cached query from SQLite; clearing in-memory fallback.",
             error,
           );
