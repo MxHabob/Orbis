@@ -11,11 +11,15 @@ use orbis_server::state::AppState;
 use sea_orm::Database;
 use std::sync::Arc;
 use tokio::net::TcpListener;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing
-    tracing_subscriber::fmt::init();
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_target(true)
+        .init();
 
     // The API server owns its database configuration. Never discover a Desktop
     // user's local database or log credentials embedded in a database URL.

@@ -8,6 +8,7 @@ interactive tool inspections, and consequential action approvals.
 import { goto } from "$app/navigation";
 import { page } from "$app/state";
 import { api, isDesktopApp } from "$lib/api";
+import { invokeDesktopCommand } from "$lib/api/desktop-command-performance";
 import type { AiCustomReportRequest } from "$lib/api/types";
 import { formatAiErrorMessage } from "$lib/features/ai/error-formatter";
 import {
@@ -170,8 +171,7 @@ function handleClose() {
 async function openStandaloneWindow() {
   if (isDesktopApp) {
     try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      await invoke("open_agent_window");
+      await invokeDesktopCommand("open_agent_window");
       uiStore.setAskOrbis(false);
       return;
     } catch (e) {

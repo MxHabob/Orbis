@@ -16,6 +16,7 @@ import {
   ArrowRight,
   ArrowUpTray,
   Bolt,
+  ChartBar,
   CheckCircle,
   ClockRotateRight,
   Computer,
@@ -36,6 +37,11 @@ import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Switch } from "@orbis/ui/switch";
 import { onMount } from "svelte";
+import {
+  getDesktopCommandPerformance,
+  resetDesktopCommandPerformance,
+  type DesktopCommandPerformance,
+} from "$lib/api/desktop-command-performance";
 import CreateDatabaseDialog from "./create-database-dialog.svelte";
 import { DatabaseManagerController } from "./database-manager.svelte";
 
@@ -44,8 +50,9 @@ let { orgId }: { orgId: string } = $props();
 const controller = new DatabaseManagerController();
 
 let activeSection = $state<
-  "overview" | "connection" | "backup" | "restore" | "maintenance"
+  "overview" | "connection" | "backup" | "restore" | "maintenance" | "performance"
 >("overview");
+let commandPerformance = $state<DesktopCommandPerformance[]>([]);
 
 // Connection form state
 let connMode = $state<ConnectionMode>("local");
@@ -108,6 +115,26 @@ function syncFormValues() {
     customBackupDir = controller.settings.backup_dir || "";
     integrityOnStartup = controller.settings.integrity_check_on_startup ?? true;
   }
+}
+
+function formatDuration(durationMs: number): string {
+  return `${durationMs.toFixed(durationMs < 10 ? 2 : 1)} ms`;
+}
+
+function clearCommandPerformance() {
+  resetDesktopCommandPerformance();
+  commandPerformance = [];
+}
+
+function refreshCommandPerformance() {
+  commandPerformance = getDesktopCommandPerformance();
+}
+
+function selectSection(
+  section: "overview" | "connection" | "backup" | "restore" | "maintenance" | "performance",
+) {
+  activeSection = section;
+  if (section === "performance") refreshCommandPerformance();
 }
 
 async function handleTestRemote() {
@@ -305,6 +332,13 @@ const directoryItems = $derived([
       controller.status?.integrity_status === "ok"
         ? m.ui_copy_ok_3b8e28b7()
         : controller.status?.integrity_status || m.ui_copy_ok_217bf3e2(),
+  },
+  {
+    id: "performance" as const,
+    title: m.database_performance_title(),
+    desc: m.database_performance_subtitle(),
+    icon: ChartBar,
+    badge: `${commandPerformance.length}`,
   },
   {
     id: "connection" as const,
@@ -583,7 +617,7 @@ const advisorInsights = $derived.by(() => {
               <button 
                 type="button"
                 class="group flex items-center justify-between py-2.5 px-3 border-b border-border/30 hover:bg-muted/40 rounded-lg transition-colors duration-150 select-none cursor-pointer w-full text-start {activeSection === item.id ? 'bg-muted/40' : ''}"
-                onclick={() => activeSection = item.id}
+                onclick={() => selectSection(item.id)}
               >
                 <div class="flex items-center gap-3.5 min-w-0 text-start">
                   <!-- Sleek Monolithic icon box -->
@@ -1246,6 +1280,81 @@ const advisorInsights = $derived.by(() => {
                 </div>
               {/if}
             </div>
+          {/if}
+
+          {#if activeSection === "performance"}
+            <section class="space-y-4 text-start">
+              <div class="flex items-center justify-between gap-3 border-b border-border/40 pb-3">
+                <div class="flex items-center gap-2">
+                  <ChartBar size={16} class="text-primary" />
+                  <h3 class="text-xs font-bold text-foreground">
+                    {m.database_performance_title()}
+                  </h3>
+                </div>
+                <div class="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-7 gap-1.5 px-2.5 text-[10px]"
+                    onclick={refreshCommandPerformance}
+                  >
+                    <ArrowPath size={12} />
+                    {m.common_refresh()}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    class="h-7 gap-1.5 px-2.5 text-[10px]"
+                    onclick={clearCommandPerformance}
+                    disabled={commandPerformance.length === 0}
+                  >
+                    {m.database_performance_reset()}
+                  </Button>
+                </div>
+              </div>
+
+              <p class="text-[10px] leading-relaxed text-muted-foreground">
+                {m.database_performance_privacy_note()}
+              </p>
+
+              {#if commandPerformance.length === 0}
+                <div class="rounded-lg border border-border/40 bg-card/40 p-6 text-center text-xs text-muted-foreground">
+                  {m.database_performance_empty()}
+                </div>
+              {:else}
+                <div class="max-h-[34rem] overflow-auto rounded-lg border border-border/40">
+                  <table class="w-full min-w-[34rem] text-start text-[10px]">
+                    <thead class="sticky top-0 bg-muted/80 text-muted-foreground">
+                      <tr>
+                        <th class="px-3 py-2 font-semibold">{m.database_performance_command()}</th>
+                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_calls()}</th>
+                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_average()}</th>
+                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_p95()}</th>
+                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_failures()}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {#each commandPerformance as metric (metric.command)}
+                        <tr class="border-t border-border/30">
+                          <td class="px-3 py-2 font-mono text-foreground">{metric.command}</td>
+                          <td class="px-3 py-2 text-end font-mono text-muted-foreground">
+                            {metric.totalCalls} <span class="text-muted-foreground/60">({metric.sampleCount})</span>
+                          </td>
+                          <td class="px-3 py-2 text-end font-mono text-muted-foreground">{formatDuration(metric.averageMs)}</td>
+                          <td class="px-3 py-2 text-end font-mono {metric.p95Ms >= 500 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}">{formatDuration(metric.p95Ms)}</td>
+                          <td class="px-3 py-2 text-end font-mono {metric.failedCalls > 0 ? 'text-destructive' : 'text-muted-foreground'}">{metric.failedCalls}</td>
+                        </tr>
+                      {/each}
+                    </tbody>
+                  </table>
+                </div>
+                <p class="text-[9px] text-muted-foreground/80">
+                  {m.database_performance_window_note()}
+                </p>
+              {/if}
+            </section>
           {/if}
 
         </div>

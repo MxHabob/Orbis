@@ -14,7 +14,7 @@
     "@tanstack/react-query": "5.104.2",
     "@tanstack/react-query-persist-client": "5.104.2",
     "buffer": "^6.0.3",
-    "expo": "~57.0.24",
+    "expo": "~58.0.0",
     "expo-blur": "~57.0.3",
     "expo-build-properties": "~57.0.22",
     "expo-camera": "~57.0.6",

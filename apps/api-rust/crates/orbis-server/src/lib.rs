@@ -6,13 +6,17 @@ pub mod state;
 use axum::{
     Router,
     body::Body,
-    extract::{FromRequestParts, State},
+    extract::{FromRequestParts, MatchedPath, State},
     http::Request,
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::get,
 };
 use sea_orm::ConnectionTrait;
+use std::{
+    sync::OnceLock,
+    time::{Duration, Instant},
+};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -724,7 +728,68 @@ pub fn app_router(state: state::AppState) -> Router {
             state.clone(),
             enforce_api_license,
         ))
+        .layer(middleware::from_fn(log_request_performance))
         .with_state(state)
+}
+
+fn slow_request_threshold() -> Duration {
+    static THRESHOLD: OnceLock<Duration> = OnceLock::new();
+
+    *THRESHOLD.get_or_init(|| {
+        const DEFAULT_THRESHOLD_MS: u64 = 500;
+
+        match std::env::var("ORBIS_SLOW_REQUEST_MS") {
+            Ok(value) => match value.parse::<u64>() {
+                Ok(milliseconds) if milliseconds > 0 => Duration::from_millis(milliseconds),
+                _ => {
+                    tracing::warn!(
+                        setting = "ORBIS_SLOW_REQUEST_MS",
+                        default_ms = DEFAULT_THRESHOLD_MS,
+                        "Invalid slow request threshold; using the default"
+                    );
+                    Duration::from_millis(DEFAULT_THRESHOLD_MS)
+                }
+            },
+            Err(_) => Duration::from_millis(DEFAULT_THRESHOLD_MS),
+        }
+    })
+}
+
+async fn log_request_performance(request: Request<Body>, next: Next) -> Response {
+    let method = request.method().clone();
+    let route = request
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|path| path.as_str().to_owned())
+        .unwrap_or_else(|| "unmatched".to_owned());
+    let started_at = Instant::now();
+    let response = next.run(request).await;
+    let duration = started_at.elapsed();
+    let duration_ms = duration.as_secs_f64() * 1000.0;
+    let status = response.status();
+
+    if duration >= slow_request_threshold() || status.is_server_error() {
+        tracing::warn!(
+            target: "orbis::performance",
+            %method,
+            %route,
+            status = status.as_u16(),
+            duration_ms,
+            slow = duration >= slow_request_threshold(),
+            "API request completed"
+        );
+    } else {
+        tracing::debug!(
+            target: "orbis::performance",
+            %method,
+            %route,
+            status = status.as_u16(),
+            duration_ms,
+            "API request completed"
+        );
+    }
+
+    response
 }
 
 async fn api_health(State(state): State<state::AppState>) -> Response {

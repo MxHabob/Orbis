@@ -388,7 +388,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restoreSession = useCallback(async () => {
-    setIsInitializing(true);
     try {
       const [
         savedToken,

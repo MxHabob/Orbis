@@ -132,6 +132,14 @@ Orbis is designed for private institutional infrastructure:
 
 For deployment and licensing inquiries, [contact Mulverse](mailto:mulverseco@gmail.com).
 
+### Local performance diagnostics
+
+The API logs slow request timings locally without recording request bodies,
+query strings, or record identifiers. Administrators can optionally use
+PostgreSQL's local `pg_stat_statements` extension for query-level aggregates.
+See the [performance diagnostics guide](docs/performance-diagnostics.md) for
+configuration and safe analysis steps.
+
 ## Translations
 
 The desktop application's supported locales and base locale are maintained in the project configuration. The message files are the source of truth for translated text:

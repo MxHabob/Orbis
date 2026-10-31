@@ -5,7 +5,7 @@
  * `ApiResponse<T>` envelope.
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { invokeDesktopCommand as invoke } from "./desktop-command-performance";
 import type {
   OrbisApiClient,
   LoginRequest,
