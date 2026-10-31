@@ -17,10 +17,13 @@ pub struct DashboardRepoImpl {
 impl DashboardRepository for DashboardRepoImpl {
     async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError> {
         // Student records are the source of truth; role assignments may be absent.
-        let total_students = self.count_query(
-            "SELECT COUNT(*) as cnt FROM students WHERE org_id = $1 AND is_deleted = FALSE",
-            org_id,
-        ).await.unwrap_or(0);
+        let total_students = self
+            .count_query(
+                "SELECT COUNT(*) as cnt FROM students WHERE org_id = $1 AND is_deleted = FALSE",
+                org_id,
+            )
+            .await
+            .unwrap_or(0);
 
         // Count teachers from user_role_assignments
         let total_teachers = self.count_query(

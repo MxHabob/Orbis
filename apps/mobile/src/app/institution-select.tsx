@@ -204,10 +204,7 @@ export default function InstitutionSelectScreen() {
 
   return (
     <Screen edges={[]} statusBarStyle="auto">
-      <View
-        className="flex-1"
-        style={{ paddingTop: topInset }}
-      >
+      <View className="flex-1" style={{ paddingTop: topInset }}>
         <InstitutionPickerHeader
           languageLabel={locale === "ar" ? "English" : "العربية"}
           accessibilityLabel={
@@ -326,8 +323,7 @@ export default function InstitutionSelectScreen() {
                 {screenError}
               </Text>
             ) : null}
-            {selectedLocalInstitution &&
-            !selectedLocalHealthQuery.isSuccess ? (
+            {selectedLocalInstitution && !selectedLocalHealthQuery.isSuccess ? (
               <Text
                 accessibilityRole={
                   selectedLocalHealthQuery.isError ? "alert" : undefined
