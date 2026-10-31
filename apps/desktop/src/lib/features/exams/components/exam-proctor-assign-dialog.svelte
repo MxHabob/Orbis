@@ -42,9 +42,15 @@ let {
 } = $props();
 
 const assignmentSchema = z.object({
-  exam_schedule_id: z.string().trim().min(1, m.operations_ui_proctor_select_schedule()),
+  exam_schedule_id: z
+    .string()
+    .trim()
+    .min(1, m.operations_ui_proctor_select_schedule()),
   room_id: z.string().trim().min(1, m.operations_ui_proctor_select_room()),
-  teacher_id: z.string().trim().min(1, m.operations_ui_proctor_select_teacher()),
+  teacher_id: z
+    .string()
+    .trim()
+    .min(1, m.operations_ui_proctor_select_teacher()),
   is_chief: z.boolean(),
 });
 
@@ -67,7 +73,12 @@ const roomsQuery = createQuery(() => ({
 
 const teachersQuery = createQuery(() => ({
   queryKey: ["exam-proctor-teachers", orgId],
-  queryFn: () => api.listEmployees({ employee_type: "teacher", status: "active" }),
+  queryFn: () =>
+    api.listEmployees({
+      employee_type: "teacher",
+      status: "active",
+      page_size: 500,
+    }),
   enabled: open && !!orgId,
   staleTime: 5 * 60 * 1000,
 }));
@@ -78,11 +89,14 @@ const assignMutation = createMutation(() => ({
 }));
 
 const rooms = $derived(roomsQuery.data ?? []);
+const examHalls = $derived(rooms.filter((room) => room.is_exam_hall));
 const teachers = $derived(teachersQuery.data?.items ?? []);
 const selectedSchedule = $derived(
   schedules.find((schedule) => schedule.id === form.values.exam_schedule_id),
 );
-const isLoadingOptions = $derived(roomsQuery.isLoading || teachersQuery.isLoading);
+const isLoadingOptions = $derived(
+  roomsQuery.isLoading || teachersQuery.isLoading,
+);
 const isSaving = $derived(form.isSubmitting || assignMutation.isPending);
 
 async function handleSubmit() {
@@ -148,15 +162,15 @@ async function handleSubmit() {
             type="single"
             value={form.values.room_id}
             onValueChange={(value) => form.setField("room_id", value ?? "")}
-            disabled={isLoadingOptions || isSaving || rooms.length === 0}
+            disabled={isLoadingOptions || isSaving || examHalls.length === 0}
           >
             <SelectTrigger id="proctor-room" class="h-9 w-full text-sm">
-              {rooms.find((room) => room.id === form.values.room_id)?.name_ar
-                || rooms.find((room) => room.id === form.values.room_id)?.name
+              {examHalls.find((room) => room.id === form.values.room_id)?.name_ar
+                || examHalls.find((room) => room.id === form.values.room_id)?.name
                 || m.operations_ui_proctor_select_room()}
             </SelectTrigger>
             <SelectContent>
-              {#each rooms as room (room.id)}
+              {#each examHalls as room (room.id)}
                 <SelectItem value={room.id}>{room.name_ar || room.name}</SelectItem>
               {/each}
             </SelectContent>
@@ -204,8 +218,8 @@ async function handleSubmit() {
         <p class="text-sm text-destructive" role="alert">
           {extractErrorMessage(roomsQuery.error || teachersQuery.error)}
         </p>
-      {:else if !isLoadingOptions && schedules.length > 0 && rooms.length === 0}
-        <p class="text-sm text-muted-foreground">{m.academics_exams_no_classrooms()}</p>
+      {:else if !isLoadingOptions && schedules.length > 0 && examHalls.length === 0}
+        <p class="text-sm text-muted-foreground">{m.operations_ui_proctor_no_exam_halls()}</p>
       {:else if !isLoadingOptions && schedules.length > 0 && teachers.length === 0}
         <p class="text-sm text-muted-foreground">{m.operations_ui_proctor_no_teachers()}</p>
       {/if}
@@ -225,7 +239,7 @@ async function handleSubmit() {
         <Button
           type="submit"
           variant="default"
-          disabled={isSaving || isLoadingOptions || schedules.length === 0 || rooms.length === 0 || teachers.length === 0}
+          disabled={isSaving || isLoadingOptions || schedules.length === 0 || examHalls.length === 0 || teachers.length === 0}
         >
           {isSaving ? m.operations_ui_proctor_assigning() : m.operations_ui_assign_proctors()}
         </Button>

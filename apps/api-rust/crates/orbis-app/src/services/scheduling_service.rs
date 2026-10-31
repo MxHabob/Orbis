@@ -10,6 +10,7 @@ use orbis_domain::entities::time_slot::TimeSlot;
 use orbis_domain::errors::DomainError;
 use orbis_domain::events::DomainEvent;
 use orbis_domain::iam::permission::Permission;
+use std::collections::HashSet;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -112,6 +113,7 @@ impl SchedulingService {
             name_ar,
             capacity,
             room_type,
+            is_exam_hall: false,
             floor,
             org_unit_id,
             created_at: now,
@@ -138,6 +140,7 @@ impl SchedulingService {
         name_ar: Option<String>,
         capacity: Option<i32>,
         room_type: Option<String>,
+        is_exam_hall: Option<bool>,
         floor: Option<i32>,
         org_unit_id: Option<Option<Uuid>>,
     ) -> Result<Room, DomainError> {
@@ -167,6 +170,9 @@ impl SchedulingService {
         }
         if let Some(rt) = room_type {
             room.room_type = rt;
+        }
+        if let Some(is_exam_hall) = is_exam_hall {
+            room.is_exam_hall = is_exam_hall;
         }
         if let Some(f) = floor {
             room.floor = Some(f);
@@ -815,30 +821,91 @@ impl SchedulingService {
 
         let now = Utc::now();
         let prefix = prefix.unwrap_or_else(|| "SEAT-".to_string());
-        let start = start_number.unwrap_or(1);
+        let mut next_number = start_number.unwrap_or(1);
+        let existing = self.seating_number_repo.find_by_session(session_id).await?;
+        let assigned_students: HashSet<Uuid> =
+            existing.iter().map(|seat| seat.student_id).collect();
+        let mut used_numbers: HashSet<String> = existing
+            .iter()
+            .map(|seat| seat.seating_number.clone())
+            .collect();
+        let mut requested_students = HashSet::new();
+        let student_ids: Vec<Uuid> = student_ids
+            .into_iter()
+            .filter(|student_id| {
+                requested_students.insert(*student_id) && !assigned_students.contains(student_id)
+            })
+            .collect();
 
+        let mut room_capacity = Vec::with_capacity(room_ids.len());
+        let unique_room_ids: HashSet<Uuid> = room_ids.iter().copied().collect();
+        if unique_room_ids.len() != room_ids.len() {
+            return Err(DomainError::Validation(
+                "Exam hall list contains duplicate rooms".into(),
+            ));
+        }
+        for room_id in room_ids {
+            let room = self
+                .room_repo
+                .find_by_id(room_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound(format!("Room {room_id} not found")))?;
+            if !room.is_exam_hall {
+                return Err(DomainError::Validation(format!(
+                    "Room {} is not enabled as an exam hall",
+                    room.name
+                )));
+            }
+            let used = existing
+                .iter()
+                .filter(|seat| seat.room_id == Some(room_id))
+                .count() as i32;
+            room_capacity.push((room_id, room.capacity.max(0), used));
+        }
+
+        let mut next_room = 0;
         let mut seatings = Vec::with_capacity(student_ids.len());
-        for (i, &student_id) in student_ids.iter().enumerate() {
-            let seat_num = format!("{}{:04}", prefix, start + (i as u32));
-            let room_id = if !room_ids.is_empty() {
-                Some(room_ids[i % room_ids.len()])
-            } else {
+        for student_id in student_ids {
+            let room_id = if room_capacity.is_empty() {
                 None
+            } else {
+                let available_room = (0..room_capacity.len())
+                    .map(|offset| (next_room + offset) % room_capacity.len())
+                    .find(|&index| room_capacity[index].2 < room_capacity[index].1)
+                    .ok_or_else(|| {
+                        DomainError::Validation(
+                            "Selected exam halls do not have enough remaining capacity".into(),
+                        )
+                    })?;
+                room_capacity[available_room].2 += 1;
+                next_room = (available_room + 1) % room_capacity.len();
+                Some(room_capacity[available_room].0)
             };
 
+            let seating_number = loop {
+                let candidate = format!("{prefix}{next_number:04}");
+                next_number = next_number.checked_add(1).ok_or_else(|| {
+                    DomainError::Validation("Seating number range is exhausted".into())
+                })?;
+                if used_numbers.insert(candidate.clone()) {
+                    break candidate;
+                }
+            };
             let seating = SeatingNumber {
                 id: Uuid::new_v4(),
                 exam_session_id: session_id,
                 student_id,
                 room_id,
-                seating_number: seat_num.clone(),
+                seating_number,
                 created_at: now,
                 updated_at: now,
             };
             seatings.push(seating);
         }
 
-        self.seating_number_repo.save_bulk(&seatings).await?;
+        if !seatings.is_empty() {
+            self.seating_number_repo.save_bulk(&seatings).await?;
+        }
 
         for s in &seatings {
             let event = DomainEvent::SeatingNumberAssigned {
@@ -899,11 +966,32 @@ impl SchedulingService {
             .check(ctx, Permission::SecretNumberGenerate)
             .await?;
 
+        self.exam_schedule_repo
+            .find_by_id(schedule_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
+
         let now = Utc::now();
-        let mut used_secrets = std::collections::HashSet::new();
+        let existing = self
+            .secret_number_repo
+            .find_by_schedule(schedule_id)
+            .await?;
+        let mut assigned_students: HashSet<Uuid> =
+            existing.iter().map(|secret| secret.student_id).collect();
+        let mut used_secrets: HashSet<String> = existing
+            .iter()
+            .map(|secret| secret.secret_number.clone())
+            .collect();
+        let mut requested_students = HashSet::new();
+        let student_ids: Vec<Uuid> = student_ids
+            .into_iter()
+            .filter(|student_id| {
+                requested_students.insert(*student_id) && !assigned_students.contains(student_id)
+            })
+            .collect();
         let mut secrets = Vec::with_capacity(student_ids.len());
 
-        for &student_id in &student_ids {
+        for student_id in student_ids {
             let mut candidate;
             loop {
                 let u = Uuid::new_v4();
@@ -913,6 +1001,7 @@ impl SchedulingService {
                     break;
                 }
             }
+            assigned_students.insert(student_id);
 
             secrets.push(SecretNumber {
                 id: Uuid::new_v4(),
@@ -924,7 +1013,9 @@ impl SchedulingService {
             });
         }
 
-        self.secret_number_repo.save_bulk(&secrets).await?;
+        if !secrets.is_empty() {
+            self.secret_number_repo.save_bulk(&secrets).await?;
+        }
         Ok(secrets)
     }
 
@@ -941,6 +1032,39 @@ impl SchedulingService {
         self.permission_checker
             .check(ctx, Permission::ProctorAssign)
             .await?;
+
+        self.exam_schedule_repo
+            .find_by_id(schedule_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Exam schedule not found".to_string()))?;
+        let room = self
+            .room_repo
+            .find_by_id(room_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Room not found".to_string()))?;
+        if !room.is_exam_hall {
+            return Err(DomainError::Validation(
+                "Room is not enabled as an exam hall".into(),
+            ));
+        }
+        let assigned = self.exam_proctor_repo.find_by_schedule(schedule_id).await?;
+        if assigned
+            .iter()
+            .any(|proctor| proctor.teacher_id == teacher_id && proctor.room_id == room_id)
+        {
+            return Err(DomainError::Validation(
+                "Teacher is already assigned to this exam hall".into(),
+            ));
+        }
+        if is_chief
+            && assigned
+                .iter()
+                .any(|proctor| proctor.room_id == room_id && proctor.is_chief)
+        {
+            return Err(DomainError::Validation(
+                "This exam hall already has a chief proctor".into(),
+            ));
+        }
 
         let now = Utc::now();
         let id = Uuid::new_v4();

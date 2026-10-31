@@ -12526,6 +12526,7 @@
           "org_id",
           "name",
           "room_type",
+          "is_exam_hall",
           "capacity",
           "created_at",
           "updated_at"
@@ -12535,6 +12536,7 @@
           "created_at": { "type": "string", "format": "date-time" },
           "floor": { "type": "integer", "format": "int32", "nullable": true },
           "id": { "type": "string", "format": "uuid" },
+          "is_exam_hall": { "type": "boolean" },
           "name": { "type": "string" },
           "name_ar": { "type": "string", "nullable": true },
           "org_id": { "type": "string", "format": "uuid" },
@@ -13562,6 +13564,7 @@
             "nullable": true
           },
           "floor": { "type": "integer", "format": "int32", "nullable": true },
+          "is_exam_hall": { "type": "boolean", "nullable": true },
           "name": { "type": "string", "nullable": true },
           "name_ar": { "type": "string", "nullable": true },
           "org_unit_id": {

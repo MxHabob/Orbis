@@ -1,6 +1,10 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { createMutation, createQuery, useQueryClient } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { FormField } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -48,11 +52,21 @@ type ScheduleFormValues = {
 
 const scheduleSchema = z
   .object({
-    section_id: z.string().trim().min(1, m.operations_ui_subject_selection_required()),
-    section_subject_id: z.string().trim().min(1, m.operations_ui_subject_selection_required()),
+    section_id: z
+      .string()
+      .trim()
+      .min(1, m.operations_ui_subject_selection_required()),
+    section_subject_id: z
+      .string()
+      .trim()
+      .min(1, m.operations_ui_subject_selection_required()),
     exam_date: z.string().date(m.common_period_form_error_dates_required()),
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, m.academics_schedule_start_time()),
-    end_time: z.string().regex(/^\d{2}:\d{2}$/, m.academics_schedule_end_time()),
+    start_time: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, m.academics_schedule_start_time()),
+    end_time: z
+      .string()
+      .regex(/^\d{2}:\d{2}$/, m.academics_schedule_end_time()),
     subject_name: z.string(),
     subject_name_ar: z.string(),
     subject_code: z.string(),
@@ -121,11 +135,18 @@ const offeringsQuery = createQuery(() => ({
   staleTime: 5 * 60 * 1000,
 }));
 
-const sections = $derived((sectionsQuery.data ?? []).filter((section) => section.is_active));
+const sections = $derived(
+  (sectionsQuery.data ?? []).filter((section) => section.is_active),
+);
 const offerings = $derived(offeringsQuery.data ?? []);
 const subjects = $derived(subjectsQuery.data ?? []);
 const subjectNames = $derived(
-  new Map(subjects.map((subject) => [String(subject.id), subject.name_ar || subject.name])),
+  new Map(
+    subjects.map((subject) => [
+      String(subject.id),
+      subject.name_ar || subject.name,
+    ]),
+  ),
 );
 const isLoadingOptions = $derived(
   sectionsQuery.isLoading ||

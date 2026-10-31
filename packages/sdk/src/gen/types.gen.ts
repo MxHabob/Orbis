@@ -2408,6 +2408,7 @@ export type RoomDto = {
   created_at: string;
   floor?: number | null;
   id: string;
+  is_exam_hall: boolean;
   name: string;
   name_ar?: string | null;
   org_id: string;
@@ -2945,6 +2946,7 @@ export type UpdatePreferencesRequest = {
 export type UpdateRoomRequest = {
   capacity?: number | null;
   floor?: number | null;
+  is_exam_hall?: boolean | null;
   name?: string | null;
   name_ar?: string | null;
   org_unit_id?: string | null;

@@ -18,6 +18,7 @@ pub struct RoomDto {
     pub name: String,
     pub name_ar: Option<String>,
     pub room_type: String,
+    pub is_exam_hall: bool,
     pub capacity: i32,
     pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
@@ -42,6 +43,7 @@ pub struct UpdateRoomInput {
     pub name_ar: Option<String>,
     pub capacity: Option<i32>,
     pub room_type: Option<String>,
+    pub is_exam_hall: Option<bool>,
     pub floor: Option<i32>,
     #[serde(default, deserialize_with = "deserialize_nullable_field")]
     pub org_unit_id: Option<Option<String>>,
@@ -161,6 +163,7 @@ fn room_dto(r: orbis_domain::entities::room::Room) -> RoomDto {
         name: r.name,
         name_ar: r.name_ar,
         room_type: r.room_type,
+        is_exam_hall: r.is_exam_hall,
         capacity: r.capacity,
         floor: r.floor,
         org_unit_id: r.org_unit_id.map(|u| u.to_string()),
@@ -249,6 +252,7 @@ pub async fn scheduling_update_room(
             request.name_ar,
             request.capacity,
             request.room_type,
+            request.is_exam_hall,
             request.floor,
             org_unit_id,
         )

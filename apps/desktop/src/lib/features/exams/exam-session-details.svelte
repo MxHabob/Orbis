@@ -30,8 +30,12 @@ let { orgId, sessionId }: { orgId: string; sessionId: string } = $props();
 // State
 let session = $state<any>(null);
 let subjects = $state<any[]>([]);
+let sectionSubjects = $state<any[]>([]);
 let schedules = $state<any[]>([]);
 let seatingNumbers = $state<any[]>([]);
+let students = $state<any[]>([]);
+let enrollments = $state<any[]>([]);
+let teachers = $state<any[]>([]);
 let printDialogOpen = $state(false);
 let selectedSeatIds = $state<Set<string>>(new Set());
 
@@ -50,14 +54,10 @@ const selectedSeatingContexts = $derived.by(() => {
         sessionName: session?.name ?? "",
       },
       student: {
-        name:
-          sn.student_name_ar ||
-          (sn as any).student_name ||
-          sn.enrollment_id ||
-          "",
+        name: getStudentName(sn.student_id),
         studentNumber: sn.seating_number,
-        className: (sn as any).class_name ?? sn.class_id ?? "",
-        level: sn.level ?? "",
+        className: getStudentSectionName(sn.student_id),
+        level: getStudentLevel(sn.student_id),
       },
     }));
 });
@@ -65,10 +65,7 @@ const selectedSeatingContexts = $derived.by(() => {
 const selectedSeatingLabels = $derived.by(() => {
   return seatingNumbers
     .filter((sn) => selectedSeatIds.has(String(sn.id)))
-    .map(
-      (sn) =>
-        `${sn.student_name_ar || sn.enrollment_id || ""} (${sn.seating_number})`,
-    );
+    .map((sn) => `${getStudentName(sn.student_id)} (${sn.seating_number})`);
 });
 
 let halls = $state<any[]>([]);
@@ -147,6 +144,61 @@ function getClassName(classId: string) {
   return cls ? cls.name_ar || cls.name : classId;
 }
 
+function getSectionSubject(sectionSubjectId: string) {
+  return sectionSubjects.find(
+    (sectionSubject) => String(sectionSubject.id) === String(sectionSubjectId),
+  );
+}
+
+function getScheduleSubjectName(schedule: any) {
+  const sectionSubject = getSectionSubject(schedule.section_subject_id);
+  return sectionSubject
+    ? getSubjectName(sectionSubject.subject_id)
+    : m.common_word_subject();
+}
+
+function getScheduleSectionName(schedule: any) {
+  const sectionSubject = getSectionSubject(schedule.section_subject_id);
+  return sectionSubject
+    ? getClassName(sectionSubject.section_id)
+    : m.common_table_class();
+}
+
+function getStudentName(studentId: string) {
+  const student = students.find(
+    (item: any) => String(item.student?.id ?? item.id) === String(studentId),
+  );
+  return (
+    student?.person?.full_name_ar ||
+    student?.person?.full_name ||
+    student?.student?.student_number ||
+    student?.student_number ||
+    ""
+  );
+}
+
+function getStudentEnrollment(studentId: string) {
+  return enrollments.find(
+    (item: any) => String(item.student_id) === String(studentId),
+  );
+}
+
+function getStudentSectionName(studentId: string) {
+  const enrollment = getStudentEnrollment(studentId);
+  const section = classes.find(
+    (item: any) => String(item.id) === String(enrollment?.section_id),
+  );
+  return section?.name_ar || section?.name || "";
+}
+
+function getStudentLevel(studentId: string) {
+  const enrollment = getStudentEnrollment(studentId);
+  const section = classes.find(
+    (item: any) => String(item.id) === String(enrollment?.section_id),
+  );
+  return section?.level || "";
+}
+
 function formatDateWithDay(dateStr: string): string {
   return (
     formatDate(dateStr, "date", {
@@ -161,7 +213,9 @@ function getExamsInCell(date: string, period: string) {
   return activeSchedules.filter(
     (s: any) =>
       String(s.exam_date) === String(date) &&
-      String(s.period) === String(period),
+      (Number(String(s.start_time).split(":")[0]) < 12
+        ? "morning"
+        : "afternoon") === period,
   );
 }
 
@@ -205,28 +259,43 @@ const tabs = $derived([
 ]);
 
 const subjectGridSource = $derived(
-  subjects.map((subject: any, index: number) => ({
-    ...subject,
+  sectionSubjects.map((sectionSubject: any, index: number) => ({
+    ...sectionSubject,
     __idx: index + 1,
-    subject_name: getSubjectName(subject.subject_id),
-    duration_display: `${subject.duration_minutes}${m.academics_exams_duration_minutes_abbr()}`,
-    exam_type_display:
-      subject.exam_type === "oral"
-        ? m.exams_subject_type_oral()
-        : subject.exam_type === "practical"
-          ? m.exams_subject_type_practical()
-          : subject.exam_type === "mixed"
-            ? m.exams_subject_type_mixed()
-            : m.exams_subject_type_written(),
+    subject_name: getSubjectName(sectionSubject.subject_id),
+    section_name: getClassName(sectionSubject.section_id),
   })),
 );
 
 const subjectColumns: OrbisColumnDef[] = [
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
-  { id: "subject_name", prop: "subject_name", header: m.common_word_subject(), name: m.common_word_subject(), flex: 1, readonly: true, cellClass: "font-medium" },
-  { id: "max_score", prop: "max_score", header: m.common_exams_subjects_score(), name: m.common_exams_subjects_score(), width: 110, size: 110, type: "number", readonly: true, align: "center" },
-  { id: "duration_display", prop: "duration_display", header: m.common_exams_subjects_duration(), name: m.common_exams_subjects_duration(), width: 130, size: 130, readonly: true, align: "center" },
-  { id: "exam_type_display", prop: "exam_type_display", header: m.common_bulk_col_exam_type(), name: m.common_bulk_col_exam_type(), width: 140, size: 140, type: "badge", readonly: true, align: "center" },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "subject_name",
+    prop: "subject_name",
+    header: m.common_word_subject(),
+    name: m.common_word_subject(),
+    flex: 1,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "section_name",
+    prop: "section_name",
+    header: m.common_table_class(),
+    name: m.common_table_class(),
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
 ];
 
 const seatActions: ActionItem[] = [
@@ -234,33 +303,135 @@ const seatActions: ActionItem[] = [
 ];
 
 const seatingGridSource = $derived(
-  seatingNumbers.map((seat: any, index: number) => ({
-    ...seat,
-    __idx: index + 1,
-    student_name_display: seat.student_name_ar || seat.enrollment_id || "—",
-    class_display: seat.class_id || "—",
-    level_display: seat.level || "—",
-  })),
+  seatingNumbers.map((seat: any, index: number) => {
+    const student = students.find(
+      (item: any) =>
+        String(item.student?.id ?? item.id) === String(seat.student_id),
+    );
+    const enrollment = enrollments.find(
+      (item: any) => String(item.student_id) === String(seat.student_id),
+    );
+    const section = classes.find(
+      (item: any) => String(item.id) === String(enrollment?.section_id),
+    );
+    const room = rooms.find(
+      (item: any) => String(item.id) === String(seat.room_id),
+    );
+    return {
+      ...seat,
+      __idx: index + 1,
+      student_name_display:
+        student?.person?.full_name_ar ||
+        student?.person?.full_name ||
+        student?.student?.student_number ||
+        student?.student_number ||
+        "—",
+      room_display: room?.name_ar || room?.name || "—",
+      class_display: section?.name_ar || section?.name || "—",
+      level_display: section?.level || "—",
+    };
+  }),
 );
 
 const seatingColumns: OrbisColumnDef[] = [
-  { id: "__selected", prop: "__selected", header: "", name: "", width: 40, size: 40, readonly: true, align: "center" },
-  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
-  { id: "seating_number", prop: "seating_number", header: m.academics_exams_seat_number(), name: m.academics_exams_seat_number(), width: 130, size: 130, type: "number", readonly: true, cellClass: "font-mono font-semibold text-primary" },
-  { id: "student_name_display", prop: "student_name_display", header: m.common_word_student(), name: m.common_word_student(), flex: 1, readonly: true },
-  { id: "class_display", prop: "class_display", header: m.common_table_class(), name: m.common_table_class(), width: 130, size: 130, readonly: true },
-  { id: "level_display", prop: "level_display", header: m.academics_exams_level(), name: m.academics_exams_level(), width: 110, size: 110, readonly: true },
-  { id: "actions", prop: "actions", header: m.common_action_delete(), name: m.common_action_delete(), width: 76, size: 76, type: "action", readonly: true, align: "center", meta: { items: seatActions } },
+  {
+    id: "__selected",
+    prop: "__selected",
+    header: "",
+    name: "",
+    width: 40,
+    size: 40,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "seating_number",
+    prop: "seating_number",
+    header: m.academics_exams_seat_number(),
+    name: m.academics_exams_seat_number(),
+    width: 130,
+    size: 130,
+    type: "number",
+    readonly: true,
+    cellClass: "font-mono font-semibold text-primary",
+  },
+  {
+    id: "room_display",
+    prop: "room_display",
+    header: m.common_lesson_label_room(),
+    name: m.common_lesson_label_room(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "student_name_display",
+    prop: "student_name_display",
+    header: m.common_word_student(),
+    name: m.common_word_student(),
+    flex: 1,
+    readonly: true,
+  },
+  {
+    id: "class_display",
+    prop: "class_display",
+    header: m.common_table_class(),
+    name: m.common_table_class(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "level_display",
+    prop: "level_display",
+    header: m.academics_exams_level(),
+    name: m.academics_exams_level(),
+    width: 110,
+    size: 110,
+    readonly: true,
+  },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_action_delete(),
+    name: m.common_action_delete(),
+    width: 76,
+    size: 76,
+    type: "action",
+    readonly: true,
+    align: "center",
+    meta: { items: seatActions },
+  },
 ];
 
 const proctorActions: ActionItem[] = [
-  { id: "delete", label: m.operations_ui_cancel_proctor_assignment(), variant: "destructive" },
+  {
+    id: "delete",
+    label: m.operations_ui_cancel_proctor_assignment(),
+    variant: "destructive",
+  },
 ];
 
 const proctorGridSource = $derived(
   proctors.map((proctor: any) => ({
     ...proctor,
-    teacher_display: proctor.teacher_id || "—",
+    teacher_display:
+      teachers.find((teacher: any) => teacher.id === proctor.teacher_id)
+        ?.full_name_ar ||
+      teachers.find((teacher: any) => teacher.id === proctor.teacher_id)
+        ?.full_name ||
+      proctor.teacher_id ||
+      "—",
     hall_display:
       rooms.find((room: any) => room.id === proctor.room_id)?.name_ar ||
       rooms.find((room: any) => room.id === proctor.room_id)?.name ||
@@ -273,10 +444,44 @@ const proctorGridSource = $derived(
 );
 
 const proctorColumns: OrbisColumnDef[] = [
-  { id: "teacher_display", prop: "teacher_display", header: m.academics_exams_proctor(), name: m.academics_exams_proctor(), flex: 1, readonly: true },
-  { id: "hall_display", prop: "hall_display", header: m.academics_exams_committee(), name: m.academics_exams_committee(), width: 150, size: 150, readonly: true },
-  { id: "role_display", prop: "role_display", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 140, size: 140, readonly: true },
-  { id: "actions", prop: "actions", header: m.common_action_delete(), name: m.common_action_delete(), width: 76, size: 76, type: "action", readonly: true, align: "center", meta: { items: proctorActions } },
+  {
+    id: "teacher_display",
+    prop: "teacher_display",
+    header: m.academics_exams_proctor(),
+    name: m.academics_exams_proctor(),
+    flex: 1,
+    readonly: true,
+  },
+  {
+    id: "hall_display",
+    prop: "hall_display",
+    header: m.academics_exams_committee(),
+    name: m.academics_exams_committee(),
+    width: 150,
+    size: 150,
+    readonly: true,
+  },
+  {
+    id: "role_display",
+    prop: "role_display",
+    header: m.common_user_form_role(),
+    name: m.common_user_form_role(),
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_action_delete(),
+    name: m.common_action_delete(),
+    width: 76,
+    size: 76,
+    type: "action",
+    readonly: true,
+    align: "center",
+    meta: { items: proctorActions },
+  },
 ];
 
 $effect(() => {
@@ -301,55 +506,60 @@ async function loadSession() {
     session = await api.getExamSession(sessionId);
 
     const [
-      loadedSubjects,
       loadedSchedules,
       loadedSeatingNumbers,
-      loadedHalls,
       loadedRooms,
       [classList, subjectList],
+      loadedTeachers,
     ] = await Promise.all([
-      Promise.resolve([]),
-      api.listExamSchedules(sessionId).catch((err: unknown) => {
-        console.error("Failed to load schedules", err);
-        return [];
-      }),
-      api.listSeating(sessionId).catch((err: unknown) => {
-        console.error("Failed to load seating numbers", err);
-        return [];
-      }),
-      Promise.resolve([]),
-      api.listRooms().catch((err: unknown) => {
-        console.error("Failed to load school rooms", err);
-        return [];
-      }),
-      Promise.all([api.listSections(), api.listSubjects()]).catch(
-        (err: unknown) => {
-          console.error("Failed to load classes/subjects catalogs", err);
-          return [[], []];
-        },
-      ),
+      api.listExamSchedules(sessionId),
+      api.listSeating(sessionId),
+      api.listRooms(),
+      Promise.all([api.listSections(), api.listSubjects()]),
+      loadActiveTeachers(),
     ]);
+    const loadedEnrollments = await loadPeriodEnrollments(session.period_id);
+
+    const activeSections = classList.filter(
+      (section: any) => section.is_active,
+    );
+    const loadedSectionSubjects = (
+      await Promise.all(
+        activeSections.map((section: any) =>
+          api.listSectionSubjects(section.id, session.period_id),
+        ),
+      )
+    )
+      .flat()
+      .filter((sectionSubject: any) => sectionSubject.is_active);
+    const loadedStudents = await loadPeriodStudents(session.period_id);
 
     let loadedProctors: any[] = [];
     if (loadedSchedules.length > 0) {
-      try {
-        const proctorArrays = await Promise.all(
-          loadedSchedules.map((s: any) =>
-            api.listProctors(s.id).catch(() => []),
-          ),
-        );
-        loadedProctors = proctorArrays.flat();
-      } catch (e) {
-        console.error("Failed to load proctors", e);
-      }
+      const proctorArrays = await Promise.all(
+        loadedSchedules.map((schedule: any) => api.listProctors(schedule.id)),
+      );
+      loadedProctors = proctorArrays.flat();
     }
 
-    subjects = loadedSubjects;
+    subjects = loadedSectionSubjects;
+    sectionSubjects = loadedSectionSubjects;
     schedules = loadedSchedules;
     seatingNumbers = loadedSeatingNumbers;
-    halls = loadedHalls;
+    students = loadedStudents;
+    enrollments = loadedEnrollments;
+    halls = loadedRooms
+      .filter((room: any) => room.is_exam_hall)
+      .map((room: any) => ({
+        room_id: room.id,
+        capacity: room.capacity,
+        allocated_count: loadedSeatingNumbers.filter(
+          (seat: any) => String(seat.room_id) === String(room.id),
+        ).length,
+      }));
     proctors = loadedProctors;
     rooms = loadedRooms;
+    teachers = loadedTeachers;
     classes = classList;
     schoolSubjects = subjectList;
 
@@ -362,6 +572,81 @@ async function loadSession() {
   }
 }
 
+async function loadPeriodStudents(periodId: string) {
+  const pageSize = 500;
+  const loaded: any[] = [];
+  const studentIds = new Set<string>();
+
+  for (let page = 1; ; page += 1) {
+    const result = await api.listStudents({
+      period_id: periodId,
+      status: "active",
+      page,
+      page_size: pageSize,
+    });
+    const newStudents = result.items.filter((item: any) => {
+      const id = String(item.student?.id ?? item.id);
+      if (studentIds.has(id)) return false;
+      studentIds.add(id);
+      return true;
+    });
+    loaded.push(...newStudents);
+
+    if (result.items.length < pageSize) break;
+    if (newStudents.length === 0) {
+      throw new Error("Student pagination returned a repeated page");
+    }
+  }
+
+  return loaded;
+}
+
+async function loadPeriodEnrollments(periodId: string) {
+  const pageSize = 500;
+  const loaded: any[] = [];
+  const enrollmentIds = new Set<string>();
+
+  for (let page = 1; ; page += 1) {
+    const result = await api.listEnrollments({
+      period_id: periodId,
+      status: "active",
+      page,
+      page_size: pageSize,
+    });
+    const newEnrollments = result.filter((item: any) => {
+      if (enrollmentIds.has(item.id)) return false;
+      enrollmentIds.add(item.id);
+      return true;
+    });
+    loaded.push(...newEnrollments);
+
+    if (result.length < pageSize) break;
+    if (newEnrollments.length === 0) {
+      throw new Error("Enrollment pagination returned a repeated page");
+    }
+  }
+
+  return loaded;
+}
+
+async function loadActiveTeachers() {
+  const pageSize = 500;
+  const loaded: any[] = [];
+
+  for (let page = 1; ; page += 1) {
+    const result = await api.listEmployees({
+      employee_type: "teacher",
+      status: "active",
+      page,
+      page_size: pageSize,
+    });
+    loaded.push(...result.items);
+    if (result.items.length < pageSize) break;
+  }
+
+  return loaded;
+}
+
 onMount(() => {
   if (orgId && sessionId) {
     loadSession();
@@ -370,20 +655,44 @@ onMount(() => {
 
 async function handleGenerateSeating() {
   try {
-    const studentsRes = await api.listStudents({ pageSize: 500 });
-    const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
+    const enrolledStudentIds = new Set(
+      enrollments
+        .filter((enrollment: any) => enrollment.status === "active")
+        .map((enrollment: any) => String(enrollment.student_id)),
+    );
+    const existingStudentIds = new Set(
+      seatingNumbers.map((seat: any) => String(seat.student_id)),
+    );
+    const studentIds = students
+      .map((student: any) => String(student.student?.id ?? student.id))
+      .filter(
+        (id: string) =>
+          enrolledStudentIds.has(id) && !existingStudentIds.has(id),
+      );
     if (!studentIds.length) {
-      toast.error(m.operations_ui_seating_no_students());
+      toast.error(
+        students.length === 0
+          ? m.operations_ui_seating_no_students()
+          : m.operations_ui_seating_all_assigned(),
+      );
       return;
     }
-    const roomIds = rooms.map((r: any) => r.id);
+    const existingSequenceNumbers = seatingNumbers
+      .map((seat: any) =>
+        Number(String(seat.seating_number).replace(/^SEAT-/, "")),
+      )
+      .filter(Number.isFinite);
+    const nextNumber = Math.max(1000, ...existingSequenceNumbers) + 1;
+    const roomIds = rooms
+      .filter((room: any) => room.is_exam_hall)
+      .map((room: any) => room.id);
 
     const promise = api.generateSeating({
       exam_session_id: sessionId,
       student_ids: studentIds,
       room_ids: roomIds,
       prefix: "SEAT-",
-      start_number: 1001,
+      start_number: nextNumber,
     });
 
     toast.promise(promise, {
@@ -406,21 +715,61 @@ async function handleGenerateSecrets() {
       toast.error(m.operations_ui_secrets_no_schedules());
       return;
     }
-    const studentsRes = await api.listStudents({ pageSize: 500 });
-    const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
-    if (!studentIds.length) {
+    if (!students.length) {
       toast.error(m.operations_ui_secrets_no_students());
       return;
     }
 
-    const promises = schedules.map((schedule: any) =>
-      api.generateSecrets({
-        exam_schedule_id: schedule.id,
-        student_ids: studentIds,
+    const pendingSecrets = await Promise.all(
+      schedules.map(async (schedule: any) => {
+        const sectionSubject = getSectionSubject(schedule.section_subject_id);
+        if (!sectionSubject) {
+          throw new Error(
+            `Scheduled exam ${schedule.id} references an unavailable section subject`,
+          );
+        }
+
+        const eligibleStudentIds = new Set(
+          enrollments
+            .filter(
+              (enrollment: any) =>
+                enrollment.status === "active" &&
+                String(enrollment.section_id) ===
+                  String(sectionSubject.section_id),
+            )
+            .map((enrollment: any) => String(enrollment.student_id)),
+        );
+        const scheduleStudents = students
+          .map((student: any) => String(student.student?.id ?? student.id))
+          .filter((studentId: string) => eligibleStudentIds.has(studentId));
+        const existingSecrets = await api.listSecrets(schedule.id);
+        const existingStudentIds = new Set(
+          existingSecrets.map((secret: any) => String(secret.student_id)),
+        );
+        const missingStudentIds = scheduleStudents.filter(
+          (studentId: string) => !existingStudentIds.has(studentId),
+        );
+
+        return { schedule, studentIds: missingStudentIds };
       }),
     );
 
-    const promise = Promise.all(promises);
+    const assignments = pendingSecrets.filter(
+      (pending) => pending.studentIds.length > 0,
+    );
+    if (assignments.length === 0) {
+      toast.info(m.operations_ui_secrets_all_assigned());
+      return;
+    }
+
+    const promise = Promise.all(
+      assignments.map(({ schedule, studentIds }) =>
+        api.generateSecrets({
+          exam_schedule_id: schedule.id,
+          student_ids: studentIds,
+        }),
+      ),
+    );
     toast.promise(promise, {
       loading: m.operations_ui_secrets_generating(),
       success: m.operations_ui_secrets_generate_success(),
@@ -600,25 +949,34 @@ async function handleDeleteProctor(proctorId: string) {
 }
 
 async function handleToggleHall(room: any) {
-  const promise = Promise.resolve();
+  const isActivating = !room.is_exam_hall;
+  const promise = api.updateRoom(room.id, { is_exam_hall: isActivating });
 
   toast.promise(promise, {
-    loading: m.operations_ui_exam_room_activating({
-      room: room.room_number || room.name,
-    }),
-    success: m.operations_ui_exam_room_activate_success(),
+    loading: isActivating
+      ? m.operations_ui_exam_room_activating({
+          room: room.name_ar || room.name,
+        })
+      : m.operations_ui_exam_room_deactivating({
+          room: room.name_ar || room.name,
+        }),
+    success: isActivating
+      ? m.operations_ui_exam_room_activate_success()
+      : m.operations_ui_exam_room_deactivate_success(),
     error: (err) =>
-      (err as any)?.message || m.operations_ui_exam_room_activate_error(),
+      (err as any)?.message ||
+      (isActivating
+        ? m.operations_ui_exam_room_activate_error()
+        : m.operations_ui_exam_room_deactivate_error()),
   });
 
   try {
     await promise;
     await loadSession();
   } catch (err) {
-    console.error(err);
+    console.error("Failed to update exam hall availability", err);
   }
 }
-
 </script>
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none text-start">
@@ -774,7 +1132,7 @@ async function handleToggleHall(room: any) {
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
-															{getSubjectName(sched.exam_subject_id)}
+															{getScheduleSubjectName(sched)}
 														</span>
 														{#if sched.isDraft}
 															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.common_status_draft()}</span>
@@ -782,7 +1140,7 @@ async function handleToggleHall(room: any) {
 													</div>
 													
 													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
+														<span class="font-bold text-primary">{getScheduleSectionName(sched)}</span>
 														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
 													</div>
 												</div>
@@ -822,7 +1180,7 @@ async function handleToggleHall(room: any) {
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
-															{getSubjectName(sched.exam_subject_id)}
+															{getScheduleSubjectName(sched)}
 														</span>
 														{#if sched.isDraft}
 															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.common_status_draft()}</span>
@@ -830,7 +1188,7 @@ async function handleToggleHall(room: any) {
 													</div>
 													
 													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
+														<span class="font-bold text-primary">{getScheduleSectionName(sched)}</span>
 														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
 													</div>
 												</div>
@@ -931,9 +1289,9 @@ async function handleToggleHall(room: any) {
 								<Card class="flex flex-col gap-3 rounded-xl border-border/60 bg-card p-4 shadow-xs transition-colors {isAct ? 'border-primary/40 ring-1 ring-primary/10' : 'hover:border-primary/30'}">
 									<div class="flex items-center justify-between">
 										<div class="flex flex-col">
-											<span class="text-sm font-semibold text-foreground">{room.room_number || room.name}</span>
-											{#if room.building}
-												<span class="mt-1 text-xs text-muted-foreground">{room.building}{m.academics_exams_floor_connector()}{room.floor}</span>
+											<span class="text-sm font-semibold text-foreground">{room.name_ar || room.name}</span>
+											{#if room.floor != null}
+												<span class="mt-1 text-xs text-muted-foreground">{m.academics_exams_floor_connector()}{room.floor}</span>
 											{/if}
 										</div>
 										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
@@ -954,6 +1312,13 @@ async function handleToggleHall(room: any) {
 													style="width: {utilPct}%"
 												></div>
 											</div>
+											<Button
+												variant="ghost"
+												class="h-8 self-end px-2 text-xs text-muted-foreground hover:text-destructive"
+												onclick={() => handleToggleHall(room)}
+											>
+												{m.operations_ui_deactivate_exam_committee()}
+											</Button>
 										</div>
 									{:else}
 										<div class="flex items-center justify-between mt-1">
@@ -982,8 +1347,6 @@ async function handleToggleHall(room: any) {
 							<Button
 								variant="outline"
 								class="h-7 px-3 text-[10px] cursor-pointer"
-								disabled={schedules.length === 0}
-								title={schedules.length === 0 ? m.academics_exams_no_exams_scheduled() : undefined}
 								onclick={() => isProctorAssignDialogOpen = true}
 							>
 								{m.common_exams_actions_assign_proctors()}
