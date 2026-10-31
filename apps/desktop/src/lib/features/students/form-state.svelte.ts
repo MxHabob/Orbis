@@ -1018,7 +1018,11 @@ export class StudentFormState {
         userId: authStore.userId,
         organizationId: this.orgId,
       };
-      uiStore.setPreference(preferenceScope, "students.studyMode", this.studyMode);
+      uiStore.setPreference(
+        preferenceScope,
+        "students.studyMode",
+        this.studyMode,
+      );
       if (this.personal.classId) {
         uiStore.setPreference(
           preferenceScope,

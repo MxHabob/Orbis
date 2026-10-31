@@ -68,8 +68,15 @@ const preferenceScope = () => ({
   organizationId: orgId,
 });
 
-function isEmployeeType(value: unknown): value is "teacher" | "admin" | "staff" | "other" {
-  return value === "teacher" || value === "admin" || value === "staff" || value === "other";
+function isEmployeeType(
+  value: unknown,
+): value is "teacher" | "admin" | "staff" | "other" {
+  return (
+    value === "teacher" ||
+    value === "admin" ||
+    value === "staff" ||
+    value === "other"
+  );
 }
 
 function isEmploymentType(
@@ -140,11 +147,11 @@ let employeeType = $state<"teacher" | "admin" | "staff" | "other">(
   isEmployeeType(savedEmployeeType)
     ? savedEmployeeType
     : uiStore.getPreference(
-      preferenceScope(),
-      "employees.employeeType",
-      "teacher",
-      isEmployeeType,
-    ),
+        preferenceScope(),
+        "employees.employeeType",
+        "teacher",
+        isEmployeeType,
+      ),
 );
 let jobTitle = $state(initialEmployee?.job_title || "");
 let department = $state(initialEmployee?.department || "");
@@ -158,21 +165,21 @@ let employmentType = $state<
   isEmploymentType(savedEmploymentType)
     ? savedEmploymentType
     : uiStore.getPreference(
-      preferenceScope(),
-      "employees.employmentType",
-      "full_time",
-      isEmploymentType,
-    ),
+        preferenceScope(),
+        "employees.employmentType",
+        "full_time",
+        isEmploymentType,
+      ),
 );
 let workShift = $state<"morning" | "evening" | "flexible">(
   isWorkShift(savedWorkShift)
     ? savedWorkShift
     : uiStore.getPreference(
-      preferenceScope(),
-      "employees.workShift",
-      "morning",
-      isWorkShift,
-    ),
+        preferenceScope(),
+        "employees.workShift",
+        "morning",
+        isWorkShift,
+      ),
 );
 let status = $state(initialEmployee?.status?.toLowerCase() || "active");
 

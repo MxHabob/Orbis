@@ -50,7 +50,12 @@ let { orgId }: { orgId: string } = $props();
 const controller = new DatabaseManagerController();
 
 let activeSection = $state<
-  "overview" | "connection" | "backup" | "restore" | "maintenance" | "performance"
+  | "overview"
+  | "connection"
+  | "backup"
+  | "restore"
+  | "maintenance"
+  | "performance"
 >("overview");
 let commandPerformance = $state<DesktopCommandPerformance[]>([]);
 
@@ -131,7 +136,13 @@ function refreshCommandPerformance() {
 }
 
 function selectSection(
-  section: "overview" | "connection" | "backup" | "restore" | "maintenance" | "performance",
+  section:
+    | "overview"
+    | "connection"
+    | "backup"
+    | "restore"
+    | "maintenance"
+    | "performance",
 ) {
   activeSection = section;
   if (section === "performance") refreshCommandPerformance();

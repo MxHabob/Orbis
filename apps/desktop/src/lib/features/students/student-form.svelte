@@ -61,7 +61,8 @@ $effect(() => {
       (value): value is string => typeof value === "string",
     );
     const defaultClassId = [rememberedClassId, contextualClassId].find(
-      (classId) => classes.some((classItem) => String(classItem.id) === classId),
+      (classId) =>
+        classes.some((classItem) => String(classItem.id) === classId),
     );
     if (defaultClassId) {
       state.personal.classId = defaultClassId;

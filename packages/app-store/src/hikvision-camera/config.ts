@@ -49,7 +49,8 @@ Connect multiple cameras and NVRs. Each camera appears as a separate feed in the
       id: "ip_address",
       label: "Camera IP Address or Hostname",
       label_ar: "عنوان IP أو اسم نطاق الكاميرا",
-      description: "The IP address or DDNS hostname of the Hikvision camera or NVR.",
+      description:
+        "The IP address or DDNS hostname of the Hikvision camera or NVR.",
       description_ar: "عنوان IP أو اسم نطاق DDNS لكاميرا هيكفيجن أو جهاز NVR.",
       type: "text",
       required: true,
