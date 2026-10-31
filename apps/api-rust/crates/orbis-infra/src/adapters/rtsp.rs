@@ -82,7 +82,7 @@ async fn verify_video_source(url: &Url, username: &str, password: &str) -> Resul
     let describe = connection
         .request("DESCRIBE", url, None, &[("Accept", "application/sdp")])
         .await?;
-    let mut authorization = if describe.status_code == 401 {
+    let authorization = if describe.status_code == 401 {
         if username.is_empty() && password.is_empty() {
             return Err(DomainError::Validation(
                 "This RTSP stream requires authentication; add the camera username and/or password"

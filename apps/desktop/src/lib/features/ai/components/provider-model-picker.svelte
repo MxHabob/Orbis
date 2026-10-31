@@ -11,15 +11,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-  DropdownMenuPortal,
 } from "@orbis/ui/dropdown-menu";
-import {
-  Sparkles,
-  ChevronDown,
-  Check,
-  Search,
-  SettingsAlt,
-} from "@orbis/icons";
+import { Sparkles, ChevronDown, Check, Search } from "@orbis/icons";
 import { getAppsByCategory } from "@orbis/app-store";
 import type { OrbisApp } from "@orbis/app-store";
 import {
@@ -49,6 +42,7 @@ let isLoadingModelCatalog = $state(false);
 let modelCatalogError = $state(false);
 let modelCatalogLoadKey = "";
 let modelSearch = $state("");
+let modelSearchProvider = $state("");
 
 // Canonical AI apps from @orbis/app-store (single source of truth)
 const aiApps = $derived(getAppsByCategory("ai-provider"));
@@ -170,6 +164,12 @@ function matchesModel(model: { label: string; value: string }, query: string) {
     model.label.toLowerCase().includes(normalizedQuery) ||
     model.value.toLowerCase().includes(normalizedQuery)
   );
+}
+
+function handleModelSearchFocus(providerName: string) {
+  if (modelSearchProvider === providerName) return;
+  modelSearchProvider = providerName;
+  modelSearch = "";
 }
 
 // Active connected integration
@@ -311,37 +311,38 @@ async function handleSelectProviderAndModel(
     align="start"
     side="top"
     sideOffset={8}
-    class="w-56 max-w-[calc(100vw-1rem)] max-h-[min(70dvh,32rem)] overflow-y-auto p-1 z-50"
+    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(280px,calc(100vw-1rem))] flex-col gap-0 overflow-visible rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
-    <div class="flex items-center gap-3 px-3 py-2.5 border-b border-border/50">
-      <div class="w-8 h-8 shrink-0 rounded-md border border-border/60 bg-muted/60 p-1 flex items-center justify-center">
-        <Sparkles size={15} class="text-primary" />
-      </div>
-      <div class="flex min-w-0 flex-col gap-1 leading-tight">
-        <span class="truncate text-xs font-bold uppercase tracking-wider text-foreground">
+    <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <div class="min-w-0">
+        <h4 class="truncate text-sm font-semibold text-foreground">
           {m.ai_ui_ai_providers()}
-        </span>
-        <span class="truncate text-[10px] font-semibold text-muted-foreground">
-          {shortProviderName}
-        </span>
+        </h4>
       </div>
     </div>
 
-    <div class="py-1">
+    <div class="min-h-0 max-h-[min(28rem,calc(100vh-8rem))] flex-1 overflow-y-auto px-2 py-2">
       {#if providersQuery.isPending}
-        <div class="flex items-center justify-center gap-2 px-3 py-3 text-xs text-muted-foreground" role="status">
-          <Sparkles size={13} class="animate-pulse text-primary" />
+        <div class="px-3 py-6 text-center text-xs text-muted-foreground" role="status">
           {m.ai_ui_loading_ai_center()}
         </div>
       {:else if connectedAiApps.length > 0}
         {#each connectedAiApps as item (item.integration.id)}
           {@const isSelectedProvider = selectedProvider.toLowerCase() === item.integration.provider_name.toLowerCase()}
+          {@const providerSearch =
+            modelSearchProvider === item.integration.provider_name
+              ? modelSearch
+              : ""}
           <DropdownMenuSub>
             <DropdownMenuSubTrigger
               title={item.app.name_ar || item.app.name}
-              class="cursor-pointer px-3 py-1.5 text-xs rounded flex items-center gap-2"
+              class="flex cursor-pointer items-center gap-3 rounded-md border-b border-border/60 px-3 py-2.5 text-start text-xs last:border-b-0 hover:bg-muted/40"
+              onpointerenter={() =>
+                handleModelSearchFocus(item.integration.provider_name)}
+              onfocus={() =>
+                handleModelSearchFocus(item.integration.provider_name)}
             >
-              <div class="size-6 shrink-0 rounded-md border border-border/60 bg-muted/50 p-1 flex items-center justify-center">
+              <div class="flex size-6 shrink-0 items-center justify-center">
                 {#if item.app.logo}
                   {@html item.app.logo(item.app.id)}
                 {:else}
@@ -349,92 +350,91 @@ async function handleSelectProviderAndModel(
                 {/if}
               </div>
 
-              <span class="truncate font-medium flex-1 text-start">
+              <span class="min-w-0 flex-1 truncate font-medium text-foreground">
                 {item.app.name_ar || item.app.name}
               </span>
 
-              {#if item.integration.is_enabled}
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title={m.ai_ui_active()}></span>
-              {/if}
-
               {#if isSelectedProvider}
-                <Check size={12} class="text-primary shrink-0 ms-1" />
+                <Check size={13} class="shrink-0 text-primary" />
               {/if}
             </DropdownMenuSubTrigger>
 
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent class="w-52 max-w-[calc(100vw-1rem)] max-h-[min(60dvh,26rem)] overflow-y-auto p-1 z-50 shadow-md rounded-md">
-                <DropdownMenuLabel class="px-3 py-2 text-[10px] uppercase font-bold tracking-wider text-muted-foreground border-b border-border/50">
-                  {m.ai_ui_available_models()}
-                </DropdownMenuLabel>
-                {#if isLoadingModelCatalog}
-                  <div class="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground" role="status">
-                    <Sparkles size={13} class="animate-pulse text-primary" />
-                    {m.ai_ui_loading_models()}
-                  </div>
-                {:else if modelCatalogError}
-                  <div class="flex items-center justify-between gap-2 px-3 py-2 text-xs text-destructive">
-                    <span class="min-w-0">{m.ai_ui_model_catalog_load_failed()}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      class="h-7 shrink-0 px-2 text-xs"
-                      onclick={() => loadProviderModels(connectedAiApps.map((provider) => provider.app.id))}
-                    >
-                      {m.ai_ui_retry()}
-                    </Button>
-                  </div>
-                {/if}
-                {#if item.models.length > 0}
-                  <div class="relative px-2 pt-2">
-                    <Search
-                      size={13}
-                      class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-                    />
-                    <Input
-                      bind:value={modelSearch}
-                      placeholder={m.shared_ui_search_placeholder()}
-                      aria-label={m.ai_ui_available_models()}
-                      class="h-8 ps-8 text-xs rounded-md"
-                    />
-                  </div>
-                {/if}
+            <DropdownMenuSubContent
+              side="inline-end"
+              align="start"
+              sideOffset={4}
+              class="flex max-h-[min(32rem,calc(100vh-6rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-x-hidden overflow-y-auto rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+            >
+              <DropdownMenuLabel class="border-b border-border px-4 py-3 text-xs font-semibold text-foreground">
+                {m.ai_ui_available_models()}
+              </DropdownMenuLabel>
+              {#if isLoadingModelCatalog}
+                <div class="px-3 py-4 text-center text-xs text-muted-foreground" role="status">
+                  {m.ai_ui_loading_models()}
+                </div>
+              {:else if modelCatalogError}
+                <div class="flex items-center justify-between gap-2 px-3 py-2 text-xs text-destructive">
+                  <span class="min-w-0">{m.ai_ui_model_catalog_load_failed()}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="h-7 shrink-0 px-2 text-xs"
+                    onclick={() => loadProviderModels(connectedAiApps.map((provider) => provider.app.id))}
+                  >
+                    {m.ai_ui_retry()}
+                  </Button>
+                </div>
+              {/if}
+              {#if item.models.length > 0}
+                <div class="relative px-3 py-3">
+                  <Search
+                    size={13}
+                    class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <Input
+                    bind:value={modelSearch}
+                    onfocus={() => handleModelSearchFocus(item.integration.provider_name)}
+                    placeholder={m.shared_ui_search_placeholder()}
+                    aria-label={m.ai_ui_available_models()}
+                    class="h-8 rounded-md ps-8 text-xs"
+                  />
+                </div>
+              {/if}
 
-                {#if item.models.length > 0}
-                  {@const filteredModels = item.models.filter((model) =>
-                    matchesModel(model, modelSearch),
-                  )}
-                  {#if filteredModels.length > 0}
-                    {#each filteredModels as model (model.value)}
+              {#if item.models.length > 0}
+                {@const filteredModels = item.models.filter((model) =>
+                  matchesModel(model, providerSearch),
+                )}
+                {#if filteredModels.length > 0}
+                  {#each filteredModels as model (model.value)}
                     {@const isSelectedModel = isSelectedProvider && selectedModel === model.value}
                     <DropdownMenuItem
                       title={model.value}
-                      class="cursor-pointer px-3 py-1.5 text-xs rounded flex items-center justify-between gap-2 font-mono {isSelectedModel ? 'bg-accent text-accent-foreground font-semibold' : ''}"
+                      class="flex cursor-pointer items-center justify-between gap-2 border-b border-border/60 px-3 py-2 text-start font-mono text-xs last:border-b-0 {isSelectedModel ? 'bg-accent text-accent-foreground font-semibold' : 'hover:bg-muted/40'}"
                       onclick={() => handleSelectProviderAndModel(item.integration.provider_name, item.app, model.value)}
                     >
-                      <span class="truncate text-[11px]">{model.label}</span>
+                      <span class="min-w-0 truncate text-[11px]">{model.label}</span>
                       {#if isSelectedModel}
-                        <Check size={12} class="text-primary shrink-0 ms-auto" />
+                        <Check size={12} class="ms-auto shrink-0 text-primary" />
                       {/if}
                     </DropdownMenuItem>
-                    {/each}
-                  {:else if !isLoadingModelCatalog && !modelCatalogError}
-                    <p class="px-3 py-2 text-xs text-muted-foreground">
-                      {m.shared_ui_select_no_results()}
-                    </p>
-                  {/if}
+                  {/each}
                 {:else if !isLoadingModelCatalog && !modelCatalogError}
-                  <p class="px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-                    {m.ai_ui_no_models_available()}
+                  <p class="px-3 py-2 text-xs text-muted-foreground">
+                    {m.shared_ui_select_no_results()}
                   </p>
                 {/if}
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
+              {:else if !isLoadingModelCatalog && !modelCatalogError}
+                <p class="px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                  {m.ai_ui_no_models_available()}
+                </p>
+              {/if}
+            </DropdownMenuSubContent>
           </DropdownMenuSub>
         {/each}
       {:else}
-        <div class="px-3 py-4 text-center text-xs leading-relaxed text-muted-foreground">
+        <div class="px-3 py-6 text-center text-xs leading-relaxed text-muted-foreground">
           {m.ai_ui_no_ai_providers_linked()}
         </div>
       {/if}
@@ -442,10 +442,9 @@ async function handleSelectProviderAndModel(
 
     {#if onOpenSettings}
       <DropdownMenuItem
-        class="cursor-pointer px-3 py-1.5 text-xs rounded flex items-center gap-2 text-primary hover:text-primary font-medium"
+        class="flex cursor-pointer items-center gap-2 border-t border-border px-4 py-3 text-xs font-medium text-primary hover:bg-muted/40 hover:text-primary"
         onclick={onOpenSettings}
       >
-        <SettingsAlt size={13} />
         <span>{m.ai_ui_manage_providers_app_store()}</span>
       </DropdownMenuItem>
     {/if}

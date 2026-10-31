@@ -817,7 +817,7 @@ impl AiOrchestrationService {
             },
             AiToolDefinition {
                 name: "inspect_report_source".into(),
-                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Call list_available_reports first and pass an exact report_code from its results. Returns no report rows.".into(),
+                description: "Inspect an authorized predefined report's parameters, available columns, formats and published report templates. Call list_available_reports first and pass an exact report_code from its results. For PDF creation, select a template ID from published_templates and pass it as template_id to create_custom_report. Returns no report rows.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
@@ -833,7 +833,7 @@ impl AiOrchestrationService {
             },
             AiToolDefinition {
                 name: "create_custom_report".into(),
-                description: "Propose a report using an authorized predefined data source, selected fields and a published report template. Requires explicit user confirmation before it is generated and saved.".into(),
+                description: "Propose a report using an authorized predefined data source and selected fields. For output_format 'pdf', first call inspect_report_source and include the ID of a published report template as template_id; PDFs cannot be rendered without a DocForge template. Other formats can use their default renderer without a template. Requires explicit user confirmation before it is generated and saved.".into(),
                 parameters_schema: json!({
                     "type": "object",
                     "properties": {
@@ -843,7 +843,7 @@ impl AiOrchestrationService {
                         "parameters": {"type": "object"},
                         "output_format": {"type": "string", "enum": ["pdf", "xlsx", "csv", "json", "html"]},
                         "locale": {"type": "string", "enum": ["ar", "en", "ar_en", "en_ar"]},
-                        "template_id": {"type": "string", "description": "Optional ID of a published report template returned by inspect_report_source"}
+                        "template_id": {"type": "string", "description": "Required for PDF output: ID of a published DocForge report template returned by inspect_report_source"}
                     },
                     "required": ["report_code", "title", "columns", "output_format"]
                 }),
@@ -2728,6 +2728,28 @@ mod tests {
             template_tool
                 .description
                 .contains("does not list report definitions")
+        );
+    }
+
+    #[test]
+    fn ai_pdf_report_tool_requires_a_template_from_report_inspection() {
+        let tools = AiOrchestrationService::registered_tools();
+        let inspect_tool = tools
+            .iter()
+            .find(|tool| tool.name == "inspect_report_source")
+            .expect("report inspection tool is registered");
+        let create_tool = tools
+            .iter()
+            .find(|tool| tool.name == "create_custom_report")
+            .expect("custom report tool is registered");
+
+        assert!(inspect_tool.description.contains("select a template ID"));
+        assert!(create_tool.description.contains("include the ID"));
+        assert!(create_tool.description.contains("PDFs cannot be rendered"));
+        assert!(
+            create_tool.parameters_schema["properties"]["template_id"]["description"]
+                .as_str()
+                .is_some_and(|description| description.contains("Required for PDF output"))
         );
     }
 

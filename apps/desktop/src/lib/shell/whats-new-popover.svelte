@@ -59,23 +59,25 @@ function handleOpenChange(open: boolean) {
 
 <Popover bind:open={isOpen} onOpenChange={handleOpenChange}>
   <PopoverTrigger>
-    <Button
-      variant="outline"
-      size="icon-sm"
-      class="cursor-pointer"
-      title={m.common_whats_new_header_title()}
-      aria-label={m.common_whats_new_header_title()}
-    >
-      <Sparkles size={14} class="text-foreground stroke-[2px]" />
-    </Button>
+    {#snippet child({ props }: { props: any })}
+      <Button
+        {...props}
+        variant="outline"
+        size="icon-sm"
+        class="cursor-pointer"
+        title={m.common_whats_new_header_title()}
+        aria-label={m.common_whats_new_header_title()}
+      >
+        <Sparkles size={14} class="text-foreground stroke-[2px]" />
+      </Button>
+    {/snippet}
   </PopoverTrigger>
 
   <PopoverContent
-    dir="auto"
     side="bottom"
     align="end"
-    sideOffset={8}
-    class="w-[min(420px,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl p-0 font-sans text-start"
+    sideOffset={6}
+    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(440px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     <div class="flex items-center justify-between border-b border-border px-4 py-3">
       <h4 class="text-sm font-bold text-foreground">
@@ -98,7 +100,7 @@ function handleOpenChange(open: boolean) {
       </Button>
     </div>
 
-    <div class="max-h-[min(440px,calc(100vh-7rem))] overflow-y-auto px-4 py-4">
+    <div class="min-h-0 flex-1 overflow-y-auto px-4 py-3">
       {#if isLoading}
         <p class="py-8 text-center text-xs text-muted-foreground" aria-live="polite">
           {m.ui_changelog_loading_release_changelog()}
@@ -107,7 +109,7 @@ function handleOpenChange(open: boolean) {
         <article class="flex flex-col gap-3">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
-              <h5 class="text-sm font-bold leading-snug text-foreground">
+              <h5 class="min-w-0 text-sm font-bold leading-snug text-foreground [overflow-wrap:anywhere]">
                 {latestRelease.title}
               </h5>
               <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
@@ -133,18 +135,18 @@ function handleOpenChange(open: boolean) {
                   alt={latestRelease.title}
                   loading="lazy"
                   referrerpolicy="no-referrer"
-                  class="max-h-24 w-full rounded-lg border border-border/50 bg-muted/20 object-cover"
+                  class="max-h-24 w-full rounded-md border border-border bg-muted/20 object-cover"
                 />
               {/each}
             </div>
           {/if}
 
           {#if latestRelease.body?.trim()}
-            <div class="max-h-56 overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-3">
+            <div class="max-h-56 min-w-0 overflow-x-hidden overflow-y-auto rounded-md border border-border bg-muted/20 p-3 [overflow-wrap:anywhere]">
               <ReleaseMarkdown markdown={latestRelease.body} />
             </div>
           {:else}
-            <p class="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
+            <p class="rounded-md border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
               {m.ui_changelog_no_release_notes()}
             </p>
           {/if}

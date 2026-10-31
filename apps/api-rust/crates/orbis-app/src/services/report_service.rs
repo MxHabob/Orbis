@@ -686,6 +686,8 @@ impl ReportService {
             None
         };
 
+        validate_pdf_template_presence(&input.output_format, template.as_ref())?;
+
         if let Some(template) = &template {
             ensure_published_template(template, ctx.tenant_id)?;
             if !template.document_type.eq_ignore_ascii_case("report") {
@@ -878,6 +880,18 @@ fn ensure_published_template(
     Ok(())
 }
 
+fn validate_pdf_template_presence(
+    output_format: &OutputFormat,
+    template: Option<&ReportTemplate>,
+) -> Result<(), DomainError> {
+    if *output_format == OutputFormat::Pdf && template.is_none() {
+        return Err(DomainError::Validation(
+            "PDF reports require a published DocForge report template. Call inspect_report_source, select a template from published_templates, and include its ID as template_id.".into(),
+        ));
+    }
+    Ok(())
+}
+
 fn select_report_columns(
     dataset: &mut ReportDataset,
     selected_columns: &[String],
@@ -1029,6 +1043,25 @@ mod tests {
             ReportExecutionOutcome::Finished(Err(DomainError::Internal(message)))
                 if message == "renderer failed"
         ));
+    }
+
+    #[test]
+    fn pdf_reports_require_a_published_template_before_job_creation() {
+        let error = validate_pdf_template_presence(&OutputFormat::Pdf, None)
+            .expect_err("PDF generation without a template must be rejected");
+
+        assert!(
+            error
+                .to_string()
+                .contains("published DocForge report template")
+        );
+        assert!(error.to_string().contains("template_id"));
+    }
+
+    #[test]
+    fn non_pdf_reports_can_use_their_default_renderer_without_a_template() {
+        validate_pdf_template_presence(&OutputFormat::Xlsx, None)
+            .expect("XLSX generation does not require a report template");
     }
 
     #[tokio::test]

@@ -1,19 +1,10 @@
-<!--
-  @component DatabaseManagementView
-  Master control subsystem for database lifecycle, backups, restore, migrations, and health checks.
-  Redesigned with the canonical Orbis Exams Dashboard design system:
-  - Notion-style Directory Index list with monolithic icon boxes & badges
-  - Linear-style Diagnostics & AI Advisor Sidebar with live KPI tiles & status indicators
-  - Sleek top header ribbon with active engine & connection badges and quick actions
-  - High-performance Svelte 5 Runes architecture with dual-transport parity & zero guessed defaults
--->
+<!-- @component Database management for connection, backup, restore, maintenance, and diagnostics. -->
 <script lang="ts">
 import type { ConnectionMode } from "$lib/api/types";
 import * as m from "$lib/paraglide/messages";
 import {
   ArrowDownTray,
   ArrowPath,
-  ArrowRight,
   ArrowUpTray,
   Bolt,
   ChartBar,
@@ -23,12 +14,10 @@ import {
   Database,
   FolderOpen,
   GlobeAlt,
-  Info,
   InfoCircle,
   Plus,
   ShieldCheck,
   Sparkles,
-  Wrench,
 } from "@orbis/icons";
 import { FormField, LoadingIndicator, toast } from "@orbis/ui";
 import { Badge } from "@orbis/ui/badge";
@@ -46,20 +35,20 @@ import {
   type DesktopCommandPerformance,
 } from "$lib/api/desktop-command-performance";
 import CreateDatabaseDialog from "./create-database-dialog.svelte";
+import DatabaseManagementHeader from "./database-management-header.svelte";
+import DatabaseManagementMetrics from "./database-management-metrics.svelte";
+import DatabaseManagementNavigation from "./database-management-navigation.svelte";
+import type {
+  DatabaseManagementSection,
+  DatabaseNavigationItem,
+} from "./database-management-types";
 import { DatabaseManagerController } from "./database-manager.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 const controller = new DatabaseManagerController();
 
-let activeSection = $state<
-  | "overview"
-  | "connection"
-  | "backup"
-  | "restore"
-  | "maintenance"
-  | "performance"
->("overview");
+let activeSection = $state<DatabaseManagementSection>("overview");
 let commandPerformance = $state<DesktopCommandPerformance[]>([]);
 let isRecordingPerformance = $state(isDesktopCommandPerformanceActive());
 
@@ -155,15 +144,7 @@ function stopPerformanceRecording() {
   refreshCommandPerformance();
 }
 
-function selectSection(
-  section:
-    | "overview"
-    | "connection"
-    | "backup"
-    | "restore"
-    | "maintenance"
-    | "performance",
-) {
+function selectSection(section: DatabaseManagementSection) {
   if (activeSection === "performance" && section !== "performance") {
     stopPerformanceRecording();
   }
@@ -178,6 +159,16 @@ function commandBarWidth(durationMs: number): string {
   );
   return `${Math.max(4, Math.min(100, (durationMs / maximum) * 100))}%`;
 }
+
+const performanceSummary = $derived.by(() => ({
+  commands: commandPerformance.length,
+  calls: commandPerformance.reduce((sum, metric) => sum + metric.totalCalls, 0),
+  failures: commandPerformance.reduce(
+    (sum, metric) => sum + metric.failedCalls,
+    0,
+  ),
+  p95: commandPerformance[0]?.p95Ms ?? null,
+}));
 
 async function handleTestRemote() {
   if (!connServerUrl.trim()) {
@@ -363,337 +354,115 @@ const kpiStats = $derived([
   },
 ]);
 
-// Notion-style Directory Items
-const directoryItems = $derived([
+const directoryItems: DatabaseNavigationItem[] = $derived([
   {
     id: "overview" as const,
-    title: m.ui_copy_overview_integrity_health_42939363(),
-    desc: m.ui_copy_target_storage_path_integrity_check_and_fa_a39b10ce(),
-    icon: ShieldCheck,
-    badge:
-      controller.status?.integrity_status === "ok"
-        ? m.ui_copy_ok_3b8e28b7()
-        : controller.status?.integrity_status || m.ui_copy_ok_217bf3e2(),
-  },
-  {
-    id: "performance" as const,
-    title: m.database_performance_title(),
-    desc: m.database_performance_subtitle(),
-    icon: ChartBar,
-    badge: `${commandPerformance.length}`,
+    title: m.database_tab_overview(),
   },
   {
     id: "connection" as const,
-    title: m.ui_copy_connection_engine_settings_e9507bc6(),
-    desc: m.ui_copy_configure_orbis_api_server_postgresql_cred_20f84da3(),
-    icon: GlobeAlt,
-    badge: controller.isLocal
-      ? "SQLite"
-      : connMode === "direct"
-        ? "PostgreSQL"
-        : "Orbis API",
+    title: m.database_tab_connection(),
   },
   ...(controller.isLocal
     ? [
         {
           id: "backup" as const,
-          title: m.ui_copy_backup_retention_policies_6a7221cd(),
-          desc: m.ui_copy_create_instant_snapshots_via_vacuum_into_a_2757e2e9(),
-          icon: ArrowDownTray,
-          badge: controller.status?.last_backup_timestamp
-            ? m.ui_copy_active_2acda471()
-            : m.ui_copy_pending_5ac26458(),
+          title: m.database_tab_backup(),
         },
         {
           id: "restore" as const,
-          title: m.ui_copy_restore_snapshot_recovery_0c381fdb(),
-          desc: m.ui_copy_safe_staged_recovery_with_pre_validation_i_589d67b1(),
-          icon: ArrowUpTray,
-          badge: m.ui_copy_staged_a21d0221(),
+          title: m.database_tab_restore(),
         },
         {
           id: "maintenance" as const,
-          title: m.ui_copy_maintenance_migrations_vacuum_4ddc2f50(),
-          desc: m.ui_copy_apply_pending_schema_migrations_compact_db_c69fb0b3(),
-          icon: Wrench,
-          badge:
-            controller.status && controller.status.pending_migrations.length > 0
-              ? m.ui_pending_migrations_count({
-                  count: controller.status.pending_migrations.length,
-                })
-              : m.ui_copy_up_to_date_ccf363f4(),
+          title: m.database_tab_maintenance(),
         },
       ]
     : []),
+  { id: "performance" as const, title: m.database_tab_performance() },
 ]);
 
-// Advisor Diagnostic Insights
-const advisorInsights = $derived.by(() => {
-  const insights = [];
-
-  // 1. Integrity Check Insight
-  const isHealthy =
-    controller.status?.integrity_status === "ok" ||
-    controller.status?.integrity_status === "healthy";
-  insights.push({
-    id: "integrity-health",
-    text: isHealthy
-      ? m.ui_copy_table_structures_and_b_tree_indices_verifi_ebbfc409()
-      : m.ui_copy_integrity_anomalies_detected_comprehensive_a7b9d476(),
-    variant: isHealthy ? ("success" as const) : ("warning" as const),
-    icon: ShieldCheck,
-  });
-
-  // 2. Schema Migrations Insight
-  const pendingCount = controller.status?.pending_migrations.length ?? 0;
-  if (pendingCount > 0) {
-    insights.push({
-      id: "migrations-pending",
-      text: m.ui_pending_migrations_apply_required({ count: pendingCount }),
-      variant: "warning" as const,
-      icon: Bolt,
-    });
-  } else {
-    insights.push({
-      id: "migrations-synced",
-      text: m.ui_copy_database_schema_is_fully_synchronized_with_832f99dd(),
-      variant: "success" as const,
-      icon: CheckCircle,
-    });
+const connectionStatus = $derived.by(() => {
+  const status = controller.status?.state;
+  if (!status) return { label: null, tone: null };
+  if (status === "connected") {
+    return { label: m.database_status_connected(), tone: "connected" as const };
   }
-
-  // 3. Concurrency / WAL Mode Insight
-  const walActive =
-    connWalMode || controller.status?.journal_mode?.toLowerCase() === "wal";
-  insights.push({
-    id: "wal-mode",
-    text: walActive
-      ? m.ui_copy_high_concurrency_wal_mode_enabled_for_lock_9e20529c()
-      : m.ui_copy_standard_journal_active_wal_mode_can_be_en_a5ec5641(),
-    variant: walActive ? ("success" as const) : ("neutral" as const),
-    icon: Sparkles,
-  });
-
-  // 4. Backup Freshness Insight
-  if (controller.status?.last_backup_timestamp) {
-    insights.push({
-      id: "backup-fresh",
-      text: m.ui_copy_verified_snapshot_taken_recently_data_prot_f3a8a1cd(),
-      variant: "success" as const,
-      icon: ClockRotateRight,
-    });
-  } else {
-    insights.push({
-      id: "backup-recommended",
-      text: m.ui_copy_no_recent_backup_recorded_creating_an_inst_f7ac9304(),
-      variant: "warning" as const,
-      icon: ArrowDownTray,
-    });
+  if (status === "migration_required") {
+    return {
+      label: m.database_status_migration_required(),
+      tone: "warning" as const,
+    };
   }
-
-  return insights;
+  return {
+    label: m.database_status_disconnected(),
+    tone: "disconnected" as const,
+  };
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide p-6 select-none font-sans flex flex-col gap-6">
-  
-  <!-- Sleek Header with Engine & Status Indicators -->
-  <div class="flex items-center justify-between border-b border-border/40 pb-4">
-    <div class="flex items-center gap-3 text-start">
-      <div class="h-8.5 w-8.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
-        <Database size={18} />
-      </div>
-      <div class="flex flex-col">
-        <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
-          {m.database_management_title?.() || m.settings_nav_database()}
-        </h2>
-        <span class="text-[9.5px] text-muted-foreground/90 mt-0.5">
-          {m.database_management_subtitle?.() || m.database_management_subtitle()}
-        </span>
-      </div>
-    </div>
+<div class="flex h-full w-full min-w-0 flex-col overflow-hidden bg-background font-sans">
+  <DatabaseManagementHeader
+    connectionMode={connMode}
+    isLocal={controller.isLocal}
+    isLoading={controller.isLoading}
+    isOperating={controller.isOperating}
+    statusLabel={connectionStatus.label}
+    statusTone={connectionStatus.tone}
+    onRefresh={() => controller.refresh()}
+    onOpenExistingDatabase={handleOpenExistingDatabase}
+    onCreateDatabase={() => (controller.isCreateDialogOpen = true)}
+  />
 
-    <!-- Active Indicators & Action Bar -->
-    <div class="flex items-center gap-2">
-      <!-- Engine Indicator Badge -->
-      <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
-        {#if controller.isLocal}
-          <Computer size={10} class="text-primary" />
-          <span>{m.settings_ui_database_sqlite_embedded()}</span>
-        {:else if connMode === "direct"}
-          <GlobeAlt size={10} class="text-primary" />
-          <span>{m.database_direct_postgres()}</span>
-        {:else}
-          <GlobeAlt size={10} class="text-primary" />
-          <span>{m.ui_copy_remote_server_efd114c0()}</span>
-        {/if}
-      </Badge>
-
-      <!-- Connection / Health Status Badge -->
-      {#if controller.status}
-        <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
-          <span class="h-1.5 w-1.5 rounded-full {controller.status.state === 'connected' ? 'bg-emerald-500' : controller.status.state === 'migration_required' ? 'bg-amber-500 animate-pulse' : 'bg-destructive'}"></span>
-          <span>{controller.status.state === 'connected' ? (m.database_status_connected?.() || m.database_status_connected()) : controller.status.state === 'migration_required' ? (m.database_status_migration_required?.() || m.ui_copy_migration_required_571b6bc3()) : (m.database_status_disconnected?.() || m.database_status_disconnected())}</span>
-        </Badge>
-      {/if}
-
-      <!-- Refresh Button -->
-      <Button
-        variant="outline"
-        size="sm"
-        class="text-[10px] font-bold px-2.5 h-7.5 rounded-md gap-1.5 cursor-pointer border-border/60 bg-card/60"
-        onclick={() => controller.refresh()}
-        disabled={controller.isLoading || controller.isOperating}
-      >
-        {#if controller.isLoading}<LoadingIndicator  size={12} class="text-primary" />{:else}<ArrowPath size={12}   />{/if}
-        <span>{m.common_refresh()}</span>
-      </Button>
-
-      <!-- Open Existing DB Button -->
-      <Button
-        variant="outline"
-        size="sm"
-        class="text-[10px] font-bold px-2.5 h-7.5 rounded-md gap-1.5 cursor-pointer border-border/60 bg-card/60"
-        onclick={handleOpenExistingDatabase}
-        disabled={controller.isOperating}
-      >
-        <FolderOpen size={12} class="text-primary" />
-        <span>{m.database_action_open?.() || m.ui_copy_open_db_a45f2956()}</span>
-      </Button>
-
-      <!-- New DB Button -->
-      <Button 
-        variant="default" 
-        size="sm" 
-        class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer ms-1 shadow-xs shadow-primary/20"
-        onclick={() => controller.isCreateDialogOpen = true}
-        disabled={controller.isOperating}
-      >
-        <Plus size={13} />
-        <span>{m.database_action_create?.() || m.ui_copy_new_db_a2bc15eb()}</span>
-      </Button>
-    </div>
-  </div>
-
-  <!-- Operational Global Alerts -->
-  {#if controller.operationError}
-    <div class="p-3.5 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center justify-between gap-3 animate-in fade-in">
-      <div class="flex items-center gap-2.5">
+  <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide">
+    {#if controller.operationError}
+    <div class="mx-4 mt-3 flex shrink-0 items-center justify-between gap-3 rounded-lg border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs text-destructive sm:mx-5" role="alert">
+      <div class="flex min-w-0 items-center gap-2.5">
         <InfoCircle size={15} class="shrink-0" />
         <span>{controller.operationError}</span>
       </div>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-[10px] text-destructive hover:bg-destructive/20" onclick={() => controller.operationError = null}>
+      <Button variant="ghost" size="sm" class="h-7 shrink-0 px-2 text-[10px] text-destructive hover:bg-destructive/20" onclick={() => controller.operationError = null}>
         {m.ui_copy_dismiss_f18c09a6()}
       </Button>
     </div>
-  {/if}
+    {/if}
 
-  {#if controller.operationSuccess}
-    <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-center justify-between gap-3 animate-in fade-in">
-      <div class="flex items-center gap-2.5">
+    {#if controller.operationSuccess}
+    <div class="mx-4 mt-3 flex shrink-0 items-center justify-between gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-600 sm:mx-5 dark:text-emerald-400" role="status">
+      <div class="flex min-w-0 items-center gap-2.5">
         <CheckCircle size={15} class="shrink-0" />
         <span>{controller.operationSuccess}</span>
       </div>
-      <Button variant="ghost" size="sm" class="h-6 px-2 text-[10px] text-emerald-600 hover:bg-emerald-500/20" onclick={() => controller.operationSuccess = null}>
+      <Button variant="ghost" size="sm" class="h-7 shrink-0 px-2 text-[10px] text-emerald-600 hover:bg-emerald-500/20" onclick={() => controller.operationSuccess = null}>
         {m.ui_copy_dismiss_f18c09a6()}
       </Button>
     </div>
-  {/if}
+    {/if}
 
-  {#if controller.isLoading && !controller.status}
-    <!-- Split Grid Loading Skeleton -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-      <!-- Left Directory List Skeleton -->
-      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
-        <Skeleton class="h-4 w-32 mb-2 rounded" />
-        {#each Array(5) as _}
-          <div class="flex items-center justify-between p-3.5 border-b border-border/30">
-            <div class="flex items-center gap-3 w-full">
-              <Skeleton class="h-8.5 w-8.5 rounded-lg" />
-              <div class="flex flex-col gap-1.5 w-2/3">
-                <Skeleton class="h-3 w-28 rounded" />
-                <Skeleton class="h-2.5 w-full rounded" />
-              </div>
-            </div>
-            <Skeleton class="h-4 w-12 rounded" />
-          </div>
-        {/each}
-      </div>
-
-      <!-- Right Diagnostics Sidebar Skeleton -->
-      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/20 rounded-xl p-5">
-        <Skeleton class="h-3 w-40 mb-1 rounded" />
-        <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/40">
-          {#each Array(4) as _}
-            <div class="flex flex-col gap-1">
-              <Skeleton class="h-2.5 w-16 rounded" />
-              <Skeleton class="h-4 w-8 rounded" />
-            </div>
+    {#if controller.isLoading && !controller.status}
+      <div class="mx-auto grid w-full max-w-7xl gap-5 px-4 py-5 sm:px-6">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {#each Array(4) as _, index (index)}
+            <Skeleton class="h-16 rounded-md" />
           {/each}
         </div>
-        <Skeleton class="h-3 w-32 mb-1 rounded" />
-        <div class="flex flex-col gap-3">
-          {#each Array(4) as _}
-            <div class="flex items-start gap-2.5">
-              <Skeleton class="h-4 w-4 rounded-full shrink-0" />
-              <Skeleton class="h-3 w-full rounded" />
-            </div>
-          {/each}
-        </div>
+        <Skeleton class="h-10 w-full rounded-md" />
+        <Skeleton class="h-64 w-full rounded-md" />
       </div>
-    </div>
-  {:else}
-    <!-- Main Content Split Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-      
-      <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) & Active Inspector Subview -->
-      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-5">
-        
-        <div>
-          <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
-            {m.ui_copy_database_management_directory_abb727de()}
-          </h3>
-          
-          <div class="flex flex-col">
-            {#each directoryItems as item (item.id)}
-              <button 
-                type="button"
-                class="group flex items-center justify-between py-2.5 px-3 border-b border-border/30 hover:bg-muted/40 rounded-lg transition-colors duration-150 select-none cursor-pointer w-full text-start {activeSection === item.id ? 'bg-muted/40' : ''}"
-                onclick={() => selectSection(item.id)}
-              >
-                <div class="flex items-center gap-3.5 min-w-0 text-start">
-                  <!-- Sleek Monolithic icon box -->
-                  <div class="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-150 {activeSection === item.id ? 'bg-primary/15 text-primary' : 'bg-muted/65 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'}">
-                    <item.icon size={16} />
-                  </div>
-                  <div class="flex flex-col min-w-0">
-                    <span class="text-xs font-bold transition-colors duration-150 {activeSection === item.id ? 'text-primary' : 'text-foreground group-hover:text-primary'}">
-                      {item.title}
-                    </span>
-                    <span class="text-[9.5px] text-muted-foreground/90 leading-normal truncate mt-0.5 max-w-sm sm:max-w-md md:max-w-lg">
-                      {item.desc}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="flex items-center gap-2 shrink-0">
-                  {#if item.badge}
-                    <span class="text-[8.5px] font-mono font-medium text-muted-foreground/80 bg-muted/50 border border-border/40 px-2 py-0.5 rounded select-none">
-                      {item.badge}
-                    </span>
-                  {/if}
-                  <ArrowRight 
-                    size={12} 
-                    class="text-muted-foreground/40 transition-opacity duration-150 rtl:rotate-180 {activeSection === item.id ? 'opacity-100 text-primary' : 'opacity-0 group-hover:opacity-100'}" 
-                  />
-                </div>
-              </button>
-            {/each}
-          </div>
-        </div>
+    {:else}
+      <div class="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
+        <DatabaseManagementMetrics stats={kpiStats} />
+        <DatabaseManagementNavigation
+          {activeSection}
+          items={directoryItems}
+          onSelect={selectSection}
+        />
 
-        <!-- Active Section Inspector Detail Panel -->
-        <div class="border border-border/50 bg-card/20 rounded-xl p-5 space-y-4 animate-in fade-in duration-150">
+        <main
+          id="database-management-content"
+          class="min-w-0 text-start"
+        >
+        <section class="space-y-4">
           
           <!-- ═══════════════════════════════════════════════════════════ -->
           <!-- SUBVIEW 1: OVERVIEW & HEALTH -->
@@ -701,12 +470,9 @@ const advisorInsights = $derived.by(() => {
           {#if activeSection === "overview"}
             <div class="space-y-4 text-start">
               <div class="flex items-center justify-between pb-3 border-b border-border/40">
-                <div class="flex items-center gap-2">
-                  <ShieldCheck size={16} class="text-primary" />
-                  <h3 class="text-xs font-bold text-foreground">
-                    {m.ui_copy_active_database_target_storage_details_e83fa545()}
-                  </h3>
-                </div>
+                <h3 class="text-xs font-bold text-foreground">
+                  {m.ui_copy_active_database_target_storage_details_e83fa545()}
+                </h3>
                 <Badge variant="outline" class="text-[9px] font-mono">
                   {controller.status?.mode?.toUpperCase() || "SQLITE"}
                 </Badge>
@@ -788,12 +554,9 @@ const advisorInsights = $derived.by(() => {
           {#if activeSection === "connection"}
             <div class="space-y-4 text-start">
               <div class="flex items-center justify-between pb-3 border-b border-border/40">
-                <div class="flex items-center gap-2">
-                  <GlobeAlt size={16} class="text-primary" />
-                  <h3 class="text-xs font-bold text-foreground">
-                    {m.ui_copy_connection_engine_configuration_c7d4c473()}
-                  </h3>
-                </div>
+                <h3 class="text-xs font-bold text-foreground">
+                  {m.ui_copy_connection_engine_configuration_c7d4c473()}
+                </h3>
               </div>
 
               <!-- Mode Selector -->
@@ -1009,12 +772,9 @@ const advisorInsights = $derived.by(() => {
           {#if activeSection === "backup"}
             <div class="space-y-4 text-start">
               <div class="flex items-center justify-between pb-3 border-b border-border/40">
-                <div class="flex items-center gap-2">
-                  <ArrowDownTray size={16} class="text-primary" />
-                  <h3 class="text-xs font-bold text-foreground">
-                    {m.ui_copy_backup_execution_retention_policies_6d81af81()}
-                  </h3>
-                </div>
+                <h3 class="text-xs font-bold text-foreground">
+                  {m.ui_copy_backup_execution_retention_policies_6d81af81()}
+                </h3>
               </div>
 
               <!-- Instant Backup Card -->
@@ -1119,12 +879,9 @@ const advisorInsights = $derived.by(() => {
           {#if activeSection === "restore"}
             <div class="space-y-4 text-start">
               <div class="flex items-center justify-between pb-3 border-b border-border/40">
-                <div class="flex items-center gap-2">
-                  <ArrowUpTray size={16} class="text-amber-500" />
-                  <h3 class="text-xs font-bold text-foreground">
-                    {m.ui_copy_restore_database_from_backup_9f021a21()}
-                  </h3>
-                </div>
+                <h3 class="text-xs font-bold text-foreground">
+                  {m.ui_copy_restore_database_from_backup_9f021a21()}
+                </h3>
               </div>
 
               <!-- Step 1: File Selection -->
@@ -1219,12 +976,9 @@ const advisorInsights = $derived.by(() => {
           {#if activeSection === "maintenance"}
             <div class="space-y-4 text-start">
               <div class="flex items-center justify-between pb-3 border-b border-border/40">
-                <div class="flex items-center gap-2">
-                  <Wrench size={16} class="text-primary" />
-                  <h3 class="text-xs font-bold text-foreground">
-                    {m.ui_copy_database_maintenance_migrations_compaction_07f28bbc()}
-                  </h3>
-                </div>
+                <h3 class="text-xs font-bold text-foreground">
+                  {m.ui_copy_database_maintenance_migrations_compaction_07f28bbc()}
+                </h3>
                 {#if controller.status && controller.status.pending_migrations.length === 0}
                   <Badge variant="outline" class="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20">
                     {m.ui_copy_up_to_date_ccf363f4()}
@@ -1241,7 +995,7 @@ const advisorInsights = $derived.by(() => {
                 <div class="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs space-y-2">
                   <span class="font-bold text-amber-700 dark:text-amber-400">{m.ui_copy_pending_migrations_00e88713()}</span>
                   <ul class="list-disc list-inside space-y-1 font-mono text-[10.5px] text-foreground">
-                    {#each controller.status.pending_migrations as migration}
+                    {#each controller.status.pending_migrations as migration (migration)}
                       <li>{migration}</li>
                     {/each}
                   </ul>
@@ -1306,7 +1060,7 @@ const advisorInsights = $derived.by(() => {
                     <span>{controller.integrityResult.is_healthy ? m.ui_copy_integrity_result_100_healthy_41f833b9() : m.ui_copy_issues_detected_d91351f2()}</span>
                   </div>
                   <ul class="list-disc list-inside font-mono text-[10.5px]">
-                    {#each controller.integrityResult.details as detail}
+                    {#each controller.integrityResult.details as detail, index (index)}
                       <li>{detail}</li>
                     {/each}
                   </ul>
@@ -1325,30 +1079,50 @@ const advisorInsights = $derived.by(() => {
           {/if}
 
           {#if activeSection === "performance"}
-            <section class="space-y-4 text-start">
-              <div class="flex items-center justify-between gap-3 border-b border-border/40 pb-3">
-                <div class="flex items-center gap-2">
-                  <ChartBar size={16} class="text-primary" />
-                  <h3 class="text-xs font-bold text-foreground">
-                    {m.database_performance_title()}
-                  </h3>
-                </div>
-                <div class="flex items-center gap-2">
+            <section class="space-y-5 text-start">
+              <div class="flex flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                <h2 class="text-sm font-semibold text-foreground">
+                  {m.database_performance_title()}
+                </h2>
+                <div class="flex flex-wrap items-center gap-2">
+                  {#if isRecordingPerformance}
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      class="h-8 gap-1.5 px-3 text-[10px]"
+                      onclick={stopPerformanceRecording}
+                    >
+                      <span class="size-1.5 rounded-full bg-current"></span>
+                      {m.database_performance_stop()}
+                    </Button>
+                  {:else}
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      class="h-8 gap-1.5 px-3 text-[10px]"
+                      onclick={startPerformanceRecording}
+                    >
+                      <ChartBar size={13} />
+                      {m.database_performance_start()}
+                    </Button>
+                  {/if}
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    class="h-7 gap-1.5 px-2.5 text-[10px]"
+                    class="h-8 gap-1.5 px-2.5 text-[10px]"
                     onclick={refreshCommandPerformance}
                   >
-                    <ArrowPath size={12} />
+                    <ArrowPath size={13} />
                     {m.common_refresh()}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    class="h-7 gap-1.5 px-2.5 text-[10px]"
+                    class="h-8 px-2.5 text-[10px]"
                     onclick={clearCommandPerformance}
                     disabled={commandPerformance.length === 0}
                   >
@@ -1357,116 +1131,104 @@ const advisorInsights = $derived.by(() => {
                 </div>
               </div>
 
-              <p class="text-[10px] leading-relaxed text-muted-foreground">
-                {m.database_performance_privacy_note()}
-              </p>
-
-              {#if commandPerformance.length === 0}
-                <div class="rounded-lg border border-border/40 bg-card/40 p-6 text-center text-xs text-muted-foreground">
-                  {m.database_performance_empty()}
+              {#if isRecordingPerformance}
+                <div class="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-[10px] text-primary" role="status">
+                  <span class="relative flex size-2">
+                    <span class="absolute inline-flex size-full animate-ping rounded-full bg-primary opacity-50"></span>
+                    <span class="relative inline-flex size-2 rounded-full bg-primary"></span>
+                  </span>
+                  {m.database_performance_recording()}
                 </div>
-              {:else}
-                <div class="max-h-[34rem] overflow-auto rounded-lg border border-border/40">
+              {/if}
+
+              <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                {#each [
+                  { label: m.database_performance_commands(), value: performanceSummary.commands },
+                  { label: m.database_performance_calls_total(), value: performanceSummary.calls },
+                  {
+                    label: m.database_performance_p95(),
+                    value:
+                      performanceSummary.p95 === null
+                        ? "—"
+                        : formatDuration(performanceSummary.p95),
+                  },
+                  { label: m.database_performance_failures(), value: performanceSummary.failures },
+                ] as metric (metric.label)}
+                  <div class="rounded-lg border border-border/50 bg-background/60 p-3">
+                    <p class="text-[10px] text-muted-foreground">{metric.label}</p>
+                    <p class="mt-1.5 font-mono text-lg font-semibold text-foreground">{metric.value}</p>
+                  </div>
+                {/each}
+              </div>
+
+              <div class="rounded-lg border border-border/50 bg-background/40 p-4">
+                <div class="mb-4 flex items-center justify-between gap-3">
+                  <h3 class="text-xs font-semibold text-foreground">{m.database_performance_slowest_commands()}</h3>
+                  <span class="text-[9px] text-muted-foreground">{m.database_performance_p95()}</span>
+                </div>
+                {#if commandPerformance.length === 0}
+                  <div class="rounded-md border border-dashed border-border/60 px-4 py-8 text-center text-xs text-muted-foreground">
+                    {m.database_performance_empty()}
+                  </div>
+                {:else}
+                  <div class="space-y-3">
+                    {#each commandPerformance.slice(0, 8) as metric (metric.command)}
+                      <div class="grid grid-cols-[minmax(7rem,1fr)_minmax(5rem,2fr)_4.5rem] items-center gap-3">
+                        <span class="truncate font-mono text-[10px] text-muted-foreground" title={metric.command}>{metric.command}</span>
+                        <div class="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            class="h-full rounded-full {metric.p95Ms >= 500 ? 'bg-amber-500' : 'bg-primary'}"
+                            style:width={commandBarWidth(metric.p95Ms)}
+                          ></div>
+                        </div>
+                        <span class="text-end font-mono text-[10px] {metric.p95Ms >= 500 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground'}">{formatDuration(metric.p95Ms)}</span>
+                      </div>
+                    {/each}
+                  </div>
+                {/if}
+              </div>
+
+              {#if commandPerformance.length > 0}
+                <div class="overflow-x-auto rounded-lg border border-border/50">
                   <table class="w-full min-w-[34rem] text-start text-[10px]">
-                    <thead class="sticky top-0 bg-muted/80 text-muted-foreground">
+                    <thead class="bg-muted/50 text-muted-foreground">
                       <tr>
-                        <th class="px-3 py-2 font-semibold">{m.database_performance_command()}</th>
-                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_calls()}</th>
-                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_average()}</th>
-                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_p95()}</th>
-                        <th class="px-3 py-2 text-end font-semibold">{m.database_performance_failures()}</th>
+                        <th class="px-3 py-2.5 font-medium">{m.database_performance_command()}</th>
+                        <th class="px-3 py-2.5 text-end font-medium">{m.database_performance_calls()}</th>
+                        <th class="px-3 py-2.5 text-end font-medium">{m.database_performance_average()}</th>
+                        <th class="px-3 py-2.5 text-end font-medium">{m.database_performance_p95()}</th>
+                        <th class="px-3 py-2.5 text-end font-medium">{m.database_performance_failures()}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {#each commandPerformance as metric (metric.command)}
-                        <tr class="border-t border-border/30">
-                          <td class="px-3 py-2 font-mono text-foreground">{metric.command}</td>
-                          <td class="px-3 py-2 text-end font-mono text-muted-foreground">
+                        <tr class="border-t border-border/40">
+                          <td class="px-3 py-2.5 font-mono text-foreground">{metric.command}</td>
+                          <td class="px-3 py-2.5 text-end font-mono text-muted-foreground">
                             {metric.totalCalls} <span class="text-muted-foreground/60">({metric.sampleCount})</span>
                           </td>
-                          <td class="px-3 py-2 text-end font-mono text-muted-foreground">{formatDuration(metric.averageMs)}</td>
-                          <td class="px-3 py-2 text-end font-mono {metric.p95Ms >= 500 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}">{formatDuration(metric.p95Ms)}</td>
-                          <td class="px-3 py-2 text-end font-mono {metric.failedCalls > 0 ? 'text-destructive' : 'text-muted-foreground'}">{metric.failedCalls}</td>
+                          <td class="px-3 py-2.5 text-end font-mono text-muted-foreground">{formatDuration(metric.averageMs)}</td>
+                          <td class="px-3 py-2.5 text-end font-mono {metric.p95Ms >= 500 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}">{formatDuration(metric.p95Ms)}</td>
+                          <td class="px-3 py-2.5 text-end font-mono {metric.failedCalls > 0 ? 'text-destructive' : 'text-muted-foreground'}">{metric.failedCalls}</td>
                         </tr>
                       {/each}
                     </tbody>
                   </table>
                 </div>
-                <p class="text-[9px] text-muted-foreground/80">
-                  {m.database_performance_window_note()}
-                </p>
               {/if}
+
+              <p class="text-[10px] leading-relaxed text-muted-foreground">
+                <span>{m.database_performance_privacy_note()}</span>
+                <span> {m.database_performance_window_note()}</span>
+              </p>
             </section>
           {/if}
 
-        </div>
+        </section>
+        </main>
       </div>
-
-      <!-- 2. RIGHT COLUMN: Database Health & Diagnostics (Linear Sidebar style) -->
-      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/10 rounded-xl p-5 select-none text-start">
-        
-        <!-- Sidebar Section: KPI Summary -->
-        <div>
-          <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            {m.ui_copy_database_engine_kpis_30659166()}
-          </h4>
-          
-          <div class="grid grid-cols-2 gap-3.5 pb-4 border-b border-border/30">
-            {#each kpiStats as stat}
-              <div class="flex flex-col min-w-0 text-start overflow-hidden" title={stat.fullTitle || stat.value}>
-                <span class="text-[9.5px] text-muted-foreground/80 truncate">{stat.label}</span>
-                <span class="text-xs font-bold text-foreground font-mono mt-0.5 leading-snug truncate">{stat.value}</span>
-                {#if stat.sub}
-                  <span class="text-[8.5px] text-muted-foreground/70 truncate mt-0.5 font-sans">{stat.sub}</span>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <!-- Sidebar Section: Orbis AI Advisor & System Diagnostics -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
-            <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>{m.ui_copy_engine_diagnostics_advisor_d44c33a7()}</span>
-          </div>
-          
-          <div class="flex flex-col gap-2.5">
-            {#each advisorInsights as insight (insight.id)}
-              <div class="flex items-start gap-2.5 p-2 rounded-lg bg-card/30 border border-border/20 text-[10px] leading-relaxed text-muted-foreground">
-                
-                <!-- Status icon or color dot -->
-                <div class="shrink-0 mt-0.5">
-                  {#if insight.variant === 'warning'}
-                    <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                    </span>
-                  {:else if insight.variant === 'success'}
-                    <span class="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  {:else}
-                    <span class="inline-flex rounded-full h-2 w-2 bg-muted-foreground/40"></span>
-                  {/if}
-                </div>
-
-                <div class="flex flex-col min-w-0">
-                  <span class="text-foreground/90 font-medium">{insight.text}</span>
-                </div>
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <!-- System Information Footer -->
-        <div class="pt-2 border-t border-border/30 flex items-center gap-2 text-[9px] text-muted-foreground/75 truncate" title={controller.status?.connection_target}>
-          <Info size={11} class="shrink-0" />
-          <span class="truncate font-mono">{controller.status?.connection_target || m.ui_copy_engine_ready_dca5401b()}</span>
-        </div>
-
-      </div>
-
-    </div>
-  {/if}
+    {/if}
+  </div>
 </div>
 
 <!-- Database Creation Dialog -->
