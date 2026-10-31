@@ -1,6 +1,7 @@
 <script lang="ts">
 import { toast } from "@orbis/ui";
 import { api, extractErrorMessage, type TimeSlotDto } from "$lib/api";
+import { getWeekdayOptions } from "$lib/core/i18n";
 import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
@@ -45,15 +46,10 @@ let {
   onSuccess,
 }: Props = $props();
 
-const weekdays = [
-  { value: 7, label: m.common_day_saturday() },
-  { value: 1, label: m.common_day_sunday() },
-  { value: 2, label: m.common_day_monday() },
-  { value: 3, label: m.common_day_tuesday() },
-  { value: 4, label: m.common_day_wednesday() },
-  { value: 5, label: m.common_day_thursday() },
-  { value: 6, label: m.common_day_friday() },
-];
+const weekdays = getWeekdayOptions();
+const weekdayOrder = new Map(
+  weekdays.map((weekday, index) => [weekday.value, index]),
+);
 
 let isEditing = $state(false);
 let editingSlot = $state<TimeSlotDto | null>(null);
@@ -62,17 +58,16 @@ let name = $state("");
 let startTime = $state("08:00");
 let endTime = $state("08:45");
 let slotIndex = $state("1");
-let selectedDays = $state<number[]>([7, 1, 2, 3, 4, 5]);
+let selectedDays = $state<number[]>([]);
 let isBreak = $state(false);
 let breakType = $state("recess");
 let isSubmitting = $state(false);
 
 const sortedTimeSlots = $derived(
   [...timeSlots].sort((left, right) => {
-    const dayOrder = [7, 1, 2, 3, 4, 5, 6];
     return (
-      dayOrder.indexOf(left.day_of_week) -
-        dayOrder.indexOf(right.day_of_week) ||
+      (weekdayOrder.get(left.day_of_week) ?? Number.MAX_SAFE_INTEGER) -
+        (weekdayOrder.get(right.day_of_week) ?? Number.MAX_SAFE_INTEGER) ||
       left.slot_index - right.slot_index
     );
   }),
@@ -93,7 +88,7 @@ function resetForm() {
   slotIndex = String(
     Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1,
   );
-  selectedDays = [7, 1, 2, 3, 4, 5];
+  selectedDays = [];
   isBreak = false;
   breakType = "recess";
 }
@@ -349,7 +344,12 @@ function getDuration(slot: TimeSlotDto): number {
               <Button type="button" variant="outline" size="sm" onclick={resetForm}>
                 {m.common_action_cancel()}
               </Button>
-              <Button type="submit" size="sm" class="gap-1.5" disabled={isSubmitting}>
+              <Button
+                type="submit"
+                size="sm"
+                class="gap-1.5"
+                disabled={isSubmitting || selectedDays.length === 0}
+              >
                 <FloppyDisk size={14} />
                 {m.academics_schedule_save_slot()}
               </Button>

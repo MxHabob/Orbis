@@ -517,13 +517,13 @@ async fn assign_secret(
     params(("schedule_id" = Uuid, Query, description = "Exam Schedule ID")),
     responses((status = 200, body = Vec<SecretDto>)), security(("bearer" = [])), tag = "Exam")]
 async fn list_secrets(
-    _ctx: AuthContext,
+    ctx: AuthContext,
     State(state): State<AppState>,
     Query(q): Query<SecretQuery>,
 ) -> Result<Json<ApiResponse<Vec<SecretDto>>>, ApiError> {
     let list = state
         .scheduling_service
-        .list_secret_numbers(q.schedule_id)
+        .list_secret_numbers(&ctx, q.schedule_id)
         .await?;
     let dtos = list
         .into_iter()

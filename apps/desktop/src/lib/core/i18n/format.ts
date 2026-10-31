@@ -310,6 +310,19 @@ function formatWithOrganizationDateFormat(
   });
 }
 
+export function getWeekdayOptions(): Array<{ value: number; label: string }> {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(Date.UTC(2023, 0, index + 1));
+    return {
+      value: index + 1,
+      label: formatDate(date, "date", {
+        weekday: "long",
+        timeZone: "UTC",
+      }),
+    };
+  });
+}
+
 /**
  * Formats a percentage value (e.g., 95.5 → "95.5%").
  *

@@ -1,7 +1,7 @@
 <script lang="ts">
-import { Grid, Pin, User, Users } from "@orbis/icons";
+import { Calendar, Pin, User, Users } from "@orbis/icons";
 import * as m from "$lib/paraglide/messages";
-import { l } from "$lib/core/i18n";
+import { getWeekdayOptions, l } from "$lib/core/i18n";
 import { getLocale } from "$lib/paraglide/runtime";
 import { enrichTimeSlots, type EnrichedTimeSlot } from "@orbis/ui";
 
@@ -17,6 +17,7 @@ interface Props {
   getSubjectColor: (id: string) => string;
   onLessonClick?: (lesson: any) => void;
   onCellClick?: (classId: string, slotId: string, day: number) => void;
+  onDayChange?: (day: number) => void;
 }
 
 let {
@@ -31,12 +32,31 @@ let {
   getSubjectColor,
   onLessonClick,
   onCellClick,
+  onDayChange,
 }: Props = $props();
 
+const weekdayOptions = getWeekdayOptions();
+const weekdayOrder = new Map(
+  weekdayOptions.map((weekday, index) => [weekday.value, index]),
+);
+const availableDays = $derived(
+  [...new Set(timeSlots.map((slot) => Number(slot.day_of_week)))]
+    .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+    .sort(
+      (left, right) =>
+        (weekdayOrder.get(left) ?? 0) - (weekdayOrder.get(right) ?? 0),
+    ),
+);
+const weekdayLabelByValue = new Map(
+  weekdayOptions.map((weekday) => [weekday.value, weekday.label]),
+);
 const enrichedSlots = $derived<EnrichedTimeSlot[]>(
   timeSlots.length > 0 && timeSlots[0]?.display_name !== undefined
-    ? timeSlots
-    : enrichTimeSlots(timeSlots, getLocale()),
+    ? timeSlots.filter((slot) => Number(slot.day_of_week) === selectedDay)
+    : enrichTimeSlots(
+        timeSlots.filter((slot) => Number(slot.day_of_week) === selectedDay),
+        getLocale(),
+      ),
 );
 
 // Day Lessons
@@ -47,13 +67,28 @@ const dayLessons = $derived(
 function getLessonForClassSlot(classId: string, slotId: string) {
   return dayLessons.find(
     (item) =>
-      String(item.class_id) === String(classId) &&
+      String(item.section_id ?? item.class_id) === String(classId) &&
       String(item.time_slot_id) === String(slotId),
   );
 }
 </script>
 
 <div class="flex flex-1 min-h-0 w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-xs">
+  <div class="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-border/60 bg-muted/15 px-3 py-2">
+    <Calendar size={14} class="shrink-0 text-muted-foreground" />
+    {#each availableDays as day (day)}
+      <button
+        type="button"
+        aria-pressed={selectedDay === day}
+        class="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors {selectedDay === day
+          ? 'bg-primary text-primary-foreground shadow-xs'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'}"
+        onclick={() => onDayChange?.(day)}
+      >
+        {weekdayLabelByValue.get(day)}
+      </button>
+    {/each}
+  </div>
   <div class="flex-1 min-h-0 min-w-0 flex flex-col overflow-auto scrollbar-hide">
     <!-- Matrix Grid -->
     <table class="w-full border-collapse text-xs select-none">
@@ -121,7 +156,12 @@ function getLessonForClassSlot(classId: string, slotId: string) {
                     </div>
                   </div>
                 {:else}
-                  <div class="h-full min-h-12"></div>
+                  <button
+                    type="button"
+                    class="min-h-12 w-full rounded-md text-primary opacity-0 transition-opacity hover:bg-primary/5 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    aria-label={m.common_lesson_sheet_title()}
+                    onclick={() => onCellClick?.(String(cls.id), String(slot.id), selectedDay)}
+                  ></button>
                 {/if}
               </td>
             {/each}

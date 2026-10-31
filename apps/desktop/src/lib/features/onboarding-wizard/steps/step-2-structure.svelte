@@ -8,6 +8,7 @@ import { systemStore } from "$lib/stores";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Label } from "@orbis/ui/label";
+import { Checkbox } from "@orbis/ui/checkbox";
 import { Badge } from "@orbis/ui/badge";
 import {
   Select,
@@ -49,6 +50,7 @@ let roomNumber = $state("");
 let roomType = $state("classroom");
 let roomCapacity = $state<number>(0);
 let roomBuilding = $state("");
+let isExamHall = $state(false);
 
 const ROOM_TYPES = [
   { value: "classroom", label: m.onboarding_room_type_classroom() },
@@ -148,6 +150,7 @@ async function handleCreateRoom() {
       name_ar: roomNameAr.trim() || undefined,
       room_number: roomNumber.trim(),
       room_type: roomType,
+      is_exam_hall: isExamHall,
       capacity: roomCapacity > 0 ? roomCapacity : undefined,
       building: roomBuilding.trim() || undefined,
       is_active: true,
@@ -158,6 +161,7 @@ async function handleCreateRoom() {
     roomNameAr = "";
     roomNumber = "";
     roomCapacity = 0;
+    isExamHall = false;
     await refreshOnboardingState(orgId, m.common_action_failed());
     successMessage = m.onboarding_step2_room_created_success();
   } catch (err: any) {
@@ -264,6 +268,21 @@ async function deleteRoom(room: RoomDto) {
               />
             </div>
           </div>
+
+          <label
+            for="onboarding-room-exam-committee"
+            class="flex items-start gap-2 rounded-lg border border-border/50 bg-background/60 p-3 text-xs"
+          >
+            <Checkbox
+              id="onboarding-room-exam-committee"
+              bind:checked={isExamHall}
+              disabled={isSubmittingRoom}
+            />
+            <span class="space-y-1">
+              <span class="block font-medium">{m.common_rooms_exam_committee()}</span>
+              <span class="block text-muted-foreground">{m.common_rooms_exam_committee_help()}</span>
+            </span>
+          </label>
 
           <div class="flex justify-end">
             <Button
@@ -435,6 +454,11 @@ async function deleteRoom(room: RoomDto) {
                       <div class="text-[10px] text-muted-foreground capitalize">
                         {room.room_type || "classroom"} {room.building ? `(${room.building})` : ""}
                       </div>
+                      {#if room.is_exam_hall}
+                        <Badge variant="outline" class="mt-1 text-[9px]">
+                          {m.common_rooms_exam_committee()}
+                        </Badge>
+                      {/if}
                     </div>
                   </div>
                   <div class="flex items-center gap-2">

@@ -181,7 +181,13 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
         TemplateNode::Image(n) => {
             let mut props = n.props.clone();
             props.position = n.position.clone().or(props.position);
-            if let Some(ref src) = props.src {
+            if let Some(expression) = props
+                .expression
+                .as_deref()
+                .filter(|expression| !expression.trim().is_empty())
+            {
+                props.src = Some(evaluate_expression(expression, context));
+            } else if let Some(ref src) = props.src {
                 props.src = Some(evaluate_expression(src, context));
             }
             vec![EvaluatedNode::Image(EvaluatedImage {
@@ -309,6 +315,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
                 Vec::new()
             }
         }
+
         TemplateNode::Repeater(n) => {
             let mut results = Vec::new();
             let data_val = resolve_path(context, &n.props.data_source).unwrap_or(Value::Null);
@@ -330,6 +337,7 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
                     }
                 }
             }
+
             results
         }
         TemplateNode::ComponentRef(n) => {
@@ -341,5 +349,38 @@ pub fn evaluate_node_tree(node: &TemplateNode, context: &Value) -> Vec<Evaluated
             );
             Vec::new()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn image_source_expression_resolves_from_context() {
+        let image: TemplateNode = serde_json::from_value(json!({
+            "type": "Image",
+            "id": "student-photo",
+            "props": {
+                "expression": "{{student.avatar_url}}",
+                "src": "data:image/png;base64,ZmFsbGJhY2s="
+            }
+        }))
+        .unwrap();
+        let context = json!({
+            "student": {
+                "avatar_url": "data:image/png;base64,cGhvdG8="
+            }
+        });
+
+        let evaluated = evaluate_node_tree(&image, &context);
+        let EvaluatedNode::Image(image) = &evaluated[0] else {
+            panic!("expected evaluated image node");
+        };
+        assert_eq!(
+            image.props.src.as_deref(),
+            Some("data:image/png;base64,cGhvdG8=")
+        );
     }
 }

@@ -3,7 +3,6 @@ import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { InfoCircle, Lock } from "@orbis/icons";
 import { toast } from "@orbis/ui";
 import { slide } from "svelte/transition";
 import { academicContext, authStore } from "$lib/stores";
@@ -305,37 +304,31 @@ onMount(() => {
 });
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none">
+<div class="flex h-full min-h-0 w-full flex-col gap-3 overflow-hidden p-3 text-start select-none sm:gap-4 sm:p-4">
   {#if isLoading}
-    <div class="flex flex-col gap-4">
-      <Skeleton class="h-64 w-full rounded-xl" />
+    <div class="flex min-h-0 flex-1 flex-col">
+      <Skeleton class="h-full min-h-64 w-full rounded-xl" />
     </div>
   {:else}
     <!-- Warnings -->
     {#if selectedPeriod && isPeriodLocked}
       <div
-        class="bg-destructive/5 border border-destructive/20 rounded-xl p-4 flex items-center gap-3"
+        class="shrink-0 rounded-xl border border-destructive/20 bg-card px-4 py-2.5"
         in:slide={{ duration: 200 }}
       >
-        <div class="h-8 w-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-          <Lock size={16} class="text-destructive" />
-        </div>
-        <div class="text-start">
-          <p class="text-xs font-bold text-destructive">{m.common_control_period_locked_title()}</p>
-          <p class="text-[10px] text-destructive/80 mt-0.5">{m.common_control_period_locked_desc()}</p>
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-start">
+          <p class="text-xs font-medium text-destructive">{m.common_control_period_locked_title()}</p>
+          <p class="text-xs text-muted-foreground">{m.common_control_period_locked_desc()}</p>
         </div>
       </div>
     {:else if selectedPeriod && !isGradeEntryOpen}
       <div
-        class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 flex items-center gap-3"
+        class="shrink-0 rounded-xl border border-amber-500/20 bg-card px-4 py-2.5"
         in:slide={{ duration: 200 }}
       >
-        <div class="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
-          <InfoCircle size={16} class="text-amber-500" />
-        </div>
-        <div class="text-start">
-          <p class="text-xs font-bold text-amber-500">{m.common_control_entry_closed_title()}</p>
-          <p class="text-[10px] text-amber-400 mt-0.5">{m.common_control_entry_closed_desc()}</p>
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-start">
+          <p class="text-xs font-medium text-amber-600">{m.common_control_entry_closed_title()}</p>
+          <p class="text-xs text-muted-foreground">{m.common_control_entry_closed_desc()}</p>
         </div>
       </div>
     {/if}

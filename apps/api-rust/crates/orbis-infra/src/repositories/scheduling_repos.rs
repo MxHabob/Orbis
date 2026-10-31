@@ -6,7 +6,11 @@ use orbis_domain::entities::room::Room as DomainRoom;
 use orbis_domain::entities::scheduled_lesson::ScheduledLesson as DomainScheduledLesson;
 use orbis_domain::entities::time_slot::TimeSlot as DomainTimeSlot;
 use orbis_domain::errors::DomainError;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+    TransactionTrait,
+};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::models::{
@@ -33,6 +37,7 @@ impl RoomRepository for SchedulingRepoImpl {
             name_ar: m.name_ar,
             capacity: m.capacity,
             room_type: m.room_type,
+            is_exam_hall: m.is_exam_hall,
             floor: m.floor,
             org_unit_id: m.org_unit_id,
             created_at: m.created_at,
@@ -55,6 +60,7 @@ impl RoomRepository for SchedulingRepoImpl {
                 name_ar: m.name_ar,
                 capacity: m.capacity,
                 room_type: m.room_type,
+                is_exam_hall: m.is_exam_hall,
                 floor: m.floor,
                 org_unit_id: m.org_unit_id,
                 created_at: m.created_at,
@@ -71,6 +77,7 @@ impl RoomRepository for SchedulingRepoImpl {
             name_ar: Set(room.name_ar.clone()),
             capacity: Set(room.capacity),
             room_type: Set(room.room_type.clone()),
+            is_exam_hall: Set(room.is_exam_hall),
             floor: Set(room.floor),
             org_unit_id: Set(room.org_unit_id),
             created_at: Set(room.created_at),
@@ -343,6 +350,112 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
             .collect())
     }
 
+    async fn has_conflicts(
+        &self,
+        lessons: &[DomainScheduledLesson],
+        exclude_ids: &[Uuid],
+    ) -> Result<bool, DomainError> {
+        if lessons.is_empty() {
+            return Ok(false);
+        }
+
+        let time_slot_ids: Vec<Uuid> = lessons
+            .iter()
+            .map(|lesson| lesson.time_slot_id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+        let mut query = ScheduledLessonEntity::find()
+            .filter(scheduled_lesson::Column::TimeSlotId.is_in(time_slot_ids.clone()));
+        if !exclude_ids.is_empty() {
+            query = query.filter(scheduled_lesson::Column::Id.is_not_in(exclude_ids.to_vec()));
+        }
+        let existing = query
+            .all(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let existing: Vec<DomainScheduledLesson> = existing
+            .into_iter()
+            .map(|lesson| DomainScheduledLesson {
+                id: lesson.id,
+                section_subject_id: lesson.section_subject_id,
+                room_id: lesson.room_id,
+                time_slot_id: lesson.time_slot_id,
+                teacher_id: lesson.teacher_id,
+                created_at: lesson.created_at,
+                updated_at: lesson.updated_at,
+            })
+            .collect();
+
+        let section_subject_ids: Vec<Uuid> = lessons
+            .iter()
+            .chain(existing.iter())
+            .map(|lesson| lesson.section_subject_id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+        let section_subjects = crate::models::section_subject::Entity::find()
+            .filter(crate::models::section_subject::Column::Id.is_in(section_subject_ids))
+            .all(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let section_by_offering: HashMap<Uuid, (Uuid, Uuid)> = section_subjects
+            .into_iter()
+            .map(|offering| (offering.id, (offering.section_id, offering.period_id)))
+            .collect();
+
+        let time_slots = TimeSlotEntity::find()
+            .filter(time_slot::Column::Id.is_in(time_slot_ids))
+            .all(&self.db)
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        let period_by_slot: HashMap<Uuid, Uuid> = time_slots
+            .into_iter()
+            .map(|slot| (slot.id, slot.period_id))
+            .collect();
+        for lesson in lessons {
+            let Some((_, section_period_id)) = section_by_offering.get(&lesson.section_subject_id)
+            else {
+                return Err(DomainError::NotFound("Section subject not found".into()));
+            };
+            let Some(slot_period_id) = period_by_slot.get(&lesson.time_slot_id) else {
+                return Err(DomainError::NotFound("Time slot not found".into()));
+            };
+            if section_period_id != slot_period_id {
+                return Err(DomainError::Validation(
+                    "Section subject and time slot must belong to the same academic period".into(),
+                ));
+            }
+        }
+
+        let existing_count = existing.len();
+        let placements: Vec<&DomainScheduledLesson> =
+            existing.iter().chain(lessons.iter()).collect();
+        for (index, lesson) in placements.iter().enumerate() {
+            for (other_index, other) in placements.iter().enumerate().skip(index + 1) {
+                if index < existing_count && other_index < existing_count {
+                    continue;
+                }
+                if lesson.time_slot_id != other.time_slot_id {
+                    continue;
+                }
+
+                let same_section = section_by_offering
+                    .get(&lesson.section_subject_id)
+                    .zip(section_by_offering.get(&other.section_subject_id))
+                    .is_some_and(|(left, right)| left.0 == right.0);
+                let same_teacher =
+                    lesson.teacher_id.is_some() && lesson.teacher_id == other.teacher_id;
+                let same_room = lesson.room_id.is_some() && lesson.room_id == other.room_id;
+                if same_section || same_teacher || same_room {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
+    }
+
     async fn save(&self, lesson: &DomainScheduledLesson) -> Result<(), DomainError> {
         let active = scheduled_lesson::ActiveModel {
             id: Set(lesson.id),
@@ -374,9 +487,34 @@ impl ScheduledLessonRepository for SchedulingRepoImpl {
     }
 
     async fn save_bulk(&self, lessons: &[DomainScheduledLesson]) -> Result<(), DomainError> {
-        for lesson in lessons {
-            ScheduledLessonRepository::save(self, lesson).await?;
+        if lessons.is_empty() {
+            return Ok(());
         }
+
+        let transaction = self
+            .db
+            .begin()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
+        for lesson in lessons {
+            let active = scheduled_lesson::ActiveModel {
+                id: Set(lesson.id),
+                section_subject_id: Set(lesson.section_subject_id),
+                room_id: Set(lesson.room_id),
+                time_slot_id: Set(lesson.time_slot_id),
+                teacher_id: Set(lesson.teacher_id),
+                created_at: Set(lesson.created_at),
+                updated_at: Set(lesson.updated_at),
+            };
+            active
+                .insert(&transaction)
+                .await
+                .map_err(|error| DomainError::Internal(error.to_string()))?;
+        }
+        transaction
+            .commit()
+            .await
+            .map_err(|error| DomainError::Internal(error.to_string()))?;
         Ok(())
     }
 

@@ -382,8 +382,9 @@ function getTotalDisplayText(col: any): string {
 
     {:else if node.type === "Image"}
       <!-- Image Node -->
-      {#if nodeProps.src || nodeProps.fallbackSrc}
-        {@const currentSrc = (nodeProps.src && !nodeProps.src.startsWith("{{")) ? nodeProps.src : (nodeProps.fallbackSrc || nodeProps.src)}
+      {@const expression = nodeProps.expression || (nodeProps.src?.startsWith("{{") ? nodeProps.src : "")}
+      {@const currentSrc = nodeProps.src && !nodeProps.src.startsWith("{{") ? nodeProps.src : nodeProps.fallbackSrc}
+      {#if currentSrc}
         {#await resolveDocumentUrl(currentSrc, nodeProps.assetRef) then resolvedSrc}
           <image
             href={resolvedSrc}
@@ -408,7 +409,7 @@ function getTotalDisplayText(col: any): string {
       {:else}
         <!-- Image placeholder -->
         <rect width={w} height={h} fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="4,2" rx="2" />
-        <text x={w/2} y={h/2} text-anchor="middle" dominant-baseline="central" fill="#94a3b8" font-size="10">📷</text>
+        <text x={w/2} y={h/2} text-anchor="middle" dominant-baseline="central" fill="#94a3b8" font-size="10">{expression || "📷"}</text>
       {/if}
 
     {:else if node.type === "Shape"}

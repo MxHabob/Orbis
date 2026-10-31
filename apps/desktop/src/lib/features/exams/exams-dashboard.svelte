@@ -2,400 +2,252 @@
 import * as m from "$lib/paraglide/messages";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
-import { Badge } from "@orbis/ui/badge";
-import {
-  ArrowRight,
-  Calendar,
-  DocumentPage,
-  Home,
-  Info,
-  InfoCircle,
-  Lock,
-  LockClosed,
-  Plus,
-  Sparkles,
-  TaskList,
-  UserBadgeCheck,
-} from "@orbis/icons";
+import { Card } from "@orbis/ui/card";
+import { ArrowRight, Calendar, ChartBar, DocumentCheck } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
-import { createQuery } from "@tanstack/svelte-query";
-import { api, extractErrorMessage } from "$lib/api";
-import { academicContext } from "$lib/stores";
+import { formatDate } from "$lib/core/i18n";
+import { extractErrorMessage, type ExamSessionDto } from "$lib/api";
 import { createPeriodsQuery } from "$lib/features/academics";
+import { createExamSessionsQuery } from "$lib/features/exams/queries";
+import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
+import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
-// Modal trigger state
+let selectedPeriodId = $state("");
 let isCreateSheetOpen = $state(false);
 
-// Queries
 const periodsQuery = createPeriodsQuery(() => orgId);
 const periods = $derived(periodsQuery.data ?? []);
-
-// Active academic year & period
-const activeYearName = $derived(academicContext.yearLabelAr);
 const activePeriod = $derived(
   periods.find(
-    (p) =>
-      p.status === "active" ||
-      p.status === "active_teaching" ||
-      p.status === "grade_submission",
-  ) || periods[0],
+    (period) =>
+      period.status === "active" ||
+      period.status === "active_teaching" ||
+      period.status === "final_exams" ||
+      period.status === "grade_submission",
+  ) ?? periods[0],
 );
-const activePeriodId = $derived(activePeriod ? String(activePeriod.id) : "");
-const activePeriodName = $derived(activePeriod ? activePeriod.name : null);
+const activePeriodId = $derived(
+  selectedPeriodId || (activePeriod ? String(activePeriod.id) : ""),
+);
+const selectedPeriod = $derived(
+  periods.find((period) => String(period.id) === activePeriodId),
+);
 
-// Grade Entry Status
+const sessionsQuery = createExamSessionsQuery(() => activePeriodId);
+const sessions = $derived<ExamSessionDto[]>(sessionsQuery.data ?? []);
+const isLoading = $derived(periodsQuery.isLoading || sessionsQuery.isLoading);
+const error = $derived(periodsQuery.error || sessionsQuery.error);
 const isGradeEntryOpen = $derived(
-  activePeriod
-    ? activePeriod.status === "grade_submission" ||
-        activePeriod.status === "active_teaching" ||
-        activePeriod.status === "open"
-    : false,
+  Boolean(selectedPeriod?.is_grade_entry_open && !selectedPeriod.is_locked),
+);
+const activeSessionsCount = $derived(
+  sessions.filter(
+    (session) => session.status === "active" || session.status === "running",
+  ).length,
+);
+const visibleSessions = $derived(
+  [...sessions]
+    .sort((a, b) => a.start_date.localeCompare(b.start_date))
+    .slice(0, 5),
 );
 
-// Exam Sessions Query
-const examSessionsQuery = createQuery(() => ({
-  queryKey: ["exam-sessions", orgId, activePeriodId],
-  queryFn: () => api.listExamSessions(activePeriodId),
-  enabled: !!orgId && !!activePeriodId,
-  staleTime: 2 * 60 * 1000,
-}));
-
-const examSessions = $derived(examSessionsQuery.data ?? []);
-
-const isLoading = $derived(
-  periodsQuery.isLoading || examSessionsQuery.isLoading,
-);
-
-const error = $derived(periodsQuery.error || examSessionsQuery.error);
+const shortcuts = $derived([
+  {
+    href: `/${orgId}/academics/exams/sessions`,
+    title: m.common_exams_sessions_title(),
+    icon: Calendar,
+  },
+  {
+    href: `/${orgId}/academics/exams/control`,
+    title: m.academics_exams_center_control_title(),
+    icon: ChartBar,
+  },
+  {
+    href: `/${orgId}/academics/exams/reports`,
+    title: m.academics_exams_center_reports_title(),
+    icon: DocumentCheck,
+  },
+]);
 
 function refetchAll() {
   periodsQuery.refetch();
-  examSessionsQuery.refetch();
+  sessionsQuery.refetch();
 }
-
-// Dynamic KPI Stats
-const kpiStats = $derived([
-  {
-    label: m.academics_exams_center_kpi_sessions(),
-    value: examSessions.length,
-  },
-  {
-    label: m.academics_exams_center_kpi_active(),
-    value: examSessions.filter(
-      (s) =>
-        s.status === "active" ||
-        s.status === "running" ||
-        s.status === "ongoing",
-    ).length,
-  },
-  {
-    label: m.academics_exams_center_kpi_grades(),
-    value: isGradeEntryOpen
-      ? m.academics_exams_center_open()
-      : m.academics_exams_center_locked(),
-  },
-  {
-    label: m.academics_exams_center_kpi_control(),
-    value:
-      examSessions.length > 0
-        ? m.academics_exams_center_ready()
-        : m.academics_exams_center_disabled(),
-  },
-]);
-
-// Notion-style Directory Items
-const directoryItems = $derived([
-  {
-    path: `/${orgId}/academics/exams/sessions`,
-    title: m.common_exams_sessions_title(),
-    desc: m.academics_exams_center_sessions_desc(),
-    icon: TaskList,
-    badge: m.academics_exams_center_sessions_badge({
-      count: examSessions.length,
-    }),
-  },
-  {
-    path: `/${orgId}/academics/exams/control`,
-    title: m.academics_exams_center_control_title(),
-    desc: m.academics_exams_center_control_desc(),
-    icon: UserBadgeCheck,
-    badge: m.academics_exams_center_control_badge(),
-  },
-  {
-    path: `/${orgId}/academics/exams/sessions`,
-    title: m.academics_exams_center_halls_title(),
-    desc: m.academics_exams_center_halls_desc(),
-    icon: Home,
-    badge: m.academics_exams_center_halls_badge(),
-  },
-  {
-    path: `/${orgId}/academics/exams/reports`,
-    title: m.academics_exams_center_reports_title(),
-    desc: m.academics_exams_center_reports_desc(),
-    icon: DocumentPage,
-    badge: m.academics_exams_center_reports_badge(),
-  },
-]);
-
-// Advisor Diagnostic Insights
-const advisorInsights = $derived.by(() => {
-  const insights = [];
-
-  // 1. Grade Entry Lock Insight
-  insights.push({
-    id: "grade-lock",
-    text: isGradeEntryOpen
-      ? m.academics_exams_center_grade_open_insight()
-      : m.academics_exams_center_grade_locked_insight(),
-    variant: isGradeEntryOpen ? ("warning" as const) : ("success" as const),
-    icon: isGradeEntryOpen ? Lock : LockClosed,
-  });
-
-  // 2. Exam Sessions Insight
-  if (examSessions.length > 0) {
-    insights.push({
-      id: "sessions-active",
-      text: m.academics_exams_center_sessions_active_insight({
-        count: examSessions.length,
-      }),
-      variant: "success" as const,
-      icon: TaskList,
-    });
-  } else {
-    insights.push({
-      id: "sessions-none",
-      text: m.academics_exams_center_sessions_empty_insight(),
-      variant: "neutral" as const,
-      icon: TaskList,
-    });
-  }
-
-  // 3. Control & Seating Insight
-  insights.push({
-    id: "seating-ready",
-    text: m.academics_exams_center_seating_ready_insight(),
-    variant: "success" as const,
-    icon: UserBadgeCheck,
-  });
-
-  return insights;
-});
 </script>
 
-<div class="h-full w-full overflow-y-auto bg-background/30 scrollbar-hide p-6 select-none font-sans flex flex-col gap-6">
-  
-  <!-- Sleek Header with Active Year & Term Indicators -->
-  <div class="flex items-center justify-between border-b border-border/40 pb-4">
-    <div class="flex items-center gap-3 text-start">
-      <div class="h-8.5 w-8.5 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">
-        <TaskList size={18} />
-      </div>
-      <div class="flex flex-col">
-        <h2 class="text-xs font-bold text-foreground tracking-wide uppercase">
-          {m.academics_exams_center_title()}
-        </h2>
-        <span class="text-[9.5px] text-muted-foreground/90 mt-0.5">
-          {m.academics_exams_center_description()}
-        </span>
-      </div>
-    </div>
+<div class="flex h-full min-h-0 w-full flex-col gap-4 overflow-y-auto bg-background p-4 font-sans text-start select-none scrollbar-hide sm:p-6">
+  <header class="flex shrink-0 flex-col gap-3 border-b border-border/40 pb-4 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-base font-bold text-foreground">
+      {m.academics_exams_center_title()}
+    </h1>
 
-    <!-- Active Academic Year & Term Pills -->
-    <div class="flex items-center gap-2">
-      {#if activeYearName}
-        <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
-          <Calendar size={10} class="text-primary" />
-          <span>{activeYearName}</span>
-        </Badge>
-      {:else}
-        <Badge variant="outline" class="text-[9px] px-2 py-0.5 text-muted-foreground border-dashed">
-          {m.academics_exams_center_no_active_year()}
-        </Badge>
-      {/if}
-      
-      {#if activePeriodName}
-        <Badge variant="outline" class="text-[9px] px-2 py-0.5 font-bold flex items-center gap-1.5 border-border/60 bg-card/60">
-          <span class="h-1.5 w-1.5 rounded-full {isGradeEntryOpen ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500'}"></span>
-          <span>{activePeriodName}</span>
-        </Badge>
-      {/if}
-
-      <Button 
-        variant="default" 
-        size="sm" 
-        class="text-[10px] font-bold px-3 h-7.5 rounded-md gap-1.5 cursor-pointer ms-2"
-        onclick={() => isCreateSheetOpen = true}
+    <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+      <PeriodSelect
+        value={activePeriodId || null}
+        orgId={orgId}
+        placeholder={m.common_metrics_period()}
+        disabled={periodsQuery.isLoading}
+        onchange={(periodId) => (selectedPeriodId = periodId || "")}
+        class="w-full sm:min-w-52"
+      />
+      <Button
+        variant="lime"
+        class="h-9 shrink-0 px-4 text-xs font-semibold"
+        onclick={() => (isCreateSheetOpen = true)}
       >
-        <Plus size={13} />
-        <span>{m.academics_exams_center_add_session()}</span>
+        {m.academics_exams_center_add_session()}
       </Button>
     </div>
-  </div>
+  </header>
 
   {#if isLoading}
-    <!-- Split Grid Loading Skeleton -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-      <!-- Left Directory List Skeleton -->
-      <div class="lg:col-span-7 xl:col-span-8 flex flex-col gap-3">
-        <Skeleton class="h-4 w-32 mb-2 rounded" />
-        {#each Array(4) as _}
-          <div class="flex items-center justify-between p-3.5 border-b border-border/30">
-            <div class="flex items-center gap-3 w-full">
-              <Skeleton class="h-8.5 w-8.5 rounded-lg" />
-              <div class="flex flex-col gap-1.5 w-2/3">
-                <Skeleton class="h-3 w-28 rounded" />
-                <Skeleton class="h-2.5 w-full rounded" />
-              </div>
-            </div>
-            <Skeleton class="h-4 w-12 rounded" />
-          </div>
-        {/each}
-      </div>
-
-      <!-- Right Diagnostics Sidebar Skeleton -->
-      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/20 rounded-xl p-5">
-        <Skeleton class="h-3 w-40 mb-1 rounded" />
-        <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/40">
-          {#each Array(4) as _}
-            <div class="flex flex-col gap-1">
-              <Skeleton class="h-2.5 w-16 rounded" />
-              <Skeleton class="h-4 w-8 rounded" />
-            </div>
-          {/each}
+    <div class="grid shrink-0 grid-cols-2 divide-x divide-border/40 rounded-xl border border-border/50 bg-card sm:grid-cols-3">
+      {#each Array(3) as _, index (index)}
+        <div class="p-4">
+          <Skeleton class="h-3 w-20" />
+          <Skeleton class="mt-2 h-5 w-10" />
         </div>
-        <Skeleton class="h-3 w-32 mb-1 rounded" />
-        <div class="flex flex-col gap-3">
-          {#each Array(3) as _}
-            <div class="flex items-start gap-2.5">
-              <Skeleton class="h-4 w-4 rounded-full shrink-0" />
-              <Skeleton class="h-3 w-full rounded" />
-            </div>
-          {/each}
-        </div>
-      </div>
+      {/each}
+    </div>
+    <div class="grid min-h-80 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(15rem,0.8fr)]">
+      <Skeleton class="h-full min-h-64 w-full rounded-xl" />
+      <Skeleton class="h-full min-h-64 w-full rounded-xl" />
     </div>
   {:else if error}
-    <div class="flex flex-col items-center justify-center py-16 text-destructive border border-destructive/20 bg-destructive/5 rounded-xl gap-2">
-      <InfoCircle size={24} />
-      <h3 class="font-semibold text-xs">{m.academics_exams_center_error_title()}</h3>
-      <p class="text-[10px] text-muted-foreground">{extractErrorMessage(error)}</p>
-      <Button variant="outline" onclick={refetchAll} class="text-[10px] mt-2 h-8">{m.academics_exams_center_retry()}</Button>
-    </div>
+    <Card class="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+      <p class="text-sm font-semibold text-destructive">
+        {m.academics_exams_center_error_title()}
+      </p>
+      <p class="max-w-xl text-xs text-muted-foreground">
+        {extractErrorMessage(error)}
+      </p>
+      <Button variant="outline" class="h-9 px-4 text-xs" onclick={refetchAll}>
+        {m.academics_exams_center_retry()}
+      </Button>
+    </Card>
   {:else}
-    <!-- Main Content Split Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
-      
-      <!-- 1. LEFT COLUMN: Directory Index List (Notion Database style) -->
-      <div class="lg:col-span-7 xl:col-span-8 flex flex-col">
-        <h3 class="text-[10px] font-bold text-muted-foreground/80 tracking-wider uppercase mb-3 text-start">
-          {m.academics_exams_center_directory_title()}
-        </h3>
-        
-        <div class="flex flex-col">
-          {#each directoryItems as item (item.path + item.title)}
-            <a 
-              href={localizeHref(item.path)} 
-              class="group flex items-center justify-between py-2.5 px-3 border-b border-border/30 hover:bg-muted/40 rounded-lg transition-colors duration-150 select-none cursor-pointer"
+    <dl class="grid shrink-0 grid-cols-2 divide-x divide-border/40 rounded-xl border border-border/50 bg-card sm:grid-cols-3">
+      <div class="p-3 sm:px-5 sm:py-4">
+        <dt class="text-[11px] text-muted-foreground">
+          {m.academics_exams_center_kpi_sessions()}
+        </dt>
+        <dd class="mt-1 text-lg font-semibold leading-none text-foreground">
+          {sessions.length}
+        </dd>
+      </div>
+      <div class="border-t border-border/40 p-3 sm:border-t-0 sm:px-5 sm:py-4">
+        <dt class="text-[11px] text-muted-foreground">
+          {m.academics_exams_center_kpi_active()}
+        </dt>
+        <dd class="mt-1 text-lg font-semibold leading-none text-foreground">
+          {activeSessionsCount}
+        </dd>
+      </div>
+      <div class="col-span-2 border-t border-border/40 p-3 sm:col-span-1 sm:border-t-0 sm:px-5 sm:py-4">
+        <dt class="text-[11px] text-muted-foreground">
+          {m.academics_exams_center_kpi_grades()}
+        </dt>
+        <dd class="mt-1 flex items-center gap-2 text-sm font-medium leading-none text-foreground">
+          <span class="h-2 w-2 rounded-full {isGradeEntryOpen ? 'bg-emerald-500' : 'bg-muted-foreground/50'}"></span>
+          {selectedPeriod
+            ? isGradeEntryOpen
+              ? m.academics_exams_center_open()
+              : m.academics_exams_center_locked()
+            : m.academics_exams_center_no_active_year()}
+        </dd>
+      </div>
+    </dl>
+
+    <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(15rem,0.8fr)]">
+      <Card class="flex min-h-64 min-w-0 flex-col overflow-hidden">
+        <div class="flex shrink-0 items-center justify-between gap-3 border-b border-border/40 px-4 py-3">
+          <h2 class="text-sm font-semibold text-foreground">
+            {m.common_exams_sessions_title()}
+          </h2>
+          <Button
+            href={localizeHref(`/${orgId}/academics/exams/sessions`)}
+            variant="ghost"
+            class="h-8 shrink-0 px-2 text-xs font-semibold text-primary"
+          >
+            {m.common_action_view_all()}
+            <ArrowRight size={14} class="ms-1 rtl:rotate-180" />
+          </Button>
+        </div>
+
+        {#if visibleSessions.length === 0}
+          <div class="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+            <p class="text-xs text-muted-foreground">
+              {m.academics_exams_center_sessions_empty_insight()}
+            </p>
+            <Button
+              variant="outline"
+              class="h-8 px-3 text-xs"
+              onclick={() => (isCreateSheetOpen = true)}
             >
-              <div class="flex items-center gap-3.5 min-w-0 text-start">
-                <!-- Sleek Monolithic icon box -->
-                <div class="h-8 w-8 rounded-lg bg-muted/65 text-muted-foreground flex items-center justify-center shrink-0 group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-150">
-                  <item.icon size={16} />
-                </div>
-                <div class="flex flex-col min-w-0">
-                  <span class="text-xs font-bold text-foreground group-hover:text-primary transition-colors duration-150">
-                    {item.title}
+              {m.academics_exams_center_add_session()}
+            </Button>
+          </div>
+        {:else}
+          <div class="min-h-0 flex-1 divide-y divide-border/40 overflow-y-auto scrollbar-hide">
+            {#each visibleSessions as session (session.id)}
+              <a
+                href={localizeHref(`/${orgId}/academics/exams/sessions/${session.id}`)}
+                class="group flex min-w-0 items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+              >
+                <span class="flex min-w-0 items-center gap-3">
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground">
+                    <Calendar size={15} />
                   </span>
-                  <span class="text-[9.5px] text-muted-foreground/90 leading-normal truncate mt-0.5 max-w-sm sm:max-w-md md:max-w-lg">
-                    {item.desc}
+                  <span class="min-w-0">
+                    <span class="block truncate text-xs font-medium text-foreground group-hover:text-primary">
+                      {session.name_ar || session.name}
+                    </span>
+                    <span class="mt-1 block truncate text-[10px] text-muted-foreground">
+                      {formatDate(session.start_date, "date")}
+                      {#if session.end_date !== session.start_date}
+                        — {formatDate(session.end_date, "date")}
+                      {/if}
+                    </span>
                   </span>
-                </div>
-              </div>
-              
-              <div class="flex items-center gap-2 shrink-0">
-                {#if item.badge}
-                  <span class="text-[8.5px] font-mono font-medium text-muted-foreground/80 bg-muted/50 border border-border/40 px-2 py-0.5 rounded select-none">
-                    {item.badge}
-                  </span>
-                {/if}
-                <ArrowRight 
-                  size={12} 
-                  class="text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 rtl:rotate-180" 
-                />
-              </div>
+                </span>
+                <span class="flex shrink-0 items-center gap-2">
+                  <ExamStatusBadge status={session.status} size="xs" />
+                  <ArrowRight size={14} class="text-muted-foreground/50 rtl:rotate-180" />
+                </span>
+              </a>
+            {/each}
+          </div>
+        {/if}
+      </Card>
+
+      <Card class="flex min-h-64 min-w-0 flex-col overflow-hidden">
+        <h2 class="border-b border-border/40 px-4 py-3 text-sm font-semibold text-foreground">
+          {m.academics_exams_center_directory_title()}
+        </h2>
+        <nav class="divide-y divide-border/40" aria-label={m.academics_exams_center_directory_title()}>
+          {#each shortcuts as item (item.href)}
+            <a
+              href={localizeHref(item.href)}
+              class="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/30"
+            >
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted/50 text-muted-foreground group-hover:text-primary">
+                <item.icon size={15} />
+              </span>
+              <span class="min-w-0 flex-1 truncate text-xs font-medium text-foreground group-hover:text-primary">
+                {item.title}
+              </span>
+              <ArrowRight size={14} class="shrink-0 text-muted-foreground/50 rtl:rotate-180" />
             </a>
           {/each}
-        </div>
-      </div>
-
-      <!-- 2. RIGHT COLUMN: Academic Health & Diagnostics (Linear Sidebar style) -->
-      <div class="lg:col-span-5 xl:col-span-4 flex flex-col gap-5 border border-border/50 bg-card/10 rounded-xl p-5 select-none text-start">
-        
-        <!-- Sidebar Section: KPI Summary -->
-        <div>
-          <h4 class="text-[9.5px] font-bold text-muted-foreground/80 tracking-wider uppercase border-b border-border/30 pb-2 mb-3">
-            {m.academics_exams_center_kpi_control()}
-          </h4>
-          
-          <div class="grid grid-cols-2 gap-4 pb-4 border-b border-border/30">
-            {#each kpiStats as stat}
-              <div class="flex flex-col text-start">
-                <span class="text-[9.5px] text-muted-foreground/80">{stat.label}</span>
-                <span class="text-sm font-bold text-foreground font-mono mt-0.5 leading-none">{stat.value}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <!-- Sidebar Section: Orbis AI Advisor System Diagnostics -->
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-2 text-foreground font-semibold text-[11px] pb-1">
-            <Sparkles size={13} class="text-primary animate-pulse" />
-            <span>{m.academics_exams_center_advisor()}</span>
-          </div>
-          
-          <div class="flex flex-col gap-2.5">
-            {#each advisorInsights as insight (insight.id)}
-              <div class="flex items-start gap-2.5 p-2 rounded-lg bg-card/30 border border-border/20 text-[10px] leading-relaxed text-muted-foreground">
-                
-                <!-- Status icon or color dot -->
-                <div class="shrink-0 mt-0.5">
-                  {#if insight.variant === 'warning'}
-                    <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                    </span>
-                  {:else if insight.variant === 'success'}
-                    <span class="inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  {:else}
-                    <span class="inline-flex rounded-full h-2 w-2 bg-muted-foreground/40"></span>
-                  {/if}
-                </div>
-
-                <div class="flex flex-col min-w-0">
-                  <span class="text-foreground/90 font-medium">{insight.text}</span>
-                </div>
-              </div>
-            {/each}
-          </div>
-        </div>
-
-        <!-- System Information Footer -->
-        <div class="pt-2 border-t border-border/30 flex items-center gap-2 text-[9px] text-muted-foreground/75">
-          <Info size={11} />
-          <span>{m.academics_exams_center_system_status()}</span>
-        </div>
-
-      </div>
-
+        </nav>
+      </Card>
     </div>
   {/if}
 </div>
 
-<!-- Exam Session Creation Side Sheet -->
 <SessionCreateSheet
   bind:open={isCreateSheetOpen}
   {orgId}

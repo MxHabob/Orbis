@@ -607,6 +607,12 @@ impl DocumentRenderer for PdfRenderer {
         template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
+        if template.is_none() {
+            return Err(DomainError::Validation(
+                "A DocForge template is required to render a PDF".into(),
+            ));
+        }
+
         if let Some(t) = template {
             if let Ok(doc) = serde_json::from_str::<
                 docforge_engine::model::document::TemplateDocument,
@@ -683,9 +689,9 @@ impl DocumentRenderer for PdfRenderer {
             }
         }
 
-        Err(DomainError::Validation(
-            "PDF output requires a published DocForge report template. Select a compatible template or use HTML output.".into(),
-        ))
+        // When no DocForge visual template is bound, fall back to HtmlRenderer
+        let html_renderer = HtmlRenderer;
+        html_renderer.render(dataset, template, _master).await
     }
 }
 

@@ -203,6 +203,7 @@ use api::{
         api::scheduling_routes::update_time_slot,
         api::scheduling_routes::delete_time_slot,
         api::scheduling_routes::schedule_lesson,
+        api::scheduling_routes::update_lesson,
         api::scheduling_routes::bulk_schedule_lessons,
         api::scheduling_routes::list_lessons,
         api::scheduling_routes::delete_lesson,

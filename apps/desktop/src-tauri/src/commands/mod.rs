@@ -246,6 +246,7 @@ fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'stati
         scheduling_cmds::scheduling_update_time_slot,
         scheduling_cmds::scheduling_delete_time_slot,
         scheduling_cmds::scheduling_schedule_lesson,
+        scheduling_cmds::scheduling_update_scheduled_lesson,
         scheduling_cmds::scheduling_bulk_schedule_lessons,
         scheduling_cmds::scheduling_list_lessons,
         scheduling_cmds::scheduling_delete_scheduled_lesson,

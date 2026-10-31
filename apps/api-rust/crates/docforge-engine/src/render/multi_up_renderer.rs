@@ -24,7 +24,7 @@ pub fn render_multi_up(
 
     let document: TemplateDocument = serde_json::from_str(document_json)
         .map_err(|error| DocforgeError::Render(format!("Invalid template JSON: {error}")))?;
-    let fonts = FontCache::new("Noto Sans Arabic");
+    let fonts = FontCache::with_system_fonts();
     let layout = LayoutEngine::new(&fonts).layout_multi_up(&document, contexts, config)?;
     render_to_pdf(
         &layout,

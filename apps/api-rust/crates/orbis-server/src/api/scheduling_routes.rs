@@ -3,7 +3,7 @@
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
-    routing::{delete, get, post},
+    routing::{get, patch, post},
 };
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -20,6 +20,7 @@ pub struct RoomDto {
     pub name: String,
     pub name_ar: Option<String>,
     pub room_type: String,
+    pub is_exam_hall: bool,
     pub capacity: i32,
     pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
@@ -32,6 +33,8 @@ pub struct CreateRoomRequest {
     pub name: String,
     pub name_ar: Option<String>,
     pub room_type: String,
+    #[serde(default)]
+    pub is_exam_hall: Option<bool>,
     pub capacity: i32,
     pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
@@ -42,6 +45,7 @@ pub struct UpdateRoomRequest {
     pub name: Option<String>,
     pub name_ar: Option<String>,
     pub room_type: Option<String>,
+    pub is_exam_hall: Option<bool>,
     pub capacity: Option<i32>,
     pub floor: Option<i32>,
     #[serde(default, deserialize_with = "deserialize_nullable_field")]
@@ -194,6 +198,7 @@ async fn create_room(
             p.room_type,
             p.floor,
             p.org_unit_id,
+            p.is_exam_hall.unwrap_or(false),
         )
         .await?;
     Ok(ApiResponse::ok(RoomDto {
@@ -202,6 +207,7 @@ async fn create_room(
         name: r.name,
         name_ar: r.name_ar,
         room_type: r.room_type,
+        is_exam_hall: r.is_exam_hall,
         capacity: r.capacity,
         floor: r.floor,
         org_unit_id: r.org_unit_id,
@@ -225,6 +231,7 @@ async fn list_rooms(
             name: r.name,
             name_ar: r.name_ar,
             room_type: r.room_type,
+            is_exam_hall: r.is_exam_hall,
             capacity: r.capacity,
             floor: r.floor,
             org_unit_id: r.org_unit_id,
@@ -253,6 +260,7 @@ async fn get_room(
         name: r.name,
         name_ar: r.name_ar,
         room_type: r.room_type,
+        is_exam_hall: r.is_exam_hall,
         capacity: r.capacity,
         floor: r.floor,
         org_unit_id: r.org_unit_id,
@@ -278,6 +286,7 @@ async fn update_room(
             p.name_ar,
             p.capacity,
             p.room_type,
+            p.is_exam_hall,
             p.floor,
             p.org_unit_id,
         )
@@ -288,6 +297,7 @@ async fn update_room(
         name: r.name,
         name_ar: r.name_ar,
         room_type: r.room_type,
+        is_exam_hall: r.is_exam_hall,
         capacity: r.capacity,
         floor: r.floor,
         org_unit_id: r.org_unit_id,
@@ -531,6 +541,38 @@ async fn schedule_lesson(
     }))
 }
 
+#[utoipa::path(patch, path = "/api/v1/scheduled-lessons/{id}",
+    params(("id" = Uuid, Path, description = "Scheduled Lesson ID")),
+    request_body = ScheduleLessonRequest,
+    responses((status = 200, body = ScheduledLessonDto)), security(("bearer" = [])), tag = "Scheduling")]
+async fn update_lesson(
+    ctx: AuthContext,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(p): Json<ScheduleLessonRequest>,
+) -> Result<Json<ApiResponse<ScheduledLessonDto>>, ApiError> {
+    let lesson = state
+        .scheduling_service
+        .update_scheduled_lesson(
+            &ctx,
+            id,
+            p.section_subject_id,
+            p.time_slot_id,
+            p.room_id,
+            p.teacher_id,
+        )
+        .await?;
+    Ok(ApiResponse::ok(ScheduledLessonDto {
+        id: lesson.id,
+        section_subject_id: lesson.section_subject_id,
+        time_slot_id: lesson.time_slot_id,
+        room_id: lesson.room_id,
+        teacher_id: lesson.teacher_id,
+        created_at: lesson.created_at,
+        updated_at: lesson.updated_at,
+    }))
+}
+
 #[utoipa::path(post, path = "/api/v1/scheduled-lessons/bulk", request_body = BulkScheduleLessonsRequest,
     responses((status = 201, body = Vec<ScheduledLessonDto>)), security(("bearer" = [])), tag = "Scheduling")]
 async fn bulk_schedule_lessons(
@@ -650,5 +692,8 @@ pub fn routes() -> Router<AppState> {
             "/api/v1/scheduled-lessons/bulk",
             post(bulk_schedule_lessons),
         )
-        .route("/api/v1/scheduled-lessons/:id", delete(delete_lesson))
+        .route(
+            "/api/v1/scheduled-lessons/:id",
+            patch(update_lesson).delete(delete_lesson),
+        )
 }

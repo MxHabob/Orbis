@@ -182,6 +182,12 @@ pub enum DomainEvent {
         time_slot_id: Uuid,
         timestamp: DateTime<Utc>,
     },
+    LessonUpdated {
+        lesson_id: Uuid,
+        section_subject_id: Uuid,
+        time_slot_id: Uuid,
+        timestamp: DateTime<Utc>,
+    },
     LessonDeleted {
         lesson_id: Uuid,
         timestamp: DateTime<Utc>,
@@ -714,6 +720,9 @@ impl DomainEvent {
                 Some(("time_slot.deleted", "time_slot", *time_slot_id))
             }
             DomainEvent::LessonScheduled { .. } => None, // Bulk operation — audit the solver job instead
+            DomainEvent::LessonUpdated { lesson_id, .. } => {
+                Some(("scheduled_lesson.updated", "scheduled_lesson", *lesson_id))
+            }
             DomainEvent::LessonDeleted { lesson_id, .. } => {
                 Some(("scheduled_lesson.deleted", "scheduled_lesson", *lesson_id))
             }

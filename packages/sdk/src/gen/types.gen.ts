@@ -1050,6 +1050,7 @@ export type CreatePeriodTypeRequest = {
 export type CreateRoomRequest = {
   capacity: number;
   floor?: number | null;
+  is_exam_hall?: boolean | null;
   name: string;
   name_ar?: string | null;
   org_unit_id?: string | null;
@@ -2408,6 +2409,7 @@ export type RoomDto = {
   created_at: string;
   floor?: number | null;
   id: string;
+  is_exam_hall: boolean;
   name: string;
   name_ar?: string | null;
   org_id: string;
@@ -2945,6 +2947,7 @@ export type UpdatePreferencesRequest = {
 export type UpdateRoomRequest = {
   capacity?: number | null;
   floor?: number | null;
+  is_exam_hall?: boolean | null;
   name?: string | null;
   name_ar?: string | null;
   org_unit_id?: string | null;
@@ -7385,6 +7388,25 @@ export type DeleteLessonResponses = {
 
 export type DeleteLessonResponse =
   DeleteLessonResponses[keyof DeleteLessonResponses];
+
+export type UpdateLessonData = {
+  body: ScheduleLessonRequest;
+  path: {
+    /**
+     * Scheduled Lesson ID
+     */
+    id: string;
+  };
+  query?: never;
+  url: "/api/v1/scheduled-lessons/{id}";
+};
+
+export type UpdateLessonResponses = {
+  200: ScheduledLessonDto;
+};
+
+export type UpdateLessonResponse =
+  UpdateLessonResponses[keyof UpdateLessonResponses];
 
 export type ListSectionSubjects2Data = {
   body?: never;

@@ -232,6 +232,8 @@ export const queryKeys = {
   // ── Exam ────────────────────────────────────────────────────
   exam: {
     all: ["exam"] as const,
+    details: (orgId: string, sessionId: string) =>
+      [...queryKeys.exam.all, "details", orgId, sessionId] as const,
     sessions: (periodId: string) =>
       [...queryKeys.exam.all, "sessions", periodId] as const,
     session: (id: string) => [...queryKeys.exam.all, "session", id] as const,

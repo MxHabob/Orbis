@@ -6095,6 +6095,38 @@
           }
         },
         "security": [{ "bearer": [] }]
+      },
+      "patch": {
+        "tags": ["Scheduling"],
+        "operationId": "update_lesson",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Scheduled Lesson ID",
+            "required": true,
+            "schema": { "type": "string", "format": "uuid" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ScheduleLessonRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ScheduledLessonDto" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearer": [] }]
       }
     },
     "/api/v1/section-subjects": {
@@ -9773,6 +9805,7 @@
         "properties": {
           "capacity": { "type": "integer", "format": "int32" },
           "floor": { "type": "integer", "format": "int32", "nullable": true },
+          "is_exam_hall": { "type": "boolean", "nullable": true },
           "name": { "type": "string" },
           "name_ar": { "type": "string", "nullable": true },
           "org_unit_id": {
@@ -12494,6 +12527,7 @@
           "org_id",
           "name",
           "room_type",
+          "is_exam_hall",
           "capacity",
           "created_at",
           "updated_at"
@@ -12503,6 +12537,7 @@
           "created_at": { "type": "string", "format": "date-time" },
           "floor": { "type": "integer", "format": "int32", "nullable": true },
           "id": { "type": "string", "format": "uuid" },
+          "is_exam_hall": { "type": "boolean" },
           "name": { "type": "string" },
           "name_ar": { "type": "string", "nullable": true },
           "org_id": { "type": "string", "format": "uuid" },
@@ -13530,6 +13565,7 @@
             "nullable": true
           },
           "floor": { "type": "integer", "format": "int32", "nullable": true },
+          "is_exam_hall": { "type": "boolean", "nullable": true },
           "name": { "type": "string", "nullable": true },
           "name_ar": { "type": "string", "nullable": true },
           "org_unit_id": {

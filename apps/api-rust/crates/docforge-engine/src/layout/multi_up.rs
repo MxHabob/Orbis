@@ -256,7 +256,7 @@ impl MultiUpConfig {
         let (offset_x, offset_y) = if self.center_on_sheet {
             let ox = margin_left_pt + (printable_w_pt - content_block_w) / 2.0;
             let oy = margin_top_pt + (printable_h_pt - content_block_h) / 2.0;
-            (ox.max(margin_left_pt), oy.max(margin_top_pt))
+            (ox, oy)
         } else {
             (margin_left_pt, margin_top_pt)
         };
@@ -629,6 +629,25 @@ mod tests {
         assert_eq!(layout.columns, 1);
         assert_eq!(layout.rows, 1);
         assert_eq!(layout.items_per_sheet, 1);
+    }
+
+    #[test]
+    fn test_sheet_sized_template_is_centered_without_margin_offset() {
+        let config = make_config(SheetSize::A4, Orientation::Portrait, 210.0, 297.0);
+        let layout = config.compute_layout();
+        let slot = &layout.slots[0];
+
+        assert_eq!(layout.items_per_sheet, 1);
+        assert!(
+            slot.x_pt.abs() < 0.01,
+            "Full-sheet template should start at the sheet's left edge, got {}pt",
+            slot.x_pt
+        );
+        assert!(
+            slot.y_pt.abs() < 0.01,
+            "Full-sheet template should start at the sheet's top edge, got {}pt",
+            slot.y_pt
+        );
     }
 
     #[test]

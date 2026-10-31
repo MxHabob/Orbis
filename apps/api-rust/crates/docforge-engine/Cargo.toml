@@ -35,6 +35,7 @@ krilla = "0.5"
 # Text layout, shaping (rustybuzz/HarfBuzz), bidi, line breaking
 # Provides Arabic/RTL support via built-in rustybuzz + unicode-bidi
 cosmic-text = "0.12"
+unicode-bidi = "0.3"
 
 # CSS Flexbox + Grid layout engine (used by Zed, Bevy, Lapce)
 taffy = "0.7"

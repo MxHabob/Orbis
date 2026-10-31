@@ -268,6 +268,17 @@ const roomColumns: OrbisColumnDef[] = [
     readonly: true,
   },
   {
+    id: "exam_committee",
+    prop: "exam_committee",
+    header: m.common_rooms_exam_committee(),
+    name: m.common_rooms_exam_committee(),
+    width: 150,
+    size: 150,
+    readonly: true,
+    type: "badge",
+    align: "center",
+  },
+  {
     id: "capacity",
     prop: "capacity",
     header: m.settings_units_column_capacity(),
@@ -305,6 +316,9 @@ const roomGridSource = $derived(
     __idx: i + 1,
     name: r.name || "—",
     room_type: r.room_type || "—",
+    exam_committee: r.is_exam_hall
+      ? m.common_rooms_exam_committee()
+      : m.common_rooms_general_room(),
     capacity: r.capacity ?? "—",
     building: r.building || branch.building || "—",
     floor:

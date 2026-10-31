@@ -1,72 +1,46 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { onMount } from "svelte";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/svelte-query";
 import { formatDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
-  Grid,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@orbis/ui/table";
+  OrbisGrid,
+  type ActionItem,
+  type OrbisColumnDef,
+  type SelectionSnapshot,
+} from "@orbis/svelte-grid";
+import { ArrowLeft } from "@orbis/icons";
 import { toast } from "@orbis/ui";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
-import {
-  ArrowLeft,
-  ArrowsRightLeft,
-  Bolt,
-  BookOpen,
-  Calendar,
-  CheckCircle,
-  Hashtag,
-  Home,
-  Lock,
-  Pencil,
-  Play,
-  Plus,
-  Printer,
-  Trash,
-  UserBadgeCheck,
-  XMark,
-} from "@orbis/icons";
+import { Card } from "@orbis/ui/card";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
+import ExamSessionConfigDialog from "$lib/features/exams/components/exam-session-config-dialog.svelte";
+import ExamProctorAssignDialog from "$lib/features/exams/components/exam-proctor-assign-dialog.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
-import { api } from "$lib/api";
-import { aiContext, confirmStore } from "$lib/stores";
+import SettingsBottomBar from "$lib/shared/components/settings-bottom-bar.svelte";
+import { api, extractErrorMessage, queryKeys } from "$lib/api";
+import { aiContext, confirmStore, effectiveContext } from "$lib/stores";
+import SplitActionMenu, {
+  type SplitActionItem,
+} from "$lib/shared/components/split-action-menu.svelte";
 
 let { orgId, sessionId }: { orgId: string; sessionId: string } = $props();
 
 // State
-let session = $state<any>(null);
-let subjects = $state<any[]>([]);
-let schedules = $state<any[]>([]);
-let seatingNumbers = $state<any[]>([]);
 let printDialogOpen = $state(false);
 let selectedSeatIds = $state<Set<string>>(new Set());
 
-function toggleSeatSelection(id: string) {
-  if (selectedSeatIds.has(id)) {
-    selectedSeatIds.delete(id);
-    selectedSeatIds = new Set(selectedSeatIds);
-  } else {
-    selectedSeatIds.add(id);
-    selectedSeatIds = new Set(selectedSeatIds);
-  }
-}
-
-function toggleSelectAllSeats() {
-  if (selectedSeatIds.size === seatingNumbers.length) {
-    selectedSeatIds = new Set();
-  } else {
-    selectedSeatIds = new Set(seatingNumbers.map((sn) => String(sn.id)));
-  }
+function handleSeatingSelection(selection: SelectionSnapshot) {
+  selectedSeatIds = new Set(selection.ids);
 }
 
 const selectedSeatingContexts = $derived.by(() => {
@@ -75,19 +49,20 @@ const selectedSeatingContexts = $derived.by(() => {
     .map((sn) => ({
       exam: {
         seatingNumber: sn.seating_number,
-        hallName: sn.room_name ?? (sn as any).hall_name ?? "",
-        deskNumber: (sn as any).desk_number ?? "",
+        hallName:
+          rooms.find((room: any) => String(room.id) === String(sn.room_id))
+            ?.name_ar ||
+          rooms.find((room: any) => String(room.id) === String(sn.room_id))
+            ?.name ||
+          "",
+        deskNumber: "",
         sessionName: session?.name ?? "",
       },
       student: {
-        name:
-          sn.student_name_ar ||
-          (sn as any).student_name ||
-          sn.enrollment_id ||
-          "",
+        name: getStudentName(sn.student_id),
         studentNumber: sn.seating_number,
-        className: (sn as any).class_name ?? sn.class_id ?? "",
-        level: sn.level ?? "",
+        className: getStudentSectionName(sn.student_id),
+        level: getStudentLevel(sn.student_id),
       },
     }));
 });
@@ -95,80 +70,82 @@ const selectedSeatingContexts = $derived.by(() => {
 const selectedSeatingLabels = $derived.by(() => {
   return seatingNumbers
     .filter((sn) => selectedSeatIds.has(String(sn.id)))
-    .map(
-      (sn) =>
-        `${sn.student_name_ar || sn.enrollment_id || ""} (${sn.seating_number})`,
-    );
+    .map((sn) => `${getStudentName(sn.student_id)} (${sn.seating_number})`);
 });
 
-let halls = $state<any[]>([]);
-let proctors = $state<any[]>([]);
-let rooms = $state<any[]>([]);
-let isLoading = $state(true);
 let activeTab = $state("subjects");
 let isSubjectSheetOpen = $state(false);
 let isEditSheetOpen = $state(false);
+let isProctorAssignDialogOpen = $state(false);
 
-let activeJob = $state<any>(null);
-let solveJobs = $state<any[]>([]);
-let isSolving = $state(false);
-let timeElapsed = $state(0);
-let pollingInterval = $state<any>(null);
-let elapsedTimer = $state<any>(null);
-
-let classes = $state<any[]>([]);
-let schoolSubjects = $state<any[]>([]);
-let previewDraft = $state(false);
+const canRevealSecrets = $derived(
+  effectiveContext.hasPermission("secret_number:reveal"),
+);
+const canGenerateSecrets = $derived(
+  effectiveContext.hasPermission("secret_number:generate"),
+);
+const canEditSession = $derived(
+  effectiveContext.hasPermission("exam_session:write"),
+);
+const canChangeSessionStatus = $derived(
+  effectiveContext.hasPermission("exam_session:activate"),
+);
 
 let isConfigModalOpen = $state(false);
 let activeConfigTab = $state("schedule");
-
-let preferredPeriod = $state("both");
-let maxExamsPerDay = $state(2);
-let defaultDurationMinutes = $state(90);
-let proctorsPerHall = $state(2);
-let preventOwnSubject = $state(true);
-let maxSessionsPerTeacher = $state(5);
-let separateDivisions = $state(false);
-let separateGenders = $state(false);
-let balanceHalls = $state(true);
-
-const draftSchedulesInGrid = $derived.by(() => {
-  if (!previewDraft || !activeJob || !activeJob.best_solution) return [];
-  try {
-    const solution = JSON.parse(activeJob.best_solution);
-    const assignments = solution.assignments || [];
-    return assignments.map((a: any) => {
-      const slotParts = a.slot_id ? a.slot_id.split("_") : [];
-      const exam_date = slotParts[0] || "";
-      const period = slotParts[1] || "";
-      return {
-        id: a.id,
-        exam_date,
-        period,
-        exam_subject_id: a.exam_subject_id,
-        applicable_class_ids: a.class_id,
-        start_time: period === "morning" ? "08:00" : "13:00",
-        end_time: (() => {
-          const exam_subject = subjects.find(
-            (s: any) => s.id === a.exam_subject_id,
-          );
-          const duration = exam_subject ? exam_subject.duration_minutes : 90;
-          const start_time = period === "morning" ? "08:00" : "13:00";
-          return addMinutes(start_time, duration);
-        })(),
-        isDraft: true,
-      };
-    });
-  } catch (e) {
-    console.error("Error parsing draft solution for exams:", e);
-    return [];
-  }
-});
-
-const activeSchedules = $derived(
-  previewDraft ? draftSchedulesInGrid : schedules,
+const queryClient = useQueryClient();
+const sessionDetailsQuery = createQuery(() => ({
+  queryKey: [...queryKeys.exam.details(orgId, sessionId), canRevealSecrets],
+  queryFn: loadSessionDetails,
+  enabled: Boolean(orgId && sessionId),
+  staleTime: 30_000,
+}));
+const sessionDetails = $derived(sessionDetailsQuery.data);
+const session = $derived(sessionDetails?.session ?? null);
+const subjects = $derived(sessionDetails?.sectionSubjects ?? []);
+const sectionSubjects = $derived(sessionDetails?.sectionSubjects ?? []);
+const schedules = $derived(sessionDetails?.schedules ?? []);
+const seatingNumbers = $derived(sessionDetails?.seatingNumbers ?? []);
+const secretNumbers = $derived(sessionDetails?.secretNumbers ?? []);
+const students = $derived(sessionDetails?.students ?? []);
+const enrollments = $derived(sessionDetails?.enrollments ?? []);
+const teachers = $derived(sessionDetails?.teachers ?? []);
+const proctors = $derived(sessionDetails?.proctors ?? []);
+const rooms = $derived(sessionDetails?.rooms ?? []);
+const classes = $derived(sessionDetails?.classes ?? []);
+const schoolSubjects = $derived(sessionDetails?.schoolSubjects ?? []);
+const halls = $derived(
+  rooms
+    .filter((room: any) => room.is_exam_hall)
+    .map((room: any) => ({
+      room_id: room.id,
+      capacity: room.capacity,
+      allocated_count: seatingNumbers.filter(
+        (seat: any) => String(seat.room_id) === String(room.id),
+      ).length,
+    })),
 );
+const isLoading = $derived(sessionDetailsQuery.isLoading);
+
+const sessionStatusMutation = createMutation(() => ({
+  mutationFn: (status: string) => api.updateExamSession(sessionId, { status }),
+  onSuccess: async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.exam.details(orgId, sessionId),
+      }),
+      ...(session?.period_id
+        ? [
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.exam.sessions(session.period_id),
+            }),
+          ]
+        : []),
+    ]);
+  },
+}));
+
+const activeSchedules = $derived(schedules);
 
 const sessionDates = $derived(
   session ? generateDatesRange(session.start_date, session.end_date) : [],
@@ -186,11 +163,59 @@ function getClassName(classId: string) {
   return cls ? cls.name_ar || cls.name : classId;
 }
 
-function getSubjectColor(subjectId: string) {
-  const sub = schoolSubjects.find(
-    (s: any) => String(s.id) === String(subjectId),
+function getSectionSubject(sectionSubjectId: string) {
+  return sectionSubjects.find(
+    (sectionSubject) => String(sectionSubject.id) === String(sectionSubjectId),
   );
-  return sub ? sub.color : "#3b82f6";
+}
+
+function getScheduleSubjectName(schedule: any) {
+  const sectionSubject = getSectionSubject(schedule.section_subject_id);
+  return sectionSubject
+    ? getSubjectName(sectionSubject.subject_id)
+    : m.common_word_subject();
+}
+
+function getScheduleSectionName(schedule: any) {
+  const sectionSubject = getSectionSubject(schedule.section_subject_id);
+  return sectionSubject
+    ? getClassName(sectionSubject.section_id)
+    : m.common_table_class();
+}
+
+function getStudentName(studentId: string) {
+  const student = students.find(
+    (item: any) => String(item.student?.id ?? item.id) === String(studentId),
+  );
+  return (
+    student?.person?.full_name_ar ||
+    student?.person?.full_name ||
+    student?.student?.student_number ||
+    student?.student_number ||
+    ""
+  );
+}
+
+function getStudentEnrollment(studentId: string) {
+  return enrollments.find(
+    (item: any) => String(item.student_id) === String(studentId),
+  );
+}
+
+function getStudentSectionName(studentId: string) {
+  const enrollment = getStudentEnrollment(studentId);
+  const section = classes.find(
+    (item: any) => String(item.id) === String(enrollment?.section_id),
+  );
+  return section?.name_ar || section?.name || "";
+}
+
+function getStudentLevel(studentId: string) {
+  const enrollment = getStudentEnrollment(studentId);
+  const section = classes.find(
+    (item: any) => String(item.id) === String(enrollment?.section_id),
+  );
+  return section?.level || "";
 }
 
 function formatDateWithDay(dateStr: string): string {
@@ -207,53 +232,404 @@ function getExamsInCell(date: string, period: string) {
   return activeSchedules.filter(
     (s: any) =>
       String(s.exam_date) === String(date) &&
-      String(s.period) === String(period),
+      (Number(String(s.start_time).split(":")[0]) < 12
+        ? "morning"
+        : "afternoon") === period,
   );
-}
-
-function addMinutes(timeStr: string, minutes: number): string {
-  const parts = timeStr.split(":");
-  if (parts.length < 2) return timeStr;
-  const h = parseInt(parts[0], 10) || 0;
-  const m = parseInt(parts[1], 10) || 0;
-  const total = h * 60 + m + minutes;
-  const rh = Math.floor(total / 60) % 24;
-  const rm = total % 60;
-  return `${String(rh).padStart(2, "0")}:${String(rm).padStart(2, "0")}`;
 }
 
 const tabs = $derived([
   {
     id: "subjects",
     label: m.common_exams_detail_subjects(),
-    icon: BookOpen,
     count: subjects.length,
   },
   {
     id: "schedule",
     label: m.common_exams_detail_schedule(),
-    icon: Calendar,
     count: activeSchedules.length,
   },
   {
     id: "seating",
     label: m.common_exams_detail_seating(),
-    icon: Hashtag,
     count: seatingNumbers.length,
   },
+  ...(canRevealSecrets
+    ? [
+        {
+          id: "secrets",
+          label: m.operations_ui_secret_numbers(),
+          count: secretNumbers.length,
+        },
+      ]
+    : []),
   {
     id: "halls",
     label: m.common_exams_stat_halls(),
-    icon: Home,
     count: halls.length,
   },
   {
     id: "proctors",
     label: m.common_exams_stat_proctors(),
-    icon: UserBadgeCheck,
     count: proctors.length,
   },
 ]);
+
+function openConfiguration(tab: "schedule" | "halls") {
+  activeConfigTab = tab;
+  isConfigModalOpen = true;
+}
+
+const headerActions = $derived.by(() => {
+  const actions: SplitActionItem[] = [
+    {
+      id: "automatic-scheduling",
+      label: m.operations_ui_automatic_scheduling(),
+      onSelect: () => openConfiguration("schedule"),
+    },
+    {
+      id: "committee-distribution",
+      label: m.operations_ui_committee_distribution(),
+      onSelect: () => openConfiguration("halls"),
+    },
+  ];
+
+  if (canEditSession) {
+    actions.push({
+      id: "edit-session",
+      label: m.common_action_edit(),
+      onSelect: () => (isEditSheetOpen = true),
+    });
+  }
+
+  if (canChangeSessionStatus && session) {
+    const completesSession = session.status === "active";
+    actions.push({
+      id: "change-session-status",
+      label: completesSession
+        ? m.operations_ui_exam_session_complete()
+        : m.operations_ui_exam_session_activate(),
+      destructive: completesSession,
+      disabled: sessionStatusMutation.isPending,
+      separatorBefore: true,
+      onSelect: handleActivate,
+    });
+  }
+
+  if (canGenerateSecrets) {
+    actions.unshift({
+      id: "secret-numbers",
+      label: m.operations_ui_secret_numbers(),
+      disabled: schedules.length === 0 || students.length === 0,
+      onSelect: handleGenerateSecrets,
+    });
+  }
+  return actions;
+});
+
+const subjectGridSource = $derived(
+  sectionSubjects.map((sectionSubject: any, index: number) => ({
+    ...sectionSubject,
+    __idx: index + 1,
+    subject_name: getSubjectName(sectionSubject.subject_id),
+    section_name: getClassName(sectionSubject.section_id),
+  })),
+);
+
+const subjectColumns: OrbisColumnDef[] = [
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "subject_name",
+    prop: "subject_name",
+    header: m.common_word_subject(),
+    name: m.common_word_subject(),
+    flex: 1,
+    readonly: true,
+    cellClass: "font-medium",
+  },
+  {
+    id: "section_name",
+    prop: "section_name",
+    header: m.common_table_class(),
+    name: m.common_table_class(),
+    width: 180,
+    size: 180,
+    readonly: true,
+  },
+];
+
+const seatActions: ActionItem[] = [
+  {
+    id: "delete",
+    label: m.common_action_delete(),
+    variant: "destructive",
+    visible: () => canEditSession,
+  },
+];
+
+const seatingGridSource = $derived(
+  seatingNumbers.map((seat: any, index: number) => {
+    const student = students.find(
+      (item: any) =>
+        String(item.student?.id ?? item.id) === String(seat.student_id),
+    );
+    const enrollment = enrollments.find(
+      (item: any) => String(item.student_id) === String(seat.student_id),
+    );
+    const section = classes.find(
+      (item: any) => String(item.id) === String(enrollment?.section_id),
+    );
+    const room = rooms.find(
+      (item: any) => String(item.id) === String(seat.room_id),
+    );
+    return {
+      ...seat,
+      __idx: index + 1,
+      student_name_display:
+        student?.person?.full_name_ar ||
+        student?.person?.full_name ||
+        student?.student?.student_number ||
+        student?.student_number ||
+        "—",
+      room_display: room?.name_ar || room?.name || "—",
+      class_display: section?.name_ar || section?.name || "—",
+      level_display: section?.level || "—",
+    };
+  }),
+);
+
+const seatingColumns: OrbisColumnDef[] = [
+  {
+    id: "__selected",
+    prop: "__selected",
+    header: "",
+    name: "",
+    width: 40,
+    size: 40,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "seating_number",
+    prop: "seating_number",
+    header: m.academics_exams_seat_number(),
+    name: m.academics_exams_seat_number(),
+    width: 130,
+    size: 130,
+    type: "number",
+    readonly: true,
+    cellClass: "font-mono font-semibold text-primary",
+  },
+  {
+    id: "room_display",
+    prop: "room_display",
+    header: m.common_lesson_label_room(),
+    name: m.common_lesson_label_room(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "student_name_display",
+    prop: "student_name_display",
+    header: m.common_word_student(),
+    name: m.common_word_student(),
+    flex: 1,
+    readonly: true,
+  },
+  {
+    id: "class_display",
+    prop: "class_display",
+    header: m.common_table_class(),
+    name: m.common_table_class(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+  {
+    id: "level_display",
+    prop: "level_display",
+    header: m.academics_exams_level(),
+    name: m.academics_exams_level(),
+    width: 110,
+    size: 110,
+    readonly: true,
+  },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_action_delete(),
+    name: m.common_action_delete(),
+    width: 76,
+    size: 76,
+    type: "action",
+    readonly: true,
+    align: "center",
+    meta: { items: seatActions },
+  },
+];
+
+const secretGridSource = $derived(
+  secretNumbers.map((secret: any, index: number) => {
+    const schedule = schedules.find(
+      (item: any) => String(item.id) === String(secret.exam_schedule_id),
+    );
+    return {
+      ...secret,
+      __idx: index + 1,
+      student_display: getStudentName(secret.student_id) || "—",
+      subject_display: schedule ? getScheduleSubjectName(schedule) : "—",
+      section_display: schedule ? getScheduleSectionName(schedule) : "—",
+      date_display: schedule ? formatDate(schedule.exam_date) : "—",
+    };
+  }),
+);
+
+const secretColumns: OrbisColumnDef[] = [
+  {
+    id: "__idx",
+    prop: "__idx",
+    header: "#",
+    name: "#",
+    width: 48,
+    size: 48,
+    readonly: true,
+    align: "center",
+  },
+  {
+    id: "secret_number",
+    prop: "secret_number",
+    header: m.operations_ui_secret_numbers(),
+    name: m.operations_ui_secret_numbers(),
+    width: 160,
+    size: 160,
+    readonly: true,
+    cellClass: "font-mono font-semibold text-primary",
+  },
+  {
+    id: "student_display",
+    prop: "student_display",
+    header: m.common_word_student(),
+    name: m.common_word_student(),
+    flex: 1,
+    readonly: true,
+  },
+  {
+    id: "subject_display",
+    prop: "subject_display",
+    header: m.common_word_subject(),
+    name: m.common_word_subject(),
+    flex: 1,
+    readonly: true,
+  },
+  {
+    id: "section_display",
+    prop: "section_display",
+    header: m.common_table_class(),
+    name: m.common_table_class(),
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "date_display",
+    prop: "date_display",
+    header: m.academics_exams_sessions_sessionId_day_date(),
+    name: m.academics_exams_sessions_sessionId_day_date(),
+    width: 130,
+    size: 130,
+    readonly: true,
+  },
+];
+
+const proctorActions: ActionItem[] = [
+  {
+    id: "delete",
+    label: m.operations_ui_cancel_proctor_assignment(),
+    variant: "destructive",
+  },
+];
+
+const proctorGridSource = $derived(
+  proctors.map((proctor: any) => ({
+    ...proctor,
+    teacher_display:
+      teachers.find((teacher: any) => teacher.id === proctor.teacher_id)
+        ?.full_name_ar ||
+      teachers.find((teacher: any) => teacher.id === proctor.teacher_id)
+        ?.full_name ||
+      proctor.teacher_id ||
+      "—",
+    hall_display:
+      rooms.find((room: any) => room.id === proctor.room_id)?.name_ar ||
+      rooms.find((room: any) => room.id === proctor.room_id)?.name ||
+      proctor.room_id ||
+      "—",
+    role_display: proctor.is_chief
+      ? m.operations_ui_proctor_chief()
+      : m.academics_exams_proctor(),
+  })),
+);
+
+const proctorColumns: OrbisColumnDef[] = [
+  {
+    id: "teacher_display",
+    prop: "teacher_display",
+    header: m.academics_exams_proctor(),
+    name: m.academics_exams_proctor(),
+    flex: 1,
+    readonly: true,
+  },
+  {
+    id: "hall_display",
+    prop: "hall_display",
+    header: m.academics_exams_committee(),
+    name: m.academics_exams_committee(),
+    width: 150,
+    size: 150,
+    readonly: true,
+  },
+  {
+    id: "role_display",
+    prop: "role_display",
+    header: m.common_user_form_role(),
+    name: m.common_user_form_role(),
+    width: 140,
+    size: 140,
+    readonly: true,
+  },
+  {
+    id: "actions",
+    prop: "actions",
+    header: m.common_action_delete(),
+    name: m.common_action_delete(),
+    width: 76,
+    size: 76,
+    type: "action",
+    readonly: true,
+    align: "center",
+    meta: { items: proctorActions },
+  },
+];
 
 $effect(() => {
   aiContext.setContext({
@@ -270,96 +646,188 @@ $effect(() => {
   return () => aiContext.clearContext();
 });
 
-async function loadSession() {
-  if (!orgId || !sessionId) return;
-  isLoading = true;
-  try {
-    session = await api.getExamSession(sessionId);
-
-    const [
-      loadedSubjects,
-      loadedSchedules,
-      loadedSeatingNumbers,
-      loadedHalls,
-      loadedRooms,
-      [classList, subjectList],
-    ] = await Promise.all([
-      Promise.resolve([]),
-      api.listExamSchedules(sessionId).catch((err: unknown) => {
-        console.error("Failed to load schedules", err);
-        return [];
-      }),
-      api.listSeating(sessionId).catch((err: unknown) => {
-        console.error("Failed to load seating numbers", err);
-        return [];
-      }),
-      Promise.resolve([]),
-      api.listRooms().catch((err: unknown) => {
-        console.error("Failed to load school rooms", err);
-        return [];
-      }),
-      Promise.all([api.listSections(), api.listSubjects()]).catch(
-        (err: unknown) => {
-          console.error("Failed to load classes/subjects catalogs", err);
-          return [[], []];
-        },
+async function loadSessionDetails() {
+  const loadedSession = await api.getExamSession(sessionId);
+  const [
+    loadedSchedules,
+    loadedSeatingNumbers,
+    loadedRooms,
+    [loadedClasses, loadedSubjects],
+    loadedTeachers,
+    loadedEnrollments,
+    loadedStudents,
+  ] = await Promise.all([
+    api.listExamSchedules(sessionId),
+    api.listSeating(sessionId),
+    api.listRooms(),
+    Promise.all([api.listSections(), api.listSubjects()]),
+    loadActiveTeachers(),
+    loadPeriodEnrollments(loadedSession.period_id),
+    loadPeriodStudents(loadedSession.period_id),
+  ]);
+  const activeSections = loadedClasses.filter(
+    (section: any) => section.is_active,
+  );
+  const [loadedSectionSubjects, loadedProctors, loadedSecrets] =
+    await Promise.all([
+      Promise.all(
+        activeSections.map((section: any) =>
+          api.listSectionSubjects(section.id, loadedSession.period_id),
+        ),
+      ).then((sectionSubjectGroups) =>
+        sectionSubjectGroups
+          .flat()
+          .filter((sectionSubject: any) => sectionSubject.is_active),
       ),
+      Promise.all(
+        loadedSchedules.map((schedule: any) => api.listProctors(schedule.id)),
+      ).then((proctorGroups) => proctorGroups.flat()),
+      canRevealSecrets
+        ? Promise.all(
+            loadedSchedules.map((schedule: any) =>
+              api.listSecrets(schedule.id),
+            ),
+          ).then((secretGroups) => secretGroups.flat())
+        : Promise.resolve([]),
     ]);
 
-    let loadedProctors: any[] = [];
-    if (loadedSchedules.length > 0) {
-      try {
-        const proctorArrays = await Promise.all(
-          loadedSchedules.map((s: any) =>
-            api.listProctors(s.id).catch(() => []),
-          ),
-        );
-        loadedProctors = proctorArrays.flat();
-      } catch (e) {
-        console.error("Failed to load proctors", e);
-      }
-    }
-
-    subjects = loadedSubjects;
-    schedules = loadedSchedules;
-    seatingNumbers = loadedSeatingNumbers;
-    halls = loadedHalls;
-    proctors = loadedProctors;
-    rooms = loadedRooms;
-    classes = classList;
-    schoolSubjects = subjectList;
-
-    await loadSolveJobs();
-  } catch (e) {
-    toast.error("Failed to load session details");
-    console.error(e);
-  } finally {
-    isLoading = false;
-  }
+  return {
+    session: loadedSession,
+    schedules: loadedSchedules,
+    seatingNumbers: loadedSeatingNumbers,
+    secretNumbers: loadedSecrets,
+    rooms: loadedRooms,
+    classes: loadedClasses,
+    schoolSubjects: loadedSubjects,
+    teachers: loadedTeachers,
+    enrollments: loadedEnrollments,
+    students: loadedStudents,
+    sectionSubjects: loadedSectionSubjects,
+    proctors: loadedProctors,
+  };
 }
 
-onMount(() => {
-  if (orgId && sessionId) {
-    loadSession();
+async function loadSession() {
+  await queryClient.invalidateQueries({
+    queryKey: queryKeys.exam.details(orgId, sessionId),
+  });
+}
+
+async function loadPeriodStudents(periodId: string) {
+  const pageSize = 500;
+  const loaded: any[] = [];
+  const studentIds = new Set<string>();
+
+  for (let page = 1; ; page += 1) {
+    const result = await api.listStudents({
+      period_id: periodId,
+      status: "active",
+      page,
+      page_size: pageSize,
+    });
+    const newStudents = result.items.filter((item: any) => {
+      const id = String(item.student?.id ?? item.id);
+      if (studentIds.has(id)) return false;
+      studentIds.add(id);
+      return true;
+    });
+    loaded.push(...newStudents);
+
+    if (result.items.length < pageSize) break;
+    if (newStudents.length === 0) {
+      throw new Error("Student pagination returned a repeated page");
+    }
   }
-});
+
+  return loaded;
+}
+
+async function loadPeriodEnrollments(periodId: string) {
+  const pageSize = 500;
+  const loaded: any[] = [];
+  const enrollmentIds = new Set<string>();
+
+  for (let page = 1; ; page += 1) {
+    const result = await api.listEnrollments({
+      period_id: periodId,
+      status: "active",
+      page,
+      page_size: pageSize,
+    });
+    const newEnrollments = result.filter((item: any) => {
+      if (enrollmentIds.has(item.id)) return false;
+      enrollmentIds.add(item.id);
+      return true;
+    });
+    loaded.push(...newEnrollments);
+
+    if (result.length < pageSize) break;
+    if (newEnrollments.length === 0) {
+      throw new Error("Enrollment pagination returned a repeated page");
+    }
+  }
+
+  return loaded;
+}
+
+async function loadActiveTeachers() {
+  const pageSize = 500;
+  const loaded: any[] = [];
+
+  for (let page = 1; ; page += 1) {
+    const result = await api.listEmployees({
+      employee_type: "teacher",
+      status: "active",
+      page,
+      page_size: pageSize,
+    });
+    loaded.push(...result.items);
+    if (result.items.length < pageSize) break;
+  }
+
+  return loaded;
+}
 
 async function handleGenerateSeating() {
   try {
-    const studentsRes = await api.listStudents({ pageSize: 500 });
-    const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
+    const enrolledStudentIds = new Set(
+      enrollments
+        .filter((enrollment: any) => enrollment.status === "active")
+        .map((enrollment: any) => String(enrollment.student_id)),
+    );
+    const existingStudentIds = new Set(
+      seatingNumbers.map((seat: any) => String(seat.student_id)),
+    );
+    const studentIds = students
+      .map((student: any) => String(student.student?.id ?? student.id))
+      .filter(
+        (id: string) =>
+          enrolledStudentIds.has(id) && !existingStudentIds.has(id),
+      );
     if (!studentIds.length) {
-      toast.error(m.operations_ui_seating_no_students());
+      toast.error(
+        students.length === 0
+          ? m.operations_ui_seating_no_students()
+          : m.operations_ui_seating_all_assigned(),
+      );
       return;
     }
-    const roomIds = rooms.map((r: any) => r.id);
+    const existingSequenceNumbers = seatingNumbers
+      .map((seat: any) =>
+        Number(String(seat.seating_number).replace(/^SEAT-/, "")),
+      )
+      .filter(Number.isFinite);
+    const nextNumber = Math.max(1000, ...existingSequenceNumbers) + 1;
+    const roomIds = rooms
+      .filter((room: any) => room.is_exam_hall)
+      .map((room: any) => room.id);
 
     const promise = api.generateSeating({
       exam_session_id: sessionId,
       student_ids: studentIds,
       room_ids: roomIds,
       prefix: "SEAT-",
-      start_number: 1001,
+      start_number: nextNumber,
     });
 
     toast.promise(promise, {
@@ -382,24 +850,59 @@ async function handleGenerateSecrets() {
       toast.error(m.operations_ui_secrets_no_schedules());
       return;
     }
-    const studentsRes = await api.listStudents({ pageSize: 500 });
-    const studentIds = studentsRes.items.map((s: any) => s.student?.id || s.id);
-    if (!studentIds.length) {
+    if (!students.length) {
       toast.error(m.operations_ui_secrets_no_students());
       return;
     }
 
-    const promises = schedules.map((schedule: any) =>
-      api.generateSecrets({
-        exam_schedule_id: schedule.id,
-        student_ids: studentIds,
+    const pendingSecrets = await Promise.all(
+      schedules.map(async (schedule: any) => {
+        const sectionSubject = getSectionSubject(schedule.section_subject_id);
+        if (!sectionSubject) {
+          throw new Error(
+            `Scheduled exam ${schedule.id} references an unavailable section subject`,
+          );
+        }
+
+        const eligibleStudentIds = new Set(
+          enrollments
+            .filter(
+              (enrollment: any) =>
+                enrollment.status === "active" &&
+                String(enrollment.section_id) ===
+                  String(sectionSubject.section_id),
+            )
+            .map((enrollment: any) => String(enrollment.student_id)),
+        );
+        const scheduleStudents = students
+          .map((student: any) => String(student.student?.id ?? student.id))
+          .filter((studentId: string) => eligibleStudentIds.has(studentId));
+        return { schedule, studentIds: scheduleStudents };
       }),
     );
 
-    const promise = Promise.all(promises);
+    const assignments = pendingSecrets.filter(
+      (pending) => pending.studentIds.length > 0,
+    );
+    if (assignments.length === 0) {
+      toast.info(m.operations_ui_secrets_all_assigned());
+      return;
+    }
+
+    const promise = Promise.all(
+      assignments.map(({ schedule, studentIds }) =>
+        api.generateSecrets({
+          exam_schedule_id: schedule.id,
+          student_ids: studentIds,
+        }),
+      ),
+    );
     toast.promise(promise, {
       loading: m.operations_ui_secrets_generating(),
-      success: m.operations_ui_secrets_generate_success(),
+      success: (generated) =>
+        generated.flat().length === 0
+          ? m.operations_ui_secrets_all_assigned()
+          : m.operations_ui_secrets_generate_success(),
       error: (err) =>
         (err as any)?.message || m.operations_ui_secrets_generate_error(),
     });
@@ -425,33 +928,8 @@ function generateDatesRange(startStr: string, endStr: string): string[] {
   return dates;
 }
 
-async function loadSolveJobs() {
-  solveJobs = [];
-  activeJob = null;
-  isSolving = false;
-}
-
 async function handleAutoSchedule() {
   toast.error(m.operations_ui_auto_scheduling_desktop_unavailable());
-}
-
-function stopPolling() {
-  if (pollingInterval) {
-    clearInterval(pollingInterval);
-    pollingInterval = null;
-  }
-  if (elapsedTimer) {
-    clearInterval(elapsedTimer);
-    elapsedTimer = null;
-  }
-}
-
-async function handleCancelSolve() {
-  toast.error(m.operations_ui_cancel_scheduling_desktop_unavailable());
-}
-
-async function handleApplySolve() {
-  toast.error(m.operations_ui_apply_scheduling_desktop_unavailable());
 }
 
 async function handleDeleteSchedule(scheduleId: string) {
@@ -477,32 +955,6 @@ async function handleDeleteSchedule(scheduleId: string) {
   }
 }
 
-async function handleToggleScheduleStatus(sched: any) {
-  const newStatus = sched.status === "cancelled" ? "scheduled" : "cancelled";
-  const label =
-    newStatus === "cancelled"
-      ? m.academics_exams_sessions_sessionId_deactivating_exam()
-      : m.academics_exams_sessions_sessionId_activating_exam();
-  const labelSuccess =
-    newStatus === "cancelled"
-      ? m.academics_exams_sessions_sessionId_deactivated_successfully()
-      : m.academics_exams_sessions_sessionId_activated_successfully();
-
-  const promise = Promise.resolve();
-  toast.promise(promise, {
-    loading: label,
-    success: labelSuccess,
-    error: (err: any) =>
-      (err as any)?.message || m.operations_ui_exam_status_update_error(),
-  });
-  try {
-    await promise;
-    await loadSession();
-  } catch (err) {
-    console.error(err);
-  }
-}
-
 async function handleAllocateHalls() {
   toast.error(m.operations_ui_hall_assignment_desktop_unavailable());
 }
@@ -510,11 +962,28 @@ async function handleAllocateHalls() {
 async function handleActivate() {
   if (!session) return;
   const targetStatus = session.status === "active" ? "completed" : "active";
-  const promise = api.updateExamSession(sessionId, { status: targetStatus });
+  const confirmed = await confirmStore.prompt({
+    title:
+      targetStatus === "completed"
+        ? m.operations_ui_exam_session_complete()
+        : m.operations_ui_exam_session_activate(),
+    description: m.operations_ui_exam_session_status_confirm(),
+    confirmText:
+      targetStatus === "completed"
+        ? m.operations_ui_exam_session_complete()
+        : m.operations_ui_exam_session_activate(),
+    variant: targetStatus === "completed" ? "destructive" : "default",
+  });
+  if (!confirmed) return;
+
+  const promise = sessionStatusMutation.mutateAsync(targetStatus);
 
   toast.promise(promise, {
     loading: m.operations_ui_exam_session_status_updating(),
-    success: m.operations_ui_exam_session_status_updated(),
+    success:
+      targetStatus === "completed"
+        ? m.operations_ui_exam_session_complete()
+        : m.operations_ui_exam_session_activate(),
     error: (err) =>
       (err as any)?.message ||
       m.operations_ui_exam_session_status_update_error(),
@@ -522,13 +991,14 @@ async function handleActivate() {
 
   try {
     await promise;
-    await loadSession();
   } catch (err) {
     console.error(err);
   }
 }
 
 async function handleDeleteSeating(seatingId: string) {
+  if (!canEditSession) return;
+
   const confirmed = await confirmStore.prompt({
     title: m.operations_ui_seating_delete_title(),
     description: m.operations_ui_seating_delete_confirm(),
@@ -546,8 +1016,64 @@ async function handleDeleteSeating(seatingId: string) {
   try {
     await promise;
     await loadSession();
+    selectedSeatIds = new Set(
+      [...selectedSeatIds].filter((id) => id !== seatingId),
+    );
   } catch (err) {
     console.error(err);
+  }
+}
+
+async function handleDeleteSelectedSeating() {
+  if (!canEditSession) return;
+
+  const seatingIds = [...selectedSeatIds].filter((id) =>
+    seatingNumbers.some((seat: any) => String(seat.id) === id),
+  );
+  if (seatingIds.length === 0) {
+    selectedSeatIds = new Set();
+    return;
+  }
+
+  const confirmed = await confirmStore.prompt({
+    title: m.operations_ui_seating_delete_title(),
+    description: m.operations_ui_seating_bulk_delete_confirm({
+      count: seatingIds.length,
+    }),
+    confirmText: m.common_action_delete(),
+    variant: "destructive",
+  });
+  if (!confirmed) return;
+
+  let failedIds: string[] = [];
+  const promise = Promise.allSettled(
+    seatingIds.map((id) => api.deleteSeating(id)),
+  ).then((results) => {
+    failedIds = seatingIds.filter(
+      (_id, index) => results[index].status === "rejected",
+    );
+    if (failedIds.length > 0) {
+      throw new Error(m.operations_ui_seating_delete_error());
+    }
+    return results;
+  });
+  toast.promise(promise, {
+    loading: m.operations_ui_seating_deleting(),
+    success: (results) =>
+      m.operations_ui_seating_bulk_delete_success({
+        count: results.length,
+      }),
+    error: () => m.operations_ui_seating_delete_error(),
+  });
+
+  try {
+    await promise;
+    selectedSeatIds = new Set();
+    await loadSession();
+  } catch (err) {
+    console.error("Failed to delete selected seating assignments", err);
+    selectedSeatIds = new Set(failedIds);
+    await loadSession();
   }
 }
 
@@ -576,103 +1102,113 @@ async function handleDeleteProctor(proctorId: string) {
 }
 
 async function handleToggleHall(room: any) {
-  const promise = Promise.resolve();
+  const isActivating = !room.is_exam_hall;
+  const promise = api.updateRoom(room.id, { is_exam_hall: isActivating });
 
   toast.promise(promise, {
-    loading: m.operations_ui_exam_room_activating({
-      room: room.room_number || room.name,
-    }),
-    success: m.operations_ui_exam_room_activate_success(),
+    loading: isActivating
+      ? m.operations_ui_exam_room_activating({
+          room: room.name_ar || room.name,
+        })
+      : m.operations_ui_exam_room_deactivating({
+          room: room.name_ar || room.name,
+        }),
+    success: isActivating
+      ? m.operations_ui_exam_room_activate_success()
+      : m.operations_ui_exam_room_deactivate_success(),
     error: (err) =>
-      (err as any)?.message || m.operations_ui_exam_room_activate_error(),
+      (err as any)?.message ||
+      (isActivating
+        ? m.operations_ui_exam_room_activate_error()
+        : m.operations_ui_exam_room_deactivate_error()),
   });
 
   try {
     await promise;
     await loadSession();
   } catch (err) {
-    console.error(err);
+    console.error("Failed to update exam hall availability", err);
   }
-}
-
-async function handleAssignProctors() {
-  toast.error(m.operations_ui_proctor_assignment_desktop_unavailable());
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-5 select-none">
+<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none text-start">
 	{#if isLoading}
-		<Skeleton class="h-20 w-full rounded-xl" />
-		<Skeleton class="h-10 w-full rounded-lg" />
+		<Skeleton class="h-24 w-full rounded-xl" />
+		<Skeleton class="h-12 w-full rounded-lg" />
 		<Skeleton class="h-64 w-full rounded-xl" />
+	{:else if sessionDetailsQuery.error}
+		<div class="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+			<p class="text-xs font-semibold text-destructive">{m.common_load_error()}</p>
+			<p class="max-w-lg text-xs text-muted-foreground">
+				{extractErrorMessage(sessionDetailsQuery.error)}
+			</p>
+			<Button
+				variant="outline"
+				class="h-9 px-4 text-xs"
+				onclick={() => sessionDetailsQuery.refetch()}
+			>
+				{m.common_retry()}
+			</Button>
+		</div>
 	{:else}
 		<!-- Back + Header -->
-		<div class="flex flex-col gap-3" in:fade={{ duration: 150 }}>
+		<div class="flex items-start gap-2" in:fade={{ duration: 150 }}>
 			<Button
 				href={localizeHref(`/${orgId}/academics/exams/sessions`)}
 				variant="ghost"
-				class="w-fit h-7 px-2 text-[10px] text-muted-foreground flex items-center gap-1 cursor-pointer"
+				size="icon-sm"
+				class="shrink-0 text-muted-foreground"
+				title={m.common_action_back()}
+				aria-label={m.common_action_back()}
 			>
-				<ArrowLeft size={12} />
-				<span>{m.common_action_back()}</span>
+				<ArrowLeft size={16} class="rtl:rotate-180" />
 			</Button>
 
-			<!-- Session Info Banner -->
-			<div class="card-tactile bg-card p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+			<div class="flex min-w-0 flex-1 flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
 				<div class="flex flex-col gap-1.5">
 					<div class="flex items-center gap-2">
-						<h1 class="text-sm font-bold text-foreground">
+						<span class="text-base font-semibold text-foreground">
 							{session?.name_ar || session?.name || `Session ${sessionId}`}
-						</h1>
+						</span>
 						<ExamStatusBadge status={session?.status || "draft"} />
 					</div>
 					{#if session}
-						<div class="flex items-center gap-3 text-[10px] text-muted-foreground">
-							<span class="flex items-center gap-1">
-								<Calendar size={10} />
-								{session.start_date} → {session.end_date}
-							</span>
-							<span class="px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 text-[9px]">
-								{session.session_type}
+						<div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+							<span>
+								{formatDate(session.start_date, "date") || session.start_date}
+								–
+								{formatDate(session.end_date, "date") || session.end_date}
 							</span>
 						</div>
 					{/if}
 				</div>
-				<div class="flex items-center gap-2">
-					<Button
+				<div class="flex flex-wrap items-center gap-2">
+					<SplitActionMenu
+						label={m.operations_ui_seating_numbers()}
+						menuLabel={m.operations_ui_actions()}
+						actions={headerActions}
+						onprimary={handleGenerateSeating}
 						variant="outline"
-						class="h-7 px-3 text-[10px] flex items-center gap-1 cursor-pointer"
-						onclick={() => isEditSheetOpen = true}
-					>
-						<Pencil size={10} />
-						{m.common_action_edit()}
-					</Button>
-					<Button
-						variant="default"
-						class="h-7 px-3 text-[10px] flex items-center gap-1 cursor-pointer"
-						onclick={handleActivate}
-					>
-						<Play size={10} />
-						{m.common_exams_detail_activate()}
-					</Button>
+						disabled={isLoading}
+					/>
 				</div>
 			</div>
 		</div>
 
 		<!-- Tabs -->
-		<div class="flex items-center gap-1 border-b border-border pb-0" in:fade={{ delay: 50, duration: 200 }}>
+		<div class="flex items-center gap-1 overflow-x-auto border-b border-border/60 pb-0 scrollbar-hide" in:fade={{ delay: 50, duration: 200 }}>
 			{#each tabs as tab (tab.id)}
 				<button
-					class="px-3 py-2 text-[10px] font-medium transition-all duration-150 border-b-2 cursor-pointer flex items-center gap-1.5
+					class="flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3 py-3 text-xs font-medium transition-colors
 						{activeTab === tab.id
 							? 'border-primary text-primary font-semibold'
 							: 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}"
 					onclick={() => activeTab = tab.id}
 				>
-					<tab.icon size={12} />
 					<span>{tab.label}</span>
 					{#if tab.count > 0}
-						<span class="text-[8px] px-1 py-0.5 rounded bg-muted/60 font-mono">{tab.count}</span>
+						<span class="rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">{tab.count}</span>
 					{/if}
 				</button>
 			{/each}
@@ -686,44 +1222,25 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if subjects.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<BookOpen size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_subjects()}</p>
 							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
-								<Plus size={12} class="me-1" />
 								{m.common_exams_subjects_add()}
 							</Button>
 						</div>
 					{:else}
-						<div class="card-tactile bg-card overflow-hidden">
-							<Grid>
-								<TableHeader>
-									<TableRow class="text-[10px]">
-										<TableHead class="w-10">#</TableHead>
-										<TableHead>{m.common_word_subject()}</TableHead>
-										<TableHead class="w-20">{m.common_exams_subjects_score()}</TableHead>
-										<TableHead class="w-24">{m.common_exams_subjects_duration()}</TableHead>
-										<TableHead class="w-24">{m.common_bulk_col_exam_type()}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#each subjects as subject, i (subject.id)}
-										<TableRow class="text-xs">
-											<TableCell class="font-mono text-muted-foreground">{i + 1}</TableCell>
-											<TableCell class="font-medium">{subject.subject_id}</TableCell>
-											<TableCell class="font-mono">{subject.max_score}</TableCell>
-											<TableCell class="font-mono">{subject.duration_minutes}{m.academics_exams_duration_minutes_abbr()}</TableCell>
-											<TableCell>
-												<span class="px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 text-[9px]">
-													{subject.exam_type}
-												</span>
-											</TableCell>
-										</TableRow>
-									{/each}
-								</TableBody>
-							</Grid>
-						</div>
+						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+							<div class="h-80 w-full">
+								<OrbisGrid
+									columns={subjectColumns}
+									source={subjectGridSource}
+									clientQuery
+									readonly
+									rtl={getLocale() === "ar"}
+									emptyTitle={m.academics_exams_no_subjects()}
+								/>
+							</div>
+						</Card>
 						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
-							<Plus size={12} class="me-1" />
 							{m.common_exams_subjects_add()}
 						</Button>
 					{/if}
@@ -734,15 +1251,13 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if activeSchedules.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Calendar size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_exams_scheduled()}</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleAutoSchedule}>
-								<Bolt size={12} class="me-1" />
+							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => openConfiguration("schedule")}>
 								{m.common_exams_actions_auto_schedule()}
 							</Button>
 						</div>
 					{:else}
-						<div class="timetable-container border rounded-2xl flex flex-col overflow-hidden shadow-sm select-none">
+						<Card class="timetable-container flex flex-col overflow-hidden rounded-xl border-border/60 shadow-xs select-none">
 							<div 
 								class="grid gap-px text-xs w-full bg-border-line"
 								style="grid-template-columns: 180px 1fr 1fr;"
@@ -759,7 +1274,7 @@ async function handleAssignProctors() {
 								</div>
 
 								<!-- Rows (Dates) -->
-								{#each sessionDates as date}
+								{#each sessionDates as date (date)}
 									<!-- Date Cell -->
 									<div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-22.5 border-b bg-muted/10 border-e">
 										<span class="text-[11px] tracking-wide font-extrabold text-foreground text-center">
@@ -770,54 +1285,30 @@ async function handleAssignProctors() {
 									<!-- Morning Cell -->
 									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
 										{#each getExamsInCell(date, "morning") as sched (sched.id)}
-											<div 
-												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
-												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
-													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/2' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
-													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
-											>
+											<div class="relative flex w-full flex-row items-stretch justify-between gap-2.5 overflow-hidden rounded-lg border border-border/60 bg-card p-2.5 transition-colors hover:border-primary/20 hover:bg-muted/10">
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
-														<span class="w-1.5 h-1.5 rounded-full bg-(--subject-color) shrink-0"></span>
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
-															{getSubjectName(sched.exam_subject_id)}
+															{getScheduleSubjectName(sched)}
 														</span>
-														{#if sched.isDraft}
-															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.common_status_draft()}</span>
-														{/if}
 													</div>
 													
 													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
-														<span class="opacity-60">•</span>
+														<span class="font-bold text-primary">{getScheduleSectionName(sched)}</span>
 														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
 													</div>
 												</div>
 
-												{#if !sched.isDraft}
-													<div class="flex items-center gap-1 shrink-0 self-center">
-														<button 
-															type="button" 
-															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
-															onclick={() => handleToggleScheduleStatus(sched)}
-															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
-														>
-															{#if sched.status === "cancelled"}
-																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
-															{:else}
-																<XMark size={12} class="text-amber-500 hover:text-amber-600" />
-															{/if}
-														</button>
-														<button 
-															type="button" 
-															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
-															onclick={() => handleDeleteSchedule(sched.id)}
-															title={m.operations_ui_delete_exam_permanently()}
-														>
-															<Trash size={12} />
-														</button>
-													</div>
-												{/if}
+												<div class="flex items-center gap-1 shrink-0 self-center">
+													<button
+														type="button"
+														class="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
+														onclick={() => handleDeleteSchedule(sched.id)}
+														title={m.operations_ui_delete_exam_permanently()}
+													>
+														{m.common_action_delete()}
+													</button>
+												</div>
 											</div>
 										{/each}
 									</div>
@@ -825,60 +1316,36 @@ async function handleAssignProctors() {
 									<!-- Afternoon Cell -->
 									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
 										{#each getExamsInCell(date, "afternoon") as sched (sched.id)}
-											<div 
-												style="--subject-color: {getSubjectColor(sched.exam_subject_id)};"
-												class="relative overflow-hidden w-full p-2.5 flex flex-row items-stretch justify-between gap-2.5 select-none transition-all duration-150 rounded-lg border
-													{sched.isDraft ? 'border-dashed border-primary/50 bg-primary/2' : 'border-border/60 hover:border-primary/20 bg-card hover:bg-muted/10'} 
-													{sched.status === 'cancelled' ? 'opacity-40 bg-muted/20 border-dashed border-muted-foreground/30 line-through' : ''}"
-											>
+											<div class="relative flex w-full flex-row items-stretch justify-between gap-2.5 overflow-hidden rounded-lg border border-border/60 bg-card p-2.5 transition-colors hover:border-primary/20 hover:bg-muted/10">
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
 													<div class="flex items-center gap-1.5 w-full">
-														<span class="w-1.5 h-1.5 rounded-full bg-(--subject-color) shrink-0"></span>
 														<span class="font-bold text-[11px] leading-tight text-foreground line-clamp-1">
-															{getSubjectName(sched.exam_subject_id)}
+															{getScheduleSubjectName(sched)}
 														</span>
-														{#if sched.isDraft}
-															<span class="text-[8px] px-1 py-0.5 rounded bg-primary/10 text-primary font-bold">{m.common_status_draft()}</span>
-														{/if}
 													</div>
 													
 													<div class="text-[9px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-														<span class="font-bold text-primary">{getClassName(sched.applicable_class_ids)}</span>
-														<span class="opacity-60">•</span>
+														<span class="font-bold text-primary">{getScheduleSectionName(sched)}</span>
 														<span class="font-mono">{sched.start_time} - {sched.end_time}</span>
 													</div>
 												</div>
 
-												{#if !sched.isDraft}
-													<div class="flex items-center gap-1 shrink-0 self-center">
-														<button 
-															type="button" 
-															class="text-muted-foreground hover:text-foreground p-1 rounded transition-colors duration-150 cursor-pointer"
-															onclick={() => handleToggleScheduleStatus(sched)}
-															title={sched.status === "cancelled" ? m.operations_ui_reactivate_exam() : m.operations_ui_deactivate_exam()}
-														>
-															{#if sched.status === "cancelled"}
-																<CheckCircle size={12} class="text-emerald-500 hover:text-emerald-600" />
-															{:else}
-																<XMark size={12} class="text-amber-500 hover:text-amber-600" />
-															{/if}
-														</button>
-														<button 
-															type="button" 
-															class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors duration-150 cursor-pointer"
-															onclick={() => handleDeleteSchedule(sched.id)}
-															title={m.operations_ui_delete_exam_permanently()}
-														>
-															<Trash size={12} />
-														</button>
-													</div>
-												{/if}
+												<div class="flex items-center gap-1 shrink-0 self-center">
+													<button
+														type="button"
+														class="rounded px-2 py-1 text-[10px] text-muted-foreground transition-colors hover:text-destructive"
+														onclick={() => handleDeleteSchedule(sched.id)}
+														title={m.operations_ui_delete_exam_permanently()}
+													>
+														{m.common_action_delete()}
+													</button>
+												</div>
 											</div>
 										{/each}
 									</div>
 								{/each}
 							</div>
-						</div>
+						</Card>
 					{/if}
 				</div>
 
@@ -887,80 +1354,58 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if seatingNumbers.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Hashtag size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_seating_numbers()}</p>
 							<Button variant="default" class="h-7 px-3 text-[10px] cursor-pointer" onclick={handleGenerateSeating}>
-								<Hashtag size={12} class="me-1" />
 								{m.common_exams_actions_generate_seating()}
 							</Button>
 						</div>
 					{:else}
 						<div class="flex items-center justify-between gap-3 px-1 select-none">
 							<span class="text-xs text-muted-foreground">{m.academics_exams_issued()}{seatingNumbers.length}{m.academics_exams_seating_numbers_suffix()}</span>
-							{#if selectedSeatIds.size > 0}
-								<Button 
-									variant="outline" 
-									class="h-7 px-3 text-[10px] flex items-center gap-1.5 cursor-pointer border-primary/30 text-primary"
-									onclick={() => printDialogOpen = true}
-								>
-									<Printer size={12} />
-									<span>{m.common_print_templates()} ({selectedSeatIds.size})</span>
-								</Button>
-							{/if}
 						</div>
-						<div class="card-tactile bg-card overflow-hidden">
-							<Grid>
-								<TableHeader>
-									<TableRow class="text-[10px]">
-										<TableHead class="w-10 text-center">
-											<input 
-												type="checkbox" 
-												checked={selectedSeatIds.size === seatingNumbers.length && seatingNumbers.length > 0} 
-												onchange={toggleSelectAllSeats}
-												class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-											/>
-										</TableHead>
-										<TableHead class="w-10">#</TableHead>
-										<TableHead>{m.academics_exams_seat_number()}</TableHead>
-										<TableHead>{m.common_word_student()}</TableHead>
-										<TableHead>{m.common_table_class()}</TableHead>
-										<TableHead>{m.academics_exams_level()}</TableHead>
-										<TableHead class="w-12 text-center">{m.common_action_delete()}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#each seatingNumbers as sn, i (sn.id)}
-										<TableRow class="text-xs">
-											<TableCell class="w-10 text-center" onclick={(e) => e.stopPropagation()}>
-												<input 
-													type="checkbox" 
-													checked={selectedSeatIds.has(String(sn.id))} 
-													onchange={() => toggleSeatSelection(String(sn.id))}
-													class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-												/>
-											</TableCell>
-											<TableCell class="font-mono text-muted-foreground">{i + 1}</TableCell>
-											<TableCell class="font-mono font-bold text-primary">{sn.seating_number}</TableCell>
-											<TableCell>{sn.student_name_ar || sn.enrollment_id}</TableCell>
-											<TableCell>{sn.class_id}</TableCell>
-											<TableCell>{sn.level}</TableCell>
-											<TableCell class="text-center">
-												<button
-													type="button"
-													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
-													onclick={() => handleDeleteSeating(sn.id)}
-													title={m.operations_ui_delete_seating_number()}
-												>
-													<Trash size={12} />
-												</button>
-											</TableCell>
-										</TableRow>
-									{/each}
-								</TableBody>
-							</Grid>
-						</div>
+						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+							<div class="h-96 w-full">
+								<OrbisGrid
+									columns={seatingColumns}
+									source={seatingGridSource}
+									clientQuery
+									readonly
+									rowIdKey="id"
+									rtl={getLocale() === "ar"}
+									onselection={handleSeatingSelection}
+									onaction={(event) => {
+										if (event.actionId === "delete") {
+											handleDeleteSeating(String(event.row.id));
+										}
+									}}
+									emptyTitle={m.academics_exams_no_seating_numbers()}
+								/>
+							</div>
+						</Card>
 					{/if}
 				</div>
+
+			<!-- ═══ Secret Numbers Tab ═══ -->
+			{:else if activeTab === "secrets"}
+				{#if secretNumbers.length === 0}
+					<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
+						<p class="text-xs text-muted-foreground">{m.operations_ui_secret_numbers_empty()}</p>
+					</div>
+				{:else}
+					<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+						<div class="h-96 w-full">
+							<OrbisGrid
+								columns={secretColumns}
+								source={secretGridSource}
+								clientQuery
+								readonly
+								rowIdKey="id"
+								rtl={getLocale() === "ar"}
+								emptyTitle={m.operations_ui_secret_numbers()}
+							/>
+						</div>
+					</Card>
+				{/if}
 
 			<!-- ═══ Halls Tab ═══ -->
 			{:else if activeTab === "halls"}
@@ -968,14 +1413,12 @@ async function handleAssignProctors() {
 					<div class="flex items-center justify-between text-xs text-muted-foreground select-none px-1">
 						<span>{m.academics_exams_activated()}{halls.length}{m.academics_exams_committees_out_of()}{rooms.length}{m.academics_exams_available_classrooms_suffix()}</span>
 						<Button variant="outline" class="h-6 px-2 text-[9px] cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-							<ArrowsRightLeft size={10} class="me-1" />
 							{m.operations_ui_distribute_students_automatically()}
 						</Button>
 					</div>
 
 					{#if rooms.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<Home size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_classrooms()}</p>
 						</div>
 					{:else}
@@ -983,12 +1426,12 @@ async function handleAssignProctors() {
 							{#each rooms as room (room.id)}
 								{@const activeHall = halls.find((h) => h.room_id === room.id)}
 								{@const isAct = !!activeHall}
-								<div class="card-tactile bg-card p-4 flex flex-col gap-3 transition-all duration-200 {isAct ? 'border-primary/40 shadow-sm ring-1 ring-primary/10' : 'opacity-85 hover:opacity-100'}">
+								<Card class="flex flex-col gap-3 rounded-xl border-border/60 bg-card p-4 shadow-xs transition-colors {isAct ? 'border-primary/40 ring-1 ring-primary/10' : 'hover:border-primary/30'}">
 									<div class="flex items-center justify-between">
 										<div class="flex flex-col">
-											<span class="text-xs font-bold text-foreground">{room.room_number || room.name}</span>
-											{#if room.building}
-												<span class="text-[8px] text-muted-foreground mt-0.5">{room.building}{m.academics_exams_floor_connector()}{room.floor}</span>
+											<span class="text-sm font-semibold text-foreground">{room.name_ar || room.name}</span>
+											{#if room.floor != null}
+												<span class="mt-1 text-xs text-muted-foreground">{m.academics_exams_floor_connector()}{room.floor}</span>
 											{/if}
 										</div>
 										<span class="text-[9px] font-mono px-1.5 py-0.5 rounded {isAct ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted text-muted-foreground border border-border/40'}">
@@ -1009,21 +1452,27 @@ async function handleAssignProctors() {
 													style="width: {utilPct}%"
 												></div>
 											</div>
+											<Button
+												variant="ghost"
+												class="h-8 self-end px-2 text-xs text-muted-foreground hover:text-destructive"
+												onclick={() => handleToggleHall(room)}
+											>
+												{m.operations_ui_deactivate_exam_committee()}
+											</Button>
 										</div>
 									{:else}
 										<div class="flex items-center justify-between mt-1">
-											<span class="text-[9px] text-muted-foreground">{m.academics_exams_default_capacity()}{room.capacity || 30}</span>
+											<span class="text-xs text-muted-foreground">{m.academics_exams_default_capacity()}{room.capacity || 30}</span>
 											<Button
 												variant="ghost"
-												class="h-6 px-2 text-[9px] font-semibold text-primary hover:bg-primary/5 cursor-pointer"
+												class="h-8 px-2 text-xs font-medium text-primary hover:bg-primary/5"
 												onclick={() => handleToggleHall(room)}
 											>
-												<Plus size={10} class="me-1" />
 												{m.operations_ui_activate_as_committee()}
 											</Button>
 										</div>
 									{/if}
-								</div>
+								</Card>
 							{/each}
 						</div>
 					{/if}
@@ -1034,315 +1483,63 @@ async function handleAssignProctors() {
 				<div class="flex flex-col gap-4">
 					{#if proctors.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
-							<UserBadgeCheck size={24} class="text-muted-foreground" />
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_proctors_assigned()}</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
-								<UserBadgeCheck size={12} class="me-1" />
+							<Button
+								variant="outline"
+								class="h-7 px-3 text-[10px] cursor-pointer"
+								onclick={() => isProctorAssignDialogOpen = true}
+							>
 								{m.common_exams_actions_assign_proctors()}
 							</Button>
 						</div>
 					{:else}
-						<div class="card-tactile bg-card overflow-hidden">
-							<Grid>
-								<TableHeader>
-									<TableRow class="text-[10px]">
-										<TableHead>{m.academics_exams_proctor()}</TableHead>
-										<TableHead>{m.academics_exams_committee()}</TableHead>
-										<TableHead>{m.common_user_form_role()}</TableHead>
-										<TableHead class="w-20">{m.common_word_status()}</TableHead>
-										<TableHead class="w-12 text-center">{m.common_action_delete()}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#each proctors as p (p.id)}
-										<TableRow class="text-xs">
-											<TableCell class="font-medium">{p.teacher_id}</TableCell>
-											<TableCell>{p.exam_hall_id}</TableCell>
-											<TableCell>{p.role}</TableCell>
-											<TableCell>
-												{#if p.is_confirmed === 1}
-													<CheckCircle size={14} class="text-emerald-500" />
-												{:else}
-													<span class="text-[9px] text-amber-500">{m.academics_exams_pending_confirmation()}</span>
-												{/if}
-											</TableCell>
-											<TableCell class="text-center">
-												<button
-													type="button"
-													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
-													onclick={() => handleDeleteProctor(p.id)}
-													title={m.operations_ui_cancel_proctor_assignment()}
-												>
-													<Trash size={12} />
-												</button>
-											</TableCell>
-										</TableRow>
-									{/each}
-								</TableBody>
-							</Grid>
-						</div>
+						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+							<div class="h-80 w-full">
+								<OrbisGrid
+									columns={proctorColumns}
+									source={proctorGridSource}
+									clientQuery
+									readonly
+									rowIdKey="id"
+									rtl={getLocale() === "ar"}
+									onaction={(event) => {
+										if (event.actionId === "delete") {
+											handleDeleteProctor(String(event.row.id));
+										}
+									}}
+									emptyTitle={m.academics_exams_no_proctors_assigned()}
+								/>
+							</div>
+						</Card>
 					{/if}
 				</div>
 			{/if}
 		</div>
 
-		{#if activeJob}
-			<div class="border border-border rounded-xl p-4 bg-muted/40 mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4" transition:fade>
-				<div class="flex items-center gap-3">
-					<div class="relative flex h-3 w-3">
-						{#if activeJob.status === 'running'}
-							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-						{:else if activeJob.status === 'completed'}
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-						{:else if activeJob.status === 'failed'}
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-						{:else}
-							<span class="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-						{/if}
-					</div>
-					<div>
-						<h4 class="text-xs font-bold flex items-center gap-1.5">
-							{#if activeJob.status === 'running'}
-								{m.operations_ui_auto_schedule_optimizing()}
-							{:else if activeJob.status === 'completed'}
-								{m.operations_ui_auto_schedule_success()}
-							{:else if activeJob.status === 'failed'}
-								{m.operations_ui_auto_schedule_failure()}
-							{:else}
-								{m.operations_ui_auto_schedule_cancelled()}
-							{/if}
-						</h4>
-						<p class="text-[10px] text-muted-foreground mt-0.5 font-mono">
-							{#if activeJob.status === 'running'}
-								{m.operations_ui_scheduling_elapsed_score({ elapsed: timeElapsed, score: activeJob.score || "—" })}
-							{:else if activeJob.status === 'completed'}
-								{m.operations_ui_scheduling_final_score({ score: activeJob.score || "—" })}
-							{/if}
-						</p>
-					</div>
-				</div>
-				<div class="flex items-center gap-2">
-					{#if activeJob.status === 'running'}
-						<Button size="sm" variant="destructive" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleCancelSolve}>
-							{m.operations_ui_cancel_operation()}
-						</Button>
-					{:else if activeJob.status === 'completed'}
-						<Button size="sm" variant={previewDraft ? "secondary" : "outline"} class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={() => previewDraft = !previewDraft}>
-							{previewDraft ? m.operations_ui_cancel_preview() : m.operations_ui_preview_proposed_schedule()}
-						</Button>
-						<Button size="sm" variant="default" class="h-8 text-[10px] px-3 font-bold cursor-pointer" onclick={handleApplySolve}>
-							{m.operations_ui_apply_proposed_schedule()}
-						</Button>
-					{/if}
-				</div>
-			</div>
-		{/if}
-
-		<!-- Quick Actions Bar -->
-		<div class="border-t border-border pt-4 flex flex-wrap items-center gap-2" in:fade={{ delay: 150, duration: 200 }}>
-			<span class="text-[9px] text-muted-foreground font-bold uppercase tracking-wider me-2">{m.academics_exams_quick_actions()}</span>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSeating}>
-				<Hashtag size={10} /> {m.operations_ui_seating_numbers()}
-			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={handleGenerateSecrets}>
-				<Lock size={10} /> {m.operations_ui_secret_numbers()}
-			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
-				<Bolt size={10} /> {m.operations_ui_automatic_scheduling()}
-			</Button>
-			<Button variant="outline" class="h-7 px-2.5 text-[9px] flex items-center gap-1 cursor-pointer" onclick={() => { activeConfigTab = "halls"; isConfigModalOpen = true; }}>
-				<ArrowsRightLeft size={10} /> {m.operations_ui_committee_distribution()}
-			</Button>
-		</div>
 	{/if}
 </div>
 
-{#if isConfigModalOpen}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div 
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
-		transition:fade={{ duration: 150 }}
-		onclick={(e) => { if (e.target === e.currentTarget) isConfigModalOpen = false; }}
-	>
-		<div class="bg-card border border-border shadow-xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] text-start">
-			<!-- Modal Header -->
-			<div class="border-b border-border p-4 flex items-center justify-between bg-muted/20">
-				<div>
-					<h3 class="text-sm font-bold text-foreground">{m.academics_exams_ai_wizard()}</h3>
-					<p class="text-[10px] text-muted-foreground mt-0.5">{m.academics_exams_ai_customize()}</p>
-				</div>
-				<button 
-					type="button" 
-					class="text-muted-foreground hover:text-foreground cursor-pointer text-xs p-1"
-					onclick={() => isConfigModalOpen = false}
-				>
-					✕
-				</button>
-			</div>
+<ExamSessionConfigDialog
+	bind:open={isConfigModalOpen}
+	bind:activeTab={activeConfigTab}
+	onAutoSchedule={handleAutoSchedule}
+	onAllocateHalls={handleAllocateHalls}
+/>
 
-			<!-- Dialog Navigation Tabs -->
-			<div class="flex border-b border-border bg-muted/10 p-1 gap-1">
-				<button 
-					type="button" 
-					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
-						{activeConfigTab === 'schedule' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
-					onclick={() => activeConfigTab = "schedule"}
-				>
-					🗓️ {m.operations_ui_schedule_periods()}
-				</button>
-				<button 
-					type="button" 
-					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
-						{activeConfigTab === 'halls' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
-					onclick={() => activeConfigTab = "halls"}
-				>
-					🏫 {m.operations_ui_distribute_committees_students()}
-				</button>
-				<button 
-					type="button" 
-					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
-						{activeConfigTab === 'proctors' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
-					onclick={() => activeConfigTab = "proctors"}
-				>
-					👮 {m.operations_ui_assign_proctors()}
-				</button>
-			</div>
-
-			<!-- Tab Contents -->
-			<div class="p-5 flex-1 overflow-y-auto flex flex-col gap-4 text-xs">
-				{#if activeConfigTab === "schedule"}
-					<!-- Period Solver settings -->
-					<div class="flex flex-col gap-3.5">
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_scheduling_preference()}</span>
-							<select 
-								bind:value={preferredPeriod}
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
-							>
-								<option value="both">{m.academics_exams_two_sessions()}</option>
-								<option value="morning">{m.academics_exams_morning_session()}</option>
-								<option value="afternoon">{m.academics_exams_afternoon_session()}</option>
-							</select>
-						</div>
-
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_max_exams_per_day()}</span>
-							<select 
-								bind:value={maxExamsPerDay}
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
-							>
-								<option value={1}>{m.academics_exams_one_exam_per_day()}</option>
-								<option value={2}>{m.academics_exams_two_exams_per_day()}</option>
-							</select>
-						</div>
-
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_default_duration()}</span>
-							<input 
-								type="number"
-								bind:value={defaultDurationMinutes}
-								min="30"
-								max="240"
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
-							/>
-						</div>
-					</div>
-
-					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
-						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
-							<Bolt size={12} class="me-1" /> {m.operations_ui_start_smart_scheduling()}
-						</Button>
-					</div>
-
-				{:else if activeConfigTab === "halls"}
-					<!-- Halls allocation settings -->
-					<div class="flex flex-col gap-3.5">
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_separate_major()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_allocate_different_tracks()}</p>
-							</div>
-							<input type="checkbox" bind:checked={separateDivisions} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_separate_gender()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_allocate_genders_separate()}</p>
-							</div>
-							<input type="checkbox" bind:checked={separateGenders} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_balance_student_numbers()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_balance_allocate_evenly()}</p>
-							</div>
-							<input type="checkbox" bind:checked={balanceHalls} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-					</div>
-
-					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
-						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
-							<ArrowsRightLeft size={12} class="me-1" /> {m.operations_ui_start_automatic_distribution()}
-						</Button>
-					</div>
-
-				{:else if activeConfigTab === "proctors"}
-					<!-- Proctors assignment settings -->
-					<div class="flex flex-col gap-3.5">
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_required_proctors()}</span>
-							<select 
-								bind:value={proctorsPerHall}
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
-							>
-								<option value={1}>{m.academics_exams_one_proctor()}</option>
-								<option value={2}>{m.academics_exams_two_proctors()}</option>
-								<option value={3}>{m.academics_exams_three_proctors()}</option>
-							</select>
-						</div>
-
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_prevent_proctoring_own_subject()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_ensure_no_proctoring_own_subject()}</p>
-							</div>
-							<input type="checkbox" bind:checked={preventOwnSubject} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_max_proctoring_sessions()}</span>
-							<input 
-								type="number"
-								bind:value={maxSessionsPerTeacher}
-								min="1"
-								max="20"
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
-							/>
-						</div>
-					</div>
-
-					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
-						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
-							<UserBadgeCheck size={12} class="me-1" /> {m.operations_ui_assign_proctors_automatically()}
-						</Button>
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-{/if}
+<ExamProctorAssignDialog
+	bind:open={isProctorAssignDialogOpen}
+	{orgId}
+	{schedules}
+	onSuccess={loadSession}
+/>
 
 <SubjectAddSheet
 	bind:open={isSubjectSheetOpen}
 	{orgId}
 	{sessionId}
+	periodId={session?.period_id || ""}
+	examStartDate={session?.start_date || ""}
+	examEndDate={session?.end_date || ""}
 	onSuccess={loadSession}
 />
 
@@ -1360,4 +1557,47 @@ async function handleAssignProctors() {
 	entityIds={Array.from(selectedSeatIds)}
 	entityLabels={selectedSeatingLabels}
 	contexts={selectedSeatingContexts}
+/>
+
+{#snippet seatingSelectionActions()}
+	<Button
+		type="button"
+		variant="ghost"
+		size="sm"
+		class="h-8 px-2.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+		onclick={() => (selectedSeatIds = new Set())}
+	>
+		{m.operations_ui_clear_selection()}
+	</Button>
+	<Button
+		type="button"
+		variant="outline"
+		size="sm"
+		class="h-8 px-3 text-xs font-semibold"
+		onclick={() => (printDialogOpen = true)}
+	>
+		{m.common_print_templates()}
+	</Button>
+	{#if canEditSession}
+		<Button
+			type="button"
+			variant="destructive"
+			size="sm"
+			class="h-8 px-3 text-xs font-semibold"
+			onclick={handleDeleteSelectedSeating}
+		>
+			{m.operations_ui_seating_bulk_delete_label()}
+		</Button>
+	{/if}
+{/snippet}
+
+<SettingsBottomBar
+	visible={activeTab === "seating" && selectedSeatIds.size > 0}
+	isDirty={selectedSeatIds.size > 0}
+	message={m.operations_ui_seating_selection_count({
+		selected: selectedSeatIds.size,
+		total: seatingNumbers.length,
+	})}
+	statusVariant="primary"
+	actions={seatingSelectionActions}
 />

@@ -1,5 +1,6 @@
 package ai.orbis.solver.dto
 
+import com.fasterxml.jackson.annotation.JsonAlias
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.databind.annotation.JsonNaming
 
@@ -44,8 +45,10 @@ data class RoomDto(
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class LessonAssignmentDto(
     val id: String,
-    val classSubjectId: String,
-    val classId: String,
+    @JsonAlias("class_subject_id")
+    val sectionSubjectId: String,
+    @JsonAlias("class_id")
+    val sectionId: String,
     val subjectId: String,
     val teacherId: String,
     val hourIndex: Int,
@@ -57,10 +60,12 @@ data class LessonAssignmentDto(
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy::class)
 data class PinnedLessonDto(
     val id: String,
-    val classId: String,
+    @JsonAlias("class_id")
+    val sectionId: String,
     val teacherId: String,
     val subjectId: String,
-    val classSubjectId: String,
+    @JsonAlias("class_subject_id")
+    val sectionSubjectId: String,
     val timeSlotId: String,
     val dayOfWeek: Int,
     val roomId: String? = null,

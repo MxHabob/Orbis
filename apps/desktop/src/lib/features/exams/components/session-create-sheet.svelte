@@ -86,7 +86,6 @@ async function handleSubmit() {
         session_type: payload.session_type,
         start_date: payload.start_date,
         end_date: payload.end_date,
-        period_id: payload.period_id,
       });
       toast.success(m.operations_ui_exam_session_update_success());
     } else {
@@ -138,6 +137,7 @@ async function handleSubmit() {
           id="session-period"
           bind:value={periodId}
           placeholder={m.exams_session_select_term()}
+          disabled={isEdit || isSaving}
           class="text-sm"
         />
         {/snippet}

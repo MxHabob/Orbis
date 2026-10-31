@@ -85,6 +85,9 @@ const gridSource = $derived(
       floor: r.floor !== null && r.floor !== undefined ? String(r.floor) : "—",
       capacity: r.capacity ?? "—",
       room_type: r.room_type || "—",
+      exam_committee: r.is_exam_hall
+        ? m.common_rooms_exam_committee()
+        : m.common_rooms_general_room(),
       status: r.is_active !== false ? "active" : "inactive",
       created_at_display: r.created_at
         ? formatDate(r.created_at, "datetime")
@@ -127,6 +130,17 @@ const columns: OrbisColumnDef[] = [
     width: 130,
     size: 130,
     readonly: true,
+  },
+  {
+    id: "exam_committee",
+    prop: "exam_committee",
+    header: m.common_rooms_exam_committee(),
+    name: m.common_rooms_exam_committee(),
+    width: 150,
+    size: 150,
+    readonly: true,
+    type: "badge",
+    align: "center",
   },
   {
     id: "building",

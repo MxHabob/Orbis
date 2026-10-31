@@ -112,9 +112,9 @@ export async function resolveDocumentUrl(
     const resolvedUrl = convertFileSrc(absolutePath);
     resolvedDocumentUrls.set(pathOrUrl, resolvedUrl);
     return resolvedUrl;
-  } catch (e) {
-    console.warn("Tauri path resolution failed, using fallback:", e);
-    return pathOrUrl;
+  } catch (error) {
+    console.error("Failed to resolve document path:", pathOrUrl, error);
+    throw error;
   }
 }
 
@@ -145,6 +145,65 @@ export async function resolveEntityDocumentUrl(
   return matchingDocument
     ? resolveDocumentUrl(pathOrUrl, matchingDocument.id)
     : resolveDocumentUrl(pathOrUrl);
+}
+
+export async function resolveDocumentImageDataUri(
+  source: string,
+  entityType: string,
+  entityId: string,
+): Promise<string> {
+  if (/^data:image\/(?:png|jpeg);base64,/i.test(source)) {
+    return source;
+  }
+
+  const resolvedUrl = await resolveEntityDocumentUrl(
+    source,
+    entityType,
+    entityId,
+  );
+  const response = await fetch(resolvedUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to load image (${response.status}).`);
+  }
+
+  let blob = await response.blob();
+  const mimeType = blob.type.split(";")[0]?.toLowerCase();
+  if (!mimeType?.startsWith("image/")) {
+    throw new Error(
+      `Expected an image, received ${blob.type || "unknown data"}.`,
+    );
+  }
+
+  if (mimeType !== "image/png" && mimeType !== "image/jpeg") {
+    const bitmap = await createImageBitmap(blob);
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Unable to convert image to PNG.");
+      context.drawImage(bitmap, 0, 0);
+      blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) resolve(result);
+          else reject(new Error("Unable to convert image to PNG."));
+        }, "image/png");
+      });
+    } finally {
+      bitmap.close();
+    }
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Unable to read image data."));
+    };
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Unable to read image data."));
+    reader.readAsDataURL(blob);
+  });
 }
 
 export function getDocumentSource(document: {

@@ -4,18 +4,11 @@ import { createQuery, useQueryClient } from "@tanstack/svelte-query";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
+import { Card } from "@orbis/ui/card";
+import { formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { fade } from "svelte/transition";
-import {
-  ArrowRight,
-  BookOpen,
-  Calendar,
-  Plus,
-  Search,
-  TaskList,
-  Users,
-} from "@orbis/icons";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
@@ -69,25 +62,9 @@ function getTypeLabel(type: string): string {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 select-none">
-	<!-- Header -->
-	<div class="flex items-center justify-between" in:fade={{ duration: 150 }}>
-		<div class="flex flex-col">
-			<h1 class="text-sm font-bold text-foreground">{m.common_exams_sessions_title()}</h1>
-		</div>
-		<Button
-			variant="default"
-			class="h-8 px-3 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-			onclick={() => isSheetOpen = true}
-		>
-			<Plus size={14} />
-			<span>{m.common_exams_sessions_create()}</span>
-		</Button>
-	</div>
-
-	<!-- Period and search filters -->
-	<div class="flex gap-2">
-		<div class="w-64 shrink-0">
+<div class="h-full w-full overflow-y-auto p-6 flex flex-col gap-4 select-none text-start">
+	<div class="flex flex-col gap-2 sm:flex-row sm:items-center" in:fade={{ duration: 150 }}>
+		<div class="w-full shrink-0 sm:w-64">
 			<PeriodSelect
 				value={listPeriodId || null}
 				placeholder={m.operations_ui_academic_session()}
@@ -96,13 +73,19 @@ function getTypeLabel(type: string): string {
 			/>
 		</div>
 		<div class="relative min-w-0 flex-1">
-			<Search size={14} class="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
 			<Input
 				placeholder={m.common_exams_sessions_search()}
-				class="ps-9 h-9 text-xs"
+				class="h-9 text-xs"
 				bind:value={searchQuery}
 			/>
 		</div>
+		<Button
+			variant="lime"
+			class="h-9 shrink-0 px-4 text-xs font-semibold"
+			onclick={() => isSheetOpen = true}
+		>
+			{m.common_exams_sessions_create()}
+		</Button>
 	</div>
 
 	<!-- Loading -->
@@ -120,7 +103,7 @@ function getTypeLabel(type: string): string {
 			</p>
 			<Button
 				variant="outline"
-				class="h-8 px-4 text-xs cursor-pointer"
+				class="h-9 px-4 text-xs"
 				onclick={() => sessionsQuery.refetch()}
 			>
 				{m.common_retry()}
@@ -128,48 +111,42 @@ function getTypeLabel(type: string): string {
 		</div>
 	{:else if filtered.length === 0}
 		<!-- Empty State -->
-		<div class="flex-1 flex flex-col items-center justify-center gap-4 py-16 text-center" in:fade={{ duration: 200 }}>
-			<div class="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center">
-				<TaskList size={28} class="text-muted-foreground" />
-			</div>
-			<p class="text-xs text-muted-foreground max-w-xs">
+		<Card class="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-border/60 bg-card px-6 py-16 text-center">
+			<p class="max-w-xs text-sm text-muted-foreground">
 				{m.common_exams_sessions_empty()}
 			</p>
 			<Button
 				variant="outline"
-				class="h-8 px-4 text-xs cursor-pointer"
+				class="h-9 px-4 text-xs"
 				onclick={() => isSheetOpen = true}
 			>
-				<Plus size={14} class="me-1.5" />
 				{m.common_exams_sessions_create()}
 			</Button>
-		</div>
+		</Card>
 	{:else}
 		<!-- Sessions Cards -->
-		<div class="flex flex-col gap-3" in:fade={{ delay: 50, duration: 200 }}>
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3" in:fade={{ delay: 50, duration: 200 }}>
 			{#each filtered as session (session.id)}
-				<div class="card-tactile bg-card p-5 flex flex-col gap-3 transition-all duration-200 hover:-translate-y-0.5 group">
+				<Card class="group gap-4 rounded-xl border-border/60 bg-card p-5 shadow-xs transition-colors hover:border-primary/30">
 					<!-- Top Row: Name + Status -->
 					<div class="flex items-start justify-between">
 						<div class="flex flex-col gap-1">
-							<h3 class="text-xs font-bold text-foreground group-hover:text-primary transition-colors">
+							<span class="text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
 								{session.name_ar || session.name}
-							</h3>
-							{#if session.name_ar && session.name}
-								<span class="text-[9px] text-muted-foreground">{session.name}</span>
-							{/if}
+							</span>
 						</div>
 						<ExamStatusBadge status={session.status} />
 					</div>
 
 					<!-- Info Row -->
-					<div class="flex items-center gap-4 text-[10px] text-muted-foreground">
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+						<span>
+							{formatDate(session.start_date, "date") || session.start_date}
+							–
+							{formatDate(session.end_date, "date") || session.end_date}
+						</span>
 						<div class="flex items-center gap-1">
-							<Calendar size={11} />
-							<span>{session.start_date} → {session.end_date}</span>
-						</div>
-						<div class="flex items-center gap-1">
-							<span class="px-1.5 py-0.5 rounded bg-muted/60 border border-border/40 text-[9px] font-medium">
+							<span class="rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[10px] font-medium text-foreground">
 								{getTypeLabel(session.session_type)}
 							</span>
 						</div>
@@ -177,26 +154,19 @@ function getTypeLabel(type: string): string {
 
 					<!-- Bottom Row: Counts + Action -->
 					<div class="flex items-center justify-between border-t border-border/50 pt-3">
-						<div class="flex items-center gap-3 text-[9px] text-muted-foreground">
-							<div class="flex items-center gap-1">
-								<BookOpen size={10} />
-								<span>{session.subjects_count || 0} {m.common_word_type()}</span>
-							</div>
-							<div class="flex items-center gap-1">
-								<Users size={10} />
-								<span>{session.students_count || 0}</span>
-							</div>
+						<div class="flex items-center gap-3 text-xs text-muted-foreground">
+							<span>{session.subjects_count || 0} {m.common_word_type()}</span>
+							<span>{session.students_count || 0}</span>
 						</div>
 						<Button
 							href={localizeHref(`/${orgId}/academics/exams/sessions/${session.id}`)}
 							variant="ghost"
-							class="text-[10px] font-bold text-primary h-7 px-2 flex items-center gap-1 cursor-pointer"
+							class="h-8 px-2 text-xs font-semibold text-primary"
 						>
-							<span>{m.common_exams_open_section()}</span>
-							<ArrowRight size={10} class="transition-transform group-hover:translate-x-1" />
+							{m.common_exams_open_section()}
 						</Button>
 					</div>
-				</div>
+				</Card>
 			{/each}
 		</div>
 	{/if}

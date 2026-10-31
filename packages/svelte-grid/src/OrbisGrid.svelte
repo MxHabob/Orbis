@@ -337,6 +337,11 @@ function rowKey(row: GridRow, index: number): string {
   return id == null ? `__i${index}` : String(id);
 }
 
+function isGridRowSelected(row: GridRow, index: number): boolean {
+  if (Object.hasOwn(row, "__selected")) return row.__selected === true;
+  return isRowSelected(selection, rowKey(row, index), displayRows.length);
+}
+
 function offsetOf(index: number): number {
   let x = 0;
   for (let i = 0; i < index; i++) x += widthOf(visibleCols[i]!);
@@ -1322,7 +1327,7 @@ export function scrollToColumnProp(prop: string) {
               {#if Header}
                 <Header row={{}} column={{ ...col, id }} />
               {:else if isSelectCol}
-                {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isRowSelected(selection, rowKey(row, idx), displayRows.length))}
+                {@const isAllSelected = displayRows.length > 0 && displayRows.every((row, idx) => isGridRowSelected(row, idx))}
                 <button
                   type="button"
                   class="orbis-checkbox-btn"
@@ -1330,13 +1335,27 @@ export function scrollToColumnProp(prop: string) {
                   aria-label="Select all"
                   onclick={(e) => {
                     e.stopPropagation();
-                    if (isAllSelected) {
-                      selection = emptySelection();
-                    } else {
-                      selection = selectScope(displayRows.map((row, idx) => rowKey(row, idx)), "filtered", [], []);
+                    const selected = !isAllSelected;
+                    const selectedIds = displayRows.map((row, idx) =>
+                      rowKey(row, idx),
+                    );
+                    if (!displayRows.some((row) => Object.hasOwn(row, "__selected"))) {
+                      if (selected) {
+                        selection = selectScope(selectedIds, "filtered", [], []);
+                      } else {
+                        selection = emptySelection();
+                      }
+                      onselection?.(selection);
                     }
-                    onselection?.(selection);
-                    onaction?.({ actionId: "select-all", row: {}, rowIndex: -1, prop: id, originalEvent: e });
+                    onaction?.({
+                      actionId: "select-all",
+                      row: {},
+                      rowIndex: -1,
+                      prop: id,
+                      originalEvent: e,
+                      selected,
+                      selectedIds,
+                    });
                   }}
                 >
                   {#if isAllSelected}
@@ -1365,10 +1384,10 @@ export function scrollToColumnProp(prop: string) {
             {#if row}
               <div
                 class="orbis-row"
-                class:selected={isRowSelected(selection, rowKey(row, r), displayRows.length)}
+                class:selected={isGridRowSelected(row, r)}
                 role="row"
                 aria-rowindex={r + 1}
-                aria-selected={isRowSelected(selection, rowKey(row, r), displayRows.length)}
+                aria-selected={isGridRowSelected(row, r)}
                 data-row={rowKey(row, r)}
                 style:padding-inline-start="{colWindow.offset}px"
               >
@@ -1449,7 +1468,7 @@ export function scrollToColumnProp(prop: string) {
                     {:else if isIndexColumn(col)}
                       <span class="orbis-index-text">{getCellValue(row, col) ?? (r + 1)}</span>
                     {:else if isCheckboxColumn(col)}
-                      {@const isChecked = id === "__selected" ? isRowSelected(selection, rowKey(row, r), displayRows.length) || row.__selected === true : getCellValue(row, col) === true || getCellValue(row, col) === 1 || getCellValue(row, col) === "true"}
+                      {@const isChecked = id === "__selected" ? isGridRowSelected(row, r) : getCellValue(row, col) === true || getCellValue(row, col) === 1 || getCellValue(row, col) === "true"}
                       <button
                         type="button"
                         class="orbis-checkbox-btn"
@@ -1457,9 +1476,19 @@ export function scrollToColumnProp(prop: string) {
                         onclick={(e) => {
                           e.stopPropagation();
                           if (id === "__selected") {
-                            selection = toggleId(selection, rowKey(row, r));
-                            onselection?.(selection);
-                            onaction?.({ actionId: "toggle-select", row, rowIndex: r, prop: id, originalEvent: e });
+                            const selected = !isChecked;
+                            if (!Object.hasOwn(row, "__selected")) {
+                              selection = toggleId(selection, rowKey(row, r));
+                              onselection?.(selection);
+                            }
+                            onaction?.({
+                              actionId: "toggle-select",
+                              row,
+                              rowIndex: r,
+                              prop: id,
+                              originalEvent: e,
+                              selected,
+                            });
                           } else {
                             commitOverlay(r, col, !isChecked);
                           }

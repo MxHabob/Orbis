@@ -2,7 +2,7 @@
 import * as m from "$lib/paraglide/messages";
 import { untrack } from "svelte";
 import { api, extractErrorMessage, type ScheduleLessonRequest } from "$lib/api";
-import { formatDate, l } from "$lib/core/i18n";
+import { getWeekdayOptions, l } from "$lib/core/i18n";
 import { createSectionSubjectsQuery } from "$lib/features/academics/queries";
 import { lessonFormInputSchema } from "@orbis/schemas";
 import {
@@ -72,7 +72,7 @@ let selectedSubjectId = $state(untrack(() => String(lesson?.subject_id || "")));
 let selectedTeacherId = $state(untrack(() => String(lesson?.teacher_id || "")));
 let selectedRoomId = $state(untrack(() => String(lesson?.room_id || "")));
 let selectedDay = $state(
-  untrack(() => Number(lesson?.day_of_week || dayOfWeek || 1)),
+  untrack(() => Number(lesson?.day_of_week || dayOfWeek || 0)),
 );
 let selectedSlotId = $state(
   untrack(() => String(lesson?.time_slot_id || timeSlotId || "")),
@@ -103,52 +103,78 @@ const SectionSubjectsQuery = createSectionSubjectsQuery(
 const SectionSubjects = $derived(SectionSubjectsQuery.data ?? []);
 const availableSubjects = $derived.by(() => {
   const linkedIds = new Set(
-    SectionSubjects.map((item: any) => String(item.subject_id)),
+    SectionSubjects.map((item) => String(item.subject_id)),
   );
   return subjects.filter((subject: any) => linkedIds.has(String(subject.id)));
 });
 const selectedSectionSubject = $derived(
-  SectionSubjects.find(
-    (item: any) => String(item.subject_id) === selectedSubjectId,
-  ),
+  SectionSubjects.find((item) => String(item.subject_id) === selectedSubjectId),
 );
 const availableTeachers = $derived.by(() => {
   const linkedIds = SectionSubjects.filter(
-    (item: any) =>
+    (item) =>
       !selectedSubjectId || String(item.subject_id) === selectedSubjectId,
   )
-    .map((item: any) =>
-      String(
-        item.instructor_id || item.primary_teacher_id || item.teacher_id || "",
-      ),
-    )
-    .filter(Boolean);
+    .map((item) => item.instructor_id)
+    .filter((id): id is string => Boolean(id));
   return teachers.filter((teacher: any) =>
     linkedIds.includes(String(teacher.id)),
   );
 });
+const weekdayOptions = getWeekdayOptions();
+const weekdayOrder = new Map(
+  weekdayOptions.map((weekday, index) => [weekday.value, index]),
+);
 const weekdays = $derived(
-  Array.from({ length: 7 }, (_, index) => {
-    const value = index + 1;
-    return {
+  [
+    ...new Set(
+      timeSlots
+        .filter((slot) => !slot.is_break)
+        .map((slot) => Number(slot.day_of_week)),
+    ),
+  ]
+    .filter((day) => Number.isInteger(day) && day >= 1 && day <= 7)
+    .sort(
+      (left, right) =>
+        (weekdayOrder.get(left) ?? 0) - (weekdayOrder.get(right) ?? 0),
+    )
+    .map((value) => ({
       value,
-      label: formatDate(new Date(Date.UTC(2023, 0, value)), "date", {
-        weekday: "long",
-        timeZone: "UTC",
-      }),
-    };
-  }),
+      label:
+        weekdayOptions.find((weekday) => weekday.value === value)?.label ?? "",
+    })),
+);
+const effectiveSelectedDay = $derived(
+  weekdays.some((weekday) => weekday.value === selectedDay)
+    ? selectedDay
+    : (weekdays[0]?.value ?? 0),
+);
+const slotsForSelectedDay = $derived(
+  timeSlots.filter(
+    (slot) => !slot.is_break && slot.day_of_week === effectiveSelectedDay,
+  ),
+);
+const effectiveSelectedSlotId = $derived(
+  slotsForSelectedDay.some((slot) => String(slot.id) === selectedSlotId)
+    ? selectedSlotId
+    : String(slotsForSelectedDay[0]?.id ?? ""),
 );
 
 function handleSubjectChange(value: string | undefined) {
   selectedSubjectId = value ?? "";
   const cs = SectionSubjects.find(
-    (item: any) => String(item.subject_id) === selectedSubjectId,
+    (item) => String(item.subject_id) === selectedSubjectId,
   );
-  const teacherId =
-    cs?.instructor_id || cs?.primary_teacher_id || cs?.teacher_id;
-  if (teacherId) {
-    selectedTeacherId = String(teacherId);
+  selectedTeacherId = cs?.instructor_id ?? "";
+}
+
+function handleDayChange(value: string | undefined) {
+  selectedDay = Number(value) || 0;
+  const slots = timeSlots.filter(
+    (slot) => !slot.is_break && slot.day_of_week === selectedDay,
+  );
+  if (!slots.some((slot) => String(slot.id) === selectedSlotId)) {
+    selectedSlotId = String(slots[0]?.id ?? "");
   }
 }
 
@@ -159,8 +185,8 @@ async function handleSubmit(event: SubmitEvent) {
     class_id: selectedClassId,
     subject_id: selectedSubjectId,
     teacher_id: selectedTeacherId,
-    time_slot_id: selectedSlotId,
-    day_of_week: selectedDay,
+    time_slot_id: effectiveSelectedSlotId,
+    day_of_week: effectiveSelectedDay,
   };
   if (!form.validate()) {
     toast.error(m.common_lesson_required_fields());
@@ -177,7 +203,6 @@ async function handleSubmit(event: SubmitEvent) {
 
   const submitted = await form.submit(async (values) => {
     if (isEditing && lesson?.id) {
-      await api.deleteScheduledLesson(lesson.id);
     }
     const request: ScheduleLessonRequest = {
       section_subject_id: selectedSectionSubject.id,
@@ -185,7 +210,11 @@ async function handleSubmit(event: SubmitEvent) {
       room_id: selectedRoomId || undefined,
       teacher_id: values.teacher_id || undefined,
     };
-    await api.scheduleLesson(request);
+    if (isEditing && lesson?.id) {
+      await api.updateScheduledLesson(lesson.id, request);
+    } else {
+      await api.scheduleLesson(request);
+    }
     toast.success(
       isEditing
         ? m.common_lesson_edit_success()
@@ -253,8 +282,8 @@ async function handleSubmit(event: SubmitEvent) {
             {/snippet}
           </FormField>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="flex flex-col gap-2 text-start"><label for="lesson-day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()} *</label><Select type="single" value={String(selectedDay)} onValueChange={(value: string | undefined) => (selectedDay = Number(value) || 1)}><SelectTrigger id="lesson-day" class="h-9 w-full text-sm"><span class="truncate">{weekdays.find((item) => item.value === selectedDay)?.label}</span></SelectTrigger><SelectContent>{#each weekdays as item}<SelectItem value={String(item.value)}>{item.label}</SelectItem>{/each}</SelectContent></Select></div>
-            <div class="flex flex-col gap-2 text-start"><label for="lesson-slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()} *</label><Select type="single" value={selectedSlotId} onValueChange={(value: string | undefined) => (selectedSlotId = value ?? "")}><SelectTrigger id="lesson-slot" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><ClockRotateRight size={13} class="text-muted-foreground" /><span>{timeSlots.find((item) => String(item.id) === selectedSlotId)?.name_ar || m.common_lesson_select_slot()}</span></div></SelectTrigger><SelectContent>{#each timeSlots.filter((item) => !item.is_break) as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)} ({item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)})</SelectItem>{/each}</SelectContent></Select></div>
+            <div class="flex flex-col gap-2 text-start"><label for="lesson-day" class="text-sm font-medium text-foreground">{m.common_lesson_label_day()} *</label><Select type="single" value={String(effectiveSelectedDay)} onValueChange={handleDayChange} disabled={weekdays.length === 0}><SelectTrigger id="lesson-day" class="h-9 w-full text-sm"><span class="truncate">{weekdays.find((item) => item.value === effectiveSelectedDay)?.label ?? m.common_lesson_label_day()}</span></SelectTrigger><SelectContent>{#each weekdays as item (item.value)}<SelectItem value={String(item.value)}>{item.label}</SelectItem>{/each}</SelectContent></Select></div>
+            <div class="flex flex-col gap-2 text-start"><label for="lesson-slot" class="text-sm font-medium text-foreground">{m.common_lesson_label_period()} *</label><Select type="single" value={effectiveSelectedSlotId} onValueChange={(value: string | undefined) => (selectedSlotId = value ?? "")} disabled={slotsForSelectedDay.length === 0}><SelectTrigger id="lesson-slot" class="h-9 w-full text-sm"><div class="flex items-center gap-1.5 truncate"><ClockRotateRight size={13} class="text-muted-foreground" /><span>{slotsForSelectedDay.find((item) => String(item.id) === effectiveSelectedSlotId)?.name_ar || m.common_lesson_select_slot()}</span></div></SelectTrigger><SelectContent>{#each slotsForSelectedDay as item (item.id)}<SelectItem value={String(item.id)}>{l(item.name_ar, item.name)} ({item.start_time?.slice(0, 5)} - {item.end_time?.slice(0, 5)})</SelectItem>{/each}</SelectContent></Select></div>
           </div>
         </AccordionContent>
       </AccordionItem>
@@ -271,6 +300,6 @@ async function handleSubmit(event: SubmitEvent) {
 
   <div class="flex shrink-0 justify-end gap-2 border-t border-border/40 bg-background/50 px-6 py-3">
     <Button type="button" variant="ghost" onclick={onCancel} disabled={isSubmitting}>{m.common_action_cancel()}</Button>
-    <Button type="submit" variant="lime" class="font-semibold" disabled={isSubmitting || isCheckingConflict || Boolean(conflictMessage)}>{isSubmitting ? m.common_state_saving() : m.common_lesson_save()}</Button>
+    <Button type="submit" variant="lime" class="font-semibold" disabled={isSubmitting || isCheckingConflict || Boolean(conflictMessage) || !effectiveSelectedDay || !effectiveSelectedSlotId}>{isSubmitting ? m.common_state_saving() : m.common_lesson_save()}</Button>
   </div>
 </form>

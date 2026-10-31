@@ -324,3 +324,21 @@ impl FontCache {
         self.fonts.is_empty()
     }
 }
+
+/// Create a shaping system containing only the font that will be embedded in the PDF.
+/// The returned family is read from the font itself so shaping cannot select a
+/// different system-installed font with the same requested template family.
+pub fn create_font_system_for_font(cached_font: &CachedFont) -> (cosmic_text::FontSystem, String) {
+    let mut font_db = cosmic_text::fontdb::Database::new();
+    font_db.load_font_data(cached_font.data.as_ref().clone());
+    let font_system = cosmic_text::FontSystem::new_with_locale_and_db("en-US".to_string(), font_db);
+    let family = font_system
+        .db()
+        .faces()
+        .next()
+        .and_then(|face| face.families.first())
+        .map(|(family, _)| family.clone())
+        .unwrap_or_else(|| cached_font.family.clone());
+
+    (font_system, family)
+}

@@ -4,6 +4,7 @@ import ai.orbis.solver.dto.SubmitResponseDto
 import ai.orbis.solver.dto.TimetableProblemDto
 import ai.orbis.solver.dto.ExamProblemDto
 import ai.orbis.solver.service.SolveJobManager
+import ai.orbis.solver.mapper.ProblemMapper
 import jakarta.inject.Inject
 import jakarta.ws.rs.*
 import jakarta.ws.rs.core.MediaType
@@ -20,6 +21,11 @@ class SolveResource {
     @POST
     @Path("/solve")
     fun submit(problem: TimetableProblemDto): Response {
+        try {
+            ProblemMapper.validate(problem)
+        } catch (error: IllegalArgumentException) {
+            throw BadRequestException(error.message ?: "Invalid timetable problem")
+        }
         val accepted = jobManager.submit(problem)
         return if (accepted) {
             Response.accepted(SubmitResponseDto(problem.jobId, true)).build()

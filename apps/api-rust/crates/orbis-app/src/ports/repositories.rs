@@ -588,6 +588,11 @@ pub trait ScheduledLessonRepository: Send + Sync {
         section_subject_id: Uuid,
     ) -> Result<Vec<ScheduledLesson>, DomainError>;
     async fn find_by_period(&self, period_id: Uuid) -> Result<Vec<ScheduledLesson>, DomainError>;
+    async fn has_conflicts(
+        &self,
+        lessons: &[ScheduledLesson],
+        exclude_ids: &[Uuid],
+    ) -> Result<bool, DomainError>;
     async fn save(&self, lesson: &ScheduledLesson) -> Result<(), DomainError>;
     async fn save_bulk(&self, lessons: &[ScheduledLesson]) -> Result<(), DomainError>;
     async fn delete(&self, id: Uuid) -> Result<(), DomainError>;

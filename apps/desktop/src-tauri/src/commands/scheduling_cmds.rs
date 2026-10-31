@@ -18,6 +18,7 @@ pub struct RoomDto {
     pub name: String,
     pub name_ar: Option<String>,
     pub room_type: String,
+    pub is_exam_hall: bool,
     pub capacity: i32,
     pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
@@ -32,6 +33,8 @@ pub struct CreateRoomInput {
     pub capacity: i32,
     #[serde(default = "default_room_type")]
     pub room_type: String,
+    #[serde(default)]
+    pub is_exam_hall: bool,
     pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
 }
@@ -42,6 +45,7 @@ pub struct UpdateRoomInput {
     pub name_ar: Option<String>,
     pub capacity: Option<i32>,
     pub room_type: Option<String>,
+    pub is_exam_hall: Option<bool>,
     pub floor: Option<i32>,
     #[serde(default, deserialize_with = "deserialize_nullable_field")]
     pub org_unit_id: Option<Option<String>>,
@@ -161,6 +165,7 @@ fn room_dto(r: orbis_domain::entities::room::Room) -> RoomDto {
         name: r.name,
         name_ar: r.name_ar,
         room_type: r.room_type,
+        is_exam_hall: r.is_exam_hall,
         capacity: r.capacity,
         floor: r.floor,
         org_unit_id: r.org_unit_id.map(|u| u.to_string()),
@@ -220,6 +225,7 @@ pub async fn scheduling_create_room(
             request.room_type,
             request.floor,
             org_unit_id,
+            request.is_exam_hall,
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -249,6 +255,7 @@ pub async fn scheduling_update_room(
             request.name_ar,
             request.capacity,
             request.room_type,
+            request.is_exam_hall,
             request.floor,
             org_unit_id,
         )
@@ -483,6 +490,42 @@ pub async fn scheduling_schedule_lesson(
         .map_err(|e| e.to_string())?;
 
     Ok(ok(lesson_dto(l)))
+}
+
+#[tauri::command]
+pub async fn scheduling_update_scheduled_lesson(
+    id: String,
+    request: ScheduleLessonInput,
+    state: State<'_, AppState>,
+) -> Result<ApiResponse<ScheduledLessonDto>, String> {
+    let ctx = make_ctx(&state);
+    let id = Uuid::parse_str(&id).map_err(|_| "Invalid scheduled lesson ID")?;
+    let section_subject_id =
+        Uuid::parse_str(&request.section_subject_id).map_err(|_| "Invalid SectionSubjectId")?;
+    let time_slot_id = Uuid::parse_str(&request.time_slot_id).map_err(|_| "Invalid timeSlotId")?;
+    let room_id = request
+        .room_id
+        .map(|room_id| Uuid::parse_str(&room_id).map_err(|_| "Invalid room ID"))
+        .transpose()?;
+    let teacher_id = request
+        .teacher_id
+        .map(|teacher_id| Uuid::parse_str(&teacher_id).map_err(|_| "Invalid teacher ID"))
+        .transpose()?;
+
+    let lesson = state
+        .scheduling_service
+        .update_scheduled_lesson(
+            &ctx,
+            id,
+            section_subject_id,
+            time_slot_id,
+            room_id,
+            teacher_id,
+        )
+        .await
+        .map_err(|error| error.to_string())?;
+
+    Ok(ok(lesson_dto(lesson)))
 }
 
 #[tauri::command]

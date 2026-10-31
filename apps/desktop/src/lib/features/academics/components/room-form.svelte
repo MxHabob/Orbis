@@ -9,6 +9,8 @@ import { FormController } from "$lib/shared/forms/form-controller.svelte";
 import { FormField } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
+import { Checkbox } from "@orbis/ui/checkbox";
+import { Label } from "@orbis/ui/label";
 import { SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import {
   Select,
@@ -33,6 +35,7 @@ let {
     name_ar?: string | null;
     capacity?: number | null;
     room_type?: string | null;
+    is_exam_hall?: boolean;
     floor?: number | null;
     org_unit_id?: string | null;
   } | null;
@@ -50,6 +53,7 @@ const form = untrack(
         name_ar: room?.name_ar || "",
         capacity: room?.capacity ?? null,
         room_type: room?.room_type || "classroom",
+        is_exam_hall: room?.is_exam_hall ?? false,
         floor: room?.floor ?? null,
         org_unit_id: room?.org_unit_id || "",
       },
@@ -102,6 +106,7 @@ async function handleSubmit(e: SubmitEvent) {
         name_ar: payload.name_ar || undefined,
         capacity: Number(payload.capacity) || 30,
         room_type: payload.room_type || "classroom",
+        is_exam_hall: payload.is_exam_hall,
         org_unit_id: payload.org_unit_id || null,
         floor:
           payload.floor != null && payload.floor !== ""
@@ -115,6 +120,7 @@ async function handleSubmit(e: SubmitEvent) {
         name_ar: payload.name_ar || undefined,
         capacity: Number(payload.capacity) || 30,
         room_type: payload.room_type || "classroom",
+        is_exam_hall: payload.is_exam_hall,
         org_unit_id: payload.org_unit_id || undefined,
         floor:
           payload.floor != null && payload.floor !== ""
@@ -288,6 +294,22 @@ async function handleSubmit(e: SubmitEvent) {
         {m.common_rooms_location_hint()}
       {/if}
     </p>
+
+    <div class="space-y-1">
+      <div class="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-2.5">
+        <Checkbox
+          id="room_exam_hall"
+          bind:checked={form.values.is_exam_hall}
+          disabled={form.isSubmitting}
+        />
+        <Label for="room_exam_hall" class="cursor-pointer text-sm font-medium">
+          {m.common_rooms_exam_committee()}
+        </Label>
+      </div>
+      <p class="ps-6 text-xs text-muted-foreground">
+        {m.common_rooms_exam_committee_help()}
+      </p>
+    </div>
   </div>
 
   <!-- Actions -->

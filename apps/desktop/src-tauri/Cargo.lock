@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Orbis-Svelte"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "bcrypt",
  "chrono",
@@ -1475,6 +1475,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+ "unicode-bidi",
  "uuid",
 ]
 
