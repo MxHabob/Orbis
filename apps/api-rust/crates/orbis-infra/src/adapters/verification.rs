@@ -7,9 +7,9 @@ use std::time::Duration;
 use tokio::net::TcpStream;
 
 use super::{
-    authen::AuthenAdapter, hikvision::HikvisionAdapter, mulverse_client::MulverseClient,
-    notification::NotificationAdapter, resolver::IntegrationResolver,
-    solver_adapter::RemoteTimefoldSolver, storage::StorageResolver,
+    authen::AuthenAdapter, camera::verify_connection as verify_camera_connection,
+    mulverse_client::MulverseClient, notification::NotificationAdapter,
+    resolver::IntegrationResolver, solver_adapter::RemoteTimefoldSolver, storage::StorageResolver,
 };
 
 const CONNECTION_CHECK_TIMEOUT: Duration = Duration::from_secs(10);
@@ -328,50 +328,9 @@ fn required_setting<'a>(
         })
 }
 
+#[cfg(test)]
 fn hikvision_camera_url(settings: &Value) -> Result<String, DomainError> {
-    let address = required_setting(settings, "ip_address", "Hikvision")?;
-    let host = match address.parse::<IpAddr>() {
-        Ok(IpAddr::V4(address)) => address.to_string(),
-        Ok(IpAddr::V6(address)) => format!("[{address}]"),
-        Err(_) => match url::Host::parse(address) {
-            Ok(url::Host::Domain(hostname)) => hostname,
-            _ => {
-                return Err(DomainError::Validation(
-                    "Hikvision camera IP address or hostname is invalid".into(),
-                ));
-            }
-        },
-    };
-    let port = settings
-        .get("port")
-        .and_then(|value| {
-            value
-                .as_u64()
-                .or_else(|| value.as_str().and_then(|port| port.parse().ok()))
-        })
-        .filter(|port| (1..=u16::MAX as u64).contains(port))
-        .ok_or_else(|| {
-            DomainError::Validation("Hikvision camera port must be between 1 and 65535".into())
-        })?;
-    Ok(format!("http://{host}:{port}"))
-}
-
-async fn verify_hikvision_connection(
-    settings: &Value,
-    secrets: &HashMap<String, String>,
-) -> Result<(), DomainError> {
-    let username = required_setting(settings, "username", "Hikvision")?;
-    let password = secrets
-        .get("password")
-        .map(String::as_str)
-        .filter(|password| !password.is_empty())
-        .ok_or_else(|| {
-            DomainError::Validation(
-                "The Hikvision integration is missing the required 'password' credential".into(),
-            )
-        })?;
-
-    HikvisionAdapter::check_connection(&hikvision_camera_url(settings)?, username, password).await
+    super::surveillance::camera_http_url(settings, "Hikvision", 80)
 }
 
 pub async fn verify_integration_connection(
@@ -411,12 +370,8 @@ pub async fn verify_integration_connection(
         AuthenAdapter::new(api_url.to_string(), api_key.to_string())
             .check_connection()
             .await
-    } else if category.eq_ignore_ascii_case("surveillance")
-        && (provider_name.eq_ignore_ascii_case("hikvision_camera")
-            || provider_name.eq_ignore_ascii_case("hikvision-camera")
-            || provider_name.eq_ignore_ascii_case("hikvision"))
-    {
-        verify_hikvision_connection(settings, secrets).await
+    } else if category.eq_ignore_ascii_case("surveillance") {
+        verify_camera_connection(provider_name, settings, secrets).await
     } else if category.eq_ignore_ascii_case("ai-provider")
         && provider_name.eq_ignore_ascii_case("orbis_ai")
     {

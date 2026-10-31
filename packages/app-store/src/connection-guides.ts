@@ -9,6 +9,7 @@ const websites: Record<string, string> = {
   "barcode-scanner": "https://www.zebra.com/us/en/products/scanners.html",
   "cloud-storage":
     "https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html",
+  "dahua-camera": "https://www.dahuasecurity.com/",
   deepseek: "https://platform.deepseek.com/",
   fingerprint: "https://www.zkteco.com/en/",
   "gemini-ai": "https://aistudio.google.com/",
@@ -28,9 +29,11 @@ const websites: Record<string, string> = {
   openrouter: "https://openrouter.ai/",
   "orbis-ai": "https://www.mulverse.com/",
   orbis_mobile: "https://www.mulverse.com/",
+  "onvif-camera": "https://www.onvif.org/",
   printer: "https://www.pwg.org/ipp/everywhere.html",
   "push-notifications": "https://firebase.google.com/docs/cloud-messaging",
   rfid: "https://www.gs1.org/standards/epc-rfid",
+  "rtsp-camera": "https://mediamtx.org/",
   sadad: "https://www.sadad.com/",
   "sms-provider": "https://www.twilio.com/docs/messaging",
   "smtp-email": "https://docs.sendgrid.com/ui/account-and-settings/api-keys",
@@ -53,8 +56,8 @@ const connectionSummaries: Record<
     ar: "للربط، أنشئ مفتاح API لدى المزود، ثم أدخله واختر النموذج أدناه. يرسل أوربيس طلب اختبار قصيراً قد تترتب عليه رسوم استخدام من المزود.",
   },
   surveillance: {
-    en: "To connect, enable the camera API, then enter its network address and credentials below.",
-    ar: "للربط، فعّل API الكاميرا، ثم أدخل عنوانها وبيانات الدخول أدناه.",
+    en: "To connect, enable the camera API and configure its RTSP source in your MediaMTX relay. Enter the camera address, credentials, and the HTTPS WHEP endpoint for that relay path below.",
+    ar: "للربط، فعّل واجهة الكاميرا واضبط مصدر RTSP في وسيط MediaMTX. أدخل عنوان الكاميرا وبيانات الدخول وعنوان WHEP الآمن لمسار الوسيط أدناه.",
   },
   communication: {
     en: "To connect, activate a business account, verify the sender, then enter the requested credentials below.",
@@ -111,6 +114,22 @@ const appSpecificSummaries: Record<string, { en: string; ar: string }> = {
     en: "Orbis validates your Mulverse API key using its connection endpoint without sending a model inference request.",
     ar: "يتحقق أوربيس من مفتاح Mulverse عبر نقطة فحص الاتصال دون إرسال طلب لتشغيل النموذج.",
   },
+  "hikvision-camera": {
+    en: "Orbis verifies the Hikvision ISAPI endpoint. Configure MediaMTX separately with this camera's RTSP source and provide the matching HTTPS WHEP endpoint.",
+    ar: "يتحقق Orbis من واجهة Hikvision ISAPI. اضبط مصدر RTSP لهذه الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+  },
+  "dahua-camera": {
+    en: "Orbis verifies the Dahua CGI API. Configure MediaMTX separately with this camera's RTSP source and provide the matching HTTPS WHEP endpoint.",
+    ar: "يتحقق Orbis من واجهة Dahua CGI. اضبط مصدر RTSP لهذه الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+  },
+  "onvif-camera": {
+    en: "Orbis verifies the ONVIF Device service. Configure MediaMTX separately with this camera's RTSP source and provide the matching HTTPS WHEP endpoint.",
+    ar: "يتحقق Orbis من خدمة ONVIF Device. اضبط مصدر RTSP لهذه الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+  },
+  "rtsp-camera": {
+    en: "Orbis checks the RTSP endpoint with an OPTIONS request and Digest authentication. Configure MediaMTX separately with the camera source and provide the matching HTTPS WHEP endpoint.",
+    ar: "يفحص Orbis عنوان RTSP بطلب OPTIONS ومصادقة Digest. اضبط مصدر الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+  },
   stripe: {
     en: "Orbis validates the Stripe secret key with a read-only account request; it does not create or modify payments.",
     ar: "يتحقق أوربيس من المفتاح السري عبر طلب قراءة لحساب Stripe، دون إنشاء دفعات أو تعديلها.",
@@ -165,6 +184,9 @@ const appsWithLiveVerifier = new Set([
   "gemini-ai",
   "groq",
   "hikvision-camera",
+  "dahua-camera",
+  "onvif-camera",
+  "rtsp-camera",
   "fingerprint",
   "google-workspace",
   "mistral",

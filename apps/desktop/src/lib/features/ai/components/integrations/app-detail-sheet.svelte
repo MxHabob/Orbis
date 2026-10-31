@@ -86,6 +86,7 @@ const activeFeatures = $derived(
     ? app.features_ar
     : app.features,
 );
+const appName = $derived(l(app.name_ar, app.name) ?? app.name);
 
 async function handleConnect(values: Record<string, unknown>) {
   isConnecting = true;
@@ -216,7 +217,7 @@ async function handleDisconnect() {
         <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
             <SheetTitle class="truncate text-lg leading-normal">
-              {l(app.name_ar, app.name)}
+              {appName}
             </SheetTitle>
             <p class="mt-2 text-xs text-muted-foreground">
               {l(getCategoryNameAr(app.category), getCategoryName(app.category))}
@@ -260,7 +261,7 @@ async function handleDisconnect() {
               }}
             >
               {app.active
-                ? m.ui_integration_connect({ name: l(app.name_ar, app.name) })
+                ? m.ui_integration_connect({ name: appName })
                 : m.ai_center_integrations_status_coming_soon()}
             </Button>
           {/if}

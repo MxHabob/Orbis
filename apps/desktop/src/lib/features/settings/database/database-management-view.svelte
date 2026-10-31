@@ -39,7 +39,10 @@ import { Switch } from "@orbis/ui/switch";
 import { onMount } from "svelte";
 import {
   getDesktopCommandPerformance,
+  isDesktopCommandPerformanceActive,
   resetDesktopCommandPerformance,
+  startDesktopCommandPerformance,
+  stopDesktopCommandPerformance,
   type DesktopCommandPerformance,
 } from "$lib/api/desktop-command-performance";
 import CreateDatabaseDialog from "./create-database-dialog.svelte";
@@ -58,6 +61,7 @@ let activeSection = $state<
   | "performance"
 >("overview");
 let commandPerformance = $state<DesktopCommandPerformance[]>([]);
+let isRecordingPerformance = $state(isDesktopCommandPerformanceActive());
 
 // Connection form state
 let connMode = $state<ConnectionMode>("local");
@@ -90,6 +94,8 @@ onMount(async () => {
   await controller.init();
   syncFormValues();
 });
+
+onMount(() => () => stopDesktopCommandPerformance());
 
 function syncFormValues() {
   if (controller.config) {
@@ -127,12 +133,26 @@ function formatDuration(durationMs: number): string {
 }
 
 function clearCommandPerformance() {
+  stopDesktopCommandPerformance();
+  isRecordingPerformance = false;
   resetDesktopCommandPerformance();
   commandPerformance = [];
 }
 
 function refreshCommandPerformance() {
   commandPerformance = getDesktopCommandPerformance();
+}
+
+function startPerformanceRecording() {
+  startDesktopCommandPerformance();
+  isRecordingPerformance = true;
+  commandPerformance = [];
+}
+
+function stopPerformanceRecording() {
+  stopDesktopCommandPerformance();
+  isRecordingPerformance = false;
+  refreshCommandPerformance();
 }
 
 function selectSection(
@@ -144,8 +164,19 @@ function selectSection(
     | "maintenance"
     | "performance",
 ) {
+  if (activeSection === "performance" && section !== "performance") {
+    stopPerformanceRecording();
+  }
   activeSection = section;
   if (section === "performance") refreshCommandPerformance();
+}
+
+function commandBarWidth(durationMs: number): string {
+  const maximum = Math.max(
+    ...commandPerformance.map((metric) => metric.p95Ms),
+    1,
+  );
+  return `${Math.max(4, Math.min(100, (durationMs / maximum) * 100))}%`;
 }
 
 async function handleTestRemote() {

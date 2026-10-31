@@ -4,9 +4,7 @@ use orbis_app::context::RequestContext;
 use orbis_app::ports::gateways::SurveillancePort;
 use orbis_domain::errors::DomainError;
 use reqwest::Client;
-use reqwest::header::WWW_AUTHENTICATE;
 use std::collections::HashMap;
-use url::Url;
 
 pub struct HikvisionAdapter {
     pub api_url: String,
@@ -28,113 +26,45 @@ impl HikvisionAdapter {
         username: &str,
         password: &str,
     ) -> Result<(), DomainError> {
-        if username.trim().is_empty() || password.is_empty() {
-            return Err(DomainError::Validation(
-                "Hikvision username and password are required".into(),
-            ));
-        }
-
-        let mut base_url = Url::parse(api_url)
-            .map_err(|_| DomainError::Validation("Hikvision camera address is invalid".into()))?;
-        if !matches!(base_url.scheme(), "http" | "https")
-            || base_url.host().is_none()
-            || !base_url.username().is_empty()
-            || base_url.password().is_some()
-            || base_url.query().is_some()
-            || base_url.fragment().is_some()
-        {
-            return Err(DomainError::Validation(
-                "Hikvision camera address must be an HTTP or HTTPS URL without embedded credentials"
-                    .into(),
-            ));
-        }
-        base_url.set_path("/ISAPI/System/deviceInfo");
-
-        let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .redirect(reqwest::redirect::Policy::none())
-            .build()
-            .map_err(|_| {
-                DomainError::Validation("Could not initialize Hikvision connection check".into())
-            })?;
-        let response =
-            client.get(base_url.clone()).send().await.map_err(|_| {
-                DomainError::Validation("Could not reach the Hikvision camera".into())
-            })?;
-        if response.status() != reqwest::StatusCode::UNAUTHORIZED {
-            return Err(DomainError::Validation(if response.status().is_success() {
-                "Hikvision camera allows unauthenticated access; credentials could not be verified"
-                    .into()
-            } else {
-                format!(
-                    "Hikvision camera rejected the connection check (HTTP {})",
-                    response.status().as_u16()
-                )
-            }));
-        }
-
-        let challenge = response
-            .headers()
-            .get_all(WWW_AUTHENTICATE)
-            .iter()
-            .filter_map(|value| value.to_str().ok())
-            .find(|value| {
-                value
-                    .trim_start()
-                    .get(..7)
-                    .is_some_and(|scheme| scheme.eq_ignore_ascii_case("digest "))
-            })
-            .ok_or_else(|| {
-                DomainError::Validation(
-                    "Hikvision camera did not provide an authentication challenge".into(),
-                )
-            })?;
-        let challenge = parse_digest_challenge(challenge)?;
-        let uri = match base_url.query() {
-            Some(query) => format!("{}?{query}", base_url.path()),
-            None => base_url.path().to_string(),
-        };
-        let authorization = digest_authorization(
-            &challenge,
-            "GET",
-            &uri,
+        Self::check_digest_endpoint(
+            api_url,
+            "/ISAPI/System/deviceInfo",
+            "Hikvision",
+            reqwest::Method::GET,
             username,
             password,
-            &hex::encode(rand::random::<[u8; 16]>()),
-        )?;
-        let response = client
-            .get(base_url)
-            .header(
-                reqwest::header::AUTHORIZATION,
-                reqwest::header::HeaderValue::from_str(&authorization).map_err(|_| {
-                    DomainError::Validation("Hikvision authentication header is invalid".into())
-                })?,
-            )
-            .send()
-            .await
-            .map_err(|_| DomainError::Validation("Could not reach the Hikvision camera".into()))?;
-
-        if !response.status().is_success() {
-            return Err(DomainError::Validation(format!(
-                "Hikvision rejected the connection check (HTTP {})",
-                response.status().as_u16()
-            )));
-        }
-
+            None,
+        )
+        .await?;
         Ok(())
+    }
+
+    pub(crate) async fn check_digest_endpoint(
+        api_url: &str,
+        endpoint: &str,
+        provider: &str,
+        method: reqwest::Method,
+        username: &str,
+        password: &str,
+        body: Option<&str>,
+    ) -> Result<reqwest::Response, DomainError> {
+        super::surveillance::check_http_digest_endpoint(
+            api_url, endpoint, provider, method, username, password, body,
+        )
+        .await
     }
 }
 
-fn parse_digest_challenge(header: &str) -> Result<HashMap<String, String>, DomainError> {
+pub(crate) fn parse_digest_challenge(header: &str) -> Result<HashMap<String, String>, DomainError> {
     let (scheme, parameters) = header
         .trim()
         .split_once(char::is_whitespace)
         .ok_or_else(|| {
-            DomainError::Validation("Hikvision authentication scheme is unsupported".into())
+            DomainError::Validation("Camera authentication scheme is unsupported".into())
         })?;
     if !scheme.eq_ignore_ascii_case("digest") {
         return Err(DomainError::Validation(
-            "Hikvision camera must support HTTP Digest authentication".into(),
+            "Camera must support HTTP Digest authentication".into(),
         ));
     }
 
@@ -149,12 +79,12 @@ fn parse_digest_challenge(header: &str) -> Result<HashMap<String, String>, Domai
         }
 
         let separator = remaining.find('=').ok_or_else(|| {
-            DomainError::Validation("Hikvision authentication challenge is malformed".into())
+            DomainError::Validation("Camera authentication challenge is malformed".into())
         })?;
         let name = remaining[..separator].trim().to_ascii_lowercase();
         if name.is_empty() {
             return Err(DomainError::Validation(
-                "Hikvision authentication challenge is malformed".into(),
+                "Camera authentication challenge is malformed".into(),
             ));
         }
         remaining = remaining[separator + 1..].trim_start();
@@ -168,7 +98,7 @@ fn parse_digest_challenge(header: &str) -> Result<HashMap<String, String>, Domai
                     '\\' => {
                         let (_, escaped) = characters.next().ok_or_else(|| {
                             DomainError::Validation(
-                                "Hikvision authentication challenge is malformed".into(),
+                                "Camera authentication challenge is malformed".into(),
                             )
                         })?;
                         value.push(escaped);
@@ -181,7 +111,7 @@ fn parse_digest_challenge(header: &str) -> Result<HashMap<String, String>, Domai
                 }
             }
             let end = end.ok_or_else(|| {
-                DomainError::Validation("Hikvision authentication challenge is malformed".into())
+                DomainError::Validation("Camera authentication challenge is malformed".into())
             })?;
             (value, quoted[end..].trim_start())
         } else {
@@ -198,14 +128,14 @@ fn parse_digest_challenge(header: &str) -> Result<HashMap<String, String>, Domai
         || values.get("nonce").is_none_or(String::is_empty)
     {
         return Err(DomainError::Validation(
-            "Hikvision authentication challenge is missing its realm or nonce".into(),
+            "Camera authentication challenge is missing its realm or nonce".into(),
         ));
     }
 
     Ok(values)
 }
 
-fn digest_authorization(
+pub(crate) fn digest_authorization(
     challenge: &HashMap<String, String>,
     method: &str,
     uri: &str,
@@ -214,10 +144,10 @@ fn digest_authorization(
     cnonce: &str,
 ) -> Result<String, DomainError> {
     let realm = challenge.get("realm").ok_or_else(|| {
-        DomainError::Validation("Hikvision digest challenge is missing its realm".into())
+        DomainError::Validation("Camera digest challenge is missing its realm".into())
     })?;
     let nonce = challenge.get("nonce").ok_or_else(|| {
-        DomainError::Validation("Hikvision digest challenge is missing its nonce".into())
+        DomainError::Validation("Camera digest challenge is missing its nonce".into())
     })?;
     let algorithm = challenge
         .get("algorithm")
@@ -225,7 +155,7 @@ fn digest_authorization(
         .unwrap_or("MD5");
     if !algorithm.eq_ignore_ascii_case("md5") && !algorithm.eq_ignore_ascii_case("md5-sess") {
         return Err(DomainError::Validation(format!(
-            "Hikvision digest algorithm '{algorithm}' is unsupported"
+            "Camera digest algorithm '{algorithm}' is unsupported"
         )));
     }
 
@@ -237,7 +167,7 @@ fn digest_authorization(
     });
     if challenge.contains_key("qop") && qop.is_none() {
         return Err(DomainError::Validation(
-            "Hikvision camera requires an unsupported digest quality of protection".into(),
+            "Camera requires an unsupported digest quality of protection".into(),
         ));
     }
 

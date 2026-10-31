@@ -2,21 +2,11 @@
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
 import { api } from "$lib/api";
-import {
-  AppNotification,
-  Bolt,
-  Camera,
-  CheckBox,
-  ClockRotateRight,
-  Cloud,
-  Expand,
-  Grid,
-  InfoCircle,
-  Sparkles,
-} from "@orbis/icons";
+import { Camera, CheckBox, Expand, Grid, Sparkles } from "@orbis/icons";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
 import AiEmptyState from "$lib/shared/components/ai-empty-state.svelte";
+import WebRtcWhepPlayer from "./components/webrtc-whep-player.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
@@ -30,36 +20,93 @@ interface CameraFeed {
   id: string;
   name: string;
   ip: string;
-  status: "online" | "offline" | "error";
+  status: "online" | "error";
   location: string;
+  whepUrl: string | null;
 }
 
 let cameras = $state<CameraFeed[]>([]);
 
-interface CameraEvent {
-  id: string;
-  camera_name: string;
-  type: "motion" | "alarm" | "disconnect" | "reconnect";
-  timestamp: string;
-}
-
-let events = $state<CameraEvent[]>([]);
+const cameraProviderNames = new Map([
+  ["hikvision_camera", "Hikvision"],
+  ["hikvision-camera", "Hikvision"],
+  ["hikvision", "Hikvision"],
+  ["dahua_camera", "Dahua"],
+  ["dahua-camera", "Dahua"],
+  ["dahua", "Dahua"],
+  ["onvif_camera", "ONVIF"],
+  ["onvif-camera", "ONVIF"],
+  ["onvif", "ONVIF"],
+  ["rtsp_camera", "RTSP"],
+  ["rtsp-camera", "RTSP"],
+  ["rtsp", "RTSP"],
+]);
 
 onMount(async () => {
   try {
-    const status = await api
-      .getIntegrationStatus("hikvision-camera")
-      .catch(() => null);
-    if (status && (status as any).cameras) {
-      cameras = (status as any).cameras;
-    } else if (
-      status?.config?.settings &&
-      (status.config.settings as any)?.cameras
-    ) {
-      cameras = (status.config.settings as any).cameras;
-    }
+    const integrations = await api.listIntegrations();
+    cameras = integrations
+      .filter((integration) => {
+        const provider = integration.provider_name.toLowerCase();
+        return (
+          integration.is_enabled &&
+          integration.category.toLowerCase() === "surveillance" &&
+          cameraProviderNames.has(provider)
+        );
+      })
+      .flatMap((integration) => {
+        const integrationSettings = integration.settings;
+        if (
+          !integrationSettings ||
+          typeof integrationSettings !== "object" ||
+          Array.isArray(integrationSettings)
+        ) {
+          return [];
+        }
+
+        const cameraSettings = integrationSettings as Record<string, unknown>;
+        const provider = integration.provider_name.toLowerCase();
+        const providerLabel = cameraProviderNames.get(provider) ?? "Camera";
+        const rawAddress =
+          typeof cameraSettings.ip_address === "string"
+            ? cameraSettings.ip_address
+            : typeof cameraSettings.rtsp_url === "string"
+              ? cameraSettings.rtsp_url
+              : "";
+        let address = rawAddress;
+        if (providerLabel === "RTSP" && rawAddress) {
+          try {
+            address = new URL(rawAddress).hostname;
+          } catch {
+            address = "";
+          }
+        }
+        const whepUrl =
+          typeof cameraSettings.whep_url === "string" &&
+          cameraSettings.whep_url.trim()
+            ? cameraSettings.whep_url.trim()
+            : null;
+        const name =
+          typeof cameraSettings.camera_name === "string" &&
+          cameraSettings.camera_name.trim()
+            ? cameraSettings.camera_name.trim()
+            : `${providerLabel} ${address}`.trim();
+        return [
+          {
+            id: integration.id,
+            name,
+            ip: address,
+            status: whepUrl ? ("online" as const) : ("error" as const),
+            location:
+              typeof cameraSettings.location === "string"
+                ? cameraSettings.location
+                : "",
+            whepUrl,
+          },
+        ];
+      });
   } catch (e) {
-    console.warn("[AI Center] Camera status not available:", e);
+    console.error("[AI Center] Camera integrations could not be loaded:", e);
   } finally {
     isLoading = false;
   }
@@ -71,16 +118,6 @@ const gridCols: Record<GridLayout, string> = {
   "3x3": "grid-cols-3",
 };
 const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
-
-const eventStyles: Record<
-  string,
-  { color: string; icon: typeof AppNotification }
-> = {
-  motion: { color: "text-muted-foreground", icon: AppNotification },
-  alarm: { color: "text-foreground font-semibold", icon: InfoCircle },
-  disconnect: { color: "text-muted-foreground", icon: Cloud },
-  reconnect: { color: "text-primary", icon: Bolt },
-};
 </script>
 
 <div class="h-full flex flex-col overflow-hidden font-sans">
@@ -101,7 +138,7 @@ const eventStyles: Record<
         { l: "1x1" as GridLayout, icon: CheckBox, label: m.ai_center_live_grid_1x1() },
         { l: "2x2" as GridLayout, icon: Grid, label: m.ai_center_live_grid_2x2() },
         { l: "3x3" as GridLayout, icon: Grid, label: m.ai_center_live_grid_3x3() },
-      ] as opt}
+      ] as opt (opt.l)}
         <Button
           type="button"
           size="sm"
@@ -119,28 +156,54 @@ const eventStyles: Record<
 
   <!-- Content Main Split View -->
   <div class="flex-1 flex overflow-hidden">
-    {#if cameras.length > 0}
+    {#if isLoading}
+      <div class="flex flex-1 items-center justify-center">
+        <p class="text-sm text-muted-foreground">{m.ai_ui_loading_cameras()}</p>
+      </div>
+    {:else if cameras.length > 0}
       <!-- Camera Grid -->
       <div class="flex-1 p-4 overflow-hidden">
         <div class="h-full grid {gridCols[gridLayout]} gap-3">
-          {#each Array(gridSlots[gridLayout]) as _, i}
+          {#each Array(gridSlots[gridLayout]) as _, i (i)}
             {@const cam = cameras[i]}
+            {@const streamActive = selectedIdx === null
+              ? i < Math.min(gridSlots[gridLayout], 4)
+              : selectedIdx === i}
             <div
               role="button"
               tabindex="0"
               class="relative bg-card rounded-xl overflow-hidden flex items-center justify-center
                      border-2 transition-all cursor-pointer shadow-inner w-full h-full text-start
                      {selectedIdx === i ? 'border-primary ring-2 ring-primary/20' : 'border-border/30 hover:border-border'}"
-              onclick={() => selectedIdx = i}
+              onclick={() => {
+                if (cam) selectedIdx = selectedIdx === i ? null : i;
+              }}
               onkeydown={(event) => {
-                if (event.key === "Enter" || event.key === " ") selectedIdx = i;
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  if (cam) selectedIdx = selectedIdx === i ? null : i;
+                }
               }}
             >
               {#if cam}
-                {#if cam.status === "online"}
-                  <div class="absolute inset-0 flex items-center justify-center opacity-40">
-                    <Camera size={40} class="text-muted-foreground" />
+                {#if cam.status === "online" && cam.whepUrl && streamActive}
+                  <WebRtcWhepPlayer
+                    whepUrl={cam.whepUrl}
+                    connectingLabel={m.ai_ui_camera_stream_connecting()}
+                    unavailableLabel={m.ai_ui_camera_stream_unavailable()}
+                  />
+                {:else if cam.status === "online"}
+                  <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/90 p-4 text-center">
+                    <Camera size={32} class="text-white/50" />
+                    <p class="text-xs font-semibold text-white/80">{cam.name}</p>
+                    <p class="text-[10px] text-white/60">
+                      {streamActive
+                        ? m.ai_ui_camera_stream_unavailable()
+                        : m.ai_ui_camera_stream_paused()}
+                    </p>
                   </div>
+                {/if}
+                {#if cam.status === "online"}
                   <div class="absolute bottom-0 left-0 right-0 bg-background/90 p-3 border-t border-border/40">
                     <div class="flex items-center justify-between">
                       <div>
@@ -148,19 +211,23 @@ const eventStyles: Record<
                         <p class="text-[10px] text-muted-foreground">{cam.location}</p>
                       </div>
                       <div class="flex items-center gap-1.5 bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
-                        <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                        <span class="text-[9px] text-primary font-semibold tracking-wider">{m.ai_ui_live()}</span>
+                        <span class="w-1.5 h-1.5 rounded-full {streamActive ? 'bg-primary animate-pulse' : 'bg-muted-foreground'}"></span>
+                        <span class="text-[9px] text-primary font-semibold tracking-wider">{streamActive ? m.ai_ui_live() : m.ai_ui_camera_stream_paused()}</span>
                       </div>
                     </div>
                   </div>
-                  <button type="button" onclick={(event) => event.stopPropagation()} class="absolute top-2.5 right-2.5 p-1.5 bg-background/80 border border-border/40 rounded-md text-foreground hover:text-primary transition-colors cursor-pointer">
+                  <button type="button" aria-label={m.template_tooltip_fullscreen()} title={m.template_tooltip_fullscreen()} onclick={(event) => {
+                    event.stopPropagation();
+                    const video = event.currentTarget.parentElement?.querySelector("video");
+                    if (video) void video.requestFullscreen();
+                  }} class="absolute top-2.5 right-2.5 p-1.5 bg-background/80 border border-border/40 rounded-md text-foreground hover:text-primary transition-colors cursor-pointer">
                     <Expand size={12} />
                   </button>
                 {:else}
                   <div class="text-center p-4">
                     <Camera size={28} class="text-muted-foreground mx-auto mb-2" />
                     <p class="text-xs font-semibold text-muted-foreground">{cam.name}</p>
-                    <p class="text-[10px] text-muted-foreground font-semibold mt-1">{cam.status === "error" ? m.ai_ui_connection_error() : m.ai_ui_not_connected()}</p>
+                    <p class="text-[10px] text-muted-foreground font-semibold mt-1">{m.ai_ui_connection_error()}</p>
                   </div>
                 {/if}
               {:else}
@@ -176,40 +243,6 @@ const eventStyles: Record<
         </div>
       </div>
 
-      <!-- Events Feed Sidebar -->
-      <div class="w-72 border-r border-border/40 bg-background flex flex-col shrink-0">
-        <div class="px-4 py-3 border-b border-border/40 bg-background flex items-center justify-between">
-          <h3 class="text-xs font-semibold text-foreground flex items-center gap-2">
-            <AppNotification size={14} class="text-primary" />
-            <span>{m.ai_center_live_events()}</span>
-          </h3>
-          <span class="text-[10px] font-mono text-muted-foreground">{m.ai_ui_alert_count({ count: events.length })}</span>
-        </div>
-
-        <div class="flex-1 overflow-y-auto divide-y divide-border/20">
-          {#if events.length > 0}
-            {#each events as event (event.id)}
-              {@const s = eventStyles[event.type]}
-              {@const EventIcon = s.icon}
-              <div class="px-4 py-3 hover:bg-muted/30 transition-colors">
-                <div class="flex items-start gap-2.5">
-                  <EventIcon size={14} class="{s.color} mt-0.5 shrink-0" />
-                  <div>
-                    <p class="text-xs font-semibold text-foreground">{event.camera_name}</p>
-                    <p class="text-[10px] text-muted-foreground font-mono mt-0.5">{event.timestamp}</p>
-                  </div>
-                </div>
-              </div>
-            {/each}
-          {:else}
-            <div class="flex flex-col items-center justify-center py-16 text-center px-4">
-              <ClockRotateRight size={18} class="text-muted-foreground mb-2" />
-              <p class="text-xs font-semibold text-foreground">{m.ai_ui_no_live_events()}</p>
-              <p class="text-[10px] text-muted-foreground mt-0.5">{m.ai_ui_live_events_empty_description()}</p>
-            </div>
-          {/if}
-        </div>
-      </div>
     {:else}
       <!-- Interactive AI Empty State: No Cameras Connected -->
       <div class="flex-1 flex items-center justify-center p-8">

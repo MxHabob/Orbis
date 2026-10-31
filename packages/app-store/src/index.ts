@@ -22,6 +22,9 @@ import authen from "./authen/config";
 import orbisAi from "./orbis-ai/config";
 import orbisMobile from "./orbis-mobile/config";
 import hikvisionCamera from "./hikvision-camera/config";
+import dahuaCamera from "./dahua-camera/config";
+import onvifCamera from "./onvif-camera/config";
+import rtspCamera from "./rtsp-camera/config";
 import smtpEmail from "./smtp-email/config";
 import whatsappBusiness from "./whatsapp-business/config";
 import smsProvider from "./sms-provider/config";
@@ -80,6 +83,9 @@ const appDefinitions: OrbisApp[] = [
   yemenWallet,
   // Surveillance
   hikvisionCamera,
+  dahuaCamera,
+  onvifCamera,
+  rtspCamera,
   // Communication
   smtpEmail,
   whatsappBusiness,

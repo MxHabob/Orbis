@@ -1,6 +1,7 @@
 import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 
 const MAX_SAMPLES_PER_COMMAND = 100;
+let collectionEnabled = false;
 
 interface CommandSamples {
   totalCalls: number;
@@ -48,6 +49,8 @@ export async function invokeDesktopCommand<T>(
   command: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
+  if (!collectionEnabled) return tauriInvoke<T>(command, args);
+
   const startedAt = performance.now();
   try {
     const result = await tauriInvoke<T>(command, args);
@@ -57,6 +60,19 @@ export async function invokeDesktopCommand<T>(
     recordCommand(command, performance.now() - startedAt, true);
     throw error;
   }
+}
+
+export function startDesktopCommandPerformance() {
+  resetDesktopCommandPerformance();
+  collectionEnabled = true;
+}
+
+export function stopDesktopCommandPerformance() {
+  collectionEnabled = false;
+}
+
+export function isDesktopCommandPerformanceActive() {
+  return collectionEnabled;
 }
 
 export function getDesktopCommandPerformance(): DesktopCommandPerformance[] {

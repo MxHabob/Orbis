@@ -29,13 +29,13 @@ import {
 
 let {
   appId,
+  formId,
   settings,
-  submitting = false,
   onsubmit,
 }: {
   appId: string;
+  formId: string;
   settings: AppSetting[];
-  submitting?: boolean;
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
@@ -109,7 +109,7 @@ async function browseDirectory(settingId: string) {
 }
 </script>
 
-<form class="space-y-4" onsubmit={handleSubmit}>
+<form id={formId} class="space-y-4" onsubmit={handleSubmit}>
   {#each visibleSettings as setting (setting.id)}
     <FormField id={setting.id} label={l(setting.label_ar, setting.label) || setting.id} error={undefined} required={setting.required}>
       {#snippet children()}
@@ -211,7 +211,4 @@ async function browseDirectory(settingId: string) {
     </FormField>
   {/each}
 
-  <Button type="submit" class="w-full" size="sm" disabled={submitting}>
-    {submitting ? m.setup_connection_connecting() : m.ui_copy_save_connect_3d45edcd()}
-  </Button>
 </form>
