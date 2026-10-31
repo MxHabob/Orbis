@@ -39,7 +39,14 @@ let {
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
-let values = $state<Record<string, any>>({});
+let values = $state<Record<string, any>>(
+  Object.fromEntries(
+    settings.map((setting) => [
+      setting.id,
+      setting.value ?? (setting.type === "switch" ? false : ""),
+    ]),
+  ),
+);
 const effectiveSettings = $derived(
   settings.map((setting) => {
     if (setting.id !== "model" || setting.type !== "select") return setting;
@@ -76,12 +83,6 @@ const visibleSettings = $derived(
 );
 
 onMount(() => {
-  values = Object.fromEntries(
-    settings.map((setting) => [
-      setting.id,
-      setting.value ?? (setting.type === "switch" ? false : ""),
-    ]),
-  );
   ensureModelCatalog(appId).catch((error: unknown) => {
     console.error("Failed to load AI provider models", error);
   });
@@ -118,7 +119,7 @@ async function browseDirectory(settingId: string) {
         <div class="flex items-center gap-2.5">
           <Switch
             id={setting.id}
-            bind:checked={values[setting.id] as any}
+            bind:checked={values[setting.id]}
             size="sm"
           />
           <span class="text-xs text-muted-foreground leading-snug">

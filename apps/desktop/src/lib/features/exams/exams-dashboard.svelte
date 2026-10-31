@@ -7,6 +7,7 @@ import { ArrowRight, Calendar, ChartBar, DocumentCheck } from "@orbis/icons";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { formatDate } from "$lib/core/i18n";
 import { extractErrorMessage, type ExamSessionDto } from "$lib/api";
+import { authStore, academicContext, uiStore } from "$lib/stores";
 import { createPeriodsQuery } from "$lib/features/academics";
 import { createExamSessionsQuery } from "$lib/features/exams/queries";
 import PeriodSelect from "$lib/features/academics/components/period-select.svelte";
@@ -40,6 +41,40 @@ const sessionsQuery = createExamSessionsQuery(() => activePeriodId);
 const sessions = $derived<ExamSessionDto[]>(sessionsQuery.data ?? []);
 const isLoading = $derived(periodsQuery.isLoading || sessionsQuery.isLoading);
 const error = $derived(periodsQuery.error || sessionsQuery.error);
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
+
+$effect(() => {
+  if (periodsQuery.isLoading || periods.length === 0) return;
+
+  const isAvailable = (periodId: string) =>
+    periods.some((period) => String(period.id) === periodId);
+  const rememberedPeriodId = uiStore.getPreference(
+    preferenceScope(),
+    "exams.selectedPeriodId",
+    "",
+    (value): value is string => typeof value === "string",
+  );
+  const nextPeriodId = isAvailable(selectedPeriodId)
+    ? selectedPeriodId
+    : isAvailable(rememberedPeriodId)
+      ? rememberedPeriodId
+      : isAvailable(academicContext.effectivePeriodId)
+        ? academicContext.effectivePeriodId
+        : activePeriodId;
+
+  if (nextPeriodId !== selectedPeriodId) selectedPeriodId = nextPeriodId;
+  if (nextPeriodId) {
+    academicContext.selectedPeriodId = nextPeriodId;
+    uiStore.setPreference(
+      preferenceScope(),
+      "exams.selectedPeriodId",
+      nextPeriodId,
+    );
+  }
+});
 const isGradeEntryOpen = $derived(
   Boolean(selectedPeriod?.is_grade_entry_open && !selectedPeriod.is_locked),
 );

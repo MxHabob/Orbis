@@ -9,6 +9,7 @@ import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import * as m from "$lib/paraglide/messages";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { authStore, uiStore } from "$lib/stores";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -29,10 +30,15 @@ let {
 let editingId = $state<string | null>(
   untrack(() => (slot?.id ? String(slot.id) : null)),
 );
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: authStore.orgId,
+});
+const defaultTimeRange = uiStore.getTimeSlotRangePreference(preferenceScope());
 let nameAr = $state("");
 let name = $state("");
-let startTime = $state("");
-let endTime = $state("");
+let startTime = $state(defaultTimeRange.startTime);
+let endTime = $state(defaultTimeRange.endTime);
 
 const form = new FormController({
   initialValues: {
@@ -54,8 +60,9 @@ function resetForm() {
   editingId = null;
   nameAr = "";
   name = "";
-  startTime = "";
-  endTime = "";
+  ({ startTime, endTime } = uiStore.getTimeSlotRangePreference(
+    preferenceScope(),
+  ));
 }
 
 function durationMinutes() {
@@ -83,15 +90,30 @@ async function saveSlot(event: SubmitEvent) {
     applicable_days: "1,2,3,4,5",
   };
   const submitted = await form.submit(async (payload) => {
+    const request = {
+      period_id: payload.period_id,
+      day_of_week: 1,
+      slot_index: payload.slot_number,
+      name: payload.name,
+      name_ar: payload.name_ar,
+      start_time: payload.start_time,
+      end_time: payload.end_time,
+      is_break: payload.is_break,
+      break_type: null,
+    };
     if (editingId) {
-      await api.createTimeSlot(payload);
+      await api.createTimeSlot(request);
       toast.success(m.academics_schedule_time_slot_updated());
     } else {
-      await api.createTimeSlot(payload);
+      await api.createTimeSlot(request);
       toast.success(m.academics_schedule_time_slot_added());
     }
   });
   if (submitted) {
+    uiStore.setTimeSlotRangePreference(preferenceScope(), {
+      startTime,
+      endTime,
+    });
     resetForm();
     open = false;
     onSuccess();

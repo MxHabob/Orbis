@@ -24,6 +24,8 @@ import { StudentFormState } from "./form-state.svelte";
 import { createClassesQuery } from "$lib/features/academics";
 import { useQueryClient } from "@tanstack/svelte-query";
 import { academicContext } from "$lib/stores/academic-context.svelte";
+import { authStore } from "$lib/stores/auth.svelte";
+import { uiStore } from "$lib/stores/ui.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 
 import ProfileSection from "./sections/profile-section.svelte";
@@ -52,8 +54,17 @@ $effect(() => {
   if (!state.isEditMode && !state.personal.classId) {
     const contextualClassId =
       effectiveContext.activeClassId || academicContext.selectedClassId;
-    if (classes.some((classItem) => classItem.id === contextualClassId)) {
-      state.personal.classId = contextualClassId;
+    const rememberedClassId = uiStore.getPreference(
+      { userId: authStore.userId, organizationId: orgId },
+      "students.classId",
+      "",
+      (value): value is string => typeof value === "string",
+    );
+    const defaultClassId = [rememberedClassId, contextualClassId].find(
+      (classId) => classes.some((classItem) => String(classItem.id) === classId),
+    );
+    if (defaultClassId) {
+      state.personal.classId = defaultClassId;
     }
   }
 });

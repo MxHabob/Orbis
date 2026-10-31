@@ -51,6 +51,16 @@ let isConnecting = $state(false);
 let isDisconnecting = $state(false);
 let connectSheetOpen = $state(false);
 let connectError = $state<string | null>(null);
+let openAccordionItems = $state(["description", "features"]);
+
+function handleOpenChange(value: boolean) {
+  open = value;
+  if (value) {
+    openAccordionItems = ["description", "features"];
+  } else {
+    onclose?.();
+  }
+}
 
 const statusQuery = createQuery(() => ({
   queryKey: ["integration-status", orgId, providerName],
@@ -182,10 +192,7 @@ async function handleDisconnect() {
 }
 </script>
 
-<Sheet bind:open onOpenChange={(value) => {
-  open = value;
-  if (!value) onclose?.();
-}}>
+<Sheet bind:open onOpenChange={handleOpenChange}>
   <SheetContent
     side="end"
     contentClass="data-[side=end]:w-[min(32rem,calc(100vw-1rem))] data-[side=end]:sm:max-w-[min(32rem,calc(100vw-1rem))]"
@@ -273,8 +280,12 @@ async function handleDisconnect() {
         </div>
       {/if}
 
-      <div class="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
-        <Accordion type="multiple" defaultValue={["description", "features"]} class="mt-3">
+      <div class="min-h-0 flex-1 overflow-y-auto scrollbar-hide px-6 pb-6">
+        <Accordion
+          type="multiple"
+          bind:value={openAccordionItems}
+          class="mt-3"
+        >
           {#if app.description || app.short_description}
             <AccordionItem value="description" class="border-b-0">
               <AccordionTrigger>{m.ai_ui_integration_how_it_works()}</AccordionTrigger>

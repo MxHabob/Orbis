@@ -22,6 +22,7 @@ import {
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
+import { authStore, uiStore } from "$lib/stores";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -46,6 +47,12 @@ function calcDuration(start: string, end: string): number {
   return endHours * 60 + endMinutes - (startHours * 60 + startMinutes);
 }
 
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: authStore.orgId,
+});
+const defaultTimeRange = uiStore.getTimeSlotRangePreference(preferenceScope());
+
 const form = new FormController({
   initialValues: {
     period_id: periodId || "",
@@ -54,9 +61,12 @@ const form = new FormController({
     name_ar: untrack(() =>
       m.academics_schedule_placeholder_period({ number: nextSlotNumber || 1 }),
     ),
-    start_time: "08:00",
-    end_time: "08:45",
-    duration_minutes: 45,
+    start_time: defaultTimeRange.startTime,
+    end_time: defaultTimeRange.endTime,
+    duration_minutes: calcDuration(
+      defaultTimeRange.startTime,
+      defaultTimeRange.endTime,
+    ),
     is_break: false,
     applicable_days: "1,2,3,4,5",
   },
@@ -120,6 +130,10 @@ async function handleSubmit(event: SubmitEvent) {
       break_type: values.is_break ? breakType : null,
     };
     await api.createTimeSlot(request);
+    uiStore.setTimeSlotRangePreference(preferenceScope(), {
+      startTime: values.start_time,
+      endTime: values.end_time,
+    });
     toast.success(m.academics_schedule_time_slot_added());
     open = false;
     onSuccess?.();

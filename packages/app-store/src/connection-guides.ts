@@ -95,6 +95,38 @@ const appSpecificSummaries: Record<string, { en: string; ar: string }> = {
     en: "Enter your Authen API URL and key. Orbis verifies access with a generated blank test image; no user image is sent, but the check may count toward your Authen usage.",
     ar: "أدخل عنوان Authen ومفتاح API. يتحقق أوربيس من الوصول بصورة اختبار اصطناعية فارغة؛ لا تُرسل صور مستخدمين، لكن قد يُحتسب الطلب ضمن استخدام Authen.",
   },
+  fingerprint: {
+    en: "Orbis checks whether the configured device IP and port are reachable over the network. This does not verify the device protocol or synchronize attendance.",
+    ar: "يتحقق أوربيس من إمكانية الوصول إلى عنوان الجهاز ومنفذه عبر الشبكة فقط؛ ولا يؤكد دعم بروتوكول الجهاز أو يزامن سجلات الحضور.",
+  },
+  "google-workspace": {
+    en: "Orbis checks Google's OpenID Connect service and validates that the organization domain and optional OAuth client ID/secret are configured together. Credentials are not verified until an OAuth sign-in is performed.",
+    ar: "يتحقق أوربيس من خدمة OpenID Connect لدى Google ومن صحة نطاق المؤسسة وتوافق وجود معرّف OAuth ومفتاحه السري معاً. لا يتم التحقق من بيانات OAuth نفسها إلا عند تنفيذ تسجيل الدخول.",
+  },
+  "microsoft-365": {
+    en: "Orbis validates the tenant, client ID, and secret by requesting an application access token from Microsoft. This does not verify permissions for every Microsoft 365 feature.",
+    ar: "يتحقق أوربيس من المستأجر ومعرّف التطبيق والمفتاح السري بطلب رمز وصول للتطبيق من Microsoft؛ ولا يؤكد ذلك صلاحيات جميع ميزات Microsoft 365.",
+  },
+  "orbis-ai": {
+    en: "Orbis validates your Mulverse API key using its connection endpoint without sending a model inference request.",
+    ar: "يتحقق أوربيس من مفتاح Mulverse عبر نقطة فحص الاتصال دون إرسال طلب لتشغيل النموذج.",
+  },
+  stripe: {
+    en: "Orbis validates the Stripe secret key with a read-only account request; it does not create or modify payments.",
+    ar: "يتحقق أوربيس من المفتاح السري عبر طلب قراءة لحساب Stripe، دون إنشاء دفعات أو تعديلها.",
+  },
+  tabby: {
+    en: "Orbis validates the Tabby secret key with a read-only request limited to one payment. No payment is created or modified.",
+    ar: "يتحقق أوربيس من مفتاح تابي بطلب قراءة محدود بدفعة واحدة، دون إنشاء دفعات أو تعديلها.",
+  },
+  tamara: {
+    en: "Orbis checks Tamara credentials with a read-only lookup for a non-existent order ID; it does not create or change an order.",
+    ar: "يتحقق أوربيس من بيانات تمارا بطلب قراءة لمعرّف طلب غير موجود؛ ولا ينشئ طلباً أو يغيّره.",
+  },
+  hyperpay: {
+    en: "Orbis checks the access token and both entity IDs with read-only lookups for a non-existent payment; it does not create or change a payment.",
+    ar: "يتحقق أوربيس من رمز الوصول ومعرّفي القناتين بطلبات قراءة لمعرّف دفعة غير موجود؛ ولا ينشئ دفعة أو يغيّرها.",
+  },
   alkuraimi: {
     en: "Contact Al-Kuraimi to request merchant API specifications and confirm Orbis support before proceeding.",
     ar: "تواصل مع بنك الكريمي لطلب مواصفات API للتجار وتأكد من دعم أوربيس قبل المتابعة.",
@@ -132,18 +164,25 @@ const appsWithLiveVerifier = new Set([
   "deepseek",
   "gemini-ai",
   "groq",
+  "hikvision-camera",
+  "fingerprint",
+  "google-workspace",
   "mistral",
   "moyasar",
+  "microsoft-365",
   "ollama",
   "openai",
   "openrouter",
+  "orbis-ai",
   "sms-provider",
   "smtp-email",
   "solver-service",
+  "stripe",
+  "tabby",
+  "tamara",
+  "hyperpay",
   "whatsapp-business",
 ]);
-
-const appsAvailableWithoutLiveVerifier = new Set(["orbis_mobile"]);
 
 export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const website = websites[app.id];
@@ -156,20 +195,17 @@ export function addConnectionSummary(app: OrbisApp): OrbisApp {
   const summary =
     appSpecificSummaries[app.id] ?? connectionSummaries[app.category];
   const canVerifyConnection = appsWithLiveVerifier.has(app.id);
-  const isAvailable =
-    canVerifyConnection || appsAvailableWithoutLiveVerifier.has(app.id);
   const moreEn = `[Learn more](${website})`;
   const moreAr = `[لمعرفة المزيد](${website})`;
-  const verificationNoteEn = isAvailable
+  const verificationNoteEn = canVerifyConnection
     ? ""
-    : "\n\n**Orbis availability:** Orbis cannot verify this integration yet, so it cannot be connected from the App Store.";
-  const verificationNoteAr = isAvailable
+    : "\n\n**Connection check:** Orbis does not currently run a live verification check for this integration.";
+  const verificationNoteAr = canVerifyConnection
     ? ""
-    : "\n\n**توفر الربط في أوربيس:** لا يستطيع أوربيس التحقق من هذا التكامل حالياً، لذلك لا يمكن ربطه من المتجر بعد.";
+    : "\n\n**فحص الاتصال:** لا يجري أوربيس حالياً فحصاً حياً لهذا التكامل.";
 
   return {
     ...app,
-    active: app.active && isAvailable,
     description: `${app.description}\n\n**Connect:** ${summary.en} ${moreEn}${verificationNoteEn}`,
     description_ar: `${app.description_ar ?? ""}\n\n**طريقة الربط:** ${summary.ar} ${moreAr}${verificationNoteAr}`,
   };

@@ -59,6 +59,8 @@ import { createStudentsQuery } from "$lib/features/students/queries";
 import { GroupSelector } from "$lib/features/groups";
 import RoleSelect from "$lib/shared/components/role-select.svelte";
 import SearchableSelect from "$lib/shared/components/searchable-select.svelte";
+import { authStore } from "$lib/stores/auth.svelte";
+import { uiStore } from "$lib/stores/ui.svelte";
 
 interface Props {
   open?: boolean;
@@ -72,7 +74,26 @@ const queryClient = useQueryClient();
 
 // ── Persona & Entity State ───────────────────────────────────────────
 type PersonaType = "employee" | "student" | "guardian" | "custom";
-let personaType = $state<PersonaType>("employee");
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
+function isPersonaType(value: unknown): value is PersonaType {
+  return (
+    value === "employee" ||
+    value === "student" ||
+    value === "guardian" ||
+    value === "custom"
+  );
+}
+let personaType = $state<PersonaType>(
+  uiStore.getPreference(
+    preferenceScope(),
+    "users.personaType",
+    "employee",
+    isPersonaType,
+  ),
+);
 
 let selectedEmployeeId = $state<string | null>(null);
 let selectedStudentId = $state<string | null>(null);
@@ -481,6 +502,7 @@ async function handleSubmit() {
     }
 
     const result = await api.provisionUser(payload);
+    uiStore.setPreference(preferenceScope(), "users.personaType", personaType);
 
     // Invalidate caches
     await Promise.all([

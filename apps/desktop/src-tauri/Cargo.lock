@@ -3906,6 +3906,7 @@ dependencies = [
  "hostname",
  "jsonwebtoken",
  "keyring",
+ "md-5",
  "orbis-app",
  "orbis-domain",
  "rand 0.8.6",

@@ -47,14 +47,14 @@ Connect multiple cameras and NVRs. Each camera appears as a separate feed in the
   settings: [
     {
       id: "ip_address",
-      label: "Camera IP Address",
-      label_ar: "عنوان IP للكاميرا",
-      description: "The IP address of the Hikvision camera or NVR.",
-      description_ar: "عنوان IP لكاميرا هيكفيجن أو جهاز NVR.",
+      label: "Camera IP Address or Hostname",
+      label_ar: "عنوان IP أو اسم نطاق الكاميرا",
+      description: "The IP address or DDNS hostname of the Hikvision camera or NVR.",
+      description_ar: "عنوان IP أو اسم نطاق DDNS لكاميرا هيكفيجن أو جهاز NVR.",
       type: "text",
       required: true,
       value: "",
-      placeholder: "192.168.1.100",
+      placeholder: "192.168.1.100 or camera.example.com",
     },
     {
       id: "port",

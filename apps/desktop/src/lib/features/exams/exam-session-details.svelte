@@ -1543,6 +1543,7 @@ async function handleToggleHall(room: any) {
 <ExamSessionConfigDialog
 	bind:open={isConfigModalOpen}
 	bind:activeTab={activeConfigTab}
+	{orgId}
 	onAutoSchedule={handleAutoSchedule}
 	onAllocateHalls={handleAllocateHalls}
 />

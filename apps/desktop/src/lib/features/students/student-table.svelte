@@ -274,11 +274,7 @@ let gridSource = $derived(
       updated_at_display: s.updated_at
         ? formatDate(s.updated_at, "datetime")
         : "—",
-      avatar_url:
-        resolvedAvatarUrls[String(s.id)] ||
-        p.avatar_url ||
-        s.avatar_url ||
-        undefined,
+      avatar_url: resolvedAvatarUrls[String(s.id)] || undefined,
     };
   }),
 );

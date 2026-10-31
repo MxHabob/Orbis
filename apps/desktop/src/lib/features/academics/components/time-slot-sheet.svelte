@@ -30,6 +30,7 @@ import {
 } from "@orbis/icons";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { authStore, uiStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 
 interface Props {
@@ -62,6 +63,10 @@ let selectedDays = $state<number[]>([]);
 let isBreak = $state(false);
 let breakType = $state("recess");
 let isSubmitting = $state(false);
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: authStore.orgId,
+});
 
 const sortedTimeSlots = $derived(
   [...timeSlots].sort((left, right) => {
@@ -101,6 +106,9 @@ function startAdd() {
   slotIndex = String(nextIndex);
   nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
   name = "";
+  ({ startTime, endTime } = uiStore.getTimeSlotRangePreference(
+    preferenceScope(),
+  ));
 }
 
 function startEdit(slot: TimeSlotDto) {
@@ -174,6 +182,10 @@ async function handleSave(event: SubmitEvent) {
       await api.batchCreateTimeSlots({ period_id: periodId, slots });
       toast.success(m.academics_schedule_time_slot_added());
     }
+    uiStore.setTimeSlotRangePreference(preferenceScope(), {
+      startTime,
+      endTime,
+    });
     resetForm();
     onSuccess?.();
   } catch (error) {
