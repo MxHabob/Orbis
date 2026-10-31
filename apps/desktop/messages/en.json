@@ -1043,7 +1043,7 @@
   "common_card_detail_admin_roles": "Supporting administrative roles",
   "common_card_detail_critical_incidents": "{count} critical incidents",
   "common_card_detail_late_absent": "Late: {lateRate}% | Absent: {absentRate}%",
-  "common_card_detail_total_enrolled": "Total Enrolled: {count}",
+  "common_card_detail_total_enrolled": "Enrollment records: {count}",
   "common_card_enrollment_rate": "Enrollment Rate",
   "common_card_staff_members": "Staff Members",
   "common_cash_account_created": "Cash or bank account created successfully",

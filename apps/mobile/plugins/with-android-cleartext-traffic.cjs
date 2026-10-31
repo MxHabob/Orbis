@@ -1,6 +1,9 @@
 const { withAndroidManifest } = require("expo/config-plugins");
 
-module.exports = function withAndroidCleartextTraffic(config, { enabled }) {
+module.exports = function withAndroidCleartextTraffic(
+  config,
+  { enabled = process.env.ORBIS_DEV_ALLOW_LOCAL_HTTP === "true" } = {},
+) {
   return withAndroidManifest(config, (modConfig) => {
     const application = modConfig.modResults.manifest.application?.[0];
     if (!application) {

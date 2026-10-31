@@ -16,9 +16,9 @@ pub struct DashboardRepoImpl {
 #[async_trait]
 impl DashboardRepository for DashboardRepoImpl {
     async fn get_counts(&self, org_id: Uuid) -> Result<DashboardCounts, DomainError> {
-        // Count students from user_role_assignments or enrollments
+        // Student records are the source of truth; role assignments may be absent.
         let total_students = self.count_query(
-            "SELECT COUNT(DISTINCT user_id) as cnt FROM user_role_assignments WHERE org_id = $1 AND (LOWER(role_id) LIKE '%student%')",
+            "SELECT COUNT(*) as cnt FROM students WHERE org_id = $1 AND is_deleted = FALSE",
             org_id,
         ).await.unwrap_or(0);
 

@@ -1,10 +1,16 @@
 import { BuildingOffice, Refresh } from "@orbis/icons/native";
-import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  Text,
+  TurboModuleRegistry,
+  View,
+  type TurboModule,
+} from "react-native";
 import Zeroconf, { useZeroconf } from "react-native-zeroconf";
-import { Section } from "@/components/layout/section";
 import { InstitutionCard } from "@/components/institutions/institution-card";
 import { useTheme } from "@/hooks/use-theme";
 import {
@@ -15,8 +21,9 @@ import { useI18n } from "@/lib/i18n";
 
 type LocalNetworkAccess = "granted" | "denied" | "unknown";
 
-export const isExpoGo =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+export const isLocalDiscoveryAvailable =
+  Platform.OS !== "web" &&
+  TurboModuleRegistry.get<TurboModule>("Zeroconf") !== null;
 
 interface LocalInstitutionDiscoveryProps {
   connectingId: string | null;
@@ -104,24 +111,18 @@ export function LocalInstitutionDiscovery({
   }, [networkAccess, restart]);
 
   return (
-    <Section
-      title={t("auth_institution_lan_title")}
-      subtitle={t("auth_institution_lan_description")}
-      spacing="four"
-      action={
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("auth_institution_lan_retry")}
-          onPress={retryDiscovery}
-          hitSlop={8}
-          className="min-h-11 min-w-11 items-center justify-center rounded-full bg-background-element"
-        >
-          <Refresh size={18} color={theme.textMuted} />
-        </Pressable>
-      }
-    >
+    <View className="gap-2">
       {institutions.length > 0 ? (
-        <View className="gap-2">
+        <>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("auth_institution_lan_retry")}
+            onPress={retryDiscovery}
+            hitSlop={8}
+            className="min-h-11 min-w-11 self-end items-center justify-center rounded-full"
+          >
+            <Refresh size={18} color={theme.textMuted} />
+          </Pressable>
           {institutions.map((institution) => (
             <InstitutionCard
               key={institution.deployment_id}
@@ -140,13 +141,13 @@ export function LocalInstitutionDiscovery({
               onPress={onConnect}
             />
           ))}
-        </View>
+        </>
       ) : (
-        <View className="min-h-20 flex-row items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+        <View className="min-h-12 flex-row items-center gap-2 rounded-xl bg-background-element px-3 py-1">
           {networkAccess === "checking" || isScanning ? (
             <ActivityIndicator size="small" color={theme.primary} />
           ) : (
-            <BuildingOffice size={20} color={theme.textMuted} />
+            <BuildingOffice size={18} color={theme.textMuted} />
           )}
           <Text
             accessibilityRole={
@@ -154,7 +155,8 @@ export function LocalInstitutionDiscovery({
                 ? "alert"
                 : undefined
             }
-            className="flex-1 text-start text-sm leading-5 text-muted-foreground"
+            numberOfLines={2}
+            className="flex-1 text-start text-xs leading-4 text-muted-foreground"
           >
             {networkAccess === "checking"
               ? t("auth_institution_lan_checking")
@@ -164,8 +166,19 @@ export function LocalInstitutionDiscovery({
                   ? t("auth_institution_lan_error")
                   : t("auth_institution_lan_empty")}
           </Text>
+          {networkAccess !== "checking" && !isScanning ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("auth_institution_lan_retry")}
+              onPress={retryDiscovery}
+              hitSlop={8}
+              className="min-h-11 min-w-11 items-center justify-center rounded-full"
+            >
+              <Refresh size={18} color={theme.textMuted} />
+            </Pressable>
+          ) : null}
         </View>
       )}
-    </Section>
+    </View>
   );
 }

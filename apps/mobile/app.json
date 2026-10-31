@@ -7,11 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "orbis",
     "userInterfaceStyle": "automatic",
-    "androidStatusBar": {
-      "backgroundColor": "#00000000",
-      "translucent": true,
-      "barStyle": "light-content"
-    },
     "android": {
       "versionCode": 3,
       "permissions": ["android.permission.ACCESS_LOCAL_NETWORK"],
@@ -37,9 +32,13 @@
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER"
+    },
     "plugins": [
       "expo-router",
-      "expo-status-bar",
+      ["expo-status-bar", { "style": "dark" }],
       [
         "expo-splash-screen",
         {
@@ -74,7 +73,21 @@
         }
       ],
       "expo-web-browser",
-      "expo-updates"
+      "expo-updates",
+      "./plugins/with-android-cleartext-traffic.cjs",
+      "./plugins/with-android-window-layout.cjs",
+      "./plugins/with-android-release-signing.cjs",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false,
+            "enablePngCrunchInReleaseBuilds": true
+          }
+        }
+      ],
+      ["expo-sqlite", { "useSQLCipher": true }]
     ],
     "experiments": {
       "typedRoutes": true,

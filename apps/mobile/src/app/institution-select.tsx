@@ -1,23 +1,15 @@
 import { BuildingOffice, CheckCircle, Search } from "@orbis/icons/native";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
-import {
-  FlatList,
-  Platform,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import type { ListRenderItemInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
-import { Section } from "@/components/layout/section";
 import { InstitutionCard } from "@/components/institutions/institution-card";
 import { InstitutionPickerHeader } from "@/components/institutions/institution-picker-header";
 import {
-  isExpoGo,
+  isLocalDiscoveryAvailable,
   LocalInstitutionDiscovery,
 } from "@/components/institutions/local-institution-discovery";
 import { Button } from "@/components/ui/button";
@@ -29,6 +21,7 @@ import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import {
   checkInstitutionConnection,
+  parseLocalInstitutionQr,
   type DirectoryInstitution,
   searchInstitutionDirectory,
 } from "@/lib/api/institution-discovery";
@@ -36,8 +29,15 @@ import { useI18n } from "@/lib/i18n";
 
 export default function InstitutionSelectScreen() {
   const router = useRouter();
+  const { institutionQr } = useLocalSearchParams<{
+    institutionQr?: string;
+  }>();
   const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
+  const topInset =
+    Platform.OS === "ios" ||
+    (Platform.OS === "android" && Number(Platform.Version) >= 35)
+      ? insets.top
+      : 0;
   const theme = useTheme();
   const { t, locale, setLocale, isArabic } = useI18n();
   const {
@@ -49,6 +49,8 @@ export default function InstitutionSelectScreen() {
   const [search, setSearch] = useState("");
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
+  const processedQrRef = useRef<string | null>(null);
+  const qrValue = typeof institutionQr === "string" ? institutionQr : null;
 
   const directoryQuery = useQuery({
     queryKey: ["institution-directory"],
@@ -61,9 +63,11 @@ export default function InstitutionSelectScreen() {
   const visibleInstitutions = useMemo(() => {
     const institutionsByDeploymentId = new Map<string, DirectoryInstitution>();
     for (const institution of directoryQuery.data ?? []) {
+      if (institution.is_local) continue;
       institutionsByDeploymentId.set(institution.deployment_id, institution);
     }
     for (const institution of savedInstitutions) {
+      if (institution.is_local) continue;
       institutionsByDeploymentId.set(institution.deployment_id, institution);
     }
 
@@ -79,9 +83,6 @@ export default function InstitutionSelectScreen() {
         ].some((value) => value.toLocaleLowerCase().includes(query)),
     );
   }, [directoryQuery.data, savedInstitutions, search]);
-  const featuredInstitution = visibleInstitutions[0];
-  const otherInstitutions = visibleInstitutions.slice(1);
-
   const connectInstitution = useCallback(
     async (institution: DirectoryInstitution) => {
       setConnectingId(institution.deployment_id);
@@ -100,6 +101,45 @@ export default function InstitutionSelectScreen() {
     },
     [router, selectInstitution, t],
   );
+
+  useEffect(() => {
+    if (!qrValue || isInitializing || processedQrRef.current === qrValue) {
+      return;
+    }
+
+    processedQrRef.current = qrValue;
+    router.setParams({ institutionQr: undefined });
+    void Promise.resolve()
+      .then(() => connectInstitution(parseLocalInstitutionQr(qrValue)))
+      .catch((caught: unknown) => {
+        console.error("[Institution Select] QR code is invalid.", caught);
+        setScreenError(t("auth_institution_local_qr_error"));
+      });
+  }, [connectInstitution, isInitializing, qrValue, router, t]);
+
+  const selectedLocalInstitution = selectedInstitution?.is_local
+    ? selectedInstitution.local_source === "qr" ||
+      selectedInstitution.local_source === "discovery"
+      ? selectedInstitution
+      : null
+    : null;
+  const selectedLocalNeedsReconnect =
+    selectedInstitution?.is_local === true && !selectedLocalInstitution;
+  const selectedLocalHealthQuery = useQuery({
+    queryKey: [
+      "institution-local-health",
+      selectedLocalInstitution?.deployment_id,
+    ],
+    queryFn: () => {
+      if (!selectedLocalInstitution) {
+        throw new Error("No local institution is selected.");
+      }
+      return checkInstitutionConnection(selectedLocalInstitution);
+    },
+    enabled: !isInitializing && selectedLocalInstitution !== null,
+    retry: false,
+    staleTime: 0,
+  });
 
   const renderInstitution = useCallback(
     ({ item }: ListRenderItemInfo<DirectoryInstitution>) => (
@@ -164,7 +204,10 @@ export default function InstitutionSelectScreen() {
 
   return (
     <Screen edges={[]} statusBarStyle="auto">
-      <View className="flex-1" style={{ paddingTop: insets.top + 8 }}>
+      <View
+        className="flex-1"
+        style={{ paddingTop: topInset }}
+      >
         <InstitutionPickerHeader
           languageLabel={locale === "ar" ? "English" : "العربية"}
           accessibilityLabel={
@@ -175,39 +218,14 @@ export default function InstitutionSelectScreen() {
 
         <View className="flex-1 overflow-hidden bg-background">
           <FlatList
-            data={otherInstitutions}
+            data={visibleInstitutions}
             keyExtractor={(institution) => institution.deployment_id}
             renderItem={renderInstitution}
             ListHeaderComponent={
-              <View className="gap-4 pb-4">
-                {Platform.OS !== "web" && isExpoGo ? (
-                  <Section
-                    title={t("auth_institution_lan_title")}
-                    subtitle={t("auth_institution_lan_description")}
-                    spacing="one"
-                  >
-                    <View className="rounded-2xl border border-border bg-card px-4 py-3">
-                      <Text className="text-start text-sm leading-5 text-muted-foreground">
-                        {t("auth_institution_lan_expo_go")}
-                      </Text>
-                    </View>
-                  </Section>
-                ) : Platform.OS !== "web" ? (
-                  <LocalInstitutionDiscovery
-                    connectingId={connectingId}
-                    selectedInstitution={selectedInstitution}
-                    onConnect={connectInstitution}
-                  />
-                ) : null}
-
-                <View>
-                  <Text className="text-start text-2xl leading-8 font-bold text-foreground">
-                    {t("auth_institution_search_title")}
-                  </Text>
-                  <Text className="mt-1 text-start text-sm leading-5 text-muted-foreground">
-                    {t("auth_institution_search_description")}
-                  </Text>
-                </View>
+              <View className="gap-3 pb-2">
+                <Text className="text-start text-2xl leading-8 font-bold text-foreground">
+                  {t("auth_institution_search_title")}
+                </Text>
 
                 <Input
                   accessibilityLabel={t("auth_institution_filter_label")}
@@ -221,59 +239,41 @@ export default function InstitutionSelectScreen() {
                   clearButtonMode="while-editing"
                 />
 
-                {featuredInstitution ? (
-                  <Section
-                    title={t("auth_institution_featured_recommended")}
-                    spacing="one"
-                    headerSpacing="two"
-                  >
-                    <InstitutionCard
-                      institution={featuredInstitution}
-                      name={
-                        isArabic && featuredInstitution.name_ar
-                          ? featuredInstitution.name_ar
-                          : featuredInstitution.name
-                      }
-                      isCurrent={
-                        selectedInstitution?.deployment_id ===
-                        featuredInstitution.deployment_id
-                      }
-                      isBusy={
-                        connectingId === featuredInstitution.deployment_id
-                      }
-                      disabled={connectingId !== null}
-                      localLabel={t("auth_institution_local_label")}
-                      onPress={connectInstitution}
-                      width={windowWidth - 32}
-                      variant="featured"
-                    />
-                  </Section>
-                ) : isLoading ? (
-                  <Section
-                    title={t("auth_institution_featured_recommended")}
-                    spacing="one"
-                    headerSpacing="two"
-                  >
-                    <Card
-                      variant="flat"
-                      padding="five"
-                      className="min-h-[136px] flex-row items-center rounded-2xl bg-card shadow-sm"
-                      style={{ width: windowWidth - 32 }}
-                    >
-                      <Skeleton width={72} height={72} borderRadius={16} />
-                      <View className="ms-4 flex-1 gap-2">
-                        <Skeleton width="76%" height={18} borderRadius={6} />
-                        <Skeleton width="54%" height={12} borderRadius={6} />
-                      </View>
-                    </Card>
-                  </Section>
+                {Platform.OS !== "web" ? (
+                  <Button
+                    title={t("auth_institution_local_scan")}
+                    variant="outline"
+                    size="md"
+                    fullWidth
+                    onPress={() => router.push("/institution-scan")}
+                  />
                 ) : null}
 
-                <Section
-                  title={t("auth_institution_results")}
-                  spacing="one"
-                  headerSpacing={0}
-                />
+                {Platform.OS !== "web" && !isLocalDiscoveryAvailable ? (
+                  <Text className="text-start text-xs leading-4 text-muted-foreground">
+                    {t("auth_institution_lan_build_required")}
+                  </Text>
+                ) : isLocalDiscoveryAvailable ? (
+                  <LocalInstitutionDiscovery
+                    connectingId={connectingId}
+                    selectedInstitution={selectedInstitution}
+                    onConnect={connectInstitution}
+                  />
+                ) : null}
+
+                {isLoading ? (
+                  <Card
+                    variant="flat"
+                    padding="three"
+                    className="min-h-[84px] flex-row items-center rounded-2xl bg-card"
+                  >
+                    <Skeleton width={56} height={56} borderRadius={16} />
+                    <View className="ms-3 flex-1 gap-2">
+                      <Skeleton width="72%" height={16} borderRadius={6} />
+                      <Skeleton width="48%" height={12} borderRadius={6} />
+                    </View>
+                  </Card>
+                ) : null}
               </View>
             }
             ListEmptyComponent={
@@ -326,7 +326,26 @@ export default function InstitutionSelectScreen() {
                 {screenError}
               </Text>
             ) : null}
-            {selectedInstitution ? (
+            {selectedLocalInstitution &&
+            !selectedLocalHealthQuery.isSuccess ? (
+              <Text
+                accessibilityRole={
+                  selectedLocalHealthQuery.isError ? "alert" : undefined
+                }
+                className="mb-3 text-center text-xs leading-4 text-muted-foreground"
+              >
+                {selectedLocalHealthQuery.isError
+                  ? t("auth_institution_connection_error")
+                  : t("auth_institution_lan_checking")}
+              </Text>
+            ) : selectedLocalNeedsReconnect ? (
+              <Text
+                accessibilityRole="alert"
+                className="mb-3 text-center text-xs leading-4 text-muted-foreground"
+              >
+                {t("auth_institution_local_reconnect_required")}
+              </Text>
+            ) : selectedInstitution ? (
               <Card
                 variant="flat"
                 padding="three"
@@ -353,7 +372,13 @@ export default function InstitutionSelectScreen() {
               size="lg"
               fullWidth
               onPress={() => router.replace("/(auth)/sign-in")}
-              disabled={!selectedInstitution || connectingId !== null}
+              disabled={
+                !selectedInstitution ||
+                connectingId !== null ||
+                selectedLocalNeedsReconnect ||
+                (selectedLocalInstitution !== null &&
+                  !selectedLocalHealthQuery.isSuccess)
+              }
             />
           </View>
         </View>
@@ -366,7 +391,7 @@ const styles = StyleSheet.create({
   listContent: {
     flexGrow: 1,
     paddingHorizontal: 16,
-    paddingTop: 24,
-    gap: 12,
+    paddingTop: 8,
+    gap: 8,
   },
 });

@@ -1043,7 +1043,7 @@
   "common_card_detail_admin_roles": "دعم الأدوار الإدارية",
   "common_card_detail_critical_incidents": "{count} حالة حرجة",
   "common_card_detail_late_absent": "تأخر: {lateRate}% | غياب: {absentRate}%",
-  "common_card_detail_total_enrolled": "إجمالي المسجلين: {count}",
+  "common_card_detail_total_enrolled": "سجلات التسجيل: {count}",
   "common_card_enrollment_rate": "نسبة التسجيل",
   "common_card_staff_members": "أعضاء الهيئة",
   "common_cash_account_created": "تم إنشاء الحساب النقدي/البنكي بنجاح",
