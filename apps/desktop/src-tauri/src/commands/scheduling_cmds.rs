@@ -33,6 +33,8 @@ pub struct CreateRoomInput {
     pub capacity: i32,
     #[serde(default = "default_room_type")]
     pub room_type: String,
+    #[serde(default)]
+    pub is_exam_hall: bool,
     pub floor: Option<i32>,
     pub org_unit_id: Option<String>,
 }
@@ -223,6 +225,7 @@ pub async fn scheduling_create_room(
             request.room_type,
             request.floor,
             org_unit_id,
+            request.is_exam_hall,
         )
         .await
         .map_err(|e| e.to_string())?;

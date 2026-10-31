@@ -1050,6 +1050,7 @@ export type CreatePeriodTypeRequest = {
 export type CreateRoomRequest = {
   capacity: number;
   floor?: number | null;
+  is_exam_hall?: boolean | null;
   name: string;
   name_ar?: string | null;
   org_unit_id?: string | null;

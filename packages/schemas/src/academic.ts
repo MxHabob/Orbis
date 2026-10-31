@@ -25,6 +25,7 @@ export const createRoomInputSchema = localizedName
       "office",
       "other",
     ]),
+    is_exam_hall: z.boolean().default(false),
     floor: z.number().int().nullable(),
     org_unit_id: z.string().trim(),
   })

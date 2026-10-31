@@ -442,10 +442,11 @@ pub async fn exam_list_secrets(
     schedule_id: String,
     state: State<'_, AppState>,
 ) -> Result<ApiResponse<Vec<SecretDto>>, String> {
+    let ctx = make_ctx(&state);
     let sid = Uuid::parse_str(&schedule_id).map_err(|_| "Invalid schedule_id")?;
     let list = state
         .scheduling_service
-        .list_secret_numbers(sid)
+        .list_secret_numbers(&ctx, sid)
         .await
         .map_err(|e| e.to_string())?;
     Ok(ok(list

@@ -9805,6 +9805,7 @@
         "properties": {
           "capacity": { "type": "integer", "format": "int32" },
           "floor": { "type": "integer", "format": "int32", "nullable": true },
+          "is_exam_hall": { "type": "boolean", "nullable": true },
           "name": { "type": "string" },
           "name_ar": { "type": "string", "nullable": true },
           "org_unit_id": {

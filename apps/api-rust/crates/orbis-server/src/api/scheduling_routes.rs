@@ -33,6 +33,8 @@ pub struct CreateRoomRequest {
     pub name: String,
     pub name_ar: Option<String>,
     pub room_type: String,
+    #[serde(default)]
+    pub is_exam_hall: Option<bool>,
     pub capacity: i32,
     pub floor: Option<i32>,
     pub org_unit_id: Option<Uuid>,
@@ -196,6 +198,7 @@ async fn create_room(
             p.room_type,
             p.floor,
             p.org_unit_id,
+            p.is_exam_hall.unwrap_or(false),
         )
         .await?;
     Ok(ApiResponse::ok(RoomDto {

@@ -607,6 +607,12 @@ impl DocumentRenderer for PdfRenderer {
         template: Option<&ReportTemplate>,
         _master: Option<&ReportTemplate>,
     ) -> Result<ExportResult, DomainError> {
+        if template.is_none() {
+            return Err(DomainError::Validation(
+                "A DocForge template is required to render a PDF".into(),
+            ));
+        }
+
         if let Some(t) = template {
             if let Ok(doc) = serde_json::from_str::<
                 docforge_engine::model::document::TemplateDocument,

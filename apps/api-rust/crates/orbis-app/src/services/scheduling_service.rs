@@ -94,6 +94,7 @@ impl SchedulingService {
         room_type: String,
         floor: Option<i32>,
         org_unit_id: Option<Uuid>,
+        is_exam_hall: bool,
     ) -> Result<Room, DomainError> {
         self.permission_checker
             .check(ctx, Permission::ScheduleWrite)
@@ -113,7 +114,7 @@ impl SchedulingService {
             name_ar,
             capacity,
             room_type,
-            is_exam_hall: false,
+            is_exam_hall,
             floor,
             org_unit_id,
             created_at: now,
@@ -951,8 +952,12 @@ impl SchedulingService {
 
     pub async fn list_secret_numbers(
         &self,
+        ctx: &RequestContext,
         schedule_id: Uuid,
     ) -> Result<Vec<SecretNumber>, DomainError> {
+        self.permission_checker
+            .check(ctx, Permission::SecretNumberReveal)
+            .await?;
         self.secret_number_repo.find_by_schedule(schedule_id).await
     }
 
