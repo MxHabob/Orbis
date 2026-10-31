@@ -6,12 +6,15 @@ import ai.orbis.solver.domain.TeacherUnavailability;
 import ai.orbis.solver.domain.TimeSlot;
 import ai.orbis.solver.domain.Timetable;
 import ai.orbis.solver.dto.LessonAssignmentDto;
+import ai.orbis.solver.dto.PinnedLessonDto;
 import ai.orbis.solver.dto.TimeSlotDto;
 import ai.orbis.solver.dto.TimetableProblemDto;
 import ai.orbis.solver.mapper.ProblemMapper;
 import ai.timefold.solver.core.api.score.buildin.hardsoft.HardSoftScore;
 import ai.timefold.solver.core.api.solver.SolverFactory;
 import ai.timefold.solver.core.api.solver.SolutionManager;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.module.kotlin.KotlinModule;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -19,6 +22,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TimetableSolverTest {
 
@@ -37,6 +42,98 @@ class TimetableSolverTest {
         Timetable timetable = ProblemMapper.INSTANCE.toTimetable(problem);
 
         assertEquals(List.of(7), timetable.getDays());
+    }
+
+    @Test
+    void acceptsLegacyClassFieldNamesAndSerializesSectionFieldNames() throws Exception {
+        var objectMapper = JsonMapper.builder()
+                .addModule(new KotlinModule.Builder().build())
+                .build();
+        String legacyRequest = """
+                {
+                  "job_id": "job",
+                  "org_id": "org",
+                  "cycle_id": "period",
+                  "mode": "incremental",
+                  "time_slots": [{
+                    "id": "slot-1",
+                    "slot_number": 1,
+                    "start_time": "08:00",
+                    "end_time": "09:00",
+                    "is_break": false,
+                    "applicable_days": [7]
+                  }],
+                  "rooms": [],
+                  "assignments": [{
+                    "id": "lesson-1",
+                    "class_subject_id": "section-subject-1",
+                    "class_id": "section-1",
+                    "subject_id": "subject-1",
+                    "teacher_id": "teacher-1",
+                    "hour_index": 0
+                  }]
+                }
+                """;
+
+        TimetableProblemDto problem = objectMapper.readValue(legacyRequest, TimetableProblemDto.class);
+        String canonicalJson = objectMapper.writeValueAsString(problem);
+
+        assertEquals("section-1", problem.getAssignments().get(0).getSectionId());
+        assertEquals("section-subject-1", problem.getAssignments().get(0).getSectionSubjectId());
+        assertTrue(canonicalJson.contains("\"section_id\":\"section-1\""));
+        assertTrue(canonicalJson.contains("\"section_subject_id\":\"section-subject-1\""));
+        assertFalse(canonicalJson.contains("\"class_id\""));
+    }
+
+    @Test
+    void rejectsUnavailableDaysAndInvalidPinnedLessons() {
+        TimetableProblemDto emptyDays = problem(List.of(
+                new TimeSlotDto("slot-1", 1, "08:00", "09:00", false, List.of())));
+        assertThrows(IllegalArgumentException.class, () -> ProblemMapper.INSTANCE.validate(emptyDays));
+
+        TimetableProblemDto invalidPinnedDay = new TimetableProblemDto(
+                "job", "org", "period", "incremental",
+                List.of(new TimeSlotDto("slot-1", 1, "08:00", "09:00", false, List.of(1))),
+                List.of(),
+                List.of(new LessonAssignmentDto(
+                        "lesson-open", "section-subject-1", "section-1", "subject-1",
+                        "teacher-1", 0, null, null, null)),
+                List.of(new PinnedLessonDto(
+                        "lesson-pinned", "section-2", "teacher-2", "subject-2",
+                        "section-subject-2", "slot-1", 7, null)),
+                List.of());
+        assertThrows(IllegalArgumentException.class,
+                () -> ProblemMapper.INSTANCE.validate(invalidPinnedDay));
+    }
+
+    @Test
+    void preservesPinnedLessonsWhileReturningOnlyOpenAssignments() {
+        TimetableProblemDto problem = new TimetableProblemDto(
+                "job", "org", "period", "incremental",
+                List.of(new TimeSlotDto("slot-1", 1, "08:00", "09:00", false, List.of(7))),
+                List.of(),
+                List.of(new LessonAssignmentDto(
+                        "lesson-open", "section-subject-open", "section-open", "subject-open",
+                        "teacher-open", 0, null, null, null)),
+                List.of(new PinnedLessonDto(
+                        "lesson-pinned", "section-pinned", "teacher-pinned", "subject-pinned",
+                        "section-subject-pinned", "slot-1", 7, null)),
+                List.of());
+        Timetable timetable = ProblemMapper.INSTANCE.toTimetable(problem);
+
+        Timetable solution = solverFactory().buildSolver().solve(timetable);
+        var result = ProblemMapper.INSTANCE.toSolution(problem, solution);
+
+        assertEquals(HardSoftScore.ZERO, solution.getScore());
+        assertEquals(2, solution.getAssignments().size());
+        assertEquals(List.of("lesson-open"),
+                result.getAssignments().stream().map(LessonAssignmentDto::getId).toList());
+        assertEquals("slot-1", solution.getAssignments().stream()
+                .filter(LessonAssignment::getPinned)
+                .findFirst()
+                .orElseThrow()
+                .getTimeSlot()
+                .getId());
     }
 
     @Test
@@ -150,6 +247,15 @@ class TimetableSolverTest {
         timetable.setDays(List.of(1));
         timetable.setAssignments(assignments);
         return timetable;
+    }
+
+    private static TimetableProblemDto problem(List<TimeSlotDto> slots) {
+        return new TimetableProblemDto(
+                "job", "org", "period", "full", slots, List.of(),
+                List.of(new LessonAssignmentDto(
+                        "lesson-1", "section-subject-1", "section-1", "subject-1",
+                        "teacher-1", 0, null, null, null)),
+                List.of(), List.of());
     }
 
     private static SolverFactory<Timetable> solverFactory() {

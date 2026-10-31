@@ -1155,7 +1155,7 @@ async function handleToggleHall(room: any) {
 }
 </script>
 
-<div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none text-start">
+<div class="h-full w-full min-w-0 max-w-full overflow-x-hidden overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none text-start">
 	{#if isLoading}
 		<Skeleton class="h-24 w-full rounded-xl" />
 		<Skeleton class="h-12 w-full rounded-lg" />
@@ -1175,8 +1175,9 @@ async function handleToggleHall(room: any) {
 			</Button>
 		</div>
 	{:else}
+		<div class="sticky top-0 z-30 -mx-6 -mt-6 flex min-w-0 flex-col gap-2 bg-background/95 px-6 pt-6 backdrop-blur">
 		<!-- Back + Header -->
-		<div class="flex items-start gap-2" in:fade={{ duration: 150 }}>
+		<div class="flex min-w-0 items-start gap-2" in:fade={{ duration: 150 }}>
 			<Button
 				href={localizeHref(`/${orgId}/academics/exams/sessions`)}
 				variant="ghost"
@@ -1188,7 +1189,7 @@ async function handleToggleHall(room: any) {
 				<ArrowLeft size={16} class="rtl:rotate-180" />
 			</Button>
 
-			<div class="flex min-w-0 flex-1 flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+			<div class="flex min-w-0 max-w-full flex-1 flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
 				<div class="flex flex-col gap-1.5">
 					<div class="flex items-center gap-2">
 						<span class="text-base font-semibold text-foreground">
@@ -1220,7 +1221,7 @@ async function handleToggleHall(room: any) {
 		</div>
 
 		<!-- Tabs -->
-		<div class="flex items-center gap-1 overflow-x-auto border-b border-border/60 pb-0 scrollbar-hide" in:fade={{ delay: 50, duration: 200 }}>
+		<div class="flex min-w-0 max-w-full items-center gap-1 overflow-x-auto border-b border-border/60 pb-0 scrollbar-hide" in:fade={{ delay: 50, duration: 200 }}>
 			{#each tabs as tab (tab.id)}
 				<button
 					class="flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3 py-3 text-xs font-medium transition-colors
@@ -1236,9 +1237,10 @@ async function handleToggleHall(room: any) {
 				</button>
 			{/each}
 		</div>
+		</div>
 
 		<!-- Tab Content -->
-		<div class="flex-1" in:fade={{ delay: 100, duration: 200 }}>
+		<div class="min-w-0 max-w-full flex-1" in:fade={{ delay: 100, duration: 200 }}>
 
 			<!-- ═══ Subjects Tab ═══ -->
 			{#if activeTab === "subjects"}
@@ -1251,8 +1253,8 @@ async function handleToggleHall(room: any) {
 							</Button>
 						</div>
 					{:else}
-						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
+						<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+							<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
 								<OrbisGrid
 									columns={subjectColumns}
 									source={subjectGridSource}
@@ -1280,10 +1282,10 @@ async function handleToggleHall(room: any) {
 							</Button>
 						</div>
 					{:else}
-						<Card class="timetable-container flex flex-col overflow-hidden rounded-xl border-border/60 shadow-xs select-none">
-							<div 
-								class="grid gap-px text-xs w-full bg-border-line"
-								style="grid-template-columns: 180px 1fr 1fr;"
+						<Card class="timetable-container flex w-full min-w-0 max-w-full flex-col overflow-hidden rounded-xl border-border/60 shadow-xs select-none">
+							<div
+								class="grid w-full min-w-0 gap-px overflow-x-auto bg-border-line text-xs"
+								style="grid-template-columns: minmax(7rem, 11.25rem) repeat(2, minmax(14rem, 1fr));"
 							>
 								<!-- Header Row -->
 								<div class="timetable-header p-4 font-bold text-center flex items-center justify-center border-b uppercase text-[10px] tracking-wider">
@@ -1299,14 +1301,14 @@ async function handleToggleHall(room: any) {
 								<!-- Rows (Dates) -->
 								{#each sessionDates as date (date)}
 									<!-- Date Cell -->
-									<div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-22.5 border-b bg-muted/10 border-e">
+									<div class="timetable-period-info min-w-0 p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-22.5 border-b bg-muted/10 border-e">
 										<span class="text-[11px] tracking-wide font-extrabold text-foreground text-center">
 											{formatDateWithDay(date)}
 										</span>
 									</div>
 
 									<!-- Morning Cell -->
-									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
+									<div class="timetable-cell min-w-0 p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card border-e">
 										{#each getExamsInCell(date, "morning") as sched (sched.id)}
 											<div class="relative flex w-full flex-row items-stretch justify-between gap-2.5 overflow-hidden rounded-lg border border-border/60 bg-card p-2.5 transition-colors hover:border-primary/20 hover:bg-muted/10">
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
@@ -1337,7 +1339,7 @@ async function handleToggleHall(room: any) {
 									</div>
 
 									<!-- Afternoon Cell -->
-									<div class="timetable-cell p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
+									<div class="timetable-cell min-w-0 p-3 text-start h-full min-h-22.5 relative flex flex-col justify-start items-stretch gap-2 border-b bg-card">
 										{#each getExamsInCell(date, "afternoon") as sched (sched.id)}
 											<div class="relative flex w-full flex-row items-stretch justify-between gap-2.5 overflow-hidden rounded-lg border border-border/60 bg-card p-2.5 transition-colors hover:border-primary/20 hover:bg-muted/10">
 												<div class="flex-1 flex flex-col justify-center items-start text-start gap-1 min-w-0">
@@ -1386,8 +1388,8 @@ async function handleToggleHall(room: any) {
 						<div class="flex items-center justify-between gap-3 px-1 select-none">
 							<span class="text-xs text-muted-foreground">{m.academics_exams_issued()}{seatingNumbers.length}{m.academics_exams_seating_numbers_suffix()}</span>
 						</div>
-						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
+						<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+							<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
 								<OrbisGrid
 									columns={seatingColumns}
 									source={seatingGridSource}
@@ -1411,8 +1413,8 @@ async function handleToggleHall(room: any) {
 						<p class="text-xs text-muted-foreground">{m.operations_ui_secret_numbers_empty()}</p>
 					</div>
 				{:else}
-					<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-						<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
+					<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+					<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
 							<OrbisGrid
 								columns={secretColumns}
 								source={secretGridSource}
@@ -1441,7 +1443,7 @@ async function handleToggleHall(room: any) {
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_classrooms()}</p>
 						</div>
 					{:else}
-						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+						<div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
 							{#each rooms as room (room.id)}
 								{@const activeHall = halls.find((h) => h.room_id === room.id)}
 								{@const isAct = !!activeHall}
@@ -1512,8 +1514,8 @@ async function handleToggleHall(room: any) {
 							</Button>
 						</div>
 					{:else}
-						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<div class="h-[calc(100dvh-17rem)] min-h-[24rem] w-full">
+						<Card class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
+							<div class="h-[min(65dvh,48rem)] min-h-64 w-full min-w-0">
 								<OrbisGrid
 									columns={proctorColumns}
 									source={proctorGridSource}

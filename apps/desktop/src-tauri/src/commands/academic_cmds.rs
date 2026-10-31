@@ -625,14 +625,10 @@ pub async fn academic_list_section_subjects(
     };
     let items = state
         .academic_service
-        .list_section_subjects(ctx.tenant_id, filter)
+        .list_all_section_subjects(ctx.tenant_id, filter)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(ok(items
-        .items
-        .into_iter()
-        .map(section_subject_dto)
-        .collect()))
+    Ok(ok(items.into_iter().map(section_subject_dto).collect()))
 }
 
 #[tauri::command]

@@ -585,13 +585,9 @@ async fn list_section_subjects(
     };
     let items = state
         .academic_service
-        .list_section_subjects(ctx.tenant_id, filter)
+        .list_all_section_subjects(ctx.tenant_id, filter)
         .await?;
-    let dtos = items
-        .items
-        .into_iter()
-        .map(section_subject_to_dto)
-        .collect();
+    let dtos = items.into_iter().map(section_subject_to_dto).collect();
     Ok(ApiResponse::ok(dtos))
 }
 
