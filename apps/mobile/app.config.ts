@@ -14,18 +14,16 @@ if (
 
 export default ({ config }: { config: ExpoConfig }): ExpoConfig => {
   const updatesEnabled = Boolean(easProjectId);
-  const android = {
-    ...config.android,
-    usesCleartextTraffic: process.env.ORBIS_DEV_ALLOW_LOCAL_HTTP === "true",
-  } as NonNullable<ExpoConfig["android"]> & {
-    usesCleartextTraffic: boolean;
-  };
+  const allowLocalHttp = process.env.ORBIS_DEV_ALLOW_LOCAL_HTTP === "true";
 
   return {
     ...config,
-    android,
     plugins: [
       ...(config.plugins ?? []),
+      [
+        "./plugins/with-android-cleartext-traffic.cjs",
+        { enabled: allowLocalHttp },
+      ],
       "./plugins/with-android-release-signing.cjs",
       [
         "expo-build-properties",

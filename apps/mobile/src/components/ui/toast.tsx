@@ -48,22 +48,6 @@ export interface ToastContextValue {
   };
 }
 
-function createToastHandler(
-  showToast: (payload: string | ToastPayload) => void,
-): ToastContextValue["toast"] {
-  const handler = (payload: string | ToastPayload) => showToast(payload);
-  return Object.assign(handler, {
-    success: (message: string, duration?: number) =>
-      showToast({ message, variant: "success", duration }),
-    error: (message: string, duration?: number) =>
-      showToast({ message, variant: "error", duration }),
-    warning: (message: string, duration?: number) =>
-      showToast({ message, variant: "warning", duration }),
-    info: (message: string, duration?: number) =>
-      showToast({ message, variant: "info", duration }),
-  });
-}
-
 // ─── Context ─────────────────────────────────────────────────────────────────
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -155,10 +139,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [opacity, translateY, dismiss],
   );
 
-  const toastHandler = React.useMemo(
-    () => createToastHandler(showToast),
-    [showToast],
-  );
+  const toastHandler = React.useMemo(() => {
+    const handler = (payload: string | ToastPayload) => showToast(payload);
+    // This function is deferred as a consumer event handler, not invoked during render.
+    // eslint-disable-next-line react-hooks/refs
+    return Object.assign(handler, {
+      success: (message: string, duration?: number) =>
+        showToast({ message, variant: "success", duration }),
+      error: (message: string, duration?: number) =>
+        showToast({ message, variant: "error", duration }),
+      warning: (message: string, duration?: number) =>
+        showToast({ message, variant: "warning", duration }),
+      info: (message: string, duration?: number) =>
+        showToast({ message, variant: "info", duration }),
+    });
+  }, [showToast]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

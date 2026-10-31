@@ -20,12 +20,7 @@ import {
 import { formatCurrency, useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
-import {
-  CreditCard,
-  Banknotes,
-  CheckCircle,
-  ExclamationCircle,
-} from "@orbis/icons/native";
+import { CreditCard, Banknotes } from "@orbis/icons/native";
 
 const feeStatusKeys: Record<string, TranslationKey> = {
   pending: "student_fee_pending",
@@ -109,7 +104,7 @@ export default function StudentFeesScreen() {
         <View className="py-ten">
           <EmptyState
             title={t("student_no_fees") || "No Fees Found"}
-            icon={<Banknotes size={32} className="text-muted-foreground" />}
+            icon={<Banknotes size={32} color={theme.mutedForeground} />}
           />
         </View>
       ) : (

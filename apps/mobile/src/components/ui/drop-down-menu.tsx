@@ -63,7 +63,7 @@ interface DropdownMenuContextValue {
   open: boolean;
   openMenu: () => void;
   closeMenu: (callback?: () => void) => void;
-  triggerRef: React.RefObject<View | null>;
+  triggerRef: React.RefObject<ViewInstance | null>;
   menuPosition: {
     top: number;
     left?: number;
@@ -72,6 +72,8 @@ interface DropdownMenuContextValue {
   };
 }
 
+type ViewInstance = React.ComponentRef<typeof View>;
+
 const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(
   null,
 );
@@ -79,7 +81,7 @@ const DropdownMenuContext = createContext<DropdownMenuContextValue | null>(
 // ─── Trigger Measurement ────────────────────────────────────────────────────────
 
 function measureTrigger(
-  ref: React.RefObject<View | null>,
+  ref: React.RefObject<ViewInstance | null>,
   callback: (x: number, y: number, width: number, height: number) => void,
 ) {
   if (!ref.current) return;
@@ -102,7 +104,7 @@ export const DropdownMenu = ({
   menuWidth = 240,
 }: DropdownMenuProps) => {
   const [visible, setVisible] = useState(false);
-  const triggerRef = useRef<View>(null);
+  const triggerRef = useRef<ViewInstance>(null);
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -184,12 +186,13 @@ export const DropdownMenuTrigger = ({
     return null;
   }
 
-  const handlePress = () => context.openMenu();
+  const { openMenu, triggerRef } = context;
+  const handlePress = () => openMenu();
   const suppressLongPress = () => undefined;
 
   if (asChild && isValidElement(children)) {
     return (
-      <View ref={context.triggerRef} collapsable={false}>
+      <View ref={triggerRef} collapsable={false}>
         {cloneElement(children as ReactElement<any>, {
           onPress: (event: any) => {
             (children as ReactElement<any>).props?.onPress?.(event);
@@ -203,7 +206,7 @@ export const DropdownMenuTrigger = ({
   }
 
   return (
-    <View ref={context.triggerRef} collapsable={false}>
+    <View ref={triggerRef} collapsable={false}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={handlePress}

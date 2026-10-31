@@ -18,7 +18,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import type { ListRenderItemInfo } from "@react-native/virtualized-lists";
+import type { ListRenderItemInfo } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Screen } from "@/components/layout/screen";
 import { Section } from "@/components/layout/section";
@@ -271,8 +271,6 @@ export default function InstitutionSelectScreen() {
     : null;
 
   const renderEmpty = useCallback(() => {
-    if (isLoading) return null;
-
     if (directoryError) {
       return (
         <View className="items-center gap-4 px-5 py-8">
@@ -310,7 +308,7 @@ export default function InstitutionSelectScreen() {
         }}
       />
     );
-  }, [directoryError, directoryQuery, isLoading, search, t]);
+  }, [directoryError, directoryQuery, search, t]);
 
   return (
     <Screen edges={[]} statusBarStyle="auto">
@@ -455,7 +453,9 @@ export default function InstitutionSelectScreen() {
               </View>
             }
             ListEmptyComponent={
-              visibleInstitutions.length === 0 ? renderEmpty : null
+              visibleInstitutions.length === 0 && !isLoading
+                ? renderEmpty
+                : undefined
             }
             ListFooterComponent={
               directoryError && visibleInstitutions.length > 0 ? (
@@ -473,7 +473,7 @@ export default function InstitutionSelectScreen() {
                     onPress={() => void directoryQuery.refetch()}
                   />
                 </View>
-              ) : null
+              ) : undefined
             }
             contentContainerStyle={[
               styles.listContent,

@@ -388,6 +388,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const restoreSession = useCallback(async () => {
+    setIsInitializing(true);
     try {
       const [
         savedToken,
@@ -663,7 +664,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [logout]);
 
   useEffect(() => {
-    restoreSession();
+    void Promise.resolve().then(restoreSession);
   }, [restoreSession]);
 
   const value = useMemo<AuthContextType>(

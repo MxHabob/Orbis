@@ -20,7 +20,7 @@ import type { StudentScheduleItem } from "@/hooks/use-api-queries";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import type { TranslationKey } from "@/lib/i18n/types";
-import { Calendar, Clock, Sparkles } from "@orbis/icons/native";
+import { Calendar, Clock } from "@orbis/icons/native";
 
 const weekdayKeys: TranslationKey[] = [
   "student_schedule_day_1",
@@ -108,7 +108,7 @@ export default function StudentScheduleScreen() {
               t("schedule_day_off_hint") ||
               "No lessons are assigned for this day."
             }
-            icon={<Calendar size={32} className="text-muted-foreground" />}
+            icon={<Calendar size={32} color={theme.mutedForeground} />}
           />
         </View>
       ) : (

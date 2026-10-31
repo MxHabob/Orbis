@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useGradesQuery, useLinkedStudentId } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import { ChartBar, AcademicCap, Sparkles } from "@orbis/icons/native";
+import { ChartBar, AcademicCap } from "@orbis/icons/native";
 
 export default function StudentGradesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -95,7 +95,7 @@ export default function StudentGradesScreen() {
         <View className="py-ten">
           <EmptyState
             title={t("student_no_grades")}
-            icon={<ChartBar size={32} className="text-muted-foreground" />}
+            icon={<ChartBar size={32} color={theme.mutedForeground} />}
           />
         </View>
       ) : (

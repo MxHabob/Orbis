@@ -5,12 +5,7 @@
  */
 
 import React from "react";
-import {
-  View,
-  type ViewProps,
-  type FlexAlignType,
-  type ViewStyle,
-} from "react-native";
+import { View, type ViewProps, type ViewStyle } from "react-native";
 
 type SpacingScale =
   | "half"
@@ -42,7 +37,7 @@ const gapClasses: Record<SpacingScale, string> = {
 export interface StackProps extends ViewProps {
   direction?: "column" | "row" | "column-reverse" | "row-reverse";
   gap?: SpacingScale | number;
-  align?: FlexAlignType;
+  align?: ViewStyle["alignItems"];
   justify?:
     | "flex-start"
     | "flex-end"
