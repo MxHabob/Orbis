@@ -18,6 +18,7 @@ import { Card } from "@orbis/ui/card";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import ExamSessionConfigDialog from "$lib/features/exams/components/exam-session-config-dialog.svelte";
+import ExamProctorAssignDialog from "$lib/features/exams/components/exam-proctor-assign-dialog.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
@@ -77,6 +78,7 @@ let isLoading = $state(true);
 let activeTab = $state("subjects");
 let isSubjectSheetOpen = $state(false);
 let isEditSheetOpen = $state(false);
+let isProctorAssignDialogOpen = $state(false);
 
 let activeJob = $state<any>(null);
 let solveJobs = $state<any[]>([]);
@@ -259,12 +261,14 @@ const proctorGridSource = $derived(
   proctors.map((proctor: any) => ({
     ...proctor,
     teacher_display: proctor.teacher_id || "—",
-    hall_display: proctor.exam_hall_id || "—",
-    role_display: proctor.role || "—",
-    status_display:
-      proctor.is_confirmed === 1
-        ? "Confirmed"
-        : m.academics_exams_pending_confirmation(),
+    hall_display:
+      rooms.find((room: any) => room.id === proctor.room_id)?.name_ar ||
+      rooms.find((room: any) => room.id === proctor.room_id)?.name ||
+      proctor.room_id ||
+      "—",
+    role_display: proctor.is_chief
+      ? m.operations_ui_proctor_chief()
+      : m.academics_exams_proctor(),
   })),
 );
 
@@ -272,7 +276,6 @@ const proctorColumns: OrbisColumnDef[] = [
   { id: "teacher_display", prop: "teacher_display", header: m.academics_exams_proctor(), name: m.academics_exams_proctor(), flex: 1, readonly: true },
   { id: "hall_display", prop: "hall_display", header: m.academics_exams_committee(), name: m.academics_exams_committee(), width: 150, size: 150, readonly: true },
   { id: "role_display", prop: "role_display", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 140, size: 140, readonly: true },
-  { id: "status_display", prop: "status_display", header: m.common_word_status(), name: m.common_word_status(), width: 170, size: 170, type: "badge", readonly: true, align: "center" },
   { id: "actions", prop: "actions", header: m.common_action_delete(), name: m.common_action_delete(), width: 76, size: 76, type: "action", readonly: true, align: "center", meta: { items: proctorActions } },
 ];
 
@@ -616,9 +619,6 @@ async function handleToggleHall(room: any) {
   }
 }
 
-async function handleAssignProctors() {
-  toast.error(m.operations_ui_proctor_assignment_desktop_unavailable());
-}
 </script>
 
 <div class="h-full w-full overflow-y-auto scrollbar-hide p-6 flex flex-col gap-6 select-none text-start">
@@ -755,7 +755,7 @@ async function handleAssignProctors() {
 								</div>
 
 								<!-- Rows (Dates) -->
-								{#each sessionDates as date}
+								{#each sessionDates as date (date)}
 									<!-- Date Cell -->
 									<div class="timetable-period-info p-3 font-semibold text-center flex flex-col justify-center items-center gap-1 min-h-22.5 border-b bg-muted/10 border-e">
 										<span class="text-[11px] tracking-wide font-extrabold text-foreground text-center">
@@ -979,7 +979,13 @@ async function handleAssignProctors() {
 					{#if proctors.length === 0}
 						<div class="flex flex-col items-center justify-center py-12 gap-3 text-center">
 							<p class="text-xs text-muted-foreground">{m.academics_exams_no_proctors_assigned()}</p>
-							<Button variant="outline" class="h-7 px-3 text-[10px] cursor-pointer" onclick={() => { activeConfigTab = "proctors"; isConfigModalOpen = true; }}>
+							<Button
+								variant="outline"
+								class="h-7 px-3 text-[10px] cursor-pointer"
+								disabled={schedules.length === 0}
+								title={schedules.length === 0 ? m.academics_exams_no_exams_scheduled() : undefined}
+								onclick={() => isProctorAssignDialogOpen = true}
+							>
 								{m.common_exams_actions_assign_proctors()}
 							</Button>
 						</div>
@@ -1053,7 +1059,13 @@ async function handleAssignProctors() {
 			<Button variant="outline" class="h-8 px-3 text-xs" onclick={handleGenerateSeating}>
 				{m.operations_ui_seating_numbers()}
 			</Button>
-			<Button variant="outline" class="h-8 px-3 text-xs" onclick={handleGenerateSecrets}>
+			<Button
+				variant="outline"
+				class="h-8 px-3 text-xs"
+				disabled={schedules.length === 0}
+				title={schedules.length === 0 ? m.operations_ui_secrets_no_schedules() : undefined}
+				onclick={handleGenerateSecrets}
+			>
 				{m.operations_ui_secret_numbers()}
 			</Button>
 			<Button variant="outline" class="h-8 px-3 text-xs" onclick={() => { activeConfigTab = "schedule"; isConfigModalOpen = true; }}>
@@ -1071,7 +1083,13 @@ async function handleAssignProctors() {
 	bind:activeTab={activeConfigTab}
 	onAutoSchedule={handleAutoSchedule}
 	onAllocateHalls={handleAllocateHalls}
-	onAssignProctors={handleAssignProctors}
+/>
+
+<ExamProctorAssignDialog
+	bind:open={isProctorAssignDialogOpen}
+	{orgId}
+	{schedules}
+	onSuccess={loadSession}
 />
 
 <SubjectAddSheet

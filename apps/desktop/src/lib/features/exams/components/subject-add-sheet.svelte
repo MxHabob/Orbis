@@ -444,7 +444,7 @@ async function handleSubmit() {
         <Button type="button" variant="outline" size="sm" onclick={() => open = false} disabled={isSaving}>
           {m.common_action_cancel()}
         </Button>
-        <Button type="submit" variant="lime" size="sm" class="font-semibold" disabled={isSaving || isLoadingOptions || !!optionsError}>
+        <Button type="submit" variant="default" size="sm" class="font-semibold" disabled={isSaving || isLoadingOptions || !!optionsError}>
           {isSaving ? m.operations_ui_saving() : m.common_exams_subjects_add()}
         </Button>
       </div>

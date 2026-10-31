@@ -6,7 +6,6 @@ import { Switch } from "@orbis/ui/switch";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -23,21 +22,16 @@ let {
   activeTab = $bindable("schedule"),
   onAutoSchedule,
   onAllocateHalls,
-  onAssignProctors,
 }: {
   open: boolean;
   activeTab: string;
   onAutoSchedule: () => void;
   onAllocateHalls: () => void;
-  onAssignProctors: () => void;
 } = $props();
 
 let preferredPeriod = $state("both");
 let maxExamsPerDay = $state(2);
 let defaultDurationMinutes = $state(90);
-let proctorsPerHall = $state(2);
-let preventOwnSubject = $state(true);
-let maxSessionsPerTeacher = $state(5);
 let separateDivisions = $state(false);
 let separateGenders = $state(false);
 let balanceHalls = $state(true);
@@ -50,9 +44,8 @@ function run(action: () => void) {
 
 <Dialog bind:open>
   <DialogContent class="max-h-[90vh] max-w-lg overflow-hidden p-0 text-start">
-    <DialogHeader class="sr-only">
+    <DialogHeader class="border-b border-border/60 px-5 py-4">
       <DialogTitle>{m.academics_exams_ai_wizard()}</DialogTitle>
-      <DialogDescription>{m.academics_exams_ai_customize()}</DialogDescription>
     </DialogHeader>
 
     <nav class="flex gap-1 border-b border-border/60 p-2" aria-label={m.academics_exams_ai_wizard()}>
@@ -71,14 +64,6 @@ function run(action: () => void) {
         onclick={() => activeTab = "halls"}
       >
         {m.operations_ui_distribute_committees_students()}
-      </button>
-      <button
-        type="button"
-        aria-pressed={activeTab === "proctors"}
-        class="flex-1 rounded-md px-2 py-2 text-xs transition-colors {activeTab === 'proctors' ? 'bg-muted text-foreground font-medium' : 'text-muted-foreground hover:text-foreground'}"
-        onclick={() => activeTab = "proctors"}
-      >
-        {m.operations_ui_assign_proctors()}
       </button>
     </nav>
 
@@ -127,7 +112,7 @@ function run(action: () => void) {
         </div>
         <DialogFooter class="mt-5 border-t border-border pt-4">
           <Button variant="outline" size="sm" onclick={() => open = false}>{m.common_action_cancel()}</Button>
-          <Button variant="lime" size="sm" class="font-semibold" onclick={() => run(onAutoSchedule)}>
+          <Button variant="default" size="sm" class="font-semibold" onclick={() => run(onAutoSchedule)}>
             {m.operations_ui_start_smart_scheduling()}
           </Button>
         </DialogFooter>
@@ -148,46 +133,8 @@ function run(action: () => void) {
         </div>
         <DialogFooter class="mt-5 border-t border-border pt-4">
           <Button variant="outline" size="sm" onclick={() => open = false}>{m.common_action_cancel()}</Button>
-          <Button variant="lime" size="sm" class="font-semibold" onclick={() => run(onAllocateHalls)}>
+          <Button variant="default" size="sm" class="font-semibold" onclick={() => run(onAllocateHalls)}>
             {m.operations_ui_start_automatic_distribution()}
-          </Button>
-        </DialogFooter>
-      {:else}
-        <div class="flex flex-col gap-4">
-          <label class="flex flex-col gap-1.5 text-xs">
-            <span class="text-muted-foreground">{m.academics_exams_required_proctors()}</span>
-            <Select
-              type="single"
-              value={String(proctorsPerHall)}
-              onValueChange={(value) => proctorsPerHall = Number(value ?? 2)}
-            >
-              <SelectTrigger class="h-9 w-full text-xs">
-                {proctorsPerHall === 1
-                  ? m.academics_exams_one_proctor()
-                  : proctorsPerHall === 3
-                    ? m.academics_exams_three_proctors()
-                    : m.academics_exams_two_proctors()}
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">{m.academics_exams_one_proctor()}</SelectItem>
-                <SelectItem value="2">{m.academics_exams_two_proctors()}</SelectItem>
-                <SelectItem value="3">{m.academics_exams_three_proctors()}</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-          <label class="flex items-center justify-between gap-4 rounded-lg border border-border/60 px-3 py-3 text-xs">
-            <span class="text-muted-foreground">{m.academics_exams_ensure_no_proctoring_own_subject()}</span>
-            <Switch bind:checked={preventOwnSubject} />
-          </label>
-          <label class="flex flex-col gap-1.5 text-xs">
-            <span class="text-muted-foreground">{m.academics_exams_max_proctoring_sessions()}</span>
-            <Input type="number" bind:value={maxSessionsPerTeacher} min="1" max="20" class="h-9 font-mono text-xs" />
-          </label>
-        </div>
-        <DialogFooter class="mt-5 border-t border-border pt-4">
-          <Button variant="outline" size="sm" onclick={() => open = false}>{m.common_action_cancel()}</Button>
-          <Button variant="lime" size="sm" class="font-semibold" onclick={() => run(onAssignProctors)}>
-            {m.operations_ui_assign_proctors_automatically()}
           </Button>
         </DialogFooter>
       {/if}
