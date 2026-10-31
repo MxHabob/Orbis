@@ -117,6 +117,8 @@
   "academics_exams_committees_out_of": " committees out of ",
   "academics_exams_default_capacity": "Default Capacity: ",
   "academics_exams_default_duration": "Default Exam Duration (in minutes):",
+  "academics_exams_session_date_outside_range": "The exam date must be within the session start and end dates.",
+  "academics_exams_session_invalid_time_range": "The end time must be after the start time.",
   "academics_exams_duration_minutes_abbr": "m",
   "academics_exams_ensure_no_proctoring_own_subject": "Ensure math Academic staff member doesn't proctor math exam to prevent cheating",
   "academics_exams_floor_connector": " - Floor ",

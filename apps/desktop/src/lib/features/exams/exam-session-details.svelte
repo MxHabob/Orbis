@@ -5,19 +5,19 @@ import { formatDate } from "$lib/core/i18n";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import {
-  Grid,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-  TableCell,
-} from "@orbis/ui/table";
+  OrbisGrid,
+  type ActionItem,
+  type OrbisColumnDef,
+  type SelectionSnapshot,
+} from "@orbis/svelte-grid";
+import { ArrowLeft } from "@orbis/icons";
 import { toast } from "@orbis/ui";
-import { localizeHref } from "$lib/paraglide/runtime";
+import { getLocale, localizeHref } from "$lib/paraglide/runtime";
 import { fade } from "svelte/transition";
 import { Card } from "@orbis/ui/card";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
+import ExamSessionConfigDialog from "$lib/features/exams/components/exam-session-config-dialog.svelte";
 import SubjectAddSheet from "$lib/features/exams/components/subject-add-sheet.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
 import PrintDialog from "$lib/shared/components/print-dialog.svelte";
@@ -34,22 +34,8 @@ let seatingNumbers = $state<any[]>([]);
 let printDialogOpen = $state(false);
 let selectedSeatIds = $state<Set<string>>(new Set());
 
-function toggleSeatSelection(id: string) {
-  if (selectedSeatIds.has(id)) {
-    selectedSeatIds.delete(id);
-    selectedSeatIds = new Set(selectedSeatIds);
-  } else {
-    selectedSeatIds.add(id);
-    selectedSeatIds = new Set(selectedSeatIds);
-  }
-}
-
-function toggleSelectAllSeats() {
-  if (selectedSeatIds.size === seatingNumbers.length) {
-    selectedSeatIds = new Set();
-  } else {
-    selectedSeatIds = new Set(seatingNumbers.map((sn) => String(sn.id)));
-  }
+function handleSeatingSelection(selection: SelectionSnapshot) {
+  selectedSeatIds = new Set(selection.ids);
 }
 
 const selectedSeatingContexts = $derived.by(() => {
@@ -105,16 +91,6 @@ let previewDraft = $state(false);
 
 let isConfigModalOpen = $state(false);
 let activeConfigTab = $state("schedule");
-
-let preferredPeriod = $state("both");
-let maxExamsPerDay = $state(2);
-let defaultDurationMinutes = $state(90);
-let proctorsPerHall = $state(2);
-let preventOwnSubject = $state(true);
-let maxSessionsPerTeacher = $state(5);
-let separateDivisions = $state(false);
-let separateGenders = $state(false);
-let balanceHalls = $state(true);
 
 const draftSchedulesInGrid = $derived.by(() => {
   if (!previewDraft || !activeJob || !activeJob.best_solution) return [];
@@ -225,6 +201,80 @@ const tabs = $derived([
     count: proctors.length,
   },
 ]);
+
+const subjectGridSource = $derived(
+  subjects.map((subject: any, index: number) => ({
+    ...subject,
+    __idx: index + 1,
+    subject_name: getSubjectName(subject.subject_id),
+    duration_display: `${subject.duration_minutes}${m.academics_exams_duration_minutes_abbr()}`,
+    exam_type_display:
+      subject.exam_type === "oral"
+        ? m.exams_subject_type_oral()
+        : subject.exam_type === "practical"
+          ? m.exams_subject_type_practical()
+          : subject.exam_type === "mixed"
+            ? m.exams_subject_type_mixed()
+            : m.exams_subject_type_written(),
+  })),
+);
+
+const subjectColumns: OrbisColumnDef[] = [
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
+  { id: "subject_name", prop: "subject_name", header: m.common_word_subject(), name: m.common_word_subject(), flex: 1, readonly: true, cellClass: "font-medium" },
+  { id: "max_score", prop: "max_score", header: m.common_exams_subjects_score(), name: m.common_exams_subjects_score(), width: 110, size: 110, type: "number", readonly: true, align: "center" },
+  { id: "duration_display", prop: "duration_display", header: m.common_exams_subjects_duration(), name: m.common_exams_subjects_duration(), width: 130, size: 130, readonly: true, align: "center" },
+  { id: "exam_type_display", prop: "exam_type_display", header: m.common_bulk_col_exam_type(), name: m.common_bulk_col_exam_type(), width: 140, size: 140, type: "badge", readonly: true, align: "center" },
+];
+
+const seatActions: ActionItem[] = [
+  { id: "delete", label: m.common_action_delete(), variant: "destructive" },
+];
+
+const seatingGridSource = $derived(
+  seatingNumbers.map((seat: any, index: number) => ({
+    ...seat,
+    __idx: index + 1,
+    student_name_display: seat.student_name_ar || seat.enrollment_id || "—",
+    class_display: seat.class_id || "—",
+    level_display: seat.level || "—",
+  })),
+);
+
+const seatingColumns: OrbisColumnDef[] = [
+  { id: "__selected", prop: "__selected", header: "", name: "", width: 40, size: 40, readonly: true, align: "center" },
+  { id: "__idx", prop: "__idx", header: "#", name: "#", width: 48, size: 48, readonly: true, align: "center" },
+  { id: "seating_number", prop: "seating_number", header: m.academics_exams_seat_number(), name: m.academics_exams_seat_number(), width: 130, size: 130, type: "number", readonly: true, cellClass: "font-mono font-semibold text-primary" },
+  { id: "student_name_display", prop: "student_name_display", header: m.common_word_student(), name: m.common_word_student(), flex: 1, readonly: true },
+  { id: "class_display", prop: "class_display", header: m.common_table_class(), name: m.common_table_class(), width: 130, size: 130, readonly: true },
+  { id: "level_display", prop: "level_display", header: m.academics_exams_level(), name: m.academics_exams_level(), width: 110, size: 110, readonly: true },
+  { id: "actions", prop: "actions", header: m.common_action_delete(), name: m.common_action_delete(), width: 76, size: 76, type: "action", readonly: true, align: "center", meta: { items: seatActions } },
+];
+
+const proctorActions: ActionItem[] = [
+  { id: "delete", label: m.operations_ui_cancel_proctor_assignment(), variant: "destructive" },
+];
+
+const proctorGridSource = $derived(
+  proctors.map((proctor: any) => ({
+    ...proctor,
+    teacher_display: proctor.teacher_id || "—",
+    hall_display: proctor.exam_hall_id || "—",
+    role_display: proctor.role || "—",
+    status_display:
+      proctor.is_confirmed === 1
+        ? "Confirmed"
+        : m.academics_exams_pending_confirmation(),
+  })),
+);
+
+const proctorColumns: OrbisColumnDef[] = [
+  { id: "teacher_display", prop: "teacher_display", header: m.academics_exams_proctor(), name: m.academics_exams_proctor(), flex: 1, readonly: true },
+  { id: "hall_display", prop: "hall_display", header: m.academics_exams_committee(), name: m.academics_exams_committee(), width: 150, size: 150, readonly: true },
+  { id: "role_display", prop: "role_display", header: m.common_user_form_role(), name: m.common_user_form_role(), width: 140, size: 140, readonly: true },
+  { id: "status_display", prop: "status_display", header: m.common_word_status(), name: m.common_word_status(), width: 170, size: 170, type: "badge", readonly: true, align: "center" },
+  { id: "actions", prop: "actions", header: m.common_action_delete(), name: m.common_action_delete(), width: 76, size: 76, type: "action", readonly: true, align: "center", meta: { items: proctorActions } },
+];
 
 $effect(() => {
   aiContext.setContext({
@@ -578,30 +628,37 @@ async function handleAssignProctors() {
 		<Skeleton class="h-64 w-full rounded-xl" />
 	{:else}
 		<!-- Back + Header -->
-		<div class="flex flex-col gap-3" in:fade={{ duration: 150 }}>
+		<div class="flex items-start gap-2" in:fade={{ duration: 150 }}>
 			<Button
 				href={localizeHref(`/${orgId}/academics/exams/sessions`)}
 				variant="ghost"
-				class="h-8 w-fit px-2 text-xs text-muted-foreground"
+				size="icon-sm"
+				class="shrink-0 text-muted-foreground"
+				title={m.common_action_back()}
+				aria-label={m.common_action_back()}
 			>
-				{m.common_action_back()}
+				<ArrowLeft size={16} class="rtl:rotate-180" />
 			</Button>
 
-			<Card class="flex flex-col gap-4 rounded-xl border-border/60 bg-card p-5 shadow-xs sm:flex-row sm:items-center sm:justify-between">
+			<div class="flex min-w-0 flex-1 flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
 				<div class="flex flex-col gap-1.5">
 					<div class="flex items-center gap-2">
-						<span class="text-sm font-semibold text-foreground">
+						<span class="text-base font-semibold text-foreground">
 							{session?.name_ar || session?.name || `Session ${sessionId}`}
 						</span>
 						<ExamStatusBadge status={session?.status || "draft"} />
 					</div>
 					{#if session}
-						<div class="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-							<span>{session.start_date} – {session.end_date}</span>
+						<div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+							<span>
+								{formatDate(session.start_date, "date") || session.start_date}
+								–
+								{formatDate(session.end_date, "date") || session.end_date}
+							</span>
 						</div>
 					{/if}
 				</div>
-				<div class="flex items-center gap-2">
+				<div class="flex flex-wrap items-center gap-2">
 					<Button
 						variant="outline"
 						class="h-9 px-3 text-xs"
@@ -617,7 +674,7 @@ async function handleAssignProctors() {
 						{m.common_exams_detail_activate()}
 					</Button>
 				</div>
-			</Card>
+			</div>
 		</div>
 
 		<!-- Tabs -->
@@ -653,32 +710,16 @@ async function handleAssignProctors() {
 						</div>
 					{:else}
 						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<Grid>
-								<TableHeader>
-									<TableRow class="text-[10px]">
-										<TableHead class="w-10">#</TableHead>
-										<TableHead>{m.common_word_subject()}</TableHead>
-										<TableHead class="w-20">{m.common_exams_subjects_score()}</TableHead>
-										<TableHead class="w-24">{m.common_exams_subjects_duration()}</TableHead>
-										<TableHead class="w-24">{m.common_bulk_col_exam_type()}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#each subjects as subject, i (subject.id)}
-										<TableRow class="text-xs">
-											<TableCell class="font-mono text-muted-foreground">{i + 1}</TableCell>
-											<TableCell class="font-medium">{subject.subject_id}</TableCell>
-											<TableCell class="font-mono">{subject.max_score}</TableCell>
-											<TableCell class="font-mono">{subject.duration_minutes}{m.academics_exams_duration_minutes_abbr()}</TableCell>
-											<TableCell>
-												<span class="rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[10px]">
-													{subject.exam_type}
-												</span>
-											</TableCell>
-										</TableRow>
-									{/each}
-								</TableBody>
-							</Grid>
+							<div class="h-80 w-full">
+								<OrbisGrid
+									columns={subjectColumns}
+									source={subjectGridSource}
+									clientQuery
+									readonly
+									rtl={getLocale() === "ar"}
+									emptyTitle={m.academics_exams_no_subjects()}
+								/>
+							</div>
 						</Card>
 						<Button variant="outline" class="w-fit h-7 px-3 text-[10px] cursor-pointer" onclick={() => isSubjectSheetOpen = true}>
 							{m.common_exams_subjects_add()}
@@ -847,55 +888,23 @@ async function handleAssignProctors() {
 							{/if}
 						</div>
 						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<Grid>
-								<TableHeader>
-									<TableRow class="text-[10px]">
-										<TableHead class="w-10 text-center">
-											<input 
-												type="checkbox" 
-												checked={selectedSeatIds.size === seatingNumbers.length && seatingNumbers.length > 0} 
-												onchange={toggleSelectAllSeats}
-												class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-											/>
-										</TableHead>
-										<TableHead class="w-10">#</TableHead>
-										<TableHead>{m.academics_exams_seat_number()}</TableHead>
-										<TableHead>{m.common_word_student()}</TableHead>
-										<TableHead>{m.common_table_class()}</TableHead>
-										<TableHead>{m.academics_exams_level()}</TableHead>
-										<TableHead class="w-12 text-center">{m.common_action_delete()}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#each seatingNumbers as sn, i (sn.id)}
-										<TableRow class="text-xs">
-											<TableCell class="w-10 text-center" onclick={(e) => e.stopPropagation()}>
-												<input 
-													type="checkbox" 
-													checked={selectedSeatIds.has(String(sn.id))} 
-													onchange={() => toggleSeatSelection(String(sn.id))}
-													class="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
-												/>
-											</TableCell>
-											<TableCell class="font-mono text-muted-foreground">{i + 1}</TableCell>
-											<TableCell class="font-mono font-bold text-primary">{sn.seating_number}</TableCell>
-											<TableCell>{sn.student_name_ar || sn.enrollment_id}</TableCell>
-											<TableCell>{sn.class_id}</TableCell>
-											<TableCell>{sn.level}</TableCell>
-											<TableCell class="text-center">
-												<button
-													type="button"
-													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
-													onclick={() => handleDeleteSeating(sn.id)}
-													title={m.operations_ui_delete_seating_number()}
-												>
-													{m.common_action_delete()}
-												</button>
-											</TableCell>
-										</TableRow>
-									{/each}
-								</TableBody>
-							</Grid>
+							<div class="h-96 w-full">
+								<OrbisGrid
+									columns={seatingColumns}
+									source={seatingGridSource}
+									clientQuery
+									readonly
+									rowIdKey="id"
+									rtl={getLocale() === "ar"}
+									onselection={handleSeatingSelection}
+									onaction={(event) => {
+										if (event.actionId === "delete") {
+											handleDeleteSeating(String(event.row.id));
+										}
+									}}
+									emptyTitle={m.academics_exams_no_seating_numbers()}
+								/>
+							</div>
 						</Card>
 					{/if}
 				</div>
@@ -976,43 +985,22 @@ async function handleAssignProctors() {
 						</div>
 					{:else}
 						<Card class="overflow-hidden rounded-xl border-border/60 bg-card shadow-xs">
-							<Grid>
-								<TableHeader>
-									<TableRow class="text-[10px]">
-										<TableHead>{m.academics_exams_proctor()}</TableHead>
-										<TableHead>{m.academics_exams_committee()}</TableHead>
-										<TableHead>{m.common_user_form_role()}</TableHead>
-										<TableHead class="w-20">{m.common_word_status()}</TableHead>
-										<TableHead class="w-12 text-center">{m.common_action_delete()}</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{#each proctors as p (p.id)}
-										<TableRow class="text-xs">
-											<TableCell class="font-medium">{p.teacher_id}</TableCell>
-											<TableCell>{p.exam_hall_id}</TableCell>
-											<TableCell>{p.role}</TableCell>
-											<TableCell>
-												{#if p.is_confirmed === 1}
-													<span class="text-xs text-emerald-600">Confirmed</span>
-												{:else}
-													<span class="text-[9px] text-amber-500">{m.academics_exams_pending_confirmation()}</span>
-												{/if}
-											</TableCell>
-											<TableCell class="text-center">
-												<button
-													type="button"
-													class="text-muted-foreground hover:text-destructive p-1 rounded transition-colors cursor-pointer"
-													onclick={() => handleDeleteProctor(p.id)}
-													title={m.operations_ui_cancel_proctor_assignment()}
-												>
-													{m.common_action_delete()}
-												</button>
-											</TableCell>
-										</TableRow>
-									{/each}
-								</TableBody>
-							</Grid>
+							<div class="h-80 w-full">
+								<OrbisGrid
+									columns={proctorColumns}
+									source={proctorGridSource}
+									clientQuery
+									readonly
+									rowIdKey="id"
+									rtl={getLocale() === "ar"}
+									onaction={(event) => {
+										if (event.actionId === "delete") {
+											handleDeleteProctor(String(event.row.id));
+										}
+									}}
+									emptyTitle={m.academics_exams_no_proctors_assigned()}
+								/>
+							</div>
 						</Card>
 					{/if}
 				</div>
@@ -1078,191 +1066,21 @@ async function handleAssignProctors() {
 	{/if}
 </div>
 
-{#if isConfigModalOpen}
-	<!-- svelte-ignore a11y_click_events_have_key_events -->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div 
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" 
-		transition:fade={{ duration: 150 }}
-		onclick={(e) => { if (e.target === e.currentTarget) isConfigModalOpen = false; }}
-	>
-		<div class="bg-card border border-border shadow-xl rounded-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] text-start">
-			<!-- Modal Header -->
-			<div class="border-b border-border p-4 flex items-center justify-between bg-muted/20">
-				<div>
-					<h3 class="text-sm font-bold text-foreground">{m.academics_exams_ai_wizard()}</h3>
-					<p class="text-[10px] text-muted-foreground mt-0.5">{m.academics_exams_ai_customize()}</p>
-				</div>
-				<button 
-					type="button" 
-					class="text-muted-foreground hover:text-foreground cursor-pointer text-xs p-1"
-					onclick={() => isConfigModalOpen = false}
-				>
-					✕
-				</button>
-			</div>
-
-			<!-- Dialog Navigation Tabs -->
-			<div class="flex border-b border-border bg-muted/10 p-1 gap-1">
-				<button 
-					type="button" 
-					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
-						{activeConfigTab === 'schedule' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
-					onclick={() => activeConfigTab = "schedule"}
-				>
-					{m.operations_ui_schedule_periods()}
-				</button>
-				<button 
-					type="button" 
-					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
-						{activeConfigTab === 'halls' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
-					onclick={() => activeConfigTab = "halls"}
-				>
-					{m.operations_ui_distribute_committees_students()}
-				</button>
-				<button 
-					type="button" 
-					class="flex-1 text-[11px] font-bold py-2 text-center rounded-lg transition-all cursor-pointer 
-						{activeConfigTab === 'proctors' ? 'bg-card text-primary shadow-sm border border-border/40' : 'text-muted-foreground hover:text-foreground'}"
-					onclick={() => activeConfigTab = "proctors"}
-				>
-					{m.operations_ui_assign_proctors()}
-				</button>
-			</div>
-
-			<!-- Tab Contents -->
-			<div class="p-5 flex-1 overflow-y-auto flex flex-col gap-4 text-xs">
-				{#if activeConfigTab === "schedule"}
-					<!-- Period Solver settings -->
-					<div class="flex flex-col gap-3.5">
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_scheduling_preference()}</span>
-							<select 
-								bind:value={preferredPeriod}
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
-							>
-								<option value="both">{m.academics_exams_two_sessions()}</option>
-								<option value="morning">{m.academics_exams_morning_session()}</option>
-								<option value="afternoon">{m.academics_exams_afternoon_session()}</option>
-							</select>
-						</div>
-
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_max_exams_per_day()}</span>
-							<select 
-								bind:value={maxExamsPerDay}
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full"
-							>
-								<option value={1}>{m.academics_exams_one_exam_per_day()}</option>
-								<option value={2}>{m.academics_exams_two_exams_per_day()}</option>
-							</select>
-						</div>
-
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_default_duration()}</span>
-							<input 
-								type="number"
-								bind:value={defaultDurationMinutes}
-								min="30"
-								max="240"
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
-							/>
-						</div>
-					</div>
-
-					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
-						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAutoSchedule(); }}>
-							{m.operations_ui_start_smart_scheduling()}
-						</Button>
-					</div>
-
-				{:else if activeConfigTab === "halls"}
-					<!-- Halls allocation settings -->
-					<div class="flex flex-col gap-3.5">
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_separate_major()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_allocate_different_tracks()}</p>
-							</div>
-							<input type="checkbox" bind:checked={separateDivisions} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_separate_gender()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_allocate_genders_separate()}</p>
-							</div>
-							<input type="checkbox" bind:checked={separateGenders} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_balance_student_numbers()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_balance_allocate_evenly()}</p>
-							</div>
-							<input type="checkbox" bind:checked={balanceHalls} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-					</div>
-
-					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
-						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAllocateHalls(); }}>
-							{m.operations_ui_start_automatic_distribution()}
-						</Button>
-					</div>
-
-				{:else if activeConfigTab === "proctors"}
-					<!-- Proctors assignment settings -->
-					<div class="flex flex-col gap-3.5">
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_required_proctors()}</span>
-							<select 
-								bind:value={proctorsPerHall}
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
-							>
-								<option value={1}>{m.academics_exams_one_proctor()}</option>
-								<option value={2}>{m.academics_exams_two_proctors()}</option>
-								<option value={3}>{m.academics_exams_three_proctors()}</option>
-							</select>
-						</div>
-
-						<div class="flex items-center justify-between p-3 rounded-lg border border-border/60 bg-muted/5">
-							<div class="flex flex-col gap-0.5 max-w-[80%]">
-								<span class="font-bold text-foreground">{m.academics_exams_prevent_proctoring_own_subject()}</span>
-								<p class="text-[10px] text-muted-foreground">{m.academics_exams_ensure_no_proctoring_own_subject()}</p>
-							</div>
-							<input type="checkbox" bind:checked={preventOwnSubject} class="w-4 h-4 rounded border-border text-primary focus:ring-primary cursor-pointer" />
-						</div>
-
-						<div class="flex flex-col gap-1.5">
-							<span class="font-bold text-foreground">{m.academics_exams_max_proctoring_sessions()}</span>
-							<input 
-								type="number"
-								bind:value={maxSessionsPerTeacher}
-								min="1"
-								max="20"
-								class="bg-background text-foreground border border-border rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-primary w-full font-mono"
-							/>
-						</div>
-					</div>
-
-					<div class="mt-4 pt-4 border-t border-border flex items-center justify-end gap-2">
-						<Button variant="outline" size="sm" class="cursor-pointer" onclick={() => isConfigModalOpen = false}>{m.common_action_cancel()}</Button>
-						<Button variant="default" size="sm" class="cursor-pointer font-bold" onclick={() => { isConfigModalOpen = false; handleAssignProctors(); }}>
-							{m.operations_ui_assign_proctors_automatically()}
-						</Button>
-					</div>
-				{/if}
-			</div>
-		</div>
-	</div>
-{/if}
+<ExamSessionConfigDialog
+	bind:open={isConfigModalOpen}
+	bind:activeTab={activeConfigTab}
+	onAutoSchedule={handleAutoSchedule}
+	onAllocateHalls={handleAllocateHalls}
+	onAssignProctors={handleAssignProctors}
+/>
 
 <SubjectAddSheet
 	bind:open={isSubjectSheetOpen}
 	{orgId}
 	{sessionId}
+	periodId={session?.period_id || ""}
+	examStartDate={session?.start_date || ""}
+	examEndDate={session?.end_date || ""}
 	onSuccess={loadSession}
 />
 

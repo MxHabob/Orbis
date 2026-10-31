@@ -5,6 +5,7 @@ import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { Card } from "@orbis/ui/card";
+import { formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { fade } from "svelte/transition";
@@ -139,7 +140,11 @@ function getTypeLabel(type: string): string {
 
 					<!-- Info Row -->
 					<div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-						<span>{session.start_date} – {session.end_date}</span>
+						<span>
+							{formatDate(session.start_date, "date") || session.start_date}
+							–
+							{formatDate(session.end_date, "date") || session.end_date}
+						</span>
 						<div class="flex items-center gap-1">
 							<span class="rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-[10px] font-medium text-foreground">
 								{getTypeLabel(session.session_type)}

@@ -1,296 +1,451 @@
-<!--
-@component SubjectAddSheet
-Sheet for adding an exam subject to a session.
-Allows selecting an existing subject or creating a new one on-the-fly.
--->
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
+import { createMutation, createQuery, useQueryClient } from "@tanstack/svelte-query";
+import { FormField } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Input } from "@orbis/ui/input";
-import { FormField } from "@orbis/ui";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 import {
   Select,
-  SelectTrigger,
   SelectContent,
   SelectItem,
+  SelectTrigger,
 } from "@orbis/ui/select";
 import { toast } from "@orbis/ui";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@orbis/ui/accordion";
+import { z } from "zod";
 
-import { api } from "$lib/api";
-import { examSubjectInputSchema } from "@orbis/schemas";
+import { api, extractErrorMessage } from "$lib/api";
 import { FormController } from "$lib/shared/forms/form-controller.svelte";
-
-const examTypeLabels = {
-  written: m.exams_subject_type_written(),
-  oral: m.exams_subject_type_oral(),
-  practical: m.exams_subject_type_practical(),
-  mixed: m.exams_subject_type_mixed(),
-};
 
 let {
   open = $bindable(false),
   orgId,
   sessionId,
+  periodId,
+  examStartDate,
+  examEndDate,
   onSuccess,
 }: {
   open: boolean;
   orgId: string;
   sessionId: string;
+  periodId: string;
+  examStartDate: string;
+  examEndDate: string;
   onSuccess: () => void;
 } = $props();
 
-// Selection / creation state
-let subjectsList = $state<any[]>([]);
-let mode = $state<"select" | "create">("select");
+type ScheduleFormValues = {
+  section_id: string;
+  section_subject_id: string;
+  exam_date: string;
+  start_time: string;
+  end_time: string;
+  subject_name: string;
+  subject_name_ar: string;
+  subject_code: string;
+};
 
-// Form inputs
-let subjectId = $state("");
+const scheduleSchema = z
+  .object({
+    section_id: z.string().trim().min(1, m.operations_ui_subject_selection_required()),
+    section_subject_id: z.string().trim().min(1, m.operations_ui_subject_selection_required()),
+    exam_date: z.string().date(m.common_period_form_error_dates_required()),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/, m.academics_schedule_start_time()),
+    end_time: z.string().regex(/^\d{2}:\d{2}$/, m.academics_schedule_end_time()),
+    subject_name: z.string(),
+    subject_name_ar: z.string(),
+    subject_code: z.string(),
+  })
+  .superRefine((values, context) => {
+    if (values.end_time <= values.start_time) {
+      context.addIssue({
+        code: "custom",
+        path: ["end_time"],
+        message: m.academics_exams_session_invalid_time_range(),
+      });
+    }
+    if (mode === "create" && !values.subject_name_ar.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["subject_name_ar"],
+        message: m.operations_ui_subject_arabic_name_required(),
+      });
+    }
+    if (mode === "create" && !values.subject_code.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["subject_code"],
+        message: m.operations_ui_subject_code_required(),
+      });
+    }
+    if (
+      (examStartDate && values.exam_date < examStartDate) ||
+      (examEndDate && values.exam_date > examEndDate)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["exam_date"],
+        message: m.academics_exams_session_date_outside_range(),
+      });
+    }
+  });
+
+let mode = $state<"select" | "create">("select");
+let sectionId = $state("");
+let sectionSubjectId = $state("");
+let examDate = $state("");
+let startTime = $state("08:00");
+let endTime = $state("10:00");
 let newSubjectName = $state("");
 let newSubjectNameAr = $state("");
 let newSubjectCode = $state("");
 
-let maxScore = $state(100);
-let durationMinutes = $state(120);
-let examType = $state("written");
-let isSaving = $state(false);
+const queryClient = useQueryClient();
+const sectionsQuery = createQuery(() => ({
+  queryKey: ["exam-session-sections", orgId, periodId],
+  queryFn: () => api.listSections(),
+  enabled: open && !!orgId && !!periodId,
+  staleTime: 5 * 60 * 1000,
+}));
+const subjectsQuery = createQuery(() => ({
+  queryKey: ["subjects", orgId],
+  queryFn: () => api.listSubjects(),
+  enabled: open && !!orgId,
+  staleTime: 10 * 60 * 1000,
+}));
+const offeringsQuery = createQuery(() => ({
+  queryKey: ["exam-session-subject-offerings", orgId, periodId, sectionId],
+  queryFn: () => api.listSectionSubjects(sectionId, periodId),
+  enabled: open && mode === "select" && !!sectionId && !!periodId,
+  staleTime: 5 * 60 * 1000,
+}));
+
+const sections = $derived((sectionsQuery.data ?? []).filter((section) => section.is_active));
+const offerings = $derived(offeringsQuery.data ?? []);
+const subjects = $derived(subjectsQuery.data ?? []);
+const subjectNames = $derived(
+  new Map(subjects.map((subject) => [String(subject.id), subject.name_ar || subject.name])),
+);
+const isLoadingOptions = $derived(
+  sectionsQuery.isLoading ||
+    subjectsQuery.isLoading ||
+    (mode === "select" && !!sectionId && offeringsQuery.isLoading),
+);
+const optionsError = $derived(
+  sectionsQuery.error || subjectsQuery.error || offeringsQuery.error,
+);
 
 const form = new FormController({
   initialValues: {
-    session_id: "",
-    subject_id: "",
-    max_score: 100,
-    duration_minutes: 120,
-    exam_type: "written" as "written" | "oral" | "practical" | "mixed",
+    section_id: "",
+    section_subject_id: "",
+    exam_date: "",
+    start_time: "08:00",
+    end_time: "10:00",
+    subject_name: "",
+    subject_name_ar: "",
+    subject_code: "",
   },
-  schema: examSubjectInputSchema,
+  schema: scheduleSchema,
 });
 
+const scheduleMutation = createMutation(() => ({
+  mutationFn: async (payload: ScheduleFormValues) => {
+    let targetSectionSubjectId = payload.section_subject_id;
+
+    if (mode === "create") {
+      const newSubject = await api.createSubject({
+        name: payload.subject_name.trim() || payload.subject_name_ar.trim(),
+        name_ar: payload.subject_name_ar.trim(),
+        code: payload.subject_code.trim().toUpperCase(),
+      });
+      await queryClient.invalidateQueries({ queryKey: ["subjects", orgId] });
+
+      const offering = await api.assignSectionSubject({
+        section_id: payload.section_id,
+        subject_id: newSubject.id,
+        period_id: periodId,
+        status: "active",
+      });
+      targetSectionSubjectId = offering.id;
+    }
+
+    return api.scheduleExam({
+      exam_session_id: sessionId,
+      section_subject_id: targetSectionSubjectId,
+      exam_date: payload.exam_date,
+      start_time: payload.start_time,
+      end_time: payload.end_time,
+    });
+  },
+}));
+
+const isSaving = $derived(form.isSubmitting || scheduleMutation.isPending);
+
 function resetForm() {
-  subjectId = "";
+  sectionId = "";
+  sectionSubjectId = "";
+  examDate = examStartDate;
+  startTime = "08:00";
+  endTime = "10:00";
   newSubjectName = "";
   newSubjectNameAr = "";
   newSubjectCode = "";
-  maxScore = 100;
-  durationMinutes = 120;
-  examType = "written";
   mode = "select";
+  form.values = {
+    section_id: "",
+    section_subject_id: "",
+    exam_date: "",
+    start_time: "08:00",
+    end_time: "10:00",
+    subject_name: "",
+    subject_name_ar: "",
+    subject_code: "",
+  };
 }
 
-// Fetch subjects catalog when sheet is opened
 $effect(() => {
-  if (open && orgId) {
-    (async () => {
-      try {
-        const res = await api.listSubjects();
-        subjectsList = res || [];
-      } catch (e: unknown) {
-        console.error("Failed to load school subjects list:", e);
-      }
-    })();
-  }
+  if (open && !examDate) examDate = examStartDate;
 });
 
 async function handleSubmit() {
-  let targetSubjectId = subjectId;
-
-  if (mode === "create") {
-    if (!newSubjectNameAr.trim()) {
-      toast.error(m.operations_ui_subject_arabic_name_required());
-      return;
-    }
-    if (!newSubjectCode.trim()) {
-      toast.error(m.operations_ui_subject_code_required());
-      return;
-    }
-    isSaving = true;
-    try {
-      // 1. Create the subject in school catalog
-      const newSub = await api.createSubject({
-        name: newSubjectName || newSubjectNameAr,
-        name_ar: newSubjectNameAr,
-        code: newSubjectCode,
-      });
-      targetSubjectId = newSub.id;
-      // Refresh local list
-      subjectsList = [...subjectsList, newSub];
-    } catch (e: any) {
-      toast.error(
-        (e as any)?.message || m.operations_ui_subject_create_error(),
-      );
-      isSaving = false;
-      return;
-    }
-  } else {
-    if (!targetSubjectId) {
-      toast.error(m.operations_ui_subject_selection_required());
-      return;
-    }
+  if (!sectionId) {
+    toast.error(m.operations_ui_subject_selection_required());
+    return;
   }
-
+  if (mode === "select" && !sectionSubjectId) {
+    toast.error(m.operations_ui_subject_selection_required());
+    return;
+  }
   form.values = {
-    session_id: sessionId,
-    subject_id: targetSubjectId,
-    max_score: Number(maxScore),
-    duration_minutes: Number(durationMinutes),
-    exam_type: examType as "written" | "oral" | "practical" | "mixed",
+    section_id: sectionId,
+    section_subject_id: mode === "create" ? "new-subject" : sectionSubjectId,
+    exam_date: examDate,
+    start_time: startTime,
+    end_time: endTime,
+    subject_name: newSubjectName,
+    subject_name_ar: newSubjectNameAr,
+    subject_code: newSubjectCode,
   };
+
   const submitted = await form.submit(async (payload) => {
-    await api.scheduleExam(payload as any);
-    toast.success(m.operations_ui_subject_add_success());
+    await scheduleMutation.mutateAsync(payload);
   });
+
   if (submitted) {
+    toast.success(m.operations_ui_subject_add_success());
     resetForm();
     open = false;
     onSuccess();
-  } else if (form.formError) toast.error(form.formError);
-  else toast.error(m.operations_ui_subject_invalid());
+  } else {
+    toast.error(
+      form.formError ||
+        Object.values(form.errors).flat()[0] ||
+        m.operations_ui_subject_invalid(),
+    );
+  }
 }
 </script>
 
-<Sheet bind:open>
+<Sheet
+  bind:open
+  onOpenChange={(value) => {
+    if (!value) resetForm();
+  }}
+>
   <SheetContent
     contentClass="data-[side=end]:sm:!max-w-md"
-    class="flex flex-col h-full overflow-hidden p-0 gap-0"
+    class="flex h-full flex-col overflow-hidden p-0"
   >
     <form
-      class="flex flex-col h-full overflow-hidden gap-0"
-      onsubmit={(e) => {
-        e.preventDefault();
+      class="flex h-full flex-col overflow-hidden"
+      onsubmit={(event) => {
+        event.preventDefault();
         handleSubmit();
       }}
     >
-      <SheetHeader class="text-start select-none px-6 py-4 border-b border-border/40 shrink-0">
-        <SheetTitle class="text-lg font-bold text-foreground">
+      <SheetHeader class="shrink-0 border-b border-border/40 px-6 py-4 text-start">
+        <SheetTitle class="text-base font-semibold text-foreground">
           {m.common_exams_subjects_add()}
         </SheetTitle>
       </SheetHeader>
 
-      <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-        <Accordion type="multiple" value={["subject", "assessment"]} class="flex flex-col gap-4">
-          <AccordionItem value="subject" class="rounded-lg">
-            <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.exams_subject_new_details()}</AccordionTrigger>
-            <AccordionContent>
-        <!-- Mode Selection Tabs -->
-        <div class="flex bg-muted/40 p-0.5 rounded-lg border border-border/40 text-[10px] font-medium shrink-0">
+      <div class="flex-1 space-y-5 overflow-y-auto p-6">
+        <div class="flex rounded-lg border border-border/60 bg-muted/30 p-1 text-xs">
           <button
             type="button"
-            class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'select' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => mode = "select"}
+            aria-pressed={mode === "select"}
+            class="flex-1 rounded-md px-3 py-2 transition-colors {mode === 'select' ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+            onclick={() => {
+              mode = "select";
+              sectionSubjectId = "";
+            }}
+            disabled={isSaving}
           >
             {m.operations_ui_existing_school_subject()}
           </button>
           <button
             type="button"
-            class="flex-1 py-1.5 rounded-md transition-all cursor-pointer {mode === 'create' ? 'bg-card text-foreground font-semibold shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => mode = "create"}
+            aria-pressed={mode === "create"}
+            class="flex-1 rounded-md px-3 py-2 transition-colors {mode === 'create' ? 'bg-card font-medium text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}"
+            onclick={() => {
+              mode = "create";
+              sectionSubjectId = "";
+            }}
+            disabled={isSaving}
           >
             {m.operations_ui_create_new_subject()}
           </button>
         </div>
 
-        {#if mode === "select"}
-          <!-- Existing Subjects Selection Dropdown -->
-          <FormField id="subject-select" label={m.operations_ui_select_subject()} error={form.errors.subject_id?.[0]} required>
-            {#snippet children()}
-            <Select type="single" value={subjectId} onValueChange={(v: string | undefined) => (subjectId = v ?? "")}>
-              <SelectTrigger class="h-9 text-xs w-full">
-                {subjectsList.find(s => String(s.id) === subjectId)?.name_ar || subjectsList.find(s => String(s.id) === subjectId)?.name || m.operations_ui_select_course_subject()}
+        <FormField id="exam-section" label={m.common_table_class()} error={form.errors.section_id?.[0]} required>
+          {#snippet children()}
+            <Select
+              type="single"
+              value={sectionId}
+              onValueChange={(value) => {
+                sectionId = value ?? "";
+                sectionSubjectId = "";
+              }}
+              disabled={isSaving || isLoadingOptions}
+            >
+              <SelectTrigger id="exam-section" class="h-9 w-full text-sm">
+                {sections.find((section) => String(section.id) === sectionId)?.name_ar ||
+                  sections.find((section) => String(section.id) === sectionId)?.name ||
+                  m.common_table_class()}
               </SelectTrigger>
               <SelectContent>
-                {#each subjectsList as s}
-                  <SelectItem value={String(s.id)}>{s.name_ar || s.name} ({s.code})</SelectItem>
+                {#each sections as section (section.id)}
+                  <SelectItem value={String(section.id)}>
+                    {section.name_ar || section.name}
+                  </SelectItem>
                 {/each}
               </SelectContent>
             </Select>
+          {/snippet}
+        </FormField>
+
+        {#if mode === "select"}
+          <FormField id="exam-subject" label={m.operations_ui_select_subject()} error={form.errors.section_subject_id?.[0]} required>
+            {#snippet children()}
+              <Select
+                type="single"
+                value={sectionSubjectId}
+                onValueChange={(value) => sectionSubjectId = value ?? ""}
+                disabled={!sectionId || isSaving || offeringsQuery.isLoading}
+              >
+                <SelectTrigger id="exam-subject" class="h-9 w-full text-sm">
+                  {offerings.find((item) => String(item.id) === sectionSubjectId)
+                    ? subjectNames.get(
+                        String(offerings.find((item) => String(item.id) === sectionSubjectId)?.subject_id),
+                      ) || m.operations_ui_select_course_subject()
+                    : m.operations_ui_select_course_subject()}
+                </SelectTrigger>
+                <SelectContent>
+                  {#each offerings as offering (offering.id)}
+                    <SelectItem value={String(offering.id)}>
+                      {subjectNames.get(String(offering.subject_id)) || offering.subject_id}
+                    </SelectItem>
+                  {/each}
+                </SelectContent>
+              </Select>
             {/snippet}
           </FormField>
         {:else}
-          <!-- New Subject Form Fields -->
-          <div class="flex flex-col gap-3 p-3 rounded-lg border border-dashed border-border/60 bg-muted/20">
-            <span class="text-[9px] font-bold text-primary uppercase">{m.exams_subject_new_details()}</span>
-            
-            <FormField id="new-sub-name-ar" label={m.operations_ui_subject_name_arabic()} error={form.errors.subject_id?.[0]} required>
+          <div class="flex flex-col gap-4">
+            <FormField id="new-sub-name-ar" label={m.operations_ui_subject_name_arabic()} error={form.errors.subject_name_ar?.[0]} required>
               {#snippet children()}
-              <Input id="new-sub-name-ar" bind:value={newSubjectNameAr} placeholder={m.operations_ui_subject_name_example()} class="text-xs h-8" />
+                <Input
+                  id="new-sub-name-ar"
+                  bind:value={newSubjectNameAr}
+                  placeholder={m.operations_ui_subject_name_example()}
+                  class="h-9 text-sm"
+                  disabled={isSaving}
+                />
               {/snippet}
             </FormField>
-
             <FormField id="new-sub-name-en" label={m.operations_ui_subject_name_english()}>
               {#snippet children()}
-              <Input id="new-sub-name-en" bind:value={newSubjectName} placeholder="e.g. Mathematics" class="text-xs h-8" />
+                <Input
+                  id="new-sub-name-en"
+                  bind:value={newSubjectName}
+                  placeholder="e.g. Mathematics"
+                  class="h-9 text-sm"
+                  disabled={isSaving}
+                />
               {/snippet}
             </FormField>
-
-            <FormField id="new-sub-code" label={m.operations_ui_subject_code()} required>
+            <FormField id="new-sub-code" label={m.operations_ui_subject_code()} error={form.errors.subject_code?.[0]} required>
               {#snippet children()}
-              <Input id="new-sub-code" bind:value={newSubjectCode} placeholder={m.operations_ui_subject_code_example()} class="text-xs h-8 uppercase font-mono" />
+                <Input
+                  id="new-sub-code"
+                  bind:value={newSubjectCode}
+                  placeholder={m.operations_ui_subject_code_example()}
+                  class="h-9 font-mono text-sm uppercase"
+                  disabled={isSaving}
+                />
               {/snippet}
             </FormField>
           </div>
         {/if}
 
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="assessment" class="rounded-lg">
-            <AccordionTrigger class="text-sm font-semibold hover:no-underline">{m.common_exams_subjects_score()} / {m.common_bulk_col_exam_type()}</AccordionTrigger>
-            <AccordionContent>
-
-        <div class="border-t border-border/40 my-1"></div>
-
-        <!-- Max Score -->
-        <FormField id="max-score" label={m.common_exams_subjects_score()} error={form.errors.max_score?.[0]} required>
+        <FormField id="exam-date" label={m.common_overview_date()} error={form.errors.exam_date?.[0]} required>
           {#snippet children()}
-          <Input id="max-score" type="number" bind:value={maxScore} class="text-xs h-9 font-mono" />
+            <Input
+              id="exam-date"
+              type="date"
+              bind:value={examDate}
+              min={examStartDate}
+              max={examEndDate}
+              class="h-9 text-sm"
+              disabled={isSaving}
+            />
           {/snippet}
         </FormField>
 
-        <!-- Duration -->
-        <FormField id="duration" label={m.common_exams_subjects_duration()} error={form.errors.duration_minutes?.[0]} required>
-          {#snippet children()}
-          <Input id="duration" type="number" bind:value={durationMinutes} class="text-xs h-9 font-mono" />
-          {/snippet}
-        </FormField>
+        <div class="grid grid-cols-2 gap-3">
+          <FormField id="exam-start-time" label={m.academics_schedule_start_time()} error={form.errors.start_time?.[0]} required>
+            {#snippet children()}
+              <Input id="exam-start-time" type="time" bind:value={startTime} class="h-9 text-sm" disabled={isSaving} />
+            {/snippet}
+          </FormField>
+          <FormField id="exam-end-time" label={m.academics_schedule_end_time()} error={form.errors.end_time?.[0]} required>
+            {#snippet children()}
+              <Input id="exam-end-time" type="time" bind:value={endTime} class="h-9 text-sm" disabled={isSaving} />
+            {/snippet}
+          </FormField>
+        </div>
 
-        <!-- Exam Type -->
-        <FormField id="exam-type" label={m.common_bulk_col_exam_type()} error={form.errors.exam_type?.[0]} required>
-          {#snippet children()}
-          <Select type="single" value={examType} onValueChange={(v: string | undefined) => (examType = v ?? "written")}>
-            <SelectTrigger class="h-9 text-xs w-full">
-              {examTypeLabels[examType as keyof typeof examTypeLabels] || examType}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="written">{m.exams_subject_type_written()}</SelectItem>
-              <SelectItem value="oral">{m.exams_subject_type_oral()}</SelectItem>
-              <SelectItem value="practical">{m.exams_subject_type_practical()}</SelectItem>
-              <SelectItem value="mixed">{m.exams_subject_type_mixed()}</SelectItem>
-            </SelectContent>
-          </Select>
-          {/snippet}
-        </FormField>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        {#if optionsError}
+          <div class="flex items-center justify-between gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-xs">
+            <span class="text-destructive">{extractErrorMessage(optionsError)}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onclick={() => {
+                sectionsQuery.refetch();
+                subjectsQuery.refetch();
+                if (sectionId) offeringsQuery.refetch();
+              }}
+            >
+              {m.common_retry()}
+            </Button>
+          </div>
+        {:else if mode === "select" && sectionId && !offeringsQuery.isLoading && offerings.length === 0}
+          <p class="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
+            {m.academics_exams_no_subjects()}
+          </p>
+        {/if}
       </div>
 
-      <!-- Footer -->
-      <div class="px-6 py-3 border-t border-border/40 flex items-center justify-end gap-2 shrink-0 bg-background/50">
-        <Button variant="ghost" class="h-8 px-4 text-xs cursor-pointer" onclick={() => { resetForm(); open = false; }}>
+      <div class="flex shrink-0 items-center justify-end gap-2 border-t border-border/40 bg-background px-6 py-4">
+        <Button type="button" variant="outline" size="sm" onclick={() => open = false} disabled={isSaving}>
           {m.common_action_cancel()}
         </Button>
-        <Button type="submit" variant="default" class="h-8 px-4 text-xs cursor-pointer" disabled={isSaving}>
-          {#if isSaving}
-            {m.operations_ui_saving()}
-          {:else}
-            {m.common_exams_subjects_add()}
-          {/if}
+        <Button type="submit" variant="lime" size="sm" class="font-semibold" disabled={isSaving || isLoadingOptions || !!optionsError}>
+          {isSaving ? m.operations_ui_saving() : m.common_exams_subjects_add()}
         </Button>
       </div>
     </form>
