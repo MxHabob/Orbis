@@ -83,29 +83,41 @@ export default function NotificationPreferencesScreen() {
   const [prefs, setPrefs] = useState<PrefsMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
-
-  const loadPrefs = useCallback(async () => {
-    try {
-      const data = await fetchNotificationPreferences();
-      const map: PrefsMap = {};
-      for (const pref of data) {
-        map[pref.category] = {
-          in_app_enabled: pref.in_app_enabled,
-          email_enabled: pref.email_enabled,
-          push_enabled: pref.push_enabled,
-        };
-      }
-      setPrefs(map);
-    } catch {
-      setIsError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
-    void loadPrefs();
-  }, [loadPrefs]);
+    let active = true;
+
+    fetchNotificationPreferences()
+      .then((data) => {
+        if (!active) return;
+        const map: PrefsMap = {};
+        for (const pref of data) {
+          map[pref.category] = {
+            in_app_enabled: pref.in_app_enabled,
+            email_enabled: pref.email_enabled,
+            push_enabled: pref.push_enabled,
+          };
+        }
+        setPrefs(map);
+        setIsError(false);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        console.error(
+          "[Notifications] Failed to load notification preferences.",
+          error,
+        );
+        setIsError(true);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [reloadCount]);
 
   const toggle = useCallback(
     async (category: string, channel: keyof PrefState, value: boolean) => {
@@ -156,7 +168,11 @@ export default function NotificationPreferencesScreen() {
             title={t("notifications_error_retry")}
             variant="outline"
             size="sm"
-            onPress={() => void loadPrefs()}
+            onPress={() => {
+              setIsLoading(true);
+              setIsError(false);
+              setReloadCount((count) => count + 1);
+            }}
           />
         </View>
       ) : (

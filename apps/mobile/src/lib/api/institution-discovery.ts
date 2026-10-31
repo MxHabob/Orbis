@@ -12,6 +12,7 @@ export interface DirectoryInstitution {
   latitude?: number | null;
   longitude?: number | null;
   is_local?: boolean;
+  local_source?: "qr" | "discovery";
 }
 
 export function parseLocalInstitutionQr(data: string): DirectoryInstitution {
@@ -43,10 +44,14 @@ export function parseLocalInstitutionQr(data: string): DirectoryInstitution {
     );
   }
 
-  return { ...payload.institution, is_local: true };
+  return {
+    ...payload.institution,
+    is_local: true,
+    local_source: "qr",
+  };
 }
 
-export function createManualLocalInstitution(
+function createLocalInstitution(
   name: string,
   endpoint: string,
 ): DirectoryInstitution {
@@ -81,6 +86,53 @@ export function createManualLocalInstitution(
     deployment_name: url.hostname,
     endpoint_url: endpointUrl,
     is_local: true,
+  };
+}
+
+export interface DiscoveredOrbisService {
+  name: string;
+  host: string;
+  ipv4: string[];
+  port: number;
+  txt: Record<string, string>;
+}
+
+export function createDiscoveredLocalInstitution(
+  service: DiscoveredOrbisService,
+): DirectoryInstitution | null {
+  if (
+    service.txt.app !== "orbis" ||
+    !Number.isInteger(service.port) ||
+    service.port < 1 ||
+    service.port > 65535
+  ) {
+    return null;
+  }
+
+  const address = service.ipv4.find(isPrivateIpv4Address);
+  if (!address) return null;
+
+  const name = service.txt.name?.trim() || service.name.trim();
+  if (name.length < 2 || name.length > 100) return null;
+
+  const institution = createLocalInstitution(
+    name,
+    `http://${address}:${service.port}`,
+  );
+  const organizationId = service.txt.organization_id;
+  const hasValidOrganizationId =
+    typeof organizationId === "string" &&
+    /^[\da-f]{8}-(?:[\da-f]{4}-){3}[\da-f]{12}$/i.test(organizationId);
+  const nameAr = service.txt.name_ar?.trim();
+
+  return {
+    ...institution,
+    organization_id: hasValidOrganizationId
+      ? organizationId
+      : institution.organization_id,
+    name_ar: nameAr && nameAr.length <= 100 ? nameAr : null,
+    deployment_name: service.host || address,
+    local_source: "discovery",
   };
 }
 
@@ -236,6 +288,9 @@ function isDirectoryInstitution(value: unknown): value is DirectoryInstitution {
     isAllowedInstitutionEndpoint(institution.endpoint_url) &&
     (institution.is_local === undefined ||
       typeof institution.is_local === "boolean") &&
+    (institution.local_source === undefined ||
+      institution.local_source === "qr" ||
+      institution.local_source === "discovery") &&
     hasValidCoordinate &&
     hasValidLongitude &&
     !(

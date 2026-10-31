@@ -9,8 +9,8 @@
     "apps/mobile"
   ],
   "catalog": {
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
     "date-fns": "^4.4.0"
@@ -54,6 +54,9 @@
     "typescript": "catalog:"
   },
   "overrides": {
+    "@expo/metro-config": {
+      "lightningcss": "1.30.1"
+    },
     "tailwindcss": "4.3.1",
     "@tailwindcss/postcss": "4.3.1",
     "@tailwindcss/vite": "4.3.1"

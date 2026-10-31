@@ -1,8 +1,9 @@
 <script lang="ts">
 import { createQuery } from "@tanstack/svelte-query";
-import { api } from "$lib/api";
+import { api, type AssessmentSchemeDto } from "$lib/api";
+import { getLocale } from "$lib/paraglide/runtime";
+import * as m from "$lib/paraglide/messages";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
-import { Badge } from "@orbis/ui/badge";
 import { Button } from "@orbis/ui/button";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { InfoCircle, SettingsAlt } from "@orbis/icons";
@@ -13,13 +14,27 @@ let {
   periodId,
 }: { open: boolean; SectionSubjectId: string; periodId: string } = $props();
 
-const componentsQuery = createQuery(() => ({
-  queryKey: ["assessment-components", SectionSubjectId, periodId],
-  queryFn: () => api.listAssessmentSchemes(),
+const schemesQuery = createQuery(() => ({
+  queryKey: ["assessment-schemes", SectionSubjectId, periodId],
+  queryFn: (): Promise<AssessmentSchemeDto[]> => api.listAssessmentSchemes(),
   enabled: !!SectionSubjectId && !!periodId && open,
 }));
 
-const components = $derived((componentsQuery.data || []) as any[]);
+const schemes = $derived(schemesQuery.data ?? []);
+const locale = $derived(getLocale());
+
+function componentWeight(
+  scheme: AssessmentSchemeDto,
+  weightValue: string,
+  maxScoreValue: string,
+) {
+  const weight = Number(weightValue);
+  if (!Number.isFinite(weight)) return 0;
+  if (weight !== 1) return weight * 100;
+
+  const schemeMax = Number(scheme.max_score);
+  return schemeMax > 0 ? (Number(maxScoreValue) / schemeMax) * 100 : 0;
+}
 </script>
 
 <Sheet bind:open>
@@ -32,59 +47,109 @@ const components = $derived((componentsQuery.data || []) as any[]);
       <SheetHeader>
         <SheetTitle class="flex items-center gap-2 text-lg">
           <SettingsAlt size={18} class="text-primary" />
-          Assessment Configuration
+          {m.common_assessment_scheme()}
         </SheetTitle>
       </SheetHeader>
     </div>
 
     <div class="flex-1 overflow-y-auto p-6 scrollbar-hide">
-      {#if componentsQuery.isLoading}
+      {#if schemesQuery.isLoading}
         <div class="flex flex-col gap-3">
-          {#each Array(4) as _}
-            <Skeleton class="h-16 w-full rounded-lg" />
+          {#each Array(3) as _, index (index)}
+            <Skeleton class="h-24 w-full rounded-lg" />
           {/each}
         </div>
-      {:else if componentsQuery.error}
+      {:else if schemesQuery.error}
         <div class="flex flex-col items-center justify-center py-12 text-destructive gap-2 text-center border border-destructive/20 bg-destructive/5 rounded-xl">
           <InfoCircle size={24} />
-          <h3 class="text-sm font-bold">Failed to load</h3>
-          <p class="text-xs opacity-80">{componentsQuery.error.message}</p>
+          <h3 class="text-sm font-bold">{m.common_load_error()}</h3>
+          <p class="text-xs opacity-80">{schemesQuery.error.message}</p>
+          <Button
+            variant="outline"
+            size="sm"
+            class="mt-2"
+            onclick={() => schemesQuery.refetch()}
+          >
+            {m.common_retry()}
+          </Button>
         </div>
-      {:else if components.length === 0}
+      {:else if schemes.length === 0}
         <div class="flex flex-col items-center justify-center py-16 text-muted-foreground text-center border border-dashed border-border/60 rounded-xl bg-muted/10">
-          <p class="text-sm">No components configured.</p>
-          <p class="text-[10px] mt-1">This subject does not have an active assessment scheme for this period.</p>
+          <p class="text-sm">{m.common_assessment_no_scheme()}</p>
         </div>
       {:else}
-        <div class="flex flex-col gap-3">
-          {#each components as comp (comp.id)}
-            <div class="flex flex-col p-4 rounded-xl border border-border/50 bg-card hover:border-primary/30 transition-colors shadow-sm">
-              <div class="flex items-start justify-between mb-2">
-                <h4 class="font-bold text-sm text-foreground">{comp.name_en || comp.name_ar || comp.exam_type}</h4>
-                <Badge variant={comp.is_active === 0 ? "outline" : "secondary"} class="text-[9px] uppercase">
-                  {comp.is_active === 0 ? "Inactive" : "Active"}
-                </Badge>
-              </div>
-              
-              <div class="flex items-center gap-4 text-[10px] text-muted-foreground mt-2 bg-muted/20 p-2 rounded border border-border/40">
-                <div class="flex flex-col">
-                  <span class="uppercase tracking-wider opacity-70 mb-0.5">Weight</span>
-                  <span class="font-bold text-foreground font-sans">{comp.weight}%</span>
+        <div class="flex flex-col gap-4">
+          {#each schemes as scheme (scheme.id)}
+            <section class="rounded-xl border border-border/50 bg-card shadow-sm">
+              <header class="flex items-start justify-between gap-3 border-b border-border/40 p-4">
+                <div class="min-w-0">
+                  <h3 class="truncate text-sm font-bold text-foreground">
+                    {locale === "ar"
+                      ? scheme.name_ar || scheme.name
+                      : scheme.name || scheme.name_ar}
+                  </h3>
+                  {#if scheme.description}
+                    <p class="mt-1 text-xs text-muted-foreground">
+                      {scheme.description}
+                    </p>
+                  {/if}
                 </div>
-                <div class="w-px h-6 bg-border/60"></div>
-                <div class="flex flex-col">
-                  <span class="uppercase tracking-wider opacity-70 mb-0.5">Max Score</span>
-                  <span class="font-bold text-foreground font-sans">{comp.max_score}</span>
+                <div class="shrink-0 text-end">
+                  <span class="block text-[10px] text-muted-foreground">
+                    {m.academics_assessment_max_score()}
+                  </span>
+                  <span class="text-sm font-bold text-foreground">
+                    {scheme.max_score}
+                  </span>
                 </div>
-              </div>
-            </div>
+              </header>
+
+              {#if scheme.components.length > 0}
+                <div class="divide-y divide-border/40">
+                  {#each [...scheme.components].sort((a, b) => a.sortOrder - b.sortOrder) as component (component.code)}
+                    <div class="flex items-center justify-between gap-3 px-4 py-3">
+                      <div class="min-w-0">
+                        <p class="truncate text-xs font-medium text-foreground">
+                          {locale === "ar"
+                            ? component.nameAr || component.name
+                            : component.name || component.nameAr}
+                        </p>
+                        <p class="mt-0.5 text-[10px] text-muted-foreground">
+                          {m.academics_assessment_component_weight({
+                            weight: componentWeight(
+                              scheme,
+                              component.weight,
+                              component.maxScore,
+                            ),
+                          })}
+                        </p>
+                      </div>
+                      <div class="shrink-0 text-end">
+                        <span class="block text-[10px] text-muted-foreground">
+                          {m.academics_assessment_max_score()}
+                        </span>
+                        <span class="text-xs font-semibold text-foreground">
+                          {component.maxScore}
+                        </span>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+                <p class="p-4 text-xs text-muted-foreground">
+                  {m.academics_assessment_no_components()}
+                </p>
+              {/if}
+            </section>
           {/each}
         </div>
       {/if}
     </div>
 
     <div class="p-4 border-t border-border/40 bg-muted/20 flex items-center justify-end">
-      <Button variant="outline" onclick={() => open = false} class="text-xs h-8">Close</Button>
+      <Button variant="outline" onclick={() => (open = false)} class="text-xs h-8">
+        {m.common_action_close()}
+      </Button>
     </div>
   </SheetContent>
 </Sheet>

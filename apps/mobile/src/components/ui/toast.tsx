@@ -139,8 +139,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [opacity, translateY, dismiss],
   );
 
-  const toastHandler = React.useMemo<ToastContextValue["toast"]>(() => {
+  const toastHandler = React.useMemo(() => {
     const handler = (payload: string | ToastPayload) => showToast(payload);
+    // This function is deferred as a consumer event handler, not invoked during render.
+    // eslint-disable-next-line react-hooks/refs
     return Object.assign(handler, {
       success: (message: string, duration?: number) =>
         showToast({ message, variant: "success", duration }),

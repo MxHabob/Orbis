@@ -433,34 +433,27 @@ export const ar = {
   auth_register_subtitle: "انضم إلى منظومة أوربس التعليمية",
   auth_institution_code: "اسم المؤسسة",
   auth_institution_search_title: "اختر مؤسستك",
-  auth_institution_search_description: "ابحث عن مؤسستك أو أضف اتصالًا محليًا.",
-  auth_institution_featured_recommended: "مقترحة",
-  auth_institution_featured_nearby: "الأقرب",
   auth_institution_local_scan: "مسح QR",
-  auth_institution_local_manual: "إدخال يدوي",
-  auth_institution_local_title: "الاتصال بمؤسسة محلية",
-  auth_institution_local_hint:
-    "امسح رمز QR الذي وفرته المدرسة أو أدخل عنوان خادمها.",
   auth_institution_local_label: "مؤسسة محلية",
-  auth_institution_local_confirm: "اتصال بهذه المؤسسة",
-  auth_institution_local_name: "اسم المدرسة",
-  auth_institution_local_server: "عنوان خادم HTTPS",
-  auth_institution_local_server_hint: "مثال: https://orbis.school.local",
+  auth_institution_local_reconnect_required:
+    "أعد الاتصال بمؤسسة نشطة عبر QR أو الاكتشاف التلقائي.",
+  auth_institution_lan_checking: "جارٍ البحث عن خوادم محلية...",
+  auth_institution_lan_empty: "لا توجد خوادم محلية.",
+  auth_institution_lan_permission_error:
+    "اسمح لـOrbis باستخدام الشبكة المحلية.",
+  auth_institution_lan_error: "تعذّر البحث عن خوادم محلية.",
+  auth_institution_lan_retry: "تحديث البحث عن الخوادم المحلية",
+  auth_institution_lan_build_required:
+    "اكتشاف الشبكة يتطلب نسخة Orbis المطوّرة.",
   auth_institution_local_camera_error:
     "تعذر الوصول إلى الكاميرا. تحقق من الإذن وحاول مجددًا.",
   auth_institution_local_qr_error:
     "رمز QR غير صالح أو لا يحتوي إعداد اتصال Orbis مدعومًا.",
-  auth_institution_local_details_error:
-    "أدخل اسم المدرسة وعنوان خادم صالحًا: HTTP بعنوان IP محلي أو HTTPS.",
   auth_institution_local_camera_title: "امسح رمز المدرسة",
   auth_institution_local_camera_hint: "ضع رمز QR داخل الإطار",
   auth_institution_local_camera_ready: "جاهز للمسح",
   auth_institution_local_camera_loading: "جارٍ تجهيز الكاميرا...",
   auth_institution_local_camera_enable: "السماح باستخدام الكاميرا",
-  auth_institution_local_secure_hint:
-    "للاتصال المحلي استخدم http:// مع عنوان IP خاص مثل 192.168.1.20:3000. عناوين الإنترنت تتطلب HTTPS. لا تستخدم HTTP على شبكة عامة أو غير موثوقة.",
-  auth_institution_local_enter_name: "اكتب اسم المؤسسة",
-  auth_institution_local_enter_server: "أدخل عنوان خادم المدرسة",
   auth_institution_filter_label: "تصفية المؤسسات",
   auth_institution_nearby: "بالقرب مني",
   auth_institution_location_error:
@@ -471,7 +464,6 @@ export const ar = {
   auth_institution_searching: "جارٍ البحث عن المؤسسات...",
   auth_institution_no_matches: "لا توجد نتائج",
   auth_institution_empty_search_action: "مسح البحث",
-  auth_institution_empty_directory_action: "إضافة خادم يدويًا",
   auth_institution_search_error: "تعذر البحث في دليل المؤسسات. حاول مرة أخرى.",
   auth_institution_connection_title: "تأكيد المؤسسة",
   auth_institution_connection_hint: "تحقق من اسم المؤسسة وخادمها قبل المتابعة.",
@@ -485,7 +477,6 @@ export const ar = {
   auth_institution_linked_empty_description:
     "ابحث عن مؤسستك لإضافتها إلى حسابك.",
   auth_institution_find_more: "البحث عن مؤسسة أخرى",
-  auth_institution_results: "مؤسسات أخرى",
   auth_institution_current: "المؤسسة الحالية",
   auth_institution_connected: "تم الاتصال بالمؤسسة بنجاح.",
   auth_institution_connection_error:

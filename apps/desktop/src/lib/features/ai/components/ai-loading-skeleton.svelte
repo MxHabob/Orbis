@@ -1,8 +1,10 @@
 <script lang="ts">
 import { onMount, onDestroy } from "svelte";
-import UserAvatar from "$lib/shared/components/user-avatar.svelte";
+import { Avatar, AvatarController } from "@orbis/avatar-engine";
 import { Skeleton } from "@orbis/ui/skeleton";
 import * as m from "$lib/paraglide/messages";
+
+const avatarController = new AvatarController("thinking", { autoBlink: false });
 
 let {
   statusText = "",
@@ -29,6 +31,7 @@ onMount(() => {
 
 onDestroy(() => {
   if (timer) clearInterval(timer);
+  avatarController.destroy();
 });
 
 const currentStatus = $derived(statusText || defaultPhases[currentPhaseIndex]);
@@ -38,8 +41,9 @@ const currentStatus = $derived(statusText || defaultPhases[currentPhaseIndex]);
   <!-- Minimalist AI Status with Thinking Avatar & Dynamic Shimmering Text -->
   <div class="flex items-center gap-2">
     <div class="relative flex items-center justify-center shrink-0">
-      <UserAvatar
-        state="thinking"
+      <Avatar
+        controller={avatarController}
+        hat="none"
         width="22px"
         height="22px"
         class="shrink-0"

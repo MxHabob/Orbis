@@ -16,27 +16,117 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@orbis/ui/select";
+import { authStore, uiStore } from "$lib/stores";
 
 let {
   open = $bindable(false),
   activeTab = $bindable("schedule"),
+  orgId,
   onAutoSchedule,
   onAllocateHalls,
 }: {
   open: boolean;
   activeTab: string;
+  orgId: string;
   onAutoSchedule: () => void;
   onAllocateHalls: () => void;
 } = $props();
 
-let preferredPeriod = $state("both");
-let maxExamsPerDay = $state(2);
-let defaultDurationMinutes = $state(90);
-let separateDivisions = $state(false);
-let separateGenders = $state(false);
-let balanceHalls = $state(true);
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
+let preferredPeriod = $state<"both" | "morning" | "afternoon">(
+  uiStore.getPreference(
+    preferenceScope(),
+    "exams.ai.preferredPeriod",
+    "both",
+    (value): value is "both" | "morning" | "afternoon" =>
+      value === "both" || value === "morning" || value === "afternoon",
+  ),
+);
+let maxExamsPerDay = $state<1 | 2>(
+  uiStore.getPreference(
+    preferenceScope(),
+    "exams.ai.maxExamsPerDay",
+    2,
+    (value): value is 1 | 2 => value === 1 || value === 2,
+  ),
+);
+let defaultDurationMinutes = $state(
+  uiStore.getPreference(
+    preferenceScope(),
+    "exams.ai.defaultDurationMinutes",
+    90,
+    (value): value is number =>
+      typeof value === "number" &&
+      Number.isInteger(value) &&
+      value >= 30 &&
+      value <= 240,
+  ),
+);
+let separateDivisions = $state(
+  uiStore.getPreference(
+    preferenceScope(),
+    "exams.ai.separateDivisions",
+    false,
+    (value): value is boolean => typeof value === "boolean",
+  ),
+);
+let separateGenders = $state(
+  uiStore.getPreference(
+    preferenceScope(),
+    "exams.ai.separateGenders",
+    false,
+    (value): value is boolean => typeof value === "boolean",
+  ),
+);
+let balanceHalls = $state(
+  uiStore.getPreference(
+    preferenceScope(),
+    "exams.ai.balanceHalls",
+    true,
+    (value): value is boolean => typeof value === "boolean",
+  ),
+);
 
 function run(action: () => void) {
+  uiStore.setPreference(
+    preferenceScope(),
+    "exams.ai.preferredPeriod",
+    preferredPeriod,
+  );
+  uiStore.setPreference(
+    preferenceScope(),
+    "exams.ai.maxExamsPerDay",
+    maxExamsPerDay,
+  );
+  if (
+    Number.isInteger(defaultDurationMinutes) &&
+    defaultDurationMinutes >= 30 &&
+    defaultDurationMinutes <= 240
+  ) {
+    uiStore.setPreference(
+      preferenceScope(),
+      "exams.ai.defaultDurationMinutes",
+      defaultDurationMinutes,
+    );
+  }
+  uiStore.setPreference(
+    preferenceScope(),
+    "exams.ai.separateDivisions",
+    separateDivisions,
+  );
+  uiStore.setPreference(
+    preferenceScope(),
+    "exams.ai.separateGenders",
+    separateGenders,
+  );
+  uiStore.setPreference(
+    preferenceScope(),
+    "exams.ai.balanceHalls",
+    balanceHalls,
+  );
   open = false;
   action();
 }
@@ -72,7 +162,13 @@ function run(action: () => void) {
         <div class="flex flex-col gap-4">
           <label class="flex flex-col gap-1.5 text-xs">
             <span class="text-muted-foreground">{m.academics_exams_scheduling_preference()}</span>
-            <Select type="single" value={preferredPeriod} onValueChange={(value) => preferredPeriod = value ?? "both"}>
+            <Select
+              type="single"
+              value={preferredPeriod}
+              onValueChange={(value) =>
+                (preferredPeriod =
+                  value === "morning" || value === "afternoon" ? value : "both")}
+            >
               <SelectTrigger class="h-9 w-full text-xs">
                 {preferredPeriod === "morning"
                   ? m.academics_exams_morning_session()
@@ -93,7 +189,7 @@ function run(action: () => void) {
             <Select
               type="single"
               value={String(maxExamsPerDay)}
-              onValueChange={(value) => maxExamsPerDay = Number(value ?? 2)}
+              onValueChange={(value) => maxExamsPerDay = value === "1" ? 1 : 2}
             >
               <SelectTrigger class="h-9 w-full text-xs">
                 {maxExamsPerDay === 1 ? m.academics_exams_one_exam_per_day() : m.academics_exams_two_exams_per_day()}

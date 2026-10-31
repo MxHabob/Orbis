@@ -9,6 +9,7 @@ import { formatDate } from "$lib/core/i18n";
 import { localizeHref } from "$lib/paraglide/runtime";
 import { api, extractErrorMessage, queryKeys } from "$lib/api";
 import { fade } from "svelte/transition";
+import { authStore, academicContext, uiStore } from "$lib/stores";
 
 import ExamStatusBadge from "$lib/features/exams/components/status-badge.svelte";
 import SessionCreateSheet from "$lib/features/exams/components/session-create-sheet.svelte";
@@ -39,6 +40,40 @@ const listPeriodId = $derived(selectedPeriodId || activePeriodId);
 const sessionsQuery = createExamSessionsQuery(() => listPeriodId);
 const sessions = $derived((sessionsQuery.data || []) as any[]);
 const isLoading = $derived(sessionsQuery.isLoading);
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
+
+$effect(() => {
+  if (periodsQuery.isLoading || periods.length === 0) return;
+
+  const isAvailable = (periodId: string) =>
+    periods.some((period) => String(period.id) === periodId);
+  const rememberedPeriodId = uiStore.getPreference(
+    preferenceScope(),
+    "exams.selectedPeriodId",
+    "",
+    (value): value is string => typeof value === "string",
+  );
+  const nextPeriodId = isAvailable(selectedPeriodId)
+    ? selectedPeriodId
+    : isAvailable(rememberedPeriodId)
+      ? rememberedPeriodId
+      : isAvailable(academicContext.effectivePeriodId)
+        ? academicContext.effectivePeriodId
+        : activePeriodId;
+
+  if (nextPeriodId !== selectedPeriodId) selectedPeriodId = nextPeriodId;
+  if (nextPeriodId) {
+    academicContext.selectedPeriodId = nextPeriodId;
+    uiStore.setPreference(
+      preferenceScope(),
+      "exams.selectedPeriodId",
+      nextPeriodId,
+    );
+  }
+});
 
 const filtered = $derived(
   sessions.filter((s: any) => {

@@ -459,35 +459,27 @@ export const en: Record<TranslationKey, string> = {
   auth_register_subtitle: "Join the Orbis Educational Platform",
   auth_institution_code: "Institution name",
   auth_institution_search_title: "Choose your institution",
-  auth_institution_search_description:
-    "Find your institution or add a local connection.",
-  auth_institution_featured_recommended: "For you",
-  auth_institution_featured_nearby: "Nearest",
   auth_institution_local_scan: "Scan QR",
-  auth_institution_local_manual: "Enter manually",
-  auth_institution_local_title: "Connect to a local institution",
-  auth_institution_local_hint:
-    "Scan a school QR code or enter its server address.",
   auth_institution_local_label: "Local institution",
-  auth_institution_local_confirm: "Connect to this institution",
-  auth_institution_local_name: "School name",
-  auth_institution_local_server: "HTTPS server address",
-  auth_institution_local_server_hint: "Example: https://orbis.school.local",
+  auth_institution_local_reconnect_required:
+    "Reconnect to an active institution with QR or automatic discovery.",
+  auth_institution_lan_checking: "Searching for local servers...",
+  auth_institution_lan_empty: "No local servers found.",
+  auth_institution_lan_permission_error:
+    "Allow Orbis to use the local network.",
+  auth_institution_lan_error: "Could not search for local servers.",
+  auth_institution_lan_retry: "Refresh local server discovery",
+  auth_institution_lan_build_required:
+    "Network discovery requires the Orbis development build.",
   auth_institution_local_camera_error:
     "Could not access the camera. Check its permission and try again.",
   auth_institution_local_qr_error:
     "This QR code is invalid or does not contain a supported Orbis connection.",
-  auth_institution_local_details_error:
-    "Enter a school name and a valid server address: HTTP with a private IP or HTTPS.",
   auth_institution_local_camera_title: "Scan school QR",
   auth_institution_local_camera_hint: "Fit the QR code inside the frame",
   auth_institution_local_camera_ready: "Ready to scan",
   auth_institution_local_camera_loading: "Starting the camera...",
   auth_institution_local_camera_enable: "Allow camera access",
-  auth_institution_local_secure_hint:
-    "For a local connection, use http:// with a private IP such as 192.168.1.20:3000. Internet servers require HTTPS. Do not use HTTP on a public or untrusted network.",
-  auth_institution_local_enter_name: "Enter the institution name",
-  auth_institution_local_enter_server: "Enter the school server address",
   auth_institution_filter_label: "Filter institutions",
   auth_institution_nearby: "Nearby",
   auth_institution_location_error:
@@ -498,7 +490,6 @@ export const en: Record<TranslationKey, string> = {
   auth_institution_searching: "Searching institutions...",
   auth_institution_no_matches: "No results",
   auth_institution_empty_search_action: "Clear search",
-  auth_institution_empty_directory_action: "Add server manually",
   auth_institution_search_error:
     "Could not search the institution directory. Try again.",
   auth_institution_connection_title: "Confirm institution",
@@ -515,7 +506,6 @@ export const en: Record<TranslationKey, string> = {
   auth_institution_linked_empty_description:
     "Find your institution to connect it to your account.",
   auth_institution_find_more: "Find another institution",
-  auth_institution_results: "Other institutions",
   auth_institution_current: "Current institution",
   auth_institution_connected: "Connected to the institution.",
   auth_institution_connection_error:

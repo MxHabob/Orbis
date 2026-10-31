@@ -26,7 +26,6 @@ import {
   CheckCircle,
   ExclamationCircle,
   ShieldCheck,
-  User,
 } from "@orbis/icons/native";
 
 const behaviorTypeKeys: Record<string, TranslationKey> = {
@@ -244,7 +243,7 @@ export default function BehaviorTabScreen() {
           <EmptyState
             title={t("behavior_empty_title")}
             description={t("behavior_empty_desc")}
-            icon={<Sparkles size={32} className="text-muted-foreground" />}
+            icon={<Sparkles size={32} color={theme.mutedForeground} />}
           />
         </View>
       ) : (

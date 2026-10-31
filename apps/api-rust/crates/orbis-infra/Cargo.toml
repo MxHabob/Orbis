@@ -19,6 +19,7 @@ serde.workspace = true
 serde_json.workspace = true
 rust_decimal.workspace = true
 reqwest = { workspace = true, features = ["json", "rustls-tls"] }
+md-5 = "0.10"
 base64 = "0.23.1"
 aes-gcm = "0.10"
 hkdf = "0.12"

@@ -70,6 +70,107 @@ jobs:
         id: release_notes
         run: node scripts/github-release-body.mjs "${{ steps.meta.outputs.tag }}"
 
+  build-api-native:
+    name: Build API (${{ matrix.asset }})
+    needs: validate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            asset: linux-x86_64
+          - runner: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            asset: linux-aarch64
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            asset: windows-x86_64
+          - runner: macos-latest
+            target: aarch64-apple-darwin
+            asset: macos-aarch64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux native dependencies
+        if: startsWith(matrix.runner, 'ubuntu-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config libdbus-1-dev
+
+      - name: Cache Rust build outputs
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/api-rust -> target
+
+      - name: Build API server
+        working-directory: apps/api-rust
+        run: cargo build --locked --release --target ${{ matrix.target }} -p orbis-server --bin orbis-server
+
+      - name: Package and verify API server (Unix)
+        if: runner.os != 'Windows'
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target }}
+          ASSET: ${{ matrix.asset }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/orbis-api-${ASSET}"
+          output="release-output"
+          mkdir -p "$stage" "$output"
+          cp "apps/api-rust/target/${TARGET}/release/orbis-server" "$stage/orbis-server"
+          chmod 755 "$stage/orbis-server"
+          printf '%s\n' "$VERSION" > "$stage/VERSION"
+          archive="$output/Orbis-API-${VERSION}-${ASSET}.tar.gz"
+          tar -czf "$archive" -C "$stage" .
+          tar -tzf "$archive" | grep -Fxq './orbis-server'
+          tar -tzf "$archive" | grep -Fxq './VERSION'
+          test "$(tar -xOf "$archive" ./VERSION)" = "$VERSION"
+          test -s "$archive"
+
+      - name: Package and verify API server (Windows)
+        if: runner.os == 'Windows'
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          TARGET: ${{ matrix.target }}
+          ASSET: ${{ matrix.asset }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $stage = Join-Path $env:RUNNER_TEMP "orbis-api-$env:ASSET"
+          $output = "release-output"
+          New-Item -ItemType Directory -Force $stage, $output | Out-Null
+          Copy-Item "apps/api-rust/target/$env:TARGET/release/orbis-server.exe" (Join-Path $stage "orbis-server.exe")
+          Set-Content -Path (Join-Path $stage "VERSION") -Value $env:VERSION -NoNewline
+          $archive = Join-Path $output "Orbis-API-$env:VERSION-$env:ASSET.zip"
+          Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $archive
+          $verify = Join-Path $env:RUNNER_TEMP "orbis-api-verify"
+          Expand-Archive -Path $archive -DestinationPath $verify
+          if (-not (Test-Path (Join-Path $verify "orbis-server.exe"))) {
+            throw "API executable is missing from the release archive."
+          }
+          if ((Get-Content (Join-Path $verify "VERSION") -Raw) -ne $env:VERSION) {
+            throw "Release version metadata does not match the release tag."
+          }
+
+      - name: Upload staged API package
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbis-api-${{ matrix.asset }}
+          path: release-output/*
+          if-no-files-found: error
+          retention-days: 7
+
   build-desktop:
     name: Build Desktop (${{ matrix.target }})
     needs: validate

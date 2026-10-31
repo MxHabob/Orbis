@@ -19,7 +19,7 @@ import {
 import type { StudentExamItem } from "@/hooks/use-api-queries";
 import { useI18n, formatNumber } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
-import { AcademicCap, Calendar, Clock, Sparkles } from "@orbis/icons/native";
+import { AcademicCap, Clock } from "@orbis/icons/native";
 
 export default function StudentExamsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -78,7 +78,7 @@ export default function StudentExamsScreen() {
               t("student_no_exams_description") ||
               "No exams are currently scheduled for your courses."
             }
-            icon={<AcademicCap size={32} className="text-muted-foreground" />}
+            icon={<AcademicCap size={32} color={theme.mutedForeground} />}
           />
         </View>
       ) : (

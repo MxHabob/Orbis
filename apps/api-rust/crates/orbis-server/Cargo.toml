@@ -31,6 +31,7 @@ utoipa = { version = "4.2.3", features = ["axum_extras", "uuid", "chrono", "deci
 utoipa-swagger-ui = { version = "6.0.0", features = ["axum"] }
 jsonwebtoken.workspace = true
 tower-http = { workspace = true, features = ["cors"] }
+mdns-sd = "0.21.6"
 
 [[bin]]
 name = "export_openapi"

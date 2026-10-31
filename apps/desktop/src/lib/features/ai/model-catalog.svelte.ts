@@ -24,7 +24,6 @@ interface ModelCatalog {
 interface UpstreamModel {
   id?: unknown;
   name?: unknown;
-  tool_call?: unknown;
   status?: unknown;
   modalities?: {
     output?: unknown;
@@ -111,7 +110,6 @@ function buildCatalog(payload: unknown): ModelCatalog {
 
       if (
         !modelId.trim() ||
-        model.tool_call !== true ||
         model.status === "deprecated" ||
         !outputModalities.includes("text")
       ) {

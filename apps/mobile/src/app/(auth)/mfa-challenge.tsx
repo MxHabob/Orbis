@@ -7,14 +7,20 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { Text, View, TextInput, Pressable } from "react-native";
+import {
+  Text,
+  View,
+  TextInput,
+  Pressable,
+  type TextInputInstance,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useAuth } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useTheme } from "@/hooks/use-theme";
 import { KeyboardAwareView } from "@/components/ui/keyboard-aware-view";
 import { Button } from "@/components/ui/button";
-import { XMark, ShieldCheck, KeyframePlus } from "@orbis/icons/native";
+import { XMark } from "@orbis/icons/native";
 
 export default function MFAChallengeScreen() {
   const router = useRouter();
@@ -32,7 +38,7 @@ export default function MFAChallengeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const inputRefs = useRef<(TextInputInstance | null)[]>([]);
 
   useEffect(() => {
     if (countdown <= 0) return;

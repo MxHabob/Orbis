@@ -129,20 +129,20 @@ function handleOpenHub() {
   <PopoverContent
     {side}
     {align}
-    sideOffset={12}
-    class="w-72 sm:w-[320px] p-5 overflow-hidden z-50 backdrop-blur-md animate-in fade-in zoom-in-95 duration-200 select-none flex flex-col gap-4"
+    sideOffset={6}
+    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     {#if isLoadingOnboarding}
-      <p class="text-sm text-muted-foreground" aria-live="polite">
+      <p class="border-b border-border bg-muted/20 px-4 py-2 text-xs text-muted-foreground" aria-live="polite">
         {m.onboarding_state_loading()}
       </p>
     {:else if onboardingLoadError}
-      <p class="text-sm text-destructive" role="alert">
+      <p class="border-b border-destructive/20 bg-destructive/5 px-4 py-2 text-xs text-destructive" role="alert">
         {m.onboarding_state_load_failed()}
       </p>
     {/if}
     <!-- Header with Circular Progress Ring -->
-    <div class="flex items-start gap-3.5 pb-3.5 border-b border-border/40">
+    <div class="flex items-start gap-3 border-b border-border px-4 py-3">
       <!-- Circular Progress Ring SVG -->
       <div class="relative size-8 shrink-0 flex items-center justify-center mt-0.5">
         <svg class="size-8 -rotate-90 transform" viewBox="0 0 28 28">
@@ -190,7 +190,7 @@ function handleOpenHub() {
     </div>
 
     <!-- Steps List -->
-    <div class="max-h-80 overflow-y-auto scrollbar-hide space-y-1 -mx-2 px-2">
+    <div class="max-h-[min(20rem,calc(100vh-12rem))] overflow-y-auto scrollbar-hide space-y-1 px-2 py-2">
       {#each steps as step (step.id)}
         {@const isCompleted = step.status === "completed"}
         {@const isActive = step.id === nextStep?.id && !isReady}
@@ -201,7 +201,7 @@ function handleOpenHub() {
           size="sm"
           disabled={!step.isAccessible}
           onclick={() => handleNavigate(step)}
-          class="group w-full flex items-start gap-3 p-2.5 rounded-xl text-start transition-colors hover:bg-muted/40 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+          class="group w-full flex items-start gap-3 rounded-md p-2.5 text-start transition-colors hover:bg-muted/40 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <!-- Status Icon / Check Indicator -->
           <div class="size-5 shrink-0 flex items-center justify-center mt-0.5">
@@ -252,7 +252,7 @@ function handleOpenHub() {
     </div>
 
     <!-- Footer Actions -->
-    <div class="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+    <div class="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
       <Button
         variant="ghost"
         size="sm"

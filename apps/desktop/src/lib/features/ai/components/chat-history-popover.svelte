@@ -5,7 +5,7 @@ Displays a popover of local agent conversation sessions with search and manageme
 <script lang="ts">
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
-import { ChatBubble, ClockRotateRight, Plus, Trash } from "@orbis/icons";
+import { ClockRotateRight, Plus, Trash } from "@orbis/icons";
 import SearchField from "$lib/shared/components/search-field.svelte";
 import { formatDate } from "$lib/core/i18n";
 import { Badge } from "@orbis/ui/badge";
@@ -71,29 +71,41 @@ function handleDelete(e: MouseEvent, sessionId: string) {
       </Button>
     {/snippet}
   </PopoverTrigger>
-  
-  <PopoverContent 
+
+  <PopoverContent
     align="end"
-    class="w-72 space-y-2 z-50 select-none bg-popover text-popover-foreground border border-border/80 shadow-xl p-3"
+    sideOffset={6}
+    class="flex max-h-[min(32rem,calc(100vh-4rem))] w-[min(360px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
-    <div class="flex items-center gap-4 justify-between">
-    <SearchField
-      bind:value={searchQuery}
-      placeholder={m.ai_ui_search_chats()}
-      class="w-full max-w-full text-xs"
-    />
+    <div class="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+      <div class="flex min-w-0 items-center gap-2">
+        <h4 class="truncate text-sm font-semibold text-foreground">
+          {m.ai_ui_chat_history()}
+        </h4>
+      </div>
       <Button
-        size="xs"
+        variant="ghost"
+        size="icon-xs"
         onclick={handleNewChat}
+        title={m.ai_ui_new_chat()}
+        aria-label={m.ai_ui_new_chat()}
+        class="shrink-0"
       >
-        <Plus size={14}  />
+        <Plus size={14} />
       </Button>
     </div>
-    
 
-    <div class="flex flex-col gap-1.5 max-h-60 overflow-y-auto scrollbar-hide text-start px-0.5 pt-1">
+    <div class="px-3 py-3">
+      <SearchField
+        bind:value={searchQuery}
+        placeholder={m.ai_ui_search_chats()}
+        class="w-full max-w-full text-xs"
+      />
+    </div>
+
+    <div class="flex max-h-[min(18rem,calc(100vh-14rem))] flex-col gap-1.5 overflow-y-auto px-3 pb-3 text-start">
       {#if filteredSessions.length === 0}
-        <div class="text-center text-[11px] text-muted-foreground py-6 flex flex-col items-center gap-1.5">
+        <div class="flex flex-col items-center gap-1.5 py-6 text-center text-[11px] text-muted-foreground">
           <ClockRotateRight size={20} class="text-muted-foreground/40" />
           <span>{m.ai_ui_no_previous_chats()}</span>
         </div>
@@ -104,10 +116,10 @@ function handleDelete(e: MouseEvent, sessionId: string) {
             tabindex="0"
             onclick={() => handleSelect(session.id)}
             onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(session.id); }}
-            class="w-full text-start p-2 rounded-lg transition-all cursor-pointer group flex flex-col gap-1 border border-transparent {session.id === currentSessionId ? 'bg-primary/10 border-primary/20 text-primary' : 'hover:bg-muted/60 text-foreground'}"
+            class="group flex w-full cursor-pointer flex-col gap-1 rounded-md border border-transparent p-2 text-start transition-colors {session.id === currentSessionId ? 'border-primary/20 bg-primary/10 text-primary' : 'text-foreground hover:bg-muted/40'}"
           >
             <div class="flex justify-between items-center w-full">
-              <span class="text-[12px] font-semibold truncate flex-1 pe-1">
+              <span class="min-w-0 flex-1 truncate pe-1 text-[12px] font-semibold">
                 {session.title || m.ai_ui_untitled_chat()}
               </span>
               <div class="flex items-center gap-1 shrink-0">

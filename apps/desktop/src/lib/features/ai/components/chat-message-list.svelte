@@ -448,13 +448,12 @@ function handleContentClick(e: MouseEvent) {
 
           <!-- Proposed Consequential Actions -->
           {#if msg.proposedActions && msg.proposedActions.length > 0}
-            <div class="space-y-2 mt-1">
+            <div class="mt-1 min-w-0 space-y-2">
               {#each msg.proposedActions as action, aIdx (`${msg.id}_act_${aIdx}`)}
-                <div class="border border-amber-500/30 bg-amber-500/5 dark:bg-amber-500/10 rounded-2xl p-3.5 space-y-2.5 shadow-sm">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      <InfoCircle size={15} class="text-amber-500 shrink-0" />
-                      <span class="text-[12.5px] font-bold text-foreground">{action.title}</span>
+                <div class="w-full min-w-0 max-w-full space-y-2.5 overflow-hidden rounded-md border border-amber-500/30 bg-amber-500/5 p-3 dark:bg-amber-500/10">
+                  <div class="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="min-w-0 text-[12.5px] font-bold text-foreground [overflow-wrap:anywhere]">{action.title}</span>
                     </div>
                     {#if action.status === 'executed'}
                       <Badge variant="lime" class="text-[9px] px-1.5 py-0.5 flex items-center gap-1">
@@ -473,18 +472,16 @@ function handleContentClick(e: MouseEvent) {
                     {/if}
                   </div>
 
-                  <p class="text-xs text-foreground/80 leading-relaxed">
+                  <p class="min-w-0 text-xs leading-relaxed text-foreground/80 [overflow-wrap:anywhere]">
                     {action.description}
                   </p>
 
                   <!-- Payload details preview -->
                   {#if action.payload && Object.keys(action.payload).length > 0}
-                    <div class="bg-background/80 border border-border/60 rounded-xl p-2.5 font-mono text-[10.5px] space-y-1 text-muted-foreground">
+                    <div class="grid min-w-0 max-w-full grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] gap-x-3 gap-y-1 overflow-hidden rounded-md border border-border bg-background/80 p-2.5 font-mono text-[10.5px] text-muted-foreground">
                       {#each Object.entries(action.payload) as [key, val] (key)}
-                        <div class="flex items-center justify-between">
-                          <span class="font-semibold text-foreground/70">{key}:</span>
-                          <span class="text-foreground">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
-                        </div>
+                        <span class="min-w-0 font-semibold text-foreground/70 [overflow-wrap:anywhere]">{key}:</span>
+                        <span class="min-w-0 text-start text-foreground [overflow-wrap:anywhere]">{typeof val === 'object' ? JSON.stringify(val) : String(val)}</span>
                       {/each}
                     </div>
                   {/if}
@@ -531,11 +528,11 @@ function handleContentClick(e: MouseEvent) {
                       </Button>
                     {/if}
                   {:else}
-                    <div class="flex items-center gap-2 pt-1">
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
                       <Button
                         size="xs"
                         variant="default"
-                        class="text-[11px] h-7.5 px-3.5 font-semibold bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white cursor-pointer rounded-lg shadow-2xs"
+                        class="h-7.5 rounded-md px-3.5 text-[11px] font-semibold text-white shadow-2xs active:scale-95"
                         onclick={() => onActionResponse?.(action, "executed")}
                       >
                         <CheckCircle size={12} class="me-1" />
@@ -544,7 +541,7 @@ function handleContentClick(e: MouseEvent) {
                       <Button
                         size="xs"
                         variant="ghost"
-                        class="text-[11px] h-7.5 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 cursor-pointer rounded-lg"
+                        class="h-7.5 rounded-md px-3 text-[11px] text-muted-foreground hover:bg-destructive/10 hover:text-destructive active:scale-95"
                         onclick={() => onActionResponse?.(action, "rejected")}
                       >
                         {m.ai_ui_cancel()}

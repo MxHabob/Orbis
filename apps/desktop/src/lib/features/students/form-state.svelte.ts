@@ -33,6 +33,8 @@ import { FinancialInfoState } from "./state/financial-info.svelte";
 import { DocumentInfoState } from "./state/document-info.svelte";
 import { effectiveContext } from "$lib/stores/effective-context.svelte";
 import { orgContext } from "$lib/stores/org-context.svelte";
+import { authStore } from "$lib/stores/auth.svelte";
+import { uiStore } from "$lib/stores/ui.svelte";
 import { parseRegistrationFieldPolicies } from "./registration-fields";
 
 interface AdmissionPolicyState {
@@ -181,6 +183,20 @@ export class StudentFormState {
     this.guardian = new GuardianState(orgId, studentId);
     this.financial = new FinancialInfoState(orgId, studentId);
     this.document = new DocumentInfoState(orgId, studentId);
+    this.studyMode = uiStore.getPreference(
+      { userId: authStore.userId, organizationId: orgId },
+      "students.studyMode",
+      "regular",
+      (value): value is typeof this.studyMode =>
+        value === "regular" ||
+        value === "part_time" ||
+        value === "distance_learning" ||
+        value === "homeschooled" ||
+        value === "auditor" ||
+        value === "visiting" ||
+        value === "exchange" ||
+        value === "special_needs",
+    );
   }
 
   async init() {
@@ -996,6 +1012,23 @@ export class StudentFormState {
 
       if (registrationArtifactWarnings.length > 0) {
         toast.warning(registrationArtifactWarnings.join("؛ "));
+      }
+
+      const preferenceScope = {
+        userId: authStore.userId,
+        organizationId: this.orgId,
+      };
+      uiStore.setPreference(
+        preferenceScope,
+        "students.studyMode",
+        this.studyMode,
+      );
+      if (this.personal.classId) {
+        uiStore.setPreference(
+          preferenceScope,
+          "students.classId",
+          this.personal.classId,
+        );
       }
 
       goto(

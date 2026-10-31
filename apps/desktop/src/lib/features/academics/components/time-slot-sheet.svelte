@@ -30,6 +30,7 @@ import {
 } from "@orbis/icons";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
+import { authStore, uiStore } from "$lib/stores";
 import * as m from "$lib/paraglide/messages";
 
 interface Props {
@@ -62,6 +63,10 @@ let selectedDays = $state<number[]>([]);
 let isBreak = $state(false);
 let breakType = $state("recess");
 let isSubmitting = $state(false);
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: authStore.orgId,
+});
 
 const sortedTimeSlots = $derived(
   [...timeSlots].sort((left, right) => {
@@ -100,7 +105,10 @@ function startAdd() {
     Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1;
   slotIndex = String(nextIndex);
   nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
-  name = m.academics_schedule_placeholder_period_en({ number: nextIndex });
+  name = "";
+  ({ startTime, endTime } = uiStore.getTimeSlotRangePreference(
+    preferenceScope(),
+  ));
 }
 
 function startEdit(slot: TimeSlotDto) {
@@ -174,6 +182,10 @@ async function handleSave(event: SubmitEvent) {
       await api.batchCreateTimeSlots({ period_id: periodId, slots });
       toast.success(m.academics_schedule_time_slot_added());
     }
+    uiStore.setTimeSlotRangePreference(preferenceScope(), {
+      startTime,
+      endTime,
+    });
     resetForm();
     onSuccess?.();
   } catch (error) {
@@ -393,7 +405,7 @@ function getDuration(slot: TimeSlotDto): number {
                   </span>
                   <div class="min-w-0">
                     <p class="truncate text-xs font-semibold text-foreground">
-                      {getWeekdayLabel(slot.day_of_week)} · {slot.name_ar || slot.name || m.academics_schedule_placeholder_period_en({ number: slot.slot_index })}
+                      {getWeekdayLabel(slot.day_of_week)} · {slot.name_ar || slot.name || m.academics_schedule_placeholder_period({ number: slot.slot_index })}
                     </p>
                     <p class="mt-1 font-mono text-[10px] text-muted-foreground">
                       {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}

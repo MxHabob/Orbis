@@ -25,7 +25,6 @@ import {
   CheckCircle,
   ExclamationCircle,
   Clock,
-  Sparkles,
 } from "@orbis/icons/native";
 
 const attendanceStatusKeys: Record<string, TranslationKey> = {
@@ -179,10 +178,7 @@ export default function StudentAttendanceScreen() {
           <EmptyState
             title={t("student_no_attendance")}
             icon={
-              <ClipboardDocumentCheck
-                size={32}
-                className="text-muted-foreground"
-              />
+              <ClipboardDocumentCheck size={32} color={theme.mutedForeground} />
             }
           />
         </View>

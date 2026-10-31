@@ -8,12 +8,6 @@ import { toast, LoadingIndicator } from "@orbis/ui";
 import { Button } from "@orbis/ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "@orbis/ui/popover";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@orbis/ui/tooltip";
-import {
   AcademicCap,
   ArchiveBox,
   AppNotification,
@@ -181,33 +175,25 @@ function openNotificationSettings() {
 <Popover {open} onOpenChange={handleOpenChange}>
   <PopoverTrigger>
     {#snippet child({ props }: { props: any })}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <Button
-              {...props}
-              variant="outline"
-              size="icon-sm"
-              class="relative cursor-pointer"
-              aria-label={m.common_nav_notifications()}
-            >
-              <AppNotification size={16} class="text-foreground" />
-              {#if notificationStore.hasUnread}
-                <span
-                  class="absolute -top-1 -inset-e-1 flex min-w-4 items-center justify-center rounded-full border border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground shadow-xs"
-                >
-                  {notificationStore.unreadCount > 99
-                    ? "99+"
-                    : notificationStore.unreadCount}
-                </span>
-              {/if}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="inline-end" sideOffset={12}>
-            {m.common_nav_notifications()}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Button
+        {...props}
+        variant="outline"
+        size="icon-sm"
+        class="relative cursor-pointer"
+        title={m.common_nav_notifications()}
+        aria-label={m.common_nav_notifications()}
+      >
+        <AppNotification size={16} class="text-foreground" />
+        {#if notificationStore.hasUnread}
+          <span
+            class="absolute -top-1 -inset-e-1 flex min-w-4 items-center justify-center rounded-full border border-background bg-destructive px-1 text-[10px] font-bold text-destructive-foreground shadow-xs"
+          >
+            {notificationStore.unreadCount > 99
+              ? "99+"
+              : notificationStore.unreadCount}
+          </span>
+        {/if}
+      </Button>
     {/snippet}
   </PopoverTrigger>
 
@@ -215,8 +201,7 @@ function openNotificationSettings() {
     side="bottom"
     align="end"
     sideOffset={6}
-    dir="auto"
-    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(440px,calc(100vw-1rem))] flex-col overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
+    class="flex max-h-[min(40rem,calc(100vh-4rem))] w-[min(440px,calc(100vw-1rem))] flex-col gap-0 overflow-hidden rounded-md border border-border bg-card p-0 text-start font-sans shadow-md"
   >
     <nav
       aria-label={m.common_nav_notifications()}

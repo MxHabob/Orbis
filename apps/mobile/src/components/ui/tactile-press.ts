@@ -36,16 +36,13 @@ export function useTactilePress(
   }, [animateTo, disabled, enabled]);
 
   const onPressOut = useCallback(() => animateTo(0), [animateTo]);
-  const style = useAnimatedStyle(
-    () => ({
-      transform: [{ translateY: enabled ? progress.value * 2 : 0 }],
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: enabled ? 0.14 * (1 - progress.value) : 0,
-      shadowRadius: enabled ? 3 * (1 - progress.value) : 0,
-      elevation: enabled ? 3 * (1 - progress.value) : 0,
-    }),
-    [enabled],
-  );
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: enabled ? progress.value * 2 : 0 }],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: enabled ? 0.14 * (1 - progress.value) : 0,
+    shadowRadius: enabled ? 3 * (1 - progress.value) : 0,
+    elevation: enabled ? 3 * (1 - progress.value) : 0,
+  }));
 
   return {
     onPressIn,

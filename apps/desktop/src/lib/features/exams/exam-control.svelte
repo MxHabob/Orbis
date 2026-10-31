@@ -5,7 +5,7 @@ import { api, extractErrorMessage } from "$lib/api";
 import { Skeleton } from "@orbis/ui/skeleton";
 import { toast } from "@orbis/ui";
 import { slide } from "svelte/transition";
-import { academicContext, authStore } from "$lib/stores";
+import { academicContext, authStore, uiStore } from "$lib/stores";
 import { getLocale } from "$lib/paraglide/runtime";
 
 import {
@@ -35,10 +35,19 @@ let matrixData = $state<GradeMatrixResponse | null>(null);
 let gridSource = $state<Record<string, unknown>[]>([]);
 let assessmentKeys = $state<string[]>([]);
 let previousSelectedClassId: string | null = null;
+const preferenceScope = () => ({
+  userId: authStore.userId,
+  organizationId: orgId,
+});
 
 onMount(() => {
-  if (academicContext.effectivePeriodId)
-    selectedPeriodId = academicContext.effectivePeriodId;
+  selectedPeriodId =
+    uiStore.getPreference(
+      preferenceScope(),
+      "exams.selectedPeriodId",
+      "",
+      (value): value is string => typeof value === "string",
+    ) || academicContext.effectivePeriodId;
   if (academicContext.selectedClassId)
     selectedClassId = academicContext.selectedClassId;
   if (academicContext.selectedSubjectId)
@@ -47,7 +56,22 @@ onMount(() => {
 });
 
 $effect(() => {
-  if (selectedPeriodId) academicContext.selectedPeriodId = selectedPeriodId;
+  if (!periods.length) return;
+
+  if (selectedPeriodId && !selectedPeriod) {
+    selectedPeriodId =
+      academicContext.activePeriod?.id ?? String(periods[0]?.id ?? "");
+    return;
+  }
+
+  if (selectedPeriodId) {
+    academicContext.selectedPeriodId = selectedPeriodId;
+    uiStore.setPreference(
+      preferenceScope(),
+      "exams.selectedPeriodId",
+      selectedPeriodId,
+    );
+  }
 });
 $effect(() => {
   if (selectedClassId) academicContext.selectedClassId = selectedClassId;
