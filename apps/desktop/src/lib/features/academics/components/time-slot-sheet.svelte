@@ -100,7 +100,7 @@ function startAdd() {
     Math.max(0, ...timeSlots.map((slot) => Number(slot.slot_index) || 0)) + 1;
   slotIndex = String(nextIndex);
   nameAr = m.academics_schedule_placeholder_period({ number: nextIndex });
-  name = m.academics_schedule_placeholder_period_en({ number: nextIndex });
+  name = "";
 }
 
 function startEdit(slot: TimeSlotDto) {
@@ -393,7 +393,7 @@ function getDuration(slot: TimeSlotDto): number {
                   </span>
                   <div class="min-w-0">
                     <p class="truncate text-xs font-semibold text-foreground">
-                      {getWeekdayLabel(slot.day_of_week)} · {slot.name_ar || slot.name || m.academics_schedule_placeholder_period_en({ number: slot.slot_index })}
+                      {getWeekdayLabel(slot.day_of_week)} · {slot.name_ar || slot.name || m.academics_schedule_placeholder_period({ number: slot.slot_index })}
                     </p>
                     <p class="mt-1 font-mono text-[10px] text-muted-foreground">
                       {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}

@@ -50,11 +50,7 @@ const form = new FormController({
   initialValues: {
     period_id: periodId || "",
     slot_number: nextSlotNumber || 1,
-    name: untrack(() =>
-      m.academics_schedule_placeholder_period_en({
-        number: nextSlotNumber || 1,
-      }),
-    ),
+    name: "",
     name_ar: untrack(() =>
       m.academics_schedule_placeholder_period({ number: nextSlotNumber || 1 }),
     ),
