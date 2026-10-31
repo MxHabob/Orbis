@@ -6,6 +6,7 @@ pub mod assessment_cmds;
 pub mod autopilot_cmds;
 pub mod bootstrap_cmds;
 pub mod calendar_cmds;
+pub mod camera_stream_cmds;
 pub mod connection_cmds;
 pub mod database_cmds;
 pub mod document_cmds;
@@ -117,6 +118,8 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
 
 fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     generate_handler![
+        camera_stream_cmds::camera_stream_start,
+        camera_stream_cmds::camera_stream_stop,
         // ── Auth & IAM ──────────────────────────────────────────
         iam_cmds::auth_login,
         iam_cmds::auth_get_session,

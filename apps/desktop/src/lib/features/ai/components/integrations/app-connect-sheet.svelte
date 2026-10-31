@@ -9,12 +9,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@orbis/ui/sheet";
 let {
   open = $bindable(false),
   app,
+  initialValues = {},
   submitting = false,
   error = null,
   onsubmit,
 }: {
   open: boolean;
   app: OrbisApp;
+  initialValues?: Record<string, unknown>;
   submitting?: boolean;
   error?: string | null;
   onsubmit: (values: Record<string, unknown>) => void;
@@ -42,11 +44,12 @@ const formId = $derived(`app-connect-form-${app.id}`);
       {#if error}
         <p class="mb-4 text-xs text-destructive" role="alert">{error}</p>
       {/if}
-      {#key app.id}
+      {#key `${app.id}-${open}`}
         <AppConnectForm
           appId={app.id}
           {formId}
           settings={app.settings}
+          {initialValues}
           {onsubmit}
         />
       {/key}

@@ -27,7 +27,9 @@ pub async fn verify_connection(
         }
     };
 
-    validate_whep_url(settings, provider)?;
+    if settings.get("whep_url").is_some() {
+        validate_whep_url(settings, provider)?;
+    }
     match provider {
         "hikvision" => {
             let (username, password) = camera_credentials(settings, secrets, "Hikvision")?;
@@ -36,9 +38,10 @@ pub async fn verify_connection(
         }
         "dahua" => DahuaAdapter::check_connection(settings, secrets).await,
         "onvif" => OnvifAdapter::check_connection(settings, secrets).await,
-        "rtsp" => RtspAdapter::check_connection(settings, secrets).await,
+        "rtsp" => Ok(()),
         _ => Err(DomainError::Validation(format!(
             "Unsupported camera provider '{provider_name}'"
         ))),
-    }
+    }?;
+    RtspAdapter::check_connection(settings, secrets).await
 }

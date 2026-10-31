@@ -56,8 +56,8 @@ const connectionSummaries: Record<
     ar: "للربط، أنشئ مفتاح API لدى المزود، ثم أدخله واختر النموذج أدناه. يرسل أوربيس طلب اختبار قصيراً قد تترتب عليه رسوم استخدام من المزود.",
   },
   surveillance: {
-    en: "To connect, enable the camera API and configure its RTSP source in your MediaMTX relay. Enter the camera address, credentials, and the HTTPS WHEP endpoint for that relay path below.",
-    ar: "للربط، فعّل واجهة الكاميرا واضبط مصدر RTSP في وسيط MediaMTX. أدخل عنوان الكاميرا وبيانات الدخول وعنوان WHEP الآمن لمسار الوسيط أدناه.",
+    en: "To connect, enable the camera API if required and enter the camera's RTSP stream URL and credentials. Orbis includes and starts its local streaming relay automatically only while the live camera view is open.",
+    ar: "للربط، فعّل واجهة الكاميرا إن لزم، ثم أدخل عنوان بث RTSP وبيانات الدخول. يضم Orbis وسيط البث ويشغّله محلياً عند فتح صفحة الكاميرات فقط.",
   },
   communication: {
     en: "To connect, activate a business account, verify the sender, then enter the requested credentials below.",
@@ -115,20 +115,20 @@ const appSpecificSummaries: Record<string, { en: string; ar: string }> = {
     ar: "يتحقق أوربيس من مفتاح Mulverse عبر نقطة فحص الاتصال دون إرسال طلب لتشغيل النموذج.",
   },
   "hikvision-camera": {
-    en: "Orbis verifies the Hikvision ISAPI endpoint. Configure MediaMTX separately with this camera's RTSP source and provide the matching HTTPS WHEP endpoint.",
-    ar: "يتحقق Orbis من واجهة Hikvision ISAPI. اضبط مصدر RTSP لهذه الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+    en: "Orbis verifies Hikvision ISAPI and the RTSP stream URL you provide. It manages the local relay automatically while live view is open.",
+    ar: "يتحقق Orbis من واجهة Hikvision ISAPI ومن عنوان بث RTSP الذي تدخله، ويدير وسيط البث المحلي تلقائياً أثناء فتح العرض المباشر.",
   },
   "dahua-camera": {
-    en: "Orbis verifies the Dahua CGI API. Configure MediaMTX separately with this camera's RTSP source and provide the matching HTTPS WHEP endpoint.",
-    ar: "يتحقق Orbis من واجهة Dahua CGI. اضبط مصدر RTSP لهذه الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+    en: "Orbis verifies the Dahua CGI API and the RTSP stream URL you provide. It manages the local relay automatically while live view is open.",
+    ar: "يتحقق Orbis من واجهة Dahua CGI ومن عنوان بث RTSP الذي تدخله، ويدير وسيط البث المحلي تلقائياً أثناء فتح العرض المباشر.",
   },
   "onvif-camera": {
-    en: "Orbis verifies the ONVIF Device service. Configure MediaMTX separately with this camera's RTSP source and provide the matching HTTPS WHEP endpoint.",
-    ar: "يتحقق Orbis من خدمة ONVIF Device. اضبط مصدر RTSP لهذه الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+    en: "Orbis verifies the ONVIF Device service and the RTSP stream URL you provide. It manages the local relay automatically while live view is open.",
+    ar: "يتحقق Orbis من خدمة ONVIF ومن عنوان بث RTSP الذي تدخله، ويدير وسيط البث المحلي تلقائياً أثناء فتح العرض المباشر.",
   },
   "rtsp-camera": {
-    en: "Orbis checks the RTSP endpoint with an OPTIONS request and Digest authentication. Configure MediaMTX separately with the camera source and provide the matching HTTPS WHEP endpoint.",
-    ar: "يفحص Orbis عنوان RTSP بطلب OPTIONS ومصادقة Digest. اضبط مصدر الكاميرا في MediaMTX وأدخل عنوان WHEP المطابق عبر HTTPS.",
+    en: "Orbis checks the RTSP endpoint with an OPTIONS request and Digest authentication, then manages its local WebRTC relay automatically while live view is open.",
+    ar: "يفحص Orbis عنوان RTSP بطلب OPTIONS ومصادقة Digest، ثم يدير وسيط WebRTC محلياً تلقائياً أثناء فتح العرض المباشر.",
   },
   stripe: {
     en: "Orbis validates the Stripe secret key with a read-only account request; it does not create or modify payments.",

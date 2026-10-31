@@ -1,7 +1,8 @@
 <script lang="ts">
 import * as m from "$lib/paraglide/messages";
 import { onMount } from "svelte";
-import { api } from "$lib/api";
+import { isDesktopApp } from "$lib/api";
+import { invokeDesktopCommand } from "$lib/api/desktop-command-performance";
 import { Camera, CheckBox, Expand, Grid, Sparkles } from "@orbis/icons";
 import { goto } from "$app/navigation";
 import { Button } from "@orbis/ui/button";
@@ -15,11 +16,11 @@ type GridLayout = "1x1" | "2x2" | "3x3";
 let gridLayout = $state<GridLayout>("2x2");
 let selectedIdx = $state<number | null>(null);
 let isLoading = $state(true);
+let loadError = $state(false);
 
 interface CameraFeed {
   id: string;
   name: string;
-  ip: string;
   status: "online" | "error";
   location: string;
   whepUrl: string | null;
@@ -27,89 +28,36 @@ interface CameraFeed {
 
 let cameras = $state<CameraFeed[]>([]);
 
-const cameraProviderNames = new Map([
-  ["hikvision_camera", "Hikvision"],
-  ["hikvision-camera", "Hikvision"],
-  ["hikvision", "Hikvision"],
-  ["dahua_camera", "Dahua"],
-  ["dahua-camera", "Dahua"],
-  ["dahua", "Dahua"],
-  ["onvif_camera", "ONVIF"],
-  ["onvif-camera", "ONVIF"],
-  ["onvif", "ONVIF"],
-  ["rtsp_camera", "RTSP"],
-  ["rtsp-camera", "RTSP"],
-  ["rtsp", "RTSP"],
-]);
+onMount(() => {
+  let disposed = false;
+  const startStreams = async () => {
+    try {
+      if (!isDesktopApp) {
+        throw new Error("Local camera streaming is available in Orbis Desktop.");
+      }
+      const response = await invokeDesktopCommand<{ data: CameraFeed[] }>(
+        "camera_stream_start",
+      );
+      if (!disposed) cameras = response.data;
+    } catch (error) {
+      console.error("[AI Center] Local camera relay could not be started:", error);
+      if (!disposed) loadError = true;
+    } finally {
+      if (!disposed) isLoading = false;
+    }
+  };
+  const startTask = startStreams();
 
-onMount(async () => {
-  try {
-    const integrations = await api.listIntegrations();
-    cameras = integrations
-      .filter((integration) => {
-        const provider = integration.provider_name.toLowerCase();
-        return (
-          integration.is_enabled &&
-          integration.category.toLowerCase() === "surveillance" &&
-          cameraProviderNames.has(provider)
-        );
-      })
-      .flatMap((integration) => {
-        const integrationSettings = integration.settings;
-        if (
-          !integrationSettings ||
-          typeof integrationSettings !== "object" ||
-          Array.isArray(integrationSettings)
-        ) {
-          return [];
-        }
-
-        const cameraSettings = integrationSettings as Record<string, unknown>;
-        const provider = integration.provider_name.toLowerCase();
-        const providerLabel = cameraProviderNames.get(provider) ?? "Camera";
-        const rawAddress =
-          typeof cameraSettings.ip_address === "string"
-            ? cameraSettings.ip_address
-            : typeof cameraSettings.rtsp_url === "string"
-              ? cameraSettings.rtsp_url
-              : "";
-        let address = rawAddress;
-        if (providerLabel === "RTSP" && rawAddress) {
-          try {
-            address = new URL(rawAddress).hostname;
-          } catch {
-            address = "";
-          }
-        }
-        const whepUrl =
-          typeof cameraSettings.whep_url === "string" &&
-          cameraSettings.whep_url.trim()
-            ? cameraSettings.whep_url.trim()
-            : null;
-        const name =
-          typeof cameraSettings.camera_name === "string" &&
-          cameraSettings.camera_name.trim()
-            ? cameraSettings.camera_name.trim()
-            : `${providerLabel} ${address}`.trim();
-        return [
-          {
-            id: integration.id,
-            name,
-            ip: address,
-            status: whepUrl ? ("online" as const) : ("error" as const),
-            location:
-              typeof cameraSettings.location === "string"
-                ? cameraSettings.location
-                : "",
-            whepUrl,
-          },
-        ];
-      });
-  } catch (e) {
-    console.error("[AI Center] Camera integrations could not be loaded:", e);
-  } finally {
-    isLoading = false;
-  }
+  return () => {
+    disposed = true;
+    void startTask.then(async () => {
+      try {
+        await invokeDesktopCommand("camera_stream_stop");
+      } catch (error) {
+        console.error("[AI Center] Local camera relay could not be stopped:", error);
+      }
+    });
+  };
 });
 
 const gridCols: Record<GridLayout, string> = {
@@ -159,6 +107,12 @@ const gridSlots: Record<GridLayout, number> = { "1x1": 1, "2x2": 4, "3x3": 9 };
     {#if isLoading}
       <div class="flex flex-1 items-center justify-center">
         <p class="text-sm text-muted-foreground">{m.ai_ui_loading_cameras()}</p>
+      </div>
+    {:else if loadError}
+      <div class="flex flex-1 items-center justify-center p-8 text-center">
+        <p class="max-w-md text-sm text-muted-foreground">
+          {m.ai_ui_camera_stream_unavailable()}
+        </p>
       </div>
     {:else if cameras.length > 0}
       <!-- Camera Grid -->

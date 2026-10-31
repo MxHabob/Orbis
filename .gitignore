@@ -88,6 +88,8 @@ dist-ssr
 .agents
 # Rust build artifacts
 target/
+/apps/desktop/src-tauri/binaries/mediamtx-*
+/apps/desktop/src-tauri/binaries/.cache/
 
 # Local API development database and SQLite sidecar files
 /orbis-api-dev.db*

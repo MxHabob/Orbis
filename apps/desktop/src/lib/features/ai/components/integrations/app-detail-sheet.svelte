@@ -191,6 +191,17 @@ async function handleDisconnect() {
     isDisconnecting = false;
   }
 }
+
+function settingsRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return {};
+  }
+  const settings: Record<string, unknown> = {};
+  for (const [key, setting] of Object.entries(value)) {
+    settings[key] = setting;
+  }
+  return settings;
+}
 </script>
 
 <Sheet bind:open onOpenChange={handleOpenChange}>
@@ -248,6 +259,18 @@ async function handleDisconnect() {
         </div>
         <div class="flex gap-2 pt-3">
           {#if isConnected}
+            {#if app.category === "surveillance"}
+              <Button
+                variant="outline"
+                size="sm"
+                onclick={() => {
+                  connectError = null;
+                  connectSheetOpen = true;
+                }}
+              >
+                {m.ui_copy_configuration_9ecff7d2()}
+              </Button>
+            {/if}
             <Button variant="outline" size="sm" disabled={isDisconnecting} onclick={handleDisconnect}>
               {m.ui_copy_disconnect_c584faa5()}
             </Button>
@@ -328,6 +351,7 @@ async function handleDisconnect() {
   <AppConnectSheet
     bind:open={connectSheetOpen}
     {app}
+    initialValues={settingsRecord(statusQuery.data?.config?.settings)}
     submitting={isConnecting}
     error={connectError}
     onsubmit={handleConnect}

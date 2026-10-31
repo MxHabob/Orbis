@@ -12,6 +12,7 @@ import { Input } from "@orbis/ui/input";
 import { FormField } from "@orbis/ui";
 import { Switch } from "@orbis/ui/switch";
 import { l } from "$lib/core/i18n";
+import { untrack } from "svelte";
 import { toast } from "@orbis/ui";
 import { createAppSettingsSchema } from "@orbis/schemas";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -31,21 +32,25 @@ let {
   appId,
   formId,
   settings,
+  initialValues = {},
   onsubmit,
 }: {
   appId: string;
   formId: string;
   settings: AppSetting[];
+  initialValues?: Record<string, unknown>;
   onsubmit?: (values: Record<string, unknown>) => void;
 } = $props();
 
 let values = $state<Record<string, any>>(
-  Object.fromEntries(
+  untrack(() => Object.fromEntries(
     settings.map((setting) => [
       setting.id,
-      setting.value ?? (setting.type === "switch" ? false : ""),
+      initialValues[setting.id] ??
+        setting.value ??
+        (setting.type === "switch" ? false : ""),
     ]),
-  ),
+  )),
 );
 const effectiveSettings = $derived(
   settings.map((setting) => {

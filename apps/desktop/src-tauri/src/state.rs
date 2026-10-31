@@ -135,6 +135,7 @@ pub struct AppState {
     pub entitlement_provider: Arc<dyn EntitlementProvider>,
     pub license_runtime: Arc<dyn orbis_app::ports::license::LicenseRuntime>,
     pub solver_sidecar: Arc<crate::features::solver_sidecar::SolverSidecarManager>,
+    pub camera_stream_manager: Arc<crate::features::camera_stream::CameraStreamManager>,
     pub app_data_dir: std::path::PathBuf,
     // ── Employee Affairs & User Groups ─────────────────────────
     pub employee_repo: Arc<dyn orbis_app::ports::repositories::EmployeeRepository>,
@@ -605,6 +606,8 @@ impl AppState {
         ));
 
         let solver_sidecar = Arc::new(crate::features::solver_sidecar::SolverSidecarManager::new());
+        let camera_stream_manager =
+            Arc::new(crate::features::camera_stream::CameraStreamManager::new(app_data_dir));
 
         // ── Employee Affairs & User Groups Wiring ───────────────────
         let group_repo =
@@ -777,6 +780,7 @@ impl AppState {
             entitlement_provider,
             license_runtime: license_runtime.clone(),
             solver_sidecar,
+            camera_stream_manager,
             app_data_dir: app_data_dir.to_path_buf(),
             // ── Employee Affairs & User Groups ─────────────────────────
             employee_repo,

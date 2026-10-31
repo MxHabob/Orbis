@@ -26,22 +26,21 @@ export function createCameraApp({
     onvif: "ONVIF",
     rtsp: "RTSP",
   }[protocol];
+  const rtspSetting: AppSetting = {
+    id: "rtsp_url",
+    label: "RTSP Stream URL",
+    label_ar: "عنوان بث RTSP",
+    description: "Camera stream URL without embedded credentials.",
+    description_ar: "عنوان بث الكاميرا دون تضمين بيانات الدخول.",
+    type: "url",
+    required: true,
+    value: "",
+    placeholder: "rtsp://192.168.1.100:554/Streaming/Channels/101",
+  };
 
   const settings: AppSetting[] = [
     ...(isRtsp
-      ? [
-          {
-            id: "rtsp_url",
-            label: "RTSP Stream URL",
-            label_ar: "عنوان بث RTSP",
-            description: "Camera stream URL without embedded credentials.",
-            description_ar: "عنوان بث الكاميرا دون تضمين بيانات الدخول.",
-            type: "url" as const,
-            required: true,
-            value: "",
-            placeholder: "rtsp://192.168.1.100:554/Streaming/Channels/101",
-          },
-        ]
+      ? [rtspSetting]
       : [
           {
             id: "ip_address",
@@ -65,6 +64,7 @@ export function createCameraApp({
             value: 80,
             validation: { min: 1, max: 65535 },
           },
+          rtspSetting,
         ]),
     {
       id: "username",
@@ -85,19 +85,6 @@ export function createCameraApp({
       type: "password",
       required: true,
       value: "",
-    },
-    {
-      id: "whep_url",
-      label: "MediaMTX HTTPS WHEP URL",
-      label_ar: "عنوان HTTPS WHEP لخدمة MediaMTX",
-      description:
-        "HTTPS endpoint for this camera's MediaMTX path, ending in /whep.",
-      description_ar:
-        "عنوان HTTPS لمسار هذه الكاميرا في MediaMTX وينتهي بـ /whep.",
-      type: "url",
-      required: true,
-      value: "",
-      placeholder: "https://stream.example.com/campus-east/whep",
     },
     {
       id: "camera_name",
@@ -132,12 +119,12 @@ export function createCameraApp({
     logo,
     short_description: shortDescription,
     short_description_ar: shortDescriptionAr,
-    description: `Connect a ${name} to Orbis. Orbis verifies its connection using ${protocolLabel}, then plays live video through a separately configured MediaMTX WebRTC/WHEP relay. Camera credentials remain server-side. Configure the relay's RTSP source separately.`,
-    description_ar: `اربط ${name} بنظام Orbis. يتحقق Orbis من الاتصال باستخدام ${protocolLabel}، ثم يعرض الفيديو عبر وسيط MediaMTX WebRTC/WHEP مُعدّ بشكل منفصل. تبقى بيانات اعتماد الكاميرا على الخادم. اضبط مصدر RTSP في الوسيط بشكل منفصل.`,
+    description: `Connect a ${name} to Orbis. Orbis verifies its ${protocolLabel} connection and manages a local MediaMTX relay while the live camera view is open. Enter the camera's RTSP stream URL; credentials are kept out of the URL and are not sent to the browser.`,
+    description_ar: `اربط ${name} بنظام Orbis. يتحقق Orbis من اتصال ${protocolLabel} ويدير وسيط MediaMTX محلياً أثناء فتح صفحة البث. أدخل عنوان RTSP للكاميرا؛ تُحفظ بيانات الدخول منفصلة ولا تُرسل إلى المتصفح.`,
     features: [
       `${protocolLabel} connection verification`,
-      "MediaMTX WebRTC/WHEP live playback",
-      "Server-side camera credentials",
+      "Managed local WebRTC relay",
+      "On-demand camera streaming without transcoding",
     ],
     settings,
     adapter_name: `${protocol}_camera`,
