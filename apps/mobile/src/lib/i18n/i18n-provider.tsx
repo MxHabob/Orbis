@@ -18,7 +18,6 @@ import {
   setLocale as setStoredLocale,
   loadPersistedLocale,
   setCurrentLocaleInternal,
-  synchronizeLocaleDirection,
   t as translateKey,
   l as localizeValue,
   isAr as checkIsAr,
@@ -39,14 +38,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     loadPersistedLocale()
-      .then(async (savedLocale) => {
+      .then((savedLocale) => {
         if (!isMounted) return;
 
-        if (savedLocale !== locale) {
-          setLocaleState(savedLocale);
-        }
-
-        await synchronizeLocaleDirection(savedLocale);
+        setCurrentLocaleInternal(savedLocale);
+        setLocaleState(savedLocale);
       })
       .catch((error: unknown) => {
         console.error(

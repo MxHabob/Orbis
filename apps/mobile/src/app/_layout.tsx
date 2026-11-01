@@ -14,6 +14,7 @@ import * as SystemUI from "expo-system-ui";
 import { Pressable, Text, View, useColorScheme } from "react-native";
 
 import { useTheme } from "@/hooks/use-theme";
+import { useI18n } from "@/lib/i18n";
 import { AppProviders } from "@/providers/app-providers";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 import {
@@ -99,7 +100,9 @@ function RootLayoutContent() {
   const [isThemeReady, setIsThemeReady] = useState(false);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const systemBackgroundColor = isDark ? "#1f1f1f" : "#fcfcfc";
   const currentColors = useTheme();
+  const { isArabic } = useI18n();
 
   const navigationTheme = useMemo(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -140,7 +143,7 @@ function RootLayoutContent() {
   useEffect(() => {
     if (!isThemeReady) return;
 
-    SystemUI.setBackgroundColorAsync(currentColors.background).catch(
+    SystemUI.setBackgroundColorAsync(systemBackgroundColor).catch(
       (error: unknown) => {
         console.error(
           "[Orbis Mobile Theme] Failed to synchronize the system background.",
@@ -148,42 +151,45 @@ function RootLayoutContent() {
         );
       },
     );
-  }, [currentColors.background, isThemeReady]);
+  }, [isThemeReady, systemBackgroundColor]);
 
   return (
     <ThemeProvider value={navigationTheme}>
       <ToastProvider>
-        <ThemedStatusBar backgroundColor={currentColors.background} />
-        <OfflineStatusBanner />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: "slide_from_right",
-            contentStyle: {
-              backgroundColor: currentColors.background,
-            },
-          }}
-        >
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(app)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="institution-select"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="institution-scan"
-            options={{
-              presentation: "modal",
-              animation: "slide_from_bottom",
+        <ThemedStatusBar />
+        <View className="flex-1" style={{ direction: isArabic ? "rtl" : "ltr" }}>
+          <OfflineStatusBanner />
+          <Stack
+            screenOptions={{
               headerShown: false,
-              contentStyle: { backgroundColor: "#000000" },
+              animation: "slide_from_right",
+              contentStyle: {
+                backgroundColor: currentColors.background,
+                direction: isArabic ? "rtl" : "ltr",
+              },
             }}
-          />
-          <Stack.Screen
-            name="+not-found"
-            options={{ title: "Oops!", headerShown: true }}
-          />
-        </Stack>
+          >
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(app)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="institution-select"
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="institution-scan"
+              options={{
+                presentation: "modal",
+                animation: "slide_from_bottom",
+                headerShown: false,
+                contentStyle: { backgroundColor: "#000000" },
+              }}
+            />
+            <Stack.Screen
+              name="+not-found"
+              options={{ title: "Oops!", headerShown: true }}
+            />
+          </Stack>
+        </View>
       </ToastProvider>
     </ThemeProvider>
   );
