@@ -12,6 +12,7 @@
 import * as m from "$lib/paraglide/messages";
 import { getLocale } from "$lib/paraglide/runtime";
 import { formatCurrency, l } from "$lib/core/i18n";
+import type { AccountDto } from "$lib/api";
 import { Input } from "@orbis/ui/input";
 import { Button } from "@orbis/ui/button";
 import {
@@ -23,19 +24,7 @@ import {
   Collapse,
 } from "@orbis/icons";
 
-export interface AccountNode {
-  id: string;
-  code: string;
-  name: string;
-  name_ar?: string;
-  name_en?: string;
-  type?: string;
-  account_type?: string;
-  sub_type?: string;
-  item_type?: string;
-  currency?: string;
-  balances?: Record<string, number>;
-  is_active?: number | boolean;
+export interface AccountNode extends AccountDto {
   children?: AccountNode[];
 }
 
@@ -91,10 +80,7 @@ function collapseAll() {
 }
 
 function getNodeName(node: AccountNode): string {
-  return (
-    l(node.name_ar, node.name_en || node.name) ||
-    m.finance_ui_account_fallback_name()
-  );
+  return l(node.name_ar, node.name) || m.finance_ui_account_fallback_name();
 }
 
 function filterTree(nodes: AccountNode[], query: string): AccountNode[] {
@@ -132,13 +118,24 @@ function handleSelect(node: AccountNode) {
 }
 
 function getBalance(node: AccountNode): number {
-  if (!node.balances) return 0;
+  if (
+    !node.balances ||
+    typeof node.balances !== "object" ||
+    Array.isArray(node.balances)
+  ) {
+    return 0;
+  }
   const curr = node.currency || "YER";
-  return Number(node.balances[curr] || node.balances[curr.toUpperCase()] || 0);
+  const value = Object.entries(node.balances).find(
+    ([currency]) => currency.toUpperCase() === curr.toUpperCase(),
+  )?.[1];
+  if (typeof value !== "number" && typeof value !== "string") return 0;
+  const balance = Number(value);
+  return Number.isFinite(balance) ? balance : 0;
 }
 
 function getSubtype(node: AccountNode): string | null {
-  const type = String(node.sub_type || node.item_type || "").toLowerCase();
+  const type = node.sub_type?.toLowerCase() ?? "";
   const map: Record<string, string> = {
     cash: m.finance_ui_account_type_cash(),
     bank: m.finance_ui_account_type_bank(),

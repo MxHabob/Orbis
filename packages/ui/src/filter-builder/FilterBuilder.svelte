@@ -9,13 +9,10 @@ import {
 import { Merge, Plus, Trash } from "@orbis/icons";
 import {
   FilterOperator,
-  type UniversalFilter,
-  type FieldDefinition,
-  type FilterTranslations,
+  type FilterBuilderProps,
   defaultFilterTranslations,
 } from "./types";
 import FilterRow from "./FilterRow.svelte";
-import FilterBuilderSelf from "./FilterBuilder.svelte";
 import { slide } from "svelte/transition";
 
 let {
@@ -24,13 +21,7 @@ let {
   isRoot = true,
   onRemove = () => {},
   translations = defaultFilterTranslations,
-}: {
-  filter: UniversalFilter;
-  fields: FieldDefinition[];
-  isRoot?: boolean;
-  onRemove?: () => void;
-  translations?: FilterTranslations;
-} = $props();
+}: FilterBuilderProps = $props();
 
 function addCondition() {
   if (!filter.conditions) filter.conditions = [];
@@ -128,7 +119,7 @@ function removeGroup(index: number) {
             {#if filter.groups}
                 {#each filter.groups as group, i (i)}
                     <div transition:slide={{duration: 200}}>
-                        <FilterBuilderSelf 
+                        <svelte:self
                             bind:filter={filter.groups[i]} 
                             fields={fields} 
                             isRoot={false} 

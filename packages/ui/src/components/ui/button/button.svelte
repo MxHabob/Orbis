@@ -8,6 +8,7 @@ export {
 </script>
 
 <script lang="ts">
+	import type { ButtonProps } from "./variants.js";
 	import { cn } from "../../../utils.js";
 	import { buttonVariants } from "./variants.js";
 

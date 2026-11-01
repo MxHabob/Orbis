@@ -136,7 +136,7 @@ const accountTree = $derived.by(() => {
       )
       .map((node) => ({
         ...node,
-        name: l(node.name_ar, node.name_en || node.name) || "—",
+        name: l(node.name_ar, node.name) || "—",
         children: buildSubTree(node.id),
       }));
   }
@@ -172,13 +172,11 @@ function handleSelectAccount(account: AccountNode) {
   selectedAccount = account;
   isAddingNew = false;
 
-  formParentId = (account as any).parent_id || null;
+  formParentId = account.parent_id ?? null;
   formCode = account.code || "";
   formNameAr = account.name_ar || (isAr() ? account.name : "") || "";
-  formNameEn = account.name_en || (!isAr() ? account.name : "") || "";
-  formAccountType = String(
-    account.account_type || account.type || "asset",
-  ).toLowerCase();
+  formNameEn = account.name;
+  formAccountType = account.account_type.toLowerCase();
   formSubType = account.sub_type || "general";
   formCurrency = account.currency || baseCurrency;
 
@@ -197,9 +195,7 @@ function startAddSubAccount(
   formAccountLevel = "sub";
 
   if (parentAccount) {
-    formAccountType = String(
-      parentAccount.account_type || parentAccount.type || "asset",
-    ).toLowerCase();
+    formAccountType = parentAccount.account_type.toLowerCase();
     formCurrency = parentAccount.currency || baseCurrency;
   }
 }
@@ -315,17 +311,13 @@ const treasurySource = $derived(
     return {
       ...account,
       __idx: i + 1,
-      name_display: l(account.name_ar, account.name_en || account.name) || "—",
+      name_display: l(account.name_ar, account.name) || "—",
       balance_formatted: formatCurrency(bal, account.currency || baseCurrency),
       currency_code: account.currency || baseCurrency,
-      status:
-        account.is_active === 1 || account.is_active === true
-          ? "active"
-          : "inactive",
-      status_display:
-        account.is_active === 1 || account.is_active === true
-          ? m.finance_ui_active()
-          : m.finance_ui_inactive(),
+      status: account.is_active ? "active" : "inactive",
+      status_display: account.is_active
+        ? m.finance_ui_active()
+        : m.finance_ui_inactive(),
     };
   }),
 );
@@ -534,7 +526,7 @@ function exportAccountsCsv() {
                         {parentAccountNode ? parentAccountNode.code : "—"}
                       </span>
                       <span class="font-medium text-foreground">
-                        {parentAccountNode ? (l(parentAccountNode.name_ar, parentAccountNode.name_en || parentAccountNode.name) || parentAccountNode.code) : m.finance_ui_root_account()}
+                        {parentAccountNode ? (l(parentAccountNode.name_ar, parentAccountNode.name) || parentAccountNode.code) : m.finance_ui_root_account()}
                       </span>
                     </div>
 

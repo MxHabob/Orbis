@@ -9,8 +9,8 @@ See `proposal.md` for motivation and `specs/api-server-distribution/spec.md` for
 **Goals:**
 
 - Build release assets for Linux x64/ARM64, Windows x64, macOS Apple Silicon, and Docker on Linux x64/ARM64.
-- Make native packages and Docker deployment materials discoverable and downloadable from the desktop settings flow, with a native save-location picker.
-- Verify downloaded artifacts before presenting them as ready to use.
+- Make native packages and Docker deployment materials discoverable from desktop settings, then hand the selected signed GitHub release URL to the default browser.
+- Verify signed release metadata before opening the selected download URL.
 - Keep server installation, database configuration, and startup under the customer's control.
 - Require platform signing for Windows/macOS artifacts and a verifiable release manifest for all downloaded assets.
 
@@ -40,13 +40,13 @@ GHCR was selected to keep image publication next to the existing GitHub release 
 
 ### Make API release assets a required release gate
 
-Add native and Docker build jobs to the tagged release workflow. The native job uses a target matrix and stages archives; Windows binaries are Authenticode-signed and macOS binaries are Developer ID-signed and notarized. The Docker job publishes the versioned multi-architecture image. A finalization step generates a manifest containing version, target, artifact URL, and SHA-256 for each native archive and Docker bundle, then signs the manifest with a dedicated release signing key. The desktop application pins the corresponding public key and verifies the manifest signature and artifact hash before accepting a download.
+Add native and Docker build jobs to the tagged release workflow. The native job uses a target matrix and stages archives; Windows binaries are Authenticode-signed and macOS binaries are Developer ID-signed and notarized. The Docker job publishes the versioned multi-architecture image. A finalization step generates a manifest containing version, target, artifact URL, and SHA-256 for each native archive and Docker bundle, then signs the manifest with a dedicated release signing key. The desktop application pins the corresponding public key and verifies the manifest signature and selected artifact metadata before opening its download URL in the browser. The browser performs the actual download, so the desktop app does not verify the downloaded file's bytes.
 
 The final release publication depends on successful build, signing, notarization, image publication, and artifact validation for every required target. Required signing credentials are configured as protected CI secrets; missing credentials or failed signing checks fail the release rather than silently publishing unsigned Windows/macOS assets. Checksums alone were rejected as the trust mechanism because an attacker able to replace both an artifact and its checksum could defeat them.
 
 ### Keep download and server setup separate from mobile integration activation
 
-Add a distinct API distribution section to the Orbis Mobile deployment settings. It retrieves the signed release manifest, presents supported native and Docker targets with release versions, and uses the desktop's native save dialog to download the selected archive or Compose bundle. Show integrity verification, progress, and explicit error states. Do not download during app activation and do not issue commands to a remote host.
+Add a distinct API distribution section to the Orbis Mobile deployment settings. It retrieves and verifies the signed release manifest, presents supported native and Docker targets with release versions, and opens the selected artifact's expected GitHub release URL in the default browser. Let the browser handle download progress and save location; the app does not download the artifact or claim to verify its bytes. Report manifest and browser-opening errors. Do not download during app activation and do not issue commands to a remote host.
 
 The initial delivery UX supplies an archive/bundle and setup guidance rather than executing privileged installation on the administrator's workstation. Endpoint registration remains a later, separate action after the customer has configured and started the API.
 

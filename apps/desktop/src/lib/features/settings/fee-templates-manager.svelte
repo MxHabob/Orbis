@@ -107,8 +107,7 @@ const gridSource = $derived(
     ),
     frequency: getFrequencyLabel(tpl.frequency),
     applicable_levels_display: formatLevels(tpl.applicable_levels),
-    status:
-      tpl.is_active === true || tpl.is_active === 1 ? "active" : "inactive",
+    status: tpl.is_active ? "active" : "inactive",
     class_count: getCategoryLabel(tpl.category),
     created_at_display: tpl.created_at
       ? formatDate(tpl.created_at, "datetime")

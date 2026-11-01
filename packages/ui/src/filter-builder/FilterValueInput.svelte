@@ -8,6 +8,7 @@ import {
 } from "../components/ui/select";
 import {
   FilterOperator,
+  type FilterOperatorType,
   type FilterCondition,
   type FieldDefinition,
 } from "./types";
@@ -24,9 +25,9 @@ let selectedField = $derived(fields.find((f) => f.id === condition.field));
 
 // Some operators don't need a value input
 let needsValue = $derived(
-  ![FilterOperator.IsNull, FilterOperator.IsNotNull].includes(
-    condition.operator,
-  ),
+  !(
+    [FilterOperator.IsNull, FilterOperator.IsNotNull] as FilterOperatorType[]
+  ).includes(condition.operator),
 );
 </script>
 

@@ -12,7 +12,7 @@ import {
   type OrgUnitDto,
   type ClassDto,
   type RoomDto,
-  type EmployeeDto,
+  type EmployeeDetailDto,
   type UserDto,
   extractErrorMessage,
 } from "$lib/api";
@@ -42,7 +42,7 @@ let {
 // Data State
 let classes = $state<ClassDto[]>([]);
 let rooms = $state<RoomDto[]>([]);
-let employees = $state<EmployeeDto[]>([]);
+let employees = $state<EmployeeDetailDto[]>([]);
 let allUnits = $state<OrgUnitDto[]>([]);
 let manager = $state<UserDto | null>(null);
 let isLoading = $state(true);
@@ -63,15 +63,15 @@ async function loadBranchData() {
   try {
     const [classesRes, roomsRes, empRes, unitsRes, usersRes] =
       await Promise.all([
-        api.listSections().catch(() => []),
-        api.listRooms().catch(() => []),
-        api.listEmployees().catch(() => []),
-        api.listOrgUnits().catch(() => []),
-        api.listUsers().catch(() => []),
+        api.listSections(),
+        api.listRooms(),
+        api.listEmployees(),
+        api.listOrgUnits(),
+        api.listUsers(),
       ]);
 
     // Sub-units belonging to this branch
-    allUnits = Array.isArray(unitsRes) ? unitsRes : [];
+    allUnits = unitsRes;
 
     // Find all unit IDs within this branch hierarchy
     const branchUnitIds = new Set<string>([branch.id]);
@@ -83,18 +83,16 @@ async function loadBranchData() {
 
     // Filter classes belonging to this branch or its stages
     classes = (Array.isArray(classesRes) ? classesRes : []).filter((c) =>
-      branchUnitIds.has(c.unit_id),
+      branchUnitIds.has(c.unit_id ?? ""),
     );
 
     // Filter rooms belonging to this branch
-    rooms = (Array.isArray(roomsRes) ? roomsRes : []).filter(
-      (r) =>
-        r.org_unit_id === branch.id ||
-        (r.building && r.building === branch.building),
-    );
+    rooms = roomsRes.filter((room) => room.org_unit_id === branch.id);
 
     // Filter employees assigned to this branch
-    employees = Array.isArray(empRes) ? empRes : [];
+    employees = empRes.items.filter((employee) =>
+      branchUnitIds.has(employee.org_unit_id ?? ""),
+    );
 
     // Find manager
     if (branch.head_id && Array.isArray(usersRes)) {
@@ -290,15 +288,6 @@ const roomColumns: OrbisColumnDef[] = [
     type: "number",
   },
   {
-    id: "building",
-    prop: "building",
-    header: m.common_rooms_label_building(),
-    name: "Building",
-    width: 140,
-    size: 140,
-    readonly: true,
-  },
-  {
     id: "floor",
     prop: "floor",
     header: m.common_rooms_label_floor(),
@@ -320,13 +309,7 @@ const roomGridSource = $derived(
       ? m.common_rooms_exam_committee()
       : m.common_rooms_general_room(),
     capacity: r.capacity ?? "—",
-    building: r.building || branch.building || "—",
-    floor:
-      r.floor !== null && r.floor !== undefined
-        ? String(r.floor)
-        : branch.floor
-          ? String(branch.floor)
-          : "—",
+    floor: r.floor !== null && r.floor !== undefined ? String(r.floor) : "—",
   })),
 );
 
@@ -556,7 +539,7 @@ const staffGridSource = $derived(
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
               <span class="text-muted-foreground">{m.ui_copy_branch_manager_5e90b291()}:</span>
-              <span class="font-semibold text-primary">{manager?.name_ar || manager?.full_name || manager?.username || m.common_unassigned()}</span>
+              <span class="font-semibold text-primary">{manager?.full_name || m.common_unassigned()}</span>
             </div>
             <div class="flex justify-between py-1.5 border-b border-border/30">
               <span class="text-muted-foreground">{m.ui_copy_data_isolation_4d35efbe()}:</span>
@@ -612,7 +595,6 @@ const staffGridSource = $derived(
         <OrbisGrid
           source={classGridSource}
           columns={classColumns}
-          enableExport={true}
         />
       </div>
     </TabsContent>
@@ -636,7 +618,6 @@ const staffGridSource = $derived(
         <OrbisGrid
           source={roomGridSource}
           columns={roomColumns}
-          enableExport={true}
         />
       </div>
     </TabsContent>
@@ -709,7 +690,6 @@ const staffGridSource = $derived(
         <OrbisGrid
           source={staffGridSource}
           columns={staffColumns}
-          enableExport={true}
         />
       </div>
     </TabsContent>

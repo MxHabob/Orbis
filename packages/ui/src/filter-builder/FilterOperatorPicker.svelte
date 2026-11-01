@@ -21,7 +21,7 @@ let {
 
 let selectedField = $derived(fields.find((f) => f.id === condition.field));
 
-const operatorLabels: Record<FilterOperator, string> = {
+const operatorLabels: Record<string, string> = {
   [FilterOperator.Eq]: "=",
   [FilterOperator.Ne]: "≠",
   [FilterOperator.Gt]: ">",

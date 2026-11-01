@@ -15,6 +15,11 @@ dist/
 apps/desktop/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/
+apps/mobile/
+apps/cli/
+apps/solver-service/
+packages/
+**/target/
 
 # Version control
 .git/

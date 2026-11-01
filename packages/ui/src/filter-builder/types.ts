@@ -96,6 +96,14 @@ export interface FilterTranslations {
   applyFilter: string;
 }
 
+export interface FilterBuilderProps {
+  filter: UniversalFilter;
+  fields: FieldDefinition[];
+  isRoot?: boolean;
+  onRemove?: () => void;
+  translations?: FilterTranslations;
+}
+
 export const defaultFilterTranslations: FilterTranslations = {
   filter: "Filter",
   advancedFilter: "Advanced Filter",

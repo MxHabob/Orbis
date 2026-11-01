@@ -1,0 +1,38 @@
+services:
+  api:
+    image: "${ORBIS_API_IMAGE:?Set ORBIS_API_IMAGE in .env}"
+    init: true
+    restart: unless-stopped
+    user: "${ORBIS_UID:-10001}:${ORBIS_GID:-10001}"
+    environment:
+      BIND_HOST: 0.0.0.0
+      PORT: "3000"
+      ORBIS_SERVER_CONFIG_FILE: /etc/orbis/server.json
+      ORBIS_LICENSE_DATA_DIR: /var/lib/orbis/license
+    ports:
+      - "${ORBIS_BIND_ADDRESS:-127.0.0.1}:3000:3000"
+    volumes:
+      - ./server.json:/etc/orbis/server.json:ro
+      - orbis_license_data:/var/lib/orbis/license
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - http://127.0.0.1:3000/api/v1/health
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+
+volumes:
+  orbis_license_data:
