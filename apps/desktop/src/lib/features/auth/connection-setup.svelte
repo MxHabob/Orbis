@@ -5,7 +5,6 @@
 <script lang="ts">
 import { LoadingIndicator } from "@orbis/ui";
 import { goto } from "$app/navigation";
-import { resolve } from "$app/paths";
 import { api } from "$lib/api/client";
 import { localizeHref, getLocale } from "$lib/paraglide/runtime";
 import * as m from "$lib/paraglide/messages";
@@ -110,9 +109,13 @@ function fieldError(field: keyof ConnectionFormValues): string | undefined {
 
 async function continueToOrganization() {
   const hasOrg = await api.systemHasOrganization();
-  goto(resolve(localizeHref(hasOrg ? "/login" : "/onboarding")), {
-    replaceState: true,
-  });
+  goto(
+    new URL(
+      localizeHref(hasOrg ? "/login" : "/onboarding"),
+      window.location.href,
+    ),
+    { replaceState: true },
+  );
 }
 
 let isCheckingHealth = $state(false);

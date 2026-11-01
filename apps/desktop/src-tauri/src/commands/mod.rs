@@ -2,6 +2,7 @@
 
 pub mod academic_cmds;
 pub mod ai_cmds;
+pub mod api_distribution_cmds;
 pub mod assessment_cmds;
 pub mod autopilot_cmds;
 pub mod bootstrap_cmds;
@@ -107,6 +108,7 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
                 | "system_get_entitlement"
                 | "system_get_app_info"
                 | "system_get_changelog"
+                | "api_distribution_verify_manifest"
                 | "system_check_for_updates"
                 | "system_install_update"
                 | "bootstrap_detect_environment"
@@ -118,6 +120,7 @@ fn is_allowed_without_operational_license(command: &str) -> bool {
 
 fn build_handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
     generate_handler![
+        api_distribution_cmds::api_distribution_verify_manifest,
         camera_stream_cmds::camera_stream_start,
         camera_stream_cmds::camera_stream_stop,
         // ── Auth & IAM ──────────────────────────────────────────
@@ -518,6 +521,7 @@ fn is_allowed_before_backend_initialization(command: &str) -> bool {
     command.starts_with("connection_")
         || command.starts_with("database_")
         || command.starts_with("window_")
+        || command == "api_distribution_verify_manifest"
 }
 
 fn required_feature(command: &str) -> Option<&'static str> {

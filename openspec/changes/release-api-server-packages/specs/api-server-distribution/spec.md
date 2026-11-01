@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Allows Orbis customers to obtain, verify, configure, and run the Orbis API on infrastructure they operate, using supported native packages or Docker without requiring Orbis to host the service.
+Allows Orbis customers to obtain authenticated release downloads, configure, and run the Orbis API on infrastructure they operate, using supported native packages or Docker without requiring Orbis to host the service.
 
 ## ADDED Requirements
 
@@ -28,31 +28,31 @@ The system SHALL keep Orbis Mobile integration activation independent from API s
 - **WHEN** an administrator opens the separate API server setup flow
 - **THEN** the system SHALL present the supported native and Docker deployment targets and the corresponding release version
 
-### Requirement: Administrator can save the selected distribution
-The system SHALL let the administrator choose where to save a selected native package or Docker deployment bundle, and SHALL report download progress and actionable failures.
+### Requirement: Administrator can download the selected distribution in a browser
+The system SHALL open the selected native package or Docker deployment bundle in the administrator's default browser after validating the signed release manifest. The browser SHALL manage the download and save location.
 
-#### Scenario: Native package download
-- **WHEN** the administrator selects a supported native target and a save location
-- **THEN** the system SHALL download that target's release package to the selected location
+#### Scenario: Native package browser download
+- **WHEN** the administrator selects a supported native target and chooses download
+- **THEN** the system SHALL open that target's signed GitHub release URL in the default browser
 
-#### Scenario: Docker bundle download
-- **WHEN** the administrator selects Docker and a save location
-- **THEN** the system SHALL download the Docker deployment materials to the selected location
+#### Scenario: Docker bundle browser download
+- **WHEN** the administrator selects Docker and chooses download
+- **THEN** the system SHALL open the signed GitHub release URL for the Docker deployment materials in the default browser
 
-#### Scenario: Download fails
-- **WHEN** the selected artifact cannot be retrieved or the destination cannot be written
-- **THEN** the system SHALL report the failure and SHALL NOT present an incomplete artifact as successfully downloaded
+#### Scenario: Browser cannot be opened
+- **WHEN** the default browser cannot be opened for the selected release URL
+- **THEN** the system SHALL report the failure and SHALL NOT report that a download has started
 
-### Requirement: Downloaded distributions can be integrity-verified
-The system SHALL verify downloaded artifacts against release-published integrity metadata before marking a download as verified, and SHALL identify verification failures to the administrator.
+### Requirement: Release metadata is authenticated before download
+The system SHALL verify the release manifest signature and validate the selected artifact URL and checksum metadata before opening the browser. The desktop app SHALL NOT claim that the downloaded file itself has been checksum-verified.
 
-#### Scenario: Artifact verification succeeds
-- **WHEN** a downloaded artifact matches the release-published integrity metadata
-- **THEN** the system SHALL identify the artifact as verified
+#### Scenario: Signed release metadata is valid
+- **WHEN** the release manifest signature is valid and the selected artifact matches the signed release metadata
+- **THEN** the system SHALL allow its expected GitHub release URL to be opened in the browser
 
-#### Scenario: Artifact verification fails
-- **WHEN** a downloaded artifact does not match the release-published integrity metadata
-- **THEN** the system SHALL report verification failure and SHALL NOT identify the artifact as ready to run
+#### Scenario: Signed release metadata is invalid
+- **WHEN** the release manifest signature or selected artifact metadata is invalid
+- **THEN** the system SHALL report verification failure and SHALL NOT open a download URL
 
 ### Requirement: Distribution supports persistent customer-operated API service setup
 Each distribution SHALL provide platform-appropriate setup materials to configure the API database connection and run the API persistently under customer control, without embedding customer credentials in the release artifact.

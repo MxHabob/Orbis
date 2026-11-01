@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import { createHash } from "node:crypto";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const releaseCheckDir = path.join(rootDir, "release-check");
 const repository = process.env.GITHUB_REPOSITORY;
 const tag = process.env.RELEASE_TAG;
 const version = process.env.RELEASE_VERSION ?? tag?.replace(/^v/, "");
@@ -18,7 +26,7 @@ if (version !== tag.slice(1)) {
 
 function runGh(args, options = {}) {
   const result = spawnSync("gh", args, {
-    maxBuffer: 5 * 1024 * 1024,
+    maxBuffer: 128 * 1024 * 1024,
     ...options,
   });
   if (result.error) throw result.error;
@@ -70,7 +78,7 @@ if (!Number.isSafeInteger(release.id) || release.id < 1) {
 if (!Array.isArray(release.assets)) {
   throw new Error(`GitHub Release ${tag} is missing its assets.`);
 }
-fs.mkdirSync("release-check", { recursive: true });
+fs.mkdirSync(releaseCheckDir, { recursive: true });
 
 const findAsset = (pattern, label) => {
   const assets = release.assets.filter((asset) => pattern.test(asset.name));
@@ -98,9 +106,16 @@ const requiredAssets = [
   findAssetNamed("latest.json", "Tauri updater JSON"),
   findAssetNamed(`${windowsInstaller.name}.sig`, "Windows NSIS signature"),
   findAssetNamed(`${macosArchive.name}.sig`, "macOS updater signature"),
+  findAssetNamed("orbis-api-manifest.json", "signed API release manifest"),
+  findAssetNamed(
+    "orbis-api-manifest.json.sig",
+    "API release manifest signature",
+  ),
 ];
 
-for (const asset of requiredAssets) {
+const downloadedAssets = new Set();
+async function downloadAsset(asset) {
+  if (downloadedAssets.has(asset.name)) return;
   if (!Number.isSafeInteger(asset.id) || asset.id < 1) {
     throw new Error(`GitHub Release asset has an invalid ID: ${asset.name}.`);
   }
@@ -109,22 +124,41 @@ for (const asset of requiredAssets) {
       `GitHub Release asset has an invalid filename: ${asset.name}.`,
     );
   }
-  const contents = runGh(
+  const result = spawnSync(
+    "gh",
     [
-      "api",
-      `repos/${repository}/releases/assets/${asset.id}`,
-      "-H",
-      "Accept: application/octet-stream",
+      "release",
+      "download",
+      tag,
+      "--repo",
+      repository,
+      "--pattern",
+      asset.name,
+      "--dir",
+      releaseCheckDir,
+      "--clobber",
     ],
-    { encoding: null },
+    { cwd: rootDir, env: process.env, stdio: "inherit" },
   );
-  if (!Buffer.isBuffer(contents) || contents.length === 0) {
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`Could not download GitHub Release asset ${asset.name}.`);
+  }
+  const assetPath = path.join(releaseCheckDir, asset.name);
+  if (!fs.statSync(assetPath, { throwIfNoEntry: false })?.isFile()) {
     throw new Error(`GitHub Release asset ${asset.name} is empty.`);
   }
-  fs.writeFileSync(`release-check/${asset.name}`, contents);
+  if (fs.statSync(assetPath).size === 0) {
+    throw new Error(`GitHub Release asset ${asset.name} is empty.`);
+  }
+  downloadedAssets.add(asset.name);
+}
+
+for (const asset of requiredAssets) {
+  await downloadAsset(asset);
 }
 fs.writeFileSync(
-  "release-check/release.json",
+  path.join(releaseCheckDir, "release.json"),
   JSON.stringify(release, null, 2),
 );
 
@@ -137,6 +171,8 @@ for (const [label, pattern] of [
   ["macOS updater archive", /\.app\.tar\.gz$/],
   ["macOS updater signature", /\.app\.tar\.gz\.sig$/],
   ["Tauri updater JSON", /^latest\.json$/],
+  ["API release manifest", /^orbis-api-manifest\.json$/],
+  ["API release manifest signature", /^orbis-api-manifest\.json\.sig$/],
   ["Android APK", new RegExp(`^orbis-${version}-android-arm64\\.apk$`, "i")],
   [
     "Android App Bundle",
@@ -146,8 +182,79 @@ for (const [label, pattern] of [
   if (!has(pattern)) throw new Error(`Release is missing ${label}.`);
 }
 
+const apiManifest = JSON.parse(
+  fs.readFileSync(
+    path.join(releaseCheckDir, "orbis-api-manifest.json"),
+    "utf8",
+  ),
+);
+const expectedApiPlatforms = new Set([
+  "linux-x86_64",
+  "linux-aarch64",
+  "windows-x86_64",
+  "macos-aarch64",
+  "docker-bundle",
+]);
+if (
+  apiManifest.schema_version !== 1 ||
+  apiManifest.version !== version ||
+  apiManifest.tag !== tag ||
+  apiManifest.docker_image !==
+    `ghcr.io/mxhabob/orbis-api@${apiManifest.docker_digest}` ||
+  !/^sha256:[a-f0-9]{64}$/.test(apiManifest.docker_digest ?? "") ||
+  !Array.isArray(apiManifest.artifacts) ||
+  apiManifest.artifacts.length !== expectedApiPlatforms.size
+) {
+  throw new Error(
+    "The signed API release manifest has invalid release metadata.",
+  );
+}
+
+for (const artifact of apiManifest.artifacts) {
+  const expectedName =
+    artifact.platform === "docker-bundle"
+      ? `Orbis-API-${version}-docker-bundle.zip`
+      : `Orbis-API-${version}-${artifact.platform}.${
+          artifact.platform === "windows-x86_64" ? "zip" : "tar.gz"
+        }`;
+  if (
+    !expectedApiPlatforms.delete(artifact.platform) ||
+    artifact.name !== expectedName ||
+    !/^[a-f0-9]{64}$/.test(artifact.sha256 ?? "") ||
+    /[\\/]/.test(artifact.name ?? "") ||
+    artifact.url !==
+      `https://${repository}/releases/download/${tag}/${artifact.name}`
+  ) {
+    throw new Error(
+      "The signed API release manifest contains an invalid artifact.",
+    );
+  }
+  const asset = findAssetNamed(
+    artifact.name,
+    `API package ${artifact.platform}`,
+  );
+  await downloadAsset(asset);
+  const hash = createHash("sha256");
+  for await (const chunk of fs.createReadStream(
+    path.join(releaseCheckDir, artifact.name),
+  )) {
+    hash.update(chunk);
+  }
+  const checksum = hash.digest("hex");
+  if (checksum !== artifact.sha256) {
+    throw new Error(
+      `API package checksum does not match the signed manifest: ${artifact.name}.`,
+    );
+  }
+}
+if (expectedApiPlatforms.size !== 0) {
+  throw new Error(
+    `The API release manifest is missing platforms: ${[...expectedApiPlatforms].join(", ")}.`,
+  );
+}
+
 const metadata = JSON.parse(
-  fs.readFileSync("release-check/latest.json", "utf8"),
+  fs.readFileSync(path.join(releaseCheckDir, "latest.json"), "utf8"),
 );
 if (metadata.version?.replace(/^v/, "") !== version) {
   throw new Error(
@@ -261,7 +368,7 @@ for (const target of ["windows-x86_64", "darwin-aarch64"]) {
     throw new Error(`Release is missing the updater signature for ${target}.`);
   }
   const signature = fs
-    .readFileSync(`release-check/${signatureFileName}`, "utf8")
+    .readFileSync(path.join(releaseCheckDir, signatureFileName), "utf8")
     .trim();
   if (signature !== platform.signature.trim()) {
     throw new Error(

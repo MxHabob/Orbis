@@ -72,7 +72,7 @@ async function handleSubmit(e: SubmitEvent) {
     await api.createAssessmentScheme({
       name: title,
       description: payload.title || payload.title_ar,
-      max_score: Number(payload.max_score) || 100,
+      max_score: String(payload.max_score),
       formula: {
         item_type: payload.item_type,
         weight: Number(payload.weight) || 15,

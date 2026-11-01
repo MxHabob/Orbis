@@ -389,7 +389,7 @@ function requestMoreIfNeeded(force = false) {
     })
     .finally(() => {
       isLoadingMore = false;
-      if (!loadMoreError) requestAnimationFrame(requestMoreIfNeeded);
+      if (!loadMoreError) requestAnimationFrame(() => requestMoreIfNeeded());
     });
 }
 
@@ -401,7 +401,7 @@ $effect(() => {
   safeSource.length;
   hasMore;
   loading;
-  requestAnimationFrame(requestMoreIfNeeded);
+  requestAnimationFrame(() => requestMoreIfNeeded());
 });
 
 function setActive(row: number, col: number, extend = false) {
@@ -1511,8 +1511,9 @@ export function scrollToColumnProp(prop: string) {
                               alt={val}
                               class="orbis-avatar-img"
                               onerror={(event) => {
-                                event.currentTarget.hidden = true;
-                                const fallback = event.currentTarget.nextElementSibling;
+                                const image = event.currentTarget;
+                                if (image instanceof HTMLImageElement) image.hidden = true;
+                                const fallback = image.nextElementSibling;
                                 if (fallback instanceof HTMLElement) fallback.hidden = false;
                               }}
                             />

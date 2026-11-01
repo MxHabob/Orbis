@@ -189,6 +189,8 @@ function handleDrop(e: DragEvent, day: number, slotId: string) {
                 {@const cellLessons = slot ? lessonMatrix.get(key) || [] : []}
                 {@const isOver = dragOverCellKey === key}
                 <div
+                  role="gridcell"
+                  tabindex="-1"
                   class="group relative flex flex-1 min-w-0 flex-col gap-1 border-e border-border/40 p-1 text-center transition-colors last:border-e-0 {isOver
                     ? 'bg-primary/10 ring-2 ring-primary ring-inset'
                     : 'hover:bg-muted/20'} {slot?.is_break ? 'bg-primary/5' : ''}"

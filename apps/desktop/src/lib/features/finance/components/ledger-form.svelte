@@ -203,9 +203,9 @@ async function handleSubmit(e: SubmitEvent) {
 
       const success = await glForm.submit(async (payload) => {
         await api.createAccount({
-          code: payload.code,
-          name: payload.name,
-          name_ar: payload.name_ar,
+          code: finalCode,
+          name: glNameEn || glNameAr,
+          name_ar: glNameAr || glNameEn,
           account_type: payload.item_type || glAccountType,
           currency: payload.currency,
           parent_id: payload.parent_id || undefined,
@@ -239,9 +239,9 @@ async function handleSubmit(e: SubmitEvent) {
 
       const success = await cashForm.submit(async (payload) => {
         await api.createAccount({
-          code: payload.code || `TR-${Date.now()}`,
-          name: payload.name,
-          name_ar: payload.name_ar,
+          code: payload.code ?? `TR-${Date.now()}`,
+          name: trNameEn || trNameAr,
+          name_ar: trNameAr || trNameEn,
           account_type: "asset",
           currency: payload.currency,
         });
@@ -283,9 +283,9 @@ async function handleSubmit(e: SubmitEvent) {
 
       const success = await entityForm.submit(async (payload) => {
         await api.createAccount({
-          code: payload.code || `EN-${Date.now()}`,
-          name: payload.name,
-          name_ar: payload.name_ar,
+          code: payload.code ?? `EN-${Date.now()}`,
+          name: enNameEn || enNameAr,
+          name_ar: enNameAr || enNameEn,
           account_type: itemType,
           currency: payload.currency,
         });
