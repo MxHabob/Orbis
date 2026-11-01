@@ -120,37 +120,6 @@ jobs:
         working-directory: apps/api-rust
         run: cargo build --locked --release --target ${{ matrix.target }} -p orbis-server --bin orbis-server
 
-      - name: Validate Windows code-signing configuration
-        if: matrix.target == 'x86_64-pc-windows-msvc'
-        env:
-          WINDOWS_API_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_API_SIGNING_PFX_BASE64 }}
-          WINDOWS_API_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_API_SIGNING_PFX_PASSWORD }}
-          WINDOWS_API_SIGNING_SUBJECT: ${{ vars.WINDOWS_API_SIGNING_SUBJECT }}
-        shell: pwsh
-        run: |
-          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_API_SIGNING_PFX_BASE64) -or
-              [string]::IsNullOrWhiteSpace($env:WINDOWS_API_SIGNING_PFX_PASSWORD) -or
-              [string]::IsNullOrWhiteSpace($env:WINDOWS_API_SIGNING_SUBJECT)) {
-            throw "Configure WINDOWS_API_SIGNING_PFX_BASE64, WINDOWS_API_SIGNING_PFX_PASSWORD, and WINDOWS_API_SIGNING_SUBJECT before publishing signed Windows API packages."
-          }
-
-      - name: Validate Apple code-signing and notarization configuration
-        if: matrix.target == 'aarch64-apple-darwin'
-        env:
-          APPLE_API_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_API_CERTIFICATE_P12_BASE64 }}
-          APPLE_API_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_API_CERTIFICATE_PASSWORD }}
-          APPLE_API_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_API_KEYCHAIN_PASSWORD }}
-          APPLE_API_SIGNING_IDENTITY: ${{ vars.APPLE_API_SIGNING_IDENTITY }}
-          APPLE_API_ID: ${{ secrets.APPLE_API_ID }}
-          APPLE_API_APP_PASSWORD: ${{ secrets.APPLE_API_APP_PASSWORD }}
-          APPLE_API_TEAM_ID: ${{ vars.APPLE_API_TEAM_ID }}
-        shell: bash
-        run: |
-          if [[ -z "$APPLE_API_CERTIFICATE_P12_BASE64" || -z "$APPLE_API_CERTIFICATE_PASSWORD" || -z "$APPLE_API_KEYCHAIN_PASSWORD" || -z "$APPLE_API_SIGNING_IDENTITY" || -z "$APPLE_API_ID" || -z "$APPLE_API_APP_PASSWORD" || -z "$APPLE_API_TEAM_ID" ]]; then
-            echo "::error::Configure Apple API signing and notarization secrets before publishing signed macOS API packages."
-            exit 1
-          fi
-
       - name: Package and verify API server (Unix)
         if: runner.os != 'Windows'
         env:
@@ -214,9 +183,6 @@ jobs:
           TARGET: ${{ matrix.target }}
           ASSET: ${{ matrix.asset }}
           DEPLOYMENT: ${{ matrix.deployment }}
-          WINDOWS_API_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_API_SIGNING_PFX_BASE64 }}
-          WINDOWS_API_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_API_SIGNING_PFX_PASSWORD }}
-          WINDOWS_API_SIGNING_SUBJECT: ${{ vars.WINDOWS_API_SIGNING_SUBJECT }}
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
@@ -248,46 +214,6 @@ jobs:
           $licenseHash = (Get-FileHash -Algorithm SHA256 $license).Hash
           if ($licenseHash -ne "1CDF703C10A70E5973BF3ACF2A5EEABE7746237155B92DB2034AEAE26FDF7802") {
             throw "The Windows service wrapper license checksum does not match the pinned release."
-          }
-          $certificatePath = Join-Path $env:RUNNER_TEMP "orbis-api-signing.pfx"
-          [System.IO.File]::WriteAllBytes(
-            $certificatePath,
-            [Convert]::FromBase64String($env:WINDOWS_API_SIGNING_PFX_BASE64)
-          )
-          try {
-            $certificate = Import-PfxCertificate `
-              -FilePath $certificatePath `
-              -CertStoreLocation Cert:\CurrentUser\My `
-              -Password (ConvertTo-SecureString $env:WINDOWS_API_SIGNING_PFX_PASSWORD -AsPlainText -Force)
-            if ($null -eq $certificate -or $certificate.Subject -notlike "*$env:WINDOWS_API_SIGNING_SUBJECT*") {
-              throw "The configured Windows signing certificate does not match the expected subject."
-            }
-            $sdkRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
-            $signTool = Get-ChildItem -Path $sdkRoot -Filter signtool.exe -Recurse |
-              Where-Object { $_.FullName -match "\\x64\\signtool\.exe$" } |
-              Sort-Object FullName -Descending |
-              Select-Object -First 1
-            if ($null -eq $signTool) {
-              throw "Windows SDK signtool.exe was not found."
-            }
-            foreach ($file in @(
-              "orbis-server.exe",
-              "orbis-api-service.exe"
-            )) {
-              & $signTool.FullName sign /fd SHA256 /td SHA256 `
-                /tr "http://timestamp.digicert.com" `
-                /sha1 $certificate.Thumbprint `
-                (Join-Path $stage $file)
-              if ($LASTEXITCODE -ne 0) {
-                throw "Authenticode signing failed for $file."
-              }
-              & $signTool.FullName verify /pa /all (Join-Path $stage $file)
-              if ($LASTEXITCODE -ne 0) {
-                throw "Authenticode signature verification failed for $file."
-              }
-            }
-          } finally {
-            Remove-Item -LiteralPath $certificatePath -Force -ErrorAction SilentlyContinue
           }
           $archive = Join-Path $output "Orbis-API-$env:VERSION-$env:ASSET.zip"
           Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $archive
@@ -345,53 +271,25 @@ jobs:
             throw "Uninstall removed the customer configuration."
           }
 
-      - name: Sign and notarize macOS API package
+      - name: Validate and smoke test macOS API package
         if: matrix.target == 'aarch64-apple-darwin'
         env:
           VERSION: ${{ needs.validate.outputs.version }}
           ASSET: ${{ matrix.asset }}
-          APPLE_API_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_API_CERTIFICATE_P12_BASE64 }}
-          APPLE_API_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_API_CERTIFICATE_PASSWORD }}
-          APPLE_API_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_API_KEYCHAIN_PASSWORD }}
-          APPLE_API_SIGNING_IDENTITY: ${{ vars.APPLE_API_SIGNING_IDENTITY }}
-          APPLE_API_ID: ${{ secrets.APPLE_API_ID }}
-          APPLE_API_APP_PASSWORD: ${{ secrets.APPLE_API_APP_PASSWORD }}
-          APPLE_API_TEAM_ID: ${{ vars.APPLE_API_TEAM_ID }}
         shell: bash
         run: |
           set -euo pipefail
           stage="$RUNNER_TEMP/orbis-api-${ASSET}"
-          certificate="$RUNNER_TEMP/orbis-api-signing.p12"
-          keychain="$RUNNER_TEMP/orbis-api-signing.keychain-db"
-          printf '%s' "$APPLE_API_CERTIFICATE_P12_BASE64" | base64 --decode > "$certificate"
-          chmod 600 "$certificate"
-          security create-keychain -p "$APPLE_API_KEYCHAIN_PASSWORD" "$keychain"
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$APPLE_API_KEYCHAIN_PASSWORD" "$keychain"
-          security import "$certificate" -k "$keychain" \
-            -P "$APPLE_API_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
-          security list-keychains -d user -s "$keychain"
-          security set-key-partition-list -S apple-tool:,apple: \
-            -s -k "$APPLE_API_KEYCHAIN_PASSWORD" "$keychain"
-          rm -f "$certificate"
-          codesign --force --options runtime --timestamp \
-            --sign "$APPLE_API_SIGNING_IDENTITY" "$stage/orbis-server"
-          codesign --verify --strict --verbose=2 "$stage/orbis-server"
-          ditto -c -k --keepParent "$stage" "$RUNNER_TEMP/orbis-api-${VERSION}-${ASSET}-notary.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/orbis-api-${VERSION}-${ASSET}-notary.zip" \
-            --apple-id "$APPLE_API_ID" \
-            --password "$APPLE_API_APP_PASSWORD" \
-            --team-id "$APPLE_API_TEAM_ID" \
-            --wait
-          shasum -a 256 "$stage/orbis-server" > "$stage/orbis-server.sig.sha256"
           archive="$GITHUB_WORKSPACE/release-output/Orbis-API-${VERSION}-${ASSET}.tar.gz"
-          tar -czf "$archive" -C "$stage" .
-          tar -tzf "$archive" | grep -Fxq './orbis-server'
-          tar -tzf "$archive" | grep -Fxq './orbis-server.sig.sha256'
+          archive_listing="$RUNNER_TEMP/orbis-api-${ASSET}-archive-list.txt"
+          tar -tzf "$archive" > "$archive_listing"
+          grep -Fxq './orbis-server' "$archive_listing"
+          grep -Fxq './com.orbis.api.plist' "$archive_listing"
+          grep -Fxq './install.sh' "$archive_listing"
           test "$(tar -xOf "$archive" ./VERSION)" = "$VERSION"
-          archived_hash="$(tar -xOf "$archive" ./orbis-server | shasum -a 256 | cut -d ' ' -f 1)"
-          signed_hash="$(shasum -a 256 "$stage/orbis-server" | cut -d ' ' -f 1)"
-          test "$archived_hash" = "$signed_hash"
+          plutil -lint "$stage/com.orbis.api.plist"
+          bash -n "$stage/install.sh"
+          bash -n "$stage/uninstall.sh"
           config_path="/Library/Application Support/Orbis/server.json"
           sudo install -d -o root -g nobody -m 0750 "$(dirname "$config_path")"
           printf '%s' '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' |
@@ -408,7 +306,6 @@ jobs:
           sudo bash "$stage/uninstall.sh"
           test -f "$config_path"
           grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
-          security delete-keychain "$keychain"
 
       - name: Upload staged API package
         uses: actions/upload-artifact@v4

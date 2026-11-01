@@ -3535,7 +3535,7 @@
   "settings_orbis_mobile_status_suspended": "موقوف",
   "settings_orbis_mobile_staff_actions": "يمكن للمؤسسة إضافة عناوينها وتعديلها وتفعيلها أو تعطيلها. إيقاف النشر أو إلغاؤه نهائيًا وإلغاء العنوان نهائيًا من صلاحيات موظفي Mulverse فقط.",
   "settings_orbis_mobile_api_download_title": "حزم خادم Orbis API",
-  "settings_orbis_mobile_api_download_description": "اختر نظام الخادم لفتح تنزيل الإصدار الموقع في المتصفح. يتولى المتصفح التنزيل ومكان الحفظ؛ هذا التطبيق لا يثبت API ولا يشغّله. جهّز PostgreSQL ومخطط Orbis أولاً.",
+  "settings_orbis_mobile_api_download_description": "اختر نظام الخادم لفتح تنزيله من الإصدار الموثّق في المتصفح. قد يعرض Windows وmacOS تحذيراً عن ملفات API غير الموقعة أو يمنع تشغيلها. يتولى المتصفح التنزيل ومكان الحفظ؛ هذا التطبيق لا يثبت API ولا يشغّله. جهّز PostgreSQL ومخطط Orbis أولاً.",
   "settings_orbis_mobile_api_check_releases": "التحقق من الحزم",
   "settings_orbis_mobile_api_download": "التنزيل في المتصفح",
   "settings_orbis_mobile_api_opening_browser": "جارٍ فتح المتصفح...",

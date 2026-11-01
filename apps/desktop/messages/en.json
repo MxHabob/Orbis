@@ -3535,7 +3535,7 @@
   "settings_orbis_mobile_status_suspended": "Suspended",
   "settings_orbis_mobile_staff_actions": "Organizations can add, edit, activate, or disable their addresses. Only Mulverse staff can suspend or revoke a deployment or permanently revoke an address.",
   "settings_orbis_mobile_api_download_title": "Orbis API server packages",
-  "settings_orbis_mobile_api_download_description": "Choose a server platform and open its signed release download in your browser. Your browser handles the download location; this app never installs or starts the API. Prepare PostgreSQL and its Orbis schema first.",
+  "settings_orbis_mobile_api_download_description": "Choose a server platform and open its download from the authenticated release in your browser. Windows and macOS may warn about or block unsigned API binaries. Your browser handles the download location; this app never installs or starts the API. Prepare PostgreSQL and its Orbis schema first.",
   "settings_orbis_mobile_api_check_releases": "Check for packages",
   "settings_orbis_mobile_api_download": "Download in browser",
   "settings_orbis_mobile_api_opening_browser": "Opening browser...",
