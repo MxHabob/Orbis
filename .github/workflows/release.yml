@@ -54,7 +54,16 @@ jobs:
           const mobileLockfileVersion = lockfile.match(/"apps\/mobile":\s*\{\s*"name":\s*"@orbis\/mobile",\s*"version":\s*"([^"]+)"/)?.[1];
           const solverPom = fs.readFileSync("./apps/solver-service/pom.xml", "utf8");
           const solverVersion = solverPom.match(/<orbis\.version>([^<]+)<\/orbis\.version>/)?.[1];
-          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion, solverVersion };
+          const apiServerManifest = fs.readFileSync("./apps/api-rust/crates/orbis-server/Cargo.toml", "utf8");
+          const apiAppManifest = fs.readFileSync("./apps/api-rust/crates/orbis-app/Cargo.toml", "utf8");
+          const apiCargoLock = fs.readFileSync("./apps/api-rust/Cargo.lock", "utf8");
+          const packageVersion = (manifest) => manifest.match(/^version = "([^"]+)"/m)?.[1];
+          const lockPackageVersion = (name) => apiCargoLock.match(new RegExp(`\\[\\[package\\]\\]\\nname = "${name}"\\nversion = "([^"]+)"`))?.[1];
+          const apiServerVersion = packageVersion(apiServerManifest);
+          const apiAppVersion = packageVersion(apiAppManifest);
+          const apiServerLockVersion = lockPackageVersion("orbis-server");
+          const apiAppLockVersion = lockPackageVersion("orbis-app");
+          const versions = { desktopVersion, mobileVersion, mobileConfigVersion: mobileConfig.version, tauriVersion, stagingVersion, cargoVersion, lockfileVersion, mobileLockfileVersion, solverVersion, apiServerVersion, apiAppVersion, apiServerLockVersion, apiAppLockVersion };
           if (Object.values(versions).some((candidate) => !candidate || candidate !== version)) {
             throw new Error(`Tag v${version} must match release versions: ${JSON.stringify(versions)}`);
           }
@@ -150,7 +159,7 @@ jobs:
           grep -Fxq './README.md' "$archive_listing"
           test "$(tar -xOf "$archive" ./VERSION)" = "$VERSION"
           if [[ "$DEPLOYMENT" == "linux" ]]; then
-            for file in install.sh uninstall.sh orbis-api.service server.example.json; do
+            for file in install.sh uninstall.sh orbis-api.service; do
               grep -Fxq "./$file" "$archive_listing"
             done
             bash -n "$stage/install.sh"
@@ -161,13 +170,20 @@ jobs:
             sudo bash "$verify/install.sh"
             sudo test -x /opt/orbis/bin/orbis-server
             sudo systemctl cat orbis-api.service
-            sudo test -r /etc/orbis/server.json
+            sudo test ! -e /etc/orbis/server.json
+            error_file="$RUNNER_TEMP/orbis-api-config-error.txt"
+            if sudo -u orbis /opt/orbis/bin/orbis-server 2>"$error_file"; then
+              echo "::error::The API unexpectedly started without a database configuration."
+              exit 1
+            fi
+            sudo grep -Fxq '  "database_url": ""' /etc/orbis/server.json
+            grep -Fq 'Created Orbis server configuration at /etc/orbis/server.json' "$error_file"
             sudo bash "$verify/uninstall.sh"
             sudo test ! -e /etc/systemd/system/orbis-api.service
             sudo test ! -e /opt/orbis/bin/orbis-server
             sudo test -e /etc/orbis/server.json
           elif [[ "$DEPLOYMENT" == "macos" ]]; then
-            for file in install.sh uninstall.sh com.orbis.api.plist server.example.json; do
+            for file in install.sh uninstall.sh com.orbis.api.plist; do
               grep -Fxq "./$file" "$archive_listing"
             done
             bash -n "$stage/install.sh"
@@ -225,7 +241,6 @@ jobs:
             "orbis-api-service.xml",
             "install.ps1",
             "uninstall.ps1",
-            "server.example.json",
             "WINSW-LICENSE.txt",
             "README.md"
           )) {
@@ -270,6 +285,31 @@ jobs:
           if ((Get-Content $customerConfigPath -Raw) -ne $customerConfig) {
             throw "Uninstall removed the customer configuration."
           }
+          Remove-Item -LiteralPath $customerConfigPath -Force
+          & (Join-Path $verify "install.ps1")
+          if (Test-Path -LiteralPath $customerConfigPath) {
+            throw "The installer created the server configuration before the API started."
+          }
+          Start-Service -Name "OrbisApi"
+          $deadline = (Get-Date).AddSeconds(30)
+          while (-not (Test-Path -LiteralPath $customerConfigPath) -and (Get-Date) -lt $deadline) {
+            Start-Sleep -Seconds 1
+          }
+          $service = Get-Service -Name "OrbisApi"
+          if ($service.Status -ne "Stopped") {
+            Stop-Service -Name "OrbisApi"
+          }
+          if (-not (Test-Path -LiteralPath $customerConfigPath)) {
+            throw "The API service did not create its missing server configuration."
+          }
+          $createdConfig = Get-Content -LiteralPath $customerConfigPath -Raw | ConvertFrom-Json
+          if ($createdConfig.database_url -ne "") {
+            throw "The API did not create an empty database_url setting."
+          }
+          & (Join-Path $verify "uninstall.ps1")
+          if (Get-Service -Name "OrbisApi" -ErrorAction SilentlyContinue) {
+            throw "The Orbis API service was not removed after the config-generation test."
+          }
 
       - name: Validate and smoke test macOS API package
         if: matrix.target == 'aarch64-apple-darwin'
@@ -295,7 +335,7 @@ jobs:
           printf '%s' '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' |
             sudo tee "$config_path" >/dev/null
           sudo bash "$stage/install.sh"
-          grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
+          sudo grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
           sudo launchctl bootstrap system /Library/LaunchDaemons/com.orbis.api.plist
           sudo launchctl print system/com.orbis.api >/dev/null
           sudo launchctl bootout system/com.orbis.api
@@ -304,8 +344,8 @@ jobs:
             exit 1
           fi
           sudo bash "$stage/uninstall.sh"
-          test -f "$config_path"
-          grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
+          sudo test -f "$config_path"
+          sudo grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
 
       - name: Upload staged API package
         uses: actions/upload-artifact@v4

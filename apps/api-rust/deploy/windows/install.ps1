@@ -14,8 +14,7 @@ foreach ($file in @(
   "orbis-server.exe",
   "orbis-api-service.exe",
   "orbis-api-service.xml",
-  "VERSION",
-  "server.example.json"
+  "VERSION"
 )) {
   if (-not (Test-Path -LiteralPath (Join-Path $packageDirectory $file) -PathType Leaf)) {
     throw "Required package file is missing: $file"
@@ -43,14 +42,10 @@ Copy-Item -LiteralPath (Join-Path $packageDirectory "orbis-api-service.exe") -De
 Copy-Item -LiteralPath (Join-Path $packageDirectory "orbis-api-service.xml") -Destination $installDirectory -Force
 Copy-Item -LiteralPath (Join-Path $packageDirectory "VERSION") -Destination $installDirectory -Force
 
-if (-not (Test-Path -LiteralPath $configPath)) {
-  Copy-Item -LiteralPath (Join-Path $packageDirectory "server.example.json") -Destination $configPath
-}
-
 & icacls.exe $dataDirectory /inheritance:r /grant:r `
   "NT AUTHORITY\SYSTEM:(OI)(CI)F" `
   "BUILTIN\Administrators:(OI)(CI)F" `
-  "NT AUTHORITY\LOCAL SERVICE:(OI)(CI)RX"
+  "NT AUTHORITY\LOCAL SERVICE:(OI)(CI)M"
 if ($LASTEXITCODE -ne 0) {
   throw "Could not secure the Orbis data directory permissions."
 }
@@ -65,14 +60,6 @@ if ($LASTEXITCODE -ne 0) {
   throw "Could not grant the Orbis service access to its log directory."
 }
 
-& icacls.exe $configPath /inheritance:r /grant:r `
-  "NT AUTHORITY\SYSTEM:F" `
-  "BUILTIN\Administrators:F" `
-  "NT AUTHORITY\LOCAL SERVICE:R"
-if ($LASTEXITCODE -ne 0) {
-  throw "Could not secure the Orbis database configuration file."
-}
-
 & $serviceExecutable install
 if ($LASTEXITCODE -ne 0) {
   throw "Could not register the Orbis API service."
@@ -80,6 +67,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $version = (Get-Content -LiteralPath (Join-Path $installDirectory "VERSION") -Raw).Trim()
 Write-Output "Orbis API $version installed."
-Write-Output "Configure $configPath with the existing Orbis database URL."
+Write-Output "The API creates $configPath on first start if it is missing."
+Write-Output "Set database_url in that file before starting the API again."
 Write-Output "After the database schema and migrations are ready, start the service with:"
 Write-Output "  Start-Service -Name $serviceName"
