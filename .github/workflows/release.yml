@@ -174,13 +174,15 @@ jobs:
           fi
           archive="$output/Orbis-API-${VERSION}-${ASSET}.tar.gz"
           tar -czf "$archive" -C "$stage" .
-          tar -tzf "$archive" | grep -Fxq './orbis-server'
-          tar -tzf "$archive" | grep -Fxq './VERSION'
-          tar -tzf "$archive" | grep -Fxq './README.md'
+          archive_listing="$RUNNER_TEMP/orbis-api-${ASSET}-archive-list.txt"
+          tar -tzf "$archive" > "$archive_listing"
+          grep -Fxq './orbis-server' "$archive_listing"
+          grep -Fxq './VERSION' "$archive_listing"
+          grep -Fxq './README.md' "$archive_listing"
           test "$(tar -xOf "$archive" ./VERSION)" = "$VERSION"
           if [[ "$DEPLOYMENT" == "linux" ]]; then
             for file in install.sh uninstall.sh orbis-api.service server.example.json; do
-              tar -tzf "$archive" | grep -Fxq "./$file"
+              grep -Fxq "./$file" "$archive_listing"
             done
             bash -n "$stage/install.sh"
             bash -n "$stage/uninstall.sh"
@@ -197,7 +199,7 @@ jobs:
             sudo test -e /etc/orbis/server.json
           elif [[ "$DEPLOYMENT" == "macos" ]]; then
             for file in install.sh uninstall.sh com.orbis.api.plist server.example.json; do
-              tar -tzf "$archive" | grep -Fxq "./$file"
+              grep -Fxq "./$file" "$archive_listing"
             done
             bash -n "$stage/install.sh"
             bash -n "$stage/uninstall.sh"
@@ -416,11 +418,9 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  build-api-docker:
-    name: Build and publish API Docker image
+  build-api-docker-amd64:
+    name: Build API Docker image (amd64)
     needs: validate
-    outputs:
-      image_digest: ${{ steps.build.outputs.digest }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -430,9 +430,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.validate.outputs.tag }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -444,29 +441,105 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish versioned multi-architecture image
-        id: build
+      - name: Build and publish native amd64 image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/api-rust/deploy/docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
-          tags: ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}
+          tags: ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}-amd64
           sbom: true
           provenance: mode=max
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=orbis-api-amd64
+          cache-to: type=gha,mode=max,scope=orbis-api-amd64
           labels: |
             org.opencontainers.image.title=Orbis API
             org.opencontainers.image.version=${{ needs.validate.outputs.version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      - name: Verify published image architectures
+  build-api-docker-arm64:
+    name: Build API Docker image (arm64)
+    needs: validate
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.tag }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish native arm64 image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api-rust/deploy/docker/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: ghcr.io/mxhabob/orbis-api:${{ needs.validate.outputs.version }}-arm64
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=orbis-api-arm64
+          cache-to: type=gha,mode=max,scope=orbis-api-arm64
+          labels: |
+            org.opencontainers.image.title=Orbis API
+            org.opencontainers.image.version=${{ needs.validate.outputs.version }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+  build-api-docker:
+    name: Publish and verify multi-architecture API Docker image
+    needs:
+      - validate
+      - build-api-docker-amd64
+      - build-api-docker-arm64
+    outputs:
+      image_digest: ${{ steps.verify.outputs.image_digest }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create versioned multi-architecture manifest
         env:
-          IMAGE_REF: ghcr.io/mxhabob/orbis-api@${{ steps.build.outputs.digest }}
+          IMAGE_NAME: ghcr.io/mxhabob/orbis-api
+          VERSION: ${{ needs.validate.outputs.version }}
         run: |
+          docker buildx imagetools create \
+            --tag "$IMAGE_NAME:$VERSION" \
+            "$IMAGE_NAME:$VERSION-amd64" \
+            "$IMAGE_NAME:$VERSION-arm64"
+
+      - name: Verify published image architectures
+        id: verify
+        env:
+          IMAGE_NAME: ghcr.io/mxhabob/orbis-api
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          IMAGE_REF="$IMAGE_NAME:$VERSION"
           docker buildx imagetools inspect "$IMAGE_REF" --raw > "$RUNNER_TEMP/orbis-api-index.json"
+          docker buildx imagetools inspect "$IMAGE_REF" > "$RUNNER_TEMP/orbis-api-inspect.txt"
           node <<'NODE'
           const fs = require("node:fs");
           const index = JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP + "/orbis-api-index.json", "utf8"));
@@ -479,6 +552,15 @@ jobs:
               throw new Error(`Published API image is missing ${required}.`);
             }
           }
+          const digest = fs.readFileSync(process.env.RUNNER_TEMP + "/orbis-api-inspect.txt", "utf8")
+            .split(/\r?\n/)
+            .find((line) => line.startsWith("Digest: "))
+            ?.slice("Digest: ".length)
+            .trim();
+          if (!digest || !/^sha256:[a-f0-9]{64}$/.test(digest)) {
+            throw new Error("Could not determine the published multi-architecture image digest.");
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `image_digest=${digest}\n`);
           NODE
 
   build-desktop:
