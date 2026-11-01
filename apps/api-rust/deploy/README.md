@@ -1,21 +1,21 @@
 # Orbis API server packages
 
-The native release archives contain the API executable, a version file, an example database configuration, and a service installer for the target operating system. The Docker Compose bundle is available separately. Downloading a package does not configure, install, or start a server.
+The native release archives contain the API executable, a version file, and a service installer for the target operating system. The Docker Compose bundle is available separately. Downloading a package does not configure, install, or start a server.
 
 ## Requirements and database setup
 
-The customer supplies and operates PostgreSQL; no package creates a database or opens a database port. Before starting Orbis API, create the database, configure a restricted database account, and configure the connection string in the OS-specific server configuration. Use TLS for database connections and protect the configuration file because it contains credentials.
+The customer supplies and operates PostgreSQL; no package creates a database or opens a database port. Before starting Orbis API, create the database and configure a restricted database account. If the server configuration is missing, the API creates `server.json` with an empty `database_url`, reports its location, and exits. Set that value to the customer-managed PostgreSQL connection string, then start the API again. Use TLS for database connections and protect the configuration file because it contains credentials.
 
 The database must already contain the Orbis schema and required migrations. The API intentionally refuses to start against an uninitialized or incompatible schema. Back up the database before applying migrations or upgrading the API.
 
 ## Supported packages
 
-- Linux x64 and ARM64: install with `sudo ./install.sh`, inspect `/etc/systemd/system/orbis-api.service`, then explicitly start with `sudo systemctl enable --now orbis-api.service`. Use `sudo systemctl stop orbis-api.service` to stop it.
-- Windows x64: the package includes the WinSW v2.12.0 license. The API executable is not Authenticode-signed, so Windows may show an unknown-publisher or SmartScreen warning. Run `install.ps1` from an elevated PowerShell session to register the service only if your organization's policy permits it. Configure `%ProgramData%\Orbis\server.json`, then explicitly start with `Start-Service -Name OrbisApi`; use `Stop-Service -Name OrbisApi` to stop it.
-- macOS Apple Silicon: the API executable is not signed or notarized, so Gatekeeper may block it. Install and run it only if your administrator's security policy permits unsigned software. Install with `sudo ./install.sh` to register the launchd service. Configure `/Library/Application Support/Orbis/server.json`, then explicitly start with `sudo launchctl bootstrap system /Library/LaunchDaemons/com.orbis.api.plist`; stop with `sudo launchctl bootout system/com.orbis.api`.
+- Linux x64 and ARM64: install with `sudo ./install.sh`, then start with `sudo systemctl enable --now orbis-api.service`. If `server.json` is missing, the API creates it and exits; set `database_url`, then restart the service. Stop with `sudo systemctl stop orbis-api.service`.
+- Windows x64: the package includes the WinSW v2.12.0 license. The API executable is not Authenticode-signed, so Windows may show an unknown-publisher or SmartScreen warning. Run `install.ps1` from an elevated PowerShell session to register the service only if your organization's policy permits it. Start `OrbisApi` once to create a missing `%ProgramData%\Orbis\server.json`, set `database_url`, then restart the service. Stop it with `Stop-Service -Name OrbisApi`.
+- macOS Apple Silicon: the API executable is not signed or notarized, so Gatekeeper may block it. Install and run it only if your administrator's security policy permits unsigned software. Install with `sudo ./install.sh` to register the launchd service. Start it with `sudo launchctl bootstrap system /Library/LaunchDaemons/com.orbis.api.plist`; if the config is missing, the API creates it and exits. Set `database_url` and restart the service. Stop it with `sudo launchctl bootout system/com.orbis.api`.
 - Docker: use the included Compose bundle and follow `docker/README.md`.
 
-Installers create a configuration template but do not start an API until the customer supplies a valid database URL. Keep the API behind a TLS reverse proxy for public access, restrict firewall rules to intended clients, and do not expose PostgreSQL to the public internet.
+Installers register the service but do not create the server configuration or start the API. Keep the API behind a TLS reverse proxy for public access, restrict firewall rules to intended clients, and do not expose PostgreSQL to the public internet.
 
 ## Upgrade and rollback
 

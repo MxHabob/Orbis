@@ -37,7 +37,6 @@ const dockerStage = fs.mkdtempSync(path.join(os.tmpdir(), "orbis-api-docker-"));
 const dockerFiles = [
   "compose.yaml",
   ".env.example",
-  "server.example.json",
   "README.md",
 ];
 for (const name of dockerFiles) {

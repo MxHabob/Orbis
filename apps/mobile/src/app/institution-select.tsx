@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/api";
 import {
@@ -56,7 +55,6 @@ export default function InstitutionSelectScreen() {
     queryKey: ["institution-directory"],
     queryFn: ({ signal }: { signal: AbortSignal }) =>
       searchInstitutionDirectory(undefined, signal),
-    enabled: !isInitializing,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -166,7 +164,6 @@ export default function InstitutionSelectScreen() {
     void setLocale(locale === "ar" ? "en" : "ar");
   }, [locale, setLocale]);
 
-  const isLoading = isInitializing || directoryQuery.isPending;
   const directoryError = directoryQuery.isError
     ? t("auth_institution_search_error")
     : null;
@@ -258,23 +255,12 @@ export default function InstitutionSelectScreen() {
                   />
                 ) : null}
 
-                {isLoading ? (
-                  <Card
-                    variant="flat"
-                    padding="three"
-                    className="min-h-[84px] flex-row items-center rounded-2xl bg-card"
-                  >
-                    <Skeleton width={56} height={56} borderRadius={16} />
-                    <View className="ms-3 flex-1 gap-2">
-                      <Skeleton width="72%" height={16} borderRadius={6} />
-                      <Skeleton width="48%" height={12} borderRadius={6} />
-                    </View>
-                  </Card>
-                ) : null}
               </View>
             }
             ListEmptyComponent={
-              visibleInstitutions.length === 0 && !isLoading
+              visibleInstitutions.length === 0 &&
+              !isInitializing &&
+              !directoryQuery.isPending
                 ? renderEmpty
                 : undefined
             }

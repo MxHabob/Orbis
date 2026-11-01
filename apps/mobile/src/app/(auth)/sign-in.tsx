@@ -125,7 +125,7 @@ export default function SignInScreen() {
           locations={[0, 0.28, 0.58, 1]}
           style={StyleSheet.absoluteFill}
         />
-        <ThemedStatusBar backgroundColor="transparent" style="light" />
+        <ThemedStatusBar style="light" />
         <KeyboardAwareView
           style={{ flex: 1 }}
           contentContainerStyle={{ flexGrow: 1 }}

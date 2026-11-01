@@ -2,7 +2,6 @@ import { BuildingOffice, Refresh } from "@orbis/icons/native";
 import { useIsFocused } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Platform,
   Pressable,
   Text,
@@ -144,11 +143,7 @@ export function LocalInstitutionDiscovery({
         </>
       ) : (
         <View className="min-h-12 flex-row items-center gap-2 rounded-xl bg-background-element px-3 py-1">
-          {networkAccess === "checking" || isScanning ? (
-            <ActivityIndicator size="small" color={theme.primary} />
-          ) : (
-            <BuildingOffice size={18} color={theme.textMuted} />
-          )}
+          <BuildingOffice size={18} color={theme.textMuted} />
           <Text
             accessibilityRole={
               networkAccess === "denied" || networkAccess === "unavailable"

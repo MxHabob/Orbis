@@ -13,7 +13,6 @@ import {
   Platform,
 } from "react-native";
 import { useSafeAreaInsets, type Edge } from "react-native-safe-area-context";
-import { useTheme } from "@/hooks/use-theme";
 import { ThemedStatusBar } from "@/components/ui/themed-status-bar";
 
 export interface ScreenProps extends ViewProps {
@@ -22,7 +21,6 @@ export interface ScreenProps extends ViewProps {
   footer?: React.ReactNode;
   edges?: Edge[];
   backgroundColor?: string;
-  statusBarColor?: string;
   statusBarStyle?: "auto" | "light" | "dark" | "inverted";
   keyboardAvoiding?: boolean;
   keyboardVerticalOffset?: number;
@@ -34,17 +32,13 @@ export function Screen({
   footer,
   edges = ["top", "bottom", "left", "right"],
   backgroundColor,
-  statusBarColor,
   statusBarStyle,
   keyboardAvoiding = false,
   keyboardVerticalOffset = 0,
   style,
   ...props
 }: ScreenProps) {
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
-
-  const resolvedBg = backgroundColor ?? theme.background;
 
   const edgePadding = {
     paddingTop: edges.includes("top") ? insets.top : 0,
@@ -63,10 +57,7 @@ export function Screen({
       ]}
       {...props}
     >
-      <ThemedStatusBar
-        backgroundColor={statusBarColor ?? resolvedBg}
-        style={statusBarStyle}
-      />
+      <ThemedStatusBar style={statusBarStyle} />
 
       {header}
       <View className="flex-1 w-full">{children}</View>

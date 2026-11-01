@@ -59,7 +59,7 @@ export default function InstitutionScanScreen() {
 
   return (
     <View style={styles.screen}>
-      <ThemedStatusBar backgroundColor="#000000" style="light" />
+      <ThemedStatusBar style="light" />
 
       {permission?.granted ? (
         <View style={styles.preview}>
