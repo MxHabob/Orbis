@@ -305,9 +305,7 @@ jobs:
           }
           $startupOutput = (Get-Content -LiteralPath $startupLog -Raw) +
             (Get-Content -LiteralPath $startupErrorLog -Raw)
-          if ($startupOutput -notmatch [regex]::Escape(
-              "Created Orbis server configuration at $customerConfigPath"
-            )) {
+          if (-not $startupOutput.Contains("Created Orbis server configuration at")) {
             throw "The API did not report that it created the missing server configuration."
           }
           if (-not (Test-Path -LiteralPath $customerConfigPath)) {
