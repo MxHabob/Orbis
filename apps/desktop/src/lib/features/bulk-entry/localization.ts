@@ -61,12 +61,19 @@ const columnHeaders: Record<BulkProfileId, Record<string, () => string>> = {
     weekly_hours: m.bulk_entry_localized_weekly_hours,
   },
   grades: {
-    student_number: m.bulk_entry_grade_header_student_number,
+    student_id: localizedHeader("معرف الطالب", "Student ID"),
     student_name: m.bulk_entry_grade_header_student_name,
-    subject_name: m.bulk_entry_grade_header_subject_name,
-    assessment_type: m.bulk_entry_grade_header_assessment_type,
+    period_id: localizedHeader("معرف الفترة الأكاديمية", "Academic Period ID"),
+    section_subject_id: localizedHeader(
+      "معرف عرض المادة",
+      "Section Subject ID",
+    ),
+    component_id: localizedHeader(
+      "معرف مكون التقييم",
+      "Assessment Component ID",
+    ),
     score: m.bulk_entry_grade_header_score,
-    max_score: m.bulk_entry_grade_header_max_score,
+    max_score: localizedHeader("الدرجة العظمى", "Maximum Score"),
     is_excused: m.bulk_entry_grade_header_is_excused,
     notes: m.bulk_entry_grade_header_notes,
   },

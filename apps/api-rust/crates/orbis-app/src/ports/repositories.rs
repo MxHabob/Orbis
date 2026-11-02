@@ -413,6 +413,11 @@ pub use StudentGuardianRepository as GuardianRepository;
 
 #[async_trait]
 pub trait GpaRecordRepository: Send + Sync {
+    async fn find_by_student_in_org(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError>;
     async fn find_by_student(
         &self,
         student_id: Uuid,
@@ -508,14 +513,36 @@ pub trait GradeRepository: Send + Sync {
         student_id: Uuid,
         period_id: Uuid,
     ) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_org_student_and_period(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
     async fn find_by_student_and_subject(
         &self,
         student_id: Uuid,
         section_subject_id: Uuid,
     ) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_org_student_and_subject(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+        section_subject_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_org_and_student(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
     async fn find_by_enrollment(&self, enrollment_id: Uuid) -> Result<Vec<Grade>, DomainError>;
     async fn find_by_section_subject(
         &self,
+        section_subject_id: Uuid,
+    ) -> Result<Vec<Grade>, DomainError>;
+    async fn find_by_org_and_section_subject(
+        &self,
+        org_id: Uuid,
         section_subject_id: Uuid,
     ) -> Result<Vec<Grade>, DomainError>;
     async fn list(

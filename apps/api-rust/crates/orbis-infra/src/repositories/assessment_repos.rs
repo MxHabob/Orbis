@@ -145,9 +145,39 @@ impl GradeRepository for AssessmentRepoImpl {
         Ok(model.map(map_grade_model_to_domain))
     }
 
+    async fn find_by_org_and_student(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
+        let models = GradeEntity::find()
+            .filter(grade::Column::OrgId.eq(org_id))
+            .filter(grade::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(map_grade_model_to_domain).collect())
+    }
+
     async fn find_by_student(&self, student_id: Uuid) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(map_grade_model_to_domain).collect())
+    }
+
+    async fn find_by_org_student_and_subject(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+        cs_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
+        let models = GradeEntity::find()
+            .filter(grade::Column::OrgId.eq(org_id))
+            .filter(grade::Column::StudentId.eq(student_id))
+            .filter(grade::Column::SectionSubjectId.eq(cs_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -166,6 +196,22 @@ impl GradeRepository for AssessmentRepoImpl {
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
 
+        Ok(models.into_iter().map(map_grade_model_to_domain).collect())
+    }
+
+    async fn find_by_org_student_and_period(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+        period_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
+        let models = GradeEntity::find()
+            .filter(grade::Column::OrgId.eq(org_id))
+            .filter(grade::Column::StudentId.eq(student_id))
+            .filter(grade::Column::PeriodId.eq(period_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
         Ok(models.into_iter().map(map_grade_model_to_domain).collect())
     }
 
@@ -189,6 +235,20 @@ impl GradeRepository for AssessmentRepoImpl {
     ) -> Result<Vec<DomainGrade>, DomainError> {
         let models = GradeEntity::find()
             .filter(grade::Column::EnrollmentId.eq(enrollment_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+        Ok(models.into_iter().map(map_grade_model_to_domain).collect())
+    }
+
+    async fn find_by_org_and_section_subject(
+        &self,
+        org_id: Uuid,
+        section_subject_id: Uuid,
+    ) -> Result<Vec<DomainGrade>, DomainError> {
+        let models = GradeEntity::find()
+            .filter(grade::Column::OrgId.eq(org_id))
+            .filter(grade::Column::SectionSubjectId.eq(section_subject_id))
             .all(&self.db)
             .await
             .map_err(|e| DomainError::Internal(e.to_string()))?;
@@ -587,6 +647,42 @@ impl BehaviorRecordRepository for AssessmentRepoImpl {
 
 #[async_trait]
 impl orbis_app::ports::repositories::GpaRecordRepository for AssessmentRepoImpl {
+    async fn find_by_student_in_org(
+        &self,
+        org_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<orbis_domain::entities::gpa_record::CumulativeGpaRecord>, DomainError> {
+        let models = crate::models::gpa_record::Entity::find()
+            .filter(crate::models::gpa_record::Column::OrgId.eq(org_id))
+            .filter(crate::models::gpa_record::Column::StudentId.eq(student_id))
+            .all(&self.db)
+            .await
+            .map_err(|e| DomainError::Internal(e.to_string()))?;
+
+        Ok(models
+            .into_iter()
+            .map(
+                |m| orbis_domain::entities::gpa_record::CumulativeGpaRecord {
+                    id: m.id,
+                    org_id: m.org_id,
+                    student_id: m.student_id,
+                    period_id: m.period_id,
+                    term_attempted_credits: m.term_attempted_credits,
+                    term_earned_credits: m.term_earned_credits,
+                    term_points: m.term_points,
+                    term_gpa: m.term_gpa,
+                    cumulative_attempted_credits: m.cumulative_attempted_credits,
+                    cumulative_earned_credits: m.cumulative_earned_credits,
+                    cumulative_points: m.cumulative_points,
+                    cumulative_gpa: m.cumulative_gpa,
+                    standing: serde_json::from_str(&format!("\"{}\"", m.standing))
+                        .unwrap_or(orbis_domain::entities::student::AcademicStanding::GoodStanding),
+                    calculated_at: m.calculated_at,
+                },
+            )
+            .collect())
+    }
+
     async fn find_by_student(
         &self,
         student_id: Uuid,
