@@ -347,12 +347,13 @@ jobs:
           sudo grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
           sudo launchctl bootstrap system /Library/LaunchDaemons/com.orbis.api.plist
           sudo launchctl print system/com.orbis.api >/dev/null
-          sudo launchctl bootout system/com.orbis.api
-          if sudo launchctl print system/com.orbis.api >/dev/null 2>&1; then
+          sudo bash "$stage/uninstall.sh"
+          sudo test ! -e /Library/LaunchDaemons/com.orbis.api.plist
+          sudo test ! -e /Library/Orbis/bin/orbis-server
+          if sudo launchctl list | awk '$NF == "com.orbis.api" { found = 1 } END { exit !found }'; then
             echo "::error::The Orbis API launchd service remained registered after bootout."
             exit 1
           fi
-          sudo bash "$stage/uninstall.sh"
           sudo test -f "$config_path"
           sudo grep -Fxq '{"database_url":"postgres://test:test@127.0.0.1:1/orbis?sslmode=disable"}' "$config_path"
 
@@ -660,9 +661,7 @@ jobs:
 
   build-android:
     name: Build and sign Android release
-    needs:
-      - validate
-      - build-desktop
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -777,10 +776,12 @@ jobs:
           cp "$apk" "release-output/Orbis-${VERSION}-android-arm64.apk"
           cp "$aab" "release-output/Orbis-${VERSION}-android-arm64.aab"
 
-      - name: Upload Android packages to draft GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "${{ needs.validate.outputs.tag }}" release-output/* --repo "$GITHUB_REPOSITORY" --clobber
+      - name: Upload Android packages as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbis-android-release
+          path: release-output/*
+          if-no-files-found: error
 
   prepare-github-release:
     name: Validate and publish GitHub Release
@@ -821,6 +822,12 @@ jobs:
           pattern: orbis-api-*
           path: release-output
           merge-multiple: true
+
+      - name: Download Android packages
+        uses: actions/download-artifact@v4
+        with:
+          name: orbis-android-release
+          path: release-output
 
       - name: Create Docker bundle and sign API release manifest
         env:
