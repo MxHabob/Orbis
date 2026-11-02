@@ -10,6 +10,7 @@ package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 binary="$package_dir/orbis-server"
 plist="$package_dir/com.orbis.api.plist"
 version_file="$package_dir/VERSION"
+installed_plist="/Library/LaunchDaemons/com.orbis.api.plist"
 
 for required_file in "$binary" "$plist" "$version_file"; do
   if [[ ! -f "$required_file" ]]; then
@@ -23,8 +24,8 @@ if ! command -v launchctl >/dev/null 2>&1; then
   exit 1
 fi
 
-if launchctl print system/com.orbis.api >/dev/null 2>&1; then
-  launchctl bootout system/com.orbis.api
+if launchctl list | awk '$NF == "com.orbis.api" { found = 1 } END { exit !found }'; then
+  launchctl bootout system "$installed_plist"
 fi
 
 install -d -o root -g wheel -m 0755 /Library/Orbis/bin
@@ -33,7 +34,7 @@ install -d -o nobody -g nobody -m 0750 \
   "/Library/Application Support/Orbis/license" /Library/Logs/Orbis
 install -o root -g wheel -m 0755 "$binary" /Library/Orbis/bin/orbis-server
 install -o root -g wheel -m 0644 "$version_file" /Library/Orbis/VERSION
-install -o root -g wheel -m 0644 "$plist" /Library/LaunchDaemons/com.orbis.api.plist
+install -o root -g wheel -m 0644 "$plist" "$installed_plist"
 
 printf 'Orbis API %s installed.\n' "$(cat /Library/Orbis/VERSION)"
 echo "The API creates /Library/Application Support/Orbis/server.json on first start if it is missing."

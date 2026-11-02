@@ -11,11 +11,12 @@ if ! command -v launchctl >/dev/null 2>&1; then
   exit 1
 fi
 
-if launchctl print system/com.orbis.api >/dev/null 2>&1; then
-  launchctl bootout system/com.orbis.api
+plist="/Library/LaunchDaemons/com.orbis.api.plist"
+if launchctl list | awk '$NF == "com.orbis.api" { found = 1 } END { exit !found }'; then
+  launchctl bootout system "$plist"
 fi
 
-rm -f /Library/LaunchDaemons/com.orbis.api.plist
+rm -f "$plist"
 rm -f /Library/Orbis/bin/orbis-server /Library/Orbis/VERSION
 
 echo "Orbis API service and executable removed."
