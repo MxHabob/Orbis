@@ -132,10 +132,9 @@ export interface EmployeePreviewDetails {
 export interface GradePreviewDetails {
   gradesToRecord: number;
   gradesToUpdate: number;
-  subjectsSummary: Record<string, number>;
-  assessmentType: string;
-  academicPeriodName: string;
-  maxScore: number;
+  sectionSubjectsSummary: Record<string, number>;
+  academicPeriodsSummary: Record<string, number>;
+  assessmentComponentsSummary: Record<string, number>;
 }
 
 export interface ChunkProgress {

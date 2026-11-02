@@ -1,27 +1,28 @@
 import type { OrbisColumnDef } from "@orbis/svelte-grid";
-import { api } from "$lib/api";
+import { api, type RecordGradeItemRequest } from "$lib/api";
 import * as m from "$lib/paraglide/messages";
 import {
-  findDuplicateIndex,
   type BulkValidationContext,
+  findDuplicateIndex,
 } from "../engine/duplicate-index";
 import type {
+  BulkCellIssue,
   BulkImportProfile,
+  BulkPreviewSummary,
   BulkReferenceData,
   ColumnDefinitionMetadata,
-  BulkCellIssue,
-  BulkPreviewSummary,
   GradePreviewDetails,
 } from "../types";
 
 export interface GradeRowData {
   rowNumber?: number;
-  student_number: string;
+  student_id: string;
   student_name?: string;
-  subject_name: string;
-  assessment_type: string;
+  period_id: string;
+  section_subject_id: string;
+  component_id: string;
   score: number | string;
-  max_score?: number | string;
+  max_score: number | string;
   is_excused?: boolean | string;
   notes?: string;
   [key: string]: unknown;
@@ -29,13 +30,13 @@ export interface GradeRowData {
 
 export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
   {
-    id: "student_number",
-    headerAr: "رقم قيد الطالب*",
-    headerEn: "Student Number*",
+    id: "student_id",
+    headerAr: "معرف الطالب*",
+    headerEn: "Student ID*",
     required: true,
     type: "text",
-    descriptionAr: "الرقم التعريفي الفريد للطالب في المدرسة",
-    example: "STU-2026-001",
+    descriptionAr: "معرف الطالب كما هو مسجل في النظام",
+    example: "student-id",
   },
   {
     id: "student_name",
@@ -47,24 +48,31 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
     example: "أحمد محمد علي",
   },
   {
-    id: "subject_name",
-    headerAr: "المادة الدراسية*",
-    headerEn: "Subject Name*",
+    id: "period_id",
+    headerAr: "معرف الفترة الأكاديمية*",
+    headerEn: "Academic Period ID*",
     required: true,
-    type: "reference",
-    referenceSource: "subjects",
-    descriptionAr: "اسم المادة المطابقة للائحة المواد الدراسية",
-    example: "الرياضيات",
+    type: "text",
+    descriptionAr: "معرف الفترة الأكاديمية التي ينتمي إليها التقييم",
+    example: "period-id",
   },
   {
-    id: "assessment_type",
-    headerAr: "نوع التقييم / الاختبار*",
-    headerEn: "Assessment Type*",
+    id: "section_subject_id",
+    headerAr: "معرف عرض المادة*",
+    headerEn: "Section Subject ID*",
     required: true,
-    type: "reference",
-    referenceSource: "assessmentSchemes",
-    descriptionAr: "نوع التقييم حسب لائحة التقييم المعتمدة",
-    example: "اختبار الشهر الأول",
+    type: "text",
+    descriptionAr: "معرف عرض المادة المرتبط بتسجيل الطالب",
+    example: "section-subject-id",
+  },
+  {
+    id: "component_id",
+    headerAr: "معرف مكون التقييم*",
+    headerEn: "Assessment Component ID*",
+    required: true,
+    type: "text",
+    descriptionAr: "معرف مكون التقييم كما هو معرف في إعداد المؤسسة",
+    example: "assessment-component-id",
   },
   {
     id: "score",
@@ -78,11 +86,11 @@ export const gradeColumnMetadata: ColumnDefinitionMetadata[] = [
   },
   {
     id: "max_score",
-    headerAr: "الدرجة العظمى",
-    headerEn: "Max Score",
-    required: false,
+    headerAr: "الدرجة العظمى*",
+    headerEn: "Maximum Score*",
+    required: true,
     type: "decimal",
-    descriptionAr: "اتركها فارغة لاستخدام الدرجة العظمى المحددة في النظام",
+    descriptionAr: "الحد الأعلى الذي ينتمي إليه score في هذا المقياس",
     example: "20",
   },
   {
@@ -120,8 +128,8 @@ export const gradeGridColumns: OrbisColumnDef[] = [
     readonly: true,
   },
   {
-    id: "student_number",
-    header: m.bulk_entry_grade_header_student_number(),
+    id: "student_id",
+    header: "Student ID",
     width: 130,
   },
   {
@@ -131,14 +139,19 @@ export const gradeGridColumns: OrbisColumnDef[] = [
     readonly: true,
   },
   {
-    id: "subject_name",
-    header: m.bulk_entry_grade_header_subject_name(),
+    id: "period_id",
+    header: "Academic Period ID",
     width: 150,
   },
   {
-    id: "assessment_type",
-    header: m.bulk_entry_grade_header_assessment_type(),
-    width: 160,
+    id: "section_subject_id",
+    header: "Section Subject ID",
+    width: 180,
+  },
+  {
+    id: "component_id",
+    header: "Assessment Component ID",
+    width: 190,
   },
   {
     id: "score",
@@ -171,42 +184,24 @@ export const gradeImportProfile: BulkImportProfile<
     en: "Academic Grades & Assessments Bulk Entry",
   },
   description: {
-    ar: "رصد درجات الطلاب لجميع المواد والتقييمات، مع التحقق من الحدود القصوى وحساب المعدلات التراكمية آلياً",
-    en: "Bulk enter student grades across subjects and assessments with live score bounds checking and automatic GPA recalculation",
+    ar: "استيراد الدرجات باستخدام معرفات الطالب والفترة وعرض المادة ومكون التقييم والحد الأعلى الصريح",
+    en: "Import grades using explicit student, period, section-subject, and assessment-component IDs with an explicit maximum score",
   },
-  templateVersion: "ORBIS-TPL-GRD-2026.1",
+  templateVersion: "ORBIS-TPL-GRD-2026.2",
   columnMetadata: gradeColumnMetadata,
   gridColumns: gradeGridColumns,
 
-  async buildReferenceData(_orgId: string): Promise<BulkReferenceData> {
-    const [subjectsRes, schemesRes] = await Promise.all([
-      api.listSubjects().catch(() => []),
-      api.listAssessmentSchemes().catch(() => []),
-    ]);
-
-    const subjects = (subjectsRes || []).map((s: any) => ({
-      id: s.id,
-      code: s.code || "",
-      name: s.name || "",
-      nameAr: s.name_ar || s.name || "",
-    }));
-
-    const assessmentSchemes = (schemesRes || []).map((s: any) => ({
-      id: s.id,
-      name: s.name || "",
-      meta: { max_score: s.max_score, formula: s.formula },
-    }));
-
+  async buildReferenceData(): Promise<BulkReferenceData> {
     return {
       classes: [],
       teachers: [],
       sections: [],
       levels: [],
-      subjects,
+      subjects: [],
       feeTemplates: [],
       discountTemplates: [],
       userGroups: [],
-      assessmentSchemes,
+      assessmentSchemes: [],
       academicPeriods: [],
       existingSectionSubjectAssignments: [],
       enums: {
@@ -224,14 +219,19 @@ export const gradeImportProfile: BulkImportProfile<
     colId: string,
     value: unknown,
     row: GradeRowData,
-    refData: BulkReferenceData,
+    _refData: BulkReferenceData,
   ): BulkCellIssue | null {
     const strVal = String(value ?? "").trim();
 
     if (
-      ["student_number", "subject_name", "assessment_type", "score"].includes(
-        colId,
-      )
+      [
+        "student_id",
+        "period_id",
+        "section_subject_id",
+        "component_id",
+        "score",
+        "max_score",
+      ].includes(colId)
     ) {
       if (!strVal) {
         return {
@@ -244,7 +244,7 @@ export const gradeImportProfile: BulkImportProfile<
 
     if (colId === "score" && strVal) {
       const num = Number(strVal);
-      if (isNaN(num)) {
+      if (!Number.isFinite(num)) {
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
@@ -259,46 +259,69 @@ export const gradeImportProfile: BulkImportProfile<
         };
       }
 
-      // Check max score bounds
-      let limit = 100;
-      if (row.max_score) {
-        limit = Number(row.max_score);
-      } else if (row.assessment_type) {
-        const matchedScheme = refData.assessmentSchemes.find(
-          (s) => s.name.toLowerCase() === row.assessment_type.toLowerCase(),
-        );
-        if (matchedScheme?.meta?.max_score) {
-          limit = Number(matchedScheme.meta.max_score);
-        }
+      const maximum = Number(row.max_score);
+      if (
+        row.max_score === undefined ||
+        row.max_score === null ||
+        String(row.max_score).trim() === "" ||
+        !Number.isFinite(maximum) ||
+        maximum <= 0
+      ) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: "max_score",
+          message: m.bulk_entry_grade_validation_max_positive(),
+        };
       }
-
-      if (num > limit) {
+      if (num > maximum) {
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
           message: m.bulk_entry_grade_validation_exceeds_max({
             score: num,
-            maximum: limit,
+            maximum,
           }),
         };
       }
     }
 
-    if (colId === "subject_name" && strVal) {
-      const hit = refData.subjects.find(
-        (s) =>
-          s.id.toLowerCase() === strVal.toLowerCase() ||
-          s.code?.toLowerCase() === strVal.toLowerCase() ||
-          s.name.toLowerCase() === strVal.toLowerCase() ||
-          s.nameAr?.toLowerCase() === strVal.toLowerCase(),
-      );
-      if (!hit) {
+    if (colId === "max_score" && strVal) {
+      const maximum = Number(strVal);
+      if (!Number.isFinite(maximum) || maximum <= 0) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: "max_score",
+          message: m.bulk_entry_grade_validation_max_positive(),
+        };
+      }
+      const score = Number(row.score);
+      if (
+        String(row.score ?? "").trim() !== "" &&
+        Number.isFinite(score) &&
+        score > maximum
+      ) {
+        return {
+          severity: "BLOCKING_ERROR",
+          columnId: "score",
+          message: m.bulk_entry_grade_validation_exceeds_max({
+            score,
+            maximum,
+          }),
+        };
+      }
+    }
+
+    if (colId === "is_excused" && strVal) {
+      const normalized = strVal.toLocaleLowerCase();
+      if (
+        !["true", "false", "yes", "no", "نعم", "لا", "1", "0"].includes(
+          normalized,
+        )
+      ) {
         return {
           severity: "BLOCKING_ERROR",
           columnId: colId,
-          message: m.bulk_entry_grade_validation_subject_not_found({
-            subject: strVal,
-          }),
+          message: m.bulk_entry_grade_validation_boolean(),
         };
       }
     }
@@ -315,21 +338,27 @@ export const gradeImportProfile: BulkImportProfile<
   ): BulkCellIssue[] {
     const issues: BulkCellIssue[] = [];
 
-    // Check duplicate student + subject + assessment in same batch
-    if (row.student_number && row.subject_name && row.assessment_type) {
+    if (
+      row.student_id &&
+      row.period_id &&
+      row.section_subject_id &&
+      row.component_id
+    ) {
       const key = JSON.stringify([
-        row.student_number.trim().toLowerCase(),
-        row.subject_name.trim().toLowerCase(),
-        row.assessment_type.trim().toLowerCase(),
+        row.student_id.trim().toLocaleLowerCase(),
+        row.period_id.trim().toLocaleLowerCase(),
+        row.section_subject_id.trim().toLocaleLowerCase(),
+        row.component_id.trim().toLocaleLowerCase(),
       ]);
       const duplicateIndex = context
         ? (findDuplicateIndex(context, "grade_assessment", key, rowIndex) ?? -1)
         : allRows.findIndex((other, index) => {
             if (index === rowIndex) return false;
             const otherKey = JSON.stringify([
-              other.student_number?.trim().toLowerCase(),
-              other.subject_name?.trim().toLowerCase(),
-              other.assessment_type?.trim().toLowerCase(),
+              other.student_id?.trim().toLocaleLowerCase(),
+              other.period_id?.trim().toLocaleLowerCase(),
+              other.section_subject_id?.trim().toLocaleLowerCase(),
+              other.component_id?.trim().toLocaleLowerCase(),
             ]);
             return key === otherKey;
           });
@@ -354,22 +383,50 @@ export const gradeImportProfile: BulkImportProfile<
   ): Promise<BulkPreviewSummary<GradePreviewDetails>> {
     let validCount = 0;
     let errorCount = 0;
-    const subjectsMap: Record<string, number> = {};
+    const sectionSubjectsSummary: Record<string, number> = {};
+    const academicPeriodsSummary: Record<string, number> = {};
+    const assessmentComponentsSummary: Record<string, number> = {};
+    const seen = new Set<string>();
 
     for (const row of rows) {
       const num = Number(row.score);
+      const maximum = Number(row.max_score);
+      const key = JSON.stringify([
+        row.student_id?.trim().toLocaleLowerCase(),
+        row.period_id?.trim().toLocaleLowerCase(),
+        row.section_subject_id?.trim().toLocaleLowerCase(),
+        row.component_id?.trim().toLocaleLowerCase(),
+      ]);
+      const hasContext =
+        Boolean(row.student_id?.trim()) &&
+        Boolean(row.period_id?.trim()) &&
+        Boolean(row.section_subject_id?.trim()) &&
+        Boolean(row.component_id?.trim());
       const isInvalid =
-        !row.student_number ||
-        !row.subject_name ||
-        !row.assessment_type ||
-        isNaN(num) ||
-        num < 0;
+        !hasContext ||
+        String(row.score ?? "").trim() === "" ||
+        String(row.max_score ?? "").trim() === "" ||
+        !Number.isFinite(num) ||
+        !Number.isFinite(maximum) ||
+        maximum <= 0 ||
+        num < 0 ||
+        num > maximum ||
+        (String(row.is_excused ?? "").trim() !== "" &&
+          !["true", "false", "yes", "no", "نعم", "لا", "1", "0"].includes(
+            String(row.is_excused).trim().toLocaleLowerCase(),
+          )) ||
+        seen.has(key);
+      if (hasContext) seen.add(key);
       if (isInvalid) {
         errorCount++;
       } else {
         validCount++;
-        const s = row.subject_name || m.bulk_entry_general();
-        subjectsMap[s] = (subjectsMap[s] || 0) + 1;
+        sectionSubjectsSummary[row.section_subject_id] =
+          (sectionSubjectsSummary[row.section_subject_id] || 0) + 1;
+        academicPeriodsSummary[row.period_id] =
+          (academicPeriodsSummary[row.period_id] || 0) + 1;
+        assessmentComponentsSummary[row.component_id] =
+          (assessmentComponentsSummary[row.component_id] || 0) + 1;
       }
     }
 
@@ -381,52 +438,23 @@ export const gradeImportProfile: BulkImportProfile<
       details: {
         gradesToRecord: validCount,
         gradesToUpdate: 0,
-        subjectsSummary: subjectsMap,
-        assessmentType:
-          rows[0]?.assessment_type || m.bulk_entry_general_assessment(),
-        academicPeriodName: m.bulk_entry_current_period(),
-        maxScore: 100,
+        sectionSubjectsSummary,
+        academicPeriodsSummary,
+        assessmentComponentsSummary,
       },
     };
   },
 
   async commitChunk(
     rows: GradeRowData[],
-    orgId: string,
-    refData: BulkReferenceData,
+    _orgId: string,
+    _refData: BulkReferenceData,
   ): Promise<{ success: boolean; errors?: string[] }> {
-    const items = rows.map((row) => {
-      const matchedSubject = refData.subjects.find(
-        (s) =>
-          s.id.toLowerCase() === row.subject_name.toLowerCase() ||
-          s.code?.toLowerCase() === row.subject_name.toLowerCase() ||
-          s.name.toLowerCase() === row.subject_name.toLowerCase() ||
-          s.nameAr?.toLowerCase() === row.subject_name.toLowerCase(),
-      );
-
-      const scoreNum = Number(row.score);
-      const maxScoreNum = row.max_score ? Number(row.max_score) : 100;
-
-      const isExcused =
-        row.is_excused === true ||
-        String(row.is_excused).toLowerCase() === "true" ||
-        String(row.is_excused) === "نعم" ||
-        String(row.is_excused) === "1";
-
-      return {
-        period_id: orgId,
-        student_id: row.student_number,
-        section_subject_id: matchedSubject?.id || orgId,
-        score: String(scoreNum),
-        max_score: String(maxScoreNum),
-        is_excused: isExcused,
-        notes: row.notes?.trim() || undefined,
-      };
-    });
+    const items = buildGradeBatchItems(rows);
 
     try {
       const result = await api.batchRecordGrades({ items });
-      if (result.count === 0 && items.length > 0) {
+      if (result.count !== items.length) {
         return {
           success: false,
           errors: [m.bulk_entry_grade_commit_failed()],
@@ -441,3 +469,61 @@ export const gradeImportProfile: BulkImportProfile<
     }
   },
 };
+
+export function buildGradeBatchItems(
+  rows: GradeRowData[],
+): RecordGradeItemRequest[] {
+  return rows.map((row) => {
+    const requiredIds = [
+      row.student_id,
+      row.period_id,
+      row.section_subject_id,
+      row.component_id,
+    ];
+    if (requiredIds.some((id) => typeof id !== "string" || !id.trim())) {
+      throw new TypeError(
+        "Grade rows require student, period, offering, and component IDs.",
+      );
+    }
+
+    const score = Number(row.score);
+    const maximum = Number(row.max_score);
+    if (
+      String(row.score ?? "").trim() === "" ||
+      String(row.max_score ?? "").trim() === "" ||
+      !Number.isFinite(score) ||
+      !Number.isFinite(maximum) ||
+      maximum <= 0 ||
+      score < 0 ||
+      score > maximum
+    ) {
+      throw new RangeError("Grade score must be within its explicit maximum.");
+    }
+
+    const excusedInput = String(row.is_excused ?? "")
+      .trim()
+      .toLocaleLowerCase();
+    const isExcused =
+      row.is_excused === true ||
+      ["true", "yes", "نعم", "1"].includes(excusedInput);
+    if (
+      excusedInput &&
+      !["true", "false", "yes", "no", "نعم", "لا", "1", "0"].includes(
+        excusedInput,
+      )
+    ) {
+      throw new TypeError("Grade rows require a valid excused value.");
+    }
+
+    return {
+      period_id: row.period_id.trim(),
+      student_id: row.student_id.trim(),
+      section_subject_id: row.section_subject_id.trim(),
+      component_id: row.component_id.trim(),
+      score: String(score),
+      max_score: String(maximum),
+      ...(excusedInput ? { is_excused: isExcused } : {}),
+      notes: row.notes?.trim() || undefined,
+    };
+  });
+}

@@ -72,6 +72,19 @@ fn teacher_is_assigned_to_lesson(
     .contains(&Some(employee_id))
 }
 
+async fn authorize_grade_access(
+    permission_checker: &dyn PermissionCheckerPort,
+    ctx: &RequestContext,
+    org_id: Uuid,
+    permission: Permission,
+) -> Result<(), DomainError> {
+    permission_checker.check(ctx, permission).await?;
+    if ctx.tenant_id != org_id {
+        return Err(DomainError::Unauthorized("Organization mismatch".into()));
+    }
+    Ok(())
+}
+
 pub struct AssessmentService {
     pub scheme_repo: Arc<dyn AssessmentSchemeRepository>,
     pub grade_repo: Arc<dyn GradeRepository>,
@@ -346,15 +359,41 @@ impl AssessmentService {
     /// Calculate final grade from assessment scheme formula
     pub async fn calculate_scheme_grades(
         &self,
-        _ctx: &RequestContext,
+        ctx: &RequestContext,
         scheme_id: Uuid,
         student_id: Uuid,
         section_subject_id: Uuid,
     ) -> Result<Decimal, DomainError> {
+        self.authorize_grade_analytics(ctx).await?;
+        let org_id = ctx.tenant_id;
+        let student_repo = self.student_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal("Student repository is required for grade calculations".into())
+        })?;
+        let student = student_repo
+            .find_by_id(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+        if student.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        if !section_subject_id.is_nil() {
+            let section_subject = self
+                .section_subject_repo
+                .find_by_id(section_subject_id)
+                .await?
+                .ok_or_else(|| DomainError::NotFound("Section subject not found".into()))?;
+            if section_subject.org_id != org_id {
+                return Err(DomainError::Unauthorized("Organization mismatch".into()));
+            }
+        }
+
         let scheme = self
             .scheme_repo
-            .find_by_id(scheme_id)
+            .find_by_org(org_id)
             .await?
+            .into_iter()
+            .find(|scheme| scheme.id == scheme_id)
             .ok_or_else(|| DomainError::NotFound("Assessment Scheme not found".into()))?;
 
         let formula_val = scheme
@@ -366,7 +405,7 @@ impl AssessmentService {
 
         let grades = self
             .grade_repo
-            .find_by_student_and_subject(student_id, section_subject_id)
+            .find_by_org_student_and_subject(org_id, student_id, section_subject_id)
             .await?;
 
         let mut engine = CalcEngine::new();
@@ -397,15 +436,46 @@ impl AssessmentService {
         period_id: Uuid,
         student_id: Uuid,
     ) -> Result<CumulativeGpaRecord, DomainError> {
-        self.permission_checker
-            .check(ctx, Permission::GradeAnalytics)
-            .await?;
+        authorize_grade_access(
+            self.permission_checker.as_ref(),
+            ctx,
+            org_id,
+            Permission::GradeAnalytics,
+        )
+        .await?;
+
+        let student_repo = self.student_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal("Student repository is required for GPA calculation".into())
+        })?;
+        let student = student_repo
+            .find_by_id(student_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Student not found".into()))?;
+        if student.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
+
+        let period_repo = self.period_repo.as_ref().ok_or_else(|| {
+            DomainError::Internal(
+                "Academic period repository is required for GPA calculation".into(),
+            )
+        })?;
+        let period = period_repo
+            .find_by_id(period_id)
+            .await?
+            .ok_or_else(|| DomainError::NotFound("Academic period not found".into()))?;
+        if period.org_id != org_id {
+            return Err(DomainError::Unauthorized("Organization mismatch".into()));
+        }
 
         let term_grades = self
             .grade_repo
-            .find_by_student_and_period(student_id, period_id)
+            .find_by_org_student_and_period(org_id, student_id, period_id)
             .await?;
-        let past_records = self.gpa_repo.find_by_student(student_id).await?;
+        let past_records = self
+            .gpa_repo
+            .find_by_student_in_org(org_id, student_id)
+            .await?;
 
         let mut term_attempted = Decimal::ZERO;
         let mut term_earned = Decimal::ZERO;
@@ -425,7 +495,13 @@ impl AssessmentService {
                 .find_by_id(g.section_subject_id)
                 .await?
             {
+                if cs.org_id != org_id {
+                    return Err(DomainError::Unauthorized("Organization mismatch".into()));
+                }
                 if let Some(subj) = self.subject_repo.find_by_id(cs.subject_id).await? {
+                    if subj.org_id != org_id {
+                        return Err(DomainError::Unauthorized("Organization mismatch".into()));
+                    }
                     subj.credit_units.unwrap_or(Decimal::from(3))
                 } else {
                     Decimal::from(3)
@@ -1063,6 +1139,43 @@ impl AssessmentService {
         filter: GradeFilter,
     ) -> Result<PaginatedList<Grade>, DomainError> {
         self.grade_repo.list(org_id, filter).await
+    }
+
+    pub async fn list_grades_for_request(
+        &self,
+        ctx: &RequestContext,
+        student_id: Option<Uuid>,
+        section_subject_id: Option<Uuid>,
+    ) -> Result<Vec<Grade>, DomainError> {
+        authorize_grade_access(
+            self.permission_checker.as_ref(),
+            ctx,
+            ctx.tenant_id,
+            Permission::GradeRead,
+        )
+        .await?;
+
+        if let Some(student_id) = student_id {
+            self.grade_repo
+                .find_by_org_and_student(ctx.tenant_id, student_id)
+                .await
+        } else if let Some(section_subject_id) = section_subject_id {
+            self.grade_repo
+                .find_by_org_and_section_subject(ctx.tenant_id, section_subject_id)
+                .await
+        } else {
+            Ok(vec![])
+        }
+    }
+
+    pub async fn authorize_grade_analytics(&self, ctx: &RequestContext) -> Result<(), DomainError> {
+        authorize_grade_access(
+            self.permission_checker.as_ref(),
+            ctx,
+            ctx.tenant_id,
+            Permission::GradeAnalytics,
+        )
+        .await
     }
 
     /// List attendance
@@ -1976,9 +2089,69 @@ impl AssessmentService {
 }
 
 #[cfg(test)]
-mod attendance_scope_tests {
+mod assessment_service_tests {
     use super::*;
     use chrono::Utc;
+
+    struct AllowPermissions;
+
+    #[async_trait::async_trait]
+    impl PermissionCheckerPort for AllowPermissions {
+        async fn check(
+            &self,
+            _ctx: &RequestContext,
+            _permission: Permission,
+        ) -> Result<(), DomainError> {
+            Ok(())
+        }
+    }
+
+    struct DenyPermissions;
+
+    #[async_trait::async_trait]
+    impl PermissionCheckerPort for DenyPermissions {
+        async fn check(
+            &self,
+            _ctx: &RequestContext,
+            _permission: Permission,
+        ) -> Result<(), DomainError> {
+            Err(DomainError::Unauthorized("Permission denied".into()))
+        }
+    }
+
+    fn request_context(tenant_id: Uuid) -> RequestContext {
+        RequestContext {
+            tenant_id,
+            actor: orbis_domain::iam::actor::Actor::User(Uuid::new_v4()),
+            request_id: "test".into(),
+            source: crate::context::ActionSource::Api,
+            org_unit_path: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn grade_access_rejects_callers_without_permission() {
+        let ctx = request_context(Uuid::new_v4());
+        let result =
+            authorize_grade_access(&DenyPermissions, &ctx, ctx.tenant_id, Permission::GradeRead)
+                .await;
+
+        assert!(matches!(result, Err(DomainError::Unauthorized(_))));
+    }
+
+    #[tokio::test]
+    async fn grade_access_rejects_cross_organization_requests() {
+        let ctx = request_context(Uuid::new_v4());
+        let result = authorize_grade_access(
+            &AllowPermissions,
+            &ctx,
+            Uuid::new_v4(),
+            Permission::GradeAnalytics,
+        )
+        .await;
+
+        assert!(matches!(result, Err(DomainError::Unauthorized(_))));
+    }
 
     fn section_subject(
         instructor_id: Uuid,

@@ -85,6 +85,25 @@ fn format_tool_execution_error(tool_name: &str, error: &DomainError) -> String {
     format!("Error executing {}: {}", tool_name, error)
 }
 
+fn validate_custom_report_action(arguments: &serde_json::Value) -> Result<(), &'static str> {
+    let is_pdf = arguments
+        .get("output_format")
+        .and_then(serde_json::Value::as_str)
+        .is_some_and(|format| format.eq_ignore_ascii_case("pdf"));
+    let has_template_id = arguments
+        .get("template_id")
+        .and_then(serde_json::Value::as_str)
+        .is_some_and(|template_id| Uuid::parse_str(template_id.trim()).is_ok());
+
+    if is_pdf && !has_template_id {
+        return Err(
+            "PDF reports require a published DocForge report template. Call inspect_report_source, select a template ID from published_templates, and include it as template_id before proposing the report.",
+        );
+    }
+
+    Ok(())
+}
+
 fn teacher_assigned_to_class(
     teacher_id: Uuid,
     section_id: Uuid,
@@ -1375,6 +1394,27 @@ impl AiOrchestrationService {
                     }
 
                     if def.is_consequential {
+                        if def.name == "create_custom_report" {
+                            if let Err(message) =
+                                validate_custom_report_action(&tool_call.arguments)
+                            {
+                                conversation_history.push(AiMessage {
+                                    role: "tool".into(),
+                                    content: message.into(),
+                                    tool_calls: None,
+                                    tool_call_id: Some(tool_call.id.clone()),
+                                    created_at: Some(Utc::now()),
+                                });
+                                executed_tools_all.push(AiToolResult {
+                                    tool_call_id: tool_call.id.clone(),
+                                    tool_name: tool_call.tool_name.clone(),
+                                    content: message.into(),
+                                    is_error: true,
+                                });
+                                continue;
+                            }
+                        }
+
                         // Consequential tool: create a proposed action for Cockpit confirmation
                         let action = AiProposedAction {
                             tool_name: tool_call.tool_name.clone(),
@@ -2550,7 +2590,8 @@ impl AiOrchestrationService {
              2. Respect user permissions and role boundaries at all times.\n\
              3. Consequential actions (e.g. changing student status, triggering autopilot tasks) must be proposed for user review and confirmed through Cockpit.\n\
              4. For educational assessments, generate structured blueprints and draft questions adhering to Bloom's taxonomy; final publication and subjective grading suggestions always require teacher review and sign-off.\n\
-             5. Respond in Arabic or English matching the user's conversation language."
+             5. For PDF report proposals, call list_available_reports and inspect_report_source, choose a published template from published_templates, and include its ID as template_id. If no published report template is available, explain that one must be published before a PDF can be generated; do not propose an incomplete PDF action.\n\
+             6. Respond in Arabic or English matching the user's conversation language."
         );
 
         prompt
@@ -2563,6 +2604,7 @@ mod tests {
         AiOrchestrationService, check_tool_permission, ensure_tenant_matches,
         format_tool_execution_error, required_tool_permission, take_private_ui_result,
         teacher_assigned_to_class, tool_supports_unit_scoping, unit_in_scope,
+        validate_custom_report_action,
     };
     use crate::context::{ActionSource, RequestContext};
     use crate::ports::iam::PermissionCheckerPort;
@@ -2750,6 +2792,29 @@ mod tests {
             create_tool.parameters_schema["properties"]["template_id"]["description"]
                 .as_str()
                 .is_some_and(|description| description.contains("Required for PDF output"))
+        );
+    }
+
+    #[test]
+    fn custom_pdf_report_action_requires_a_template_id() {
+        assert!(
+            validate_custom_report_action(&json!({
+                "output_format": "pdf"
+            }))
+            .is_err()
+        );
+        assert!(
+            validate_custom_report_action(&json!({
+                "output_format": "PDF",
+                "template_id": Uuid::new_v4().to_string()
+            }))
+            .is_ok()
+        );
+        assert!(
+            validate_custom_report_action(&json!({
+                "output_format": "xlsx"
+            }))
+            .is_ok()
         );
     }
 

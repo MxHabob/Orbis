@@ -5,6 +5,7 @@ import type {
   BulkRowState,
 } from "../types";
 import { createBulkValidationContext } from "./duplicate-index";
+import { validateAllRows } from "./validator";
 
 export interface RevalidationEvent {
   rowIndex: number;
@@ -36,22 +37,28 @@ export function revalidateCellChange<T = Record<string, unknown>>(
   );
 
   // 1. Revalidate the single cell
+  const affectedColumns =
+    profile.id === "grades" && columnId === "max_score"
+      ? ["max_score", "score"]
+      : [columnId];
   const rowErrors = new Map<string, string>(targetRow.errors);
   const rowWarnings = new Map<string, string>(targetRow.warnings);
-  rowErrors.delete(columnId);
-  rowWarnings.delete(columnId);
+  for (const affectedColumn of affectedColumns) {
+    rowErrors.delete(affectedColumn);
+    rowWarnings.delete(affectedColumn);
 
-  const cellIssue = profile.validateCell(
-    columnId,
-    newValue,
-    targetRow.data as T,
-    refData,
-  );
-  if (cellIssue) {
-    if (cellIssue.severity === "BLOCKING_ERROR") {
-      rowErrors.set(columnId, cellIssue.message);
-    } else if (cellIssue.severity === "WARNING") {
-      rowWarnings.set(columnId, cellIssue.message);
+    const cellIssue = profile.validateCell(
+      affectedColumn,
+      targetRow.data[affectedColumn],
+      targetRow.data as T,
+      refData,
+    );
+    if (cellIssue) {
+      if (cellIssue.severity === "BLOCKING_ERROR") {
+        rowErrors.set(cellIssue.columnId, cellIssue.message);
+      } else if (cellIssue.severity === "WARNING") {
+        rowWarnings.set(cellIssue.columnId, cellIssue.message);
+      }
     }
   }
 
@@ -88,6 +95,22 @@ export function revalidateCellChange<T = Record<string, unknown>>(
   } else {
     targetRow.status = "valid";
     targetRow.data.status = m.bulk_entry_status_valid();
+  }
+
+  const gradeContextColumns = [
+    "student_id",
+    "period_id",
+    "section_subject_id",
+    "component_id",
+  ];
+  if (profile.id === "grades" && gradeContextColumns.includes(columnId)) {
+    const summary = validateAllRows(rows, profile, refData);
+    return {
+      updatedRows: rows,
+      errorCount: summary.errorCount,
+      warningCount: summary.warningCount,
+      validCount: summary.validCount,
+    };
   }
 
   // 3. A changed unique value can create or resolve a duplicate for any other row.
