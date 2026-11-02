@@ -290,17 +290,28 @@ jobs:
           if (Test-Path -LiteralPath $customerConfigPath) {
             throw "The installer created the server configuration before the API started."
           }
-          Start-Service -Name "OrbisApi"
-          $deadline = (Get-Date).AddSeconds(30)
-          while (-not (Test-Path -LiteralPath $customerConfigPath) -and (Get-Date) -lt $deadline) {
-            Start-Sleep -Seconds 1
+          $apiExecutable = Join-Path $env:ProgramFiles "Orbis\API\orbis-server.exe"
+          $startupLog = Join-Path $env:RUNNER_TEMP "orbis-api-config-init.log"
+          $startupErrorLog = Join-Path $env:RUNNER_TEMP "orbis-api-config-init-error.log"
+          $startup = Start-Process -FilePath $apiExecutable `
+            -WorkingDirectory (Split-Path -Parent $apiExecutable) `
+            -Wait -PassThru -NoNewWindow `
+            -RedirectStandardOutput $startupLog `
+            -RedirectStandardError $startupErrorLog
+          $startupExitCode = $startup.ExitCode
+          Get-Content -LiteralPath $startupLog, $startupErrorLog
+          if ($startupExitCode -eq 0) {
+            throw "The API unexpectedly started with an empty database configuration."
           }
-          $service = Get-Service -Name "OrbisApi"
-          if ($service.Status -ne "Stopped") {
-            Stop-Service -Name "OrbisApi"
+          $startupOutput = (Get-Content -LiteralPath $startupLog -Raw) +
+            (Get-Content -LiteralPath $startupErrorLog -Raw)
+          if ($startupOutput -notmatch [regex]::Escape(
+              "Created Orbis server configuration at $customerConfigPath"
+            )) {
+            throw "The API did not report that it created the missing server configuration."
           }
           if (-not (Test-Path -LiteralPath $customerConfigPath)) {
-            throw "The API service did not create its missing server configuration."
+            throw "The API did not create its missing server configuration."
           }
           $createdConfig = Get-Content -LiteralPath $customerConfigPath -Raw | ConvertFrom-Json
           if ($createdConfig.database_url -ne "") {
