@@ -532,8 +532,16 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
     }
 
     async fn save_binding(&self, binding: &ReportTemplateBinding) -> Result<(), DomainError> {
+        let existing = self
+            .find_binding(
+                binding.report_definition_id,
+                &binding.locale,
+                &binding.format,
+            )
+            .await?;
+        let binding_id = existing.as_ref().map_or(binding.id, |existing| existing.id);
         let active = report_template_binding::ActiveModel {
-            id: Set(binding.id),
+            id: Set(binding_id),
             report_definition_id: Set(binding.report_definition_id),
             template_id: Set(binding.template_id),
             locale: Set(binding.locale.clone()),
@@ -541,7 +549,11 @@ impl ReportTemplateRepository for ReportTemplateRepoImpl {
             is_default: Set(binding.is_default),
             created_at: Set(binding.created_at.into()),
         };
-        active.insert(&self.db).await.map_err(db_err)?;
+        if existing.is_some() {
+            active.update(&self.db).await.map_err(db_err)?;
+        } else {
+            active.insert(&self.db).await.map_err(db_err)?;
+        }
         Ok(())
     }
 

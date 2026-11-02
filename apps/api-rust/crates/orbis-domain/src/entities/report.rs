@@ -665,6 +665,18 @@ pub struct OrgReportContext {
     pub website: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub primary_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub country_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ministry_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub region_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub city: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tax_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub license_number: Option<String>,
 }
 
 // ═══════════════════════════════════════════════════════════════

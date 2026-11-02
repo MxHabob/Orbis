@@ -15,17 +15,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@orbis/ui/card";
-import { Check, Bolt, ArrowPath, Trash } from "@orbis/icons";
+import { Bolt, ArrowPath, Check, Trash } from "@orbis/icons";
 import { formatLicensePlan } from "$lib/utils/license";
 import { formatDate } from "$lib/core/i18n";
 import LicensePlanCard from "./components/license-plan-card.svelte";
+import CopyableInput from "$lib/shared/components/copyable-input.svelte";
 
 let { orgId }: { orgId: string } = $props();
 
 let isRefreshing = $state(false);
 let isStartingTrial = $state(false);
 let isDeactivating = $state(false);
-let copiedId = $state(false);
 const planDisplay = $derived(
   formatLicensePlan(licenseStore.planName) ??
     formatLicensePlan(licenseStore.plan) ??
@@ -84,20 +84,6 @@ async function handleDeactivate() {
 
 function handleOpenActivation() {
   uiStore.setActivationDialog(true);
-}
-
-async function copyInstallationId() {
-  if (!licenseStore.installationId) return;
-  try {
-    await navigator.clipboard.writeText(licenseStore.installationId);
-    copiedId = true;
-    toast.success(m.common_copied());
-    setTimeout(() => {
-      copiedId = false;
-    }, 2000);
-  } catch {
-    toast.error("Failed to copy");
-  }
 }
 
 function getFeatureLabel(key: string): string {
@@ -462,25 +448,11 @@ const statusBadge = $derived.by(() => {
           <CardDescription>{m.license_installation_id_desc()}</CardDescription>
         </CardHeader>
         <CardContent class="p-5">
-          <div class="flex items-center gap-2">
-          <input
+          <CopyableInput
             id="install_id"
-            type="text"
-            readonly
-            value={licenseStore.installationId || "—"}
-            aria-label={m.license_installation_id()}
-            class="h-10 min-w-0 flex-1 rounded-md border border-border bg-muted/40 px-3 font-mono text-xs text-muted-foreground select-all"
+            label={m.license_installation_id()}
+            value={licenseStore.installationId}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onclick={copyInstallationId}
-            disabled={!licenseStore.installationId}
-            class="h-10 shrink-0 px-3 text-xs"
-          >
-            {copiedId ? m.common_copied() : m.common_action_copy()}
-          </Button>
-          </div>
           {#if licenseStore.isActive}
             <div class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
               <div>

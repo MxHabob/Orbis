@@ -3,6 +3,7 @@ import * as m from "$lib/paraglide/messages";
 import { Input } from "@orbis/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@orbis/ui/card";
 import SettingsRow from "$lib/shared/components/settings-row.svelte";
+import CopyableInput from "$lib/shared/components/copyable-input.svelte";
 import { BilingualNameFields } from "@orbis/ui/bilingual-name-fields";
 import { suggestLocalTranslation } from "$lib/shared/translation/local-engine";
 
@@ -37,12 +38,10 @@ let {
       labelFor="org_slug"
     >
       {#snippet children()}
-        <Input
+        <CopyableInput
           id="org_slug"
-          type="text"
+          label={m.settings_general_slug()}
           value={slug}
-          disabled
-          class="h-9 w-full bg-muted/40 text-muted-foreground border-border/80"
         />
       {/snippet}
     </SettingsRow>
@@ -98,12 +97,10 @@ let {
       last
     >
       {#snippet children()}
-        <Input
+        <CopyableInput
           id="organization_id"
-          type="text"
+          label={m.settings_general_id()}
           value={organizationId}
-          disabled
-          class="h-9 w-full bg-muted/40 text-muted-foreground border-border/80 font-mono"
         />
       {/snippet}
     </SettingsRow>

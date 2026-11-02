@@ -388,6 +388,14 @@ async function initEditor() {
             type: "string",
             label: m.template_schema_region_name(),
           },
+          phone: {
+            type: "string",
+            label: m.settings_general_phone(),
+          },
+          website: {
+            type: "string",
+            label: m.settings_general_website(),
+          },
           name_ar: {
             type: "string",
             label: m.template_schema_organization_name_ar(),
@@ -421,6 +429,14 @@ async function initEditor() {
           region_name: {
             type: "string",
             label: m.template_schema_region_name(),
+          },
+          phone: {
+            type: "string",
+            label: m.settings_general_phone(),
+          },
+          website: {
+            type: "string",
+            label: m.settings_general_website(),
           },
           name_ar: {
             type: "string",

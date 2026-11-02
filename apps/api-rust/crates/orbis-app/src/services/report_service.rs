@@ -689,7 +689,7 @@ impl ReportService {
         if template.is_none() && input.output_format == OutputFormat::Pdf {
             let published_report_templates = self
                 .template_repo
-                .list_by_org(ctx.tenant_id, Some("published"), Some("report"), None)
+                .list_by_org(ctx.tenant_id, Some("published"), None, None)
                 .await?;
             template = select_default_report_template(
                 published_report_templates,
@@ -1166,8 +1166,8 @@ mod tests {
     #[test]
     fn default_report_template_selection_prefers_matching_locale_and_default() {
         let org_id = Uuid::new_v4();
-        let english = report_template(org_id, "en", true, TemplateStatus::Published, "report");
-        let arabic = report_template(org_id, "ar", true, TemplateStatus::Published, "report");
+        let english = report_template(org_id, "en", true, TemplateStatus::Published, "REPORT");
+        let arabic = report_template(org_id, "ar", true, TemplateStatus::Published, "REPORT");
         let expected_id = arabic.id;
 
         let selected = select_default_report_template(vec![english, arabic], org_id, "ar")

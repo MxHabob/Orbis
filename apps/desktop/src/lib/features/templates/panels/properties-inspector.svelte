@@ -62,6 +62,12 @@ function updateProp(key: string, value: unknown) {
   store.updateSelectedProps({ [key]: value });
 }
 
+function updateShapePaint(property: "fill" | "stroke", value: string) {
+  if (!node) return;
+  const alias = property === "fill" ? "fillColor" : "strokeColor";
+  store.updateSelectedProps({ [property]: value, [alias]: value });
+}
+
 function triggerImageReplace() {
   imageFileInput?.click();
 }
@@ -712,6 +718,7 @@ function applyYemeniCertificateColumnsPreset() {
                 <span class="text-[11px] text-muted-foreground">{m.template_inspector_header_background()}</span>
                 <ColorPicker
                   value={nodeProps.style?.headerBgColor || "#1e3a8a"}
+                  allowNone
                   onchange={(c) => updateTableStyle("headerBgColor", c)}
                 />
               </div>
@@ -990,7 +997,8 @@ function applyYemeniCertificateColumnsPreset() {
               <span class="text-[10px] text-muted-foreground">{m.template_inspector_fill_color()}</span>
               <ColorPicker
                 value={nodeProps.fill || nodeProps.fillColor || "#ffffff"}
-                onchange={(c) => updateProp("fill", c)}
+                allowNone
+                onchange={(c) => updateShapePaint("fill", c)}
               />
             </div>
 
@@ -998,7 +1006,8 @@ function applyYemeniCertificateColumnsPreset() {
               <span class="text-[10px] text-muted-foreground">{m.template_inspector_stroke_color()}</span>
               <ColorPicker
                 value={nodeProps.stroke || nodeProps.strokeColor || "#000000"}
-                onchange={(c) => updateProp("stroke", c)}
+                allowNone
+                onchange={(c) => updateShapePaint("stroke", c)}
               />
             </div>
 
