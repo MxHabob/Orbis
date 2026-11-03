@@ -223,7 +223,7 @@ for (const artifact of apiManifest.artifacts) {
     !/^[a-f0-9]{64}$/.test(artifact.sha256 ?? "") ||
     /[\\/]/.test(artifact.name ?? "") ||
     artifact.url !==
-      `https://${repository}/releases/download/${tag}/${artifact.name}`
+      `https://github.com/${repository}/releases/download/${tag}/${artifact.name}`
   ) {
     throw new Error(
       "The signed API release manifest contains an invalid artifact.",
