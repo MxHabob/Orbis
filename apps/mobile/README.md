@@ -93,8 +93,11 @@ crunching enabled. It builds only the `arm64-v8a` native architecture to keep
 the APK smaller; it is suitable for 64-bit ARM Android phones and will not run
 on x86 devices or 32-bit-only phones. The APK is
 `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`.
-Gradle runs offline, so required Android SDK/NDK and build dependencies must
-already be installed locally.
+Gradle runs offline by default, so required Android SDK/NDK and build
+dependencies must already be installed locally. The GitHub Actions release
+build runs Gradle online so uncached plugins and dependencies can be resolved.
+For other CI builds that use the local build script, set
+`ORBIS_GRADLE_OFFLINE=false`.
 
 The build uses the app version in `app.json`. Before publishing a new release,
 update `expo.version` and increase `expo.android.versionCode` so Android and the
